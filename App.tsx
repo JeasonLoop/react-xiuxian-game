@@ -11,7 +11,7 @@ import ArtifactUpgradeModal from './components/ArtifactUpgradeModal';
 import SectModal from './components/SectModal';
 import SecretRealmModal from './components/SecretRealmModal';
 import CombatVisuals from './components/CombatVisuals';
-import { generateAdventureEvent, generateBreakthroughFlavorText } from './services/geminiService';
+import { generateAdventureEvent, generateBreakthroughFlavorText } from './services/aiService';
 import { Sword, User, Backpack, BookOpen, Sparkles, Scroll, Mountain } from 'lucide-react';
 
 // Unique ID generator
@@ -49,7 +49,7 @@ function App() {
   const [isSectOpen, setIsSectOpen] = useState(false);
   const [isRealmOpen, setIsRealmOpen] = useState(false);
   const [itemToUpgrade, setItemToUpgrade] = useState<Item | null>(null);
-  
+
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [visualEffects, setVisualEffects] = useState<{ type: 'damage' | 'heal' | 'slash', value?: string, color?: string, id: string }[]>([]);
@@ -72,7 +72,7 @@ function App() {
   const getItemStats = (item: Item) => {
     const rarity = item.rarity || '普通';
     const multiplier = RARITY_MULTIPLIERS[rarity] || 1;
-    
+
     return {
       attack: item.effect?.attack ? Math.floor(item.effect.attack * multiplier) : 0,
       defense: item.effect?.defense ? Math.floor(item.effect.defense * multiplier) : 0,
@@ -97,9 +97,9 @@ function App() {
   // Action: Meditate (Reliable Exp)
   const handleMeditate = () => {
     if (loading || cooldown > 0) return;
-    
+
     let baseGain = 10 + (player.realmLevel * 5);
-    
+
     // Apply Active Art Bonus
     const activeArt = CULTIVATION_ARTS.find(a => a.id === player.activeArtId);
     if (activeArt && activeArt.effects.expRate) {
@@ -108,9 +108,9 @@ function App() {
 
     // Slight randomness
     const actualGain = Math.floor(baseGain * (0.8 + Math.random() * 0.4));
-    
+
     setPlayer(prev => ({ ...prev, exp: prev.exp + actualGain }));
-    
+
     const artText = activeArt ? `，运转${activeArt.name}` : '';
     addLog(`你潜心感悟大道${artText}。(+${actualGain} 修为)`);
     setCooldown(1);
@@ -128,11 +128,11 @@ function App() {
 
     try {
       const result: AdventureResult = await generateAdventureEvent(player, adventureType);
-      
+
       // Handle Visuals
       if (result.hpChange < 0) {
         triggerVisual('damage', String(result.hpChange), 'text-red-500');
-        // Simple shake effect is handled by CSS on body if we wanted global, 
+        // Simple shake effect is handled by CSS on body if we wanted global,
         // but here we rely on the floating text for now.
         if (document.body) {
           document.body.classList.add('animate-shake');
@@ -148,7 +148,7 @@ function App() {
 
       setPlayer(prev => {
         let newInv = [...prev.inventory];
-        
+
         if (result.itemObtained) {
           const existingIdx = newInv.findIndex(i => i.name === result.itemObtained?.name);
           if (existingIdx >= 0) {
@@ -179,7 +179,7 @@ function App() {
       });
 
       addLog(result.story, result.eventColor);
-      
+
       if (result.itemObtained) {
         addLog(`获得物品: ${result.itemObtained.name}`, 'gain');
       }
@@ -208,7 +208,7 @@ function App() {
   // Action: Secret Realm
   const handleEnterRealm = async (realm: SecretRealm) => {
     if (loading || cooldown > 0) return;
-    
+
     if (player.hp < player.maxHp * 0.3) {
       addLog("你气血不足，此时进入秘境无异于自寻死路！", 'danger');
       return;
@@ -221,7 +221,7 @@ function App() {
 
     setPlayer(prev => ({ ...prev, spiritStones: prev.spiritStones - realm.cost }));
     setIsRealmOpen(false); // Close modal
-    
+
     // Secret Realm Adventure
     await executeAdventure('secret_realm', realm.name);
   };
@@ -239,8 +239,8 @@ function App() {
   };
 
   const handleBreakthrough = async () => {
-    if (loading) return; 
-    
+    if (loading) return;
+
     const isRealmUpgrade = player.realmLevel >= 9;
     const successChance = isRealmUpgrade ? 0.6 : 0.9;
     const roll = Math.random();
@@ -248,7 +248,7 @@ function App() {
     if (roll < successChance) {
       setLoading(true);
       const nextLevel = isRealmUpgrade ? 1 : player.realmLevel + 1;
-      
+
       let nextRealm = player.realm;
       if (isRealmUpgrade) {
         const realms = Object.values(RealmType);
@@ -265,7 +265,7 @@ function App() {
       setPlayer(prev => {
         const stats = REALM_DATA[nextRealm];
         const levelMultiplier = 1 + (nextLevel * 0.1);
-        
+
         // 1. Calculate Art Bonuses
         let bonusAttack = 0;
         let bonusDefense = 0;
@@ -290,7 +290,7 @@ function App() {
         }
 
         const newBaseMaxHp = Math.floor(stats.baseMaxHp * levelMultiplier);
-        
+
         return {
           ...prev,
           realm: nextRealm,
@@ -320,7 +320,7 @@ function App() {
 
       const effectLogs = [];
       let newStats = { ...prev };
-      
+
       if (item.effect?.hp) {
         newStats.hp = Math.min(newStats.maxHp, newStats.hp + item.effect.hp);
         effectLogs.push(`恢复了 ${item.effect.hp} 点气血。`);
@@ -331,7 +331,7 @@ function App() {
       }
 
       addLog(`你使用了 ${item.name}。 ${effectLogs.join(' ')}`, 'gain');
-      
+
       return { ...newStats, inventory: newInv };
     });
   };
@@ -408,7 +408,7 @@ function App() {
 
       const growthRate = getUpgradeMultiplier(item.rarity);
       const getNextStat = (val: number) => Math.floor(val * (1 + growthRate));
-      
+
       const newEffect = {
         ...item.effect,
         attack: item.effect?.attack ? getNextStat(item.effect.attack) : undefined,
@@ -442,7 +442,7 @@ function App() {
 
         const newItem = { ...item, effect: newEffect };
         const newStats = getItemStats(newItem);
-        
+
         newAttack += newStats.attack;
         newDefense += newStats.defense;
         newMaxHp += newStats.hp;
@@ -468,7 +468,7 @@ function App() {
 
     setPlayer(prev => {
       const newStones = prev.spiritStones - art.cost;
-      
+
       const newAttack = prev.attack + (art.effects.attack || 0);
       const newDefense = prev.defense + (art.effects.defense || 0);
       const newMaxHp = prev.maxHp + (art.effects.hp || 0);
@@ -510,7 +510,7 @@ function App() {
       for (const req of recipe.ingredients) {
         const itemIdx = newInventory.findIndex(i => i.name === req.name);
         if (itemIdx === -1 || newInventory[itemIdx].quantity < req.qty) return prev;
-        
+
         newInventory[itemIdx] = { ...newInventory[itemIdx], quantity: newInventory[itemIdx].quantity - req.qty };
       }
 
@@ -518,9 +518,9 @@ function App() {
 
       const existingResultIdx = cleanedInventory.findIndex(i => i.name === recipe.result.name);
       if (existingResultIdx >= 0) {
-        cleanedInventory[existingResultIdx] = { 
-          ...cleanedInventory[existingResultIdx], 
-          quantity: cleanedInventory[existingResultIdx].quantity + 1 
+        cleanedInventory[existingResultIdx] = {
+          ...cleanedInventory[existingResultIdx],
+          quantity: cleanedInventory[existingResultIdx].quantity + 1
         };
       } else {
         cleanedInventory.push({
@@ -549,7 +549,7 @@ function App() {
   const handleJoinSect = (sectId: string) => {
     const sect = SECTS.find(s => s.id === sectId);
     if (!sect) return;
-    
+
     setPlayer(prev => ({ ...prev, sectId: sectId, sectRank: SectRank.Outer, sectContribution: 0 }));
     addLog(`恭喜！你已拜入【${sect.name}】，成为一名外门弟子。`, 'special');
   };
@@ -565,7 +565,7 @@ function App() {
       let contribGain = 0;
       let stoneCost = 0;
       let updatedInventory = [...prev.inventory];
-      
+
       if (type === 'patrol') {
         contribGain = 10;
         addLog('你在山门附近巡视了一圈，震慑了一些宵小之辈。', 'normal');
@@ -577,7 +577,7 @@ function App() {
       } else if (type === 'donate_herb') {
         const herbIdx = updatedInventory.findIndex(i => i.name === '聚灵草');
         if (herbIdx === -1 || updatedInventory[herbIdx].quantity < 1) return prev;
-        
+
         updatedInventory[herbIdx] = { ...updatedInventory[herbIdx], quantity: updatedInventory[herbIdx].quantity - 1 };
         updatedInventory = updatedInventory.filter(i => i.quantity > 0);
         contribGain = 20;
@@ -598,9 +598,9 @@ function App() {
       const ranks = Object.values(SectRank);
       const currentRankIdx = ranks.indexOf(prev.sectRank);
       const nextRank = ranks[currentRankIdx + 1];
-      
+
       if (!nextRank) return prev;
-      
+
       const req = SECT_RANK_REQUIREMENTS[nextRank];
       if (prev.sectContribution < req.contribution) return prev;
 
@@ -620,7 +620,7 @@ function App() {
 
        const newInv = [...prev.inventory];
        const existingIdx = newInv.findIndex(i => i.name === itemTemplate.name);
-       
+
        if (existingIdx >= 0) {
          newInv[existingIdx] = { ...newInv[existingIdx], quantity: newInv[existingIdx].quantity + 1 };
        } else {
@@ -648,7 +648,7 @@ function App() {
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-stone-900 text-stone-200 overflow-hidden relative">
-      
+
       {/* Visual Effects Layer */}
       <CombatVisuals effects={visualEffects} />
 
@@ -658,14 +658,14 @@ function App() {
         <header className="bg-paper-800 p-4 border-b border-stone-700 flex justify-between items-center shadow-lg z-10">
           <h1 className="text-xl font-serif text-mystic-gold tracking-widest">云灵修仙</h1>
           <div className="flex gap-2">
-            <button 
+            <button
               onClick={() => setIsCultivationOpen(true)}
               className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm"
             >
               <BookOpen size={18} />
               <span className="hidden sm:inline">功法</span>
             </button>
-            <button 
+            <button
               onClick={() => setIsInventoryOpen(true)}
               className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm"
             >
@@ -679,7 +679,7 @@ function App() {
 
         {/* Action Bar */}
         <div className="bg-paper-800 p-4 border-t border-stone-700 grid grid-cols-2 md:grid-cols-5 gap-4 shrink-0">
-          
+
           <button
             onClick={handleMeditate}
             disabled={loading || cooldown > 0}
@@ -747,9 +747,9 @@ function App() {
         </div>
       </main>
 
-      <InventoryModal 
-        isOpen={isInventoryOpen} 
-        onClose={() => setIsInventoryOpen(false)} 
+      <InventoryModal
+        isOpen={isInventoryOpen}
+        onClose={() => setIsInventoryOpen(false)}
         inventory={player.inventory}
         equippedId={player.equippedArtifactId}
         player={player}
@@ -792,7 +792,7 @@ function App() {
         onPromote={handleSectPromote}
         onBuy={handleSectBuy}
       />
-      
+
       <SecretRealmModal
         isOpen={isRealmOpen}
         onClose={() => setIsRealmOpen(false)}
