@@ -6,15 +6,16 @@ import { REALM_ORDER } from "../constants";
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
-// 统一使用 Vercel Serverless Function 代理
+// 强制使用代理路径，避免跨域问题
 // 开发环境通过 Vite proxy，生产环境通过 Vercel Function
 const DEFAULT_API_URL = "/api/v2/chat/completions";
 const DEFAULT_MODEL = "spark-x";
 const DEFAULT_API_KEY = "VaFHzaNWVPHbKzIEjOhB:FlsoaFuNhKTsAwZMbRDf";
 
-const API_URL = import.meta.env.VITE_AI_API_URL || DEFAULT_API_URL;
+// 强制使用代理 URL，忽略环境变量（避免 Vercel 环境变量覆盖）
+const API_URL = DEFAULT_API_URL;
 const API_MODEL = import.meta.env.VITE_AI_MODEL || DEFAULT_MODEL;
-const API_KEY = import.meta.env.VITE_AI_API_KEY || DEFAULT_API_KEY;
+const API_KEY = import.meta.env.VITE_AI_KEY || DEFAULT_API_KEY;
 
 const stripCodeFence = (text: string): string => {
   let output = text.trim();
