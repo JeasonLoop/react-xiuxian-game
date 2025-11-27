@@ -28,11 +28,17 @@ const PetModal: React.FC<Props> = ({ isOpen, onClose, player, onActivatePet, onF
   const activePet = player.pets.find(p => p.id === player.activePetId);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-stone-800 rounded-lg border border-stone-700 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-stone-800 border-b border-stone-700 p-4 flex justify-between items-center">
-          <h2 className="text-xl font-serif text-mystic-gold">灵宠系统</h2>
-          <button onClick={onClose} className="text-stone-400 hover:text-white">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 p-0 md:p-4 touch-manipulation"
+      onClick={onClose}
+    >
+      <div
+        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[80vh] md:h-auto md:max-w-3xl md:max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sticky top-0 bg-stone-800 border-b border-stone-700 p-3 md:p-4 flex justify-between items-center">
+          <h2 className="text-lg md:text-xl font-serif text-mystic-gold">灵宠系统</h2>
+          <button onClick={onClose} className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation">
             <X size={24} />
           </button>
         </div>

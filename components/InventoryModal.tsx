@@ -112,16 +112,22 @@ const InventoryModal: React.FC<Props> = ({
   const comparison = calculateComparison();
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-      <div className="bg-paper-800 w-full max-w-6xl rounded border border-stone-600 shadow-2xl flex flex-col max-h-[90vh]">
-        <div className="p-4 border-b border-stone-600 flex justify-between items-center bg-ink-800 rounded-t">
-          <h3 className="text-xl font-serif text-mystic-gold flex items-center gap-2">
-            <Package size={20} /> 储物袋
+    <div
+      className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm touch-manipulation"
+      onClick={onClose}
+    >
+      <div
+        className="bg-paper-800 w-full h-[80vh] md:h-auto md:max-w-6xl md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-600 shadow-2xl flex flex-col md:max-h-[90vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-3 md:p-4 border-b border-stone-600 flex justify-between items-center bg-ink-800 md:rounded-t">
+          <h3 className="text-lg md:text-xl font-serif text-mystic-gold flex items-center gap-2">
+            <Package size={18} className="md:w-5 md:h-5" /> 储物袋
           </h3>
           <div className="flex gap-2">
             <button
               onClick={() => setShowEquipment(!showEquipment)}
-              className={`px-3 py-1 rounded text-sm border transition-colors ${
+              className={`px-2 md:px-3 py-1.5 md:py-1 rounded text-xs md:text-sm border transition-colors min-h-[44px] md:min-h-0 touch-manipulation ${
                 showEquipment
                   ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
                   : 'bg-stone-700 border-stone-600 text-stone-300'
@@ -129,7 +135,7 @@ const InventoryModal: React.FC<Props> = ({
             >
               {showEquipment ? '隐藏' : '显示'}装备栏
             </button>
-            <button onClick={onClose} className="text-stone-400 hover:text-white">
+            <button onClick={onClose} className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation">
               <X size={24} />
             </button>
           </div>
@@ -138,7 +144,7 @@ const InventoryModal: React.FC<Props> = ({
         <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
           {/* 装备面板 */}
           {showEquipment && (
-            <div className="w-full md:w-1/2 border-b md:border-b-0 md:border-r border-stone-600 p-4 overflow-y-auto">
+            <div className="w-full md:w-1/2 border-b md:border-b-0 md:border-r border-stone-600 p-3 md:p-4 overflow-y-auto">
               <EquipmentPanel
                 equippedItems={equippedItems}
                 inventory={inventory}

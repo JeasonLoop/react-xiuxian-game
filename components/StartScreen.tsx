@@ -37,20 +37,20 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 flex items-center justify-center z-50">
-      <div className="bg-paper-800 border-2 border-mystic-gold rounded-lg p-8 max-w-2xl w-full mx-4 shadow-2xl">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-serif font-bold text-mystic-gold tracking-widest mb-2">
+    <div className="fixed inset-0 bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 flex items-center justify-center z-50 p-4 overflow-y-auto touch-manipulation">
+      <div className="bg-paper-800 border-2 border-mystic-gold rounded-lg p-4 md:p-8 max-w-2xl w-full shadow-2xl my-auto">
+        <div className="text-center mb-4 md:mb-8">
+          <h1 className="text-2xl md:text-4xl font-serif font-bold text-mystic-gold tracking-widest mb-2">
             云灵修仙
           </h1>
-          <p className="text-stone-400 text-lg">踏上你的长生之路</p>
+          <p className="text-stone-400 text-sm md:text-lg">踏上你的长生之路</p>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           {/* 输入名称 */}
           <div>
-            <label className="block text-stone-300 mb-2 font-semibold flex items-center gap-2">
-              <User size={20} />
+            <label className="block text-stone-300 mb-2 font-semibold flex items-center gap-2 text-sm md:text-base">
+              <User size={18} className="md:w-5 md:h-5" />
               修仙者名称
             </label>
             <input
@@ -58,77 +58,77 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
               placeholder="请输入你的道号..."
-              className="w-full px-4 py-3 bg-stone-700 border border-stone-600 rounded text-stone-200 placeholder-stone-500 focus:outline-none focus:border-mystic-jade focus:ring-2 focus:ring-mystic-jade/50"
+              className="w-full px-3 md:px-4 py-2.5 md:py-3 bg-stone-700 border border-stone-600 rounded text-stone-200 placeholder-stone-500 focus:outline-none focus:border-mystic-jade focus:ring-2 focus:ring-mystic-jade/50 text-sm md:text-base"
               maxLength={20}
             />
           </div>
 
           {/* 天赋选择（只显示，不可修改） */}
           <div>
-            <label className="block text-stone-300 mb-2 font-semibold flex items-center gap-2">
-              <Sparkles size={20} />
+            <label className="block text-stone-300 mb-2 font-semibold flex items-center gap-2 text-sm md:text-base">
+              <Sparkles size={18} className="md:w-5 md:h-5" />
               天生天赋（随机生成，不可修改）
             </label>
-            <div className={`p-4 rounded border-2 ${getRarityColor(selectedTalent?.rarity || '普通')} bg-stone-800/50`}>
+            <div className={`p-3 md:p-4 rounded border-2 ${getRarityColor(selectedTalent?.rarity || '普通')} bg-stone-800/50`}>
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-xl font-bold">{selectedTalent?.name}</h3>
-                <span className={`px-2 py-1 rounded text-xs font-semibold ${getRarityColor(selectedTalent?.rarity || '普通')}`}>
+                <h3 className="text-lg md:text-xl font-bold">{selectedTalent?.name}</h3>
+                <span className={`px-2 py-1 rounded text-[10px] md:text-xs font-semibold ${getRarityColor(selectedTalent?.rarity || '普通')}`}>
                   {selectedTalent?.rarity}
                 </span>
               </div>
-              <p className="text-stone-300 mb-3">{selectedTalent?.description}</p>
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <p className="text-stone-300 mb-2 md:mb-3 text-xs md:text-sm">{selectedTalent?.description}</p>
+              <div className="grid grid-cols-2 gap-2 text-xs md:text-sm">
                 {selectedTalent?.effects.attack && (
                   <div className="flex items-center gap-1 text-stone-300">
-                    <Sword size={16} className="text-red-400" />
+                    <Sword size={14} className="md:w-4 md:h-4 text-red-400" />
                     <span>攻击 +{selectedTalent.effects.attack}</span>
                   </div>
                 )}
                 {selectedTalent?.effects.defense && (
                   <div className="flex items-center gap-1 text-stone-300">
-                    <Shield size={16} className="text-blue-400" />
+                    <Shield size={14} className="md:w-4 md:h-4 text-blue-400" />
                     <span>防御 +{selectedTalent.effects.defense}</span>
                   </div>
                 )}
                 {selectedTalent?.effects.hp && (
                   <div className="flex items-center gap-1 text-stone-300">
-                    <Heart size={16} className="text-pink-400" />
+                    <Heart size={14} className="md:w-4 md:h-4 text-pink-400" />
                     <span>气血 +{selectedTalent.effects.hp}</span>
                   </div>
                 )}
                 {selectedTalent?.effects.spirit && (
                   <div className="flex items-center gap-1 text-stone-300">
-                    <Zap size={16} className="text-yellow-400" />
+                    <Zap size={14} className="md:w-4 md:h-4 text-yellow-400" />
                     <span>神识 +{selectedTalent.effects.spirit}</span>
                   </div>
                 )}
                 {selectedTalent?.effects.physique && (
                   <div className="flex items-center gap-1 text-stone-300">
-                    <Shield size={16} className="text-green-400" />
+                    <Shield size={14} className="md:w-4 md:h-4 text-green-400" />
                     <span>体魄 +{selectedTalent.effects.physique}</span>
                   </div>
                 )}
                 {selectedTalent?.effects.speed && (
                   <div className="flex items-center gap-1 text-stone-300">
-                    <Zap size={16} className="text-cyan-400" />
+                    <Zap size={14} className="md:w-4 md:h-4 text-cyan-400" />
                     <span>速度 +{selectedTalent.effects.speed}</span>
                   </div>
                 )}
                 {selectedTalent?.effects.expRate && (
                   <div className="flex items-center gap-1 text-stone-300">
-                    <Sparkles size={16} className="text-purple-400" />
+                    <Sparkles size={14} className="md:w-4 md:h-4 text-purple-400" />
                     <span>修炼速度 +{Math.round(selectedTalent.effects.expRate * 100)}%</span>
                   </div>
                 )}
                 {selectedTalent?.effects.luck && (
                   <div className="flex items-center gap-1 text-stone-300">
-                    <Sparkles size={16} className="text-yellow-400" />
+                    <Sparkles size={14} className="md:w-4 md:h-4 text-yellow-400" />
                     <span>幸运 +{selectedTalent.effects.luck}</span>
                   </div>
                 )}
               </div>
             </div>
-            <p className="text-xs text-stone-500 mt-2">
+            <p className="text-[10px] md:text-xs text-stone-500 mt-2">
               * 天赋在游戏开始时随机生成，之后不可修改
             </p>
           </div>
@@ -137,9 +137,9 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
           <button
             onClick={handleStart}
             disabled={!playerName.trim()}
-            className="w-full py-4 bg-gradient-to-r from-mystic-gold to-yellow-600 hover:from-yellow-600 hover:to-mystic-gold text-stone-900 font-bold text-lg rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-3 md:py-4 bg-gradient-to-r from-mystic-gold to-yellow-600 active:from-yellow-600 active:to-mystic-gold text-stone-900 font-bold text-base md:text-lg rounded-lg transition-all duration-300 shadow-lg active:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 min-h-[56px] md:min-h-0 touch-manipulation"
           >
-            <Sparkles size={24} />
+            <Sparkles size={20} className="md:w-6 md:h-6" />
             开始修仙之旅
           </button>
         </div>

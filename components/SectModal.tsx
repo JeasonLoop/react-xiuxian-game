@@ -93,22 +93,28 @@ const SectModal: React.FC<Props> = ({
     getRealmIndex(player.realm) >= nextReq.realmIndex;
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-      <div className="bg-paper-800 w-full max-w-4xl rounded border border-stone-600 shadow-2xl flex flex-col h-[80vh]">
+    <div
+      className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm touch-manipulation"
+      onClick={onClose}
+    >
+      <div
+        className="bg-paper-800 w-full h-[80vh] md:h-auto md:max-w-4xl md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-600 shadow-2xl flex flex-col md:h-[80vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="p-4 border-b border-stone-600 bg-ink-800 rounded-t flex justify-between items-start">
+        <div className="p-3 md:p-4 border-b border-stone-600 bg-ink-800 md:rounded-t flex justify-between items-start">
           <div>
-             <div className="flex items-center gap-2 mb-1">
-                <h3 className="text-2xl font-serif text-mystic-gold">{currentSect?.name}</h3>
-                <span className="text-xs px-2 py-0.5 rounded bg-stone-700 text-stone-300 border border-stone-600">
+             <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <h3 className="text-xl md:text-2xl font-serif text-mystic-gold">{currentSect?.name}</h3>
+                <span className="text-[10px] md:text-xs px-2 py-0.5 rounded bg-stone-700 text-stone-300 border border-stone-600">
                   {player.sectRank}
                 </span>
              </div>
-             <div className="text-sm text-stone-400 flex gap-4">
+             <div className="text-xs md:text-sm text-stone-400 flex gap-4">
                <span>宗门贡献: <span className="text-white font-bold">{player.sectContribution}</span></span>
              </div>
           </div>
-          <button onClick={onClose} className="text-stone-400 hover:text-white">
+          <button onClick={onClose} className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation">
             <X size={24} />
           </button>
         </div>
