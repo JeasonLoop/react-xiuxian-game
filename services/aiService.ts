@@ -6,10 +6,8 @@ import { REALM_ORDER } from "../constants";
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
-const IS_PROD = import.meta.env.MODE === "production";
-const DEFAULT_API_URL = IS_PROD
-  ? "https://spark-api-open.xf-yun.com/v2/chat/completions"
-  : "/api/v2/chat/completions";
+// 统一使用代理路径，开发和生产环境都通过 /api 代理
+const DEFAULT_API_URL = "/api/v2/chat/completions";
 const DEFAULT_MODEL = "spark-x";
 const DEFAULT_API_KEY = "VaFHzaNWVPHbKzIEjOhB:FlsoaFuNhKTsAwZMbRDf";
 
