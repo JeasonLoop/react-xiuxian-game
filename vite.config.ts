@@ -5,9 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   base: '/react-xiuxian-game/',
   server: {
-    port: 3000,
-    host: '0.0.0.0',
-     proxy: {
+    proxy: {
       '/api': {
         target: 'https://spark-api-open.xf-yun.com', // 替换为实际API地址
         changeOrigin: true,
