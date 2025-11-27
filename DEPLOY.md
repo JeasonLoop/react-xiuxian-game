@@ -49,24 +49,34 @@
 
 ## 🔧 跨域问题解决方案
 
-本项目已配置 `vercel.json` 来解决 API 跨域问题：
+本项目使用 **Vercel Serverless Function** 来解决 API 跨域问题：
 
 - **开发环境**: Vite dev server 代理 `/api` → `https://spark-api-open.xf-yun.com`
-- **生产环境**: Vercel rewrites 代理 `/api` → `https://spark-api-open.xf-yun.com`
+- **生产环境**: Vercel Serverless Function (`/api/proxy`) 代理所有 API 请求
 
 ### 工作原理
 
 ```
 浏览器请求: /api/v2/chat/completions
        ↓
-Vercel 服务器: 转发到 https://spark-api-open.xf-yun.com/v2/chat/completions
+Vercel Serverless Function (api/proxy.js): 
+  - 接收请求
+  - 转发到 https://spark-api-open.xf-yun.com/v2/chat/completions
+  - 添加 CORS 头
        ↓
 讯飞星火 API: 处理请求并返回结果
        ↓
-Vercel 服务器: 返回给浏览器
+Vercel Function: 返回给浏览器（带正确的 CORS 头）
 ```
 
-这样浏览器只与同源的 Vercel 服务器通信，避免了跨域问题。
+这样浏览器只与同源的 Vercel 服务器通信，完全避免了跨域问题。
+
+### 技术细节
+
+- 使用 Vercel Serverless Function 而不是简单的 rewrites
+- 自动转发 `Authorization` 头和请求体
+- 添加正确的 CORS 响应头
+- 支持 OPTIONS 预检请求
 
 ## 📝 环境变量（可选）
 

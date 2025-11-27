@@ -6,7 +6,8 @@ import { REALM_ORDER } from "../constants";
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
-// 统一使用代理路径，开发和生产环境都通过 /api 代理
+// 统一使用 Vercel Serverless Function 代理
+// 开发环境通过 Vite proxy，生产环境通过 Vercel Function
 const DEFAULT_API_URL = "/api/v2/chat/completions";
 const DEFAULT_MODEL = "spark-x";
 const DEFAULT_API_KEY = "VaFHzaNWVPHbKzIEjOhB:FlsoaFuNhKTsAwZMbRDf";
