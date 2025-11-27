@@ -1,0 +1,118 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>云灵修仙传</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;500;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              serif: ['"Noto Serif SC"', 'serif'],
+            },
+            colors: {
+              ink: {
+                900: '#0f0f12',
+                800: '#1a1b1e',
+                700: '#27282d',
+              },
+              paper: {
+                100: '#f5f5f0',
+                200: '#e6e6dc',
+                800: '#2d2d2a',
+                900: '#1c1c1a',
+              },
+              mystic: {
+                gold: '#cba135',
+                jade: '#5c946e',
+                blood: '#8a2c2c',
+              }
+            },
+            animation: {
+              'shake': 'shake 0.5s cubic-bezier(.36,.07,.19,.97) both',
+              'float-up': 'floatUp 1s ease-out forwards',
+              'slash': 'slash 0.3s ease-out forwards',
+              'fade-in': 'fadeIn 0.3s ease-out forwards',
+            },
+            keyframes: {
+              shake: {
+                '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                '30%, 50%, 70%': { transform: 'translate3d(-4px, 0, 0)' },
+                '40%, 60%': { transform: 'translate3d(4px, 0, 0)' }
+              },
+              floatUp: {
+                '0%': { opacity: '1', transform: 'translate(-50%, -50%) scale(0.5)' },
+                '20%': { opacity: '1', transform: 'translate(-50%, -150%) scale(1.2)' },
+                '100%': { opacity: '0', transform: 'translate(-50%, -300%) scale(1)' }
+              },
+              slash: {
+                '0%': { opacity: '0', transform: 'translate(-50%, -50%) rotate(45deg) scaleX(0)' },
+                '50%': { opacity: '1', transform: 'translate(-50%, -50%) rotate(45deg) scaleX(1)' },
+                '100%': { opacity: '0', transform: 'translate(-50%, -50%) rotate(45deg) scaleX(1.2)' }
+              },
+              fadeIn: {
+                '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' }
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        font-family: 'Noto Serif SC', serif;
+        background-color: #1c1c1a;
+        color: #e6e6dc;
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+      }
+      /* 移动端优化 */
+      @media (max-width: 768px) {
+        * {
+          -webkit-tap-highlight-color: transparent;
+        }
+        button, a {
+          touch-action: manipulation;
+          -webkit-touch-callout: none;
+        }
+      }
+      /* Custom Scrollbar for logs */
+      .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+      }
+      .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+      }
+    </style>
+
+  <script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0"
+  }
+}
+</script>
+  <script type="module" crossorigin src="./assets/index-56hmPRBb.js"></script>
+</head>
+  <body>
+    <div id="root"></div>
+
+  </body>
+</html>
