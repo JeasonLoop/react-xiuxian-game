@@ -1,7 +1,7 @@
 
 /// <reference types="vite/client" />
 
-import { PlayerStats, AdventureResult, AdventureType } from "../types";
+import { PlayerStats, AdventureResult, AdventureType, RealmType } from "../types";
 import { REALM_ORDER } from "../constants";
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
@@ -287,5 +287,66 @@ export const generateBreakthroughFlavorText = async (realm: string, success: boo
     return content.trim() || (success ? "天地震动，你成功突破瓶颈！" : "你气血翻涌，突破失败了。");
   } catch (e) {
     return success ? "突破成功！" : "突破失败！";
+  }
+};
+
+export const generateEnemyName = async (realm: RealmType, adventureType: AdventureType): Promise<{ name: string; title: string }> => {
+  if (!API_KEY) {
+    // 如果API不可用，返回空对象，让调用者使用预设列表
+    return { name: '', title: '' };
+  }
+
+  try {
+    // RealmType 枚举的值已经是中文名称（如 '炼气期'、'筑基期'）
+    const realmName = realm;
+
+    const adventureContext = adventureType === 'secret_realm'
+      ? '秘境中'
+      : adventureType === 'lucky'
+        ? '机缘之地'
+        : '荒野中';
+
+    const prompt = `
+      在修仙游戏中，玩家在${adventureContext}遭遇了一个敌人。
+      敌人境界：${realmName}
+
+      请生成一个符合修仙风格的敌人名字和称号。
+      名字可以是妖兽名（如：血牙狼、玄煞蛛）或修士名（如：断魂剑客、血手魔修）。
+      称号应该描述敌人的身份（如：荒原妖兽、邪修、秘境守卫）。
+
+      请以JSON格式返回，格式为：
+      {
+        "name": "敌人名字（2-4个字）",
+        "title": "敌人称号（2-5个字）"
+      }
+
+      只返回JSON，不要其他内容。
+    `;
+
+    const content = await requestSpark(
+      [
+        {
+          role: "system",
+          content: "你是修仙游戏的设计师，擅长创造符合仙侠风格的敌人名称。请严格返回JSON格式。",
+        },
+        { role: "user", content: prompt },
+      ],
+      0.9
+    );
+
+    const cleaned = stripCodeFence(content);
+    const parsed = JSON.parse(cleaned);
+
+    if (parsed.name && parsed.title) {
+      return {
+        name: parsed.name.trim(),
+        title: parsed.title.trim()
+      };
+    }
+
+    return { name: '', title: '' };
+  } catch (e) {
+    console.error("AI生成敌人名字失败:", e);
+    return { name: '', title: '' };
   }
 };

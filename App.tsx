@@ -11,6 +11,7 @@ import ArtifactUpgradeModal from './components/ArtifactUpgradeModal';
 import SectModal from './components/SectModal';
 import SecretRealmModal from './components/SecretRealmModal';
 import CombatVisuals from './components/CombatVisuals';
+import BattleModal from './components/BattleModal';
 import CharacterModal from './components/CharacterModal';
 import AchievementModal from './components/AchievementModal';
 import PetModal from './components/PetModal';
@@ -19,6 +20,7 @@ import SettingsModal from './components/SettingsModal';
 import ShopModal from './components/ShopModal';
 import StartScreen from './components/StartScreen';
 import MobileSidebar from './components/MobileSidebar';
+import { resolveBattleEncounter, shouldTriggerBattle, BattleReplay } from './services/battleService';
 import { generateAdventureEvent, generateBreakthroughFlavorText } from './services/aiService';
 import { Sword, User, Backpack, BookOpen, Sparkles, Scroll, Mountain, Star, Trophy, Gift, Settings, ShoppingBag, Menu } from 'lucide-react';
 
@@ -200,6 +202,9 @@ function App() {
   const [lotteryRewards, setLotteryRewards] = useState<Array<{ type: string; name: string; quantity?: number }>>([]);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
+  const [battleReplay, setBattleReplay] = useState<BattleReplay | null>(null);
+  const [isBattleModalOpen, setIsBattleModalOpen] = useState(false);
+  const [revealedBattleRounds, setRevealedBattleRounds] = useState(0);
 
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
@@ -218,6 +223,37 @@ function App() {
       setVisualEffects(prev => prev.filter(v => v.id !== id));
     }, 1000);
   };
+
+  const openBattleModal = (replay: BattleReplay) => {
+    setBattleReplay(replay);
+    setIsBattleModalOpen(true);
+    setRevealedBattleRounds(replay.rounds.length > 0 ? 1 : 0);
+  };
+
+  const handleSkipBattleLogs = () => {
+    if (battleReplay) {
+      setRevealedBattleRounds(battleReplay.rounds.length);
+    }
+  };
+
+  const handleCloseBattleModal = () => {
+    setIsBattleModalOpen(false);
+    setBattleReplay(null);
+    setRevealedBattleRounds(0);
+  };
+
+  useEffect(() => {
+    if (!isBattleModalOpen || !battleReplay) return;
+    if (revealedBattleRounds >= battleReplay.rounds.length) return;
+    const speedMap = { slow: 1200, normal: 800, fast: 450 } as const;
+    const delay = speedMap[settings.animationSpeed] || 800;
+    const timer = window.setTimeout(() => {
+      setRevealedBattleRounds(prev =>
+        Math.min(prev + 1, battleReplay.rounds.length)
+      );
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [isBattleModalOpen, battleReplay, revealedBattleRounds, settings.animationSpeed]);
 
   // 根据物品名称和描述推断物品类型和装备槽位
   const inferItemTypeAndSlot = (
@@ -464,7 +500,16 @@ function App() {
     }
 
     try {
-      const result: AdventureResult = await generateAdventureEvent(player, adventureType);
+      let result: AdventureResult;
+      let battleContext: BattleReplay | null = null;
+
+      if (shouldTriggerBattle(player, adventureType)) {
+        const battleResolution = await resolveBattleEncounter(player, adventureType);
+        result = battleResolution.adventureResult;
+        battleContext = battleResolution.replay;
+      } else {
+        result = await generateAdventureEvent(player, adventureType);
+      }
 
       // Handle Visuals
       if (result.hpChange < 0) {
@@ -692,6 +737,10 @@ function App() {
 
       if (result.itemObtained) {
         addLog(`获得物品: ${result.itemObtained.name}`, 'gain');
+      }
+
+      if (battleContext) {
+        openBattleModal(battleContext);
       }
 
       // 如果触发随机秘境，自动进入秘境并触发新的随机事件
@@ -2521,6 +2570,14 @@ function App() {
 
         </div>
       </main>
+
+      <BattleModal
+        isOpen={isBattleModalOpen}
+        replay={battleReplay}
+        revealedRounds={revealedBattleRounds}
+        onSkip={handleSkipBattleLogs}
+        onClose={handleCloseBattleModal}
+      />
 
       <InventoryModal
         isOpen={isInventoryOpen}
