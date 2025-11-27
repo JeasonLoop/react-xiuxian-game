@@ -8,9 +8,9 @@ type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
 // 强制使用代理路径，避免跨域问题
 // 开发环境通过 Vite proxy，生产环境通过 Vercel Function
-const DEFAULT_API_URL = "/api/v2/chat/completions";
-const DEFAULT_MODEL = "spark-x";
-const DEFAULT_API_KEY = "VaFHzaNWVPHbKzIEjOhB:FlsoaFuNhKTsAwZMbRDf";
+const DEFAULT_API_URL = "https://api.siliconflow.cn/v1/chat/completions";
+const DEFAULT_MODEL = "Qwen/Qwen2.5-72B-Instruct";
+const DEFAULT_API_KEY = "sk-hmldnzdfarkzmvvnzqxasgaqdznjpjfvxyqczpmifbmwtqda";
 
 // 强制使用代理 URL，忽略环境变量（避免 Vercel 环境变量覆盖）
 const API_URL = DEFAULT_API_URL;
