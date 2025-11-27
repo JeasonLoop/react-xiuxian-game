@@ -238,6 +238,7 @@ export interface AdventureResult {
       maxHp?: number;
     };
   };
+  petObtained?: string; // 获得的灵宠模板ID（如 "pet-spirit-fox"）
   eventColor: 'normal' | 'gain' | 'danger' | 'special';
 }
 

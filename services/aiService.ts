@@ -208,6 +208,7 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
 - triggerSecretRealm(布尔值，可选): 是否触发随机秘境（如果为true，玩家将进入秘境并触发新的随机事件）
 - eventColor(字符串: normal/gain/danger/special): 事件颜色（危险事件应为"danger"，秘境事件应为"special"）
 - itemObtained(可以为 null 或包含 name/type/description/rarity/isEquippable/equipmentSlot/effect/permanentEffect 对象): 获得的物品
+- petObtained(字符串，可选): 如果拯救灵兽获得灵宠，请设置为以下之一：pet-spirit-fox（灵狐，普通）、pet-thunder-tiger（雷虎，稀有）、pet-phoenix（凤凰，仙品）。如果事件描述中提到拯救灵兽、获得灵宠等，必须设置此字段
   - type(字符串): 物品类型，必须是以下之一：草药、丹药、材料、法宝、武器、护甲、首饰、戒指
   - isEquippable(布尔值): 是否可装备（如果是装备类物品，必须为true）
   - equipmentSlot(字符串，可选): 装备槽位，如果是装备类物品，必须指定。可选值：头部、肩部、胸甲、手套、裤腿、鞋子、戒指1、戒指2、戒指3、戒指4、首饰1、首饰2、法宝1、法宝2、武器

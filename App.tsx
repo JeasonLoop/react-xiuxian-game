@@ -540,6 +540,7 @@ function App() {
         let newLuck = prev.luck;
         let newLotteryTickets = prev.lotteryTickets;
         let newInheritanceLevel = prev.inheritanceLevel;
+        let newPets = [...prev.pets];
 
         // 处理获得的物品
         if (result.itemObtained) {
@@ -643,6 +644,34 @@ function App() {
           addLog(`🌟 你获得了上古传承！可以直接突破 ${result.inheritanceLevelChange} 个境界！`, 'special');
         }
 
+        // 处理获得的灵宠
+        if (result.petObtained) {
+          const petTemplate = PET_TEMPLATES.find(t => t.id === result.petObtained);
+          if (petTemplate) {
+            // 检查是否已经拥有该灵宠（根据种类判断，避免重复）
+            const hasSameSpecies = newPets.some(p => p.species === petTemplate.species);
+            if (!hasSameSpecies) {
+              const newPet: Pet = {
+                id: uid(),
+                name: petTemplate.name,
+                species: petTemplate.species,
+                level: 1,
+                exp: 0,
+                maxExp: 100,
+                rarity: petTemplate.rarity,
+                stats: { ...petTemplate.baseStats },
+                skills: [...petTemplate.skills],
+                evolutionStage: 0,
+                affection: 50
+              };
+              newPets.push(newPet);
+              addLog(`✨ 你拯救了灵兽，获得了灵宠【${newPet.name}】！`, 'special');
+            } else {
+              addLog(`你遇到了灵兽，但它似乎已经有了同类伙伴，便离开了。`, 'normal');
+            }
+          }
+        }
+
         // 小概率获得功法（3%概率，秘境中5%）
         const artChance = realmName ? 0.05 : 0.03;
         if (Math.random() < artChance && adventureType !== 'lucky') {
@@ -729,7 +758,8 @@ function App() {
           speed: newSpeed,
           luck: newLuck,
           lotteryTickets: newLotteryTickets,
-          inheritanceLevel: newInheritanceLevel
+          inheritanceLevel: newInheritanceLevel,
+          pets: newPets
         };
       });
 
