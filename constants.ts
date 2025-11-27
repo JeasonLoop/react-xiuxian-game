@@ -250,18 +250,6 @@ export const INITIAL_ITEMS: Item[] = [
     equipmentSlot: EquipmentSlot.Chest,
     effect: { defense: 3, hp: 10 }
   },
-  {
-    id: 'azure-frost-sword',
-    name: '青霜剑',
-    type: ItemType.Weapon,
-    description: '剑身泛着寒光，削铁如泥。',
-    quantity: 0,
-    rarity: '稀有',
-    level: 0,
-    isEquippable: true,
-    equipmentSlot: EquipmentSlot.Weapon,
-    effect: { attack: 15 }
-  }
 ];
 
 export const PILL_RECIPES: Recipe[] = [
