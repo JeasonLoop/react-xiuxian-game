@@ -19,7 +19,7 @@ const ArtifactUpgradeModal: React.FC<Props> = ({ isOpen, onClose, item, player, 
   const nextLevel = currentLevel + 1;
   const rarity = item.rarity || '普通';
   const rarityMult = RARITY_MULTIPLIERS[rarity];
-  
+
   // Cost Calculation
   const costStones = Math.floor(BASE_UPGRADE_COST_STONES * (currentLevel + 1) * rarityMult);
   const costMats = Math.floor(BASE_UPGRADE_COST_MATS * (currentLevel + 1));
@@ -32,7 +32,7 @@ const ArtifactUpgradeModal: React.FC<Props> = ({ isOpen, onClose, item, player, 
   // Note: Inventory stores RAW base effects. InventoryModal applies rarity visual multiplier.
   // HOWEVER, the `handleUpgrade` logic updates the raw effect in inventory.
   // So `item.effect` is the source of truth.
-  
+
   const currentEffect = item.effect || {};
   const nextEffect = {
     attack: currentEffect.attack ? getNextStat(currentEffect.attack) : 0,
@@ -46,8 +46,14 @@ const ArtifactUpgradeModal: React.FC<Props> = ({ isOpen, onClose, item, player, 
   const canAfford = playerStones >= costStones && playerMats >= costMats;
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
-      <div className="bg-paper-800 w-full max-w-md rounded border border-stone-600 shadow-2xl flex flex-col">
+    <div
+      className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-[60] p-0 md:p-4 backdrop-blur-sm touch-manipulation"
+      onClick={onClose}
+    >
+      <div
+        className="bg-paper-800 w-full h-[80vh] md:h-auto md:max-w-md md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-600 shadow-2xl flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-4 border-b border-stone-600 flex justify-between items-center bg-ink-800 rounded-t">
           <h3 className="text-xl font-serif text-mystic-gold flex items-center gap-2">
             <Hammer size={20} /> 法宝祭炼
@@ -68,7 +74,7 @@ const ArtifactUpgradeModal: React.FC<Props> = ({ isOpen, onClose, item, player, 
 
           {/* Stats Comparison */}
           <div className="bg-ink-900 p-4 rounded border border-stone-700 grid grid-cols-3 gap-4 items-center">
-            
+
             {/* Current */}
             <div className="space-y-2 text-right">
                {currentEffect.attack !== undefined && (
@@ -134,8 +140,8 @@ const ArtifactUpgradeModal: React.FC<Props> = ({ isOpen, onClose, item, player, 
             disabled={!canAfford}
             className={`
               w-full py-3 rounded font-serif font-bold text-lg transition-all
-              ${canAfford 
-                ? 'bg-mystic-gold/20 text-mystic-gold hover:bg-mystic-gold/30 border border-mystic-gold shadow-[0_0_15px_rgba(203,161,53,0.3)]' 
+              ${canAfford
+                ? 'bg-mystic-gold/20 text-mystic-gold hover:bg-mystic-gold/30 border border-mystic-gold shadow-[0_0_15px_rgba(203,161,53,0.3)]'
                 : 'bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700'}
             `}
           >

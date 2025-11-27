@@ -18,8 +18,9 @@ import LotteryModal from './components/LotteryModal';
 import SettingsModal from './components/SettingsModal';
 import ShopModal from './components/ShopModal';
 import StartScreen from './components/StartScreen';
+import MobileSidebar from './components/MobileSidebar';
 import { generateAdventureEvent, generateBreakthroughFlavorText } from './services/aiService';
-import { Sword, User, Backpack, BookOpen, Sparkles, Scroll, Mountain, Star, Trophy, Gift, Settings, ShoppingBag } from 'lucide-react';
+import { Sword, User, Backpack, BookOpen, Sparkles, Scroll, Mountain, Star, Trophy, Gift, Settings, ShoppingBag, Menu } from 'lucide-react';
 
 // Unique ID generator
 const uid = () => Math.random().toString(36).substr(2, 9);
@@ -197,6 +198,8 @@ function App() {
   const [itemToUpgrade, setItemToUpgrade] = useState<Item | null>(null);
   const [purchaseSuccess, setPurchaseSuccess] = useState<{ item: string; quantity: number } | null>(null);
   const [lotteryRewards, setLotteryRewards] = useState<Array<{ type: string; name: string; quantity?: number }>>([]);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
@@ -2355,48 +2358,56 @@ function App() {
       {/* Visual Effects Layer */}
       <CombatVisuals effects={visualEffects} />
 
-      <StatsPanel player={player} />
+      <div className="hidden md:block">
+        <StatsPanel player={player} />
+      </div>
 
-      <main className="flex-1 flex flex-col h-full relative">
-        <header className="bg-paper-800 p-4 border-b border-stone-700 flex justify-between items-center shadow-lg z-10">
-          <h1 className="text-xl font-serif text-mystic-gold tracking-widest">云灵修仙</h1>
-          <div className="flex gap-2 flex-wrap">
+      <main className="flex-1 flex flex-col h-full relative min-w-0">
+        <header className="bg-paper-800 p-2 md:p-4 border-b border-stone-700 flex justify-between items-center shadow-lg z-10">
+          <h1 className="text-base md:text-xl font-serif text-mystic-gold tracking-widest">云灵修仙</h1>
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setIsMobileSidebarOpen(true)}
+            className="md:hidden flex items-center justify-center w-12 h-12 bg-ink-800 active:bg-stone-700 rounded border border-stone-600 touch-manipulation"
+          >
+            <Menu size={24} className="text-stone-200" />
+          </button>
+          {/* Desktop Buttons */}
+          <div className="hidden md:flex gap-2 flex-wrap">
             <button
               onClick={() => setIsCultivationOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm"
+              className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
             >
               <BookOpen size={18} />
-              <span className="hidden sm:inline">功法</span>
+              <span>功法</span>
             </button>
             <button
               onClick={() => setIsInventoryOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm"
+              className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
             >
               <Backpack size={18} />
-              <span className="hidden sm:inline">储物袋</span>
+              <span>储物袋</span>
             </button>
             <button
               onClick={() => setIsCharacterOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm"
+              className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
             >
               <Star size={18} />
-              <span className="hidden sm:inline">角色</span>
+              <span>角色</span>
             </button>
             <button
               onClick={() => {
                 setIsAchievementOpen(true);
-                // 标记所有已完成的成就为已查看
                 setPlayer(prev => ({
                   ...prev,
                   viewedAchievements: [...prev.achievements]
                 }));
               }}
-              className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm relative"
+              className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm relative min-w-[44px] min-h-[44px] justify-center"
             >
               <Trophy size={18} />
-              <span className="hidden sm:inline">成就</span>
+              <span>成就</span>
               {(() => {
-                // 只显示未查看的新成就数量
                 const newAchievements = player.achievements.filter(a => !player.viewedAchievements.includes(a));
                 return newAchievements.length > 0 ? (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -2407,10 +2418,10 @@ function App() {
             </button>
             <button
               onClick={() => setIsPetOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm"
+              className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
             >
               <Sparkles size={18} />
-              <span className="hidden sm:inline">灵宠</span>
+              <span>灵宠</span>
               {player.pets.length > 0 && (
                 <span className="text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded">
                   {player.pets.length}
@@ -2419,10 +2430,10 @@ function App() {
             </button>
             <button
               onClick={() => setIsLotteryOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm"
+              className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
             >
               <Gift size={18} />
-              <span className="hidden sm:inline">抽奖</span>
+              <span>抽奖</span>
               {player.lotteryTickets > 0 && (
                 <span className="text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded">
                   {player.lotteryTickets}
@@ -2431,107 +2442,81 @@ function App() {
             </button>
             <button
               onClick={() => setIsSettingsOpen(true)}
-              className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm"
+              className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
             >
               <Settings size={18} />
-              <span className="hidden sm:inline">设置</span>
+              <span>设置</span>
             </button>
-            {/* <div className="flex gap-1">
-              <button
-                onClick={() => handleOpenShop(ShopType.Village)}
-                className="flex items-center gap-1 px-2 py-1 bg-green-900/30 hover:bg-green-900/50 rounded border border-green-700 text-xs transition-colors"
-                title="村庄商店"
-              >
-                <ShoppingBag size={14} />
-                <span className="hidden sm:inline">村庄</span>
-              </button>
-              <button
-                onClick={() => handleOpenShop(ShopType.City)}
-                className="flex items-center gap-1 px-2 py-1 bg-blue-900/30 hover:bg-blue-900/50 rounded border border-blue-700 text-xs transition-colors"
-                title="城市商店"
-              >
-                <ShoppingBag size={14} />
-                <span className="hidden sm:inline">城市</span>
-              </button>
-              <button
-                onClick={() => handleOpenShop(ShopType.Sect)}
-                className="flex items-center gap-1 px-2 py-1 bg-purple-900/30 hover:bg-purple-900/50 rounded border border-purple-700 text-xs transition-colors"
-                title="仙门商店"
-              >
-                <ShoppingBag size={14} />
-                <span className="hidden sm:inline">仙门</span>
-              </button>
-            </div> */}
           </div>
         </header>
 
-        <LogPanel logs={logs} />
+        <LogPanel logs={logs} className="pb-[23rem] md:pb-0" />
 
-        {/* Action Bar */}
-        <div className="bg-paper-800 p-4 border-t border-stone-700 grid grid-cols-2 md:grid-cols-5 gap-4 shrink-0">
+        {/* Action Bar - Mobile: Bottom Fixed, Desktop: Normal */}
+        <div className="bg-paper-800 p-3 md:p-4 border-t border-stone-700 grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 shrink-0 fixed md:relative bottom-0 left-0 right-0 md:left-auto md:right-auto z-20 shadow-lg md:shadow-none">
 
           <button
             onClick={handleMeditate}
             disabled={loading || cooldown > 0}
             className={`
-              flex flex-col items-center justify-center p-4 rounded border transition-all duration-200
-              ${loading || cooldown > 0 ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed' : 'bg-ink-800 border-stone-600 hover:border-mystic-jade hover:bg-ink-700 text-stone-200'}
+              flex flex-col items-center justify-center p-4 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[90px] md:min-h-[100px]
+              ${loading || cooldown > 0 ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed' : 'bg-ink-800 border-stone-600 active:border-mystic-jade active:bg-ink-700 text-stone-200'}
             `}
           >
-            <User size={24} className="mb-2 text-mystic-jade" />
-            <span className="font-serif font-bold">打坐</span>
-            <span className="text-xs text-stone-500 mt-1">修炼 · 心法</span>
+            <User size={24} className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-mystic-jade" />
+            <span className="font-serif font-bold text-base md:text-base">打坐</span>
+            <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">修炼 · 心法</span>
           </button>
 
           <button
             onClick={handleAdventure}
             disabled={loading || cooldown > 0}
             className={`
-              flex flex-col items-center justify-center p-4 rounded border transition-all duration-200 group
-              ${loading || cooldown > 0 ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed' : 'bg-ink-800 border-stone-600 hover:border-mystic-gold hover:bg-ink-700 text-stone-200'}
+              flex flex-col items-center justify-center p-4 md:p-4 rounded-lg border-2 transition-all duration-200 group touch-manipulation min-h-[90px] md:min-h-[100px]
+              ${loading || cooldown > 0 ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed' : 'bg-ink-800 border-stone-600 active:border-mystic-gold active:bg-ink-700 text-stone-200'}
             `}
           >
-            <Sword size={24} className={`mb-2 text-mystic-gold ${loading ? 'animate-spin' : 'group-hover:scale-110 transition-transform'}`} />
-            <span className="font-serif font-bold">{loading ? '历练中...' : '历练'}</span>
-            <span className="text-xs text-stone-500 mt-1">机缘 · 战斗</span>
+            <Sword size={24} className={`md:w-6 md:h-6 mb-1.5 md:mb-2 text-mystic-gold ${loading ? 'animate-spin' : 'group-active:scale-110 transition-transform'}`} />
+            <span className="font-serif font-bold text-base md:text-base">{loading ? '历练中...' : '历练'}</span>
+            <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">机缘 · 战斗</span>
           </button>
 
           <button
             onClick={() => setIsRealmOpen(true)}
             disabled={loading}
             className={`
-              flex flex-col items-center justify-center p-4 rounded border transition-all duration-200
-              ${loading ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed' : 'bg-ink-800 border-stone-600 hover:border-purple-500 hover:bg-ink-700 text-stone-200'}
+              flex flex-col items-center justify-center p-4 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[90px] md:min-h-[100px]
+              ${loading ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed' : 'bg-ink-800 border-stone-600 active:border-purple-500 active:bg-ink-700 text-stone-200'}
             `}
           >
-            <Mountain size={24} className="mb-2 text-purple-400" />
-            <span className="font-serif font-bold">秘境</span>
-            <span className="text-xs text-stone-500 mt-1">探险 · 夺宝</span>
+            <Mountain size={24} className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-purple-400" />
+            <span className="font-serif font-bold text-base md:text-base">秘境</span>
+            <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">探险 · 夺宝</span>
           </button>
 
           <button
             onClick={() => setIsAlchemyOpen(true)}
             disabled={loading}
             className={`
-              flex flex-col items-center justify-center p-4 rounded border transition-all duration-200
-              ${loading ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed' : 'bg-ink-800 border-stone-600 hover:border-cyan-500 hover:bg-ink-700 text-stone-200'}
+              flex flex-col items-center justify-center p-4 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[90px] md:min-h-[100px]
+              ${loading ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed' : 'bg-ink-800 border-stone-600 active:border-cyan-500 active:bg-ink-700 text-stone-200'}
             `}
           >
-            <Sparkles size={24} className="mb-2 text-cyan-400" />
-            <span className="font-serif font-bold">炼丹</span>
-            <span className="text-xs text-stone-500 mt-1">丹药 · 辅助</span>
+            <Sparkles size={24} className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-cyan-400" />
+            <span className="font-serif font-bold text-base md:text-base">炼丹</span>
+            <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">丹药 · 辅助</span>
           </button>
 
           <button
             onClick={() => setIsSectOpen(true)}
             className={`
-              flex flex-col items-center justify-center p-4 rounded border transition-all duration-200
-              ${loading ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed' : 'bg-ink-800 border-stone-600 hover:border-blue-400 hover:bg-ink-700 text-stone-200'}
+              flex flex-col items-center justify-center p-4 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[90px] md:min-h-[100px]
+              ${loading ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed' : 'bg-ink-800 border-stone-600 active:border-blue-400 active:bg-ink-700 text-stone-200'}
             `}
           >
-            <Scroll size={24} className="mb-2 text-blue-400" />
-            <span className="font-serif font-bold">宗门</span>
-            <span className="text-xs text-stone-500 mt-1">任务 · 晋升</span>
+            <Scroll size={24} className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-blue-400" />
+            <span className="font-serif font-bold text-base md:text-base">宗门</span>
+            <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">任务 · 晋升</span>
           </button>
 
         </div>
@@ -2676,6 +2661,43 @@ function App() {
                 ))}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Sidebar */}
+      <MobileSidebar
+        isOpen={isMobileSidebarOpen}
+        onClose={() => setIsMobileSidebarOpen(false)}
+        onOpenStats={() => setIsMobileStatsOpen(true)}
+        onOpenCultivation={() => setIsCultivationOpen(true)}
+        onOpenInventory={() => setIsInventoryOpen(true)}
+        onOpenCharacter={() => setIsCharacterOpen(true)}
+        onOpenAchievement={() => {
+          setIsAchievementOpen(true);
+          setPlayer(prev => ({
+            ...prev,
+            viewedAchievements: [...prev.achievements]
+          }));
+        }}
+        onOpenPet={() => setIsPetOpen(true)}
+        onOpenLottery={() => setIsLotteryOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        achievementCount={player.achievements.filter(a => !player.viewedAchievements.includes(a)).length}
+        petCount={player.pets.length}
+        lotteryTickets={player.lotteryTickets}
+      />
+
+      {isMobileStatsOpen && (
+        <div
+          className="fixed inset-0 bg-black/70 flex items-end justify-center z-[70] p-0 md:hidden touch-manipulation"
+          onClick={() => setIsMobileStatsOpen(false)}
+        >
+          <div
+            className="bg-paper-800 w-full h-[80vh] rounded-t-2xl border border-stone-700 shadow-2xl overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <StatsPanel player={player} />
           </div>
         </div>
       )}

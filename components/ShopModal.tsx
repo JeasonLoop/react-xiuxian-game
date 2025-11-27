@@ -62,17 +62,23 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
   });
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-      <div className="bg-paper-800 w-full max-w-4xl rounded border border-stone-600 shadow-2xl flex flex-col max-h-[90vh]">
-        <div className="p-4 border-b border-stone-600 flex justify-between items-center bg-ink-800 rounded-t">
+    <div
+      className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm touch-manipulation"
+      onClick={onClose}
+    >
+      <div
+        className="bg-paper-800 w-full h-[80vh] md:h-auto md:max-w-4xl md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-600 shadow-2xl flex flex-col md:max-h-[90vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-3 md:p-4 border-b border-stone-600 flex justify-between items-center bg-ink-800 md:rounded-t">
           <div>
-            <h3 className="text-xl font-serif text-mystic-gold flex items-center gap-2">
-              <ShoppingBag size={20} />
+            <h3 className="text-lg md:text-xl font-serif text-mystic-gold flex items-center gap-2">
+              <ShoppingBag size={18} className="md:w-5 md:h-5" />
               {shop.name}
             </h3>
             <p className="text-sm text-stone-400 mt-1">{shop.description}</p>
           </div>
-          <button onClick={onClose} className="text-stone-400 hover:text-white">
+          <button onClick={onClose} className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation">
             <X size={24} />
           </button>
         </div>
