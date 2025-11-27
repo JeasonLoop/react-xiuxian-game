@@ -1,0 +1,233 @@
+import React, { useRef } from 'react';
+import { X, Volume2, Music, Save, Globe, Upload } from 'lucide-react';
+import { GameSettings } from '../types';
+
+interface Props {
+  isOpen: boolean;
+  onClose: () => void;
+  settings: GameSettings;
+  onUpdateSettings: (settings: Partial<GameSettings>) => void;
+  onImportSave?: () => void;
+}
+
+const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSettings, onImportSave }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const SAVE_KEY = 'xiuxian-game-save';
+
+  if (!isOpen) return null;
+
+  const handleImportSave = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // 只接受txt文件
+    if (!file.name.endsWith('.txt')) {
+      alert('请选择.txt格式的存档文件！');
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      let saveData;
+
+      // 尝试解析JSON
+      try {
+        saveData = JSON.parse(text);
+      } catch (parseError) {
+        // 如果不是JSON，尝试直接使用文本内容
+        alert('存档文件格式错误！请确保文件内容是有效的JSON格式。');
+        return;
+      }
+
+      // 验证存档数据结构
+      if (!saveData.player || !saveData.logs) {
+        alert('存档文件格式不正确！缺少必要的玩家数据或日志数据。');
+        return;
+      }
+
+      // 确认导入
+      if (!window.confirm('确定要导入此存档吗？当前存档将被替换，页面将自动刷新。')) {
+        return;
+      }
+
+      // 保存到localStorage
+      localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+
+      // 提示并刷新页面
+      alert('存档导入成功！页面即将刷新...');
+      window.location.reload();
+    } catch (error) {
+      console.error('导入存档失败:', error);
+      alert('导入存档失败！请检查文件格式是否正确。');
+    }
+
+    // 清空文件输入，以便可以重复选择同一文件
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-stone-800 rounded-lg border border-stone-700 w-full max-w-md">
+        <div className="sticky top-0 bg-stone-800 border-b border-stone-700 p-4 flex justify-between items-center">
+          <h2 className="text-xl font-serif text-mystic-gold">设置</h2>
+          <button onClick={onClose} className="text-stone-400 hover:text-white">
+            <X size={24} />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {/* 音效设置 */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Volume2 size={20} className="text-stone-400" />
+              <h3 className="font-bold">音效</h3>
+            </div>
+            <div className="space-y-3">
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-stone-300">启用音效</span>
+                <input
+                  type="checkbox"
+                  checked={settings.soundEnabled}
+                  onChange={(e) => onUpdateSettings({ soundEnabled: e.target.checked })}
+                  className="w-5 h-5"
+                />
+              </label>
+              {settings.soundEnabled && (
+                <div>
+                  <label className="block text-sm text-stone-400 mb-2">
+                    音效音量: {settings.soundVolume}%
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={settings.soundVolume}
+                    onChange={(e) => onUpdateSettings({ soundVolume: parseInt(e.target.value) })}
+                    className="w-full"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 音乐设置 */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Music size={20} className="text-stone-400" />
+              <h3 className="font-bold">音乐</h3>
+            </div>
+            <div className="space-y-3">
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-stone-300">启用音乐</span>
+                <input
+                  type="checkbox"
+                  checked={settings.musicEnabled}
+                  onChange={(e) => onUpdateSettings({ musicEnabled: e.target.checked })}
+                  className="w-5 h-5"
+                />
+              </label>
+              {settings.musicEnabled && (
+                <div>
+                  <label className="block text-sm text-stone-400 mb-2">
+                    音乐音量: {settings.musicVolume}%
+                  </label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={settings.musicVolume}
+                    onChange={(e) => onUpdateSettings({ musicVolume: parseInt(e.target.value) })}
+                    className="w-full"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 游戏设置 */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Save size={20} className="text-stone-400" />
+              <h3 className="font-bold">游戏</h3>
+            </div>
+            <div className="space-y-3">
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-stone-300">自动保存</span>
+                <input
+                  type="checkbox"
+                  checked={settings.autoSave}
+                  onChange={(e) => onUpdateSettings({ autoSave: e.target.checked })}
+                  className="w-5 h-5"
+                />
+              </label>
+              <div>
+                <label className="block text-sm text-stone-400 mb-2">动画速度</label>
+                <select
+                  value={settings.animationSpeed}
+                  onChange={(e) => onUpdateSettings({ animationSpeed: e.target.value as any })}
+                  className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                >
+                  <option value="slow">慢</option>
+                  <option value="normal">正常</option>
+                  <option value="fast">快</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* 存档管理 */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Upload size={20} className="text-stone-400" />
+              <h3 className="font-bold">存档管理</h3>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-stone-400 mb-2">导入存档</label>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".txt"
+                  onChange={handleImportSave}
+                  className="hidden"
+                  id="import-save-input"
+                />
+                <label
+                  htmlFor="import-save-input"
+                  className="block w-full bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded px-4 py-2 text-center cursor-pointer transition-colors"
+                >
+                  <Upload size={16} className="inline mr-2" />
+                  选择存档文件 (.txt)
+                </label>
+                <p className="text-xs text-stone-500 mt-2">
+                  选择.txt格式的存档文件，导入后将替换当前存档并刷新页面
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 语言设置 */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Globe size={20} className="text-stone-400" />
+              <h3 className="font-bold">语言</h3>
+            </div>
+            <select
+              value={settings.language}
+              onChange={(e) => onUpdateSettings({ language: e.target.value as any })}
+              className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+            >
+              <option value="zh">中文</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SettingsModal;
+

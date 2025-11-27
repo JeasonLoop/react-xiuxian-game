@@ -1,5 +1,5 @@
 
-import { RealmType, Item, ItemType, CultivationArt, ItemRarity, SectRank, SecretRealm, Recipe } from './types';
+import { RealmType, Item, ItemType, CultivationArt, ItemRarity, SectRank, SecretRealm, Recipe, Talent, Title, EncounterEvent, ExplorationLocation, Achievement, PetTemplate, PetSkill, LotteryPrize, EquipmentSlot, Shop, ShopType, ShopItem } from './types';
 
 export const REALM_ORDER = [
   RealmType.QiRefining,
@@ -11,14 +11,22 @@ export const REALM_ORDER = [
   RealmType.ImmortalAscension
 ];
 
-export const REALM_DATA: Record<RealmType, { baseMaxHp: number; baseAttack: number; baseDefense: number; maxExpBase: number }> = {
-  [RealmType.QiRefining]: { baseMaxHp: 100, baseAttack: 10, baseDefense: 5, maxExpBase: 100 },
-  [RealmType.Foundation]: { baseMaxHp: 500, baseAttack: 50, baseDefense: 25, maxExpBase: 1000 },
-  [RealmType.GoldenCore]: { baseMaxHp: 2500, baseAttack: 200, baseDefense: 100, maxExpBase: 5000 },
-  [RealmType.NascentSoul]: { baseMaxHp: 10000, baseAttack: 1000, baseDefense: 500, maxExpBase: 25000 },
-  [RealmType.SpiritSevering]: { baseMaxHp: 50000, baseAttack: 5000, baseDefense: 2500, maxExpBase: 100000 },
-  [RealmType.VoidRefining]: { baseMaxHp: 200000, baseAttack: 20000, baseDefense: 10000, maxExpBase: 500000 },
-  [RealmType.ImmortalAscension]: { baseMaxHp: 1000000, baseAttack: 100000, baseDefense: 50000, maxExpBase: 9999999 },
+export const REALM_DATA: Record<RealmType, {
+  baseMaxHp: number;
+  baseAttack: number;
+  baseDefense: number;
+  baseSpirit: number; // 神识
+  basePhysique: number; // 体魄
+  baseSpeed: number; // 速度
+  maxExpBase: number
+}> = {
+  [RealmType.QiRefining]: { baseMaxHp: 100, baseAttack: 10, baseDefense: 5, baseSpirit: 5, basePhysique: 10, baseSpeed: 10, maxExpBase: 100 },
+  [RealmType.Foundation]: { baseMaxHp: 500, baseAttack: 50, baseDefense: 25, baseSpirit: 25, basePhysique: 50, baseSpeed: 30, maxExpBase: 1000 },
+  [RealmType.GoldenCore]: { baseMaxHp: 2500, baseAttack: 200, baseDefense: 100, baseSpirit: 100, basePhysique: 200, baseSpeed: 50, maxExpBase: 5000 },
+  [RealmType.NascentSoul]: { baseMaxHp: 10000, baseAttack: 1000, baseDefense: 500, baseSpirit: 500, basePhysique: 1000, baseSpeed: 100, maxExpBase: 25000 },
+  [RealmType.SpiritSevering]: { baseMaxHp: 50000, baseAttack: 5000, baseDefense: 2500, baseSpirit: 2500, basePhysique: 5000, baseSpeed: 200, maxExpBase: 100000 },
+  [RealmType.VoidRefining]: { baseMaxHp: 200000, baseAttack: 20000, baseDefense: 10000, baseSpirit: 10000, basePhysique: 20000, baseSpeed: 300, maxExpBase: 500000 },
+  [RealmType.ImmortalAscension]: { baseMaxHp: 1000000, baseAttack: 100000, baseDefense: 50000, baseSpirit: 50000, basePhysique: 100000, baseSpeed: 500, maxExpBase: 9999999 },
 };
 
 export const RARITY_MULTIPLIERS: Record<ItemRarity, number> = {
@@ -109,6 +117,78 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     realmRequirement: RealmType.SpiritSevering,
     cost: 20000,
     effects: { defense: 500, attack: 500, hp: 5000 }
+  },
+  {
+    id: 'art-wind-step',
+    name: '御风步',
+    type: 'body',
+    description: '身法如风，行动迅捷。提升攻击和速度。',
+    realmRequirement: RealmType.QiRefining,
+    cost: 80,
+    effects: { attack: 8 }
+  },
+  {
+    id: 'art-water-mirror',
+    name: '水镜心法',
+    type: 'mental',
+    description: '心如止水，明镜高悬。提升修炼速度和防御。',
+    realmRequirement: RealmType.Foundation,
+    cost: 400,
+    effects: { expRate: 0.3, defense: 15 }
+  },
+  {
+    id: 'art-earth-shield',
+    name: '厚土护体',
+    type: 'body',
+    description: '引大地之力护体，防御力极强。',
+    realmRequirement: RealmType.Foundation,
+    cost: 600,
+    effects: { defense: 40, hp: 150 }
+  },
+  {
+    id: 'art-ice-soul',
+    name: '冰心诀',
+    type: 'mental',
+    description: '心如寒冰，不为外物所动。大幅提升修炼速度。',
+    realmRequirement: RealmType.GoldenCore,
+    cost: 2500,
+    effects: { expRate: 0.6, defense: 30 }
+  },
+  {
+    id: 'art-dragon-fist',
+    name: '龙拳',
+    type: 'body',
+    description: '拳如真龙，威力无穷。大幅提升攻击力。',
+    realmRequirement: RealmType.GoldenCore,
+    cost: 3500,
+    effects: { attack: 200 }
+  },
+  {
+    id: 'art-phoenix-rebirth',
+    name: '凤凰涅槃功',
+    type: 'mental',
+    description: '如凤凰涅槃，每次突破都能获得巨大提升。',
+    realmRequirement: RealmType.NascentSoul,
+    cost: 10000,
+    effects: { expRate: 0.7, hp: 3000, attack: 100 }
+  },
+  {
+    id: 'art-star-destruction',
+    name: '星辰破灭诀',
+    type: 'body',
+    description: '引星辰之力，破灭万物。攻击力达到极致。',
+    realmRequirement: RealmType.SpiritSevering,
+    cost: 25000,
+    effects: { attack: 1000, defense: 200 }
+  },
+  {
+    id: 'art-universe-devour',
+    name: '吞天噬地',
+    type: 'mental',
+    description: '吞噬天地灵气，修炼速度达到极致。',
+    realmRequirement: RealmType.VoidRefining,
+    cost: 50000,
+    effects: { expRate: 1.0, attack: 500, defense: 500, hp: 10000 }
   }
 ];
 
@@ -149,34 +229,37 @@ export const INITIAL_ITEMS: Item[] = [
   {
     id: 'iron-sword',
     name: '凡铁剑',
-    type: ItemType.Artifact,
+    type: ItemType.Weapon,
     description: '普通的铁剑，聊胜于无。',
     quantity: 1,
     rarity: '普通',
     level: 0,
     isEquippable: true,
+    equipmentSlot: EquipmentSlot.Weapon,
     effect: { attack: 5 }
   },
   {
     id: 'cloth-robe',
     name: '粗布道袍',
-    type: ItemType.Artifact,
+    type: ItemType.Armor,
     description: '云灵宗外门弟子制式道袍。',
     quantity: 1,
     rarity: '普通',
     level: 0,
     isEquippable: true,
+    equipmentSlot: EquipmentSlot.Chest,
     effect: { defense: 3, hp: 10 }
   },
   {
     id: 'azure-frost-sword',
     name: '青霜剑',
-    type: ItemType.Artifact,
+    type: ItemType.Weapon,
     description: '剑身泛着寒光，削铁如泥。',
     quantity: 0,
     rarity: '稀有',
     level: 0,
     isEquippable: true,
+    equipmentSlot: EquipmentSlot.Weapon,
     effect: { attack: 15 }
   }
 ];
@@ -282,23 +365,23 @@ export interface SectInfo {
 }
 
 export const SECTS: SectInfo[] = [
-  { 
-    id: 'sect-cloud', 
-    name: '云灵宗', 
-    description: '正道大宗，门风清正，适合大部分修士。', 
-    reqRealm: RealmType.QiRefining 
+  {
+    id: 'sect-cloud',
+    name: '云灵宗',
+    description: '正道大宗，门风清正，适合大部分修士。',
+    reqRealm: RealmType.QiRefining
   },
-  { 
-    id: 'sect-fire', 
-    name: '烈阳宗', 
-    description: '坐落于火山之上，专修火法，行事霸道。', 
-    reqRealm: RealmType.Foundation 
+  {
+    id: 'sect-fire',
+    name: '烈阳宗',
+    description: '坐落于火山之上，专修火法，行事霸道。',
+    reqRealm: RealmType.Foundation
   },
-  { 
-    id: 'sect-sword', 
-    name: '万剑门', 
-    description: '一剑破万法。门徒皆为剑痴，攻击力极强。', 
-    reqRealm: RealmType.Foundation 
+  {
+    id: 'sect-sword',
+    name: '万剑门',
+    description: '一剑破万法。门徒皆为剑痴，攻击力极强。',
+    reqRealm: RealmType.Foundation
   }
 ];
 
@@ -347,5 +430,629 @@ export const SECRET_REALMS: SecretRealm[] = [
     cost: 500,
     riskLevel: '极度危险',
     drops: ['雷属性至宝', '仙品丹药材料', '天阶功法']
+  }
+];
+
+// --- 角色系统：天赋 ---
+export const TALENTS: Talent[] = [
+  {
+    id: 'talent-ordinary',
+    name: '凡体',
+    description: '普通的修仙资质，没有任何特殊加成。',
+    rarity: '普通',
+    effects: {}
+  },
+  {
+    id: 'talent-spirit-root',
+    name: '灵根',
+    description: '拥有灵根，修炼速度提升10%。',
+    rarity: '稀有',
+    effects: { expRate: 0.1 }
+  },
+  {
+    id: 'talent-immortal-body',
+    name: '仙体',
+    description: '天生仙体，气血和防御大幅提升。',
+    rarity: '传说',
+    effects: { hp: 200, defense: 50 }
+  },
+  {
+    id: 'talent-sword-heart',
+    name: '剑心',
+    description: '天生剑心，攻击力大幅提升。',
+    rarity: '传说',
+    effects: { attack: 100 }
+  },
+  {
+    id: 'talent-lucky-star',
+    name: '天运之子',
+    description: '受天道眷顾，幸运值大幅提升，更容易遇到奇遇。',
+    rarity: '仙品',
+    effects: { luck: 50, expRate: 0.2 }
+  }
+];
+
+// --- 角色系统：称号 ---
+export const TITLES: Title[] = [
+  {
+    id: 'title-novice',
+    name: '初入仙途',
+    description: '刚刚踏入修仙之路的新人。',
+    requirement: '初始称号',
+    effects: {}
+  },
+  {
+    id: 'title-foundation',
+    name: '筑基修士',
+    description: '成功筑基，正式踏入修仙门槛。',
+    requirement: '达到筑基期',
+    effects: { attack: 10, defense: 5 }
+  },
+  {
+    id: 'title-golden-core',
+    name: '金丹真人',
+    description: '凝聚金丹，已是修仙界的中流砥柱。',
+    requirement: '达到金丹期',
+    effects: { attack: 50, defense: 25, hp: 200 }
+  },
+  {
+    id: 'title-nascent-soul',
+    name: '元婴老祖',
+    description: '修成元婴，可称一方老祖。',
+    requirement: '达到元婴期',
+    effects: { attack: 200, defense: 100, hp: 1000 }
+  },
+  {
+    id: 'title-immortal',
+    name: '飞升仙人',
+    description: '渡劫飞升，已是真正的仙人。',
+    requirement: '达到渡劫飞升',
+    effects: { attack: 1000, defense: 500, hp: 5000, expRate: 0.3 }
+  }
+];
+
+// --- 奇遇系统 ---
+export const ENCOUNTER_EVENTS: EncounterEvent[] = [
+  {
+    id: 'encounter-herb',
+    name: '发现灵草',
+    description: '你在山间发现了一株珍贵的灵草。',
+    rarity: '普通',
+    triggerChance: 0.3,
+    rewards: {
+      exp: 20,
+      items: [{ name: '聚灵草', rarity: '普通', quantity: 1 }]
+    }
+  },
+  {
+    id: 'encounter-spirit-stone',
+    name: '灵石矿脉',
+    description: '你意外发现了一处小型灵石矿脉。',
+    rarity: '稀有',
+    triggerChance: 0.15,
+    rewards: {
+      spiritStones: 100,
+      exp: 50
+    }
+  },
+  {
+    id: 'encounter-ancient-cave',
+    name: '古修士洞府',
+    description: '你发现了一处古修士遗留的洞府，获得了珍贵的传承。',
+    rarity: '传说',
+    triggerChance: 0.05,
+    minRealm: RealmType.Foundation,
+    requirements: { minLuck: 30 },
+    rewards: {
+      exp: 500,
+      spiritStones: 500,
+      items: [{ name: '上古功法残卷', rarity: '传说', quantity: 1 }]
+    }
+  },
+  {
+    id: 'encounter-immortal-herb',
+    name: '万年仙草',
+    description: '你遇到了传说中的万年仙草，这是天大的机缘！',
+    rarity: '仙品',
+    triggerChance: 0.01,
+    minRealm: RealmType.GoldenCore,
+    requirements: { minLuck: 50 },
+    rewards: {
+      exp: 2000,
+      items: [{ name: '万年仙草', rarity: '仙品', quantity: 1 }]
+    }
+  }
+];
+
+// --- 探索系统 ---
+export const EXPLORATION_LOCATIONS: ExplorationLocation[] = [
+  {
+    id: 'explore-forest',
+    name: '迷雾森林',
+    description: '常年被迷雾笼罩的森林，隐藏着许多秘密。',
+    minRealm: RealmType.QiRefining,
+    cost: 20,
+    riskLevel: '低',
+    eventTypes: ['normal', 'lucky']
+  },
+  {
+    id: 'explore-mountain',
+    name: '天柱山',
+    description: '高耸入云的山峰，传说有仙人居住。',
+    minRealm: RealmType.Foundation,
+    cost: 50,
+    riskLevel: '中',
+    eventTypes: ['normal', 'lucky'],
+    specialEncounters: ['encounter-ancient-cave']
+  },
+  {
+    id: 'explore-abyss',
+    name: '无底深渊',
+    description: '深不见底的深渊，危险与机遇并存。',
+    minRealm: RealmType.GoldenCore,
+    cost: 200,
+    riskLevel: '高',
+    eventTypes: ['normal', 'lucky', 'secret_realm'],
+    specialEncounters: ['encounter-immortal-herb']
+  }
+];
+
+// --- 成就系统 ---
+export const ACHIEVEMENTS: Achievement[] = [
+  {
+    id: 'ach-first-step',
+    name: '第一步',
+    description: '完成第一次打坐修炼',
+    category: 'cultivation',
+    requirement: { type: 'custom', value: 1, target: 'meditate' },
+    reward: { exp: 50, spiritStones: 10 },
+    rarity: '普通'
+  },
+  {
+    id: 'ach-foundation',
+    name: '筑基成功',
+    description: '突破到筑基期',
+    category: 'cultivation',
+    requirement: { type: 'realm', value: 1, target: RealmType.Foundation },
+    reward: { exp: 500, spiritStones: 200, titleId: 'title-foundation' },
+    rarity: '稀有'
+  },
+  {
+    id: 'ach-golden-core',
+    name: '金丹大道',
+    description: '突破到金丹期',
+    category: 'cultivation',
+    requirement: { type: 'realm', value: 1, target: RealmType.GoldenCore },
+    reward: { exp: 2000, spiritStones: 1000, titleId: 'title-golden-core' },
+    rarity: '传说'
+  },
+  {
+    id: 'ach-first-kill',
+    name: '初战告捷',
+    description: '在历练中击败第一个敌人',
+    category: 'combat',
+    requirement: { type: 'kill', value: 1 },
+    reward: { exp: 100, spiritStones: 50 },
+    rarity: '普通'
+  },
+  {
+    id: 'ach-collector',
+    name: '收藏家',
+    description: '收集10种不同的物品',
+    category: 'collection',
+    requirement: { type: 'collect', value: 10 },
+    reward: { exp: 300, spiritStones: 200 },
+    rarity: '稀有'
+  },
+  {
+    id: 'ach-immortal',
+    name: '飞升成仙',
+    description: '达到渡劫飞升境界',
+    category: 'special',
+    requirement: { type: 'realm', value: 1, target: RealmType.ImmortalAscension },
+    reward: { exp: 10000, spiritStones: 10000, titleId: 'title-immortal' },
+    rarity: '仙品'
+  }
+];
+
+// --- 灵宠系统 ---
+export const PET_SKILLS: PetSkill[] = [
+  {
+    id: 'skill-bite',
+    name: '撕咬',
+    description: '基础攻击技能',
+    type: 'attack',
+    effect: { damage: 10 }
+  },
+  {
+    id: 'skill-heal',
+    name: '治愈之光',
+    description: '为主人恢复气血',
+    type: 'support',
+    effect: { heal: 50 }
+  },
+  {
+    id: 'skill-protect',
+    name: '守护',
+    description: '提升主人防御',
+    type: 'defense',
+    effect: { buff: { defense: 20 } }
+  },
+  {
+    id: 'skill-blessing',
+    name: '祝福',
+    description: '提升主人攻击和防御',
+    type: 'support',
+    effect: { buff: { attack: 30, defense: 15 } }
+  }
+];
+
+export const PET_TEMPLATES: PetTemplate[] = [
+  {
+    id: 'pet-spirit-fox',
+    name: '灵狐',
+    species: '狐族',
+    description: '聪明伶俐的灵狐，擅长辅助。',
+    rarity: '普通',
+    baseStats: { attack: 20, defense: 15, hp: 100, speed: 30 },
+    skills: [
+      { id: 'skill-bite', name: '撕咬', description: '基础攻击', type: 'attack', effect: { damage: 10 } },
+      { id: 'skill-heal', name: '治愈之光', description: '恢复气血', type: 'support', effect: { heal: 50 } }
+    ],
+    evolutionRequirements: { level: 10, items: [{ name: '聚灵草', quantity: 10 }] }
+  },
+  {
+    id: 'pet-thunder-tiger',
+    name: '雷虎',
+    species: '虎族',
+    description: '凶猛威武的雷虎，攻击力极强。',
+    rarity: '稀有',
+    baseStats: { attack: 50, defense: 30, hp: 200, speed: 40 },
+    skills: [
+      { id: 'skill-bite', name: '撕咬', description: '基础攻击', type: 'attack', effect: { damage: 30 } },
+      { id: 'skill-thunder', name: '雷击', description: '雷属性攻击', type: 'attack', effect: { damage: 50 } }
+    ],
+    evolutionRequirements: { level: 20, items: [{ name: '妖兽内丹', quantity: 5 }] }
+  },
+  {
+    id: 'pet-phoenix',
+    name: '凤凰',
+    species: '神兽',
+    description: '传说中的神兽凤凰，拥有强大的力量。',
+    rarity: '仙品',
+    baseStats: { attack: 200, defense: 150, hp: 1000, speed: 80 },
+    skills: [
+      { id: 'skill-blessing', name: '祝福', description: '提升属性', type: 'support', effect: { buff: { attack: 50, defense: 30 } } },
+      { id: 'skill-rebirth', name: '涅槃', description: '复活主人', type: 'support', effect: { heal: 9999 } }
+    ]
+  }
+];
+
+// --- 抽奖系统 ---
+export const LOTTERY_PRIZES: LotteryPrize[] = [
+  {
+    id: 'lottery-stone-10',
+    name: '10灵石',
+    type: 'spiritStones',
+    rarity: '普通',
+    weight: 40,
+    value: { spiritStones: 10 }
+  },
+  {
+    id: 'lottery-stone-100',
+    name: '100灵石',
+    type: 'spiritStones',
+    rarity: '稀有',
+    weight: 20,
+    value: { spiritStones: 100 }
+  },
+  {
+    id: 'lottery-exp-50',
+    name: '50修为',
+    type: 'exp',
+    rarity: '普通',
+    weight: 30,
+    value: { exp: 50 }
+  },
+  {
+    id: 'lottery-pill',
+    name: '聚气丹',
+    type: 'item',
+    rarity: '普通',
+    weight: 15,
+    value: {
+      item: {
+        name: '聚气丹',
+        type: ItemType.Pill,
+        description: '提升修炼速度',
+        quantity: 1,
+        rarity: '普通',
+        effect: { exp: 50 }
+      }
+    }
+  },
+  {
+    id: 'lottery-pet-fox',
+    name: '灵狐',
+    type: 'pet',
+    rarity: '稀有',
+    weight: 5,
+    value: { petId: 'pet-spirit-fox' }
+  },
+  {
+    id: 'lottery-legend-item',
+    name: '传说法宝',
+    type: 'item',
+    rarity: '传说',
+    weight: 2,
+    value: {
+      item: {
+        name: '神秘法宝',
+        type: ItemType.Artifact,
+        description: '传说中的法宝',
+        quantity: 1,
+        rarity: '传说',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Artifact1,
+        effect: { attack: 500, defense: 250, hp: 1000 }
+      }
+    }
+  },
+  {
+    id: 'lottery-immortal-item',
+    name: '仙品至宝',
+    type: 'item',
+    rarity: '仙品',
+    weight: 1,
+    value: {
+      item: {
+        name: '仙品至宝',
+        type: ItemType.Artifact,
+        description: '仙品级别的至宝',
+        quantity: 1,
+        rarity: '仙品',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Artifact1,
+        effect: { attack: 2000, defense: 1000, hp: 5000 }
+      }
+    }
+  }
+];
+
+// --- 商店系统 ---
+
+export const SHOPS: Shop[] = [
+  {
+    id: 'shop-village',
+    name: '村庄杂货铺',
+    type: ShopType.Village,
+    description: '小村庄的杂货铺，主要售卖基础物品和低阶材料。',
+    items: [
+      {
+        id: 'shop-herb-1',
+        name: '止血草',
+        type: ItemType.Herb,
+        description: '常见的草药，用于治疗轻微外伤。',
+        rarity: '普通',
+        price: 10,
+        sellPrice: 3,
+        effect: { hp: 20 }
+      },
+      {
+        id: 'shop-material-1',
+        name: '炼器石',
+        type: ItemType.Material,
+        description: '用于强化法宝的基础材料。',
+        rarity: '普通',
+        price: 15,
+        sellPrice: 5
+      },
+      {
+        id: 'shop-pill-1',
+        name: '聚气丹',
+        type: ItemType.Pill,
+        description: '短时间内大幅提升修炼速度。',
+        rarity: '普通',
+        price: 30,
+        sellPrice: 10,
+        effect: { exp: 50 }
+      },
+      {
+        id: 'shop-weapon-1',
+        name: '木剑',
+        type: ItemType.Weapon,
+        description: '普通的木制剑，适合初学者。',
+        rarity: '普通',
+        price: 50,
+        sellPrice: 15,
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Weapon,
+        effect: { attack: 3 }
+      }
+    ]
+  },
+  {
+    id: 'shop-city',
+    name: '城市商会',
+    type: ShopType.City,
+    description: '繁华城市的商会，商品种类丰富，品质较高。',
+    items: [
+      {
+        id: 'shop-herb-2',
+        name: '聚灵草',
+        type: ItemType.Herb,
+        description: '吸收天地灵气的草药，炼制聚气丹的主材。',
+        rarity: '普通',
+        price: 20,
+        sellPrice: 7
+      },
+      {
+        id: 'shop-pill-2',
+        name: '回春丹',
+        type: ItemType.Pill,
+        description: '疗伤圣药，大幅恢复气血。',
+        rarity: '稀有',
+        price: 100,
+        sellPrice: 30,
+        effect: { hp: 200 }
+      },
+      {
+        id: 'shop-weapon-2',
+        name: '精铁剑',
+        type: ItemType.Weapon,
+        description: '精铁打造的利剑，锋利无比。',
+        rarity: '普通',
+        price: 150,
+        sellPrice: 45,
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Weapon,
+        effect: { attack: 10 }
+      },
+      {
+        id: 'shop-armor-1',
+        name: '布甲',
+        type: ItemType.Armor,
+        description: '普通的布制护甲，提供基础防护。',
+        rarity: '普通',
+        price: 120,
+        sellPrice: 36,
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Chest,
+        effect: { defense: 5, hp: 20 }
+      },
+      {
+        id: 'shop-ring-1',
+        name: '铜戒指',
+        type: ItemType.Ring,
+        description: '普通的铜制戒指，略微提升属性。',
+        rarity: '普通',
+        price: 80,
+        sellPrice: 24,
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Ring1,
+        effect: { attack: 2, defense: 2 }
+      }
+    ]
+  },
+  {
+    id: 'shop-sect',
+    name: '仙门宝库',
+    type: ShopType.Sect,
+    description: '仙门内部的宝库，只对门内弟子开放，售卖高阶物品。',
+    items: [
+      {
+        id: 'shop-pill-3',
+        name: '洗髓丹',
+        type: ItemType.Pill,
+        description: '易筋洗髓，脱胎换骨。永久增加少量最大生命值。',
+        rarity: '稀有',
+        price: 500,
+        sellPrice: 150,
+        effect: { hp: 50 },
+        minRealm: RealmType.Foundation
+      },
+      {
+        id: 'shop-weapon-3',
+        name: '青霜剑',
+        type: ItemType.Weapon,
+        description: '剑身泛着寒光，削铁如泥。',
+        rarity: '稀有',
+        price: 800,
+        sellPrice: 240,
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Weapon,
+        effect: { attack: 15 },
+        minRealm: RealmType.Foundation
+      },
+      {
+        id: 'shop-armor-2',
+        name: '云灵道袍',
+        type: ItemType.Armor,
+        description: '云灵宗内门弟子道袍，防御力不俗。',
+        rarity: '稀有',
+        price: 600,
+        sellPrice: 180,
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Chest,
+        effect: { defense: 15, hp: 50 },
+        minRealm: RealmType.Foundation
+      },
+      {
+        id: 'shop-pill-4',
+        name: '筑基丹',
+        type: ItemType.Pill,
+        description: '增加突破到筑基期的几率。服用后获得海量修为。',
+        rarity: '传说',
+        price: 2000,
+        sellPrice: 600,
+        effect: { exp: 500 },
+        minRealm: RealmType.QiRefining
+      },
+      {
+        id: 'shop-weapon-legend',
+        name: '天罡剑',
+        type: ItemType.Weapon,
+        description: '传说中的天罡剑，剑气纵横，威力无穷。',
+        rarity: '传说',
+        price: 5000,
+        sellPrice: 1500,
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Weapon,
+        effect: { attack: 200, defense: 50 },
+        minRealm: RealmType.GoldenCore
+      },
+      {
+        id: 'shop-armor-legend',
+        name: '龙鳞甲',
+        type: ItemType.Armor,
+        description: '用真龙鳞片打造的护甲，防御力极强。',
+        rarity: '传说',
+        price: 4000,
+        sellPrice: 1200,
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Chest,
+        effect: { defense: 150, hp: 500, attack: 30 },
+        minRealm: RealmType.NascentSoul
+      },
+      {
+        id: 'shop-accessory-1',
+        name: '护身符',
+        type: ItemType.Accessory,
+        description: '仙门特制的护身符，提供强大的防护。',
+        rarity: '稀有',
+        price: 1000,
+        sellPrice: 300,
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Accessory1,
+        effect: { defense: 20, hp: 100 },
+        minRealm: RealmType.GoldenCore
+      },
+      {
+        id: 'shop-weapon-immortal',
+        name: '仙剑·诛仙',
+        type: ItemType.Weapon,
+        description: '传说中的仙剑，一剑可诛仙，威力达到极致。',
+        rarity: '仙品',
+        price: 20000,
+        sellPrice: 6000,
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Weapon,
+        effect: { attack: 1000, defense: 200, hp: 500 },
+        minRealm: RealmType.SpiritSevering
+      },
+      {
+        id: 'shop-armor-immortal',
+        name: '仙甲·不灭',
+        type: ItemType.Armor,
+        description: '传说中的仙甲，防御力达到极致，几乎不灭。',
+        rarity: '仙品',
+        price: 18000,
+        sellPrice: 5400,
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Chest,
+        effect: { defense: 800, hp: 2000, attack: 100 },
+        minRealm: RealmType.SpiritSevering
+      }
+    ]
   }
 ];

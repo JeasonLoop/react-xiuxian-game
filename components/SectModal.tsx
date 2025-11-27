@@ -12,20 +12,21 @@ interface Props {
   onLeaveSect: () => void;
   onTask: (type: 'patrol' | 'donate_stone' | 'donate_herb') => void;
   onPromote: () => void;
-  onBuy: (item: Partial<Item>, cost: number) => void;
+  onBuy: (item: Partial<Item>, cost: number, quantity?: number) => void;
 }
 
-const SectModal: React.FC<Props> = ({ 
-  isOpen, 
-  onClose, 
-  player, 
-  onJoinSect, 
+const SectModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  player,
+  onJoinSect,
   onLeaveSect,
   onTask,
   onPromote,
   onBuy
 }) => {
   const [activeTab, setActiveTab] = useState<'hall' | 'mission' | 'shop'>('hall');
+  const [buyQuantities, setBuyQuantities] = useState<Record<number, number>>({});
 
   if (!isOpen) return null;
 
@@ -45,7 +46,7 @@ const SectModal: React.FC<Props> = ({
               <X size={24} />
             </button>
           </div>
-          
+
           <div className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-3 gap-4">
             {SECTS.map(sect => {
               const canJoin = getRealmIndex(player.realm) >= getRealmIndex(sect.reqRealm);
@@ -53,7 +54,7 @@ const SectModal: React.FC<Props> = ({
                 <div key={sect.id} className="bg-ink-800 border border-stone-700 p-4 rounded flex flex-col">
                   <h4 className="text-xl font-serif font-bold text-stone-200 mb-2">{sect.name}</h4>
                   <p className="text-stone-400 text-sm mb-4 flex-1">{sect.description}</p>
-                  
+
                   <div className="text-xs text-stone-500 mb-4">
                     入门要求: <span className={canJoin ? 'text-stone-300' : 'text-red-400'}>{sect.reqRealm}</span>
                   </div>
@@ -63,8 +64,8 @@ const SectModal: React.FC<Props> = ({
                     disabled={!canJoin}
                     className={`
                       w-full py-2 rounded font-serif text-sm transition-colors border
-                      ${canJoin 
-                        ? 'bg-mystic-jade/20 text-mystic-jade border-mystic-jade hover:bg-mystic-jade/30' 
+                      ${canJoin
+                        ? 'bg-mystic-jade/20 text-mystic-jade border-mystic-jade hover:bg-mystic-jade/30'
                         : 'bg-stone-800 text-stone-600 border-stone-700 cursor-not-allowed'}
                     `}
                   >
@@ -86,9 +87,9 @@ const SectModal: React.FC<Props> = ({
   const currentRankIdx = ranks.indexOf(player.sectRank);
   const nextRank = currentRankIdx < ranks.length - 1 ? ranks[currentRankIdx + 1] : null;
   const nextReq = nextRank ? SECT_RANK_REQUIREMENTS[nextRank] : null;
-  
-  const canPromote = nextRank && nextReq && 
-    player.sectContribution >= nextReq.contribution && 
+
+  const canPromote = nextRank && nextReq &&
+    player.sectContribution >= nextReq.contribution &&
     getRealmIndex(player.realm) >= nextReq.realmIndex;
 
   return (
@@ -114,19 +115,19 @@ const SectModal: React.FC<Props> = ({
 
         {/* Navigation */}
         <div className="flex border-b border-stone-700 bg-ink-900">
-          <button 
+          <button
             onClick={() => setActiveTab('hall')}
             className={`flex-1 py-3 text-sm font-serif transition-colors flex items-center justify-center gap-2 ${activeTab === 'hall' ? 'text-mystic-gold bg-paper-800 border-t-2 border-mystic-gold' : 'text-stone-500 hover:text-stone-300'}`}
           >
             <Shield size={16} /> 宗门大殿
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('mission')}
             className={`flex-1 py-3 text-sm font-serif transition-colors flex items-center justify-center gap-2 ${activeTab === 'mission' ? 'text-mystic-gold bg-paper-800 border-t-2 border-mystic-gold' : 'text-stone-500 hover:text-stone-300'}`}
           >
             <Scroll size={16} /> 任务阁
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('shop')}
             className={`flex-1 py-3 text-sm font-serif transition-colors flex items-center justify-center gap-2 ${activeTab === 'shop' ? 'text-mystic-gold bg-paper-800 border-t-2 border-mystic-gold' : 'text-stone-500 hover:text-stone-300'}`}
           >
@@ -136,7 +137,7 @@ const SectModal: React.FC<Props> = ({
 
         {/* Content */}
         <div className="flex-1 p-6 overflow-y-auto bg-paper-800">
-          
+
           {/* Main Hall */}
           {activeTab === 'hall' && (
             <div className="space-y-6">
@@ -166,8 +167,8 @@ const SectModal: React.FC<Props> = ({
                        disabled={!canPromote}
                        className={`
                          w-full py-2 rounded font-serif text-sm transition-colors flex items-center justify-center gap-2
-                         ${canPromote 
-                           ? 'bg-mystic-gold/20 text-mystic-gold border border-mystic-gold hover:bg-mystic-gold/30' 
+                         ${canPromote
+                           ? 'bg-mystic-gold/20 text-mystic-gold border border-mystic-gold hover:bg-mystic-gold/30'
                            : 'bg-stone-800 text-stone-600 border border-stone-700 cursor-not-allowed'}
                        `}
                      >
@@ -182,7 +183,7 @@ const SectModal: React.FC<Props> = ({
               <div className="bg-ink-800 p-4 rounded border border-stone-700">
                  <h4 className="font-serif text-lg text-stone-200 mb-2 border-b border-stone-700 pb-2">退出宗门</h4>
                  <p className="text-sm text-stone-500 mb-4">退出宗门将清空所有贡献值，且短期内不可再次加入。</p>
-                 <button 
+                 <button
                    onClick={onLeaveSect}
                    className="px-4 py-2 border border-red-900 text-red-400 hover:bg-red-900/20 rounded text-sm transition-colors"
                  >
@@ -198,11 +199,43 @@ const SectModal: React.FC<Props> = ({
               <div className="bg-ink-800 p-4 rounded border border-stone-700 flex flex-col">
                 <h4 className="font-serif font-bold text-stone-200 mb-1">山门巡逻</h4>
                 <p className="text-xs text-stone-500 mb-4 flex-1">在宗门附近巡视，驱逐野兽，维护治安。</p>
-                <div className="flex justify-between items-center text-xs text-stone-400 mb-3">
+                <div className="flex justify-between items-center text-xs text-stone-400 mb-2">
                    <span>奖励: 10 贡献</span>
                    <span>耗时: 瞬时</span>
                 </div>
-                <button onClick={() => onTask('patrol')} className="w-full py-2 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded text-sm">执行任务</button>
+                <div className="text-xs text-stone-500 mb-2">
+                  今日已完成: {(() => {
+                    const today = new Date().toISOString().split('T')[0];
+                    const lastReset = player.lastTaskResetDate || today;
+                    return lastReset === today ? (player.dailyTaskCount || 0) : 0;
+                  })()} / 10 次
+                </div>
+                <button
+                  onClick={() => onTask('patrol')}
+                  disabled={(() => {
+                    const today = new Date().toISOString().split('T')[0];
+                    const lastReset = player.lastTaskResetDate || today;
+                    const count = lastReset === today ? (player.dailyTaskCount || 0) : 0;
+                    return count >= 10;
+                  })()}
+                  className={`w-full py-2 rounded text-sm ${
+                    (() => {
+                      const today = new Date().toISOString().split('T')[0];
+                      const lastReset = player.lastTaskResetDate || today;
+                      const count = lastReset === today ? (player.dailyTaskCount || 0) : 0;
+                      return count >= 10;
+                    })()
+                      ? 'bg-stone-900 text-stone-600 cursor-not-allowed'
+                      : 'bg-stone-700 hover:bg-stone-600 text-stone-200'
+                  }`}
+                >
+                  {(() => {
+                    const today = new Date().toISOString().split('T')[0];
+                    const lastReset = player.lastTaskResetDate || today;
+                    const count = lastReset === today ? (player.dailyTaskCount || 0) : 0;
+                    return count >= 10 ? '今日已完成' : '执行任务';
+                  })()}
+                </button>
               </div>
 
               <div className="bg-ink-800 p-4 rounded border border-stone-700 flex flex-col">
@@ -212,8 +245,8 @@ const SectModal: React.FC<Props> = ({
                    <span>消耗: 100 灵石</span>
                    <span>奖励: 50 贡献</span>
                 </div>
-                <button 
-                  onClick={() => onTask('donate_stone')} 
+                <button
+                  onClick={() => onTask('donate_stone')}
                   disabled={player.spiritStones < 100}
                   className={`w-full py-2 rounded text-sm ${player.spiritStones < 100 ? 'bg-stone-900 text-stone-600' : 'bg-stone-700 hover:bg-stone-600 text-stone-200'}`}
                 >
@@ -228,8 +261,8 @@ const SectModal: React.FC<Props> = ({
                    <span>消耗: 1 聚灵草</span>
                    <span>奖励: 20 贡献</span>
                 </div>
-                <button 
-                  onClick={() => onTask('donate_herb')} 
+                <button
+                  onClick={() => onTask('donate_herb')}
                   disabled={!player.inventory.find(i => i.name === '聚灵草' && i.quantity > 0)}
                   className={`w-full py-2 rounded text-sm ${!player.inventory.find(i => i.name === '聚灵草' && i.quantity > 0) ? 'bg-stone-900 text-stone-600' : 'bg-stone-700 hover:bg-stone-600 text-stone-200'}`}
                 >
@@ -242,29 +275,71 @@ const SectModal: React.FC<Props> = ({
           {/* Treasure Pavilion */}
           {activeTab === 'shop' && (
             <div className="space-y-4">
-              {SECT_SHOP_ITEMS.map((item, idx) => (
-                <div key={idx} className="bg-ink-800 p-3 rounded border border-stone-700 flex items-center justify-between">
-                  <div>
-                    <div className="font-bold text-stone-200">{item.name}</div>
-                    <div className="text-xs text-stone-500">{item.item.description}</div>
+              {SECT_SHOP_ITEMS.map((item, idx) => {
+                const quantity = buyQuantities[idx] || 1;
+                const totalCost = item.cost * quantity;
+                const canBuy = player.sectContribution >= totalCost;
+
+                return (
+                  <div key={idx} className="bg-ink-800 p-3 rounded border border-stone-700 flex items-center justify-between">
+                    <div>
+                      <div className="font-bold text-stone-200">{item.name}</div>
+                      <div className="text-xs text-stone-500">{item.item.description}</div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-mystic-gold font-bold">
+                        {item.cost} 贡献
+                        {quantity > 1 && (
+                          <span className="text-xs text-stone-400 ml-1">
+                            x{quantity} = {totalCost}
+                          </span>
+                        )}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 border border-stone-600 rounded">
+                          <button
+                            onClick={() => setBuyQuantities(prev => ({ ...prev, [idx]: Math.max(1, (prev[idx] || 1) - 1) }))}
+                            className="px-2 py-1 text-stone-400 hover:text-white"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            value={quantity}
+                            onChange={(e) => {
+                              const val = Math.max(1, parseInt(e.target.value) || 1);
+                              setBuyQuantities(prev => ({ ...prev, [idx]: val }));
+                            }}
+                            className="w-12 text-center bg-transparent text-stone-200 border-0 focus:outline-none"
+                          />
+                          <button
+                            onClick={() => setBuyQuantities(prev => ({ ...prev, [idx]: (prev[idx] || 1) + 1 }))}
+                            className="px-2 py-1 text-stone-400 hover:text-white"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => {
+                            onBuy(item.item, item.cost, quantity);
+                            setBuyQuantities(prev => ({ ...prev, [idx]: 1 }));
+                          }}
+                          disabled={!canBuy}
+                          className={`
+                            px-3 py-1.5 rounded text-xs border
+                            ${canBuy
+                              ? 'bg-stone-700 hover:bg-stone-600 text-stone-200 border-stone-600'
+                              : 'bg-stone-900 text-stone-600 border-stone-800 cursor-not-allowed'}
+                          `}
+                        >
+                          兑换
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-mystic-gold font-bold">{item.cost} 贡献</span>
-                    <button 
-                      onClick={() => onBuy(item.item, item.cost)}
-                      disabled={player.sectContribution < item.cost}
-                      className={`
-                        px-3 py-1.5 rounded text-xs border
-                        ${player.sectContribution >= item.cost 
-                          ? 'bg-stone-700 hover:bg-stone-600 text-stone-200 border-stone-600' 
-                          : 'bg-stone-900 text-stone-600 border-stone-800 cursor-not-allowed'}
-                      `}
-                    >
-                      兑换
-                    </button>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

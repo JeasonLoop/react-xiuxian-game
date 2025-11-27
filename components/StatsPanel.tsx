@@ -12,7 +12,10 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
   const hpPercentage = Math.min(100, (player.hp / player.maxHp) * 100);
 
   const activeArt = CULTIVATION_ARTS.find(a => a.id === player.activeArtId);
-  const equippedItem = player.inventory.find(i => i.id === player.equippedArtifactId);
+  // 查找本命法宝（通过natalArtifactId）
+  const natalArtifact = player.natalArtifactId
+    ? player.inventory.find(i => i.id === player.natalArtifactId)
+    : null;
 
   const getRarityColor = (rarity: ItemRarity | undefined) => {
     switch (rarity) {
@@ -39,8 +42,8 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
             <span>{player.hp} / {player.maxHp}</span>
           </div>
           <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
-            <div 
-              className="h-full bg-mystic-blood transition-all duration-500 ease-out" 
+            <div
+              className="h-full bg-mystic-blood transition-all duration-500 ease-out"
               style={{ width: `${hpPercentage}%` }}
             />
           </div>
@@ -52,8 +55,8 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
             <span>{Math.floor(player.exp)} / {player.maxExp}</span>
           </div>
           <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
-            <div 
-              className="h-full bg-mystic-jade transition-all duration-500 ease-out" 
+            <div
+              className="h-full bg-mystic-jade transition-all duration-500 ease-out"
               style={{ width: `${expPercentage}%` }}
             />
           </div>
@@ -71,34 +74,55 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
         </div>
       </div>
 
-      {/* Equipped Artifact */}
+      {/* Natal Artifact */}
       <div className="bg-ink-800 p-3 rounded border border-stone-700 flex items-center gap-3">
         <Sword size={18} className="text-purple-400" />
         <div className="flex-1">
           <div className="text-xs text-stone-500">本命法宝</div>
-          <div className={`font-serif font-bold text-sm ${getRarityColor(equippedItem?.rarity)}`}>
-            {equippedItem ? equippedItem.name : '未装备'}
+          <div className={`font-serif font-bold text-sm ${getRarityColor(natalArtifact?.rarity)}`}>
+            {natalArtifact ? natalArtifact.name : '未装备'}
           </div>
         </div>
       </div>
 
       {/* Attributes */}
-      <div className="grid grid-cols-2 gap-4 mt-1">
+      <div className="grid grid-cols-2 gap-3 mt-1">
         <div className="bg-ink-800 p-3 rounded border border-stone-700 flex items-center gap-3">
-          <Zap size={18} className="text-stone-500" />
+          <Sword size={18} className="text-red-400" />
           <div>
             <div className="text-xs text-stone-500">攻击</div>
             <div className="text-stone-200 font-bold">{player.attack}</div>
           </div>
         </div>
         <div className="bg-ink-800 p-3 rounded border border-stone-700 flex items-center gap-3">
-          <Shield size={18} className="text-stone-500" />
+          <Shield size={18} className="text-blue-400" />
           <div>
             <div className="text-xs text-stone-500">防御</div>
             <div className="text-stone-200 font-bold">{player.defense}</div>
           </div>
         </div>
-        <div className="bg-ink-800 p-3 rounded border border-stone-700 flex items-center gap-3 col-span-2">
+        <div className="bg-ink-800 p-3 rounded border border-stone-700 flex items-center gap-3">
+          <Zap size={18} className="text-yellow-400" />
+          <div>
+            <div className="text-xs text-stone-500">神识</div>
+            <div className="text-stone-200 font-bold">{player.spirit}</div>
+          </div>
+        </div>
+        <div className="bg-ink-800 p-3 rounded border border-stone-700 flex items-center gap-3">
+          <Shield size={18} className="text-green-400" />
+          <div>
+            <div className="text-xs text-stone-500">体魄</div>
+            <div className="text-stone-200 font-bold">{player.physique}</div>
+          </div>
+        </div>
+        <div className="bg-ink-800 p-3 rounded border border-stone-700 flex items-center gap-3">
+          <Zap size={18} className="text-cyan-400" />
+          <div>
+            <div className="text-xs text-stone-500">速度</div>
+            <div className="text-stone-200 font-bold">{player.speed}</div>
+          </div>
+        </div>
+        <div className="bg-ink-800 p-3 rounded border border-stone-700 flex items-center gap-3">
           <Coins size={18} className="text-mystic-gold" />
           <div>
             <div className="text-xs text-stone-500">灵石</div>
@@ -106,6 +130,26 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
           </div>
         </div>
       </div>
+
+      {/* 其他信息 */}
+      {player.lotteryTickets > 0 && (
+        <div className="bg-ink-800 p-3 rounded border border-yellow-500/50 flex items-center gap-3">
+          <Zap size={18} className="text-yellow-400" />
+          <div>
+            <div className="text-xs text-stone-500">抽奖券</div>
+            <div className="text-yellow-400 font-bold">{player.lotteryTickets}</div>
+          </div>
+        </div>
+      )}
+      {player.inheritanceLevel > 0 && (
+        <div className="bg-ink-800 p-3 rounded border border-purple-500/50 flex items-center gap-3">
+          <Zap size={18} className="text-purple-400" />
+          <div>
+            <div className="text-xs text-stone-500">传承等级</div>
+            <div className="text-purple-400 font-bold">{player.inheritanceLevel}</div>
+          </div>
+        </div>
+      )}
 
       <div className="mt-auto pt-6 border-t border-stone-700 text-xs text-stone-500 italic text-center">
         “道可道，非常道。”
