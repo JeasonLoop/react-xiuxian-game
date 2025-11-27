@@ -1,6 +1,6 @@
-import React from 'react';
-import { X, Heart, Zap, Shield, Swords } from 'lucide-react';
-import { PlayerStats, Pet } from '../types';
+import React, { useState } from 'react';
+import { X, Heart, Zap, Shield, Swords, Droplet, Package, Sparkles } from 'lucide-react';
+import { PlayerStats, Pet, Item, ItemType } from '../types';
 import { PET_TEMPLATES } from '../constants';
 
 interface Props {
@@ -8,11 +8,15 @@ interface Props {
   onClose: () => void;
   player: PlayerStats;
   onActivatePet: (petId: string) => void;
-  onFeedPet: (petId: string) => void;
+  onFeedPet: (petId: string, feedType: 'hp' | 'item' | 'exp', itemId?: string) => void;
   onEvolvePet: (petId: string) => void;
 }
 
 const PetModal: React.FC<Props> = ({ isOpen, onClose, player, onActivatePet, onFeedPet, onEvolvePet }) => {
+  const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
+  const [feedType, setFeedType] = useState<'hp' | 'item' | 'exp' | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+
   if (!isOpen) return null;
 
   const getRarityColor = (rarity: string) => {
@@ -26,6 +30,33 @@ const PetModal: React.FC<Props> = ({ isOpen, onClose, player, onActivatePet, onF
   };
 
   const activePet = player.pets.find(p => p.id === player.activePetId);
+
+  // 可喂养的物品（草药、丹药、材料）
+  const feedableItems = player.inventory.filter(item =>
+    item.type === ItemType.Herb || item.type === ItemType.Pill || item.type === ItemType.Material
+  );
+
+  const handleFeedClick = (petId: string) => {
+    setSelectedPetId(petId);
+    setFeedType(null);
+    setSelectedItemId(null);
+  };
+
+  const handleFeedConfirm = () => {
+    if (!selectedPetId || !feedType) return;
+    if (feedType === 'item' && !selectedItemId) return;
+
+    onFeedPet(selectedPetId, feedType, selectedItemId || undefined);
+    setSelectedPetId(null);
+    setFeedType(null);
+    setSelectedItemId(null);
+  };
+
+  const handleFeedCancel = () => {
+    setSelectedPetId(null);
+    setFeedType(null);
+    setSelectedItemId(null);
+  };
 
   return (
     <div
@@ -96,10 +127,10 @@ const PetModal: React.FC<Props> = ({ isOpen, onClose, player, onActivatePet, onF
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={() => onFeedPet(activePet.id)}
+                  onClick={() => handleFeedClick(activePet.id)}
                   className="flex-1 px-4 py-2 bg-green-900 hover:bg-green-800 rounded border border-green-700 text-sm"
                 >
-                  喂养 (+10经验)
+                  喂养
                 </button>
                 {activePet.evolutionStage < 2 && (
                   <button
@@ -164,7 +195,7 @@ const PetModal: React.FC<Props> = ({ isOpen, onClose, player, onActivatePet, onF
                       />
                     </div>
                     <button
-                      onClick={() => onFeedPet(pet.id)}
+                      onClick={() => handleFeedClick(pet.id)}
                       className="w-full px-3 py-1.5 bg-green-900 hover:bg-green-800 rounded border border-green-700 text-xs"
                     >
                       喂养
@@ -175,6 +206,104 @@ const PetModal: React.FC<Props> = ({ isOpen, onClose, player, onActivatePet, onF
             )}
           </div>
         </div>
+
+        {/* 喂养方式选择弹窗 */}
+        {selectedPetId && (
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[60] p-4">
+            <div className="bg-stone-800 rounded-lg border border-stone-700 w-full max-w-md p-6">
+              <h3 className="text-lg font-bold mb-4 text-mystic-gold">选择喂养方式</h3>
+
+              {!feedType ? (
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setFeedType('hp')}
+                    className="w-full px-4 py-3 bg-red-900 hover:bg-red-800 rounded border border-red-700 flex items-center gap-3"
+                  >
+                    <Droplet className="text-red-400" size={20} />
+                    <div className="flex-1 text-left">
+                      <div className="font-bold">血量喂养</div>
+                      <div className="text-xs text-stone-400">消耗 200 点气血 (+10经验)</div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => setFeedType('item')}
+                    className="w-full px-4 py-3 bg-blue-900 hover:bg-blue-800 rounded border border-blue-700 flex items-center gap-3"
+                    disabled={feedableItems.length === 0}
+                  >
+                    <Package className="text-blue-400" size={20} />
+                    <div className="flex-1 text-left">
+                      <div className="font-bold">物品喂养</div>
+                      <div className="text-xs text-stone-400">
+                        {feedableItems.length === 0 ? '背包中没有可喂养物品' : '消耗物品 (+10经验)'}
+                      </div>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => setFeedType('exp')}
+                    className="w-full px-4 py-3 bg-purple-900 hover:bg-purple-800 rounded border border-purple-700 flex items-center gap-3"
+                  >
+                    <Sparkles className="text-purple-400" size={20} />
+                    <div className="flex-1 text-left">
+                      <div className="font-bold">修为喂养</div>
+                      <div className="text-xs text-stone-400">消耗 5% 当前修为 (+10经验)</div>
+                    </div>
+                  </button>
+                </div>
+              ) : feedType === 'item' ? (
+                <div className="space-y-3">
+                  <div className="text-sm text-stone-400 mb-3">选择要喂养的物品：</div>
+                  <div className="max-h-60 overflow-y-auto space-y-2">
+                    {feedableItems.length === 0 ? (
+                      <div className="text-center text-stone-500 py-4">背包中没有可喂养物品</div>
+                    ) : (
+                      feedableItems.map(item => (
+                        <button
+                          key={item.id}
+                          onClick={() => setSelectedItemId(item.id)}
+                          className={`w-full px-3 py-2 rounded border text-left ${
+                            selectedItemId === item.id
+                              ? 'bg-blue-900 border-blue-600'
+                              : 'bg-stone-700 border-stone-600 hover:bg-stone-600'
+                          }`}
+                        >
+                          <div className="font-bold text-sm">{item.name}</div>
+                          <div className="text-xs text-stone-400">数量: {item.quantity}</div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="flex gap-2 mt-6">
+                <button
+                  onClick={handleFeedCancel}
+                  className="flex-1 px-4 py-2 bg-stone-700 hover:bg-stone-600 rounded border border-stone-600"
+                >
+                  取消
+                </button>
+                {feedType && (feedType !== 'item' || selectedItemId) && (
+                  <button
+                    onClick={handleFeedConfirm}
+                    className="flex-1 px-4 py-2 bg-green-900 hover:bg-green-800 rounded border border-green-700"
+                  >
+                    确认喂养
+                  </button>
+                )}
+                {feedType && feedType !== 'item' && (
+                  <button
+                    onClick={() => setFeedType(null)}
+                    className="px-4 py-2 bg-stone-700 hover:bg-stone-600 rounded border border-stone-600"
+                  >
+                    返回
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

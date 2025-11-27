@@ -238,6 +238,31 @@ export interface AdventureResult {
       maxHp?: number;
     };
   };
+  itemsObtained?: Array<{ // 多个物品（用于搜刮等）
+    name: string;
+    type: string;
+    description: string;
+    rarity?: string;
+    isEquippable?: boolean;
+    equipmentSlot?: string;
+    effect?: {
+      attack?: number;
+      defense?: number;
+      hp?: number;
+      exp?: number;
+      spirit?: number;
+      physique?: number;
+      speed?: number;
+    };
+    permanentEffect?: {
+      attack?: number;
+      defense?: number;
+      spirit?: number;
+      physique?: number;
+      speed?: number;
+      maxHp?: number;
+    };
+  }>;
   petObtained?: string; // 获得的灵宠模板ID（如 "pet-spirit-fox"）
   eventColor: 'normal' | 'gain' | 'danger' | 'special';
 }

@@ -542,7 +542,75 @@ function App() {
         let newInheritanceLevel = prev.inheritanceLevel;
         let newPets = [...prev.pets];
 
-        // 处理获得的物品
+        // 处理获得的多个物品（搜刮奖励等）
+        if (result.itemsObtained && result.itemsObtained.length > 0) {
+          result.itemsObtained.forEach(itemData => {
+            let itemName = itemData.name;
+            let itemType = itemData.type as ItemType || ItemType.Material;
+            let isEquippable = itemData.isEquippable;
+            let equipmentSlot = itemData.equipmentSlot as EquipmentSlot | undefined;
+            const itemDescription = itemData.description || '';
+
+            // 自动推断和修正物品类型和装备槽位
+            const inferred = inferItemTypeAndSlot(itemName, itemType, itemDescription, isEquippable);
+            itemType = inferred.type;
+            isEquippable = inferred.isEquippable;
+            equipmentSlot = inferred.equipmentSlot || equipmentSlot;
+
+            // 确保法宝有属性加成，且不能有exp加成
+            let finalEffect = itemData.effect || {};
+            if (itemType === ItemType.Artifact) {
+              if (finalEffect.exp) {
+                const { exp, ...restEffect } = finalEffect;
+                finalEffect = restEffect;
+              }
+
+              const hasAnyAttribute = finalEffect.attack || finalEffect.defense || finalEffect.hp ||
+                                     finalEffect.spirit || finalEffect.physique || finalEffect.speed;
+
+              if (!hasAnyAttribute) {
+                const rarity = (itemData.rarity as ItemRarity) || '普通';
+                const rarityMultiplier = RARITY_MULTIPLIERS[rarity];
+                const baseValue = rarity === '普通' ? 10 :
+                                rarity === '稀有' ? 30 :
+                                rarity === '传说' ? 80 : 200;
+                const attributeTypes = ['attack', 'defense', 'hp', 'spirit', 'physique', 'speed'];
+                const numAttributes = Math.floor(Math.random() * 3) + 1;
+                const selectedAttributes = attributeTypes.sort(() => Math.random() - 0.5).slice(0, numAttributes);
+
+                finalEffect = {};
+                selectedAttributes.forEach(attr => {
+                  const value = Math.floor(baseValue * rarityMultiplier * (0.8 + Math.random() * 0.4));
+                  (finalEffect as any)[attr] = value;
+                });
+              }
+            }
+
+            const isEquipment = isEquippable && equipmentSlot;
+            const existingIdx = newInv.findIndex(i => i.name === itemName);
+
+            if (existingIdx >= 0 && !isEquipment) {
+              newInv[existingIdx] = { ...newInv[existingIdx], quantity: newInv[existingIdx].quantity + 1 };
+            } else {
+              const newItem: Item = {
+                id: uid(),
+                name: itemName,
+                type: itemType,
+                description: itemData.description + (isEquipment ? generateAttributePreview(finalEffect) : ''),
+                quantity: 1,
+                rarity: (itemData.rarity as ItemRarity) || '普通',
+                level: 0,
+                isEquippable: isEquippable,
+                equipmentSlot: equipmentSlot,
+                effect: finalEffect,
+                permanentEffect: itemData.permanentEffect
+              };
+              newInv.push(newItem);
+            }
+          });
+        }
+
+        // 处理获得的单个物品（兼容旧代码）
         if (result.itemObtained) {
           let itemName = result.itemObtained.name;
           let itemType = result.itemObtained.type as ItemType || ItemType.Material;
@@ -765,7 +833,13 @@ function App() {
 
       addLog(result.story, result.eventColor);
 
-      if (result.itemObtained) {
+      // 显示获得的物品
+      if (result.itemsObtained && result.itemsObtained.length > 0) {
+        result.itemsObtained.forEach(item => {
+          const rarityText = item.rarity ? `【${item.rarity}】` : '';
+          addLog(`获得物品: ${rarityText}${item.name}`, 'gain');
+        });
+      } else if (result.itemObtained) {
         addLog(`获得物品: ${result.itemObtained.name}`, 'gain');
       }
 
@@ -2205,43 +2279,116 @@ function App() {
     if (pet) addLog(`你激活了灵宠【${pet.name}】！`, 'gain');
   };
 
-  const handleFeedPet = (petId: string) => {
+  const handleFeedPet = (petId: string, feedType: 'hp' | 'item' | 'exp', itemId?: string) => {
+    if (!player) return;
+
+    const pet = player.pets.find(p => p.id === petId);
+    if (!pet) return;
+
+    // 检查消耗
+    let canFeed = false;
+    let costMessage = '';
+
+    if (feedType === 'hp') {
+      const hpCost = 200;
+      if (player.hp >= hpCost) {
+        canFeed = true;
+        costMessage = `消耗了 ${hpCost} 点气血`;
+      } else {
+        addLog(`气血不足，无法喂养！需要 ${hpCost} 点气血，当前只有 ${player.hp} 点`, 'danger');
+        return;
+      }
+    } else if (feedType === 'item') {
+      if (!itemId) {
+        addLog('请选择要喂养的物品', 'danger');
+        return;
+      }
+      const item = player.inventory.find(i => i.id === itemId);
+      if (!item || item.quantity <= 0) {
+        addLog('物品不存在或数量不足', 'danger');
+        return;
+      }
+      canFeed = true;
+      costMessage = `消耗了 1 个【${item.name}】`;
+    } else if (feedType === 'exp') {
+      const expCost = Math.max(1, Math.floor(player.exp * 0.05)); // 消耗5%当前修为，至少1点
+      if (player.exp >= expCost) {
+        canFeed = true;
+        costMessage = `消耗了 ${expCost} 点修为`;
+      } else {
+        addLog(`修为不足，无法喂养！需要 ${expCost} 点修为，当前只有 ${player.exp} 点`, 'danger');
+        return;
+      }
+    }
+
+    if (!canFeed) return;
+
     setPlayer(prev => {
-      const newPets = prev.pets.map(pet => {
-        if (pet.id === petId) {
-          let newExp = pet.exp + 10;
-          let newLevel = pet.level;
-          let newMaxExp = pet.maxExp;
+      if (!prev) return prev;
+
+      // 扣除消耗
+      let newHp = prev.hp;
+      let newExp = prev.exp;
+      let newInventory = [...prev.inventory];
+
+      if (feedType === 'hp') {
+        newHp = Math.max(0, prev.hp - 200);
+      } else if (feedType === 'item' && itemId) {
+        newInventory = prev.inventory.map(item => {
+          if (item.id === itemId) {
+            return { ...item, quantity: item.quantity - 1 };
+          }
+          return item;
+        }).filter(item => item.quantity > 0);
+      } else if (feedType === 'exp') {
+        const expCost = Math.max(1, Math.floor(prev.exp * 0.05));
+        newExp = Math.max(0, prev.exp - expCost);
+      }
+
+      // 给灵宠增加经验
+      const newPets = prev.pets.map(p => {
+        if (p.id === petId) {
+          let petNewExp = p.exp + 10;
+          let petNewLevel = p.level;
+          let petNewMaxExp = p.maxExp;
           let leveledUp = false;
 
-          if (newExp >= pet.maxExp) {
-            newLevel += 1;
-            newExp = 0;
-            newMaxExp = Math.floor(pet.maxExp * 1.5);
+          if (petNewExp >= p.maxExp) {
+            petNewLevel += 1;
+            petNewExp = 0;
+            petNewMaxExp = Math.floor(p.maxExp * 1.5);
             leveledUp = true;
-            addLog(`【${pet.name}】升级了！现在是 ${newLevel} 级`, 'gain');
+            addLog(`【${p.name}】升级了！现在是 ${petNewLevel} 级`, 'gain');
           }
 
           // 只有升级时才提升属性，而不是每次喂养都提升
           const newStats = leveledUp ? {
-            attack: Math.floor(pet.stats.attack * 1.1),
-            defense: Math.floor(pet.stats.defense * 1.1),
-            hp: Math.floor(pet.stats.hp * 1.1),
-            speed: Math.floor(pet.stats.speed * 1.05) // 速度也稍微提升
-          } : pet.stats;
+            attack: Math.floor(p.stats.attack * 1.1),
+            defense: Math.floor(p.stats.defense * 1.1),
+            hp: Math.floor(p.stats.hp * 1.1),
+            speed: Math.floor(p.stats.speed * 1.05) // 速度也稍微提升
+          } : p.stats;
 
           return {
-            ...pet,
-            level: newLevel,
-            exp: newExp,
-            maxExp: newMaxExp,
+            ...p,
+            level: petNewLevel,
+            exp: petNewExp,
+            maxExp: petNewMaxExp,
             stats: newStats
           };
         }
-        return pet;
+        return p;
       });
 
-      return { ...prev, pets: newPets };
+      addLog(`${costMessage}，【${pet.name}】获得了 10 点经验`, 'gain');
+
+      return {
+        ...prev,
+        hp: newHp,
+        exp: newExp,
+        inventory: newInventory,
+        pets: newPets
+      };
     });
   };
 

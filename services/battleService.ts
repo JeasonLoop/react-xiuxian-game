@@ -1,5 +1,5 @@
-import { AdventureResult, AdventureType, PlayerStats, RealmType } from '../types';
-import { REALM_ORDER } from '../constants';
+import { AdventureResult, AdventureType, PlayerStats, RealmType, ItemRarity, ItemType, EquipmentSlot } from '../types';
+import { REALM_ORDER, RARITY_MULTIPLIERS } from '../constants';
 import { generateEnemyName } from './aiService';
 
 const randomId = () => Math.random().toString(36).slice(2, 9);
@@ -52,6 +52,199 @@ const baseBattleChance: Record<AdventureType, number> = {
 
 const pickOne = <T,>(list: T[]): T => list[Math.floor(Math.random() * list.length)];
 
+// 搜刮奖励物品名称库
+const LOOT_ITEMS = {
+  // 草药类
+  herbs: [
+    { name: '止血草', type: ItemType.Herb, rarity: '普通' as ItemRarity, effect: { hp: 20 } },
+    { name: '聚灵草', type: ItemType.Herb, rarity: '普通' as ItemRarity },
+    { name: '回气草', type: ItemType.Herb, rarity: '普通' as ItemRarity, effect: { hp: 30 } },
+    { name: '凝神花', type: ItemType.Herb, rarity: '稀有' as ItemRarity, effect: { hp: 50, spirit: 5 } },
+    { name: '血参', type: ItemType.Herb, rarity: '稀有' as ItemRarity, effect: { hp: 80 } },
+    { name: '千年灵芝', type: ItemType.Herb, rarity: '传说' as ItemRarity, effect: { hp: 150, maxHp: 20 } },
+    { name: '万年仙草', type: ItemType.Herb, rarity: '仙品' as ItemRarity, effect: { hp: 300, maxHp: 50 } },
+  ],
+  // 丹药类
+  pills: [
+    { name: '回血丹', type: ItemType.Pill, rarity: '普通' as ItemRarity, effect: { hp: 50 } },
+    { name: '聚气丹', type: ItemType.Pill, rarity: '普通' as ItemRarity, effect: { exp: 20 } },
+    { name: '强体丹', type: ItemType.Pill, rarity: '稀有' as ItemRarity, permanentEffect: { physique: 5 } },
+    { name: '凝神丹', type: ItemType.Pill, rarity: '稀有' as ItemRarity, permanentEffect: { spirit: 5 } },
+    { name: '筑基丹', type: ItemType.Pill, rarity: '传说' as ItemRarity, effect: { exp: 100 } },
+    { name: '破境丹', type: ItemType.Pill, rarity: '传说' as ItemRarity, effect: { exp: 200 } },
+    { name: '仙灵丹', type: ItemType.Pill, rarity: '仙品' as ItemRarity, effect: { exp: 500 }, permanentEffect: { maxHp: 100 } },
+  ],
+  // 材料类
+  materials: [
+    { name: '灵石碎片', type: ItemType.Material, rarity: '普通' as ItemRarity },
+    { name: '炼器石', type: ItemType.Material, rarity: '普通' as ItemRarity },
+    { name: '精铁', type: ItemType.Material, rarity: '普通' as ItemRarity },
+    { name: '玄铁', type: ItemType.Material, rarity: '稀有' as ItemRarity },
+    { name: '星辰石', type: ItemType.Material, rarity: '稀有' as ItemRarity },
+    { name: '天外陨铁', type: ItemType.Material, rarity: '传说' as ItemRarity },
+    { name: '仙晶', type: ItemType.Material, rarity: '仙品' as ItemRarity },
+  ],
+  // 装备类（武器）
+  weapons: [
+    { name: '精铁剑', type: ItemType.Weapon, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Weapon, effect: { attack: 10 } },
+    { name: '玄铁刀', type: ItemType.Weapon, rarity: '稀有' as ItemRarity, slot: EquipmentSlot.Weapon, effect: { attack: 30 } },
+    { name: '星辰剑', type: ItemType.Weapon, rarity: '传说' as ItemRarity, slot: EquipmentSlot.Weapon, effect: { attack: 80, speed: 10 } },
+    { name: '仙灵剑', type: ItemType.Weapon, rarity: '仙品' as ItemRarity, slot: EquipmentSlot.Weapon, effect: { attack: 200, spirit: 50 } },
+  ],
+  // 装备类（护甲）
+  armors: [
+    { name: '布甲', type: ItemType.Armor, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Chest, effect: { defense: 5, hp: 20 } },
+    { name: '铁甲', type: ItemType.Armor, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Chest, effect: { defense: 15, hp: 50 } },
+    { name: '玄铁甲', type: ItemType.Armor, rarity: '稀有' as ItemRarity, slot: EquipmentSlot.Chest, effect: { defense: 40, hp: 100 } },
+    { name: '星辰战甲', type: ItemType.Armor, rarity: '传说' as ItemRarity, slot: EquipmentSlot.Chest, effect: { defense: 100, hp: 300, attack: 20 } },
+    { name: '仙灵法袍', type: ItemType.Armor, rarity: '仙品' as ItemRarity, slot: EquipmentSlot.Chest, effect: { defense: 250, hp: 800, spirit: 100 } },
+  ],
+  // 装备类（首饰）
+  accessories: [
+    { name: '护身符', type: ItemType.Accessory, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Accessory1, effect: { defense: 3, hp: 15 } },
+    { name: '聚灵玉佩', type: ItemType.Accessory, rarity: '稀有' as ItemRarity, slot: EquipmentSlot.Accessory1, effect: { spirit: 20, exp: 10 } },
+    { name: '星辰项链', type: ItemType.Accessory, rarity: '传说' as ItemRarity, slot: EquipmentSlot.Accessory1, effect: { attack: 30, defense: 30, speed: 15 } },
+    { name: '仙灵手镯', type: ItemType.Accessory, rarity: '仙品' as ItemRarity, slot: EquipmentSlot.Accessory1, effect: { attack: 80, defense: 80, hp: 200 } },
+  ],
+  // 装备类（戒指）
+  rings: [
+    { name: '铁戒指', type: ItemType.Ring, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Ring1, effect: { attack: 5 } },
+    { name: '银戒指', type: ItemType.Ring, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Ring1, effect: { defense: 5 } },
+    { name: '金戒指', type: ItemType.Ring, rarity: '稀有' as ItemRarity, slot: EquipmentSlot.Ring1, effect: { attack: 15, defense: 15 } },
+    { name: '星辰戒指', type: ItemType.Ring, rarity: '传说' as ItemRarity, slot: EquipmentSlot.Ring1, effect: { attack: 40, defense: 40, speed: 20 } },
+    { name: '仙灵戒指', type: ItemType.Ring, rarity: '仙品' as ItemRarity, slot: EquipmentSlot.Ring1, effect: { attack: 100, defense: 100, spirit: 50 } },
+  ],
+  // 法宝类
+  artifacts: [
+    { name: '聚灵珠', type: ItemType.Artifact, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Artifact1, effect: { spirit: 10, exp: 5 } },
+    { name: '护体符', type: ItemType.Artifact, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Artifact1, effect: { defense: 10, hp: 30 } },
+    { name: '玄灵镜', type: ItemType.Artifact, rarity: '稀有' as ItemRarity, slot: EquipmentSlot.Artifact1, effect: { spirit: 30, defense: 20 } },
+    { name: '星辰盘', type: ItemType.Artifact, rarity: '传说' as ItemRarity, slot: EquipmentSlot.Artifact1, effect: { attack: 50, defense: 50, spirit: 50 } },
+    { name: '仙灵宝珠', type: ItemType.Artifact, rarity: '仙品' as ItemRarity, slot: EquipmentSlot.Artifact1, effect: { attack: 150, defense: 150, spirit: 150, hp: 500 } },
+  ],
+};
+
+// 根据敌人强度和类型生成搜刮奖励
+const generateLoot = (enemyStrength: number, adventureType: AdventureType, playerRealm: RealmType): AdventureResult['itemObtained'][] => {
+  const lootItems: AdventureResult['itemObtained'][] = [];
+
+  // 根据敌人强度决定奖励数量（1-3个物品）
+  const numItems = enemyStrength < 0.7 ? 1 : enemyStrength < 1.0 ? 1 + Math.floor(Math.random() * 2) : 2 + Math.floor(Math.random() * 2);
+
+  // 根据敌人强度和类型决定稀有度分布
+  const getRarityChance = (): ItemRarity => {
+    const roll = Math.random();
+    if (adventureType === 'secret_realm') {
+      // 秘境：更高概率获得稀有物品
+      if (roll < 0.1) return '仙品';
+      if (roll < 0.3) return '传说';
+      if (roll < 0.6) return '稀有';
+      return '普通';
+    } else if (adventureType === 'lucky') {
+      // 机缘：中等概率
+      if (roll < 0.05) return '传说';
+      if (roll < 0.25) return '稀有';
+      return '普通';
+    } else {
+      // 普通历练：较低概率
+      if (roll < 0.02) return '传说';
+      if (roll < 0.15) return '稀有';
+      return '普通';
+    }
+  };
+
+  for (let i = 0; i < numItems; i++) {
+    const targetRarity = getRarityChance();
+
+    // 根据稀有度选择物品类型
+    const itemTypeRoll = Math.random();
+    let itemPool: Array<{
+      name: string;
+      type: ItemType;
+      rarity: ItemRarity;
+      effect?: any;
+      permanentEffect?: any;
+      slot?: EquipmentSlot;
+    }>;
+    let itemType: string;
+
+    if (itemTypeRoll < 0.3) {
+      // 30% 草药
+      itemPool = LOOT_ITEMS.herbs as any;
+      itemType = '草药';
+    } else if (itemTypeRoll < 0.5) {
+      // 20% 丹药
+      itemPool = LOOT_ITEMS.pills as any;
+      itemType = '丹药';
+    } else if (itemTypeRoll < 0.7) {
+      // 20% 材料
+      itemPool = LOOT_ITEMS.materials as any;
+      itemType = '材料';
+    } else if (itemTypeRoll < 0.85) {
+      // 15% 装备（武器/护甲/首饰/戒指）
+      const equipRoll = Math.random();
+      if (equipRoll < 0.3) {
+        itemPool = LOOT_ITEMS.weapons as any;
+        itemType = '武器';
+      } else if (equipRoll < 0.6) {
+        itemPool = LOOT_ITEMS.armors as any;
+        itemType = '护甲';
+      } else if (equipRoll < 0.8) {
+        itemPool = LOOT_ITEMS.accessories as any;
+        itemType = '首饰';
+      } else {
+        itemPool = LOOT_ITEMS.rings as any;
+        itemType = '戒指';
+      }
+    } else {
+      // 15% 法宝
+      itemPool = LOOT_ITEMS.artifacts as any;
+      itemType = '法宝';
+    }
+
+    // 从对应稀有度的物品中随机选择
+    const availableItems = itemPool.filter(item => item.rarity === targetRarity);
+    if (availableItems.length === 0) {
+      // 如果没有对应稀有度的物品，降级选择
+      const fallbackItems = itemPool.filter(item => {
+        const rarityOrder: ItemRarity[] = ['普通', '稀有', '传说', '仙品'];
+        const targetIndex = rarityOrder.indexOf(targetRarity);
+        const itemIndex = rarityOrder.indexOf(item.rarity);
+        return itemIndex <= targetIndex;
+      });
+      if (fallbackItems.length > 0) {
+        const selected = pickOne(fallbackItems);
+        const item: AdventureResult['itemObtained'] = {
+          name: selected.name,
+          type: itemType,
+          description: `${selected.name}，从敌人身上搜刮获得。`,
+          rarity: selected.rarity,
+          isEquippable: selected.slot !== undefined,
+          equipmentSlot: selected.slot as string | undefined,
+          effect: selected.effect,
+          permanentEffect: selected.permanentEffect,
+        };
+        lootItems.push(item);
+      }
+    } else {
+      const selected = pickOne(availableItems);
+      const item: AdventureResult['itemObtained'] = {
+        name: selected.name,
+        type: itemType,
+        description: `${selected.name}，从敌人身上搜刮获得。`,
+        rarity: selected.rarity,
+        isEquippable: selected.slot !== undefined,
+        equipmentSlot: selected.slot as string | undefined,
+        effect: selected.effect,
+        permanentEffect: selected.permanentEffect,
+      };
+      lootItems.push(item);
+    }
+  }
+
+  return lootItems;
+};
+
 export interface BattleRoundLog {
   id: string;
   attacker: 'player' | 'enemy';
@@ -72,6 +265,7 @@ export interface BattleReplay {
     attack: number;
     defense: number;
     speed: number;
+    strengthMultiplier?: number; // 敌人强度倍数
   };
   rounds: BattleRoundLog[];
   victory: boolean;
@@ -90,13 +284,76 @@ export interface BattleResolution {
 
 const clampMin = (value: number, min: number) => (value < min ? min : value);
 
-const createEnemy = async (player: PlayerStats, adventureType: AdventureType) => {
+const createEnemy = async (player: PlayerStats, adventureType: AdventureType): Promise<{
+  name: string;
+  title: string;
+  realm: RealmType;
+  attack: number;
+  defense: number;
+  maxHp: number;
+  speed: number;
+  strengthMultiplier: number;
+}> => {
   const currentRealmIndex = REALM_ORDER.indexOf(player.realm);
   const realmOffset = adventureType === 'secret_realm' ? 1 : adventureType === 'lucky' ? -1 : 0;
   const targetIndex = clampMin(Math.min(REALM_ORDER.length - 1, currentRealmIndex + realmOffset), 0);
   const realm = REALM_ORDER[targetIndex];
-  const difficulty = battleDifficulty[adventureType] || 1;
-  const variance = () => 0.85 + Math.random() * 0.35; // 0.85 - 1.2
+  const baseDifficulty = battleDifficulty[adventureType] || 1;
+
+  // 引入强度等级系统：弱敌、普通、强敌
+  // 普通历练：40%弱敌，50%普通，10%强敌
+  // 机缘历练：60%弱敌，35%普通，5%强敌
+  // 秘境历练：20%弱敌，50%普通，30%强敌
+  const strengthRoll = Math.random();
+  let strengthMultiplier = 1;
+  let strengthVariance = { min: 0.85, max: 1.2 };
+
+  if (adventureType === 'normal') {
+    if (strengthRoll < 0.4) {
+      // 弱敌 40%
+      strengthMultiplier = 0.6 + Math.random() * 0.2; // 0.6 - 0.8
+      strengthVariance = { min: 0.6, max: 0.9 };
+    } else if (strengthRoll < 0.9) {
+      // 普通 50%
+      strengthMultiplier = 0.8 + Math.random() * 0.2; // 0.8 - 1.0
+      strengthVariance = { min: 0.75, max: 1.1 };
+    } else {
+      // 强敌 10%
+      strengthMultiplier = 1.0 + Math.random() * 0.2; // 1.0 - 1.2
+      strengthVariance = { min: 0.9, max: 1.3 };
+    }
+  } else if (adventureType === 'lucky') {
+    if (strengthRoll < 0.6) {
+      // 弱敌 60%
+      strengthMultiplier = 0.5 + Math.random() * 0.2; // 0.5 - 0.7
+      strengthVariance = { min: 0.5, max: 0.85 };
+    } else if (strengthRoll < 0.95) {
+      // 普通 35%
+      strengthMultiplier = 0.7 + Math.random() * 0.2; // 0.7 - 0.9
+      strengthVariance = { min: 0.65, max: 1.0 };
+    } else {
+      // 强敌 5%
+      strengthMultiplier = 0.9 + Math.random() * 0.2; // 0.9 - 1.1
+      strengthVariance = { min: 0.8, max: 1.2 };
+    }
+  } else if (adventureType === 'secret_realm') {
+    if (strengthRoll < 0.2) {
+      // 弱敌 20%
+      strengthMultiplier = 0.7 + Math.random() * 0.2; // 0.7 - 0.9
+      strengthVariance = { min: 0.65, max: 1.0 };
+    } else if (strengthRoll < 0.7) {
+      // 普通 50%
+      strengthMultiplier = 0.9 + Math.random() * 0.2; // 0.9 - 1.1
+      strengthVariance = { min: 0.8, max: 1.2 };
+    } else {
+      // 强敌 30%
+      strengthMultiplier = 1.1 + Math.random() * 0.3; // 1.1 - 1.4
+      strengthVariance = { min: 1.0, max: 1.5 };
+    }
+  }
+
+  const variance = () => strengthVariance.min + Math.random() * (strengthVariance.max - strengthVariance.min);
+  const finalDifficulty = baseDifficulty * strengthMultiplier;
 
   // 15%概率使用AI生成敌人名字，失败则使用预设列表
   let name = pickOne(ENEMY_NAMES);
@@ -115,14 +372,19 @@ const createEnemy = async (player: PlayerStats, adventureType: AdventureType) =>
     }
   }
 
+  // 降低敌人的基础属性，特别是攻击和防御
+  const baseAttack = player.attack * 0.7 + player.realmLevel * 3; // 从 5 降到 3
+  const baseDefense = player.defense * 0.7 + player.realmLevel * 2; // 从 4 降到 2
+
   return {
     name,
     title,
     realm,
-    attack: Math.max(12, Math.round((player.attack + player.realmLevel * 5) * variance() * difficulty)),
-    defense: Math.max(10, Math.round((player.defense + player.realmLevel * 4) * variance() * difficulty)),
-    maxHp: Math.max(60, Math.round(player.maxHp * (0.75 + Math.random() * 0.5) * difficulty)),
-    speed: Math.max(8, Math.round((player.speed || 10) * (0.8 + Math.random() * 0.4)))
+    attack: Math.max(8, Math.round(baseAttack * variance() * finalDifficulty)),
+    defense: Math.max(6, Math.round(baseDefense * variance() * finalDifficulty)),
+    maxHp: Math.max(40, Math.round(player.maxHp * (0.5 + Math.random() * 0.4) * finalDifficulty)), // 从 0.75-1.25 降到 0.5-0.9
+    speed: Math.max(6, Math.round((player.speed || 10) * (0.7 + Math.random() * 0.3) * strengthMultiplier)), // 从 0.8-1.2 降到 0.7-1.0
+    strengthMultiplier // 保存强度倍数用于生成奖励
   };
 };
 
@@ -196,8 +458,15 @@ export const resolveBattleEncounter = async (player: PlayerStats, adventureType:
   const expChange = victory ? rewardExp : -Math.max(5, Math.round(rewardExp * 0.5));
   const spiritChange = victory ? rewardStones : -Math.max(2, Math.round(rewardStones * 0.6));
 
+  // 如果胜利，生成搜刮奖励
+  const lootItems: AdventureResult['itemObtained'][] = [];
+  if (victory) {
+    const loot = generateLoot(enemy.strengthMultiplier, adventureType, player.realm);
+    lootItems.push(...loot);
+  }
+
   const summary = victory
-    ? `你斩杀了${enemy.title}${enemy.name}，耗费 ${hpLoss} 点气血。`
+    ? `你斩杀了${enemy.title}${enemy.name}，耗费 ${hpLoss} 点气血。${lootItems.length > 0 ? '你搜刮了敌人的遗物。' : ''}`
     : `你不敌${enemy.title}${enemy.name}，重伤撤离，损失 ${hpLoss} 点气血。`;
 
   const adventureResult: AdventureResult = {
@@ -205,7 +474,8 @@ export const resolveBattleEncounter = async (player: PlayerStats, adventureType:
     hpChange: playerHp - player.hp,
     expChange,
     spiritStonesChange: spiritChange,
-    eventColor: 'danger'
+    eventColor: 'danger',
+    itemsObtained: lootItems.length > 0 ? lootItems : undefined
   };
 
   return {
