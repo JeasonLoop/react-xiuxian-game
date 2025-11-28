@@ -1234,7 +1234,7 @@ function App() {
           defense: Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense,
           spirit: Math.floor(stats.baseSpirit * levelMultiplier) + bonusSpirit,
           physique: Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique,
-          speed: Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed,
+          speed: Math.max(0, Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed),
           inheritanceLevel: remainingInheritance
         };
       }
@@ -1295,10 +1295,14 @@ function App() {
         Object.values(prev.equippedItems).forEach(itemId => {
           const equippedItem = prev.inventory.find(i => i.id === itemId);
           if (equippedItem && equippedItem.effect) {
-            const itemStats = getItemStats(equippedItem);
+            const isNatal = equippedItem.id === prev.natalArtifactId;
+            const itemStats = getItemStats(equippedItem, isNatal);
             bonusAttack += itemStats.attack;
             bonusDefense += itemStats.defense;
             bonusHp += itemStats.hp;
+            bonusSpirit += itemStats.spirit;
+            bonusPhysique += itemStats.physique;
+            bonusSpeed += itemStats.speed;
           }
         });
 
@@ -1338,7 +1342,7 @@ function App() {
           defense: Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense,
           spirit: Math.floor(stats.baseSpirit * levelMultiplier) + bonusSpirit,
           physique: Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique,
-          speed: Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed,
+          speed: Math.max(0, Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed),
         };
       });
       setLoading(false);
@@ -1678,7 +1682,7 @@ function App() {
         hp: Math.min(prev.hp, newMaxHp), // Clamp current HP if maxHp decreased
         spirit: newSpirit,
         physique: newPhysique,
-        speed: newSpeed
+        speed: Math.max(0, newSpeed)
       };
     });
   };
@@ -1768,7 +1772,7 @@ function App() {
         defense: newDefense,
         spirit: newSpirit,
         physique: newPhysique,
-        speed: newSpeed
+        speed: Math.max(0, newSpeed)
       };
     });
   };
@@ -1822,7 +1826,7 @@ function App() {
         defense: newDefense,
         spirit: newSpirit,
         physique: newPhysique,
-        speed: newSpeed
+        speed: Math.max(0, newSpeed)
       };
     });
   };
@@ -1868,7 +1872,7 @@ function App() {
         hp: Math.min(prev.hp, newMaxHp),
         spirit: newSpirit,
         physique: newPhysique,
-        speed: newSpeed
+        speed: Math.max(0, newSpeed)
       };
     });
   };
@@ -1922,7 +1926,8 @@ function App() {
       // Check if item is equipped in any slot
       const equippedSlot = Object.entries(prev.equippedItems).find(([_, itemId]) => itemId === item.id)?.[0] as EquipmentSlot | undefined;
       if (equippedSlot) {
-        const oldStats = getItemStats(item);
+        const isNatal = item.id === prev.natalArtifactId;
+        const oldStats = getItemStats(item, isNatal);
         newAttack -= oldStats.attack;
         newDefense -= oldStats.defense;
         newMaxHp -= oldStats.hp;
@@ -1931,7 +1936,7 @@ function App() {
         newSpeed -= oldStats.speed;
 
         const newItem = { ...item, effect: newEffect };
-        const newStats = getItemStats(newItem);
+        const newStats = getItemStats(newItem, isNatal);
 
         newAttack += newStats.attack;
         newDefense += newStats.defense;
@@ -1952,7 +1957,7 @@ function App() {
         maxHp: newMaxHp,
         spirit: newSpirit,
         physique: newPhysique,
-        speed: newSpeed
+        speed: Math.max(0, newSpeed)
       };
     });
     setIsUpgradeOpen(false);
