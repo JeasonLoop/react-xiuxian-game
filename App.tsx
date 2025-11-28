@@ -82,7 +82,12 @@ import {
 } from 'lucide-react';
 
 // Unique ID generator
-const uid = () => Math.random().toString(36).substr(2, 9);
+// 改进的 uid 生成函数，使用时间戳+随机数确保唯一性
+let uidCounter = 0;
+const uid = () => {
+  uidCounter++;
+  return `${Date.now()}-${uidCounter}-${Math.random().toString(36).substr(2, 9)}`;
+};
 
 // localStorage 键名
 const SAVE_KEY = 'xiuxian-game-save';
@@ -329,12 +334,30 @@ function App() {
     }[]
   >([]);
 
-  // Helper to add logs
+  // Helper to add logs (带去重机制，防止短时间内重复添加相同内容)
   const addLog = (text: string, type: LogEntry['type'] = 'normal') => {
-    setLogs((prev) => [
-      ...prev,
-      { id: uid(), text, type, timestamp: Date.now() },
-    ]);
+    setLogs((prev) => {
+      const now = Date.now();
+      // 检查最近1秒内是否有相同内容和类型的日志
+      const recentDuplicate = prev
+        .slice(-5) // 只检查最近5条日志
+        .some(
+          (log) =>
+            log.text === text &&
+            log.type === type &&
+            now - log.timestamp < 1000 // 1秒内的重复视为无效
+        );
+
+      // 如果有重复，不添加
+      if (recentDuplicate) {
+        return prev;
+      }
+
+      return [
+        ...prev,
+        { id: uid(), text, type, timestamp: now },
+      ];
+    });
   };
 
   // Helper to trigger visuals
