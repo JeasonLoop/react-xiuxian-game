@@ -1,7 +1,7 @@
 /**
  * AI 服务配置
  * 支持多种 AI 服务提供商，通过环境变量轻松切换
- * 
+ *
  * 默认使用 SiliconFlow 作为 AI 接口
  * 如需切换，设置环境变量 VITE_AI_PROVIDER
  */
@@ -45,34 +45,43 @@ const AI_PROVIDERS: Record<AIProvider, {
  */
 export function getAIConfig(): AIConfig {
   const isDev = import.meta.env.DEV;
-  
+
   // 从环境变量获取配置
   const provider = (import.meta.env.VITE_AI_PROVIDER || 'siliconflow') as AIProvider;
   const apiKey = import.meta.env.VITE_AI_KEY || '';
   const customApiUrl = import.meta.env.VITE_AI_API_URL;
   const customModel = import.meta.env.VITE_AI_MODEL;
-  const useProxy = import.meta.env.VITE_AI_USE_PROXY !== 'false'; // 默认使用代理
+  const proxyPreference = import.meta.env.VITE_AI_USE_PROXY;
 
   // 获取预设配置
   const providerConfig = AI_PROVIDERS[provider] || AI_PROVIDERS.siliconflow;
 
   // 构建配置
-  const apiUrl = customApiUrl || providerConfig.defaultUrl;
+  const apiUrl = providerConfig.defaultUrl;
   const model = customModel || providerConfig.defaultModel;
   const proxyPath = providerConfig.proxyPath;
 
+  // 是否应该使用内置代理路径
+  let shouldUseProxy = false;
+  if (!customApiUrl) {
+    if (proxyPreference === 'true') {
+      // 显式开启（适用于 Vercel 等生产环境）
+      shouldUseProxy = true;
+    } else if (proxyPreference === 'false') {
+      shouldUseProxy = false;
+    } else {
+      // 未设置时，开发环境默认开启代理，生产环境默认关闭
+      shouldUseProxy = isDev;
+    }
+  }
+
   // 确定最终使用的 URL
-  // 开发环境：如果 useProxy 为 true，使用代理路径；否则使用完整 URL
-  // 生产环境：使用完整 URL 或通过 Vercel Function 代理
   let finalApiUrl: string;
-  if (isDev && useProxy) {
-    // 开发环境使用代理路径
-    finalApiUrl = proxyPath;
-  } else if (customApiUrl) {
-    // 如果设置了自定义 URL，直接使用
+  if (customApiUrl) {
     finalApiUrl = customApiUrl;
+  } else if (shouldUseProxy) {
+    finalApiUrl = proxyPath;
   } else {
-    // 否则使用提供商默认 URL
     finalApiUrl = apiUrl;
   }
 
@@ -81,7 +90,7 @@ export function getAIConfig(): AIConfig {
     apiKey,
     apiUrl: finalApiUrl,
     model,
-    useProxy: isDev && useProxy,
+    useProxy: shouldUseProxy,
     proxyPath,
   };
 }
@@ -120,7 +129,7 @@ export function validateAIConfig(config: AIConfig): { valid: boolean; error?: st
 export function getAIConfigInfo(): string {
   const config = getAIConfig();
   const validation = validateAIConfig(config);
-  
+
   return `
 AI 服务配置:
 - 提供商: ${config.provider}
