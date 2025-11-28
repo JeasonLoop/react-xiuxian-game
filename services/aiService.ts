@@ -224,9 +224,25 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
       - 境界：${player.realm} (第 ${player.realmLevel} 层)
       - 气血：${player.hp}/${player.maxHp}
       - 攻击力：${player.attack}
+      - 防御力：${player.defense}
+      - 神识：${player.spirit}
+      - 体魄：${player.physique}
+      - 速度：${player.speed}
 
       请生成一个随机奇遇。
       ${typeInstructions}
+
+      【重要约束】
+      1. 事件描述（story）必须符合玩家当前境界，使用修仙风格的中文描述，长度控制在50-200字
+      2. 所有数值必须合理：气血变化不应超过玩家最大气血的50%，修为和灵石变化应符合境界水平
+      3. 事件颜色（eventColor）必须准确反映事件性质：
+         - normal：普通事件，无明显收益或损失
+         - gain：正面事件，有明显收益（获得物品、修为、灵石等）
+         - danger：危险事件，有损失（受伤、被抢、属性降低等）
+         - special：特殊事件，罕见且收益丰厚（大机缘、传承、仙品等）
+      4. 如果事件描述中提到获得物品，必须在itemObtained或itemsObtained中提供该物品
+      5. 物品名称必须符合修仙风格，避免使用现代词汇
+      6. 属性降低（attributeReduction）应该非常罕见，且必须与事件描述相符
 
       请严格以 JSON 格式返回结果。所有文本必须使用中文。
       如果获得物品，请设定合理的属性加成和稀有度。
@@ -311,6 +327,10 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
 4. 装备类物品必须设置 isEquippable: true 和正确的 equipmentSlot
 5. 法宝不能提供exp（修为）加成，只能提供属性加成
 6. 根据物品名称推断装备槽位：剑/刀/枪→武器，道袍/胸甲→胸甲，头盔/冠→头部，戒指→戒指1-4，项链/玉佩→首饰1-2，法宝→法宝1-2
+7. 事件描述必须与奖励/惩罚相匹配：如果描述获得物品，必须提供itemObtained；如果描述受伤，hpChange应为负数
+8. 传承等级变化（inheritanceLevelChange）只能为1-4之间的整数，且应该极其罕见（只有大机缘事件才可能出现）
+9. 触发随机秘境（triggerSecretRealm）应该非常罕见，只有特殊事件才可能触发
+10. 灵宠机缘（petOpportunity）需要玩家已有灵宠时才应该出现，且应该合理（如提升等级、获得经验等）
 
 【物品生成多样化规则】
 - 尽量生成不同名称、不同类型的物品，避免重复

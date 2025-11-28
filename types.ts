@@ -178,7 +178,12 @@ export interface PlayerStats {
   // 传承系统
   inheritanceLevel: number; // 传承等级（0-4，每次传承可突破1-4个境界）
   // 每日任务系统
-  dailyTaskCount: number; // 今日已完成瞬时任务次数
+  dailyTaskCount: {
+    instant: number; // 今日已完成瞬时任务次数（限制10次）
+    short: number; // 今日已完成短暂任务次数（限制5次）
+    medium: number; // 今日已完成中等任务次数（限制3次）
+    long: number; // 今日已完成较长任务次数（限制2次）
+  };
   lastTaskResetDate: string; // 上次重置任务计数的日期（YYYY-MM-DD格式）
   // 成就系统扩展
   viewedAchievements: string[]; // 已查看过的成就ID（用于角标显示）

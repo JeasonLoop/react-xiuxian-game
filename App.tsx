@@ -171,7 +171,12 @@ const createInitialPlayer = (name: string, talentId: string): PlayerStats => {
     lotteryTickets: 3,
     lotteryCount: 0,
     inheritanceLevel: 0,
-    dailyTaskCount: 0,
+    dailyTaskCount: {
+      instant: 0,
+      short: 0,
+      medium: 0,
+      long: 0,
+    },
     lastTaskResetDate: new Date().toISOString().split('T')[0],
     viewedAchievements: [],
     natalArtifactId: null,
@@ -225,7 +230,11 @@ function App() {
           // 确保加载的存档包含新字段
           const loadedPlayer = {
             ...savedData.player,
-            dailyTaskCount: savedData.player.dailyTaskCount || 0,
+            dailyTaskCount: savedData.player.dailyTaskCount && typeof savedData.player.dailyTaskCount === 'object'
+              ? savedData.player.dailyTaskCount
+              : typeof savedData.player.dailyTaskCount === 'number'
+                ? { instant: savedData.player.dailyTaskCount, short: 0, medium: 0, long: 0 } // 兼容旧存档
+                : { instant: 0, short: 0, medium: 0, long: 0 },
             lastTaskResetDate:
               savedData.player.lastTaskResetDate ||
               new Date().toISOString().split('T')[0],
@@ -1019,11 +1028,17 @@ function App() {
           result.inheritanceLevelChange &&
           result.inheritanceLevelChange > 0
         ) {
-          newInheritanceLevel += result.inheritanceLevelChange;
-          addLog(
-            `🌟 你获得了上古传承！可以直接突破 ${result.inheritanceLevelChange} 个境界！`,
-            'special'
-          );
+          // 限制传承等级变化在1-4之间，且总传承等级不超过4
+          const validChange = Math.max(1, Math.min(4, result.inheritanceLevelChange));
+          const newTotal = Math.min(4, newInheritanceLevel + validChange);
+          const actualChange = newTotal - newInheritanceLevel;
+          if (actualChange > 0) {
+            newInheritanceLevel = newTotal;
+            addLog(
+              `🌟 你获得了上古传承！可以直接突破 ${actualChange} 个境界！`,
+              'special'
+            );
+          }
         }
 
         // 处理获得的灵宠
@@ -1271,30 +1286,78 @@ function App() {
         let newSpeed = prev.speed;
         if (result.attributeReduction) {
           const reduction = result.attributeReduction;
+
+          // 保护机制：限制单个属性最多降低10%，总属性降低不超过15%
+          const maxSingleReductionRatio = 0.1; // 单个属性最多降低10%
+          const maxTotalReductionRatio = 0.15; // 总属性最多降低15%
+
+          // 计算总降低值
+          let totalReduction = 0;
+          if (reduction.attack) totalReduction += reduction.attack;
+          if (reduction.defense) totalReduction += reduction.defense;
+          if (reduction.spirit) totalReduction += reduction.spirit;
+          if (reduction.physique) totalReduction += reduction.physique;
+          if (reduction.speed) totalReduction += reduction.speed;
+          if (reduction.maxHp) totalReduction += reduction.maxHp;
+
+          // 计算玩家总属性值
+          const totalAttributes = prev.attack + prev.defense + prev.spirit + prev.physique + prev.speed + prev.maxHp;
+          const maxAllowedReduction = totalAttributes * maxTotalReductionRatio;
+
+          // 如果总降低超过限制，按比例缩减
+          let scaleFactor = 1;
+          if (totalReduction > maxAllowedReduction) {
+            scaleFactor = maxAllowedReduction / totalReduction;
+          }
+
           if (reduction.attack) {
-            newAttack = Math.max(0, newAttack - reduction.attack);
-            addLog(`⚠️ 你的攻击力降低了 ${reduction.attack} 点！`, 'danger');
+            const maxSingleReduction = Math.floor(prev.attack * maxSingleReductionRatio);
+            const actualReduction = Math.min(Math.floor(reduction.attack * scaleFactor), maxSingleReduction);
+            newAttack = Math.max(0, newAttack - actualReduction);
+            if (actualReduction > 0) {
+              addLog(`⚠️ 你的攻击力降低了 ${actualReduction} 点！`, 'danger');
+            }
           }
           if (reduction.defense) {
-            newDefense = Math.max(0, newDefense - reduction.defense);
-            addLog(`⚠️ 你的防御力降低了 ${reduction.defense} 点！`, 'danger');
+            const maxSingleReduction = Math.floor(prev.defense * maxSingleReductionRatio);
+            const actualReduction = Math.min(Math.floor(reduction.defense * scaleFactor), maxSingleReduction);
+            newDefense = Math.max(0, newDefense - actualReduction);
+            if (actualReduction > 0) {
+              addLog(`⚠️ 你的防御力降低了 ${actualReduction} 点！`, 'danger');
+            }
           }
           if (reduction.spirit) {
-            newSpirit = Math.max(0, newSpirit - reduction.spirit);
-            addLog(`⚠️ 你的神识降低了 ${reduction.spirit} 点！`, 'danger');
+            const maxSingleReduction = Math.floor(prev.spirit * maxSingleReductionRatio);
+            const actualReduction = Math.min(Math.floor(reduction.spirit * scaleFactor), maxSingleReduction);
+            newSpirit = Math.max(0, newSpirit - actualReduction);
+            if (actualReduction > 0) {
+              addLog(`⚠️ 你的神识降低了 ${actualReduction} 点！`, 'danger');
+            }
           }
           if (reduction.physique) {
-            newPhysique = Math.max(0, newPhysique - reduction.physique);
-            addLog(`⚠️ 你的体魄降低了 ${reduction.physique} 点！`, 'danger');
+            const maxSingleReduction = Math.floor(prev.physique * maxSingleReductionRatio);
+            const actualReduction = Math.min(Math.floor(reduction.physique * scaleFactor), maxSingleReduction);
+            newPhysique = Math.max(0, newPhysique - actualReduction);
+            if (actualReduction > 0) {
+              addLog(`⚠️ 你的体魄降低了 ${actualReduction} 点！`, 'danger');
+            }
           }
           if (reduction.speed) {
-            newSpeed = Math.max(0, newSpeed - reduction.speed);
-            addLog(`⚠️ 你的速度降低了 ${reduction.speed} 点！`, 'danger');
+            const maxSingleReduction = Math.floor(prev.speed * maxSingleReductionRatio);
+            const actualReduction = Math.min(Math.floor(reduction.speed * scaleFactor), maxSingleReduction);
+            newSpeed = Math.max(0, newSpeed - actualReduction);
+            if (actualReduction > 0) {
+              addLog(`⚠️ 你的速度降低了 ${actualReduction} 点！`, 'danger');
+            }
           }
           if (reduction.maxHp) {
-            newMaxHp = Math.max(prev.maxHp * 0.5, newMaxHp - reduction.maxHp); // 至少保留50%气血上限
+            const maxSingleReduction = Math.floor(prev.maxHp * maxSingleReductionRatio);
+            const actualReduction = Math.min(Math.floor(reduction.maxHp * scaleFactor), maxSingleReduction);
+            newMaxHp = Math.max(prev.maxHp * 0.5, newMaxHp - actualReduction); // 至少保留50%气血上限
             newHp = Math.min(newHp, newMaxHp);
-            addLog(`⚠️ 你的气血上限降低了 ${reduction.maxHp} 点！`, 'danger');
+            if (actualReduction > 0) {
+              addLog(`⚠️ 你的气血上限降低了 ${actualReduction} 点！`, 'danger');
+            }
           }
         }
 
@@ -2691,24 +2754,39 @@ function App() {
 
   const handleSectTask = (task: RandomSectTask) => {
     setPlayer((prev) => {
-      // 检查每日任务限制（瞬时完成的任务每日限制10次）
+      // 检查每日任务限制
       const today = new Date().toISOString().split('T')[0];
-      let dailyTaskCount = prev.dailyTaskCount || 0;
+      let dailyTaskCount = prev.dailyTaskCount || { instant: 0, short: 0, medium: 0, long: 0 };
       let lastTaskResetDate = prev.lastTaskResetDate || today;
 
       // 如果日期变化，重置计数
       if (lastTaskResetDate !== today) {
-        dailyTaskCount = 0;
+        dailyTaskCount = { instant: 0, short: 0, medium: 0, long: 0 };
         lastTaskResetDate = today;
       }
 
-      // 瞬时完成的任务有每日限制
-      if (task.timeCost === 'instant') {
-        if (dailyTaskCount >= 10) {
-          addLog('今日已完成10次瞬时任务，请明日再来。', 'danger');
+      // 任务类型限制配置
+      const taskLimits: Record<string, { limit: number; name: string }> = {
+        instant: { limit: 10, name: '瞬时' },
+        short: { limit: 5, name: '短暂' },
+        medium: { limit: 3, name: '中等' },
+        long: { limit: 2, name: '较长' },
+      };
+
+      // 检查当前任务类型的每日限制
+      const taskType = task.timeCost;
+      const limitConfig = taskLimits[taskType];
+      if (limitConfig) {
+        const currentCount = dailyTaskCount[taskType as keyof typeof dailyTaskCount] || 0;
+        if (currentCount >= limitConfig.limit) {
+          addLog(`今日已完成${limitConfig.limit}次${limitConfig.name}任务，请明日再来。`, 'danger');
           return prev;
         }
-        dailyTaskCount += 1;
+        // 增加计数
+        dailyTaskCount = {
+          ...dailyTaskCount,
+          [taskType]: currentCount + 1,
+        };
       }
 
       // 检查消耗
