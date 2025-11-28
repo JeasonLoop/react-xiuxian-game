@@ -1,8 +1,9 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { PlayerStats, SectRank, RealmType, Item } from '../types';
 import { SECTS, SECT_RANK_REQUIREMENTS, SECT_SHOP_ITEMS, REALM_ORDER } from '../constants';
-import { X, Users, Award, ShoppingBag, Shield, Scroll, ArrowUp } from 'lucide-react';
+import { generateRandomSects, generateRandomSectTasks, RandomSectTask } from '../services/randomService';
+import { X, Users, Award, ShoppingBag, Shield, Scroll, ArrowUp, RefreshCw } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -10,7 +11,7 @@ interface Props {
   player: PlayerStats;
   onJoinSect: (sectId: string) => void;
   onLeaveSect: () => void;
-  onTask: (type: 'patrol' | 'donate_stone' | 'donate_herb') => void;
+  onTask: (task: RandomSectTask) => void;
   onPromote: () => void;
   onBuy: (item: Partial<Item>, cost: number, quantity?: number) => void;
 }
@@ -27,10 +28,27 @@ const SectModal: React.FC<Props> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'hall' | 'mission' | 'shop'>('hall');
   const [buyQuantities, setBuyQuantities] = useState<Record<number, number>>({});
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // 生成随机宗门列表（未加入宗门时）
+  const availableSects = useMemo(() => {
+    if (player.sectId) return SECTS;
+    return generateRandomSects(player.realm, 6);
+  }, [player.realm, player.sectId, refreshKey]);
+
+  // 生成随机任务列表（已加入宗门时）
+  const randomTasks = useMemo(() => {
+    if (!player.sectId) return [];
+    return generateRandomSectTasks(player.sectRank, 3);
+  }, [player.sectId, player.sectRank, refreshKey]);
+
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   if (!isOpen) return null;
 
-  const currentSect = SECTS.find(s => s.id === player.sectId);
+  const currentSect = availableSects.find(s => s.id === player.sectId) || SECTS.find(s => s.id === player.sectId);
   const getRealmIndex = (r: RealmType) => REALM_ORDER.indexOf(r);
 
   // -- Selection View (Not in a sect) --
@@ -42,13 +60,23 @@ const SectModal: React.FC<Props> = ({
             <h3 className="text-xl font-serif text-mystic-gold flex items-center gap-2">
               <Users size={20} /> 寻访仙门
             </h3>
-            <button onClick={onClose} className="text-stone-400 hover:text-white">
-              <X size={24} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleRefresh}
+                className="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded text-sm flex items-center gap-1.5 transition-colors"
+                title="刷新宗门列表"
+              >
+                <RefreshCw size={16} />
+                <span className="hidden md:inline">刷新</span>
+              </button>
+              <button onClick={onClose} className="text-stone-400 hover:text-white">
+                <X size={24} />
+              </button>
+            </div>
           </div>
 
           <div className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-3 gap-4">
-            {SECTS.map(sect => {
+            {availableSects.map(sect => {
               const canJoin = getRealmIndex(player.realm) >= getRealmIndex(sect.reqRealm);
               return (
                 <div key={sect.id} className="bg-ink-800 border border-stone-700 p-4 rounded flex flex-col">
@@ -114,9 +142,21 @@ const SectModal: React.FC<Props> = ({
                <span>宗门贡献: <span className="text-white font-bold">{player.sectContribution}</span></span>
              </div>
           </div>
-          <button onClick={onClose} className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation">
-            <X size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            {activeTab === 'mission' && (
+              <button
+                onClick={handleRefresh}
+                className="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded text-sm flex items-center gap-1.5 transition-colors min-h-[44px] md:min-h-0 touch-manipulation"
+                title="刷新任务列表"
+              >
+                <RefreshCw size={16} />
+                <span className="hidden md:inline">刷新</span>
+              </button>
+            )}
+            <button onClick={onClose} className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation">
+              <X size={24} />
+            </button>
+          </div>
         </div>
 
         {/* Navigation */}
@@ -201,79 +241,103 @@ const SectModal: React.FC<Props> = ({
 
           {/* Mission Hall */}
           {activeTab === 'mission' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-ink-800 p-4 rounded border border-stone-700 flex flex-col">
-                <h4 className="font-serif font-bold text-stone-200 mb-1">山门巡逻</h4>
-                <p className="text-xs text-stone-500 mb-4 flex-1">在宗门附近巡视，驱逐野兽，维护治安。</p>
-                <div className="flex justify-between items-center text-xs text-stone-400 mb-2">
-                   <span>奖励: 10 贡献</span>
-                   <span>耗时: 瞬时</span>
-                </div>
-                <div className="text-xs text-stone-500 mb-2">
-                  今日已完成: {(() => {
-                    const today = new Date().toISOString().split('T')[0];
-                    const lastReset = player.lastTaskResetDate || today;
-                    return lastReset === today ? (player.dailyTaskCount || 0) : 0;
-                  })()} / 10 次
-                </div>
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-serif text-lg text-stone-200">任务列表</h4>
                 <button
-                  onClick={() => onTask('patrol')}
-                  disabled={(() => {
-                    const today = new Date().toISOString().split('T')[0];
-                    const lastReset = player.lastTaskResetDate || today;
-                    const count = lastReset === today ? (player.dailyTaskCount || 0) : 0;
-                    return count >= 10;
-                  })()}
-                  className={`w-full py-2 rounded text-sm ${
-                    (() => {
+                  onClick={handleRefresh}
+                  className="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded text-sm flex items-center gap-1.5 transition-colors"
+                  title="刷新任务列表"
+                >
+                  <RefreshCw size={16} />
+                  <span>刷新</span>
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {randomTasks.map((task) => {
+                  const canComplete = (() => {
+                    if (task.cost?.spiritStones && player.spiritStones < task.cost.spiritStones) return false;
+                    if (task.cost?.items) {
+                      for (const itemReq of task.cost.items) {
+                        const item = player.inventory.find(i => i.name === itemReq.name);
+                        if (!item || item.quantity < itemReq.quantity) return false;
+                      }
+                    }
+                    // 瞬时任务检查每日限制
+                    if (task.timeCost === 'instant') {
                       const today = new Date().toISOString().split('T')[0];
                       const lastReset = player.lastTaskResetDate || today;
                       const count = lastReset === today ? (player.dailyTaskCount || 0) : 0;
-                      return count >= 10;
-                    })()
-                      ? 'bg-stone-900 text-stone-600 cursor-not-allowed'
-                      : 'bg-stone-700 hover:bg-stone-600 text-stone-200'
-                  }`}
-                >
-                  {(() => {
-                    const today = new Date().toISOString().split('T')[0];
-                    const lastReset = player.lastTaskResetDate || today;
-                    const count = lastReset === today ? (player.dailyTaskCount || 0) : 0;
-                    return count >= 10 ? '今日已完成' : '执行任务';
-                  })()}
-                </button>
-              </div>
+                      if (count >= 10) return false;
+                    }
+                    return true;
+                  })();
 
-              <div className="bg-ink-800 p-4 rounded border border-stone-700 flex flex-col">
-                <h4 className="font-serif font-bold text-stone-200 mb-1">上交灵石</h4>
-                <p className="text-xs text-stone-500 mb-4 flex-1">为宗门建设捐献灵石。</p>
-                <div className="flex justify-between items-center text-xs text-stone-400 mb-3">
-                   <span>消耗: 100 灵石</span>
-                   <span>奖励: 50 贡献</span>
-                </div>
-                <button
-                  onClick={() => onTask('donate_stone')}
-                  disabled={player.spiritStones < 100}
-                  className={`w-full py-2 rounded text-sm ${player.spiritStones < 100 ? 'bg-stone-900 text-stone-600' : 'bg-stone-700 hover:bg-stone-600 text-stone-200'}`}
-                >
-                  {player.spiritStones < 100 ? '灵石不足' : '上交物资'}
-                </button>
-              </div>
+                  const timeCostText = {
+                    instant: '瞬时',
+                    short: '短暂',
+                    medium: '中等',
+                    long: '较长'
+                  }[task.timeCost];
 
-              <div className="bg-ink-800 p-4 rounded border border-stone-700 flex flex-col">
-                <h4 className="font-serif font-bold text-stone-200 mb-1">上交草药</h4>
-                <p className="text-xs text-stone-500 mb-4 flex-1">上交一株【聚灵草】以供炼丹房使用。</p>
-                <div className="flex justify-between items-center text-xs text-stone-400 mb-3">
-                   <span>消耗: 1 聚灵草</span>
-                   <span>奖励: 20 贡献</span>
-                </div>
-                <button
-                  onClick={() => onTask('donate_herb')}
-                  disabled={!player.inventory.find(i => i.name === '聚灵草' && i.quantity > 0)}
-                  className={`w-full py-2 rounded text-sm ${!player.inventory.find(i => i.name === '聚灵草' && i.quantity > 0) ? 'bg-stone-900 text-stone-600' : 'bg-stone-700 hover:bg-stone-600 text-stone-200'}`}
-                >
-                  上交物资
-                </button>
+                  return (
+                    <div key={task.id} className="bg-ink-800 p-4 rounded border border-stone-700 flex flex-col">
+                      <h4 className="font-serif font-bold text-stone-200 mb-1">{task.name}</h4>
+                      <p className="text-xs text-stone-500 mb-4 flex-1">{task.description}</p>
+
+                      <div className="space-y-2 mb-4">
+                        {task.cost && (
+                          <div className="text-xs text-red-400">
+                            消耗: {
+                              task.cost.spiritStones && <span>{task.cost.spiritStones} 灵石</span>
+                            }
+                            {task.cost.items && task.cost.items.map((item, idx) => (
+                              <span key={idx}>
+                                {idx > 0 && '、'}
+                                {item.quantity} {item.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <div className="text-xs text-stone-400">
+                          奖励: <span className="text-mystic-gold">{task.reward.contribution} 贡献</span>
+                          {task.reward.exp && <span>、{task.reward.exp} 修为</span>}
+                          {task.reward.spiritStones && <span>、{task.reward.spiritStones} 灵石</span>}
+                          {task.reward.items && task.reward.items.map((item, idx) => (
+                            <span key={idx}>
+                              {idx === 0 && '、'}
+                              {item.quantity} {item.name}
+                            </span>
+                          ))}
+                        </div>
+                        <div className="text-xs text-stone-500">
+                          耗时: {timeCostText}
+                        </div>
+                        {task.timeCost === 'instant' && (
+                          <div className="text-xs text-stone-500">
+                            今日已完成: {(() => {
+                              const today = new Date().toISOString().split('T')[0];
+                              const lastReset = player.lastTaskResetDate || today;
+                              return lastReset === today ? (player.dailyTaskCount || 0) : 0;
+                            })()} / 10 次
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        onClick={() => onTask(task)}
+                        disabled={!canComplete}
+                        className={`w-full py-2 rounded text-sm ${
+                          !canComplete
+                            ? 'bg-stone-900 text-stone-600 cursor-not-allowed'
+                            : 'bg-stone-700 hover:bg-stone-600 text-stone-200'
+                        }`}
+                      >
+                        {!canComplete ? '无法完成' : '执行任务'}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

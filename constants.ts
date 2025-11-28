@@ -423,6 +423,7 @@ export const SECRET_REALMS: SecretRealm[] = [
 
 // --- 角色系统：天赋 ---
 export const TALENTS: Talent[] = [
+  // 普通天赋（3个）
   {
     id: 'talent-ordinary',
     name: '凡体',
@@ -431,12 +432,79 @@ export const TALENTS: Talent[] = [
     effects: {}
   },
   {
+    id: 'talent-strong-body',
+    name: '强健体魄',
+    description: '身体比常人强壮一些，气血略微提升。',
+    rarity: '普通',
+    effects: { hp: 50 }
+  },
+  {
+    id: 'talent-quick-learner',
+    name: '悟性尚可',
+    description: '学习能力稍强，修炼速度略微提升。',
+    rarity: '普通',
+    effects: { expRate: 0.05 }
+  },
+
+  // 稀有天赋（8个）
+  {
     id: 'talent-spirit-root',
     name: '灵根',
     description: '拥有灵根，修炼速度提升10%。',
     rarity: '稀有',
     effects: { expRate: 0.1 }
   },
+  {
+    id: 'talent-iron-bone',
+    name: '铁骨',
+    description: '骨骼坚硬，防御力提升。',
+    rarity: '稀有',
+    effects: { defense: 30, physique: 20 }
+  },
+  {
+    id: 'talent-sharp-blade',
+    name: '利刃',
+    description: '天生适合使用武器，攻击力提升。',
+    rarity: '稀有',
+    effects: { attack: 40 }
+  },
+  {
+    id: 'talent-spirit-sense',
+    name: '神识敏锐',
+    description: '神识天生敏锐，神识和速度提升。',
+    rarity: '稀有',
+    effects: { spirit: 25, speed: 15 }
+  },
+  {
+    id: 'talent-vitality',
+    name: '生机勃勃',
+    description: '生命力旺盛，气血上限大幅提升。',
+    rarity: '稀有',
+    effects: { hp: 150, physique: 15 }
+  },
+  {
+    id: 'talent-fast-cultivation',
+    name: '修炼奇才',
+    description: '修炼天赋出众，修炼速度提升15%。',
+    rarity: '稀有',
+    effects: { expRate: 0.15 }
+  },
+  {
+    id: 'talent-lucky',
+    name: '小有气运',
+    description: '运气不错，幸运值提升。',
+    rarity: '稀有',
+    effects: { luck: 20 }
+  },
+  {
+    id: 'talent-balanced',
+    name: '均衡发展',
+    description: '各项属性均衡提升。',
+    rarity: '稀有',
+    effects: { attack: 20, defense: 20, hp: 80, spirit: 15, physique: 15, speed: 10 }
+  },
+
+  // 传说天赋（6个）
   {
     id: 'talent-immortal-body',
     name: '仙体',
@@ -452,11 +520,55 @@ export const TALENTS: Talent[] = [
     effects: { attack: 100 }
   },
   {
+    id: 'talent-thunder-body',
+    name: '雷体',
+    description: '拥有雷属性体质，攻击和速度大幅提升。',
+    rarity: '传说',
+    effects: { attack: 80, speed: 40, spirit: 30 }
+  },
+  {
+    id: 'talent-dragon-blood',
+    name: '龙血',
+    description: '体内流淌着龙族血脉，气血和体魄大幅提升。',
+    rarity: '传说',
+    effects: { hp: 300, physique: 50, defense: 40 }
+  },
+  {
+    id: 'talent-genius',
+    name: '修炼天才',
+    description: '修炼天赋绝佳，修炼速度大幅提升。',
+    rarity: '传说',
+    effects: { expRate: 0.25, spirit: 40 }
+  },
+  {
+    id: 'talent-blessed',
+    name: '天眷之人',
+    description: '受天道眷顾，幸运值和修炼速度提升。',
+    rarity: '传说',
+    effects: { luck: 35, expRate: 0.15 }
+  },
+
+  // 仙品天赋（3个）
+  {
     id: 'talent-lucky-star',
     name: '天运之子',
     description: '受天道眷顾，幸运值大幅提升，更容易遇到奇遇。',
     rarity: '仙品',
     effects: { luck: 50, expRate: 0.2 }
+  },
+  {
+    id: 'talent-immortal-king',
+    name: '仙王转世',
+    description: '疑似仙王转世，各项属性大幅提升，修炼速度极快。',
+    rarity: '仙品',
+    effects: { attack: 150, defense: 100, hp: 400, spirit: 60, physique: 60, speed: 50, expRate: 0.3 }
+  },
+  {
+    id: 'talent-chaos-body',
+    name: '混沌之体',
+    description: '拥有传说中的混沌之体，所有属性全面提升，修炼速度极快。',
+    rarity: '仙品',
+    effects: { attack: 120, defense: 80, hp: 350, spirit: 50, physique: 50, speed: 40, expRate: 0.25, luck: 30 }
   }
 ];
 

@@ -19,13 +19,35 @@ const API_KEY = import.meta.env.VITE_AI_KEY || DEFAULT_API_KEY;
 
 const stripCodeFence = (text: string): string => {
   let output = text.trim();
+
+  // 移除代码块标记
   if (output.startsWith("```")) {
-    output = output.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+    output = output.replace(/^```(?:json|JSON)?/i, "").replace(/```$/i, "").trim();
   }
   if (output.toLowerCase().startsWith("json")) {
     output = output.slice(4).trim();
   }
-  return output;
+
+  // 移除可能的前置说明文字（如"根据你的要求"、"我做了调整"等）
+  // 查找第一个 { 或 [ 的位置，移除之前的所有内容
+  const jsonStart = output.search(/[\{\[]/);
+  if (jsonStart > 0) {
+    output = output.slice(jsonStart);
+  }
+
+  // 移除可能的后置说明文字
+  // 查找最后一个 } 或 ] 的位置，移除之后的所有内容
+  const lastBrace = Math.max(output.lastIndexOf('}'), output.lastIndexOf(']'));
+  if (lastBrace > 0 && lastBrace < output.length - 1) {
+    // 检查后面是否还有有效的JSON内容，如果没有则截断
+    const afterBrace = output.slice(lastBrace + 1).trim();
+    if (afterBrace && !afterBrace.match(/^[,}\]]/)) {
+      // 如果后面有非JSON字符，截断
+      output = output.slice(0, lastBrace + 1);
+    }
+  }
+
+  return output.trim();
 };
 
 // 清理JSON中的无效格式（如 +8 应该改为 8）
@@ -156,6 +178,7 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
           8. 救助他人（获得功德和奖励）
           9. 发现灵泉（获得灵气）
           10. 拯救灵兽（获得灵宠）
+          11. 【灵宠机缘】灵宠在历练中获得机缘（提升等级、进化、提升属性、获得经验）
           11. 运气好,捡到若干抽奖券(获得抽奖券)
           12. 极小概率获得传承(获得传承,可以直接突破1-4个境界)
           13. 【危险】遭遇邪修或魔修（可能受伤、被抢走灵石、修为降低）
@@ -192,47 +215,81 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
       [
         {
           role: "system",
-          content: "你是一名严谨的修仙游戏GM，需要严格按照用户要求返回结构化数据。返回的JSON中，所有数字值必须是纯数字，不要带+号或其他符号。",
+          content: "你是一名严谨的修仙游戏GM，需要严格按照用户要求返回结构化数据。\n\n重要规则：\n1. 只返回JSON格式，不要有任何额外的文字说明、解释或描述\n2. 不要使用代码块标记（如```json```），直接返回纯JSON\n3. 所有数字值必须是纯数字格式，例如 \"spirit\": 8 而不是 \"spirit\": +8\n4. 不要添加任何注释或说明文字\n5. 确保JSON格式完全正确，可以被直接解析",
         },
         {
           role: "user",
           content: `${prompt}
-请以 JSON 格式输出，字段为：
-- story(字符串): 事件描述
-- hpChange(整数): 气血变化（纯数字，不要带+号，可以是负数）
-- expChange(整数): 修为变化（纯数字，不要带+号，可以是负数，遭遇危险时可能降低）
-- spiritStonesChange(整数): 灵石变化（纯数字，不要带+号，可以是负数，被抢时可能为负数）
-- lotteryTicketsChange(整数，可选): 抽奖券变化（如果获得抽奖券，纯数字）
-- inheritanceLevelChange(整数1-4，可选): 传承等级变化（极小概率获得传承，可直接突破1-4个境界，纯数字）
-- attributeReduction(对象，可选): 属性降低（遭遇陷阱、邪修等危险事件时，包含attack/defense/spirit/physique/speed/maxHp字段，所有数字值必须是纯数字）
-- triggerSecretRealm(布尔值，可选): 是否触发随机秘境（如果为true，玩家将进入秘境并触发新的随机事件）
-- eventColor(字符串: normal/gain/danger/special): 事件颜色（危险事件应为"danger"，秘境事件应为"special"）
-- itemObtained(可以为 null 或包含 name/type/description/rarity/isEquippable/equipmentSlot/effect/permanentEffect 对象): 获得的物品
-- petObtained(字符串，可选): 如果拯救灵兽获得灵宠，请设置为以下之一：pet-spirit-fox（灵狐，普通）、pet-thunder-tiger（雷虎，稀有）、pet-phoenix（凤凰，仙品）。如果事件描述中提到拯救灵兽、获得灵宠等，必须设置此字段
-  - type(字符串): 物品类型，必须是以下之一：草药、丹药、材料、法宝、武器、护甲、首饰、戒指
-  - isEquippable(布尔值): 是否可装备（如果是装备类物品，必须为true）
-  - equipmentSlot(字符串，可选): 装备槽位，如果是装备类物品，必须指定。可选值：头部、肩部、胸甲、手套、裤腿、鞋子、戒指1、戒指2、戒指3、戒指4、首饰1、首饰2、法宝1、法宝2、武器
-  - effect: 临时效果对象，包含 hp/exp/attack/defense/spirit/physique/speed 等字段（所有数字值必须是纯数字，不要带+号）
-  - permanentEffect: 永久效果对象，包含 attack/defense/spirit/physique/speed/maxHp 等字段（所有数字值必须是纯数字，不要带+号）
 
-重要规则：
-1. 所有数字值必须是纯数字格式，例如 "spirit": 8 而不是 "spirit": +8
-2. 装备类物品（武器、护甲、首饰、戒指、法宝）必须设置 isEquippable: true 和正确的 equipmentSlot
-3. 物品类型必须严格使用：草药、丹药、材料、法宝、武器、护甲、首饰、戒指（不要使用"防具"等非标准类型）
-4. 根据物品名称和描述合理推断装备槽位：
-   - 剑、刀、枪、戟等武器 → type: "武器", equipmentSlot: "武器"
-   - 裘、披风、肩甲、护肩等 → type: "护甲", equipmentSlot: "肩部"
-   - 道袍、法衣、胸甲等 → type: "护甲", equipmentSlot: "胸甲"
-   - 头盔、冠、帽等 → type: "护甲", equipmentSlot: "头部"
-   - 手套、护手等 → type: "护甲", equipmentSlot: "手套"
-   - 靴、鞋等 → type: "护甲", equipmentSlot: "鞋子"
-   - 戒指 → type: "戒指", equipmentSlot: "戒指1"或"戒指2"等
-   - 项链、玉佩、手镯等 → type: "首饰", equipmentSlot: "首饰1"或"首饰2"
-   - 法宝类 → type: "法宝", equipmentSlot: "法宝1"或"法宝2"
-5. 法宝（type: "法宝"）必须提供属性加成，不能提供exp（修为）加成：
-   - 法宝必须设置effect对象，包含以下至少一种属性：attack（攻击）、defense（防御）、hp（气血）、spirit（神识）、physique（体魄）、speed（速度）
-   - 法宝绝对不能设置effect.exp（修为加成），法宝是装备类物品，提供的是个人属性加成，不是修为加成
-   - 根据法宝的稀有度和描述，合理设置属性加成数值`,
+【输出要求】
+只返回JSON格式，不要有任何额外的文字、说明、解释或描述。不要使用代码块标记，直接返回纯JSON。
+
+【JSON字段定义】
+{
+  "story": "事件描述（字符串）",
+  "hpChange": 气血变化（整数，纯数字，可以是负数）,
+  "expChange": 修为变化（整数，纯数字，可以是负数）,
+  "spiritStonesChange": 灵石变化（整数，纯数字，可以是负数）,
+  "lotteryTicketsChange": 抽奖券变化（整数，可选，纯数字）,
+  "inheritanceLevelChange": 传承等级变化（整数1-4，可选，纯数字）,
+  "attributeReduction": {
+    "attack": 攻击降低（整数，可选，纯数字）,
+    "defense": 防御降低（整数，可选，纯数字）,
+    "spirit": 神识降低（整数，可选，纯数字）,
+    "physique": 体魄降低（整数，可选，纯数字）,
+    "speed": 速度降低（整数，可选，纯数字）,
+    "maxHp": 气血上限降低（整数，可选，纯数字）
+  },
+  "triggerSecretRealm": 是否触发随机秘境（布尔值，可选）,
+  "eventColor": "事件颜色（normal/gain/danger/special）",
+  "itemObtained": {
+    "name": "物品名称（字符串）",
+    "type": "物品类型（草药/丹药/材料/法宝/武器/护甲/首饰/戒指）",
+    "description": "物品描述（字符串，只包含描述文字，不要包含属性信息如[攻+50]等，属性会单独显示）",
+    "rarity": "稀有度（普通/稀有/传说/仙品，可选）",
+    "isEquippable": 是否可装备（布尔值）,
+    "equipmentSlot": "装备槽位（字符串，可选：头部/肩部/胸甲/手套/裤腿/鞋子/戒指1-4/首饰1-2/法宝1-2/武器）",
+    "effect": {
+      "hp": 气血（整数，可选，纯数字）,
+      "exp": 修为（整数，可选，纯数字）,
+      "attack": 攻击（整数，可选，纯数字）,
+      "defense": 防御（整数，可选，纯数字）,
+      "spirit": 神识（整数，可选，纯数字）,
+      "physique": 体魄（整数，可选，纯数字）,
+      "speed": 速度（整数，可选，纯数字）
+    },
+    "permanentEffect": {
+      "attack": 攻击（整数，可选，纯数字）,
+      "defense": 防御（整数，可选，纯数字）,
+      "spirit": 神识（整数，可选，纯数字）,
+      "physique": 体魄（整数，可选，纯数字）,
+      "speed": 速度（整数，可选，纯数字）,
+      "maxHp": 气血上限（整数，可选，纯数字）
+    }
+  },
+  "itemsObtained": [多个物品数组，格式同itemObtained，可选],
+  "petObtained": "灵宠模板ID（字符串，可选：pet-spirit-fox/pet-thunder-tiger/pet-phoenix）",
+  "petOpportunity": {
+    "type": "机缘类型（evolution/level/stats/exp）",
+    "petId": "灵宠ID（字符串，可选）",
+    "levelGain": 提升等级数（整数，可选，type为level时必需）,
+    "expGain": 获得经验（整数，可选，type为exp时必需）,
+    "statsBoost": {
+      "attack": 攻击提升（整数，可选，纯数字）,
+      "defense": 防御提升（整数，可选，纯数字）,
+      "hp": 气血提升（整数，可选，纯数字）,
+      "speed": 速度提升（整数，可选，纯数字）
+    }
+  }
+}
+
+【重要规则】
+1. 只返回JSON，不要有任何其他文字
+2. 所有数字必须是纯数字，不要带+号或其他符号
+3. 物品类型必须严格使用：草药、丹药、材料、法宝、武器、护甲、首饰、戒指
+4. 装备类物品必须设置 isEquippable: true 和正确的 equipmentSlot
+5. 法宝不能提供exp（修为）加成，只能提供属性加成
+6. 根据物品名称推断装备槽位：剑/刀/枪→武器，道袍/胸甲→胸甲，头盔/冠→头部，戒指→戒指1-4，项链/玉佩→首饰1-2，法宝→法宝1-2`,
         },
       ],
       0.95

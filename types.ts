@@ -264,6 +264,18 @@ export interface AdventureResult {
     };
   }>;
   petObtained?: string; // 获得的灵宠模板ID（如 "pet-spirit-fox"）
+  petOpportunity?: { // 灵宠机缘
+    type: 'evolution' | 'level' | 'stats' | 'exp'; // 机缘类型：进化、提升等级、提升属性、获得经验
+    petId?: string; // 影响的灵宠ID（可选，如果为空则随机选择玩家拥有的一个灵宠）
+    levelGain?: number; // 提升的等级数（type为'level'时）
+    expGain?: number; // 获得的经验值（type为'exp'时）
+    statsBoost?: { // 属性提升（type为'stats'时）
+      attack?: number;
+      defense?: number;
+      hp?: number;
+      speed?: number;
+    };
+  };
   eventColor: 'normal' | 'gain' | 'danger' | 'special';
 }
 

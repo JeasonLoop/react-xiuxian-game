@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Talent } from '../types';
 import { TALENTS } from '../constants';
 import { Sparkles, Sword, Shield, Heart, Zap, User } from 'lucide-react';
@@ -11,12 +11,15 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
   const [playerName, setPlayerName] = useState('');
   const [selectedTalentId, setSelectedTalentId] = useState<string | null>(null);
 
-  // 随机生成一个天赋
-  const availableTalents = TALENTS;
-  const randomTalent = availableTalents[Math.floor(Math.random() * availableTalents.length)];
+  // 只在组件首次加载时随机生成一个天赋（使用useMemo确保只执行一次）
+  const initialRandomTalentId = useMemo(() => {
+    const availableTalents = TALENTS;
+    const randomTalent = availableTalents[Math.floor(Math.random() * availableTalents.length)];
+    return randomTalent.id;
+  }, []); // 空依赖数组，确保只执行一次
 
-  // 如果没有选择天赋，使用随机天赋
-  const finalTalentId = selectedTalentId || randomTalent.id;
+  // 如果没有选择天赋，使用初始随机天赋
+  const finalTalentId = selectedTalentId || initialRandomTalentId;
   const selectedTalent = TALENTS.find(t => t.id === finalTalentId);
 
   const handleStart = () => {

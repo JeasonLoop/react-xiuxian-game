@@ -1,8 +1,9 @@
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { PlayerStats, RealmType, SecretRealm } from '../types';
 import { SECRET_REALMS, REALM_ORDER } from '../constants';
-import { X, Mountain, Skull, Gem, Ticket } from 'lucide-react';
+import { generateRandomRealms } from '../services/randomService';
+import { X, Mountain, Skull, Gem, Ticket, RefreshCw } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -12,9 +13,20 @@ interface Props {
 }
 
 const SecretRealmModal: React.FC<Props> = ({ isOpen, onClose, player, onEnter }) => {
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // 使用 useMemo 生成随机秘境列表，refreshKey 变化时重新生成
+  const availableRealms = useMemo(() => {
+    return generateRandomRealms(player.realm, 6);
+  }, [player.realm, refreshKey]);
+
   if (!isOpen) return null;
 
   const getRealmIndex = (r: RealmType) => REALM_ORDER.indexOf(r);
+
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+  };
 
   return (
     <div
@@ -29,13 +41,23 @@ const SecretRealmModal: React.FC<Props> = ({ isOpen, onClose, player, onEnter })
           <h3 className="text-lg md:text-xl font-serif text-purple-300 flex items-center gap-2">
             <Mountain size={18} className="md:w-5 md:h-5" /> 秘境探索
           </h3>
-          <button onClick={onClose} className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation">
-            <X size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRefresh}
+              className="px-3 py-1.5 bg-purple-900/40 hover:bg-purple-800/60 text-purple-300 border border-purple-700 rounded text-sm flex items-center gap-1.5 transition-colors min-h-[44px] md:min-h-0 touch-manipulation"
+              title="刷新秘境列表"
+            >
+              <RefreshCw size={16} />
+              <span className="hidden md:inline">刷新</span>
+            </button>
+            <button onClick={onClose} className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation">
+              <X size={24} />
+            </button>
+          </div>
         </div>
 
         <div className="p-3 md:p-6 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-          {SECRET_REALMS.map((realm) => {
+          {availableRealms.map((realm) => {
             const playerRealmIndex = getRealmIndex(player.realm);
             const reqRealmIndex = getRealmIndex(realm.minRealm);
             const isRealmEnough = playerRealmIndex >= reqRealmIndex;

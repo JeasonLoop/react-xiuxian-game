@@ -70,12 +70,17 @@ const InventoryModal: React.FC<Props> = ({
   const getItemStats = (item: Item) => {
     const rarity = item.rarity || '普通';
     const multiplier = RARITY_MULTIPLIERS[rarity] || 1;
+    const isNatal = item.isNatal || false;
+    const natalMultiplier = isNatal ? 1.5 : 1;
 
     return {
-      attack: item.effect?.attack ? Math.floor(item.effect.attack * multiplier) : 0,
-      defense: item.effect?.defense ? Math.floor(item.effect.defense * multiplier) : 0,
-      hp: item.effect?.hp ? Math.floor(item.effect.hp * multiplier) : 0,
-      exp: item.effect?.exp || 0 // Exp usually static
+      attack: item.effect?.attack ? Math.floor(item.effect.attack * multiplier * natalMultiplier) : 0,
+      defense: item.effect?.defense ? Math.floor(item.effect.defense * multiplier * natalMultiplier) : 0,
+      hp: item.effect?.hp ? Math.floor(item.effect.hp * multiplier * natalMultiplier) : 0,
+      exp: item.effect?.exp || 0, // Exp usually static
+      spirit: item.effect?.spirit ? Math.floor(item.effect.spirit * multiplier * natalMultiplier) : 0,
+      physique: item.effect?.physique ? Math.floor(item.effect.physique * multiplier * natalMultiplier) : 0,
+      speed: item.effect?.speed ? Math.floor(item.effect.speed * multiplier * natalMultiplier) : 0
     };
   };
 
@@ -210,6 +215,9 @@ const InventoryModal: React.FC<Props> = ({
                         {stats.defense > 0 && <span>防 +{stats.defense}</span>}
                         {stats.hp > 0 && <span>血 +{stats.hp}</span>}
                         {stats.exp > 0 && <span>修 +{stats.exp}</span>}
+                        {stats.spirit > 0 && <span>神识 +{stats.spirit}</span>}
+                        {stats.physique > 0 && <span>体魄 +{stats.physique}</span>}
+                        {stats.speed > 0 && <span>速度 +{stats.speed}</span>}
                       </div>
                     )}
                   </div>

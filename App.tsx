@@ -22,6 +22,7 @@ import StartScreen from './components/StartScreen';
 import MobileSidebar from './components/MobileSidebar';
 import { resolveBattleEncounter, shouldTriggerBattle, BattleReplay } from './services/battleService';
 import { generateAdventureEvent, generateBreakthroughFlavorText } from './services/aiService';
+import { RandomSectTask } from './services/randomService';
 import { Sword, User, Backpack, BookOpen, Sparkles, Scroll, Mountain, Star, Trophy, Gift, Settings, ShoppingBag, Menu } from 'lucide-react';
 
 // Unique ID generator
@@ -596,7 +597,7 @@ function App() {
                 id: uid(),
                 name: itemName,
                 type: itemType,
-                description: itemData.description + (isEquipment ? generateAttributePreview(finalEffect) : ''),
+                description: itemData.description,
                 quantity: 1,
                 rarity: (itemData.rarity as ItemRarity) || '普通',
                 level: 0,
@@ -687,7 +688,7 @@ function App() {
               id: uid(),
               name: itemName,
               type: itemType,
-              description: result.itemObtained.description + (isEquipment ? generateAttributePreview(finalEffect) : ''),
+              description: result.itemObtained.description,
               quantity: 1, // 装备quantity始终为1
               rarity: (result.itemObtained.rarity as ItemRarity) || '普通',
               level: 0,
@@ -740,6 +741,126 @@ function App() {
           }
         }
 
+        // 处理灵宠机缘
+        if (result.petOpportunity && newPets.length > 0) {
+          let targetPet: Pet | null = null;
+
+          // 确定目标灵宠：优先使用当前激活的灵宠
+          if (result.petOpportunity.petId) {
+            targetPet = newPets.find(p => p.id === result.petOpportunity.petId) || null;
+          }
+          // 如果没有指定或找不到，优先使用当前激活的灵宠
+          if (!targetPet && prev.activePetId) {
+            targetPet = newPets.find(p => p.id === prev.activePetId) || null;
+          }
+          // 如果还是没有，随机选择一个
+          if (!targetPet) {
+            const randomPet = newPets[Math.floor(Math.random() * newPets.length)];
+            targetPet = randomPet;
+          }
+
+          if (targetPet) {
+            const petIndex = newPets.findIndex(p => p.id === targetPet!.id);
+            const updatedPet = { ...targetPet };
+
+            switch (result.petOpportunity.type) {
+              case 'evolution':
+                if (updatedPet.evolutionStage < 2) {
+                  updatedPet.evolutionStage += 1;
+                  updatedPet.stats = {
+                    attack: Math.floor(updatedPet.stats.attack * 1.5),
+                    defense: Math.floor(updatedPet.stats.defense * 1.5),
+                    hp: Math.floor(updatedPet.stats.hp * 1.5),
+                    speed: Math.floor(updatedPet.stats.speed * 1.2)
+                  };
+                  newPets[petIndex] = updatedPet;
+                  addLog(`✨ 【${targetPet.name}】在历练中获得机缘，成功进化了！实力大幅提升！`, 'special');
+                }
+                break;
+
+              case 'level':
+                if (result.petOpportunity.levelGain && result.petOpportunity.levelGain > 0) {
+                  const levelGain = Math.min(result.petOpportunity.levelGain, 5); // 最多提升5级
+                  updatedPet.level += levelGain;
+                  // 每次升级提升属性
+                  for (let i = 0; i < levelGain; i++) {
+                    updatedPet.stats = {
+                      attack: Math.floor(updatedPet.stats.attack * 1.1),
+                      defense: Math.floor(updatedPet.stats.defense * 1.1),
+                      hp: Math.floor(updatedPet.stats.hp * 1.1),
+                      speed: Math.floor(updatedPet.stats.speed * 1.05)
+                    };
+                  }
+                  newPets[petIndex] = updatedPet;
+                  addLog(`✨ 【${targetPet.name}】在历练中获得机缘，直接提升了 ${levelGain} 级！`, 'special');
+                }
+                break;
+
+              case 'stats':
+                if (result.petOpportunity.statsBoost) {
+                  const boost = result.petOpportunity.statsBoost;
+                  updatedPet.stats = {
+                    attack: updatedPet.stats.attack + (boost.attack || 0),
+                    defense: updatedPet.stats.defense + (boost.defense || 0),
+                    hp: updatedPet.stats.hp + (boost.hp || 0),
+                    speed: updatedPet.stats.speed + (boost.speed || 0)
+                  };
+                  newPets[petIndex] = updatedPet;
+                  const statsText = [
+                    boost.attack ? `攻击+${boost.attack}` : '',
+                    boost.defense ? `防御+${boost.defense}` : '',
+                    boost.hp ? `气血+${boost.hp}` : '',
+                    boost.speed ? `速度+${boost.speed}` : ''
+                  ].filter(Boolean).join('、');
+                  addLog(`✨ 【${targetPet.name}】在历练中获得机缘，属性提升了：${statsText}！`, 'special');
+                }
+                break;
+
+              case 'exp':
+                if (result.petOpportunity.expGain && result.petOpportunity.expGain > 0) {
+                  let petNewExp = updatedPet.exp + result.petOpportunity.expGain;
+                  let petNewLevel = updatedPet.level;
+                  let petNewMaxExp = updatedPet.maxExp;
+                  let leveledUp = false;
+                  let levelGainCount = 0;
+
+                  // 处理升级（可能连升多级）
+                  while (petNewExp >= petNewMaxExp && petNewLevel < 100) {
+                    petNewExp -= petNewMaxExp;
+                    petNewLevel += 1;
+                    levelGainCount += 1;
+                    petNewMaxExp = Math.floor(petNewMaxExp * 1.5);
+                    leveledUp = true;
+                  }
+
+                  // 每次升级提升属性
+                  if (leveledUp) {
+                    for (let i = 0; i < levelGainCount; i++) {
+                      updatedPet.stats = {
+                        attack: Math.floor(updatedPet.stats.attack * 1.1),
+                        defense: Math.floor(updatedPet.stats.defense * 1.1),
+                        hp: Math.floor(updatedPet.stats.hp * 1.1),
+                        speed: Math.floor(updatedPet.stats.speed * 1.05)
+                      };
+                    }
+                  }
+
+                  updatedPet.exp = petNewExp;
+                  updatedPet.level = petNewLevel;
+                  updatedPet.maxExp = petNewMaxExp;
+
+                  newPets[petIndex] = updatedPet;
+                  if (leveledUp) {
+                    addLog(`✨ 【${targetPet.name}】在历练中获得了 ${result.petOpportunity.expGain} 点经验，并提升了 ${levelGainCount} 级！`, 'special');
+                  } else {
+                    addLog(`✨ 【${targetPet.name}】在历练中获得了 ${result.petOpportunity.expGain} 点经验！`, 'special');
+                  }
+                }
+                break;
+            }
+          }
+        }
+
         // 小概率获得功法（3%概率，秘境中5%）
         const artChance = realmName ? 0.05 : 0.03;
         if (Math.random() < artChance && adventureType !== 'lucky') {
@@ -749,12 +870,15 @@ function App() {
           );
           if (availableArts.length > 0) {
             const randomArt = availableArts[Math.floor(Math.random() * availableArts.length)];
-            newArts.push(randomArt.id);
-            newAttack += randomArt.effects.attack || 0;
-            newDefense += randomArt.effects.defense || 0;
-            newMaxHp += randomArt.effects.hp || 0;
-            newHp += randomArt.effects.hp || 0;
-            addLog(`🎉 你在历练中领悟了功法【${randomArt.name}】！`, 'special');
+            // 确保功法没有被重复添加
+            if (!newArts.includes(randomArt.id)) {
+              newArts.push(randomArt.id);
+              newAttack += randomArt.effects.attack || 0;
+              newDefense += randomArt.effects.defense || 0;
+              newMaxHp += randomArt.effects.hp || 0;
+              newHp += randomArt.effects.hp || 0;
+              addLog(`🎉 你在历练中领悟了功法【${randomArt.name}】！可在功法阁查看。`, 'special');
+            }
           }
         }
 
@@ -1403,7 +1527,7 @@ function App() {
             id: uid(),
             name: shopItem.name,
             type: shopItem.type,
-            description: shopItem.description + (isEquipment ? generateAttributePreview(shopItem.effect) : ''),
+            description: shopItem.description,
             quantity: addQuantity,
             rarity: shopItem.rarity,
             level: 0,
@@ -1905,7 +2029,7 @@ function App() {
           id: uid(),
           name: recipe.result.name || 'Unknown',
           type: recipe.result.type || ItemType.Pill,
-          description: (recipe.result.description || '') + (isEquipment ? generateAttributePreview(recipe.result.effect) : ''),
+          description: recipe.result.description || '',
           quantity: 1, // 装备quantity始终为1
           rarity: (recipe.result.rarity as ItemRarity) || '普通',
           level: 0,
@@ -1963,7 +2087,7 @@ function App() {
     setIsSectOpen(false);
   };
 
-  const handleSectTask = (type: 'patrol' | 'donate_stone' | 'donate_herb') => {
+  const handleSectTask = (task: RandomSectTask) => {
     setPlayer(prev => {
       // 检查每日任务限制（瞬时完成的任务每日限制10次）
       const today = new Date().toISOString().split('T')[0];
@@ -1976,8 +2100,8 @@ function App() {
         lastTaskResetDate = today;
       }
 
-      // 瞬时完成的任务（patrol）有每日限制
-      if (type === 'patrol') {
+      // 瞬时完成的任务有每日限制
+      if (task.timeCost === 'instant') {
         if (dailyTaskCount >= 10) {
           addLog('今日已完成10次瞬时任务，请明日再来。', 'danger');
           return prev;
@@ -1985,31 +2109,75 @@ function App() {
         dailyTaskCount += 1;
       }
 
-      let contribGain = 0;
+      // 检查消耗
       let stoneCost = 0;
       let updatedInventory = [...prev.inventory];
 
-      if (type === 'patrol') {
-        contribGain = 10;
-        addLog('你在山门附近巡视了一圈，震慑了一些宵小之辈。', 'normal');
-      } else if (type === 'donate_stone') {
-        if (prev.spiritStones < 100) return prev;
-        stoneCost = 100;
-        contribGain = 50;
-        addLog('你向宗门捐献了 100 灵石。', 'normal');
-      } else if (type === 'donate_herb') {
-        const herbIdx = updatedInventory.findIndex(i => i.name === '聚灵草');
-        if (herbIdx === -1 || updatedInventory[herbIdx].quantity < 1) return prev;
-
-        updatedInventory[herbIdx] = { ...updatedInventory[herbIdx], quantity: updatedInventory[herbIdx].quantity - 1 };
-        updatedInventory = updatedInventory.filter(i => i.quantity > 0);
-        contribGain = 20;
-        addLog('你向炼丹房上交了一株聚灵草。', 'normal');
+      if (task.cost?.spiritStones) {
+        if (prev.spiritStones < task.cost.spiritStones) {
+          addLog(`灵石不足，需要 ${task.cost.spiritStones} 灵石。`, 'danger');
+          return prev;
+        }
+        stoneCost = task.cost.spiritStones;
       }
+
+      if (task.cost?.items) {
+        for (const itemReq of task.cost.items) {
+          const itemIdx = updatedInventory.findIndex(i => i.name === itemReq.name);
+          if (itemIdx === -1 || updatedInventory[itemIdx].quantity < itemReq.quantity) {
+            addLog(`物品不足，需要 ${itemReq.quantity} 个【${itemReq.name}】。`, 'danger');
+            return prev;
+          }
+          updatedInventory[itemIdx] = {
+            ...updatedInventory[itemIdx],
+            quantity: updatedInventory[itemIdx].quantity - itemReq.quantity
+          };
+        }
+        updatedInventory = updatedInventory.filter(i => i.quantity > 0);
+      }
+
+      // 计算奖励
+      let contribGain = task.reward.contribution || 0;
+      let expGain = task.reward.exp || 0;
+      let stoneGain = task.reward.spiritStones || 0;
+
+      // 添加奖励物品
+      if (task.reward.items) {
+        task.reward.items.forEach(rewardItem => {
+          const existingIdx = updatedInventory.findIndex(i => i.name === rewardItem.name);
+          if (existingIdx >= 0) {
+            updatedInventory[existingIdx] = {
+              ...updatedInventory[existingIdx],
+              quantity: updatedInventory[existingIdx].quantity + (rewardItem.quantity || 1)
+            };
+          } else {
+            // 创建新物品（简化版，只包含基本信息）
+            updatedInventory.push({
+              id: uid(),
+              name: rewardItem.name,
+              type: ItemType.Material,
+              description: `完成任务获得的${rewardItem.name}`,
+              quantity: rewardItem.quantity || 1,
+              rarity: '普通'
+            });
+          }
+        });
+      }
+
+      // 生成任务完成日志
+      const rewardText = [
+        `${contribGain} 贡献`,
+        expGain > 0 ? `${expGain} 修为` : '',
+        stoneGain > 0 ? `${stoneGain} 灵石` : '',
+        task.reward.items ? task.reward.items.map(i => `${i.quantity} ${i.name}`).join('、') : ''
+      ].filter(Boolean).join('、');
+
+      addLog(`你完成了任务【${task.name}】，获得了 ${rewardText}。`, 'gain');
 
       return {
         ...prev,
-        spiritStones: prev.spiritStones - stoneCost,
+        spiritStones: prev.spiritStones - stoneCost + stoneGain,
+        exp: prev.exp + expGain,
         inventory: updatedInventory,
         sectContribution: prev.sectContribution + contribGain,
         dailyTaskCount,
@@ -2065,7 +2233,7 @@ function App() {
             id: uid(),
             name: itemTemplate.name || '未知物品',
             type: itemTemplate.type || ItemType.Material,
-            description: (itemTemplate.description || '') + (isEquipment ? generateAttributePreview(itemTemplate.effect) : ''),
+            description: itemTemplate.description || '',
             quantity: addQuantity,
             rarity: (itemTemplate.rarity as ItemRarity) || '普通',
             effect: itemTemplate.effect,
@@ -2345,28 +2513,36 @@ function App() {
         newExp = Math.max(0, prev.exp - expCost);
       }
 
-      // 给灵宠增加经验
+      // 给灵宠增加经验（随机5-20点，但最大可以直接提升一级）
+      const expGainMin = 5;
+      const expGainMax = 20;
+      // 计算最多能获得多少经验才能直接升一级
+      const expToNextLevel = pet.maxExp - pet.exp;
+      const maxExpGain = Math.min(expGainMax, expToNextLevel);
+      const expGain = Math.floor(expGainMin + Math.random() * (maxExpGain - expGainMin + 1));
+
       const newPets = prev.pets.map(p => {
         if (p.id === petId) {
-          let petNewExp = p.exp + 10;
+          let petNewExp = p.exp + expGain;
           let petNewLevel = p.level;
           let petNewMaxExp = p.maxExp;
           let leveledUp = false;
 
-          if (petNewExp >= p.maxExp) {
+          // 处理升级（可能因为经验足够而直接升级）
+          while (petNewExp >= petNewMaxExp && petNewLevel < 100) {
+            petNewExp -= petNewMaxExp;
             petNewLevel += 1;
-            petNewExp = 0;
-            petNewMaxExp = Math.floor(p.maxExp * 1.5);
+            petNewMaxExp = Math.floor(petNewMaxExp * 1.5);
             leveledUp = true;
             addLog(`【${p.name}】升级了！现在是 ${petNewLevel} 级`, 'gain');
           }
 
-          // 只有升级时才提升属性，而不是每次喂养都提升
+          // 只有升级时才提升属性
           const newStats = leveledUp ? {
             attack: Math.floor(p.stats.attack * 1.1),
             defense: Math.floor(p.stats.defense * 1.1),
             hp: Math.floor(p.stats.hp * 1.1),
-            speed: Math.floor(p.stats.speed * 1.05) // 速度也稍微提升
+            speed: Math.floor(p.stats.speed * 1.05)
           } : p.stats;
 
           return {
@@ -2380,7 +2556,7 @@ function App() {
         return p;
       });
 
-      addLog(`${costMessage}，【${pet.name}】获得了 10 点经验`, 'gain');
+      addLog(`${costMessage}，【${pet.name}】获得了 ${expGain} 点经验`, 'gain');
 
       return {
         ...prev,
@@ -2502,14 +2678,10 @@ function App() {
               finalItem.isEquippable = true;
             }
 
-            // 添加属性预览到描述
-            const finalIsEquipment = finalItem.isEquippable && finalItem.equipmentSlot;
-            const descriptionWithPreview = (finalItem.description || '') + (finalIsEquipment ? generateAttributePreview(finalItem.effect) : '');
-
             newInv.push({
               ...finalItem,
               id: uid(),
-              description: descriptionWithPreview,
+              description: finalItem.description || '',
               quantity: 1 // 装备quantity始终为1
             } as Item);
           }
