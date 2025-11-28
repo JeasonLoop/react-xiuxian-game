@@ -153,14 +153,15 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
         break;
       case 'secret_realm':
         typeInstructions = `
-          玩家正在【秘境】中探索。
-          当前境界：${player.realm} (第 ${player.realmLevel} 层)
-
-          环境险恶，但回报丰厚。可能遭遇强大的守护妖兽（高伤害风险）或发现外界绝迹的宝物。
-          如果发生战斗，伤害和奖励都应比平时更高。
-          物品稀有度：至少是"稀有"，有${Math.min(30 + realmIndex * 10, 70)}%几率"传说"，${Math.min(realmIndex * 5, 20)}%几率"仙品"。
-          修为奖励：${Math.floor(50 * realmMultiplier)}-${Math.floor(500 * realmMultiplier)}，灵石奖励：${Math.floor(100 * realmMultiplier)}-${Math.floor(1000 * realmMultiplier)}。
-        `;
+            玩家正在【秘境】中探索。
+            当前境界：${player.realm} (第 ${player.realmLevel} 层)
+        
+            环境险恶，但回报丰厚。可能遭遇强大的守护妖兽（高伤害风险）或发现外界绝迹的宝物。
+            如果发生战斗，伤害和奖励都应比平时更高。
+            【重要】秘境中虽然危险，但主要是战斗伤害（hpChange可能为负），不应该降低玩家的永久属性（attack、defense、spirit、physique、speed、maxHp）。
+            物品稀有度：至少是"稀有"，有${Math.min(30 + realmIndex * 10, 70)}%几率"传说"，${Math.min(realmIndex * 5, 20)}%几率"仙品"。
+            修为奖励：${Math.floor(50 * realmMultiplier)}-${Math.floor(500 * realmMultiplier)}，灵石奖励：${Math.floor(100 * realmMultiplier)}-${Math.floor(1000 * realmMultiplier)}。
+          `;
         break;
       default:
         typeInstructions = `
