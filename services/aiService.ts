@@ -1,6 +1,3 @@
-
-/// <reference types="vite/client" />
-
 import { PlayerStats, AdventureResult, AdventureType, RealmType } from "../types";
 import { REALM_ORDER } from "../constants";
 
@@ -10,12 +7,19 @@ type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 // 开发环境通过 Vite proxy，生产环境通过 Vercel Function
 const DEFAULT_API_URL = "https://api.siliconflow.cn/v1/chat/completions";
 const DEFAULT_MODEL = "Qwen/Qwen2.5-72B-Instruct";
-const DEFAULT_API_KEY = "sk-hmldnzdfarkzmvvnzqxasgaqdznjpjfvxyqczpmifbmwtqda";
 
-// 强制使用代理 URL，忽略环境变量（避免 Vercel 环境变量覆盖）
-const API_URL = DEFAULT_API_URL;
+// 从环境变量获取配置，生产环境必须配置环境变量
+const API_URL = import.meta.env.VITE_AI_API_URL || DEFAULT_API_URL;
 const API_MODEL = import.meta.env.VITE_AI_MODEL || DEFAULT_MODEL;
-const API_KEY = import.meta.env.VITE_AI_KEY || DEFAULT_API_KEY;
+const API_KEY = import.meta.env.VITE_AI_KEY;
+
+// 检查 API Key 是否存在
+if (!API_KEY) {
+  console.warn(
+    "⚠️ VITE_AI_KEY 环境变量未设置。请创建 .env.local 文件并配置 API Key。\n" +
+    "示例：VITE_AI_KEY=your-api-key-here"
+  );
+}
 
 const stripCodeFence = (text: string): string => {
   let output = text.trim();

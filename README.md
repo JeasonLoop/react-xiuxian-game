@@ -63,9 +63,22 @@ npm install
 
 #### 3️⃣ 配置环境变量
 
-在项目 `aiService.ts` 文件添加你的 API Key:
+**⚠️ 重要**: 项目不再包含硬编码的 API Key，必须配置环境变量。
 
-> 💡 **获取 API Key**: 访问 [讯飞星火](https://xinghuo.xfyun.cn/sparkapi?ch=bytg-api-tyc&msclkid=63a60dcc6eeb1b55ded1650d04a7cbdb)
+在项目根目录创建 `.env.local` 文件：
+
+```bash
+# .env.local
+VITE_AI_KEY=your-api-key-here
+VITE_AI_MODEL=Qwen/Qwen2.5-72B-Instruct
+VITE_AI_API_URL=https://api.siliconflow.cn/v1/chat/completions
+```
+
+> 💡 **获取 API Key**: 
+> - 访问 [SiliconFlow](https://siliconflow.cn) 注册账号并创建 API Key
+> - 或使用其他兼容 OpenAI API 格式的服务
+>
+> ⚠️ **安全提示**: `.env.local` 文件已添加到 `.gitignore`，不会被提交到 Git。不要将 API Key 提交到代码仓库。
 
 #### 4️⃣ 启动开发服务器
 
