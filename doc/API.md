@@ -14,16 +14,28 @@
 // services/aiService.ts
 const DEFAULT_API_URL = "https://api.siliconflow.cn/v1/chat/completions";
 const DEFAULT_MODEL = "Qwen/Qwen2.5-72B-Instruct";
-const DEFAULT_API_KEY = "sk-..."; // 硬编码在代码中
+
+// API Key 必须从环境变量获取，不再硬编码
+const API_KEY = import.meta.env.VITE_AI_KEY;
 ```
 
-#### 环境变量（可选）
+#### 环境变量（必需）
+
+**⚠️ 重要**: API Key 必须通过环境变量配置，不再支持硬编码。
+
+创建 `.env.local` 文件（此文件不会被提交到 Git）：
 
 ```bash
-VITE_AI_KEY=your-api-key
+# .env.local
+VITE_AI_KEY=your-api-key-here
 VITE_AI_MODEL=Qwen/Qwen2.5-72B-Instruct
 VITE_AI_API_URL=https://api.siliconflow.cn/v1/chat/completions
 ```
+
+**获取 API Key**:
+- 访问 [SiliconFlow](https://siliconflow.cn) 注册账号
+- 创建 API Key
+- 将 API Key 配置到 `.env.local` 文件中
 
 ### API 函数
 
@@ -336,13 +348,19 @@ export default async function handler(req, res) {
 ### API Key 管理
 
 **当前实现**:
-- API Key 硬编码在 `aiService.ts` 中
-- 不推荐用于生产环境
+- ✅ API Key 必须通过环境变量配置
+- ✅ 已移除硬编码的 API Key
+- ✅ `.env.local` 文件已加入 `.gitignore`
 
-**推荐做法**:
-1. 使用环境变量存储 API Key
-2. 不要将 API Key 提交到 Git
-3. 使用 `.env.local` 文件（已加入 `.gitignore`）
+**配置方法**:
+1. 创建 `.env.local` 文件（不会被提交到 Git）
+2. 配置 `VITE_AI_KEY=your-api-key-here`
+3. 不要将 API Key 提交到代码仓库
+4. 如果 API Key 泄露，立即在服务商处重新生成
+
+**生产环境部署**:
+- Vercel: 在项目设置中添加环境变量 `VITE_AI_KEY`
+- 其他平台: 根据平台文档配置环境变量
 
 ### 请求限制
 
