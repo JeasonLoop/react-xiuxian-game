@@ -269,12 +269,26 @@ const SectModal: React.FC<Props> = ({
                         if (!item || item.quantity < itemReq.quantity) return false;
                       }
                     }
-                    // 瞬时任务检查每日限制
-                    if (task.timeCost === 'instant') {
-                      const today = new Date().toISOString().split('T')[0];
-                      const lastReset = player.lastTaskResetDate || today;
-                      const count = lastReset === today ? (player.dailyTaskCount || 0) : 0;
-                      if (count >= 10) return false;
+                    // 检查每日任务限制
+                    const today = new Date().toISOString().split('T')[0];
+                    const lastReset = player.lastTaskResetDate || today;
+                    const taskLimits: Record<string, number> = {
+                      instant: 10,
+                      short: 5,
+                      medium: 3,
+                      long: 2,
+                    };
+                    const limit = taskLimits[task.timeCost];
+                    if (limit) {
+                      const dailyTaskCount = lastReset === today
+                        ? (player.dailyTaskCount && typeof player.dailyTaskCount === 'object'
+                            ? player.dailyTaskCount
+                            : typeof player.dailyTaskCount === 'number'
+                              ? { instant: player.dailyTaskCount, short: 0, medium: 0, long: 0 }
+                              : { instant: 0, short: 0, medium: 0, long: 0 })
+                        : { instant: 0, short: 0, medium: 0, long: 0 };
+                      const currentCount = dailyTaskCount[task.timeCost as keyof typeof dailyTaskCount] || 0;
+                      if (currentCount >= limit) return false;
                     }
                     return true;
                   })();
@@ -319,15 +333,33 @@ const SectModal: React.FC<Props> = ({
                         <div className="text-xs text-stone-500">
                           耗时: {timeCostText}
                         </div>
-                        {task.timeCost === 'instant' && (
-                          <div className="text-xs text-stone-500">
-                            今日已完成: {(() => {
-                              const today = new Date().toISOString().split('T')[0];
-                              const lastReset = player.lastTaskResetDate || today;
-                              return lastReset === today ? (player.dailyTaskCount || 0) : 0;
-                            })()} / 10 次
-                          </div>
-                        )}
+                        {(() => {
+                          const today = new Date().toISOString().split('T')[0];
+                          const lastReset = player.lastTaskResetDate || today;
+                          const taskLimits: Record<string, number> = {
+                            instant: 10,
+                            short: 5,
+                            medium: 3,
+                            long: 2,
+                          };
+                          const limit = taskLimits[task.timeCost];
+                          if (limit) {
+                            const dailyTaskCount = lastReset === today
+                              ? (player.dailyTaskCount && typeof player.dailyTaskCount === 'object'
+                                  ? player.dailyTaskCount
+                                  : typeof player.dailyTaskCount === 'number'
+                                    ? { instant: player.dailyTaskCount, short: 0, medium: 0, long: 0 }
+                                    : { instant: 0, short: 0, medium: 0, long: 0 })
+                              : { instant: 0, short: 0, medium: 0, long: 0 };
+                            const currentCount = dailyTaskCount[task.timeCost as keyof typeof dailyTaskCount] || 0;
+                            return (
+                              <div className="text-xs text-stone-500">
+                                今日已完成: {currentCount} / {limit} 次
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
 
                       <button
