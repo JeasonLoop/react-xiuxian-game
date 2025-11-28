@@ -15,13 +15,14 @@ const getProxyTarget = () => {
       // 如果解析失败，使用默认值
     }
   }
-  
+
   // 根据提供商选择目标
   const provider = process.env.VITE_AI_PROVIDER || 'siliconflow';
   switch (provider) {
     case 'openai':
       return 'https://api.openai.com';
     case 'siliconflow':
+      return 'https://api.siliconflow.cn';
     default:
       return 'https://api.siliconflow.cn';
   }

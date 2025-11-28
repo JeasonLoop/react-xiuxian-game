@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { X, Volume2, Music, Save, Globe, Upload, Github } from "lucide-react";
+import { X, Volume2, Music, Save, Globe, Upload, Download, Github } from "lucide-react";
 import { GameSettings } from "../types";
 
 interface Props {
@@ -28,9 +28,10 @@ const SettingsModal: React.FC<Props> = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // 只接受txt文件
-    if (!file.name.endsWith(".txt")) {
-      alert("请选择.txt格式的存档文件！");
+    // 支持 .json 和 .txt 文件
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith(".json") && !fileName.endsWith(".txt")) {
+      alert("请选择 .json 或 .txt 格式的存档文件！");
       return;
     }
 
@@ -42,21 +43,38 @@ const SettingsModal: React.FC<Props> = ({
       try {
         saveData = JSON.parse(text);
       } catch (parseError) {
-        // 如果不是JSON，尝试直接使用文本内容
         alert("存档文件格式错误！请确保文件内容是有效的JSON格式。");
+        console.error("JSON解析错误:", parseError);
         return;
       }
 
       // 验证存档数据结构
-      if (!saveData.player || !saveData.logs) {
-        alert("存档文件格式不正确！缺少必要的玩家数据或日志数据。");
+      if (!saveData || typeof saveData !== "object") {
+        alert("存档文件格式不正确！文件内容必须是有效的JSON对象。");
         return;
       }
+
+      if (!saveData.player || typeof saveData.player !== "object") {
+        alert("存档文件格式不正确！缺少必要的玩家数据。");
+        return;
+      }
+
+      if (!Array.isArray(saveData.logs)) {
+        alert("存档文件格式不正确！日志数据必须是数组格式。");
+        return;
+      }
+
+      // 显示存档信息预览
+      const playerName = saveData.player.name || "未知";
+      const realm = saveData.player.realm || "未知";
+      const timestamp = saveData.timestamp
+        ? new Date(saveData.timestamp).toLocaleString("zh-CN")
+        : "未知";
 
       // 确认导入
       if (
         !window.confirm(
-          "确定要导入此存档吗？当前存档将被替换，页面将自动刷新。"
+          `确定要导入此存档吗？\n\n玩家名称: ${playerName}\n境界: ${realm}\n保存时间: ${timestamp}\n\n当前存档将被替换，页面将自动刷新。`
         )
       ) {
         return;
@@ -70,12 +88,56 @@ const SettingsModal: React.FC<Props> = ({
       window.location.reload();
     } catch (error) {
       console.error("导入存档失败:", error);
-      alert("导入存档失败！请检查文件格式是否正确。");
+      alert(
+        `导入存档失败！\n错误信息: ${error instanceof Error ? error.message : "未知错误"}\n请检查文件格式是否正确。`
+      );
     }
 
     // 清空文件输入，以便可以重复选择同一文件
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  };
+
+  const handleExportSave = () => {
+    try {
+      const saved = localStorage.getItem(SAVE_KEY);
+      if (!saved) {
+        alert("没有找到存档数据！请先开始游戏。");
+        return;
+      }
+
+      // 解析存档数据以获取玩家信息用于文件名
+      let saveData;
+      try {
+        saveData = JSON.parse(saved);
+      } catch (error) {
+        alert("存档数据损坏，无法导出！");
+        return;
+      }
+
+      // 创建文件名
+      const playerName = saveData.player?.name || "player";
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+      const fileName = `xiuxian-save-${playerName}-${timestamp}.json`;
+
+      // 创建下载链接
+      const blob = new Blob([saved], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      alert("存档导出成功！");
+    } catch (error) {
+      console.error("导出存档失败:", error);
+      alert(
+        `导出存档失败！\n错误信息: ${error instanceof Error ? error.message : "未知错误"}`
+      );
     }
   };
 
@@ -221,10 +283,25 @@ const SettingsModal: React.FC<Props> = ({
           {/* 存档管理 */}
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <Upload size={20} className="text-stone-400" />
+              <Save size={20} className="text-stone-400" />
               <h3 className="font-bold">存档管理</h3>
             </div>
             <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-stone-400 mb-2">
+                  导出存档
+                </label>
+                <button
+                  onClick={handleExportSave}
+                  className="w-full bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded px-4 py-2 flex items-center justify-center transition-colors"
+                >
+                  <Download size={16} className="mr-2" />
+                  导出当前存档 (.json)
+                </button>
+                <p className="text-xs text-stone-500 mt-2">
+                  将当前存档导出为 JSON 文件，可用于备份或分享
+                </p>
+              </div>
               <div>
                 <label className="block text-sm text-stone-400 mb-2">
                   导入存档
@@ -232,7 +309,7 @@ const SettingsModal: React.FC<Props> = ({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".txt"
+                  accept=".json,.txt"
                   onChange={handleImportSave}
                   className="hidden"
                   id="import-save-input"
@@ -242,10 +319,10 @@ const SettingsModal: React.FC<Props> = ({
                   className="block w-full bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded px-4 py-2 text-center cursor-pointer transition-colors"
                 >
                   <Upload size={16} className="inline mr-2" />
-                  选择存档文件 (.txt)
+                  选择存档文件 (.json 或 .txt)
                 </label>
                 <p className="text-xs text-stone-500 mt-2">
-                  选择.txt格式的存档文件，导入后将替换当前存档并刷新页面
+                  选择 .json 或 .txt 格式的存档文件，导入后将替换当前存档并刷新页面
                 </p>
               </div>
             </div>

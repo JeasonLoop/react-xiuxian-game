@@ -19,7 +19,10 @@ VITE_AI_MODEL=Qwen/Qwen2.5-72B-Instruct
 # 可选：自定义 API URL（如果设置则覆盖提供商默认 URL）
 # VITE_AI_API_URL=https://api.siliconflow.cn/v1/chat/completions
 
-# 可选：是否使用代理（开发环境，默认 true）
+# 可选：是否通过 /api 代理
+# 未设置时：开发环境默认 true，生产环境默认 false
+# 显式设置为 true 可在 Vercel 等环境走 /api 代理
+# 显式设置为 false 则无论环境都直连远程 API
 # VITE_AI_USE_PROXY=true
 ```
 
@@ -80,14 +83,14 @@ VITE_AI_MODEL=your-model-name
 
 ## 故障排查
 
-### 404 错误
+### 404 错误（或 CORS 错误）
 
 **原因**: API 路径不正确
 
 **解决方法**:
 1. 检查 `VITE_AI_API_URL` 是否正确
 2. 确保路径包含 `/v1/chat/completions`
-3. 开发环境确保 `VITE_AI_USE_PROXY=true`
+3. 开发环境推荐 `VITE_AI_USE_PROXY=true`（默认即为 true，可避免 CORS）
 4. 检查浏览器控制台的网络请求，查看实际请求的 URL
 
 ### 401 错误
