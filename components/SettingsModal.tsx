@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { X, Volume2, Music, Save, Globe, Upload } from 'lucide-react';
+import { X, Volume2, Music, Save, Globe, Upload, Github } from 'lucide-react';
 import { GameSettings } from '../types';
 
 interface Props {
@@ -228,6 +228,29 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
               <option value="zh">中文</option>
               <option value="en">English</option>
             </select>
+          </div>
+
+          {/* 关于 */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Github size={20} className="text-stone-400" />
+              <h3 className="font-bold">关于</h3>
+            </div>
+            <div className="space-y-3">
+              <a
+                href="https://github.com/JeasonLoop/react-xiuxian-game"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 w-full bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded px-4 py-2 transition-colors"
+              >
+                <Github size={16} />
+                <span>GitHub 仓库</span>
+                <span className="ml-auto text-xs text-stone-400">↗</span>
+              </a>
+              <p className="text-xs text-stone-500">
+                一款文字修仙小游戏，欢迎 Star 和 Fork！
+              </p>
+            </div>
           </div>
         </div>
       </div>
