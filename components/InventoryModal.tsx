@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Item, ItemType, ItemRarity, PlayerStats, EquipmentSlot } from '../types';
-import { X, Package, ShieldCheck, ArrowRight, Hammer, Trash2, Sparkles } from 'lucide-react';
+import { X, Package, ShieldCheck, ArrowRight, Hammer, Trash2, Sparkles, ArrowUpDown } from 'lucide-react';
 import { RARITY_MULTIPLIERS } from '../constants';
 import EquipmentPanel from './EquipmentPanel';
 
@@ -20,6 +20,8 @@ interface Props {
   onUnrefineNatalArtifact?: () => void;
 }
 
+type ItemCategory = 'all' | 'equipment' | 'pill' | 'consumable';
+
 const InventoryModal: React.FC<Props> = ({
   isOpen,
   onClose,
@@ -36,6 +38,60 @@ const InventoryModal: React.FC<Props> = ({
 }) => {
   const [hoveredItem, setHoveredItem] = useState<Item | null>(null);
   const [showEquipment, setShowEquipment] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<ItemCategory>('all');
+  const [sortByRarity, setSortByRarity] = useState(true);
+
+  // 过滤和排序物品
+  const filteredAndSortedInventory = useMemo(() => {
+    // 品级排序权重
+    const getRarityOrder = (rarity: ItemRarity | undefined): number => {
+      const rarityOrder: Record<ItemRarity, number> = {
+        '仙品': 4,
+        '传说': 3,
+        '稀有': 2,
+        '普通': 1
+      };
+      return rarityOrder[rarity || '普通'];
+    };
+
+    // 判断物品分类
+    const getItemCategory = (item: Item): ItemCategory => {
+      if (item.isEquippable || 
+          item.type === ItemType.Weapon || 
+          item.type === ItemType.Armor || 
+          item.type === ItemType.Artifact || 
+          item.type === ItemType.Accessory || 
+          item.type === ItemType.Ring) {
+        return 'equipment';
+      }
+      if (item.type === ItemType.Pill) {
+        return 'pill';
+      }
+      return 'consumable';
+    };
+
+    let filtered = inventory;
+
+    // 按分类过滤
+    if (selectedCategory !== 'all') {
+      filtered = inventory.filter(item => getItemCategory(item) === selectedCategory);
+    }
+
+    // 按品级排序（从高到低）
+    if (sortByRarity) {
+      filtered = [...filtered].sort((a, b) => {
+        const rarityA = getRarityOrder(a.rarity);
+        const rarityB = getRarityOrder(b.rarity);
+        if (rarityB !== rarityA) {
+          return rarityB - rarityA; // 品级从高到低
+        }
+        // 如果品级相同，按名称排序
+        return a.name.localeCompare(b.name, 'zh-CN');
+      });
+    }
+
+    return filtered;
+  }, [inventory, selectedCategory, sortByRarity]);
 
   if (!isOpen) return null;
 
@@ -159,14 +215,81 @@ const InventoryModal: React.FC<Props> = ({
           )}
 
           {/* 物品列表 */}
-          <div className={`${showEquipment ? 'w-full md:w-1/2' : 'w-full'} p-4 overflow-y-auto`}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {inventory.length === 0 ? (
+          <div className={`${showEquipment ? 'w-full md:w-1/2' : 'w-full'} p-4 overflow-y-auto flex flex-col`}>
+            {/* 分类标签和排序按钮 */}
+            <div className="mb-4 flex flex-col gap-2">
+              {/* 分类标签 */}
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => setSelectedCategory('all')}
+                  className={`px-3 py-1.5 rounded text-sm border transition-colors ${
+                    selectedCategory === 'all'
+                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                  }`}
+                >
+                  全部
+                </button>
+                <button
+                  onClick={() => setSelectedCategory('equipment')}
+                  className={`px-3 py-1.5 rounded text-sm border transition-colors ${
+                    selectedCategory === 'equipment'
+                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                  }`}
+                >
+                  装备
+                </button>
+                <button
+                  onClick={() => setSelectedCategory('pill')}
+                  className={`px-3 py-1.5 rounded text-sm border transition-colors ${
+                    selectedCategory === 'pill'
+                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                  }`}
+                >
+                  丹药
+                </button>
+                <button
+                  onClick={() => setSelectedCategory('consumable')}
+                  className={`px-3 py-1.5 rounded text-sm border transition-colors ${
+                    selectedCategory === 'consumable'
+                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                  }`}
+                >
+                  用品
+                </button>
+              </div>
+              {/* 排序按钮 */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSortByRarity(!sortByRarity)}
+                  className={`px-3 py-1.5 rounded text-sm border transition-colors flex items-center gap-1.5 ${
+                    sortByRarity
+                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                  }`}
+                >
+                  <ArrowUpDown size={14} />
+                  {sortByRarity ? '按品级排序' : '原始顺序'}
+                </button>
+                <span className="text-xs text-stone-500">
+                  {filteredAndSortedInventory.length} 件物品
+                </span>
+              </div>
+            </div>
+
+            {/* 物品网格 */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
+              {filteredAndSortedInventory.length === 0 ? (
                 <div className="col-span-full text-center text-stone-500 py-10 font-serif">
-                  储物袋空空如也，快去历练一番吧！
+                  {selectedCategory === 'all' 
+                    ? '储物袋空空如也，快去历练一番吧！'
+                    : `当前分类暂无物品`}
                 </div>
               ) : (
-                inventory.map((item, idx) => {
+                filteredAndSortedInventory.map((item, idx) => {
               const isEquipped = isItemEquipped(item);
               const stats = getItemStats(item);
               const rarity = item.rarity || '普通';
