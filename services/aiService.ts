@@ -1,21 +1,21 @@
-
-/// <reference types="vite/client" />
-
 import { PlayerStats, AdventureResult, AdventureType, RealmType } from "../types";
 import { REALM_ORDER } from "../constants";
+import { getAIConfig, validateAIConfig, getAIConfigInfo } from "../config/aiConfig";
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
-// AI 配置从环境变量读取（.env.local）
-// 开发环境通过 Vite proxy，生产环境通过 Vercel Function
-const DEFAULT_API_URL = "https://api.siliconflow.cn/v1/chat/completions";
-const DEFAULT_MODEL = "Qwen/Qwen2.5-72B-Instruct";
-const DEFAULT_API_KEY = "";
+// 获取 AI 配置
+const aiConfig = getAIConfig();
+const API_URL = aiConfig.apiUrl;
+const API_MODEL = aiConfig.model;
+const API_KEY = aiConfig.apiKey;
 
-// 从环境变量读取配置，如果不存在则使用默认值
-const API_URL = import.meta.env.VITE_AI_API_URL || DEFAULT_API_URL;
-const API_MODEL = import.meta.env.VITE_AI_MODEL || DEFAULT_MODEL;
-const API_KEY = import.meta.env.VITE_AI_KEY || DEFAULT_API_KEY;
+// 验证配置
+const validation = validateAIConfig(aiConfig);
+if (!validation.valid) {
+  console.warn(`⚠️ AI 配置无效: ${validation.error}`);
+  console.info(getAIConfigInfo());
+}
 
 const stripCodeFence = (text: string): string => {
   let output = text.trim();
