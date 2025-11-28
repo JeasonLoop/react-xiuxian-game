@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, ShoppingBag, Coins, Package } from 'lucide-react';
-import { Shop, ShopItem, Item, PlayerStats, RealmType } from '../types';
+import { Shop, ShopItem, Item, PlayerStats, RealmType, ItemRarity, ItemType } from '../types';
 import { REALM_ORDER, RARITY_MULTIPLIERS } from '../constants';
 
 interface Props {
@@ -53,6 +53,89 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
     const playerRealmIndex = REALM_ORDER.indexOf(player.realm);
     return playerRealmIndex >= itemRealmIndex;
   });
+
+  // 计算物品出售价格（与 App.tsx 中的逻辑保持一致）
+  const calculateItemSellPrice = (item: Item): number => {
+    const rarity = item.rarity || '普通';
+    const level = item.level || 0;
+
+    // 基础价格（根据稀有度）
+    const basePrices: Record<ItemRarity, number> = {
+      '普通': 10,
+      '稀有': 50,
+      '传说': 300,
+      '仙品': 2000,
+    };
+    let basePrice = basePrices[rarity];
+
+    // 计算属性价值
+    let attributeValue = 0;
+    const rarityMultiplier = RARITY_MULTIPLIERS[rarity];
+
+    // 临时效果价值（effect）
+    if (item.effect) {
+      const effect = item.effect;
+      attributeValue += (effect.attack || 0) * 2; // 攻击力每点值2灵石
+      attributeValue += (effect.defense || 0) * 1.5; // 防御力每点值1.5灵石
+      attributeValue += (effect.hp || 0) * 0.5; // 气血每点值0.5灵石
+      attributeValue += (effect.spirit || 0) * 1.5; // 神识每点值1.5灵石
+      attributeValue += (effect.physique || 0) * 1.5; // 体魄每点值1.5灵石
+      attributeValue += (effect.speed || 0) * 2; // 速度每点值2灵石
+      attributeValue += (effect.exp || 0) * 0.1; // 修为每点值0.1灵石（临时效果）
+    }
+
+    // 永久效果价值（permanentEffect，更值钱）
+    if (item.permanentEffect) {
+      const permEffect = item.permanentEffect;
+      attributeValue += (permEffect.attack || 0) * 10; // 永久攻击每点值10灵石
+      attributeValue += (permEffect.defense || 0) * 8; // 永久防御每点值8灵石
+      attributeValue += (permEffect.maxHp || 0) * 3; // 永久气血上限每点值3灵石
+      attributeValue += (permEffect.spirit || 0) * 8; // 永久神识每点值8灵石
+      attributeValue += (permEffect.physique || 0) * 8; // 永久体魄每点值8灵石
+      attributeValue += (permEffect.speed || 0) * 10; // 永久速度每点值10灵石
+    }
+
+    // 应用稀有度倍率到属性价值
+    attributeValue = Math.floor(attributeValue * rarityMultiplier);
+
+    // 装备类物品额外价值加成
+    let equipmentBonus = 0;
+    if (item.isEquippable) {
+      // 装备类物品根据类型有不同的基础价值
+      switch (item.type) {
+        case ItemType.Weapon:
+          equipmentBonus = basePrice * 1.5; // 武器额外50%价值
+          break;
+        case ItemType.Armor:
+          equipmentBonus = basePrice * 1.2; // 护甲额外20%价值
+          break;
+        case ItemType.Artifact:
+          equipmentBonus = basePrice * 2; // 法宝额外100%价值
+          break;
+        case ItemType.Ring:
+        case ItemType.Accessory:
+          equipmentBonus = basePrice * 1.3; // 戒指和首饰额外30%价值
+          break;
+      }
+    }
+
+    // 强化等级加成（每级增加20%价值）
+    const levelMultiplier = 1 + (level * 0.2);
+
+    // 计算最终价格
+    const totalValue = (basePrice + attributeValue + equipmentBonus) * levelMultiplier;
+
+    // 根据物品类型调整（消耗品价值较低）
+    let typeMultiplier = 1;
+    if (item.type === ItemType.Herb || item.type === ItemType.Pill) {
+      typeMultiplier = 0.5; // 消耗品价值减半
+    } else if (item.type === ItemType.Material) {
+      typeMultiplier = 0.3; // 材料价值更低
+    }
+
+    // 最终价格（取整，最低为1）
+    return Math.max(1, Math.floor(totalValue * typeMultiplier));
+  };
 
   // 可出售的物品（排除已装备的）
   const sellableItems = player.inventory.filter(item => {
@@ -235,7 +318,7 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
                   {sellableItems.map(item => {
                     // 找到对应的商店物品来计算出售价格
                     const shopItem = shop.items.find(si => si.name === item.name);
-                    const sellPrice = shopItem?.sellPrice || Math.floor((item.rarity === '普通' ? 5 : item.rarity === '稀有' ? 20 : item.rarity === '传说' ? 100 : 500) * ((item.level || 0) + 1));
+                    const sellPrice = shopItem?.sellPrice || calculateItemSellPrice(item);
                     const rarity = item.rarity || '普通';
 
                     return (
