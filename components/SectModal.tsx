@@ -9,7 +9,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   player: PlayerStats;
-  onJoinSect: (sectId: string) => void;
+  onJoinSect: (sectId: string, sectName?: string) => void;
   onLeaveSect: () => void;
   onTask: (task: RandomSectTask) => void;
   onPromote: () => void;
@@ -88,12 +88,18 @@ const SectModal: React.FC<Props> = ({
                   </div>
 
                   <button
-                    onClick={() => onJoinSect(sect.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (canJoin) {
+                        onJoinSect(sect.id, sect.name);
+                      }
+                    }}
                     disabled={!canJoin}
                     className={`
-                      w-full py-2 rounded font-serif text-sm transition-colors border
+                      w-full py-2 rounded font-serif text-sm transition-colors border touch-manipulation
                       ${canJoin
-                        ? 'bg-mystic-jade/20 text-mystic-jade border-mystic-jade hover:bg-mystic-jade/30'
+                        ? 'bg-mystic-jade/20 text-mystic-jade border-mystic-jade hover:bg-mystic-jade/30 active:bg-mystic-jade/40'
                         : 'bg-stone-800 text-stone-600 border-stone-700 cursor-not-allowed'}
                     `}
                   >
