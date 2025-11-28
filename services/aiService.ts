@@ -6,14 +6,14 @@ import { REALM_ORDER } from "../constants";
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
-// 强制使用代理路径，避免跨域问题
+// AI 配置从环境变量读取（.env.local）
 // 开发环境通过 Vite proxy，生产环境通过 Vercel Function
 const DEFAULT_API_URL = "https://api.siliconflow.cn/v1/chat/completions";
 const DEFAULT_MODEL = "Qwen/Qwen2.5-72B-Instruct";
-const DEFAULT_API_KEY = "sk-hmldnzdfarkzmvvnzqxasgaqdznjpjfvxyqczpmifbmwtqda";
+const DEFAULT_API_KEY = "";
 
-// 强制使用代理 URL，忽略环境变量（避免 Vercel 环境变量覆盖）
-const API_URL = DEFAULT_API_URL;
+// 从环境变量读取配置，如果不存在则使用默认值
+const API_URL = import.meta.env.VITE_AI_API_URL || DEFAULT_API_URL;
 const API_MODEL = import.meta.env.VITE_AI_MODEL || DEFAULT_MODEL;
 const API_KEY = import.meta.env.VITE_AI_KEY || DEFAULT_API_KEY;
 
