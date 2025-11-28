@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
-import { X, Volume2, Music, Save, Globe, Upload, Github } from 'lucide-react';
-import { GameSettings } from '../types';
+import React, { useRef } from "react";
+import { X, Volume2, Music, Save, Globe, Upload, Github } from "lucide-react";
+import { GameSettings } from "../types";
 
 interface Props {
   isOpen: boolean;
@@ -10,19 +10,27 @@ interface Props {
   onImportSave?: () => void;
 }
 
-const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSettings, onImportSave }) => {
+const SettingsModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  settings,
+  onUpdateSettings,
+  onImportSave,
+}) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const SAVE_KEY = 'xiuxian-game-save';
+  const SAVE_KEY = "xiuxian-game-save";
 
   if (!isOpen) return null;
 
-  const handleImportSave = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImportSave = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     // 只接受txt文件
-    if (!file.name.endsWith('.txt')) {
-      alert('请选择.txt格式的存档文件！');
+    if (!file.name.endsWith(".txt")) {
+      alert("请选择.txt格式的存档文件！");
       return;
     }
 
@@ -35,18 +43,22 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
         saveData = JSON.parse(text);
       } catch (parseError) {
         // 如果不是JSON，尝试直接使用文本内容
-        alert('存档文件格式错误！请确保文件内容是有效的JSON格式。');
+        alert("存档文件格式错误！请确保文件内容是有效的JSON格式。");
         return;
       }
 
       // 验证存档数据结构
       if (!saveData.player || !saveData.logs) {
-        alert('存档文件格式不正确！缺少必要的玩家数据或日志数据。');
+        alert("存档文件格式不正确！缺少必要的玩家数据或日志数据。");
         return;
       }
 
       // 确认导入
-      if (!window.confirm('确定要导入此存档吗？当前存档将被替换，页面将自动刷新。')) {
+      if (
+        !window.confirm(
+          "确定要导入此存档吗？当前存档将被替换，页面将自动刷新。"
+        )
+      ) {
         return;
       }
 
@@ -54,16 +66,16 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
       localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
 
       // 提示并刷新页面
-      alert('存档导入成功！页面即将刷新...');
+      alert("存档导入成功！页面即将刷新...");
       window.location.reload();
     } catch (error) {
-      console.error('导入存档失败:', error);
-      alert('导入存档失败！请检查文件格式是否正确。');
+      console.error("导入存档失败:", error);
+      alert("导入存档失败！请检查文件格式是否正确。");
     }
 
     // 清空文件输入，以便可以重复选择同一文件
     if (fileInputRef.current) {
-      fileInputRef.current.value = '';
+      fileInputRef.current.value = "";
     }
   };
 
@@ -73,17 +85,22 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
       onClick={onClose}
     >
       <div
-        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[80vh] md:h-auto md:max-w-md md:max-h-[90vh] overflow-y-auto"
+        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[80vh] md:h-auto md:max-w-md md:max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-stone-800 border-b border-stone-700 p-3 md:p-4 flex justify-between items-center">
-          <h2 className="text-lg md:text-xl font-serif text-mystic-gold">设置</h2>
-          <button onClick={onClose} className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation">
+        <div className="bg-stone-800 border-b border-stone-700 p-3 md:p-4 flex justify-between items-center md:rounded-t-2xl flex-shrink-0">
+          <h2 className="text-lg md:text-xl font-serif text-mystic-gold">
+            设置
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+          >
             <X size={24} />
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6 overflow-y-auto flex-1">
           {/* 音效设置 */}
           <div>
             <div className="flex items-center gap-2 mb-3">
@@ -96,7 +113,9 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
                 <input
                   type="checkbox"
                   checked={settings.soundEnabled}
-                  onChange={(e) => onUpdateSettings({ soundEnabled: e.target.checked })}
+                  onChange={(e) =>
+                    onUpdateSettings({ soundEnabled: e.target.checked })
+                  }
                   className="w-5 h-5"
                 />
               </label>
@@ -110,7 +129,11 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
                     min="0"
                     max="100"
                     value={settings.soundVolume}
-                    onChange={(e) => onUpdateSettings({ soundVolume: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      onUpdateSettings({
+                        soundVolume: parseInt(e.target.value),
+                      })
+                    }
                     className="w-full"
                   />
                 </div>
@@ -130,7 +153,9 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
                 <input
                   type="checkbox"
                   checked={settings.musicEnabled}
-                  onChange={(e) => onUpdateSettings({ musicEnabled: e.target.checked })}
+                  onChange={(e) =>
+                    onUpdateSettings({ musicEnabled: e.target.checked })
+                  }
                   className="w-5 h-5"
                 />
               </label>
@@ -144,7 +169,11 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
                     min="0"
                     max="100"
                     value={settings.musicVolume}
-                    onChange={(e) => onUpdateSettings({ musicVolume: parseInt(e.target.value) })}
+                    onChange={(e) =>
+                      onUpdateSettings({
+                        musicVolume: parseInt(e.target.value),
+                      })
+                    }
                     className="w-full"
                   />
                 </div>
@@ -164,15 +193,21 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
                 <input
                   type="checkbox"
                   checked={settings.autoSave}
-                  onChange={(e) => onUpdateSettings({ autoSave: e.target.checked })}
+                  onChange={(e) =>
+                    onUpdateSettings({ autoSave: e.target.checked })
+                  }
                   className="w-5 h-5"
                 />
               </label>
               <div>
-                <label className="block text-sm text-stone-400 mb-2">动画速度</label>
+                <label className="block text-sm text-stone-400 mb-2">
+                  动画速度
+                </label>
                 <select
                   value={settings.animationSpeed}
-                  onChange={(e) => onUpdateSettings({ animationSpeed: e.target.value as any })}
+                  onChange={(e) =>
+                    onUpdateSettings({ animationSpeed: e.target.value as any })
+                  }
                   className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
                 >
                   <option value="slow">慢</option>
@@ -191,7 +226,9 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
             </div>
             <div className="space-y-3">
               <div>
-                <label className="block text-sm text-stone-400 mb-2">导入存档</label>
+                <label className="block text-sm text-stone-400 mb-2">
+                  导入存档
+                </label>
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -222,7 +259,9 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
             </div>
             <select
               value={settings.language}
-              onChange={(e) => onUpdateSettings({ language: e.target.value as any })}
+              onChange={(e) =>
+                onUpdateSettings({ language: e.target.value as any })
+              }
               className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
             >
               <option value="zh">中文</option>
@@ -259,4 +298,3 @@ const SettingsModal: React.FC<Props> = ({ isOpen, onClose, settings, onUpdateSet
 };
 
 export default SettingsModal;
-
