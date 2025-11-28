@@ -1,7 +1,42 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { PlayerStats, RealmType, LogEntry, Item, ItemType, AdventureResult, CultivationArt, ItemRarity, SectRank, SecretRealm, AdventureType, Recipe, GameSettings, Pet, EquipmentSlot, Shop, ShopType, ShopItem } from './types';
-import { REALM_DATA, INITIAL_ITEMS, CULTIVATION_ARTS, PILL_RECIPES, RARITY_MULTIPLIERS, UPGRADE_MATERIAL_NAME, getUpgradeMultiplier, SECTS, SECT_RANK_REQUIREMENTS, REALM_ORDER, TALENTS, TITLES, ACHIEVEMENTS, PET_TEMPLATES, LOTTERY_PRIZES, SHOPS } from './constants';
+import {
+  PlayerStats,
+  RealmType,
+  LogEntry,
+  Item,
+  ItemType,
+  AdventureResult,
+  CultivationArt,
+  ItemRarity,
+  SectRank,
+  SecretRealm,
+  AdventureType,
+  Recipe,
+  GameSettings,
+  Pet,
+  EquipmentSlot,
+  Shop,
+  ShopType,
+  ShopItem,
+} from './types';
+import {
+  REALM_DATA,
+  INITIAL_ITEMS,
+  CULTIVATION_ARTS,
+  PILL_RECIPES,
+  RARITY_MULTIPLIERS,
+  UPGRADE_MATERIAL_NAME,
+  getUpgradeMultiplier,
+  SECTS,
+  SECT_RANK_REQUIREMENTS,
+  REALM_ORDER,
+  TALENTS,
+  TITLES,
+  ACHIEVEMENTS,
+  PET_TEMPLATES,
+  LOTTERY_PRIZES,
+  SHOPS,
+} from './constants';
 import StatsPanel from './components/StatsPanel';
 import LogPanel from './components/LogPanel';
 import InventoryModal from './components/InventoryModal';
@@ -20,10 +55,31 @@ import SettingsModal from './components/SettingsModal';
 import ShopModal from './components/ShopModal';
 import StartScreen from './components/StartScreen';
 import MobileSidebar from './components/MobileSidebar';
-import { resolveBattleEncounter, shouldTriggerBattle, BattleReplay } from './services/battleService';
-import { generateAdventureEvent, generateBreakthroughFlavorText } from './services/aiService';
+import {
+  resolveBattleEncounter,
+  shouldTriggerBattle,
+  BattleReplay,
+} from './services/battleService';
+import {
+  generateAdventureEvent,
+  generateBreakthroughFlavorText,
+} from './services/aiService';
 import { RandomSectTask } from './services/randomService';
-import { Sword, User, Backpack, BookOpen, Sparkles, Scroll, Mountain, Star, Trophy, Gift, Settings, ShoppingBag, Menu } from 'lucide-react';
+import {
+  Sword,
+  User,
+  Backpack,
+  BookOpen,
+  Sparkles,
+  Scroll,
+  Mountain,
+  Star,
+  Trophy,
+  Gift,
+  Settings,
+  ShoppingBag,
+  Menu,
+} from 'lucide-react';
 
 // Unique ID generator
 const uid = () => Math.random().toString(36).substr(2, 9);
@@ -69,7 +125,7 @@ const normalizeItemEffect = (itemName: string, aiEffect?: any, aiPermanentEffect
 
 // 创建初始玩家数据
 const createInitialPlayer = (name: string, talentId: string): PlayerStats => {
-  const initialTalent = TALENTS.find(t => t.id === talentId);
+  const initialTalent = TALENTS.find((t) => t.id === talentId);
   const talentAttack = initialTalent?.effects.attack || 0;
   const talentDefense = initialTalent?.effects.defense || 0;
   const talentHp = initialTalent?.effects.hp || 0;
@@ -113,7 +169,7 @@ const createInitialPlayer = (name: string, talentId: string): PlayerStats => {
     dailyTaskCount: 0,
     lastTaskResetDate: new Date().toISOString().split('T')[0],
     viewedAchievements: [],
-    natalArtifactId: null
+    natalArtifactId: null,
   };
 };
 
@@ -145,7 +201,7 @@ function App() {
       musicVolume: 50,
       autoSave: true,
       animationSpeed: 'normal',
-      language: 'zh'
+      language: 'zh',
     };
   });
 
@@ -165,9 +221,11 @@ function App() {
           const loadedPlayer = {
             ...savedData.player,
             dailyTaskCount: savedData.player.dailyTaskCount || 0,
-            lastTaskResetDate: savedData.player.lastTaskResetDate || new Date().toISOString().split('T')[0],
+            lastTaskResetDate:
+              savedData.player.lastTaskResetDate ||
+              new Date().toISOString().split('T')[0],
             viewedAchievements: savedData.player.viewedAchievements || [],
-            natalArtifactId: savedData.player.natalArtifactId || null
+            natalArtifactId: savedData.player.natalArtifactId || null,
           };
           setPlayer(loadedPlayer);
           setLogs(savedData.logs || []);
@@ -182,29 +240,42 @@ function App() {
   }, [hasSave, player]);
 
   // 保存存档
-  const saveGame = useCallback((playerData: PlayerStats, logsData: LogEntry[]) => {
-    try {
-      const saveData = {
-        player: playerData,
-        logs: logsData,
-        timestamp: Date.now()
-      };
-      localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
-      if (settings.autoSave) {
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  const saveGame = useCallback(
+    (playerData: PlayerStats, logsData: LogEntry[]) => {
+      try {
+        const saveData = {
+          player: playerData,
+          logs: logsData,
+          timestamp: Date.now(),
+        };
+        localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+        if (settings.autoSave) {
+          localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+        }
+      } catch (error) {
+        console.error('保存存档失败:', error);
       }
-    } catch (error) {
-      console.error('保存存档失败:', error);
-    }
-  }, [settings]);
+    },
+    [settings]
+  );
 
   // 开始新游戏
   const handleStartGame = (playerName: string, talentId: string) => {
     const newPlayer = createInitialPlayer(playerName, talentId);
-    const initialTalent = TALENTS.find(t => t.id === talentId);
+    const initialTalent = TALENTS.find((t) => t.id === talentId);
     const initialLogs: LogEntry[] = [
-      { id: uid(), text: "欢迎来到修仙世界。你的长生之路就此开始。", type: 'special', timestamp: Date.now() },
-      { id: uid(), text: `你天生拥有【${initialTalent?.name}】天赋。${initialTalent?.description}`, type: 'special', timestamp: Date.now() }
+      {
+        id: uid(),
+        text: '欢迎来到修仙世界。你的长生之路就此开始。',
+        type: 'special',
+        timestamp: Date.now(),
+      },
+      {
+        id: uid(),
+        text: `你天生拥有【${initialTalent?.name}】天赋。${initialTalent?.description}`,
+        type: 'special',
+        timestamp: Date.now(),
+      },
     ];
     setPlayer(newPlayer);
     setLogs(initialLogs);
@@ -234,8 +305,13 @@ function App() {
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [currentShop, setCurrentShop] = useState<Shop | null>(null);
   const [itemToUpgrade, setItemToUpgrade] = useState<Item | null>(null);
-  const [purchaseSuccess, setPurchaseSuccess] = useState<{ item: string; quantity: number } | null>(null);
-  const [lotteryRewards, setLotteryRewards] = useState<Array<{ type: string; name: string; quantity?: number }>>([]);
+  const [purchaseSuccess, setPurchaseSuccess] = useState<{
+    item: string;
+    quantity: number;
+  } | null>(null);
+  const [lotteryRewards, setLotteryRewards] = useState<
+    Array<{ type: string; name: string; quantity?: number }>
+  >([]);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
   const [battleReplay, setBattleReplay] = useState<BattleReplay | null>(null);
@@ -244,19 +320,33 @@ function App() {
 
   const [loading, setLoading] = useState(false);
   const [cooldown, setCooldown] = useState(0);
-  const [visualEffects, setVisualEffects] = useState<{ type: 'damage' | 'heal' | 'slash', value?: string, color?: string, id: string }[]>([]);
+  const [visualEffects, setVisualEffects] = useState<
+    {
+      type: 'damage' | 'heal' | 'slash';
+      value?: string;
+      color?: string;
+      id: string;
+    }[]
+  >([]);
 
   // Helper to add logs
   const addLog = (text: string, type: LogEntry['type'] = 'normal') => {
-    setLogs(prev => [...prev, { id: uid(), text, type, timestamp: Date.now() }]);
+    setLogs((prev) => [
+      ...prev,
+      { id: uid(), text, type, timestamp: Date.now() },
+    ]);
   };
 
   // Helper to trigger visuals
-  const triggerVisual = (type: 'damage' | 'heal' | 'slash', value?: string, color?: string) => {
+  const triggerVisual = (
+    type: 'damage' | 'heal' | 'slash',
+    value?: string,
+    color?: string
+  ) => {
     const id = uid();
-    setVisualEffects(prev => [...prev, { type, value, color, id }]);
+    setVisualEffects((prev) => [...prev, { type, value, color, id }]);
     setTimeout(() => {
-      setVisualEffects(prev => prev.filter(v => v.id !== id));
+      setVisualEffects((prev) => prev.filter((v) => v.id !== id));
     }, 1000);
   };
 
@@ -284,12 +374,17 @@ function App() {
     const speedMap = { slow: 1200, normal: 800, fast: 450 } as const;
     const delay = speedMap[settings.animationSpeed] || 800;
     const timer = window.setTimeout(() => {
-      setRevealedBattleRounds(prev =>
+      setRevealedBattleRounds((prev) =>
         Math.min(prev + 1, battleReplay.rounds.length)
       );
     }, delay);
     return () => window.clearTimeout(timer);
-  }, [isBattleModalOpen, battleReplay, revealedBattleRounds, settings.animationSpeed]);
+  }, [
+    isBattleModalOpen,
+    battleReplay,
+    revealedBattleRounds,
+    settings.animationSpeed,
+  ]);
 
   // 根据物品名称和描述推断物品类型和装备槽位
   const inferItemTypeAndSlot = (
@@ -297,17 +392,25 @@ function App() {
     currentType: ItemType,
     description: string,
     currentIsEquippable?: boolean
-  ): { type: ItemType; isEquippable: boolean; equipmentSlot?: EquipmentSlot } => {
+  ): {
+    type: ItemType;
+    isEquippable: boolean;
+    equipmentSlot?: EquipmentSlot;
+  } => {
     const nameLower = name.toLowerCase();
     const descLower = description.toLowerCase();
     const combined = nameLower + descLower;
 
     // 武器类
-    if (combined.match(/剑|刀|枪|戟|斧|锤|鞭|棍|棒|矛|弓|弩|匕首|短剑|长剑|重剑|飞剑|灵剑|仙剑/)) {
+    if (
+      combined.match(
+        /剑|刀|枪|戟|斧|锤|鞭|棍|棒|矛|弓|弩|匕首|短剑|长剑|重剑|飞剑|灵剑|仙剑/
+      )
+    ) {
       return {
         type: ItemType.Weapon,
         isEquippable: true,
-        equipmentSlot: EquipmentSlot.Weapon
+        equipmentSlot: EquipmentSlot.Weapon,
       };
     }
 
@@ -316,7 +419,7 @@ function App() {
       return {
         type: ItemType.Armor,
         isEquippable: true,
-        equipmentSlot: EquipmentSlot.Shoulder
+        equipmentSlot: EquipmentSlot.Shoulder,
       };
     }
 
@@ -325,7 +428,7 @@ function App() {
       return {
         type: ItemType.Armor,
         isEquippable: true,
-        equipmentSlot: EquipmentSlot.Head
+        equipmentSlot: EquipmentSlot.Head,
       };
     }
 
@@ -334,7 +437,7 @@ function App() {
       return {
         type: ItemType.Armor,
         isEquippable: true,
-        equipmentSlot: EquipmentSlot.Chest
+        equipmentSlot: EquipmentSlot.Chest,
       };
     }
 
@@ -343,7 +446,7 @@ function App() {
       return {
         type: ItemType.Armor,
         isEquippable: true,
-        equipmentSlot: EquipmentSlot.Gloves
+        equipmentSlot: EquipmentSlot.Gloves,
       };
     }
 
@@ -352,7 +455,7 @@ function App() {
       return {
         type: ItemType.Armor,
         isEquippable: true,
-        equipmentSlot: EquipmentSlot.Boots
+        equipmentSlot: EquipmentSlot.Boots,
       };
     }
 
@@ -361,48 +464,62 @@ function App() {
       return {
         type: ItemType.Armor,
         isEquippable: true,
-        equipmentSlot: EquipmentSlot.Legs
+        equipmentSlot: EquipmentSlot.Legs,
       };
     }
 
     // 戒指
     if (combined.match(/戒指|指环|戒/)) {
       // 随机分配一个戒指槽位
-      const ringSlots = [EquipmentSlot.Ring1, EquipmentSlot.Ring2, EquipmentSlot.Ring3, EquipmentSlot.Ring4];
+      const ringSlots = [
+        EquipmentSlot.Ring1,
+        EquipmentSlot.Ring2,
+        EquipmentSlot.Ring3,
+        EquipmentSlot.Ring4,
+      ];
       return {
         type: ItemType.Ring,
         isEquippable: true,
-        equipmentSlot: ringSlots[Math.floor(Math.random() * ringSlots.length)]
+        equipmentSlot: ringSlots[Math.floor(Math.random() * ringSlots.length)],
       };
     }
 
     // 首饰（项链、玉佩、手镯等）
     if (combined.match(/项链|玉佩|手镯|手链|吊坠|护符|符|佩|饰/)) {
-      const accessorySlots = [EquipmentSlot.Accessory1, EquipmentSlot.Accessory2];
+      const accessorySlots = [
+        EquipmentSlot.Accessory1,
+        EquipmentSlot.Accessory2,
+      ];
       return {
         type: ItemType.Accessory,
         isEquippable: true,
-        equipmentSlot: accessorySlots[Math.floor(Math.random() * accessorySlots.length)]
+        equipmentSlot:
+          accessorySlots[Math.floor(Math.random() * accessorySlots.length)],
       };
     }
 
     // 法宝
-    if (combined.match(/法宝|法器|灵器|仙器|神器|鼎|钟|镜|塔|扇|珠|印|盘|笔|袋|旗|炉|图|斧|锤/)) {
+    if (
+      combined.match(
+        /法宝|法器|灵器|仙器|神器|鼎|钟|镜|塔|扇|珠|印|盘|笔|袋|旗|炉|图|斧|锤/
+      )
+    ) {
       const artifactSlots = [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2];
       return {
         type: ItemType.Artifact,
         isEquippable: true,
-        equipmentSlot: artifactSlots[Math.floor(Math.random() * artifactSlots.length)]
+        equipmentSlot:
+          artifactSlots[Math.floor(Math.random() * artifactSlots.length)],
       };
     }
 
     // 如果当前类型是"防具"等非标准类型，转换为护甲
-    if (currentType === '防具' as any) {
+    if (currentType === ('防具' as any)) {
       // 默认作为胸甲处理
       return {
         type: ItemType.Armor,
         isEquippable: true,
-        equipmentSlot: EquipmentSlot.Chest
+        equipmentSlot: EquipmentSlot.Chest,
       };
     }
 
@@ -412,20 +529,20 @@ function App() {
         return {
           type: ItemType.Armor,
           isEquippable: true,
-          equipmentSlot: EquipmentSlot.Chest // 默认胸甲
+          equipmentSlot: EquipmentSlot.Chest, // 默认胸甲
         };
       } else if (currentType === ItemType.Weapon) {
         return {
           type: ItemType.Weapon,
           isEquippable: true,
-          equipmentSlot: EquipmentSlot.Weapon
+          equipmentSlot: EquipmentSlot.Weapon,
         };
       }
     }
 
     return {
       type: currentType,
-      isEquippable: currentIsEquippable || false
+      isEquippable: currentIsEquippable || false,
     };
   };
 
@@ -437,12 +554,24 @@ function App() {
     const natalMultiplier = isNatal ? 1.5 : 1;
 
     return {
-      attack: item.effect?.attack ? Math.floor(item.effect.attack * multiplier * natalMultiplier) : 0,
-      defense: item.effect?.defense ? Math.floor(item.effect.defense * multiplier * natalMultiplier) : 0,
-      hp: item.effect?.hp ? Math.floor(item.effect.hp * multiplier * natalMultiplier) : 0,
-      spirit: item.effect?.spirit ? Math.floor(item.effect.spirit * multiplier * natalMultiplier) : 0,
-      physique: item.effect?.physique ? Math.floor(item.effect.physique * multiplier * natalMultiplier) : 0,
-      speed: item.effect?.speed ? Math.floor(item.effect.speed * multiplier * natalMultiplier) : 0,
+      attack: item.effect?.attack
+        ? Math.floor(item.effect.attack * multiplier * natalMultiplier)
+        : 0,
+      defense: item.effect?.defense
+        ? Math.floor(item.effect.defense * multiplier * natalMultiplier)
+        : 0,
+      hp: item.effect?.hp
+        ? Math.floor(item.effect.hp * multiplier * natalMultiplier)
+        : 0,
+      spirit: item.effect?.spirit
+        ? Math.floor(item.effect.spirit * multiplier * natalMultiplier)
+        : 0,
+      physique: item.effect?.physique
+        ? Math.floor(item.effect.physique * multiplier * natalMultiplier)
+        : 0,
+      speed: item.effect?.speed
+        ? Math.floor(item.effect.speed * multiplier * natalMultiplier)
+        : 0,
     };
   };
 
@@ -464,14 +593,20 @@ function App() {
     if (!player) return; // 如果 player 为 null，不执行定时器
 
     const timer = setInterval(() => {
-      setPlayer(prev => {
+      setPlayer((prev) => {
         if (!prev) return prev; // 防止 prev 为 null
         if (prev.hp < prev.maxHp) {
-          return { ...prev, hp: Math.min(prev.maxHp, prev.hp + Math.max(1, Math.floor(prev.maxHp * 0.01))) };
+          return {
+            ...prev,
+            hp: Math.min(
+              prev.maxHp,
+              prev.hp + Math.max(1, Math.floor(prev.maxHp * 0.01))
+            ),
+          };
         }
         return prev;
       });
-      if (cooldown > 0) setCooldown(c => c - 1);
+      if (cooldown > 0) setCooldown((c) => c - 1);
     }, 1000);
     return () => clearInterval(timer);
   }, [cooldown, player]);
@@ -480,16 +615,16 @@ function App() {
   const handleMeditate = () => {
     if (loading || cooldown > 0 || !player) return;
 
-    let baseGain = 10 + (player.realmLevel * 5);
+    let baseGain = 10 + player.realmLevel * 5;
 
     // Apply Active Art Bonus
-    const activeArt = CULTIVATION_ARTS.find(a => a.id === player.activeArtId);
+    const activeArt = CULTIVATION_ARTS.find((a) => a.id === player.activeArtId);
     if (activeArt && activeArt.effects.expRate) {
       baseGain = Math.floor(baseGain * (1 + activeArt.effects.expRate));
     }
 
     // Apply Talent Bonus
-    const talent = TALENTS.find(t => t.id === player.talentId);
+    const talent = TALENTS.find((t) => t.id === player.talentId);
     if (talent && talent.effects.expRate) {
       baseGain = Math.floor(baseGain * (1 + talent.effects.expRate));
     }
@@ -497,7 +632,7 @@ function App() {
     // Slight randomness
     const actualGain = Math.floor(baseGain * (0.8 + Math.random() * 0.4));
 
-    setPlayer(prev => ({ ...prev, exp: prev.exp + actualGain }));
+    setPlayer((prev) => ({ ...prev, exp: prev.exp + actualGain }));
 
     const artText = activeArt ? `，运转${activeArt.name}` : '';
     addLog(`你潜心感悟大道${artText}。(+${actualGain} 修为)`);
@@ -506,16 +641,23 @@ function App() {
 
     // 检查首次打坐成就
     if (!player.achievements.includes('ach-first-step')) {
-      const firstMeditateAchievement = ACHIEVEMENTS.find(a => a.id === 'ach-first-step');
+      const firstMeditateAchievement = ACHIEVEMENTS.find(
+        (a) => a.id === 'ach-first-step'
+      );
       if (firstMeditateAchievement) {
-        setPlayer(prev => {
+        setPlayer((prev) => {
           const newAchievements = [...prev.achievements, 'ach-first-step'];
-          addLog(`🎉 达成成就：【${firstMeditateAchievement.name}】！`, 'special');
+          addLog(
+            `🎉 达成成就：【${firstMeditateAchievement.name}】！`,
+            'special'
+          );
           return {
             ...prev,
             achievements: newAchievements,
             exp: prev.exp + (firstMeditateAchievement.reward.exp || 0),
-            spiritStones: prev.spiritStones + (firstMeditateAchievement.reward.spiritStones || 0)
+            spiritStones:
+              prev.spiritStones +
+              (firstMeditateAchievement.reward.spiritStones || 0),
           };
         });
       }
@@ -523,7 +665,10 @@ function App() {
   };
 
   // Common adventure/realm logic
-  const executeAdventure = async (adventureType: AdventureType, realmName?: string) => {
+  const executeAdventure = async (
+    adventureType: AdventureType,
+    realmName?: string
+  ) => {
     if (!player) {
       setLoading(false);
       return;
@@ -532,7 +677,7 @@ function App() {
     if (realmName) {
       addLog(`你进入了【${realmName}】，只觉灵气逼人，杀机四伏...`, 'special');
     } else {
-      addLog("你走出洞府，前往荒野历练...", 'normal');
+      addLog('你走出洞府，前往荒野历练...', 'normal');
     }
 
     try {
@@ -540,7 +685,10 @@ function App() {
       let battleContext: BattleReplay | null = null;
 
       if (shouldTriggerBattle(player, adventureType)) {
-        const battleResolution = await resolveBattleEncounter(player, adventureType);
+        const battleResolution = await resolveBattleEncounter(
+          player,
+          adventureType
+        );
         result = battleResolution.adventureResult;
         battleContext = battleResolution.replay;
       } else {
@@ -554,7 +702,10 @@ function App() {
         // but here we rely on the floating text for now.
         if (document.body) {
           document.body.classList.add('animate-shake');
-          setTimeout(() => document.body.classList.remove('animate-shake'), 500);
+          setTimeout(
+            () => document.body.classList.remove('animate-shake'),
+            500
+          );
         }
       } else if (result.hpChange > 0) {
         triggerVisual('heal', `+${result.hpChange}`, 'text-emerald-400');
@@ -564,7 +715,7 @@ function App() {
         triggerVisual('slash');
       }
 
-      setPlayer(prev => {
+      setPlayer((prev) => {
         let newInv = [...prev.inventory];
         let newArts = [...prev.cultivationArts];
         let newTalentId = prev.talentId;
@@ -580,15 +731,22 @@ function App() {
 
         // 处理获得的多个物品（搜刮奖励等）
         if (result.itemsObtained && result.itemsObtained.length > 0) {
-          result.itemsObtained.forEach(itemData => {
+          result.itemsObtained.forEach((itemData) => {
             let itemName = itemData.name;
-            let itemType = itemData.type as ItemType || ItemType.Material;
+            let itemType = (itemData.type as ItemType) || ItemType.Material;
             let isEquippable = itemData.isEquippable;
-            let equipmentSlot = itemData.equipmentSlot as EquipmentSlot | undefined;
+            let equipmentSlot = itemData.equipmentSlot as
+              | EquipmentSlot
+              | undefined;
             const itemDescription = itemData.description || '';
 
             // 自动推断和修正物品类型和装备槽位
-            const inferred = inferItemTypeAndSlot(itemName, itemType, itemDescription, isEquippable);
+            const inferred = inferItemTypeAndSlot(
+              itemName,
+              itemType,
+              itemDescription,
+              isEquippable
+            );
             itemType = inferred.type;
             isEquippable = inferred.isEquippable;
             equipmentSlot = inferred.equipmentSlot || equipmentSlot;
@@ -605,32 +763,56 @@ function App() {
                 finalEffect = restEffect;
               }
 
-              const hasAnyAttribute = finalEffect.attack || finalEffect.defense || finalEffect.hp ||
-                                     finalEffect.spirit || finalEffect.physique || finalEffect.speed;
+              const hasAnyAttribute =
+                finalEffect.attack ||
+                finalEffect.defense ||
+                finalEffect.hp ||
+                finalEffect.spirit ||
+                finalEffect.physique ||
+                finalEffect.speed;
 
               if (!hasAnyAttribute) {
                 const rarity = (itemData.rarity as ItemRarity) || '普通';
                 const rarityMultiplier = RARITY_MULTIPLIERS[rarity];
-                const baseValue = rarity === '普通' ? 10 :
-                                rarity === '稀有' ? 30 :
-                                rarity === '传说' ? 80 : 200;
-                const attributeTypes = ['attack', 'defense', 'hp', 'spirit', 'physique', 'speed'];
+                const baseValue =
+                  rarity === '普通'
+                    ? 10
+                    : rarity === '稀有'
+                      ? 30
+                      : rarity === '传说'
+                        ? 80
+                        : 200;
+                const attributeTypes = [
+                  'attack',
+                  'defense',
+                  'hp',
+                  'spirit',
+                  'physique',
+                  'speed',
+                ];
                 const numAttributes = Math.floor(Math.random() * 3) + 1;
-                const selectedAttributes = attributeTypes.sort(() => Math.random() - 0.5).slice(0, numAttributes);
+                const selectedAttributes = attributeTypes
+                  .sort(() => Math.random() - 0.5)
+                  .slice(0, numAttributes);
 
                 finalEffect = {};
-                selectedAttributes.forEach(attr => {
-                  const value = Math.floor(baseValue * rarityMultiplier * (0.8 + Math.random() * 0.4));
+                selectedAttributes.forEach((attr) => {
+                  const value = Math.floor(
+                    baseValue * rarityMultiplier * (0.8 + Math.random() * 0.4)
+                  );
                   (finalEffect as any)[attr] = value;
                 });
               }
             }
 
             const isEquipment = isEquippable && equipmentSlot;
-            const existingIdx = newInv.findIndex(i => i.name === itemName);
+            const existingIdx = newInv.findIndex((i) => i.name === itemName);
 
             if (existingIdx >= 0 && !isEquipment) {
-              newInv[existingIdx] = { ...newInv[existingIdx], quantity: newInv[existingIdx].quantity + 1 };
+              newInv[existingIdx] = {
+                ...newInv[existingIdx],
+                quantity: newInv[existingIdx].quantity + 1,
+              };
             } else {
               const newItem: Item = {
                 id: uid(),
@@ -653,27 +835,61 @@ function App() {
         // 处理获得的单个物品（兼容旧代码）
         if (result.itemObtained) {
           let itemName = result.itemObtained.name;
-          let itemType = result.itemObtained.type as ItemType || ItemType.Material;
+          let itemType =
+            (result.itemObtained.type as ItemType) || ItemType.Material;
           let isEquippable = result.itemObtained.isEquippable;
-          let equipmentSlot = result.itemObtained.equipmentSlot as EquipmentSlot | undefined;
+          let equipmentSlot = result.itemObtained.equipmentSlot as
+            | EquipmentSlot
+            | undefined;
           const itemDescription = result.itemObtained.description || '';
 
           // 处理神秘法宝：随机命名并设置为法宝类型
           if (itemName?.includes('神秘') || itemName?.includes('法宝')) {
             const artifactNames = [
-              '青莲剑', '紫霄钟', '玄天镜', '九幽塔', '太虚鼎', '阴阳扇', '星辰珠', '混沌印',
-              '天机盘', '轮回笔', '乾坤袋', '五行旗', '八卦炉', '太极图', '无极剑', '造化钟',
-              '开天斧', '辟地锤', '混元珠', '先天图', '后天镜', '三生石', '六道轮', '九重天'
+              '青莲剑',
+              '紫霄钟',
+              '玄天镜',
+              '九幽塔',
+              '太虚鼎',
+              '阴阳扇',
+              '星辰珠',
+              '混沌印',
+              '天机盘',
+              '轮回笔',
+              '乾坤袋',
+              '五行旗',
+              '八卦炉',
+              '太极图',
+              '无极剑',
+              '造化钟',
+              '开天斧',
+              '辟地锤',
+              '混元珠',
+              '先天图',
+              '后天镜',
+              '三生石',
+              '六道轮',
+              '九重天',
             ];
-            itemName = artifactNames[Math.floor(Math.random() * artifactNames.length)];
+            itemName =
+              artifactNames[Math.floor(Math.random() * artifactNames.length)];
             itemType = ItemType.Artifact;
             isEquippable = true;
             // 随机分配一个法宝槽位
-            const artifactSlots = [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2];
-            equipmentSlot = artifactSlots[Math.floor(Math.random() * artifactSlots.length)];
+            const artifactSlots = [
+              EquipmentSlot.Artifact1,
+              EquipmentSlot.Artifact2,
+            ];
+            equipmentSlot =
+              artifactSlots[Math.floor(Math.random() * artifactSlots.length)];
           } else {
             // 自动推断和修正物品类型和装备槽位
-            const inferred = inferItemTypeAndSlot(itemName, itemType, itemDescription, isEquippable);
+            const inferred = inferItemTypeAndSlot(
+              itemName,
+              itemType,
+              itemDescription,
+              isEquippable
+            );
             itemType = inferred.type;
             isEquippable = inferred.isEquippable;
             equipmentSlot = inferred.equipmentSlot || equipmentSlot;
@@ -693,26 +909,48 @@ function App() {
             }
 
             // 如果法宝没有任何属性加成，自动生成属性
-            const hasAnyAttribute = finalEffect.attack || finalEffect.defense || finalEffect.hp ||
-                                   finalEffect.spirit || finalEffect.physique || finalEffect.speed;
+            const hasAnyAttribute =
+              finalEffect.attack ||
+              finalEffect.defense ||
+              finalEffect.hp ||
+              finalEffect.spirit ||
+              finalEffect.physique ||
+              finalEffect.speed;
 
             if (!hasAnyAttribute) {
-              const rarity = (result.itemObtained.rarity as ItemRarity) || '普通';
+              const rarity =
+                (result.itemObtained.rarity as ItemRarity) || '普通';
               const rarityMultiplier = RARITY_MULTIPLIERS[rarity];
 
               // 根据稀有度生成基础属性值
-              const baseValue = rarity === '普通' ? 10 :
-                              rarity === '稀有' ? 30 :
-                              rarity === '传说' ? 80 : 200;
+              const baseValue =
+                rarity === '普通'
+                  ? 10
+                  : rarity === '稀有'
+                    ? 30
+                    : rarity === '传说'
+                      ? 80
+                      : 200;
 
               // 随机生成1-3种属性
-              const attributeTypes = ['attack', 'defense', 'hp', 'spirit', 'physique', 'speed'];
+              const attributeTypes = [
+                'attack',
+                'defense',
+                'hp',
+                'spirit',
+                'physique',
+                'speed',
+              ];
               const numAttributes = Math.floor(Math.random() * 3) + 1; // 1-3种属性
-              const selectedAttributes = attributeTypes.sort(() => Math.random() - 0.5).slice(0, numAttributes);
+              const selectedAttributes = attributeTypes
+                .sort(() => Math.random() - 0.5)
+                .slice(0, numAttributes);
 
               finalEffect = {};
-              selectedAttributes.forEach(attr => {
-                const value = Math.floor(baseValue * rarityMultiplier * (0.8 + Math.random() * 0.4));
+              selectedAttributes.forEach((attr) => {
+                const value = Math.floor(
+                  baseValue * rarityMultiplier * (0.8 + Math.random() * 0.4)
+                );
                 (finalEffect as any)[attr] = value;
               });
             }
@@ -720,11 +958,14 @@ function App() {
 
           // 装备类物品可以重复获得，但每个装备单独占一格（quantity始终为1）
           const isEquipment = isEquippable && equipmentSlot;
-          const existingIdx = newInv.findIndex(i => i.name === itemName);
+          const existingIdx = newInv.findIndex((i) => i.name === itemName);
 
           if (existingIdx >= 0 && !isEquipment) {
             // 非装备类物品可以叠加
-            newInv[existingIdx] = { ...newInv[existingIdx], quantity: newInv[existingIdx].quantity + 1 };
+            newInv[existingIdx] = {
+              ...newInv[existingIdx],
+              quantity: newInv[existingIdx].quantity + 1,
+            };
           } else {
             // 装备类物品或新物品，创建新物品（每个装备单独占一格）
             const newItem: Item = {
@@ -751,17 +992,27 @@ function App() {
         }
 
         // 处理传承奖励（极小概率获得传承，可直接突破1-4个境界）
-        if (result.inheritanceLevelChange && result.inheritanceLevelChange > 0) {
+        if (
+          result.inheritanceLevelChange &&
+          result.inheritanceLevelChange > 0
+        ) {
           newInheritanceLevel += result.inheritanceLevelChange;
-          addLog(`🌟 你获得了上古传承！可以直接突破 ${result.inheritanceLevelChange} 个境界！`, 'special');
+          addLog(
+            `🌟 你获得了上古传承！可以直接突破 ${result.inheritanceLevelChange} 个境界！`,
+            'special'
+          );
         }
 
         // 处理获得的灵宠
         if (result.petObtained) {
-          const petTemplate = PET_TEMPLATES.find(t => t.id === result.petObtained);
+          const petTemplate = PET_TEMPLATES.find(
+            (t) => t.id === result.petObtained
+          );
           if (petTemplate) {
             // 检查是否已经拥有该灵宠（根据种类判断，避免重复）
-            const hasSameSpecies = newPets.some(p => p.species === petTemplate.species);
+            const hasSameSpecies = newPets.some(
+              (p) => p.species === petTemplate.species
+            );
             if (!hasSameSpecies) {
               const newPet: Pet = {
                 id: uid(),
@@ -774,12 +1025,18 @@ function App() {
                 stats: { ...petTemplate.baseStats },
                 skills: [...petTemplate.skills],
                 evolutionStage: 0,
-                affection: 50
+                affection: 50,
               };
               newPets.push(newPet);
-              addLog(`✨ 你拯救了灵兽，获得了灵宠【${newPet.name}】！`, 'special');
+              addLog(
+                `✨ 你拯救了灵兽，获得了灵宠【${newPet.name}】！`,
+                'special'
+              );
             } else {
-              addLog(`你遇到了灵兽，但它似乎已经有了同类伙伴，便离开了。`, 'normal');
+              addLog(
+                `你遇到了灵兽，但它似乎已经有了同类伙伴，便离开了。`,
+                'normal'
+              );
             }
           }
         }
@@ -790,20 +1047,22 @@ function App() {
 
           // 确定目标灵宠：优先使用当前激活的灵宠
           if (result.petOpportunity.petId) {
-            targetPet = newPets.find(p => p.id === result.petOpportunity.petId) || null;
+            targetPet =
+              newPets.find((p) => p.id === result.petOpportunity.petId) || null;
           }
           // 如果没有指定或找不到，优先使用当前激活的灵宠
           if (!targetPet && prev.activePetId) {
-            targetPet = newPets.find(p => p.id === prev.activePetId) || null;
+            targetPet = newPets.find((p) => p.id === prev.activePetId) || null;
           }
           // 如果还是没有，随机选择一个
           if (!targetPet) {
-            const randomPet = newPets[Math.floor(Math.random() * newPets.length)];
+            const randomPet =
+              newPets[Math.floor(Math.random() * newPets.length)];
             targetPet = randomPet;
           }
 
           if (targetPet) {
-            const petIndex = newPets.findIndex(p => p.id === targetPet!.id);
+            const petIndex = newPets.findIndex((p) => p.id === targetPet!.id);
             const updatedPet = { ...targetPet };
 
             switch (result.petOpportunity.type) {
@@ -814,16 +1073,25 @@ function App() {
                     attack: Math.floor(updatedPet.stats.attack * 1.5),
                     defense: Math.floor(updatedPet.stats.defense * 1.5),
                     hp: Math.floor(updatedPet.stats.hp * 1.5),
-                    speed: Math.floor(updatedPet.stats.speed * 1.2)
+                    speed: Math.floor(updatedPet.stats.speed * 1.2),
                   };
                   newPets[petIndex] = updatedPet;
-                  addLog(`✨ 【${targetPet.name}】在历练中获得机缘，成功进化了！实力大幅提升！`, 'special');
+                  addLog(
+                    `✨ 【${targetPet.name}】在历练中获得机缘，成功进化了！实力大幅提升！`,
+                    'special'
+                  );
                 }
                 break;
 
               case 'level':
-                if (result.petOpportunity.levelGain && result.petOpportunity.levelGain > 0) {
-                  const levelGain = Math.min(result.petOpportunity.levelGain, 5); // 最多提升5级
+                if (
+                  result.petOpportunity.levelGain &&
+                  result.petOpportunity.levelGain > 0
+                ) {
+                  const levelGain = Math.min(
+                    result.petOpportunity.levelGain,
+                    5
+                  ); // 最多提升5级
                   updatedPet.level += levelGain;
                   // 每次升级提升属性
                   for (let i = 0; i < levelGain; i++) {
@@ -831,11 +1099,14 @@ function App() {
                       attack: Math.floor(updatedPet.stats.attack * 1.1),
                       defense: Math.floor(updatedPet.stats.defense * 1.1),
                       hp: Math.floor(updatedPet.stats.hp * 1.1),
-                      speed: Math.floor(updatedPet.stats.speed * 1.05)
+                      speed: Math.floor(updatedPet.stats.speed * 1.05),
                     };
                   }
                   newPets[petIndex] = updatedPet;
-                  addLog(`✨ 【${targetPet.name}】在历练中获得机缘，直接提升了 ${levelGain} 级！`, 'special');
+                  addLog(
+                    `✨ 【${targetPet.name}】在历练中获得机缘，直接提升了 ${levelGain} 级！`,
+                    'special'
+                  );
                 }
                 break;
 
@@ -846,22 +1117,31 @@ function App() {
                     attack: updatedPet.stats.attack + (boost.attack || 0),
                     defense: updatedPet.stats.defense + (boost.defense || 0),
                     hp: updatedPet.stats.hp + (boost.hp || 0),
-                    speed: updatedPet.stats.speed + (boost.speed || 0)
+                    speed: updatedPet.stats.speed + (boost.speed || 0),
                   };
                   newPets[petIndex] = updatedPet;
                   const statsText = [
                     boost.attack ? `攻击+${boost.attack}` : '',
                     boost.defense ? `防御+${boost.defense}` : '',
                     boost.hp ? `气血+${boost.hp}` : '',
-                    boost.speed ? `速度+${boost.speed}` : ''
-                  ].filter(Boolean).join('、');
-                  addLog(`✨ 【${targetPet.name}】在历练中获得机缘，属性提升了：${statsText}！`, 'special');
+                    boost.speed ? `速度+${boost.speed}` : '',
+                  ]
+                    .filter(Boolean)
+                    .join('、');
+                  addLog(
+                    `✨ 【${targetPet.name}】在历练中获得机缘，属性提升了：${statsText}！`,
+                    'special'
+                  );
                 }
                 break;
 
               case 'exp':
-                if (result.petOpportunity.expGain && result.petOpportunity.expGain > 0) {
-                  let petNewExp = updatedPet.exp + result.petOpportunity.expGain;
+                if (
+                  result.petOpportunity.expGain &&
+                  result.petOpportunity.expGain > 0
+                ) {
+                  let petNewExp =
+                    updatedPet.exp + result.petOpportunity.expGain;
                   let petNewLevel = updatedPet.level;
                   let petNewMaxExp = updatedPet.maxExp;
                   let leveledUp = false;
@@ -883,7 +1163,7 @@ function App() {
                         attack: Math.floor(updatedPet.stats.attack * 1.1),
                         defense: Math.floor(updatedPet.stats.defense * 1.1),
                         hp: Math.floor(updatedPet.stats.hp * 1.1),
-                        speed: Math.floor(updatedPet.stats.speed * 1.05)
+                        speed: Math.floor(updatedPet.stats.speed * 1.05),
                       };
                     }
                   }
@@ -894,9 +1174,15 @@ function App() {
 
                   newPets[petIndex] = updatedPet;
                   if (leveledUp) {
-                    addLog(`✨ 【${targetPet.name}】在历练中获得了 ${result.petOpportunity.expGain} 点经验，并提升了 ${levelGainCount} 级！`, 'special');
+                    addLog(
+                      `✨ 【${targetPet.name}】在历练中获得了 ${result.petOpportunity.expGain} 点经验，并提升了 ${levelGainCount} 级！`,
+                      'special'
+                    );
                   } else {
-                    addLog(`✨ 【${targetPet.name}】在历练中获得了 ${result.petOpportunity.expGain} 点经验！`, 'special');
+                    addLog(
+                      `✨ 【${targetPet.name}】在历练中获得了 ${result.petOpportunity.expGain} 点经验！`,
+                      'special'
+                    );
                   }
                 }
                 break;
@@ -907,12 +1193,15 @@ function App() {
         // 小概率获得功法（3%概率，秘境中5%）
         const artChance = realmName ? 0.05 : 0.03;
         if (Math.random() < artChance && adventureType !== 'lucky') {
-          const availableArts = CULTIVATION_ARTS.filter(art =>
-            !newArts.includes(art.id) &&
-            REALM_ORDER.indexOf(art.realmRequirement) <= REALM_ORDER.indexOf(prev.realm)
+          const availableArts = CULTIVATION_ARTS.filter(
+            (art) =>
+              !newArts.includes(art.id) &&
+              REALM_ORDER.indexOf(art.realmRequirement) <=
+                REALM_ORDER.indexOf(prev.realm)
           );
           if (availableArts.length > 0) {
-            const randomArt = availableArts[Math.floor(Math.random() * availableArts.length)];
+            const randomArt =
+              availableArts[Math.floor(Math.random() * availableArts.length)];
             // 确保功法没有被重复添加
             if (!newArts.includes(randomArt.id)) {
               newArts.push(randomArt.id);
@@ -920,27 +1209,36 @@ function App() {
               newDefense += randomArt.effects.defense || 0;
               newMaxHp += randomArt.effects.hp || 0;
               newHp += randomArt.effects.hp || 0;
-              addLog(`🎉 你在历练中领悟了功法【${randomArt.name}】！可在功法阁查看。`, 'special');
+              addLog(
+                `🎉 你在历练中领悟了功法【${randomArt.name}】！可在功法阁查看。`,
+                'special'
+              );
             }
           }
         }
 
         // 极小概率获得天赋（1%概率，秘境中2%，大机缘中5%）
-        const talentChance = adventureType === 'lucky' ? 0.05 : (realmName ? 0.02 : 0.01);
+        const talentChance =
+          adventureType === 'lucky' ? 0.05 : realmName ? 0.02 : 0.01;
         if (Math.random() < talentChance && !newTalentId) {
-          const availableTalents = TALENTS.filter(t =>
-            t.id !== 'talent-ordinary' &&
-            t.rarity !== '仙品' // 仙品天赋只能通过特殊方式获得
+          const availableTalents = TALENTS.filter(
+            (t) => t.id !== 'talent-ordinary' && t.rarity !== '仙品' // 仙品天赋只能通过特殊方式获得
           );
           if (availableTalents.length > 0) {
-            const randomTalent = availableTalents[Math.floor(Math.random() * availableTalents.length)];
+            const randomTalent =
+              availableTalents[
+                Math.floor(Math.random() * availableTalents.length)
+              ];
             newTalentId = randomTalent.id;
             newAttack += randomTalent.effects.attack || 0;
             newDefense += randomTalent.effects.defense || 0;
             newMaxHp += randomTalent.effects.hp || 0;
             newHp += randomTalent.effects.hp || 0;
             newLuck += randomTalent.effects.luck || 0;
-            addLog(`🌟 你在历练中觉醒了天赋【${randomTalent.name}】！`, 'special');
+            addLog(
+              `🌟 你在历练中觉醒了天赋【${randomTalent.name}】！`,
+              'special'
+            );
           }
         }
 
@@ -981,7 +1279,10 @@ function App() {
           ...prev,
           hp: Math.max(0, Math.min(newMaxHp, newHp + result.hpChange)),
           exp: Math.max(0, prev.exp + result.expChange), // 修为不能为负
-          spiritStones: Math.max(0, prev.spiritStones + result.spiritStonesChange), // 灵石不能为负
+          spiritStones: Math.max(
+            0,
+            prev.spiritStones + result.spiritStonesChange
+          ), // 灵石不能为负
           inventory: newInv,
           cultivationArts: newArts,
           talentId: newTalentId || prev.talentId,
@@ -994,7 +1295,7 @@ function App() {
           luck: newLuck,
           lotteryTickets: newLotteryTickets,
           inheritanceLevel: newInheritanceLevel,
-          pets: newPets
+          pets: newPets,
         };
       });
 
@@ -1002,7 +1303,7 @@ function App() {
 
       // 显示获得的物品
       if (result.itemsObtained && result.itemsObtained.length > 0) {
-        result.itemsObtained.forEach(item => {
+        result.itemsObtained.forEach((item) => {
           const rarityText = item.rarity ? `【${item.rarity}】` : '';
           addLog(`获得物品: ${rarityText}${item.name}`, 'gain');
         });
@@ -1018,9 +1319,12 @@ function App() {
       if (result.triggerSecretRealm) {
         setTimeout(async () => {
           addLog(`你进入了秘境深处...`, 'special');
-          const secretRealmResult = await generateAdventureEvent(player, 'secret_realm');
+          const secretRealmResult = await generateAdventureEvent(
+            player,
+            'secret_realm'
+          );
           // 递归处理秘境事件
-          setPlayer(prev => {
+          setPlayer((prev) => {
             if (!prev) return prev;
             // 计算境界倍数（用于平衡补偿）
             const realmIndex = REALM_ORDER.indexOf(prev.realm);
@@ -1040,7 +1344,7 @@ function App() {
             // 处理秘境中的物品
             if (secretRealmResult.itemObtained) {
               const itemName = secretRealmResult.itemObtained.name;
-              const existingIdx = newInv.findIndex(i => i.name === itemName);
+              const existingIdx = newInv.findIndex((i) => i.name === itemName);
               if (existingIdx < 0) {
                 // 规范化物品效果（确保已知物品的效果与描述一致）
                 const normalized = normalizeItemEffect(
@@ -1051,10 +1355,14 @@ function App() {
                 const newItem: Item = {
                   id: uid(),
                   name: itemName,
-                  type: secretRealmResult.itemObtained.type as ItemType || ItemType.Material,
+                  type:
+                    (secretRealmResult.itemObtained.type as ItemType) ||
+                    ItemType.Material,
                   description: secretRealmResult.itemObtained.description,
                   quantity: 1,
-                  rarity: (secretRealmResult.itemObtained.rarity as ItemRarity) || '普通',
+                  rarity:
+                    (secretRealmResult.itemObtained.rarity as ItemRarity) ||
+                    '普通',
                   level: 0,
                   isEquippable: secretRealmResult.itemObtained.isEquippable,
                   equipmentSlot: secretRealmResult.itemObtained.equipmentSlot as EquipmentSlot | undefined,
@@ -1138,16 +1446,22 @@ function App() {
 
             return {
               ...prev,
-              hp: Math.max(0, Math.min(newMaxHp, newHp + secretRealmResult.hpChange)),
+              hp: Math.max(
+                0,
+                Math.min(newMaxHp, newHp + secretRealmResult.hpChange)
+              ),
               exp: Math.max(0, newExp + secretRealmResult.expChange),
-              spiritStones: Math.max(0, newStones + secretRealmResult.spiritStonesChange),
+              spiritStones: Math.max(
+                0,
+                newStones + secretRealmResult.spiritStonesChange
+              ),
               inventory: newInv,
               attack: newAttack,
               defense: newDefense,
               maxHp: newMaxHp,
               spirit: newSpirit,
               physique: newPhysique,
-              speed: newSpeed
+              speed: newSpeed,
             };
           });
           addLog(secretRealmResult.story, secretRealmResult.eventColor);
@@ -1156,9 +1470,8 @@ function App() {
           }
         }, 1000);
       }
-
     } catch (e) {
-      addLog("历练途中突发异变，你神识受损，不得不返回。", 'danger');
+      addLog('历练途中突发异变，你神识受损，不得不返回。', 'danger');
     } finally {
       setLoading(false);
       setCooldown(2);
@@ -1169,7 +1482,7 @@ function App() {
   const handleAdventure = async () => {
     if (loading || cooldown > 0) return;
     if (player.hp < player.maxHp * 0.2) {
-      addLog("你身受重伤，不宜出行。请先打坐疗伤。", 'danger');
+      addLog('你身受重伤，不宜出行。请先打坐疗伤。', 'danger');
       return;
     }
 
@@ -1179,13 +1492,17 @@ function App() {
     const realmBonus = realmIndex * 0.02; // 每提升一个境界增加2%
     const levelBonus = (player.realmLevel - 1) * 0.01; // 每提升一层增加1%
     const luckBonus = player.luck * 0.001; // 幸运值加成
-    const luckyChance = Math.min(0.3, baseLuckyChance + realmBonus + levelBonus + luckBonus);
+    const luckyChance = Math.min(
+      0.3,
+      baseLuckyChance + realmBonus + levelBonus + luckBonus
+    );
 
     // 15% Chance to encounter a shop
     const shopChance = Math.random();
     if (shopChance < 0.15) {
       const shopTypes = [ShopType.Village, ShopType.City, ShopType.Sect];
-      const randomShopType = shopTypes[Math.floor(Math.random() * shopTypes.length)];
+      const randomShopType =
+        shopTypes[Math.floor(Math.random() * shopTypes.length)];
       handleOpenShop(randomShopType);
       return;
     }
@@ -1200,16 +1517,19 @@ function App() {
     if (loading || cooldown > 0 || !player) return;
 
     if (player.hp < player.maxHp * 0.3) {
-      addLog("你气血不足，此时进入秘境无异于自寻死路！", 'danger');
+      addLog('你气血不足，此时进入秘境无异于自寻死路！', 'danger');
       return;
     }
 
     if (player.spiritStones < realm.cost) {
-      addLog("囊中羞涩，无法支付开启秘境的灵石。", 'danger');
+      addLog('囊中羞涩，无法支付开启秘境的灵石。', 'danger');
       return;
     }
 
-    setPlayer(prev => ({ ...prev, spiritStones: prev.spiritStones - realm.cost }));
+    setPlayer((prev) => ({
+      ...prev,
+      spiritStones: prev.spiritStones - realm.cost,
+    }));
     setIsRealmOpen(false); // Close modal
 
     // Secret Realm Adventure
@@ -1235,7 +1555,7 @@ function App() {
       return;
     }
 
-    setPlayer(prev => {
+    setPlayer((prev) => {
       let remainingInheritance = prev.inheritanceLevel;
       let currentRealm = prev.realm;
       let currentLevel = prev.realmLevel;
@@ -1268,7 +1588,7 @@ function App() {
 
       if (breakthroughCount > 0) {
         const stats = REALM_DATA[currentRealm];
-        const levelMultiplier = 1 + (currentLevel * 0.1);
+        const levelMultiplier = 1 + currentLevel * 0.1;
 
         // 计算所有加成
         let bonusAttack = 0;
@@ -1279,8 +1599,8 @@ function App() {
         let bonusSpeed = 0;
 
         // 功法加成
-        prev.cultivationArts.forEach(artId => {
-          const art = CULTIVATION_ARTS.find(a => a.id === artId);
+        prev.cultivationArts.forEach((artId) => {
+          const art = CULTIVATION_ARTS.find((a) => a.id === artId);
           if (art) {
             bonusAttack += art.effects.attack || 0;
             bonusDefense += art.effects.defense || 0;
@@ -1292,8 +1612,8 @@ function App() {
         });
 
         // 装备加成（包括本命法宝）
-        Object.values(prev.equippedItems).forEach(itemId => {
-          const equippedItem = prev.inventory.find(i => i.id === itemId);
+        Object.values(prev.equippedItems).forEach((itemId) => {
+          const equippedItem = prev.inventory.find((i) => i.id === itemId);
           if (equippedItem && equippedItem.effect) {
             const isNatal = equippedItem.id === prev.natalArtifactId;
             const itemStats = getItemStats(equippedItem, isNatal);
@@ -1307,7 +1627,7 @@ function App() {
         });
 
         // 天赋加成
-        const talent = TALENTS.find(t => t.id === prev.talentId);
+        const talent = TALENTS.find((t) => t.id === prev.talentId);
         if (talent) {
           bonusAttack += talent.effects.attack || 0;
           bonusDefense += talent.effects.defense || 0;
@@ -1318,7 +1638,7 @@ function App() {
         }
 
         // 称号加成
-        const title = TITLES.find(t => t.id === prev.titleId);
+        const title = TITLES.find((t) => t.id === prev.titleId);
         if (title) {
           bonusAttack += title.effects.attack || 0;
           bonusDefense += title.effects.defense || 0;
@@ -1330,7 +1650,10 @@ function App() {
 
         const newBaseMaxHp = Math.floor(stats.baseMaxHp * levelMultiplier);
 
-        addLog(`🌟 你使用了传承，连续突破了 ${breakthroughCount} 个境界！`, 'special');
+        addLog(
+          `🌟 你使用了传承，连续突破了 ${breakthroughCount} 个境界！`,
+          'special'
+        );
 
         return {
           ...prev,
@@ -1341,11 +1664,16 @@ function App() {
           maxHp: newBaseMaxHp + bonusHp,
           hp: newBaseMaxHp + bonusHp, // Full heal
           attack: Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack,
-          defense: Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense,
+          defense:
+            Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense,
           spirit: Math.floor(stats.baseSpirit * levelMultiplier) + bonusSpirit,
-          physique: Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique,
-          speed: Math.max(0, Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed),
-          inheritanceLevel: remainingInheritance
+          physique:
+            Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique,
+          speed: Math.max(
+            0,
+            Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed
+          ),
+          inheritanceLevel: remainingInheritance,
         };
       }
 
@@ -1373,13 +1701,21 @@ function App() {
         }
       }
 
-      const flavor = await generateBreakthroughFlavorText(isRealmUpgrade ? nextRealm : `第 ${nextLevel} 层`, true);
+      const flavor = await generateBreakthroughFlavorText(
+        isRealmUpgrade ? nextRealm : `第 ${nextLevel} 层`,
+        true
+      );
       addLog(flavor, 'special');
-      addLog(isRealmUpgrade ? `恭喜！你的境界提升到了 ${nextRealm} ！` : `恭喜！你突破到了第 ${nextLevel} 层！`, 'special');
+      addLog(
+        isRealmUpgrade
+          ? `恭喜！你的境界提升到了 ${nextRealm} ！`
+          : `恭喜！你突破到了第 ${nextLevel} 层！`,
+        'special'
+      );
 
-      setPlayer(prev => {
+      setPlayer((prev) => {
         const stats = REALM_DATA[nextRealm];
-        const levelMultiplier = 1 + (nextLevel * 0.1);
+        const levelMultiplier = 1 + nextLevel * 0.1;
 
         // 1. Calculate Art Bonuses
         let bonusAttack = 0;
@@ -1389,21 +1725,21 @@ function App() {
         let bonusPhysique = 0;
         let bonusSpeed = 0;
 
-        prev.cultivationArts.forEach(artId => {
-           const art = CULTIVATION_ARTS.find(a => a.id === artId);
-           if (art) {
-             bonusAttack += art.effects.attack || 0;
-             bonusDefense += art.effects.defense || 0;
-             bonusHp += art.effects.hp || 0;
-             bonusSpirit += art.effects.spirit || 0;
-             bonusPhysique += art.effects.physique || 0;
-             bonusSpeed += art.effects.speed || 0;
-           }
+        prev.cultivationArts.forEach((artId) => {
+          const art = CULTIVATION_ARTS.find((a) => a.id === artId);
+          if (art) {
+            bonusAttack += art.effects.attack || 0;
+            bonusDefense += art.effects.defense || 0;
+            bonusHp += art.effects.hp || 0;
+            bonusSpirit += art.effects.spirit || 0;
+            bonusPhysique += art.effects.physique || 0;
+            bonusSpeed += art.effects.speed || 0;
+          }
         });
 
         // 2. Calculate Equipment Bonuses
-        Object.values(prev.equippedItems).forEach(itemId => {
-          const equippedItem = prev.inventory.find(i => i.id === itemId);
+        Object.values(prev.equippedItems).forEach((itemId) => {
+          const equippedItem = prev.inventory.find((i) => i.id === itemId);
           if (equippedItem && equippedItem.effect) {
             const isNatal = equippedItem.id === prev.natalArtifactId;
             const itemStats = getItemStats(equippedItem, isNatal);
@@ -1417,7 +1753,7 @@ function App() {
         });
 
         // 3. Calculate Talent Bonuses
-        const talent = TALENTS.find(t => t.id === prev.talentId);
+        const talent = TALENTS.find((t) => t.id === prev.talentId);
         if (talent) {
           bonusAttack += talent.effects.attack || 0;
           bonusDefense += talent.effects.defense || 0;
@@ -1428,7 +1764,7 @@ function App() {
         }
 
         // 4. Calculate Title Bonuses
-        const title = TITLES.find(t => t.id === prev.titleId);
+        const title = TITLES.find((t) => t.id === prev.titleId);
         if (title) {
           bonusAttack += title.effects.attack || 0;
           bonusDefense += title.effects.defense || 0;
@@ -1449,26 +1785,36 @@ function App() {
           maxHp: newBaseMaxHp + bonusHp,
           hp: newBaseMaxHp + bonusHp, // Full heal
           attack: Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack,
-          defense: Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense,
+          defense:
+            Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense,
           spirit: Math.floor(stats.baseSpirit * levelMultiplier) + bonusSpirit,
-          physique: Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique,
-          speed: Math.max(0, Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed),
+          physique:
+            Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique,
+          speed: Math.max(
+            0,
+            Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed
+          ),
         };
       });
       setLoading(false);
-
     } else {
-      addLog("你尝试冲击瓶颈，奈何根基不稳，惨遭反噬！", 'danger');
-      setPlayer(prev => ({ ...prev, exp: Math.floor(prev.exp * 0.7), hp: Math.floor(prev.hp * 0.5) }));
+      addLog('你尝试冲击瓶颈，奈何根基不稳，惨遭反噬！', 'danger');
+      setPlayer((prev) => ({
+        ...prev,
+        exp: Math.floor(prev.exp * 0.7),
+        hp: Math.floor(prev.hp * 0.5),
+      }));
     }
   };
 
   const handleUseItem = (item: Item) => {
-    setPlayer(prev => {
-      const newInv = prev.inventory.map(i => {
-        if (i.id === item.id) return { ...i, quantity: i.quantity - 1 };
-        return i;
-      }).filter(i => i.quantity > 0);
+    setPlayer((prev) => {
+      const newInv = prev.inventory
+        .map((i) => {
+          if (i.id === item.id) return { ...i, quantity: i.quantity - 1 };
+          return i;
+        })
+        .filter((i) => i.quantity > 0);
 
       const effectLogs = [];
       let newStats = { ...prev };
@@ -1481,26 +1827,29 @@ function App() {
         item.name.toLowerCase().includes('egg') ||
         item.name.includes('灵兽蛋') ||
         item.name.includes('灵宠蛋') ||
-        (item.description && (
-          item.description.includes('孵化') ||
-          item.description.includes('灵宠') ||
-          item.description.includes('灵兽') ||
-          item.description.includes('宠物')
-        ));
+        (item.description &&
+          (item.description.includes('孵化') ||
+            item.description.includes('灵宠') ||
+            item.description.includes('灵兽') ||
+            item.description.includes('宠物')));
 
       if (isPetEgg) {
         // 根据物品稀有度匹配灵宠稀有度
-        const availablePets = PET_TEMPLATES.filter(t => {
+        const availablePets = PET_TEMPLATES.filter((t) => {
           // 根据物品稀有度匹配灵宠稀有度
-          if (item.rarity === '普通') return t.rarity === '普通' || t.rarity === '稀有';
-          if (item.rarity === '稀有') return t.rarity === '稀有' || t.rarity === '传说';
-          if (item.rarity === '传说') return t.rarity === '传说' || t.rarity === '仙品';
+          if (item.rarity === '普通')
+            return t.rarity === '普通' || t.rarity === '稀有';
+          if (item.rarity === '稀有')
+            return t.rarity === '稀有' || t.rarity === '传说';
+          if (item.rarity === '传说')
+            return t.rarity === '传说' || t.rarity === '仙品';
           if (item.rarity === '仙品') return t.rarity === '仙品';
           return true;
         });
 
         if (availablePets.length > 0) {
-          const randomTemplate = availablePets[Math.floor(Math.random() * availablePets.length)];
+          const randomTemplate =
+            availablePets[Math.floor(Math.random() * availablePets.length)];
           const newPet: Pet = {
             id: uid(),
             name: randomTemplate.name,
@@ -1512,11 +1861,14 @@ function App() {
             stats: { ...randomTemplate.baseStats },
             skills: [...randomTemplate.skills],
             evolutionStage: 0,
-            affection: 50
+            affection: 50,
           };
           newPets.push(newPet);
           effectLogs.push(`✨ 孵化出了灵宠【${newPet.name}】！`);
-          addLog(`🎉 你成功孵化了${item.name}，获得了灵宠【${newPet.name}】！`, 'special');
+          addLog(
+            `🎉 你成功孵化了${item.name}，获得了灵宠【${newPet.name}】！`,
+            'special'
+          );
         } else {
           effectLogs.push('但似乎什么都没有孵化出来...');
           addLog(`你尝试孵化${item.name}，但似乎什么都没有发生...`, 'normal');
@@ -1578,7 +1930,7 @@ function App() {
   // 丢弃物品
   const handleDiscardItem = (item: Item) => {
     if (window.confirm(`确定要丢弃 ${item.name} x${item.quantity} 吗？`)) {
-      setPlayer(prev => {
+      setPlayer((prev) => {
         // 检查是否已装备
         const isEquipped = Object.values(prev.equippedItems).includes(item.id);
         if (isEquipped) {
@@ -1586,7 +1938,7 @@ function App() {
           return prev;
         }
 
-        const newInv = prev.inventory.filter(i => i.id !== item.id);
+        const newInv = prev.inventory.filter((i) => i.id !== item.id);
         addLog(`你丢弃了 ${item.name} x${item.quantity}。`, 'normal');
         return { ...prev, inventory: newInv };
       });
@@ -1595,7 +1947,7 @@ function App() {
 
   // 打开商店
   const handleOpenShop = (shopType: ShopType) => {
-    const shop = SHOPS.find(s => s.type === shopType);
+    const shop = SHOPS.find((s) => s.type === shopType);
     if (shop) {
       setCurrentShop(shop);
       setIsShopOpen(true);
@@ -1605,7 +1957,7 @@ function App() {
 
   // 购买物品（支持批量购买）
   const handleBuyItem = (shopItem: ShopItem, quantity: number = 1) => {
-    setPlayer(prev => {
+    setPlayer((prev) => {
       const totalPrice = shopItem.price * quantity;
       if (prev.spiritStones < totalPrice) {
         addLog('灵石不足！', 'danger');
@@ -1624,11 +1976,14 @@ function App() {
 
       const newInv = [...prev.inventory];
       const isEquipment = shopItem.isEquippable && shopItem.equipmentSlot;
-      const existingIdx = newInv.findIndex(i => i.name === shopItem.name);
+      const existingIdx = newInv.findIndex((i) => i.name === shopItem.name);
 
       if (existingIdx >= 0 && !isEquipment) {
         // 非装备类物品可以叠加
-        newInv[existingIdx] = { ...newInv[existingIdx], quantity: newInv[existingIdx].quantity + quantity };
+        newInv[existingIdx] = {
+          ...newInv[existingIdx],
+          quantity: newInv[existingIdx].quantity + quantity,
+        };
       } else {
         // 装备类物品或新物品，每个装备单独占一格
         // 如果是装备，每次购买创建一个新物品（quantity=1）
@@ -1647,13 +2002,16 @@ function App() {
             level: 0,
             isEquippable: shopItem.isEquippable,
             equipmentSlot: shopItem.equipmentSlot,
-            effect: shopItem.effect
+            effect: shopItem.effect,
           };
           newInv.push(newItem);
         }
       }
 
-      addLog(`你花费 ${totalPrice} 灵石购买了 ${shopItem.name} x${quantity}。`, 'gain');
+      addLog(
+        `你花费 ${totalPrice} 灵石购买了 ${shopItem.name} x${quantity}。`,
+        'gain'
+      );
       // 显示购买成功弹窗
       setPurchaseSuccess({ item: shopItem.name, quantity });
       setTimeout(() => setPurchaseSuccess(null), 2000);
@@ -1661,7 +2019,7 @@ function App() {
       return {
         ...prev,
         spiritStones: prev.spiritStones - totalPrice,
-        inventory: newInv
+        inventory: newInv,
       };
     });
   };
@@ -1670,7 +2028,7 @@ function App() {
   const handleSellItem = (item: Item) => {
     if (!currentShop) return;
 
-    setPlayer(prev => {
+    setPlayer((prev) => {
       // 检查是否已装备
       const isEquipped = Object.values(prev.equippedItems).includes(item.id);
       if (isEquipped) {
@@ -1679,25 +2037,34 @@ function App() {
       }
 
       // 找到对应的商店物品来计算出售价格
-      const shopItem = currentShop.items.find(si => si.name === item.name);
-      const sellPrice = shopItem?.sellPrice || Math.floor(
-        (item.rarity === '普通' ? 5 :
-         item.rarity === '稀有' ? 20 :
-         item.rarity === '传说' ? 100 : 500) * ((item.level || 0) + 1)
-      );
+      const shopItem = currentShop.items.find((si) => si.name === item.name);
+      const sellPrice =
+        shopItem?.sellPrice ||
+        Math.floor(
+          (item.rarity === '普通'
+            ? 5
+            : item.rarity === '稀有'
+              ? 20
+              : item.rarity === '传说'
+                ? 100
+                : 500) *
+            ((item.level || 0) + 1)
+        );
 
-      const newInv = prev.inventory.map(i => {
-        if (i.id === item.id) {
-          return { ...i, quantity: i.quantity - 1 };
-        }
-        return i;
-      }).filter(i => i.quantity > 0);
+      const newInv = prev.inventory
+        .map((i) => {
+          if (i.id === item.id) {
+            return { ...i, quantity: i.quantity - 1 };
+          }
+          return i;
+        })
+        .filter((i) => i.quantity > 0);
 
       addLog(`你出售了 ${item.name}，获得 ${sellPrice} 灵石。`, 'gain');
       return {
         ...prev,
         spiritStones: prev.spiritStones + sellPrice,
-        inventory: newInv
+        inventory: newInv,
       };
     });
   };
@@ -1716,14 +2083,22 @@ function App() {
 
     if (isRing) {
       // 戒指可以装备到任意戒指槽位
-      const ringSlots = [EquipmentSlot.Ring1, EquipmentSlot.Ring2, EquipmentSlot.Ring3, EquipmentSlot.Ring4];
+      const ringSlots = [
+        EquipmentSlot.Ring1,
+        EquipmentSlot.Ring2,
+        EquipmentSlot.Ring3,
+        EquipmentSlot.Ring4,
+      ];
       if (!ringSlots.includes(slot)) {
         addLog('戒指只能装备到戒指槽位！', 'danger');
         return;
       }
     } else if (isAccessory) {
       // 首饰可以装备到任意首饰槽位
-      const accessorySlots = [EquipmentSlot.Accessory1, EquipmentSlot.Accessory2];
+      const accessorySlots = [
+        EquipmentSlot.Accessory1,
+        EquipmentSlot.Accessory2,
+      ];
       if (!accessorySlots.includes(slot)) {
         addLog('首饰只能装备到首饰槽位！', 'danger');
         return;
@@ -1743,7 +2118,7 @@ function App() {
       }
     }
 
-    setPlayer(prev => {
+    setPlayer((prev) => {
       let newAttack = prev.attack;
       let newDefense = prev.defense;
       let newMaxHp = prev.maxHp;
@@ -1755,7 +2130,9 @@ function App() {
       // 1. Remove stats from currently equipped item in this slot if any
       const currentEquippedId = prev.equippedItems[slot];
       if (currentEquippedId) {
-        const currentEquipped = prev.inventory.find(i => i.id === currentEquippedId);
+        const currentEquipped = prev.inventory.find(
+          (i) => i.id === currentEquippedId
+        );
         if (currentEquipped) {
           const isNatal = currentEquipped.id === prev.natalArtifactId;
           const stats = getItemStats(currentEquipped, isNatal);
@@ -1792,7 +2169,7 @@ function App() {
         hp: Math.min(prev.hp, newMaxHp), // Clamp current HP if maxHp decreased
         spirit: newSpirit,
         physique: newPhysique,
-        speed: Math.max(0, newSpeed)
+        speed: Math.max(0, newSpeed),
       };
     });
   };
@@ -1810,11 +2187,16 @@ function App() {
     }
 
     // 检查是否已有本命法宝
-    setPlayer(prev => {
+    setPlayer((prev) => {
       if (prev.natalArtifactId) {
-        const currentNatal = prev.inventory.find(i => i.id === prev.natalArtifactId);
+        const currentNatal = prev.inventory.find(
+          (i) => i.id === prev.natalArtifactId
+        );
         if (currentNatal) {
-          addLog(`你已经拥有本命法宝【${currentNatal.name}】，需要先解除祭炼才能祭炼新的法宝。`, 'danger');
+          addLog(
+            `你已经拥有本命法宝【${currentNatal.name}】，需要先解除祭炼才能祭炼新的法宝。`,
+            'danger'
+          );
           return prev;
         }
       }
@@ -1822,10 +2204,10 @@ function App() {
       // 消耗气血上限（根据法宝稀有度决定消耗量）
       const rarity = item.rarity || '普通';
       const hpCostMap: Record<ItemRarity, number> = {
-        '普通': 50,
-        '稀有': 100,
-        '传说': 200,
-        '仙品': 500
+        普通: 50,
+        稀有: 100,
+        传说: 200,
+        仙品: 500,
       };
       const hpCost = hpCostMap[rarity];
 
@@ -1835,7 +2217,7 @@ function App() {
       }
 
       // 更新物品，标记为本命
-      const newInventory = prev.inventory.map(i => {
+      const newInventory = prev.inventory.map((i) => {
         if (i.id === item.id) {
           return { ...i, isNatal: true };
         }
@@ -1869,7 +2251,10 @@ function App() {
         newSpeed = newSpeed - oldStats.speed + newStats.speed;
       }
 
-      addLog(`你消耗了 ${hpCost} 点气血上限，将【${item.name}】祭炼为本命法宝！`, 'special');
+      addLog(
+        `你消耗了 ${hpCost} 点气血上限，将【${item.name}】祭炼为本命法宝！`,
+        'special'
+      );
       addLog(`本命法宝与你的生命相连，属性加成提升50%！`, 'special');
 
       return {
@@ -1882,26 +2267,28 @@ function App() {
         defense: newDefense,
         spirit: newSpirit,
         physique: newPhysique,
-        speed: Math.max(0, newSpeed)
+        speed: Math.max(0, newSpeed),
       };
     });
   };
 
   // 解除本命法宝祭炼
   const handleUnrefineNatalArtifact = () => {
-    setPlayer(prev => {
+    setPlayer((prev) => {
       if (!prev.natalArtifactId) {
         addLog('你没有本命法宝！', 'danger');
         return prev;
       }
 
-      const natalItem = prev.inventory.find(i => i.id === prev.natalArtifactId);
+      const natalItem = prev.inventory.find(
+        (i) => i.id === prev.natalArtifactId
+      );
       if (!natalItem) {
         addLog('本命法宝不存在！', 'danger');
         return prev;
       }
 
-      const newInventory = prev.inventory.map(i => {
+      const newInventory = prev.inventory.map((i) => {
         if (i.id === prev.natalArtifactId) {
           return { ...i, isNatal: false };
         }
@@ -1915,7 +2302,9 @@ function App() {
       let newPhysique = prev.physique;
       let newSpeed = prev.speed;
 
-      const isEquipped = Object.values(prev.equippedItems).includes(prev.natalArtifactId);
+      const isEquipped = Object.values(prev.equippedItems).includes(
+        prev.natalArtifactId
+      );
       if (isEquipped) {
         const oldStats = getItemStats(natalItem, true);
         const newStats = getItemStats(natalItem, false);
@@ -1936,20 +2325,20 @@ function App() {
         defense: newDefense,
         spirit: newSpirit,
         physique: newPhysique,
-        speed: Math.max(0, newSpeed)
+        speed: Math.max(0, newSpeed),
       };
     });
   };
 
   const handleUnequipItem = (slot: EquipmentSlot) => {
-    setPlayer(prev => {
+    setPlayer((prev) => {
       const currentEquippedId = prev.equippedItems[slot];
       if (!currentEquippedId) {
         addLog('该栏位没有装备！', 'danger');
         return prev;
       }
 
-      const item = prev.inventory.find(i => i.id === currentEquippedId);
+      const item = prev.inventory.find((i) => i.id === currentEquippedId);
       if (!item) return prev;
 
       let newAttack = prev.attack;
@@ -1982,7 +2371,7 @@ function App() {
         hp: Math.min(prev.hp, newMaxHp),
         spirit: newSpirit,
         physique: newPhysique,
-        speed: Math.max(0, newSpeed)
+        speed: Math.max(0, newSpeed),
       };
     });
   };
@@ -1992,10 +2381,20 @@ function App() {
     setIsUpgradeOpen(true);
   };
 
-  const handleUpgradeItem = (item: Item, costStones: number, costMats: number) => {
-    setPlayer(prev => {
-      const matsItem = prev.inventory.find(i => i.name === UPGRADE_MATERIAL_NAME);
-      if (prev.spiritStones < costStones || !matsItem || matsItem.quantity < costMats) {
+  const handleUpgradeItem = (
+    item: Item,
+    costStones: number,
+    costMats: number
+  ) => {
+    setPlayer((prev) => {
+      const matsItem = prev.inventory.find(
+        (i) => i.name === UPGRADE_MATERIAL_NAME
+      );
+      if (
+        prev.spiritStones < costStones ||
+        !matsItem ||
+        matsItem.quantity < costMats
+      ) {
         return prev;
       }
 
@@ -2004,27 +2403,37 @@ function App() {
 
       const newEffect = {
         ...item.effect,
-        attack: item.effect?.attack ? getNextStat(item.effect.attack) : undefined,
-        defense: item.effect?.defense ? getNextStat(item.effect.defense) : undefined,
+        attack: item.effect?.attack
+          ? getNextStat(item.effect.attack)
+          : undefined,
+        defense: item.effect?.defense
+          ? getNextStat(item.effect.defense)
+          : undefined,
         hp: item.effect?.hp ? getNextStat(item.effect.hp) : undefined,
-        spirit: item.effect?.spirit ? getNextStat(item.effect.spirit) : undefined,
-        physique: item.effect?.physique ? getNextStat(item.effect.physique) : undefined,
+        spirit: item.effect?.spirit
+          ? getNextStat(item.effect.spirit)
+          : undefined,
+        physique: item.effect?.physique
+          ? getNextStat(item.effect.physique)
+          : undefined,
         speed: item.effect?.speed ? getNextStat(item.effect.speed) : undefined,
       };
 
-      const newInventory = prev.inventory.map(i => {
-        if (i.name === UPGRADE_MATERIAL_NAME) {
-          return { ...i, quantity: i.quantity - costMats };
-        }
-        if (i.id === item.id) {
-          return {
-            ...i,
-            level: (i.level || 0) + 1,
-            effect: newEffect
-          };
-        }
-        return i;
-      }).filter(i => i.quantity > 0);
+      const newInventory = prev.inventory
+        .map((i) => {
+          if (i.name === UPGRADE_MATERIAL_NAME) {
+            return { ...i, quantity: i.quantity - costMats };
+          }
+          if (i.id === item.id) {
+            return {
+              ...i,
+              level: (i.level || 0) + 1,
+              effect: newEffect,
+            };
+          }
+          return i;
+        })
+        .filter((i) => i.quantity > 0);
 
       let newAttack = prev.attack;
       let newDefense = prev.defense;
@@ -2034,7 +2443,9 @@ function App() {
       let newSpeed = prev.speed;
 
       // Check if item is equipped in any slot
-      const equippedSlot = Object.entries(prev.equippedItems).find(([_, itemId]) => itemId === item.id)?.[0] as EquipmentSlot | undefined;
+      const equippedSlot = Object.entries(prev.equippedItems).find(
+        ([_, itemId]) => itemId === item.id
+      )?.[0] as EquipmentSlot | undefined;
       if (equippedSlot) {
         const isNatal = item.id === prev.natalArtifactId;
         const oldStats = getItemStats(item, isNatal);
@@ -2067,7 +2478,7 @@ function App() {
         maxHp: newMaxHp,
         spirit: newSpirit,
         physique: newPhysique,
-        speed: Math.max(0, newSpeed)
+        speed: Math.max(0, newSpeed),
       };
     });
     setIsUpgradeOpen(false);
@@ -2077,7 +2488,7 @@ function App() {
   const handleLearnArt = (art: CultivationArt) => {
     if (!player || player.spiritStones < art.cost) return;
 
-    setPlayer(prev => {
+    setPlayer((prev) => {
       const newStones = prev.spiritStones - art.cost;
 
       const newAttack = prev.attack + (art.effects.attack || 0);
@@ -2100,7 +2511,7 @@ function App() {
         maxHp: newMaxHp,
         hp: newHp,
         cultivationArts: newArts,
-        activeArtId: newActiveId
+        activeArtId: newActiveId,
       };
     });
 
@@ -2109,34 +2520,43 @@ function App() {
 
   const handleActivateArt = (art: CultivationArt) => {
     if (art.type !== 'mental') return;
-    setPlayer(prev => ({ ...prev, activeArtId: art.id }));
+    setPlayer((prev) => ({ ...prev, activeArtId: art.id }));
     addLog(`你开始运转心法【${art.name}】。`, 'normal');
   };
 
   const handleCraft = (recipe: Recipe) => {
-    setPlayer(prev => {
+    setPlayer((prev) => {
       if (prev.spiritStones < recipe.cost) return prev;
 
       const newInventory = [...prev.inventory];
       for (const req of recipe.ingredients) {
-        const itemIdx = newInventory.findIndex(i => i.name === req.name);
-        if (itemIdx === -1 || newInventory[itemIdx].quantity < req.qty) return prev;
+        const itemIdx = newInventory.findIndex((i) => i.name === req.name);
+        if (itemIdx === -1 || newInventory[itemIdx].quantity < req.qty)
+          return prev;
 
-        newInventory[itemIdx] = { ...newInventory[itemIdx], quantity: newInventory[itemIdx].quantity - req.qty };
+        newInventory[itemIdx] = {
+          ...newInventory[itemIdx],
+          quantity: newInventory[itemIdx].quantity - req.qty,
+        };
       }
 
-      const cleanedInventory = newInventory.filter(i => i.quantity > 0);
+      const cleanedInventory = newInventory.filter((i) => i.quantity > 0);
 
-      const isEquipment = recipe.result.type === ItemType.Artifact || recipe.result.type === ItemType.Weapon ||
-                         recipe.result.type === ItemType.Armor || recipe.result.type === ItemType.Ring ||
-                         recipe.result.type === ItemType.Accessory;
-      const existingResultIdx = cleanedInventory.findIndex(i => i.name === recipe.result.name);
+      const isEquipment =
+        recipe.result.type === ItemType.Artifact ||
+        recipe.result.type === ItemType.Weapon ||
+        recipe.result.type === ItemType.Armor ||
+        recipe.result.type === ItemType.Ring ||
+        recipe.result.type === ItemType.Accessory;
+      const existingResultIdx = cleanedInventory.findIndex(
+        (i) => i.name === recipe.result.name
+      );
 
       if (existingResultIdx >= 0 && !isEquipment) {
         // 非装备类物品可以叠加
         cleanedInventory[existingResultIdx] = {
           ...cleanedInventory[existingResultIdx],
-          quantity: cleanedInventory[existingResultIdx].quantity + 1
+          quantity: cleanedInventory[existingResultIdx].quantity + 1,
         };
       } else {
         // 装备类物品或新物品，创建新物品（每个装备单独占一格）
@@ -2148,7 +2568,7 @@ function App() {
           quantity: 1, // 装备quantity始终为1
           rarity: (recipe.result.rarity as ItemRarity) || '普通',
           level: 0,
-          effect: recipe.result.effect
+          effect: recipe.result.effect,
         };
 
         // 如果是装备，添加装备相关属性
@@ -2156,20 +2576,37 @@ function App() {
           newItem.isEquippable = true;
           // 尝试从recipe.result获取equipmentSlot，如果没有则根据类型推断
           if ('equipmentSlot' in recipe.result && recipe.result.equipmentSlot) {
-            newItem.equipmentSlot = recipe.result.equipmentSlot as EquipmentSlot;
+            newItem.equipmentSlot = recipe.result
+              .equipmentSlot as EquipmentSlot;
           } else {
             // 根据类型推断装备槽位
             if (recipe.result.type === ItemType.Artifact) {
-              const artifactSlots = [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2];
-              newItem.equipmentSlot = artifactSlots[Math.floor(Math.random() * artifactSlots.length)];
+              const artifactSlots = [
+                EquipmentSlot.Artifact1,
+                EquipmentSlot.Artifact2,
+              ];
+              newItem.equipmentSlot =
+                artifactSlots[Math.floor(Math.random() * artifactSlots.length)];
             } else if (recipe.result.type === ItemType.Weapon) {
               newItem.equipmentSlot = EquipmentSlot.Weapon;
             } else if (recipe.result.type === ItemType.Ring) {
-              const ringSlots = [EquipmentSlot.Ring1, EquipmentSlot.Ring2, EquipmentSlot.Ring3, EquipmentSlot.Ring4];
-              newItem.equipmentSlot = ringSlots[Math.floor(Math.random() * ringSlots.length)];
+              const ringSlots = [
+                EquipmentSlot.Ring1,
+                EquipmentSlot.Ring2,
+                EquipmentSlot.Ring3,
+                EquipmentSlot.Ring4,
+              ];
+              newItem.equipmentSlot =
+                ringSlots[Math.floor(Math.random() * ringSlots.length)];
             } else if (recipe.result.type === ItemType.Accessory) {
-              const accessorySlots = [EquipmentSlot.Accessory1, EquipmentSlot.Accessory2];
-              newItem.equipmentSlot = accessorySlots[Math.floor(Math.random() * accessorySlots.length)];
+              const accessorySlots = [
+                EquipmentSlot.Accessory1,
+                EquipmentSlot.Accessory2,
+              ];
+              newItem.equipmentSlot =
+                accessorySlots[
+                  Math.floor(Math.random() * accessorySlots.length)
+                ];
             }
           }
         }
@@ -2182,7 +2619,7 @@ function App() {
       return {
         ...prev,
         spiritStones: prev.spiritStones - recipe.cost,
-        inventory: cleanedInventory
+        inventory: cleanedInventory,
       };
     });
   };
@@ -2209,18 +2646,28 @@ function App() {
       }
     }
 
-    setPlayer(prev => ({ ...prev, sectId: sectId, sectRank: SectRank.Outer, sectContribution: 0 }));
+    setPlayer((prev) => ({
+      ...prev,
+      sectId: sectId,
+      sectRank: SectRank.Outer,
+      sectContribution: 0,
+    }));
     addLog(`恭喜！你已拜入【${sect.name}】，成为一名外门弟子。`, 'special');
   };
 
   const handleLeaveSect = () => {
-    setPlayer(prev => ({ ...prev, sectId: null, sectRank: SectRank.Outer, sectContribution: 0 }));
+    setPlayer((prev) => ({
+      ...prev,
+      sectId: null,
+      sectRank: SectRank.Outer,
+      sectContribution: 0,
+    }));
     addLog(`你叛出了宗门，从此成为一名散修。`, 'danger');
     setIsSectOpen(false);
   };
 
   const handleSectTask = (task: RandomSectTask) => {
-    setPlayer(prev => {
+    setPlayer((prev) => {
       // 检查每日任务限制（瞬时完成的任务每日限制10次）
       const today = new Date().toISOString().split('T')[0];
       let dailyTaskCount = prev.dailyTaskCount || 0;
@@ -2255,17 +2702,25 @@ function App() {
 
       if (task.cost?.items) {
         for (const itemReq of task.cost.items) {
-          const itemIdx = updatedInventory.findIndex(i => i.name === itemReq.name);
-          if (itemIdx === -1 || updatedInventory[itemIdx].quantity < itemReq.quantity) {
-            addLog(`物品不足，需要 ${itemReq.quantity} 个【${itemReq.name}】。`, 'danger');
+          const itemIdx = updatedInventory.findIndex(
+            (i) => i.name === itemReq.name
+          );
+          if (
+            itemIdx === -1 ||
+            updatedInventory[itemIdx].quantity < itemReq.quantity
+          ) {
+            addLog(
+              `物品不足，需要 ${itemReq.quantity} 个【${itemReq.name}】。`,
+              'danger'
+            );
             return prev;
           }
           updatedInventory[itemIdx] = {
             ...updatedInventory[itemIdx],
-            quantity: updatedInventory[itemIdx].quantity - itemReq.quantity
+            quantity: updatedInventory[itemIdx].quantity - itemReq.quantity,
           };
         }
-        updatedInventory = updatedInventory.filter(i => i.quantity > 0);
+        updatedInventory = updatedInventory.filter((i) => i.quantity > 0);
       }
 
       // 计算奖励
@@ -2275,12 +2730,16 @@ function App() {
 
       // 添加奖励物品
       if (task.reward.items) {
-        task.reward.items.forEach(rewardItem => {
-          const existingIdx = updatedInventory.findIndex(i => i.name === rewardItem.name);
+        task.reward.items.forEach((rewardItem) => {
+          const existingIdx = updatedInventory.findIndex(
+            (i) => i.name === rewardItem.name
+          );
           if (existingIdx >= 0) {
             updatedInventory[existingIdx] = {
               ...updatedInventory[existingIdx],
-              quantity: updatedInventory[existingIdx].quantity + (rewardItem.quantity || 1)
+              quantity:
+                updatedInventory[existingIdx].quantity +
+                (rewardItem.quantity || 1),
             };
           } else {
             // 创建新物品（简化版，只包含基本信息）
@@ -2290,7 +2749,7 @@ function App() {
               type: ItemType.Material,
               description: `完成任务获得的${rewardItem.name}`,
               quantity: rewardItem.quantity || 1,
-              rarity: '普通'
+              rarity: '普通',
             });
           }
         });
@@ -2301,8 +2760,12 @@ function App() {
         `${contribGain} 贡献`,
         expGain > 0 ? `${expGain} 修为` : '',
         stoneGain > 0 ? `${stoneGain} 灵石` : '',
-        task.reward.items ? task.reward.items.map(i => `${i.quantity} ${i.name}`).join('、') : ''
-      ].filter(Boolean).join('、');
+        task.reward.items
+          ? task.reward.items.map((i) => `${i.quantity} ${i.name}`).join('、')
+          : '',
+      ]
+        .filter(Boolean)
+        .join('、');
 
       addLog(`你完成了任务【${task.name}】，获得了 ${rewardText}。`, 'gain');
 
@@ -2313,13 +2776,13 @@ function App() {
         inventory: updatedInventory,
         sectContribution: prev.sectContribution + contribGain,
         dailyTaskCount,
-        lastTaskResetDate
+        lastTaskResetDate,
       };
     });
   };
 
   const handleSectPromote = () => {
-    setPlayer(prev => {
+    setPlayer((prev) => {
       const ranks = Object.values(SectRank);
       const currentRankIdx = ranks.indexOf(prev.sectRank);
       const nextRank = ranks[currentRankIdx + 1];
@@ -2334,26 +2797,34 @@ function App() {
       return {
         ...prev,
         sectRank: nextRank,
-        sectContribution: prev.sectContribution - req.contribution
+        sectContribution: prev.sectContribution - req.contribution,
       };
     });
   };
 
-  const handleSectBuy = (itemTemplate: Partial<Item>, cost: number, quantity: number = 1) => {
-    setPlayer(prev => {
-       const totalCost = cost * quantity;
-       if (prev.sectContribution < totalCost) {
-         addLog('贡献不足！', 'danger');
-         return prev;
-       }
+  const handleSectBuy = (
+    itemTemplate: Partial<Item>,
+    cost: number,
+    quantity: number = 1
+  ) => {
+    setPlayer((prev) => {
+      const totalCost = cost * quantity;
+      if (prev.sectContribution < totalCost) {
+        addLog('贡献不足！', 'danger');
+        return prev;
+      }
 
       const newInv = [...prev.inventory];
-      const isEquipment = itemTemplate.isEquippable && itemTemplate.equipmentSlot;
-      const existingIdx = newInv.findIndex(i => i.name === itemTemplate.name);
+      const isEquipment =
+        itemTemplate.isEquippable && itemTemplate.equipmentSlot;
+      const existingIdx = newInv.findIndex((i) => i.name === itemTemplate.name);
 
       if (existingIdx >= 0 && !isEquipment) {
         // 非装备类物品可以叠加
-        newInv[existingIdx] = { ...newInv[existingIdx], quantity: newInv[existingIdx].quantity + quantity };
+        newInv[existingIdx] = {
+          ...newInv[existingIdx],
+          quantity: newInv[existingIdx].quantity + quantity,
+        };
       } else {
         // 装备类物品或新物品，每个装备单独占一格
         // 如果是装备，每次兑换创建一个新物品（quantity=1）
@@ -2371,21 +2842,24 @@ function App() {
             effect: itemTemplate.effect,
             level: 0,
             isEquippable: itemTemplate.isEquippable,
-            equipmentSlot: itemTemplate.equipmentSlot
+            equipmentSlot: itemTemplate.equipmentSlot,
           });
         }
       }
 
-       addLog(`你消耗了 ${totalCost} 贡献，兑换了 ${itemTemplate.name} x${quantity}。`, 'gain');
-       // 显示购买成功弹窗
-       setPurchaseSuccess({ item: itemTemplate.name || '未知物品', quantity });
-       setTimeout(() => setPurchaseSuccess(null), 2000);
+      addLog(
+        `你消耗了 ${totalCost} 贡献，兑换了 ${itemTemplate.name} x${quantity}。`,
+        'gain'
+      );
+      // 显示购买成功弹窗
+      setPurchaseSuccess({ item: itemTemplate.name || '未知物品', quantity });
+      setTimeout(() => setPurchaseSuccess(null), 2000);
 
-       return {
-         ...prev,
-         sectContribution: prev.sectContribution - totalCost,
-         inventory: newInv
-       };
+      return {
+        ...prev,
+        sectContribution: prev.sectContribution - totalCost,
+        inventory: newInv,
+      };
     });
   };
 
@@ -2399,10 +2873,10 @@ function App() {
   };
 
   const handleSelectTitle = (titleId: string) => {
-    const title = TITLES.find(t => t.id === titleId);
+    const title = TITLES.find((t) => t.id === titleId);
     if (!title) return;
 
-    setPlayer(prev => {
+    setPlayer((prev) => {
       let newAttack = prev.attack;
       let newDefense = prev.defense;
       let newMaxHp = prev.maxHp;
@@ -2410,7 +2884,7 @@ function App() {
 
       // 移除旧称号效果
       if (prev.titleId) {
-        const oldTitle = TITLES.find(t => t.id === prev.titleId);
+        const oldTitle = TITLES.find((t) => t.id === prev.titleId);
         if (oldTitle) {
           newAttack -= oldTitle.effects.attack || 0;
           newDefense -= oldTitle.effects.defense || 0;
@@ -2432,7 +2906,7 @@ function App() {
         attack: newAttack,
         defense: newDefense,
         maxHp: newMaxHp,
-        hp: Math.min(newHp, newMaxHp)
+        hp: Math.min(newHp, newMaxHp),
       };
     });
   };
@@ -2440,7 +2914,7 @@ function App() {
   const handleAllocateAttribute = (type: 'attack' | 'defense' | 'hp') => {
     if (!player || player.attributePoints <= 0) return;
 
-    setPlayer(prev => {
+    setPlayer((prev) => {
       const points = prev.attributePoints - 1;
       let newAttack = prev.attack;
       let newDefense = prev.defense;
@@ -2465,7 +2939,7 @@ function App() {
         attack: newAttack,
         defense: newDefense,
         maxHp: newMaxHp,
-        hp: newHp
+        hp: newHp,
       };
     });
   };
@@ -2476,7 +2950,7 @@ function App() {
     if (checkingAchievementsRef.current) return; // 防止重复触发
     checkingAchievementsRef.current = true;
 
-    setPlayer(prev => {
+    setPlayer((prev) => {
       if (!prev) {
         checkingAchievementsRef.current = false;
         return prev; // 防止 prev 为 null
@@ -2489,16 +2963,21 @@ function App() {
       let newInv = [...prev.inventory];
       let newTitleId = prev.titleId;
 
-      ACHIEVEMENTS.forEach(achievement => {
+      ACHIEVEMENTS.forEach((achievement) => {
         // 跳过已完成的成就，避免重复触发
         if (newAchievements.includes(achievement.id)) return;
 
         let completed = false;
         if (achievement.requirement.type === 'realm') {
-          const realmIndex = REALM_ORDER.indexOf(achievement.requirement.target as RealmType);
+          const realmIndex = REALM_ORDER.indexOf(
+            achievement.requirement.target as RealmType
+          );
           const playerRealmIndex = REALM_ORDER.indexOf(prev.realm);
           completed = playerRealmIndex >= realmIndex;
-        } else if (achievement.requirement.type === 'custom' && achievement.requirement.target === 'meditate') {
+        } else if (
+          achievement.requirement.type === 'custom' &&
+          achievement.requirement.target === 'meditate'
+        ) {
           // 这个需要在打坐时单独检查
           return;
         }
@@ -2510,10 +2989,13 @@ function App() {
           newStones += achievement.reward.spiritStones || 0;
 
           if (achievement.reward.items) {
-            achievement.reward.items.forEach(item => {
-              const existingIdx = newInv.findIndex(i => i.name === item.name);
+            achievement.reward.items.forEach((item) => {
+              const existingIdx = newInv.findIndex((i) => i.name === item.name);
               if (existingIdx >= 0) {
-                newInv[existingIdx] = { ...newInv[existingIdx], quantity: newInv[existingIdx].quantity + 1 };
+                newInv[existingIdx] = {
+                  ...newInv[existingIdx],
+                  quantity: newInv[existingIdx].quantity + 1,
+                };
               } else {
                 newInv.push({ ...item, id: uid() });
               }
@@ -2530,13 +3012,23 @@ function App() {
 
       if (hasNewAchievement && newTitleId && newTitleId !== prev.titleId) {
         // 应用新称号效果
-        const title = TITLES.find(t => t.id === newTitleId);
+        const title = TITLES.find((t) => t.id === newTitleId);
         if (title) {
-          const oldTitle = prev.titleId ? TITLES.find(t => t.id === prev.titleId) : null;
-          let titleAttack = prev.attack - (oldTitle?.effects.attack || 0) + (title.effects.attack || 0);
-          let titleDefense = prev.defense - (oldTitle?.effects.defense || 0) + (title.effects.defense || 0);
-          let titleMaxHp = prev.maxHp - (oldTitle?.effects.hp || 0) + (title.effects.hp || 0);
-          let titleHp = prev.hp - (oldTitle?.effects.hp || 0) + (title.effects.hp || 0);
+          const oldTitle = prev.titleId
+            ? TITLES.find((t) => t.id === prev.titleId)
+            : null;
+          let titleAttack =
+            prev.attack -
+            (oldTitle?.effects.attack || 0) +
+            (title.effects.attack || 0);
+          let titleDefense =
+            prev.defense -
+            (oldTitle?.effects.defense || 0) +
+            (title.effects.defense || 0);
+          let titleMaxHp =
+            prev.maxHp - (oldTitle?.effects.hp || 0) + (title.effects.hp || 0);
+          let titleHp =
+            prev.hp - (oldTitle?.effects.hp || 0) + (title.effects.hp || 0);
 
           checkingAchievementsRef.current = false;
           return {
@@ -2549,7 +3041,7 @@ function App() {
             attack: titleAttack,
             defense: titleDefense,
             maxHp: titleMaxHp,
-            hp: Math.min(titleHp, titleMaxHp)
+            hp: Math.min(titleHp, titleMaxHp),
           };
         }
       }
@@ -2562,7 +3054,7 @@ function App() {
           exp: newExp,
           spiritStones: newStones,
           inventory: newInv,
-          titleId: newTitleId || prev.titleId
+          titleId: newTitleId || prev.titleId,
         };
       }
 
@@ -2574,15 +3066,19 @@ function App() {
   // 灵宠系统
   const handleActivatePet = (petId: string) => {
     if (!player) return;
-    setPlayer(prev => ({ ...prev, activePetId: petId }));
-    const pet = player.pets.find(p => p.id === petId);
+    setPlayer((prev) => ({ ...prev, activePetId: petId }));
+    const pet = player.pets.find((p) => p.id === petId);
     if (pet) addLog(`你激活了灵宠【${pet.name}】！`, 'gain');
   };
 
-  const handleFeedPet = (petId: string, feedType: 'hp' | 'item' | 'exp', itemId?: string) => {
+  const handleFeedPet = (
+    petId: string,
+    feedType: 'hp' | 'item' | 'exp',
+    itemId?: string
+  ) => {
     if (!player) return;
 
-    const pet = player.pets.find(p => p.id === petId);
+    const pet = player.pets.find((p) => p.id === petId);
     if (!pet) return;
 
     // 检查消耗
@@ -2595,7 +3091,10 @@ function App() {
         canFeed = true;
         costMessage = `消耗了 ${hpCost} 点气血`;
       } else {
-        addLog(`气血不足，无法喂养！需要 ${hpCost} 点气血，当前只有 ${player.hp} 点`, 'danger');
+        addLog(
+          `气血不足，无法喂养！需要 ${hpCost} 点气血，当前只有 ${player.hp} 点`,
+          'danger'
+        );
         return;
       }
     } else if (feedType === 'item') {
@@ -2603,7 +3102,7 @@ function App() {
         addLog('请选择要喂养的物品', 'danger');
         return;
       }
-      const item = player.inventory.find(i => i.id === itemId);
+      const item = player.inventory.find((i) => i.id === itemId);
       if (!item || item.quantity <= 0) {
         addLog('物品不存在或数量不足', 'danger');
         return;
@@ -2616,14 +3115,17 @@ function App() {
         canFeed = true;
         costMessage = `消耗了 ${expCost} 点修为`;
       } else {
-        addLog(`修为不足，无法喂养！需要 ${expCost} 点修为，当前只有 ${player.exp} 点`, 'danger');
+        addLog(
+          `修为不足，无法喂养！需要 ${expCost} 点修为，当前只有 ${player.exp} 点`,
+          'danger'
+        );
         return;
       }
     }
 
     if (!canFeed) return;
 
-    setPlayer(prev => {
+    setPlayer((prev) => {
       if (!prev) return prev;
 
       // 扣除消耗
@@ -2634,12 +3136,14 @@ function App() {
       if (feedType === 'hp') {
         newHp = Math.max(0, prev.hp - 200);
       } else if (feedType === 'item' && itemId) {
-        newInventory = prev.inventory.map(item => {
-          if (item.id === itemId) {
-            return { ...item, quantity: item.quantity - 1 };
-          }
-          return item;
-        }).filter(item => item.quantity > 0);
+        newInventory = prev.inventory
+          .map((item) => {
+            if (item.id === itemId) {
+              return { ...item, quantity: item.quantity - 1 };
+            }
+            return item;
+          })
+          .filter((item) => item.quantity > 0);
       } else if (feedType === 'exp') {
         const expCost = Math.max(1, Math.floor(prev.exp * 0.05));
         newExp = Math.max(0, prev.exp - expCost);
@@ -2651,9 +3155,11 @@ function App() {
       // 计算最多能获得多少经验才能直接升一级
       const expToNextLevel = pet.maxExp - pet.exp;
       const maxExpGain = Math.min(expGainMax, expToNextLevel);
-      const expGain = Math.floor(expGainMin + Math.random() * (maxExpGain - expGainMin + 1));
+      const expGain = Math.floor(
+        expGainMin + Math.random() * (maxExpGain - expGainMin + 1)
+      );
 
-      const newPets = prev.pets.map(p => {
+      const newPets = prev.pets.map((p) => {
         if (p.id === petId) {
           let petNewExp = p.exp + expGain;
           let petNewLevel = p.level;
@@ -2670,19 +3176,21 @@ function App() {
           }
 
           // 只有升级时才提升属性
-          const newStats = leveledUp ? {
-            attack: Math.floor(p.stats.attack * 1.1),
-            defense: Math.floor(p.stats.defense * 1.1),
-            hp: Math.floor(p.stats.hp * 1.1),
-            speed: Math.floor(p.stats.speed * 1.05)
-          } : p.stats;
+          const newStats = leveledUp
+            ? {
+                attack: Math.floor(p.stats.attack * 1.1),
+                defense: Math.floor(p.stats.defense * 1.1),
+                hp: Math.floor(p.stats.hp * 1.1),
+                speed: Math.floor(p.stats.speed * 1.05),
+              }
+            : p.stats;
 
           return {
             ...p,
             level: petNewLevel,
             exp: petNewExp,
             maxExp: petNewMaxExp,
-            stats: newStats
+            stats: newStats,
           };
         }
         return p;
@@ -2695,26 +3203,29 @@ function App() {
         hp: newHp,
         exp: newExp,
         inventory: newInventory,
-        pets: newPets
+        pets: newPets,
       };
     });
   };
 
   const handleEvolvePet = (petId: string) => {
     if (!player) return;
-    const pet = player.pets.find(p => p.id === petId);
+    const pet = player.pets.find((p) => p.id === petId);
     if (!pet || pet.evolutionStage >= 2) return;
 
-    const template = PET_TEMPLATES.find(t => t.species === pet.species);
+    const template = PET_TEMPLATES.find((t) => t.species === pet.species);
     if (!template || !template.evolutionRequirements) return;
 
     if (pet.level < template.evolutionRequirements.level) {
-      addLog(`灵宠等级不足，需要 ${template.evolutionRequirements.level} 级才能进化`, 'danger');
+      addLog(
+        `灵宠等级不足，需要 ${template.evolutionRequirements.level} 级才能进化`,
+        'danger'
+      );
       return;
     }
 
-    setPlayer(prev => {
-      const newPets = prev.pets.map(p => {
+    setPlayer((prev) => {
+      const newPets = prev.pets.map((p) => {
         if (p.id === petId) {
           return {
             ...p,
@@ -2723,8 +3234,8 @@ function App() {
               attack: Math.floor(p.stats.attack * 1.5),
               defense: Math.floor(p.stats.defense * 1.5),
               hp: Math.floor(p.stats.hp * 1.5),
-              speed: Math.floor(p.stats.speed * 1.2)
-            }
+              speed: Math.floor(p.stats.speed * 1.2),
+            },
           };
         }
         return p;
@@ -2748,7 +3259,7 @@ function App() {
     for (let i = 0; i < count; i++) {
       if (guaranteedRare && i === count - 1) {
         // 保底稀有以上
-        const rarePrizes = LOTTERY_PRIZES.filter(p => p.rarity !== '普通');
+        const rarePrizes = LOTTERY_PRIZES.filter((p) => p.rarity !== '普通');
         const totalWeight = rarePrizes.reduce((sum, p) => sum + p.weight, 0);
         let random = Math.random() * totalWeight;
         for (const prize of rarePrizes) {
@@ -2759,7 +3270,10 @@ function App() {
           }
         }
       } else {
-        const totalWeight = LOTTERY_PRIZES.reduce((sum, p) => sum + p.weight, 0);
+        const totalWeight = LOTTERY_PRIZES.reduce(
+          (sum, p) => sum + p.weight,
+          0
+        );
         let random = Math.random() * totalWeight;
         for (const prize of LOTTERY_PRIZES) {
           random -= prize.weight;
@@ -2772,9 +3286,10 @@ function App() {
     }
 
     // 收集所有获得的奖励用于弹窗显示
-    const rewards: Array<{ type: string; name: string; quantity?: number }> = [];
+    const rewards: Array<{ type: string; name: string; quantity?: number }> =
+      [];
 
-    setPlayer(prev => {
+    setPlayer((prev) => {
       let newInv = [...prev.inventory];
       let newStones = prev.spiritStones;
       let newExp = prev.exp;
@@ -2785,7 +3300,11 @@ function App() {
         if (prize.type === 'spiritStones') {
           const amount = prize.value.spiritStones || 0;
           newStones += amount;
-          rewards.push({ type: 'spiritStones', name: '灵石', quantity: amount });
+          rewards.push({
+            type: 'spiritStones',
+            name: '灵石',
+            quantity: amount,
+          });
           addLog(`获得 ${amount} 灵石`, 'gain');
         } else if (prize.type === 'exp') {
           const amount = prize.value.exp || 0;
@@ -2795,18 +3314,25 @@ function App() {
         } else if (prize.type === 'item' && prize.value.item) {
           const item = prize.value.item;
           const isEquipment = item.isEquippable && item.equipmentSlot;
-          const existingIdx = newInv.findIndex(i => i.name === item.name);
+          const existingIdx = newInv.findIndex((i) => i.name === item.name);
 
           if (existingIdx >= 0 && !isEquipment) {
             // 非装备类物品可以叠加
-            newInv[existingIdx] = { ...newInv[existingIdx], quantity: newInv[existingIdx].quantity + 1 };
+            newInv[existingIdx] = {
+              ...newInv[existingIdx],
+              quantity: newInv[existingIdx].quantity + 1,
+            };
           } else {
             // 装备类物品或新物品，每个装备单独占一格
             // 如果是法宝类型但没有装备槽位，自动分配
             let finalItem = { ...item };
             if (item.type === ItemType.Artifact && !item.equipmentSlot) {
-              const artifactSlots = [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2];
-              finalItem.equipmentSlot = artifactSlots[Math.floor(Math.random() * artifactSlots.length)];
+              const artifactSlots = [
+                EquipmentSlot.Artifact1,
+                EquipmentSlot.Artifact2,
+              ];
+              finalItem.equipmentSlot =
+                artifactSlots[Math.floor(Math.random() * artifactSlots.length)];
               finalItem.isEquippable = true;
             }
 
@@ -2814,13 +3340,15 @@ function App() {
               ...finalItem,
               id: uid(),
               description: finalItem.description || '',
-              quantity: 1 // 装备quantity始终为1
+              quantity: 1, // 装备quantity始终为1
             } as Item);
           }
           rewards.push({ type: 'item', name: item.name, quantity: 1 });
           addLog(`获得 ${item.name}！`, 'gain');
         } else if (prize.type === 'pet' && prize.value.petId) {
-          const template = PET_TEMPLATES.find(t => t.id === prize.value.petId);
+          const template = PET_TEMPLATES.find(
+            (t) => t.id === prize.value.petId
+          );
           if (template) {
             const newPet: Pet = {
               id: uid(),
@@ -2833,7 +3361,7 @@ function App() {
               stats: { ...template.baseStats },
               skills: [...template.skills],
               evolutionStage: 0,
-              affection: 50
+              affection: 50,
             };
             newPets.push(newPet);
             rewards.push({ type: 'pet', name: template.name, quantity: 1 });
@@ -2854,7 +3382,7 @@ function App() {
         inventory: newInv,
         spiritStones: newStones,
         exp: newExp,
-        pets: newPets
+        pets: newPets,
       };
     });
 
@@ -2874,7 +3402,7 @@ function App() {
 
   // 设置系统
   const handleUpdateSettings = (newSettings: Partial<GameSettings>) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
+    setSettings((prev) => ({ ...prev, ...newSettings }));
   };
 
   // 显示开始界面
@@ -2884,7 +3412,6 @@ function App() {
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-stone-900 text-stone-200 overflow-hidden relative">
-
       {/* Visual Effects Layer */}
       <CombatVisuals effects={visualEffects} />
 
@@ -2894,7 +3421,9 @@ function App() {
 
       <main className="flex-1 flex flex-col h-full relative min-w-0">
         <header className="bg-paper-800 p-2 md:p-4 border-b border-stone-700 flex justify-between items-center shadow-lg z-10">
-          <h1 className="text-base md:text-xl font-serif text-mystic-gold tracking-widest">云灵修仙</h1>
+          <h1 className="text-base md:text-xl font-serif text-mystic-gold tracking-widest">
+            云灵修仙
+          </h1>
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsMobileSidebarOpen(true)}
@@ -2928,9 +3457,9 @@ function App() {
             <button
               onClick={() => {
                 setIsAchievementOpen(true);
-                setPlayer(prev => ({
+                setPlayer((prev) => ({
                   ...prev,
-                  viewedAchievements: [...prev.achievements]
+                  viewedAchievements: [...prev.achievements],
                 }));
               }}
               className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm relative min-w-[44px] min-h-[44px] justify-center"
@@ -2938,7 +3467,9 @@ function App() {
               <Trophy size={18} />
               <span>成就</span>
               {(() => {
-                const newAchievements = player.achievements.filter(a => !player.viewedAchievements.includes(a));
+                const newAchievements = player.achievements.filter(
+                  (a) => !player.viewedAchievements.includes(a)
+                );
                 return newAchievements.length > 0 ? (
                   <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                     {newAchievements.length}
@@ -2984,7 +3515,6 @@ function App() {
 
         {/* Action Bar - Mobile: Bottom Fixed, Desktop: Normal */}
         <div className="bg-paper-800 p-3 md:p-4 border-t border-stone-700 grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 shrink-0 fixed md:relative bottom-0 left-0 right-0 md:left-auto md:right-auto z-20 shadow-lg md:shadow-none">
-
           <button
             onClick={handleMeditate}
             disabled={loading || cooldown > 0}
@@ -2993,9 +3523,16 @@ function App() {
               ${loading || cooldown > 0 ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed' : 'bg-ink-800 border-stone-600 active:border-mystic-jade active:bg-ink-700 text-stone-200'}
             `}
           >
-            <User size={24} className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-mystic-jade" />
-            <span className="font-serif font-bold text-base md:text-base">打坐</span>
-            <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">修炼 · 心法</span>
+            <User
+              size={24}
+              className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-mystic-jade"
+            />
+            <span className="font-serif font-bold text-base md:text-base">
+              打坐
+            </span>
+            <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">
+              修炼 · 心法
+            </span>
           </button>
 
           <button
@@ -3006,9 +3543,16 @@ function App() {
               ${loading || cooldown > 0 ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed' : 'bg-ink-800 border-stone-600 active:border-mystic-gold active:bg-ink-700 text-stone-200'}
             `}
           >
-            <Sword size={24} className={`md:w-6 md:h-6 mb-1.5 md:mb-2 text-mystic-gold ${loading ? 'animate-spin' : 'group-active:scale-110 transition-transform'}`} />
-            <span className="font-serif font-bold text-base md:text-base">{loading ? '历练中...' : '历练'}</span>
-            <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">机缘 · 战斗</span>
+            <Sword
+              size={24}
+              className={`md:w-6 md:h-6 mb-1.5 md:mb-2 text-mystic-gold ${loading ? 'animate-spin' : 'group-active:scale-110 transition-transform'}`}
+            />
+            <span className="font-serif font-bold text-base md:text-base">
+              {loading ? '历练中...' : '历练'}
+            </span>
+            <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">
+              机缘 · 战斗
+            </span>
           </button>
 
           <button
@@ -3019,9 +3563,16 @@ function App() {
               ${loading ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed' : 'bg-ink-800 border-stone-600 active:border-purple-500 active:bg-ink-700 text-stone-200'}
             `}
           >
-            <Mountain size={24} className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-purple-400" />
-            <span className="font-serif font-bold text-base md:text-base">秘境</span>
-            <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">探险 · 夺宝</span>
+            <Mountain
+              size={24}
+              className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-purple-400"
+            />
+            <span className="font-serif font-bold text-base md:text-base">
+              秘境
+            </span>
+            <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">
+              探险 · 夺宝
+            </span>
           </button>
 
           <button
@@ -3032,9 +3583,16 @@ function App() {
               ${loading ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed' : 'bg-ink-800 border-stone-600 active:border-cyan-500 active:bg-ink-700 text-stone-200'}
             `}
           >
-            <Sparkles size={24} className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-cyan-400" />
-            <span className="font-serif font-bold text-base md:text-base">炼丹</span>
-            <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">丹药 · 辅助</span>
+            <Sparkles
+              size={24}
+              className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-cyan-400"
+            />
+            <span className="font-serif font-bold text-base md:text-base">
+              炼丹
+            </span>
+            <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">
+              丹药 · 辅助
+            </span>
           </button>
 
           <button
@@ -3044,11 +3602,17 @@ function App() {
               ${loading ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed' : 'bg-ink-800 border-stone-600 active:border-blue-400 active:bg-ink-700 text-stone-200'}
             `}
           >
-            <Scroll size={24} className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-blue-400" />
-            <span className="font-serif font-bold text-base md:text-base">宗门</span>
-            <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">任务 · 晋升</span>
+            <Scroll
+              size={24}
+              className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-blue-400"
+            />
+            <span className="font-serif font-bold text-base md:text-base">
+              宗门
+            </span>
+            <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">
+              任务 · 晋升
+            </span>
           </button>
-
         </div>
       </main>
 
@@ -3120,7 +3684,10 @@ function App() {
 
       <ArtifactUpgradeModal
         isOpen={isUpgradeOpen}
-        onClose={() => { setIsUpgradeOpen(false); setItemToUpgrade(null); }}
+        onClose={() => {
+          setIsUpgradeOpen(false);
+          setItemToUpgrade(null);
+        }}
         item={itemToUpgrade}
         player={player}
         onConfirm={handleUpgradeItem}
@@ -3186,7 +3753,10 @@ function App() {
       {currentShop && (
         <ShopModal
           isOpen={isShopOpen}
-          onClose={() => { setIsShopOpen(false); setCurrentShop(null); }}
+          onClose={() => {
+            setIsShopOpen(false);
+            setCurrentShop(null);
+          }}
           shop={currentShop}
           player={player}
           onBuyItem={handleBuyItem}
@@ -3202,7 +3772,9 @@ function App() {
               <span className="text-2xl">✓</span>
               <div>
                 <div className="font-bold text-lg">购买成功！</div>
-                <div className="text-sm">获得 {purchaseSuccess.item} x{purchaseSuccess.quantity}</div>
+                <div className="text-sm">
+                  获得 {purchaseSuccess.item} x{purchaseSuccess.quantity}
+                </div>
               </div>
             </div>
           </div>
@@ -3218,10 +3790,15 @@ function App() {
               <div className="font-bold text-xl">抽奖获得！</div>
               <div className="w-full space-y-2 max-h-60 overflow-y-auto">
                 {lotteryRewards.map((reward, idx) => (
-                  <div key={idx} className="bg-white/20 rounded px-4 py-2 flex items-center justify-between">
+                  <div
+                    key={idx}
+                    className="bg-white/20 rounded px-4 py-2 flex items-center justify-between"
+                  >
                     <span className="font-semibold">{reward.name}</span>
                     {reward.quantity !== undefined && (
-                      <span className="text-yellow-300 font-bold">x{reward.quantity}</span>
+                      <span className="text-yellow-300 font-bold">
+                        x{reward.quantity}
+                      </span>
                     )}
                   </div>
                 ))}
@@ -3241,15 +3818,19 @@ function App() {
         onOpenCharacter={() => setIsCharacterOpen(true)}
         onOpenAchievement={() => {
           setIsAchievementOpen(true);
-          setPlayer(prev => ({
+          setPlayer((prev) => ({
             ...prev,
-            viewedAchievements: [...prev.achievements]
+            viewedAchievements: [...prev.achievements],
           }));
         }}
         onOpenPet={() => setIsPetOpen(true)}
         onOpenLottery={() => setIsLotteryOpen(true)}
         onOpenSettings={() => setIsSettingsOpen(true)}
-        achievementCount={player.achievements.filter(a => !player.viewedAchievements.includes(a)).length}
+        achievementCount={
+          player.achievements.filter(
+            (a) => !player.viewedAchievements.includes(a)
+          ).length
+        }
         petCount={player.pets.length}
         lotteryTickets={player.lotteryTickets}
       />
@@ -3267,7 +3848,6 @@ function App() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
