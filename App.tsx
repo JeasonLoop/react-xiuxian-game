@@ -446,17 +446,8 @@ function App() {
       };
     }
 
-    // 肩部装备（裘、披风、肩甲等）
-    if (combined.match(/裘|披风|斗篷|肩甲|护肩|肩饰|肩胛/)) {
-      return {
-        type: ItemType.Armor,
-        isEquippable: true,
-        equipmentSlot: EquipmentSlot.Shoulder,
-      };
-    }
-
-    // 头部装备
-    if (combined.match(/头盔|头冠|冠|帽|发簪|发带|头饰|面罩/)) {
+    // 头部装备（优先检查，避免被其他规则误判）
+    if (combined.match(/头盔|头冠|道冠|法冠|仙冠|龙冠|凤冠|冠|帽|发簪|发带|头饰|面罩|头|首/)) {
       return {
         type: ItemType.Armor,
         isEquippable: true,
@@ -464,17 +455,17 @@ function App() {
       };
     }
 
-    // 胸甲装备
-    if (combined.match(/道袍|法衣|胸甲|护胸|铠甲|战甲|法袍|长袍|外衣/)) {
+    // 肩部装备
+    if (combined.match(/肩|裘|披风|斗篷|肩甲|护肩|肩饰|肩胛|云肩|法肩|仙肩/)) {
       return {
         type: ItemType.Armor,
         isEquippable: true,
-        equipmentSlot: EquipmentSlot.Chest,
+        equipmentSlot: EquipmentSlot.Shoulder,
       };
     }
 
-    // 手套
-    if (combined.match(/手套|护手|手甲|拳套/)) {
+    // 手套（优先检查，避免被其他规则误判）
+    if (combined.match(/手套|护手|手甲|拳套|法手|仙手|龙爪套|手/)) {
       return {
         type: ItemType.Armor,
         isEquippable: true,
@@ -482,8 +473,8 @@ function App() {
       };
     }
 
-    // 鞋子
-    if (combined.match(/靴|鞋|足|步|履/)) {
+    // 鞋子（优先检查，避免被其他规则误判）
+    if (combined.match(/靴|鞋|足|步|履|仙履|云履|龙鳞靴|战靴|法靴/)) {
       return {
         type: ItemType.Armor,
         isEquippable: true,
@@ -492,11 +483,20 @@ function App() {
     }
 
     // 裤腿
-    if (combined.match(/裤|腿甲|护腿|下装/)) {
+    if (combined.match(/裤|腿甲|护腿|下装|法裤|仙裤|龙鳞裤|腿/)) {
       return {
         type: ItemType.Armor,
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Legs,
+      };
+    }
+
+    // 胸甲装备（放在最后，作为默认护甲类型）
+    if (combined.match(/道袍|法衣|胸甲|护胸|铠甲|战甲|法袍|长袍|外衣|甲|袍|衣/)) {
+      return {
+        type: ItemType.Armor,
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Chest,
       };
     }
 
@@ -2110,6 +2110,89 @@ function App() {
     });
   };
 
+  // 计算物品出售价格
+  const calculateItemSellPrice = (item: Item): number => {
+    const rarity = item.rarity || '普通';
+    const level = item.level || 0;
+
+    // 基础价格（根据稀有度）
+    const basePrices: Record<ItemRarity, number> = {
+      '普通': 10,
+      '稀有': 50,
+      '传说': 300,
+      '仙品': 2000,
+    };
+    let basePrice = basePrices[rarity];
+
+    // 计算属性价值
+    let attributeValue = 0;
+    const rarityMultiplier = RARITY_MULTIPLIERS[rarity];
+
+    // 临时效果价值（effect）
+    if (item.effect) {
+      const effect = item.effect;
+      attributeValue += (effect.attack || 0) * 2; // 攻击力每点值2灵石
+      attributeValue += (effect.defense || 0) * 1.5; // 防御力每点值1.5灵石
+      attributeValue += (effect.hp || 0) * 0.5; // 气血每点值0.5灵石
+      attributeValue += (effect.spirit || 0) * 1.5; // 神识每点值1.5灵石
+      attributeValue += (effect.physique || 0) * 1.5; // 体魄每点值1.5灵石
+      attributeValue += (effect.speed || 0) * 2; // 速度每点值2灵石
+      attributeValue += (effect.exp || 0) * 0.1; // 修为每点值0.1灵石（临时效果）
+    }
+
+    // 永久效果价值（permanentEffect，更值钱）
+    if (item.permanentEffect) {
+      const permEffect = item.permanentEffect;
+      attributeValue += (permEffect.attack || 0) * 10; // 永久攻击每点值10灵石
+      attributeValue += (permEffect.defense || 0) * 8; // 永久防御每点值8灵石
+      attributeValue += (permEffect.maxHp || 0) * 3; // 永久气血上限每点值3灵石
+      attributeValue += (permEffect.spirit || 0) * 8; // 永久神识每点值8灵石
+      attributeValue += (permEffect.physique || 0) * 8; // 永久体魄每点值8灵石
+      attributeValue += (permEffect.speed || 0) * 10; // 永久速度每点值10灵石
+    }
+
+    // 应用稀有度倍率到属性价值
+    attributeValue = Math.floor(attributeValue * rarityMultiplier);
+
+    // 装备类物品额外价值加成
+    let equipmentBonus = 0;
+    if (item.isEquippable) {
+      // 装备类物品根据类型有不同的基础价值
+      switch (item.type) {
+        case ItemType.Weapon:
+          equipmentBonus = basePrice * 1.5; // 武器额外50%价值
+          break;
+        case ItemType.Armor:
+          equipmentBonus = basePrice * 1.2; // 护甲额外20%价值
+          break;
+        case ItemType.Artifact:
+          equipmentBonus = basePrice * 2; // 法宝额外100%价值
+          break;
+        case ItemType.Ring:
+        case ItemType.Accessory:
+          equipmentBonus = basePrice * 1.3; // 戒指和首饰额外30%价值
+          break;
+      }
+    }
+
+    // 强化等级加成（每级增加20%价值）
+    const levelMultiplier = 1 + (level * 0.2);
+
+    // 计算最终价格
+    const totalValue = (basePrice + attributeValue + equipmentBonus) * levelMultiplier;
+
+    // 根据物品类型调整（消耗品价值较低）
+    let typeMultiplier = 1;
+    if (item.type === ItemType.Herb || item.type === ItemType.Pill) {
+      typeMultiplier = 0.5; // 消耗品价值减半
+    } else if (item.type === ItemType.Material) {
+      typeMultiplier = 0.3; // 材料价值更低
+    }
+
+    // 最终价格（取整，最低为1）
+    return Math.max(1, Math.floor(totalValue * typeMultiplier));
+  };
+
   // 出售物品
   const handleSellItem = (item: Item) => {
     if (!currentShop) return;
@@ -2124,18 +2207,7 @@ function App() {
 
       // 找到对应的商店物品来计算出售价格
       const shopItem = currentShop.items.find((si) => si.name === item.name);
-      const sellPrice =
-        shopItem?.sellPrice ||
-        Math.floor(
-          (item.rarity === '普通'
-            ? 5
-            : item.rarity === '稀有'
-              ? 20
-              : item.rarity === '传说'
-                ? 100
-                : 500) *
-            ((item.level || 0) + 1)
-        );
+      const sellPrice = shopItem?.sellPrice || calculateItemSellPrice(item);
 
       const newInv = prev.inventory
         .map((i) => {
