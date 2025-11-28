@@ -1,4 +1,32 @@
 // Vercel Serverless Function - API 代理
+// 支持动态配置 AI 服务提供商
+
+/**
+ * 获取代理目标 URL
+ */
+function getProxyTarget() {
+  // 从环境变量获取配置
+  const customUrl = process.env.VITE_AI_API_URL;
+  if (customUrl) {
+    try {
+      const url = new URL(customUrl);
+      return url.origin;
+    } catch {
+      // 如果解析失败，使用默认值
+    }
+  }
+  
+  // 根据提供商选择目标
+  const provider = process.env.VITE_AI_PROVIDER || 'siliconflow';
+  switch (provider) {
+    case 'openai':
+      return 'https://api.openai.com';
+    case 'siliconflow':
+    default:
+      return 'https://api.siliconflow.cn';
+  }
+}
+
 export default async function handler(req, res) {
   // 设置 CORS 头（必须在最前面）
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -17,7 +45,12 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch('https://spark-api-open.xf-yun.com/v2/chat/completions', {
+    // 从请求路径中提取实际路径（去掉 /api 前缀）
+    const apiPath = req.url.replace(/^\/api/, '') || '/v1/chat/completions';
+    const targetBase = getProxyTarget();
+    const targetUrl = `${targetBase}${apiPath}`;
+    
+    const response = await fetch(targetUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

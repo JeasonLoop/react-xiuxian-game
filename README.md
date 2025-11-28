@@ -65,18 +65,23 @@ npm install
 
 **⚠️ 重要**: 项目不再包含硬编码的 API Key，必须配置环境变量。
 
+**默认配置**: 项目默认使用 **SiliconFlow** 作为 AI 接口，只需配置 API Key 即可。
+
 在项目根目录创建 `.env.local` 文件：
 
 ```bash
 # .env.local
+# 最小配置：只需设置 API Key，其他使用默认值（SiliconFlow）
 VITE_AI_KEY=your-api-key-here
-VITE_AI_MODEL=Qwen/Qwen2.5-72B-Instruct
-VITE_AI_API_URL=https://api.siliconflow.cn/v1/chat/completions
+
+# 可选配置（如果不设置，将使用默认值）
+# VITE_AI_PROVIDER=siliconflow  # 默认: siliconflow
+# VITE_AI_MODEL=Qwen/Qwen2.5-72B-Instruct  # 默认模型
 ```
 
 > 💡 **获取 API Key**: 
 > - 访问 [SiliconFlow](https://siliconflow.cn) 注册账号并创建 API Key
-> - 或使用其他兼容 OpenAI API 格式的服务
+> - 如需使用其他 AI 服务，设置 `VITE_AI_PROVIDER` 环境变量
 >
 > ⚠️ **安全提示**: `.env.local` 文件已添加到 `.gitignore`，不会被提交到 Git。不要将 API Key 提交到代码仓库。
 
