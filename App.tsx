@@ -32,6 +32,41 @@ const uid = () => Math.random().toString(36).substr(2, 9);
 const SAVE_KEY = 'xiuxian-game-save';
 const SETTINGS_KEY = 'xiuxian-game-settings';
 
+// 已知物品的效果映射表（确保描述和实际效果一致）
+const KNOWN_ITEM_EFFECTS: Record<string, { effect?: any; permanentEffect?: any }> = {
+  '止血草': { effect: { hp: 20 } },
+  '聚灵草': { effect: {} },
+  '回气草': { effect: { hp: 30 } },
+  '凝神花': { effect: { hp: 50, spirit: 5 } },
+  '血参': { effect: { hp: 80 } },
+  '千年灵芝': { effect: { hp: 1500 }, permanentEffect: { maxHp: 200, physique: 100 } },
+  '万年仙草': { effect: { hp: 3000 }, permanentEffect: { maxHp: 500, spirit: 50 } },
+  '回血丹': { effect: { hp: 50 } },
+  '聚气丹': { effect: { exp: 20 } },
+  '强体丹': { permanentEffect: { physique: 5 } },
+  '凝神丹': { permanentEffect: { spirit: 5 } },
+  '筑基丹': { effect: { exp: 100 } },
+  '破境丹': { effect: { exp: 200 } },
+  '仙灵丹': { effect: { exp: 500 }, permanentEffect: { maxHp: 100, physique: 70 } },
+};
+
+// 规范化物品效果，确保已知物品的效果与描述一致
+const normalizeItemEffect = (itemName: string, aiEffect?: any, aiPermanentEffect?: any) => {
+  const knownItem = KNOWN_ITEM_EFFECTS[itemName];
+  if (knownItem) {
+    // 如果物品在已知列表中，使用预定义的效果
+    return {
+      effect: knownItem.effect || aiEffect || {},
+      permanentEffect: knownItem.permanentEffect || aiPermanentEffect || {}
+    };
+  }
+  // 否则使用AI生成的效果
+  return {
+    effect: aiEffect || {},
+    permanentEffect: aiPermanentEffect || {}
+  };
+};
+
 // 创建初始玩家数据
 const createInitialPlayer = (name: string, talentId: string): PlayerStats => {
   const initialTalent = TALENTS.find(t => t.id === talentId);
@@ -558,8 +593,12 @@ function App() {
             isEquippable = inferred.isEquippable;
             equipmentSlot = inferred.equipmentSlot || equipmentSlot;
 
+            // 规范化物品效果（确保已知物品的效果与描述一致）
+            const normalized = normalizeItemEffect(itemName, itemData.effect, itemData.permanentEffect);
+            let finalEffect = normalized.effect;
+            let finalPermanentEffect = normalized.permanentEffect;
+
             // 确保法宝有属性加成，且不能有exp加成
-            let finalEffect = itemData.effect || {};
             if (itemType === ItemType.Artifact) {
               if (finalEffect.exp) {
                 const { exp, ...restEffect } = finalEffect;
@@ -601,11 +640,11 @@ function App() {
                 quantity: 1,
                 rarity: (itemData.rarity as ItemRarity) || '普通',
                 level: 0,
-                isEquippable: isEquippable,
-                equipmentSlot: equipmentSlot,
-                effect: finalEffect,
-                permanentEffect: itemData.permanentEffect
-              };
+              isEquippable: isEquippable,
+              equipmentSlot: equipmentSlot,
+              effect: finalEffect,
+              permanentEffect: finalPermanentEffect
+            };
               newInv.push(newItem);
             }
           });
@@ -620,7 +659,7 @@ function App() {
           const itemDescription = result.itemObtained.description || '';
 
           // 处理神秘法宝：随机命名并设置为法宝类型
-          if (itemName.includes('神秘') && itemName.includes('法宝')) {
+          if (itemName?.includes('神秘') || itemName?.includes('法宝')) {
             const artifactNames = [
               '青莲剑', '紫霄钟', '玄天镜', '九幽塔', '太虚鼎', '阴阳扇', '星辰珠', '混沌印',
               '天机盘', '轮回笔', '乾坤袋', '五行旗', '八卦炉', '太极图', '无极剑', '造化钟',
@@ -640,8 +679,12 @@ function App() {
             equipmentSlot = inferred.equipmentSlot || equipmentSlot;
           }
 
+          // 规范化物品效果（确保已知物品的效果与描述一致）
+          const normalized = normalizeItemEffect(itemName, result.itemObtained.effect, result.itemObtained.permanentEffect);
+          let finalEffect = normalized.effect;
+          let finalPermanentEffect = normalized.permanentEffect;
+
           // 确保法宝有属性加成，且不能有exp加成
-          let finalEffect = result.itemObtained.effect || {};
           if (itemType === ItemType.Artifact) {
             // 移除exp加成（法宝不应该提供修为加成）
             if (finalEffect.exp) {
@@ -695,7 +738,7 @@ function App() {
               isEquippable: isEquippable,
               equipmentSlot: equipmentSlot,
               effect: finalEffect,
-              permanentEffect: result.itemObtained.permanentEffect
+              permanentEffect: finalPermanentEffect
             };
             newInv.push(newItem);
           }
@@ -979,6 +1022,10 @@ function App() {
           // 递归处理秘境事件
           setPlayer(prev => {
             if (!prev) return prev;
+            // 计算境界倍数（用于平衡补偿）
+            const realmIndex = REALM_ORDER.indexOf(prev.realm);
+            const realmMultiplier = 1 + (realmIndex * 0.3) + ((prev.realmLevel - 1) * 0.1);
+
             let newInv = [...prev.inventory];
             let newStones = prev.spiritStones;
             let newExp = prev.exp;
@@ -995,6 +1042,12 @@ function App() {
               const itemName = secretRealmResult.itemObtained.name;
               const existingIdx = newInv.findIndex(i => i.name === itemName);
               if (existingIdx < 0) {
+                // 规范化物品效果（确保已知物品的效果与描述一致）
+                const normalized = normalizeItemEffect(
+                  itemName,
+                  secretRealmResult.itemObtained.effect,
+                  secretRealmResult.itemObtained.permanentEffect
+                );
                 const newItem: Item = {
                   id: uid(),
                   name: itemName,
@@ -1005,24 +1058,81 @@ function App() {
                   level: 0,
                   isEquippable: secretRealmResult.itemObtained.isEquippable,
                   equipmentSlot: secretRealmResult.itemObtained.equipmentSlot as EquipmentSlot | undefined,
-                  effect: secretRealmResult.itemObtained.effect,
-                  permanentEffect: secretRealmResult.itemObtained.permanentEffect
+                  effect: normalized.effect,
+                  permanentEffect: normalized.permanentEffect
                 };
                 newInv.push(newItem);
               }
             }
 
-            // 处理属性降低
+            // 处理属性降低（平衡机制：限制降低数值，确保有补偿）
             if (secretRealmResult.attributeReduction) {
               const reduction = secretRealmResult.attributeReduction;
-              if (reduction.attack) newAttack = Math.max(0, newAttack - reduction.attack);
-              if (reduction.defense) newDefense = Math.max(0, newDefense - reduction.defense);
-              if (reduction.spirit) newSpirit = Math.max(0, newSpirit - reduction.spirit);
-              if (reduction.physique) newPhysique = Math.max(0, newPhysique - reduction.physique);
-              if (reduction.speed) newSpeed = Math.max(0, newSpeed - reduction.speed);
+
+              // 计算属性降低的总量，如果降低太多，需要限制
+              let totalReduction = 0;
+              if (reduction.attack) totalReduction += reduction.attack;
+              if (reduction.defense) totalReduction += reduction.defense;
+              if (reduction.spirit) totalReduction += reduction.spirit;
+              if (reduction.physique) totalReduction += reduction.physique;
+              if (reduction.speed) totalReduction += reduction.speed;
+              if (reduction.maxHp) totalReduction += reduction.maxHp;
+
+              // 计算玩家总属性值（用于比例限制）
+              const totalAttributes = prev.attack + prev.defense + prev.spirit + prev.physique + prev.speed + prev.maxHp;
+
+              // 如果降低超过总属性的15%，则按比例缩减（确保不会过度降低）
+              const maxReductionRatio = 0.15; // 最多降低15%
+              const maxAllowedReduction = totalAttributes * maxReductionRatio;
+
+              if (totalReduction > maxAllowedReduction) {
+                const scaleFactor = maxAllowedReduction / totalReduction;
+                // 按比例缩减所有降低值
+                if (reduction.attack) reduction.attack = Math.floor(reduction.attack * scaleFactor);
+                if (reduction.defense) reduction.defense = Math.floor(reduction.defense * scaleFactor);
+                if (reduction.spirit) reduction.spirit = Math.floor(reduction.spirit * scaleFactor);
+                if (reduction.physique) reduction.physique = Math.floor(reduction.physique * scaleFactor);
+                if (reduction.speed) reduction.speed = Math.floor(reduction.speed * scaleFactor);
+                if (reduction.maxHp) reduction.maxHp = Math.floor(reduction.maxHp * scaleFactor);
+              }
+
+              // 应用属性降低（限制单个属性最多降低10%）
+              if (reduction.attack) {
+                const maxAttackReduction = Math.floor(prev.attack * 0.1);
+                newAttack = Math.max(0, newAttack - Math.min(reduction.attack, maxAttackReduction));
+              }
+              if (reduction.defense) {
+                const maxDefenseReduction = Math.floor(prev.defense * 0.1);
+                newDefense = Math.max(0, newDefense - Math.min(reduction.defense, maxDefenseReduction));
+              }
+              if (reduction.spirit) {
+                const maxSpiritReduction = Math.floor(prev.spirit * 0.1);
+                newSpirit = Math.max(0, newSpirit - Math.min(reduction.spirit, maxSpiritReduction));
+              }
+              if (reduction.physique) {
+                const maxPhysiqueReduction = Math.floor(prev.physique * 0.1);
+                newPhysique = Math.max(0, newPhysique - Math.min(reduction.physique, maxPhysiqueReduction));
+              }
+              if (reduction.speed) {
+                const maxSpeedReduction = Math.floor(prev.speed * 0.1);
+                newSpeed = Math.max(0, newSpeed - Math.min(reduction.speed, maxSpeedReduction));
+              }
               if (reduction.maxHp) {
-                newMaxHp = Math.max(prev.maxHp * 0.5, newMaxHp - reduction.maxHp);
+                const maxHpReduction = Math.floor(prev.maxHp * 0.1);
+                const actualReduction = Math.min(reduction.maxHp, maxHpReduction);
+                newMaxHp = Math.max(prev.maxHp * 0.5, newMaxHp - actualReduction);
                 newHp = Math.min(newHp, newMaxHp);
+              }
+
+              // 如果确实发生了属性降低，确保有补偿（检查是否有物品或大量奖励）
+              const hasCompensation = secretRealmResult.itemObtained ||
+                                     secretRealmResult.expChange > 100 * realmMultiplier ||
+                                     secretRealmResult.spiritStonesChange > 200 * realmMultiplier;
+
+              if (!hasCompensation && totalReduction > 0) {
+                // 如果没有补偿，自动增加一些奖励作为补偿
+                newExp += Math.floor(50 * realmMultiplier);
+                newStones += Math.floor(100 * realmMultiplier);
               }
             }
 
@@ -2078,9 +2188,26 @@ function App() {
   };
 
   // --- SECT HANDLERS ---
-  const handleJoinSect = (sectId: string) => {
-    const sect = SECTS.find(s => s.id === sectId);
-    if (!sect) return;
+  const handleJoinSect = (sectId: string, sectName?: string) => {
+    // 先尝试从 SECTS 中查找
+    let sect = SECTS.find(s => s.id === sectId);
+
+    // 如果找不到，说明是随机生成的宗门，使用传入的名称或创建一个临时宗门对象
+    if (!sect) {
+      if (sectName) {
+        // 使用传入的名称创建临时宗门对象
+        sect = {
+          id: sectId,
+          name: sectName,
+          description: '',
+          reqRealm: RealmType.QiRefining
+        };
+      } else {
+        // 如果连名称都没有，尝试从 availableSects 中查找（但这需要从 SectModal 传递）
+        console.warn('无法找到宗门信息:', sectId);
+        return;
+      }
+    }
 
     setPlayer(prev => ({ ...prev, sectId: sectId, sectRank: SectRank.Outer, sectContribution: 0 }));
     addLog(`恭喜！你已拜入【${sect.name}】，成为一名外门弟子。`, 'special');
@@ -2924,6 +3051,34 @@ function App() {
 
         </div>
       </main>
+
+      {/* GitHub 链接 */}
+      <div className="fixed bottom-2 left-2 md:bottom-4 md:left-4 z-30">
+        <a
+          href="https://github.com/JeasonLoop/react-xiuxian-game"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 bg-stone-800/90 hover:bg-stone-700/90 text-stone-300 hover:text-white border border-stone-600 rounded-lg px-3 py-2 text-sm transition-all duration-200 shadow-lg backdrop-blur-sm"
+          title="查看 GitHub 仓库"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="flex-shrink-0"
+          >
+            <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0-2-1.5-3-1.5-3-1.5-.3 1.15-.3 2.35 0 3.5-1.05 1.08-1 2.5-1 3.5 0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+            <path d="M9 18c-4.51 2-5-2-7-2" />
+          </svg>
+          <span className="hidden md:inline">GitHub</span>
+        </a>
+      </div>
 
       <BattleModal
         isOpen={isBattleModalOpen}
