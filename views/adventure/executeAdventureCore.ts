@@ -830,9 +830,12 @@ export async function executeAdventureCore({
       }
     }
 
+    // 允许hp变为0或负数，用于触发死亡检测
+    const finalHp = newHp + result.hpChange;
+
     return {
       ...prev,
-      hp: Math.max(0, Math.min(newMaxHp, newHp + result.hpChange)),
+      hp: Math.min(newMaxHp, finalHp), // 移除 Math.max(0, ...)，允许负数
       exp: Math.max(0, prev.exp + result.expChange), // 修为不能为负
       spiritStones: Math.max(
         0,
@@ -866,8 +869,16 @@ export async function executeAdventureCore({
     addLog(`获得物品: ${result.itemObtained.name}`, 'gain');
   }
 
-  if (battleContext && !skipBattle) {
-    onOpenBattleModal(battleContext);
+  // 即使跳过战斗，也要保存战斗数据用于死亡统计
+  // 但只在非自动模式下显示战斗弹窗
+  if (battleContext) {
+    if (!skipBattle) {
+      onOpenBattleModal(battleContext);
+    } else {
+      // 自动模式下，静默保存战斗数据（通过 onOpenBattleModal 回调）
+      // 这样可以在死亡时显示战斗统计
+      onOpenBattleModal(battleContext);
+    }
   }
 
   // 如果触发随机秘境，自动进入秘境并触发新的随机事件

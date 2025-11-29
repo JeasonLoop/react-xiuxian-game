@@ -532,9 +532,10 @@ export const resolveBattleEncounter = async (player: PlayerStats, adventureType:
   }
 
   const victory = enemyHp <= 0 && playerHp > 0;
-  if (!victory) {
-    playerHp = Math.max(1, Math.round(player.maxHp * 0.08));
-  }
+  // 移除战斗失败时的血量保护，允许死亡
+  // if (!victory) {
+  //   playerHp = Math.max(1, Math.round(player.maxHp * 0.08));
+  // }
 
   const hpLoss = Math.max(0, player.hp - playerHp);
 
