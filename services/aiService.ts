@@ -299,7 +299,7 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
     "equipmentSlot": "装备槽位（字符串，可选：头部/肩部/胸甲/手套/裤腿/鞋子/戒指1-4/首饰1-2/法宝1-2/武器）",
     "effect": {
       "hp": 气血（整数，可选，纯数字）,
-      "exp": 修为（整数，可选，纯数字）,
+      "exp": 修为（整数，可选，纯数字，注意：装备类物品不能有exp加成）,
       "attack": 攻击（整数，可选，纯数字）,
       "defense": 防御（整数，可选，纯数字）,
       "spirit": 神识（整数，可选，纯数字）,
@@ -370,7 +370,9 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
   * 单一属性：只加攻击、只加防御、只加气血等
   * 双属性组合：攻击+速度、防御+气血、神识+体魄等
   * 多属性组合：攻击+防御+速度、气血+神识+体魄等（稀有物品）
-- 永久属性物品（permanentEffect）应该比临时效果物品（effect）更稀有
+- 【重要】装备类物品（武器/护甲/首饰/戒指/法宝）必须使用 effect 字段来提供属性加成，不要使用 permanentEffect
+- permanentEffect 仅用于消耗品（丹药等）使用后永久增加玩家属性
+- 装备类物品的 effect 会在装备时生效，卸下时失效，这是装备的正常机制
 - 根据稀有度调整属性数值：
   * 普通：单一属性10-30，双属性各5-15
   * 稀有：单一属性30-80，双属性各15-40，三属性各10-25

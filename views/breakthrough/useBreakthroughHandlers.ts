@@ -125,13 +125,18 @@ export function useBreakthroughHandlers({
         }
 
         const newBaseMaxHp = Math.floor(stats.baseMaxHp * levelMultiplier);
+        const newMaxExp = Math.floor(stats.maxExpBase * levelMultiplier * 1.5);
+
+        // 计算超出当前境界的经验值，保留到下一个境界
+        const excessExp = Math.max(0, prev.exp - prev.maxExp);
+        const newExp = excessExp;
 
         return {
           ...prev,
           realm: nextRealm,
           realmLevel: nextLevel,
-          exp: 0,
-          maxExp: Math.floor(stats.maxExpBase * levelMultiplier * 1.5),
+          exp: newExp, // 保留超出部分
+          maxExp: newMaxExp,
           maxHp: newBaseMaxHp + bonusHp,
           hp: newBaseMaxHp + bonusHp, // Full heal
           attack: Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack,
@@ -246,6 +251,11 @@ export function useBreakthroughHandlers({
         }
 
         const newBaseMaxHp = Math.floor(stats.baseMaxHp * levelMultiplier);
+        const newMaxExp = Math.floor(stats.maxExpBase * levelMultiplier * 1.5);
+
+        // 计算超出当前境界的经验值，保留到下一个境界
+        const excessExp = Math.max(0, prev.exp - prev.maxExp);
+        const newExp = excessExp;
 
         addLog(
           `🌟 你使用了传承，连续突破了 ${breakthroughCount} 个境界！`,
@@ -256,8 +266,8 @@ export function useBreakthroughHandlers({
           ...prev,
           realm: currentRealm,
           realmLevel: currentLevel,
-          exp: 0,
-          maxExp: Math.floor(stats.maxExpBase * levelMultiplier * 1.5),
+          exp: newExp, // 保留超出部分
+          maxExp: newMaxExp,
           maxHp: newBaseMaxHp + bonusHp,
           hp: newBaseMaxHp + bonusHp,
           attack: Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack,

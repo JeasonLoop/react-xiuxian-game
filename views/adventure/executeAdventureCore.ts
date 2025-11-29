@@ -125,6 +125,48 @@ export async function executeAdventureCore({
         let finalEffect = normalized.effect;
         let finalPermanentEffect = normalized.permanentEffect;
 
+        // 装备类物品应该使用 effect 而不是 permanentEffect
+        // 如果装备只有 permanentEffect 而没有 effect，将其转换为 effect
+        if (isEquippable && !finalEffect && finalPermanentEffect) {
+          // 将 permanentEffect 转换为 effect（除了 maxHp，因为装备不提供 maxHp）
+          finalEffect = {
+            attack: finalPermanentEffect.attack,
+            defense: finalPermanentEffect.defense,
+            spirit: finalPermanentEffect.spirit,
+            physique: finalPermanentEffect.physique,
+            speed: finalPermanentEffect.speed,
+            hp: 0, // maxHp 转换为 hp（装备时增加当前气血上限）
+          };
+          // 如果有 maxHp，也加到 hp 中
+          if (finalPermanentEffect.maxHp) {
+            finalEffect.hp = (finalEffect.hp || 0) + finalPermanentEffect.maxHp;
+          }
+          // 清空 permanentEffect（装备不应该有 permanentEffect）
+          finalPermanentEffect = undefined;
+          console.log(`[装备效果修正] "${itemName}": 将 permanentEffect 转换为 effect`);
+        }
+
+        // 装备类物品应该使用 effect 而不是 permanentEffect
+        // 如果装备只有 permanentEffect 而没有 effect，将其转换为 effect
+        if (isEquippable && !finalEffect && finalPermanentEffect) {
+          // 将 permanentEffect 转换为 effect（除了 maxHp，因为装备不提供 maxHp）
+          finalEffect = {
+            attack: finalPermanentEffect.attack,
+            defense: finalPermanentEffect.defense,
+            spirit: finalPermanentEffect.spirit,
+            physique: finalPermanentEffect.physique,
+            speed: finalPermanentEffect.speed,
+            hp: 0, // maxHp 转换为 hp（装备时增加当前气血上限）
+          };
+          // 如果有 maxHp，也加到 hp 中
+          if (finalPermanentEffect.maxHp) {
+            finalEffect.hp = (finalEffect.hp || 0) + finalPermanentEffect.maxHp;
+          }
+          // 清空 permanentEffect（装备不应该有 permanentEffect）
+          finalPermanentEffect = undefined;
+          console.log(`[装备效果修正] "${itemName}": 将 permanentEffect 转换为 effect`);
+        }
+
         // 确保法宝有属性加成，且不能有exp加成
         if (itemType === ItemType.Artifact) {
           if (finalEffect.exp) {
@@ -290,6 +332,27 @@ export async function executeAdventureCore({
       );
       let finalEffect = normalized.effect;
       let finalPermanentEffect = normalized.permanentEffect;
+
+      // 装备类物品应该使用 effect 而不是 permanentEffect
+      // 如果装备只有 permanentEffect 而没有 effect，将其转换为 effect
+      if (isEquippable && !finalEffect && finalPermanentEffect) {
+        // 将 permanentEffect 转换为 effect（除了 maxHp，因为装备不提供 maxHp）
+        finalEffect = {
+          attack: finalPermanentEffect.attack,
+          defense: finalPermanentEffect.defense,
+          spirit: finalPermanentEffect.spirit,
+          physique: finalPermanentEffect.physique,
+          speed: finalPermanentEffect.speed,
+          hp: 0, // maxHp 转换为 hp（装备时增加当前气血上限）
+        };
+        // 如果有 maxHp，也加到 hp 中
+        if (finalPermanentEffect.maxHp) {
+          finalEffect.hp = (finalEffect.hp || 0) + finalPermanentEffect.maxHp;
+        }
+        // 清空 permanentEffect（装备不应该有 permanentEffect）
+        finalPermanentEffect = undefined;
+        console.log(`[装备效果修正] "${itemName}": 将 permanentEffect 转换为 effect`);
+      }
 
       // 确保法宝有属性加成，且不能有exp加成
       if (itemType === ItemType.Artifact) {
