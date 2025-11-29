@@ -57,6 +57,7 @@ export function useGameState() {
               new Date().toISOString().split('T')[0],
             viewedAchievements: savedData.player.viewedAchievements || [],
             natalArtifactId: savedData.player.natalArtifactId || null,
+            unlockedRecipes: savedData.player.unlockedRecipes || [], // 兼容旧存档，确保 unlockedRecipes 存在
           };
           setPlayer(loadedPlayer);
           setLogs(savedData.logs || []);

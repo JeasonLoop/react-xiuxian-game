@@ -132,6 +132,10 @@ export function useItemHandlers({
       // 处理丹方使用
       if (item.type === ItemType.Recipe && item.recipeData) {
         const recipeName = item.recipeData.name;
+        // 确保 unlockedRecipes 存在（兼容旧存档）
+        if (!newStats.unlockedRecipes) {
+          newStats.unlockedRecipes = [];
+        }
         // 检查是否已经解锁
         if (newStats.unlockedRecipes.includes(recipeName)) {
           addLog(`你已经学会了【${recipeName}】的炼制方法。`, 'normal');
