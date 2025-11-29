@@ -84,7 +84,7 @@ const LogPanel: React.FC<Props> = ({ logs, className }) => {
       const isAtBottom = checkIfAtBottom();
       shouldAutoScrollRef.current = isAtBottom;
 
-      if (isAtBottom) {
+      if (!isAtBottom) {
         // 使用 requestAnimationFrame 确保 DOM 更新后再滚动
         requestAnimationFrame(() => {
           endRef.current?.scrollIntoView({ behavior: 'smooth' });

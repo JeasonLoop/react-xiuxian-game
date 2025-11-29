@@ -978,13 +978,30 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     name: '聚气丹',
     type: 'item',
     rarity: '普通',
-    weight: 20,
+    weight: 18,
     value: {
       item: {
         name: '聚气丹',
         type: ItemType.Pill,
         description: '短时间内大幅提升修炼速度',
         quantity: 1,
+        rarity: '普通',
+        effect: { exp: 50 }
+      }
+    }
+  },
+  {
+    id: 'lottery-pill-qi-2',
+    name: '聚气丹x3',
+    type: 'item',
+    rarity: '普通',
+    weight: 12,
+    value: {
+      item: {
+        name: '聚气丹',
+        type: ItemType.Pill,
+        description: '短时间内大幅提升修炼速度',
+        quantity: 3,
         rarity: '普通',
         effect: { exp: 50 }
       }
@@ -1042,6 +1059,40 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     }
   },
   {
+    id: 'lottery-pill-golden',
+    name: '结金丹',
+    type: 'item',
+    rarity: '稀有',
+    weight: 6,
+    value: {
+      item: {
+        name: '结金丹',
+        type: ItemType.Pill,
+        description: '有助于凝结金丹的珍贵丹药',
+        quantity: 1,
+        rarity: '稀有',
+        effect: { exp: 300, spirit: 20 }
+      }
+    }
+  },
+  {
+    id: 'lottery-pill-soul',
+    name: '凝魂丹',
+    type: 'item',
+    rarity: '传说',
+    weight: 4,
+    value: {
+      item: {
+        name: '凝魂丹',
+        type: ItemType.Pill,
+        description: '能够凝聚神魂的珍贵丹药',
+        quantity: 1,
+        rarity: '传说',
+        effect: { exp: 1000, spirit: 50, hp: 300 }
+      }
+    }
+  },
+  {
     id: 'lottery-pill-dragon',
     name: '龙血丹',
     type: 'item',
@@ -1054,7 +1105,24 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         description: '蕴含一丝真龙之血，气血如龙',
         quantity: 1,
         rarity: '传说',
-        effect: { hp: 500 }
+        effect: { hp: 500, attack: 20, defense: 20 }
+      }
+    }
+  },
+  {
+    id: 'lottery-pill-phoenix',
+    name: '凤凰涅槃丹',
+    type: 'item',
+    rarity: '传说',
+    weight: 2,
+    value: {
+      item: {
+        name: '凤凰涅槃丹',
+        type: ItemType.Pill,
+        description: '蕴含凤凰涅槃之力的神丹',
+        quantity: 1,
+        rarity: '传说',
+        effect: { hp: 800, exp: 1500, attack: 30 }
       }
     }
   },
@@ -1082,13 +1150,29 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     name: '炼器石',
     type: 'item',
     rarity: '普通',
-    weight: 18,
+    weight: 16,
     value: {
       item: {
         name: '炼器石',
         type: ItemType.Material,
         description: '用于强化法宝的基础材料',
         quantity: 5,
+        rarity: '普通'
+      }
+    }
+  },
+  {
+    id: 'lottery-material-refining-2',
+    name: '炼器石x10',
+    type: 'item',
+    rarity: '普通',
+    weight: 10,
+    value: {
+      item: {
+        name: '炼器石',
+        type: ItemType.Material,
+        description: '用于强化法宝的基础材料',
+        quantity: 10,
         rarity: '普通'
       }
     }
@@ -1126,6 +1210,70 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     }
   },
   {
+    id: 'lottery-material-spirit',
+    name: '灵石碎片',
+    type: 'item',
+    rarity: '普通',
+    weight: 14,
+    value: {
+      item: {
+        name: '灵石碎片',
+        type: ItemType.Material,
+        description: '破碎的灵石，可用于炼器',
+        quantity: 10,
+        rarity: '普通'
+      }
+    }
+  },
+  {
+    id: 'lottery-material-iron',
+    name: '精铁',
+    type: 'item',
+    rarity: '普通',
+    weight: 12,
+    value: {
+      item: {
+        name: '精铁',
+        type: ItemType.Material,
+        description: '经过提炼的精铁，是炼器的好材料',
+        quantity: 5,
+        rarity: '普通'
+      }
+    }
+  },
+  {
+    id: 'lottery-material-silver',
+    name: '秘银',
+    type: 'item',
+    rarity: '稀有',
+    weight: 7,
+    value: {
+      item: {
+        name: '秘银',
+        type: ItemType.Material,
+        description: '珍贵的炼器材料，能够提升法宝品质',
+        quantity: 3,
+        rarity: '稀有'
+      }
+    }
+  },
+  {
+    id: 'lottery-material-dragon-scale',
+    name: '龙鳞',
+    type: 'item',
+    rarity: '传说',
+    weight: 3,
+    value: {
+      item: {
+        name: '龙鳞',
+        type: ItemType.Material,
+        description: '真龙身上的鳞片，是炼制顶级法宝的材料',
+        quantity: 1,
+        rarity: '传说'
+      }
+    }
+  },
+  {
     id: 'lottery-material-herb',
     name: '聚灵草',
     type: 'item',
@@ -1137,6 +1285,22 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         type: ItemType.Herb,
         description: '吸收天地灵气的草药',
         quantity: 10,
+        rarity: '普通'
+      }
+    }
+  },
+  {
+    id: 'lottery-material-herb-2',
+    name: '聚灵草x20',
+    type: 'item',
+    rarity: '普通',
+    weight: 10,
+    value: {
+      item: {
+        name: '聚灵草',
+        type: ItemType.Herb,
+        description: '吸收天地灵气的草药',
+        quantity: 20,
         rarity: '普通'
       }
     }
@@ -1158,6 +1322,22 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     }
   },
   {
+    id: 'lottery-material-snow-lotus',
+    name: '雪莲花',
+    type: 'item',
+    rarity: '稀有',
+    weight: 6,
+    value: {
+      item: {
+        name: '雪莲花',
+        type: ItemType.Herb,
+        description: '生长在极寒之地的灵花，药效极强',
+        quantity: 2,
+        rarity: '稀有'
+      }
+    }
+  },
+  {
     id: 'lottery-material-legend',
     name: '千年人参',
     type: 'item',
@@ -1173,6 +1353,22 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
       }
     }
   },
+  {
+    id: 'lottery-material-phoenix-feather',
+    name: '凤凰羽',
+    type: 'item',
+    rarity: '传说',
+    weight: 2,
+    value: {
+      item: {
+        name: '凤凰羽',
+        type: ItemType.Material,
+        description: '凤凰身上的羽毛，蕴含涅槃之力',
+        quantity: 1,
+        rarity: '传说'
+      }
+    }
+  },
 
   // 普通奖励 - 装备（武器）
   {
@@ -1180,7 +1376,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     name: '精铁剑',
     type: 'item',
     rarity: '普通',
-    weight: 12,
+    weight: 10,
     value: {
       item: {
         name: '精铁剑',
@@ -1195,11 +1391,30 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     }
   },
   {
+    id: 'lottery-weapon-bronze',
+    name: '青铜刀',
+    type: 'item',
+    rarity: '普通',
+    weight: 9,
+    value: {
+      item: {
+        name: '青铜刀',
+        type: ItemType.Weapon,
+        description: '青铜锻造的宝刀，刀锋锐利',
+        quantity: 1,
+        rarity: '普通',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Weapon,
+        effect: { attack: 12 }
+      }
+    }
+  },
+  {
     id: 'lottery-weapon-frost',
     name: '青霜剑',
     type: 'item',
     rarity: '稀有',
-    weight: 7,
+    weight: 6,
     value: {
       item: {
         name: '青霜剑',
@@ -1214,11 +1429,49 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     }
   },
   {
+    id: 'lottery-weapon-fire',
+    name: '烈焰枪',
+    type: 'item',
+    rarity: '稀有',
+    weight: 5,
+    value: {
+      item: {
+        name: '烈焰枪',
+        type: ItemType.Weapon,
+        description: '枪身燃烧着烈焰，威力惊人',
+        quantity: 1,
+        rarity: '稀有',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Weapon,
+        effect: { attack: 18, hp: 20 }
+      }
+    }
+  },
+  {
+    id: 'lottery-weapon-thunder',
+    name: '雷光剑',
+    type: 'item',
+    rarity: '稀有',
+    weight: 4,
+    value: {
+      item: {
+        name: '雷光剑',
+        type: ItemType.Weapon,
+        description: '剑身缠绕着雷光，速度极快',
+        quantity: 1,
+        rarity: '稀有',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Weapon,
+        effect: { attack: 20, speed: 10 }
+      }
+    }
+  },
+  {
     id: 'lottery-weapon-sky',
     name: '天罡剑',
     type: 'item',
     rarity: '传说',
-    weight: 3,
+    weight: 2,
     value: {
       item: {
         name: '天罡剑',
@@ -1232,6 +1485,44 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
       }
     }
   },
+  {
+    id: 'lottery-weapon-dragon',
+    name: '龙吟刀',
+    type: 'item',
+    rarity: '传说',
+    weight: 2,
+    value: {
+      item: {
+        name: '龙吟刀',
+        type: ItemType.Weapon,
+        description: '刀出如龙吟，威力惊天',
+        quantity: 1,
+        rarity: '传说',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Weapon,
+        effect: { attack: 220, defense: 40, hp: 100 }
+      }
+    }
+  },
+  {
+    id: 'lottery-weapon-immortal',
+    name: '诛仙剑',
+    type: 'item',
+    rarity: '仙品',
+    weight: 1,
+    value: {
+      item: {
+        name: '诛仙剑',
+        type: ItemType.Weapon,
+        description: '传说中的仙剑，可诛仙灭魔',
+        quantity: 1,
+        rarity: '仙品',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Weapon,
+        effect: { attack: 1000, defense: 200, hp: 500, spirit: 100 }
+      }
+    }
+  },
 
   // 普通奖励 - 装备（防具）
   {
@@ -1239,7 +1530,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     name: '布甲',
     type: 'item',
     rarity: '普通',
-    weight: 12,
+    weight: 10,
     value: {
       item: {
         name: '布甲',
@@ -1254,11 +1545,30 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     }
   },
   {
+    id: 'lottery-armor-leather',
+    name: '皮甲',
+    type: 'item',
+    rarity: '普通',
+    weight: 9,
+    value: {
+      item: {
+        name: '皮甲',
+        type: ItemType.Armor,
+        description: '用兽皮制作的护甲，比布甲更坚固',
+        quantity: 1,
+        rarity: '普通',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Chest,
+        effect: { defense: 8, hp: 30 }
+      }
+    }
+  },
+  {
     id: 'lottery-armor-cloud',
     name: '云灵道袍',
     type: 'item',
     rarity: '稀有',
-    weight: 7,
+    weight: 6,
     value: {
       item: {
         name: '云灵道袍',
@@ -1273,11 +1583,30 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     }
   },
   {
+    id: 'lottery-armor-iron',
+    name: '铁甲',
+    type: 'item',
+    rarity: '稀有',
+    weight: 5,
+    value: {
+      item: {
+        name: '铁甲',
+        type: ItemType.Armor,
+        description: '精铁打造的护甲，防御力强劲',
+        quantity: 1,
+        rarity: '稀有',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Chest,
+        effect: { defense: 20, hp: 60 }
+      }
+    }
+  },
+  {
     id: 'lottery-armor-dragon',
     name: '龙鳞甲',
     type: 'item',
     rarity: '传说',
-    weight: 3,
+    weight: 2,
     value: {
       item: {
         name: '龙鳞甲',
@@ -1291,6 +1620,44 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
       }
     }
   },
+  {
+    id: 'lottery-armor-phoenix',
+    name: '凤凰羽衣',
+    type: 'item',
+    rarity: '传说',
+    weight: 2,
+    value: {
+      item: {
+        name: '凤凰羽衣',
+        type: ItemType.Armor,
+        description: '用凤凰羽毛编织的仙衣，轻盈而坚固',
+        quantity: 1,
+        rarity: '传说',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Chest,
+        effect: { defense: 140, hp: 450, speed: 30, spirit: 40 }
+      }
+    }
+  },
+  {
+    id: 'lottery-armor-immortal',
+    name: '仙灵道袍',
+    type: 'item',
+    rarity: '仙品',
+    weight: 1,
+    value: {
+      item: {
+        name: '仙灵道袍',
+        type: ItemType.Armor,
+        description: '仙灵所制的道袍，蕴含无上仙力',
+        quantity: 1,
+        rarity: '仙品',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Chest,
+        effect: { defense: 800, hp: 3000, attack: 100, spirit: 200 }
+      }
+    }
+  },
 
   // 普通奖励 - 装备（饰品）
   {
@@ -1298,7 +1665,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     name: '铜戒指',
     type: 'item',
     rarity: '普通',
-    weight: 10,
+    weight: 9,
     value: {
       item: {
         name: '铜戒指',
@@ -1313,11 +1680,68 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     }
   },
   {
+    id: 'lottery-ring-silver',
+    name: '银戒指',
+    type: 'item',
+    rarity: '普通',
+    weight: 8,
+    value: {
+      item: {
+        name: '银戒指',
+        type: ItemType.Ring,
+        description: '银制的戒指，比铜戒指更精致',
+        quantity: 1,
+        rarity: '普通',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Ring1,
+        effect: { attack: 4, defense: 4 }
+      }
+    }
+  },
+  {
+    id: 'lottery-ring-gold',
+    name: '金戒指',
+    type: 'item',
+    rarity: '稀有',
+    weight: 5,
+    value: {
+      item: {
+        name: '金戒指',
+        type: ItemType.Ring,
+        description: '黄金打造的戒指，属性加成不错',
+        quantity: 1,
+        rarity: '稀有',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Ring1,
+        effect: { attack: 15, defense: 15 }
+      }
+    }
+  },
+  {
+    id: 'lottery-ring-star',
+    name: '星辰戒指',
+    type: 'item',
+    rarity: '传说',
+    weight: 2,
+    value: {
+      item: {
+        name: '星辰戒指',
+        type: ItemType.Ring,
+        description: '蕴含星辰之力的戒指，威力强大',
+        quantity: 1,
+        rarity: '传说',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Ring1,
+        effect: { attack: 40, defense: 40, speed: 20, spirit: 30 }
+      }
+    }
+  },
+  {
     id: 'lottery-accessory-protect',
     name: '护身符',
     type: 'item',
     rarity: '稀有',
-    weight: 6,
+    weight: 5,
     value: {
       item: {
         name: '护身符',
@@ -1331,81 +1755,271 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
       }
     }
   },
-
-  // 普通奖励 - 法宝
   {
-    id: 'lottery-artifact-common',
-    name: '普通法宝',
-    type: 'item',
-    rarity: '普通',
-    weight: 8,
-    value: {
-      item: {
-        name: '普通法宝',
-        type: ItemType.Artifact,
-        description: '基础的法宝，提供少量属性加成',
-        quantity: 1,
-        rarity: '普通',
-        isEquippable: true,
-        equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 20, defense: 10, hp: 50 }
-      }
-    }
-  },
-  {
-    id: 'lottery-artifact-rare',
-    name: '稀有法宝',
+    id: 'lottery-accessory-jade',
+    name: '玉佩',
     type: 'item',
     rarity: '稀有',
-    weight: 5,
+    weight: 4,
     value: {
       item: {
-        name: '稀有法宝',
-        type: ItemType.Artifact,
-        description: '品质不错的法宝，属性加成可观',
+        name: '玉佩',
+        type: ItemType.Accessory,
+        description: '温润的玉佩，能够静心凝神',
         quantity: 1,
         rarity: '稀有',
         isEquippable: true,
-        equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 100, defense: 50, hp: 200 }
+        equipmentSlot: EquipmentSlot.Accessory1,
+        effect: { spirit: 30, hp: 80, defense: 15 }
       }
     }
   },
   {
-    id: 'lottery-artifact-legend',
-    name: '传说法宝',
+    id: 'lottery-accessory-immortal',
+    name: '仙灵玉佩',
     type: 'item',
     rarity: '传说',
     weight: 2,
     value: {
       item: {
-        name: '传说法宝',
-        type: ItemType.Artifact,
-        description: '传说中的法宝，威力强大',
+        name: '仙灵玉佩',
+        type: ItemType.Accessory,
+        description: '仙灵所制的玉佩，蕴含无上仙力',
         quantity: 1,
         rarity: '传说',
         isEquippable: true,
+        equipmentSlot: EquipmentSlot.Accessory1,
+        effect: { attack: 50, defense: 50, hp: 300, spirit: 80 }
+      }
+    }
+  },
+
+  // 普通奖励 - 法宝
+  {
+    id: 'lottery-artifact-common-1',
+    name: '聚灵珠',
+    type: 'item',
+    rarity: '普通',
+    weight: 6,
+    value: {
+      item: {
+        name: '聚灵珠',
+        type: ItemType.Artifact,
+        description: '能够聚集天地灵气的宝珠，略微提升修炼速度',
+        quantity: 1,
+        rarity: '普通',
+        isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 500, defense: 250, hp: 1000 }
+        effect: { attack: 15, defense: 8, hp: 40, spirit: 10 }
       }
     }
   },
   {
-    id: 'lottery-artifact-immortal',
-    name: '仙品至宝',
+    id: 'lottery-artifact-common-2',
+    name: '护体符',
+    type: 'item',
+    rarity: '普通',
+    weight: 6,
+    value: {
+      item: {
+        name: '护体符',
+        type: ItemType.Artifact,
+        description: '基础的护身符箓，提供微弱的防护',
+        quantity: 1,
+        rarity: '普通',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Artifact1,
+        effect: { attack: 10, defense: 15, hp: 50 }
+      }
+    }
+  },
+  {
+    id: 'lottery-artifact-common-3',
+    name: '青莲剑',
+    type: 'item',
+    rarity: '普通',
+    weight: 5,
+    value: {
+      item: {
+        name: '青莲剑',
+        type: ItemType.Artifact,
+        description: '青莲道人所用法宝，剑身如莲，清雅脱俗',
+        quantity: 1,
+        rarity: '普通',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Artifact1,
+        effect: { attack: 25, defense: 10, hp: 30 }
+      }
+    }
+  },
+  {
+    id: 'lottery-artifact-rare-1',
+    name: '玄灵镜',
+    type: 'item',
+    rarity: '稀有',
+    weight: 4,
+    value: {
+      item: {
+        name: '玄灵镜',
+        type: ItemType.Artifact,
+        description: '能够洞察虚实的宝镜，提升神识和防御',
+        quantity: 1,
+        rarity: '稀有',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Artifact1,
+        effect: { attack: 80, defense: 60, hp: 180, spirit: 30 }
+      }
+    }
+  },
+  {
+    id: 'lottery-artifact-rare-2',
+    name: '紫霄钟',
+    type: 'item',
+    rarity: '稀有',
+    weight: 4,
+    value: {
+      item: {
+        name: '紫霄钟',
+        type: ItemType.Artifact,
+        description: '紫霄宫传承法宝，钟声可震慑邪魔',
+        quantity: 1,
+        rarity: '稀有',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Artifact1,
+        effect: { attack: 100, defense: 50, hp: 200, spirit: 20 }
+      }
+    }
+  },
+  {
+    id: 'lottery-artifact-rare-3',
+    name: '阴阳扇',
+    type: 'item',
+    rarity: '稀有',
+    weight: 3,
+    value: {
+      item: {
+        name: '阴阳扇',
+        type: ItemType.Artifact,
+        description: '蕴含阴阳之力的宝扇，攻防兼备',
+        quantity: 1,
+        rarity: '稀有',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Artifact1,
+        effect: { attack: 90, defense: 70, hp: 220 }
+      }
+    }
+  },
+  {
+    id: 'lottery-artifact-legend-1',
+    name: '星辰盘',
+    type: 'item',
+    rarity: '传说',
+    weight: 2,
+    value: {
+      item: {
+        name: '星辰盘',
+        type: ItemType.Artifact,
+        description: '能够引动星辰之力的法宝，威力无穷',
+        quantity: 1,
+        rarity: '传说',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Artifact1,
+        effect: { attack: 450, defense: 250, hp: 900, spirit: 100 }
+      }
+    }
+  },
+  {
+    id: 'lottery-artifact-legend-2',
+    name: '九幽塔',
+    type: 'item',
+    rarity: '传说',
+    weight: 2,
+    value: {
+      item: {
+        name: '九幽塔',
+        type: ItemType.Artifact,
+        description: '来自九幽之地的宝塔，可镇压一切邪祟',
+        quantity: 1,
+        rarity: '传说',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Artifact1,
+        effect: { attack: 500, defense: 300, hp: 1000, spirit: 80 }
+      }
+    }
+  },
+  {
+    id: 'lottery-artifact-legend-3',
+    name: '太虚鼎',
+    type: 'item',
+    rarity: '传说',
+    weight: 1,
+    value: {
+      item: {
+        name: '太虚鼎',
+        type: ItemType.Artifact,
+        description: '太虚道人的本命法宝，蕴含虚空之力',
+        quantity: 1,
+        rarity: '传说',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Artifact1,
+        effect: { attack: 550, defense: 250, hp: 1100, spirit: 120 }
+      }
+    }
+  },
+  {
+    id: 'lottery-artifact-immortal-1',
+    name: '仙灵宝珠',
     type: 'item',
     rarity: '仙品',
     weight: 1,
     value: {
       item: {
-        name: '仙品至宝',
+        name: '仙灵宝珠',
         type: ItemType.Artifact,
-        description: '仙品级别的至宝，威力达到极致',
+        description: '仙灵凝聚而成的宝珠，蕴含无上仙力',
         quantity: 1,
         rarity: '仙品',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 2000, defense: 1000, hp: 5000 }
+        effect: { attack: 1800, defense: 900, hp: 4500, spirit: 500 }
+      }
+    }
+  },
+  {
+    id: 'lottery-artifact-immortal-2',
+    name: '太极图',
+    type: 'item',
+    rarity: '仙品',
+    weight: 1,
+    value: {
+      item: {
+        name: '太极图',
+        type: ItemType.Artifact,
+        description: '先天至宝，蕴含太极阴阳大道',
+        quantity: 1,
+        rarity: '仙品',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Artifact1,
+        effect: { attack: 2000, defense: 1000, hp: 5000, spirit: 600 }
+      }
+    }
+  },
+  {
+    id: 'lottery-artifact-immortal-3',
+    name: '混沌印',
+    type: 'item',
+    rarity: '仙品',
+    weight: 1,
+    value: {
+      item: {
+        name: '混沌印',
+        type: ItemType.Artifact,
+        description: '开天辟地时诞生的至宝，可镇压万物',
+        quantity: 1,
+        rarity: '仙品',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Artifact1,
+        effect: { attack: 2200, defense: 1100, hp: 5500, spirit: 550 }
       }
     }
   },
@@ -1415,7 +2029,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     id: 'lottery-pet-fox',
     name: '灵狐',
     type: 'pet',
-    rarity: '稀有',
+    rarity: '普通',
     weight: 5,
     value: { petId: 'pet-spirit-fox' }
   },
@@ -1423,8 +2037,8 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     id: 'lottery-pet-tiger',
     name: '雷虎',
     type: 'pet',
-    rarity: '传说',
-    weight: 2,
+    rarity: '稀有',
+    weight: 3,
     value: { petId: 'pet-thunder-tiger' }
   },
   {
