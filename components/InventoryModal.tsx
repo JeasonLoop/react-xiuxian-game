@@ -39,6 +39,7 @@ const InventoryModal: React.FC<Props> = ({
   const [hoveredItem, setHoveredItem] = useState<Item | null>(null);
   const [showEquipment, setShowEquipment] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<ItemCategory>('all');
+  const [selectedEquipmentSlot, setSelectedEquipmentSlot] = useState<EquipmentSlot | 'all'>('all');
   const [sortByRarity, setSortByRarity] = useState(true);
 
   // 过滤和排序物品
@@ -56,11 +57,11 @@ const InventoryModal: React.FC<Props> = ({
 
     // 判断物品分类
     const getItemCategory = (item: Item): ItemCategory => {
-      if (item.isEquippable || 
-          item.type === ItemType.Weapon || 
-          item.type === ItemType.Armor || 
-          item.type === ItemType.Artifact || 
-          item.type === ItemType.Accessory || 
+      if (item.isEquippable ||
+          item.type === ItemType.Weapon ||
+          item.type === ItemType.Armor ||
+          item.type === ItemType.Artifact ||
+          item.type === ItemType.Accessory ||
           item.type === ItemType.Ring) {
         return 'equipment';
       }
@@ -77,6 +78,38 @@ const InventoryModal: React.FC<Props> = ({
       filtered = inventory.filter(item => getItemCategory(item) === selectedCategory);
     }
 
+    // 如果是装备分类，进一步按部位过滤
+    if (selectedCategory === 'equipment' && selectedEquipmentSlot !== 'all') {
+      filtered = filtered.filter(item => {
+        if (!item.equipmentSlot) return false;
+        // 对于戒指、首饰、法宝，需要匹配对应的槽位组
+        if (selectedEquipmentSlot === EquipmentSlot.Ring1 ||
+            selectedEquipmentSlot === EquipmentSlot.Ring2 ||
+            selectedEquipmentSlot === EquipmentSlot.Ring3 ||
+            selectedEquipmentSlot === EquipmentSlot.Ring4) {
+          // 如果选择的是某个戒指槽位，显示所有戒指
+          return item.equipmentSlot === EquipmentSlot.Ring1 ||
+                 item.equipmentSlot === EquipmentSlot.Ring2 ||
+                 item.equipmentSlot === EquipmentSlot.Ring3 ||
+                 item.equipmentSlot === EquipmentSlot.Ring4;
+        }
+        if (selectedEquipmentSlot === EquipmentSlot.Accessory1 ||
+            selectedEquipmentSlot === EquipmentSlot.Accessory2) {
+          // 如果选择的是某个首饰槽位，显示所有首饰
+          return item.equipmentSlot === EquipmentSlot.Accessory1 ||
+                 item.equipmentSlot === EquipmentSlot.Accessory2;
+        }
+        if (selectedEquipmentSlot === EquipmentSlot.Artifact1 ||
+            selectedEquipmentSlot === EquipmentSlot.Artifact2) {
+          // 如果选择的是某个法宝槽位，显示所有法宝
+          return item.equipmentSlot === EquipmentSlot.Artifact1 ||
+                 item.equipmentSlot === EquipmentSlot.Artifact2;
+        }
+        // 其他部位直接匹配
+        return item.equipmentSlot === selectedEquipmentSlot;
+      });
+    }
+
     // 按品级排序（从高到低）
     if (sortByRarity) {
       filtered = [...filtered].sort((a, b) => {
@@ -91,7 +124,7 @@ const InventoryModal: React.FC<Props> = ({
     }
 
     return filtered;
-  }, [inventory, selectedCategory, sortByRarity]);
+  }, [inventory, selectedCategory, selectedEquipmentSlot, sortByRarity]);
 
   if (!isOpen) return null;
 
@@ -221,7 +254,10 @@ const InventoryModal: React.FC<Props> = ({
               {/* 分类标签 */}
               <div className="flex gap-2 flex-wrap">
                 <button
-                  onClick={() => setSelectedCategory('all')}
+                  onClick={() => {
+                    setSelectedCategory('all');
+                    setSelectedEquipmentSlot('all');
+                  }}
                   className={`px-3 py-1.5 rounded text-sm border transition-colors ${
                     selectedCategory === 'all'
                       ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
@@ -231,7 +267,10 @@ const InventoryModal: React.FC<Props> = ({
                   全部
                 </button>
                 <button
-                  onClick={() => setSelectedCategory('equipment')}
+                  onClick={() => {
+                    setSelectedCategory('equipment');
+                    setSelectedEquipmentSlot('all');
+                  }}
                   className={`px-3 py-1.5 rounded text-sm border transition-colors ${
                     selectedCategory === 'equipment'
                       ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
@@ -241,7 +280,10 @@ const InventoryModal: React.FC<Props> = ({
                   装备
                 </button>
                 <button
-                  onClick={() => setSelectedCategory('pill')}
+                  onClick={() => {
+                    setSelectedCategory('pill');
+                    setSelectedEquipmentSlot('all');
+                  }}
                   className={`px-3 py-1.5 rounded text-sm border transition-colors ${
                     selectedCategory === 'pill'
                       ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
@@ -251,7 +293,10 @@ const InventoryModal: React.FC<Props> = ({
                   丹药
                 </button>
                 <button
-                  onClick={() => setSelectedCategory('consumable')}
+                  onClick={() => {
+                    setSelectedCategory('consumable');
+                    setSelectedEquipmentSlot('all');
+                  }}
                   className={`px-3 py-1.5 rounded text-sm border transition-colors ${
                     selectedCategory === 'consumable'
                       ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
@@ -261,6 +306,126 @@ const InventoryModal: React.FC<Props> = ({
                   用品
                 </button>
               </div>
+              {/* 装备部位细分（仅在装备分类时显示） */}
+              {selectedCategory === 'equipment' && (
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={() => setSelectedEquipmentSlot('all')}
+                    className={`px-2 py-1 rounded text-xs border transition-colors ${
+                      selectedEquipmentSlot === 'all'
+                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                    }`}
+                  >
+                    全部装备
+                  </button>
+                  <button
+                    onClick={() => setSelectedEquipmentSlot(EquipmentSlot.Weapon)}
+                    className={`px-2 py-1 rounded text-xs border transition-colors ${
+                      selectedEquipmentSlot === EquipmentSlot.Weapon
+                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                    }`}
+                  >
+                    武器
+                  </button>
+                  <button
+                    onClick={() => setSelectedEquipmentSlot(EquipmentSlot.Head)}
+                    className={`px-2 py-1 rounded text-xs border transition-colors ${
+                      selectedEquipmentSlot === EquipmentSlot.Head
+                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                    }`}
+                  >
+                    头部
+                  </button>
+                  <button
+                    onClick={() => setSelectedEquipmentSlot(EquipmentSlot.Shoulder)}
+                    className={`px-2 py-1 rounded text-xs border transition-colors ${
+                      selectedEquipmentSlot === EquipmentSlot.Shoulder
+                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                    }`}
+                  >
+                    肩部
+                  </button>
+                  <button
+                    onClick={() => setSelectedEquipmentSlot(EquipmentSlot.Chest)}
+                    className={`px-2 py-1 rounded text-xs border transition-colors ${
+                      selectedEquipmentSlot === EquipmentSlot.Chest
+                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                    }`}
+                  >
+                    胸甲
+                  </button>
+                  <button
+                    onClick={() => setSelectedEquipmentSlot(EquipmentSlot.Gloves)}
+                    className={`px-2 py-1 rounded text-xs border transition-colors ${
+                      selectedEquipmentSlot === EquipmentSlot.Gloves
+                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                    }`}
+                  >
+                    手套
+                  </button>
+                  <button
+                    onClick={() => setSelectedEquipmentSlot(EquipmentSlot.Legs)}
+                    className={`px-2 py-1 rounded text-xs border transition-colors ${
+                      selectedEquipmentSlot === EquipmentSlot.Legs
+                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                    }`}
+                  >
+                    裤腿
+                  </button>
+                  <button
+                    onClick={() => setSelectedEquipmentSlot(EquipmentSlot.Boots)}
+                    className={`px-2 py-1 rounded text-xs border transition-colors ${
+                      selectedEquipmentSlot === EquipmentSlot.Boots
+                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                    }`}
+                  >
+                    鞋子
+                  </button>
+                  <button
+                    onClick={() => setSelectedEquipmentSlot(EquipmentSlot.Ring1)}
+                    className={`px-2 py-1 rounded text-xs border transition-colors ${
+                      selectedEquipmentSlot === EquipmentSlot.Ring1 ||
+                      selectedEquipmentSlot === EquipmentSlot.Ring2 ||
+                      selectedEquipmentSlot === EquipmentSlot.Ring3 ||
+                      selectedEquipmentSlot === EquipmentSlot.Ring4
+                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                    }`}
+                  >
+                    戒指
+                  </button>
+                  <button
+                    onClick={() => setSelectedEquipmentSlot(EquipmentSlot.Accessory1)}
+                    className={`px-2 py-1 rounded text-xs border transition-colors ${
+                      selectedEquipmentSlot === EquipmentSlot.Accessory1 ||
+                      selectedEquipmentSlot === EquipmentSlot.Accessory2
+                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                    }`}
+                  >
+                    首饰
+                  </button>
+                  <button
+                    onClick={() => setSelectedEquipmentSlot(EquipmentSlot.Artifact1)}
+                    className={`px-2 py-1 rounded text-xs border transition-colors ${
+                      selectedEquipmentSlot === EquipmentSlot.Artifact1 ||
+                      selectedEquipmentSlot === EquipmentSlot.Artifact2
+                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                    }`}
+                  >
+                    法宝
+                  </button>
+                </div>
+              )}
               {/* 排序按钮 */}
               <div className="flex items-center gap-2">
                 <button
@@ -284,7 +449,7 @@ const InventoryModal: React.FC<Props> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
               {filteredAndSortedInventory.length === 0 ? (
                 <div className="col-span-full text-center text-stone-500 py-10 font-serif">
-                  {selectedCategory === 'all' 
+                  {selectedCategory === 'all'
                     ? '储物袋空空如也，快去历练一番吧！'
                     : `当前分类暂无物品`}
                 </div>
