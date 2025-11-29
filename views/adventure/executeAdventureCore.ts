@@ -101,12 +101,17 @@ export async function executeAdventureCore({
         const itemDescription = itemData.description || '';
 
         // 自动推断和修正物品类型和装备槽位
+        // 优先使用代码推断的结果，因为代码的规则更准确
         const inferred = inferItemTypeAndSlot(
           itemName,
           itemType,
           itemDescription,
           isEquippable
         );
+        // 如果推断出的类型与AI返回的类型不一致，使用推断的类型（代码规则优先）
+        if (inferred.type !== itemType) {
+          console.log(`[物品类型修正] "${itemName}": AI返回类型="${itemType}", 推断类型="${inferred.type}", 使用推断类型`);
+        }
         itemType = inferred.type;
         isEquippable = inferred.isEquippable;
         equipmentSlot = inferred.equipmentSlot || equipmentSlot;
@@ -261,12 +266,17 @@ export async function executeAdventureCore({
           artifactSlots[Math.floor(Math.random() * artifactSlots.length)];
       } else {
         // 自动推断和修正物品类型和装备槽位
+        // 优先使用代码推断的结果，因为代码的规则更准确
         const inferred = inferItemTypeAndSlot(
           itemName,
           itemType,
           itemDescription,
           isEquippable
         );
+        // 如果推断出的类型与AI返回的类型不一致，使用推断的类型（代码规则优先）
+        if (inferred.type !== itemType) {
+          console.log(`[物品类型修正] "${itemName}": AI返回类型="${itemType}", 推断类型="${inferred.type}", 使用推断类型`);
+        }
         itemType = inferred.type;
         isEquippable = inferred.isEquippable;
         equipmentSlot = inferred.equipmentSlot || equipmentSlot;
