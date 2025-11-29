@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { PlayerStats, ItemRarity } from '../types';
 import { CULTIVATION_ARTS } from '../constants';
 import { Shield, Zap, Coins, BookOpen, Sword, ChevronDown, ChevronUp } from 'lucide-react';
@@ -9,24 +9,42 @@ interface Props {
 
 const StatsPanel: React.FC<Props> = ({ player }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const expPercentage = Math.min(100, (player.exp / player.maxExp) * 100);
-  const hpPercentage = Math.min(100, (player.hp / player.maxHp) * 100);
 
-  const activeArt = CULTIVATION_ARTS.find(a => a.id === player.activeArtId);
+  // 使用 useMemo 缓存计算结果
+  const expPercentage = useMemo(
+    () => Math.min(100, (player.exp / player.maxExp) * 100),
+    [player.exp, player.maxExp]
+  );
+  const hpPercentage = useMemo(
+    () => Math.min(100, (player.hp / player.maxHp) * 100),
+    [player.hp, player.maxHp]
+  );
+
+  const activeArt = useMemo(
+    () => CULTIVATION_ARTS.find(a => a.id === player.activeArtId),
+    [player.activeArtId]
+  );
+
   // 查找本命法宝（通过natalArtifactId）
-  const natalArtifact = player.natalArtifactId
-    ? player.inventory.find(i => i.id === player.natalArtifactId)
-    : null;
+  const natalArtifact = useMemo(
+    () => player.natalArtifactId
+      ? player.inventory.find(i => i.id === player.natalArtifactId)
+      : null,
+    [player.natalArtifactId, player.inventory]
+  );
 
-  const getRarityColor = (rarity: ItemRarity | undefined) => {
-    switch (rarity) {
-      case '稀有': return 'text-blue-400';
-      case '传说': return 'text-purple-400';
-      case '仙品': return 'text-mystic-gold';
-      case '普通':
-      default: return 'text-stone-200';
-    }
-  };
+
+  const getRarityColor = useMemo(() => {
+    return (rarity: ItemRarity | undefined) => {
+      switch (rarity) {
+        case '稀有': return 'text-blue-400';
+        case '传说': return 'text-purple-400';
+        case '仙品': return 'text-mystic-gold';
+        case '普通':
+        default: return 'text-stone-200';
+      }
+    };
+  }, []);
 
   return (
     <div className="bg-paper-800 border-r-2 border-b-2 md:border-b-0 border-stone-700 p-3 md:p-6 flex flex-col gap-3 md:gap-6 w-full md:w-80 shrink-0 h-auto md:h-full overflow-y-auto">
@@ -176,4 +194,4 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
   );
 };
 
-export default StatsPanel;
+export default React.memo(StatsPanel);

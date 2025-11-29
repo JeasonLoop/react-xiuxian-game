@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { PlayerStats, LogEntry, GameSettings } from '../types';
 import StatsPanel from '../components/StatsPanel';
 import LogPanel from '../components/LogPanel';
@@ -78,7 +78,7 @@ interface GameViewProps {
   };
 }
 
-export default function GameView({
+function GameView({
   player,
   logs,
   visualEffects,
@@ -91,6 +91,24 @@ export default function GameView({
   modals,
   handlers,
 }: GameViewProps) {
+  // 缓存成就数量计算
+  const achievementCount = useMemo(
+    () => player.achievements.filter(
+      (a) => !player.viewedAchievements.includes(a)
+    ).length,
+    [player.achievements, player.viewedAchievements]
+  );
+
+  const petCount = useMemo(
+    () => player.pets.length,
+    [player.pets.length]
+  );
+
+  const lotteryTickets = useMemo(
+    () => player.lotteryTickets,
+    [player.lotteryTickets]
+  );
+
   return (
     <div className="flex flex-col md:flex-row h-screen bg-stone-900 text-stone-200 overflow-hidden relative">
       {/* Visual Effects Layer */}
@@ -147,13 +165,9 @@ export default function GameView({
         onOpenPet={handlers.onOpenPet}
         onOpenLottery={handlers.onOpenLottery}
         onOpenSettings={handlers.onOpenSettings}
-        achievementCount={
-          player.achievements.filter(
-            (a) => !player.viewedAchievements.includes(a)
-          ).length
-        }
-        petCount={player.pets.length}
-        lotteryTickets={player.lotteryTickets}
+        achievementCount={achievementCount}
+        petCount={petCount}
+        lotteryTickets={lotteryTickets}
       />
 
       {isMobileStatsOpen && (
@@ -172,4 +186,6 @@ export default function GameView({
     </div>
   );
 }
+
+export default React.memo(GameView);
 

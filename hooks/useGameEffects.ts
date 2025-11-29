@@ -13,6 +13,8 @@ export function useGameEffects() {
   >([]);
 
   // Helper to add logs (带去重机制，防止短时间内重复添加相同内容)
+  // 限制日志数量，避免内存占用过大
+  const MAX_LOGS = 1000;
   const createAddLog = useCallback((setLogs: React.Dispatch<React.SetStateAction<LogEntry[]>>) => {
     return (text: string, type: LogEntry['type'] = 'normal') => {
       setLogs((prev) => {
@@ -32,10 +34,18 @@ export function useGameEffects() {
           return prev;
         }
 
-        return [
+        // 限制日志数量，只保留最近的 MAX_LOGS 条
+        const newLogs = [
           ...prev,
           { id: uid(), text, type, timestamp: now },
         ];
+
+        // 如果超过最大数量，只保留最新的
+        if (newLogs.length > MAX_LOGS) {
+          return newLogs.slice(-MAX_LOGS);
+        }
+
+        return newLogs;
       });
     };
   }, []);

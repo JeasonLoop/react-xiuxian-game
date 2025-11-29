@@ -242,7 +242,7 @@ function App() {
   const handleSectBuy = sectHandlers.handleSectBuy;
   const checkAchievements = achievementHandlers.checkAchievements;
 
-  // Passive Regeneration logic
+  // Passive Regeneration logic - 优化：使用 useRef 避免依赖变化导致定时器重建
   useEffect(() => {
     if (!player) return; // 如果 player 为 null，不执行定时器
 
@@ -260,10 +260,10 @@ function App() {
         }
         return prev;
       });
-      if (cooldown > 0) setCooldown((c) => c - 1);
+      setCooldown((c) => (c > 0 ? c - 1 : 0));
     }, 1000);
     return () => clearInterval(timer);
-  }, [cooldown, player]);
+  }, [player]); // 移除 cooldown 依赖，避免频繁重建定时器
 
   // 从冒险 handlers 中提取函数
   const { handleAdventure, executeAdventure } = adventureHandlers;
