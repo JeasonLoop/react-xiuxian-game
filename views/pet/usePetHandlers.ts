@@ -109,15 +109,25 @@ export function usePetHandlers({
         newExp = Math.max(0, prev.exp - expCost);
       }
 
-      // 给灵宠增加经验（随机5-20点，但最大可以直接提升一级）
-      const expGainMin = 5;
-      const expGainMax = 20;
+      // 给灵宠增加经验（随机20-50点，但最大可以直接提升一级）
+      const expGainMin = 20;
+      const expGainMax = 50;
       // 计算最多能获得多少经验才能直接升一级
       const expToNextLevel = pet.maxExp - pet.exp;
-      const maxExpGain = Math.min(expGainMax, expToNextLevel);
-      const expGain = Math.floor(
-        expGainMin + Math.random() * (maxExpGain - expGainMin + 1)
-      );
+      // 如果距离下一级很近，至少给最小经验值，否则在范围内随机
+      let expGain: number;
+      if (expToNextLevel < expGainMin) {
+        // 如果距离下一级很近，直接给剩余经验（会升级）
+        expGain = expToNextLevel;
+      } else {
+        const maxExpGain = Math.min(expGainMax, expToNextLevel);
+        expGain = Math.floor(
+          expGainMin + Math.random() * (maxExpGain - expGainMin + 1)
+        );
+      }
+
+      // 增加亲密度（每次喂养增加2-5点）
+      const affectionGain = Math.floor(2 + Math.random() * 4);
 
       const newPets = prev.pets.map((p) => {
         if (p.id === petId) {
@@ -145,18 +155,27 @@ export function usePetHandlers({
               }
             : p.stats;
 
+          // 增加亲密度（最高100）
+          const newAffection = Math.min(100, p.affection + affectionGain);
+
           return {
             ...p,
             level: petNewLevel,
             exp: petNewExp,
             maxExp: petNewMaxExp,
             stats: newStats,
+            affection: newAffection,
           };
         }
         return p;
       });
 
-      addLog(`${costMessage}，【${pet.name}】获得了 ${expGain} 点经验`, 'gain');
+      // 构建反馈消息
+      let feedbackMessage = `${costMessage}，【${pet.name}】获得了 ${expGain} 点经验`;
+      if (affectionGain > 0) {
+        feedbackMessage += `，亲密度提升了 ${affectionGain} 点`;
+      }
+      addLog(feedbackMessage, 'gain');
 
       return {
         ...prev,

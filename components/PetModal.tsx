@@ -222,7 +222,7 @@ const PetModal: React.FC<Props> = ({ isOpen, onClose, player, onActivatePet, onF
                     <Droplet className="text-red-400" size={20} />
                     <div className="flex-1 text-left">
                       <div className="font-bold">血量喂养</div>
-                      <div className="text-xs text-stone-400">消耗 200 点气血 (+10经验)</div>
+                      <div className="text-xs text-stone-400">消耗 200 点气血 (+20~50经验，+2~5亲密度)</div>
                     </div>
                   </button>
 
@@ -235,7 +235,7 @@ const PetModal: React.FC<Props> = ({ isOpen, onClose, player, onActivatePet, onF
                     <div className="flex-1 text-left">
                       <div className="font-bold">物品喂养</div>
                       <div className="text-xs text-stone-400">
-                        {feedableItems.length === 0 ? '背包中没有可喂养物品' : '消耗物品 (+10经验)'}
+                        {feedableItems.length === 0 ? '背包中没有可喂养物品' : '消耗物品 (+20~50经验，+2~5亲密度)'}
                       </div>
                     </div>
                   </button>
@@ -247,7 +247,7 @@ const PetModal: React.FC<Props> = ({ isOpen, onClose, player, onActivatePet, onF
                     <Sparkles className="text-purple-400" size={20} />
                     <div className="flex-1 text-left">
                       <div className="font-bold">修为喂养</div>
-                      <div className="text-xs text-stone-400">消耗 5% 当前修为 (+10经验)</div>
+                      <div className="text-xs text-stone-400">消耗 5% 当前修为 (+20~50经验，+2~5亲密度)</div>
                     </div>
                   </button>
                 </div>
