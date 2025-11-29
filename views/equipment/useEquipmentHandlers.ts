@@ -34,46 +34,53 @@ export function useEquipmentHandlers({
       return;
     }
 
-    // 对于戒指、首饰、法宝，允许装备到任意同类型的空槽位
-    const isRing = item.type === ItemType.Ring;
-    const isAccessory = item.type === ItemType.Accessory;
-    const isArtifact = item.type === ItemType.Artifact;
-
-    if (isRing) {
-      const ringSlots = [
-        EquipmentSlot.Ring1,
-        EquipmentSlot.Ring2,
-        EquipmentSlot.Ring3,
-        EquipmentSlot.Ring4,
-      ];
-      if (!ringSlots.includes(slot)) {
-        addLog('戒指只能装备到戒指槽位！', 'danger');
-        return;
-      }
-    } else if (isAccessory) {
-      const accessorySlots = [
-        EquipmentSlot.Accessory1,
-        EquipmentSlot.Accessory2,
-      ];
-      if (!accessorySlots.includes(slot)) {
-        addLog('首饰只能装备到首饰槽位！', 'danger');
-        return;
-      }
-    } else if (isArtifact) {
-      const artifactSlots = [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2];
-      if (!artifactSlots.includes(slot)) {
-        addLog('法宝只能装备到法宝槽位！', 'danger');
-        return;
-      }
-    } else {
-      // 其他装备类型需要精确匹配
-      if (item.equipmentSlot !== slot) {
-        addLog('装备部位不匹配！', 'danger');
-        return;
-      }
-    }
-
     setPlayer((prev) => {
+      // 检查物品是否在背包中
+      const itemInInventory = prev.inventory.find((i) => i.id === item.id);
+      if (!itemInInventory) {
+        addLog('该物品不在背包中！', 'danger');
+        return prev;
+      }
+
+      // 对于戒指、首饰、法宝，允许装备到任意同类型的空槽位
+      const isRing = item.type === ItemType.Ring;
+      const isAccessory = item.type === ItemType.Accessory;
+      const isArtifact = item.type === ItemType.Artifact;
+
+      if (isRing) {
+        const ringSlots = [
+          EquipmentSlot.Ring1,
+          EquipmentSlot.Ring2,
+          EquipmentSlot.Ring3,
+          EquipmentSlot.Ring4,
+        ];
+        if (!ringSlots.includes(slot)) {
+          addLog('戒指只能装备到戒指槽位！', 'danger');
+          return prev;
+        }
+      } else if (isAccessory) {
+        const accessorySlots = [
+          EquipmentSlot.Accessory1,
+          EquipmentSlot.Accessory2,
+        ];
+        if (!accessorySlots.includes(slot)) {
+          addLog('首饰只能装备到首饰槽位！', 'danger');
+          return prev;
+        }
+      } else if (isArtifact) {
+        const artifactSlots = [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2];
+        if (!artifactSlots.includes(slot)) {
+          addLog('法宝只能装备到法宝槽位！', 'danger');
+          return prev;
+        }
+      } else {
+        // 其他装备类型需要精确匹配
+        if (item.equipmentSlot !== slot) {
+          addLog('装备部位不匹配！', 'danger');
+          return prev;
+        }
+      }
+
       let newAttack = prev.attack;
       let newDefense = prev.defense;
       let newMaxHp = prev.maxHp;
@@ -82,9 +89,29 @@ export function useEquipmentHandlers({
       let newSpeed = prev.speed;
       const newEquippedItems = { ...prev.equippedItems };
 
+      // 0. 如果该物品已经在其他槽位装备，先卸下旧槽位的装备
+      let oldSlot: EquipmentSlot | null = null;
+      for (const [equippedSlot, equippedItemId] of Object.entries(prev.equippedItems)) {
+        if (equippedItemId === item.id && equippedSlot !== slot) {
+          oldSlot = equippedSlot as EquipmentSlot;
+          // 移除旧槽位的装备ID
+          delete newEquippedItems[oldSlot];
+          // 减去旧槽位的属性（如果物品已经在某个槽位，属性已经被计算过了，所以需要先减去）
+          const isNatal = item.id === prev.natalArtifactId;
+          const oldStats = getItemStats(item, isNatal);
+          newAttack -= oldStats.attack;
+          newDefense -= oldStats.defense;
+          newMaxHp -= oldStats.hp;
+          newSpirit -= oldStats.spirit;
+          newPhysique -= oldStats.physique;
+          newSpeed -= oldStats.speed;
+          break;
+        }
+      }
+
       // 1. Remove stats from currently equipped item in this slot if any
       const currentEquippedId = prev.equippedItems[slot];
-      if (currentEquippedId) {
+      if (currentEquippedId && currentEquippedId !== item.id) {
         const currentEquipped = prev.inventory.find(
           (i) => i.id === currentEquippedId
         );
@@ -113,7 +140,11 @@ export function useEquipmentHandlers({
       // 3. Update equipped items
       newEquippedItems[slot] = item.id;
 
-      addLog(`你装备了 ${item.name} 到${slot}，实力有所提升。`, 'normal');
+      if (oldSlot) {
+        addLog(`你将 ${item.name} 从${oldSlot}移动到${slot}。`, 'normal');
+      } else {
+        addLog(`你装备了 ${item.name} 到${slot}，实力有所提升。`, 'normal');
+      }
 
       return {
         ...prev,
