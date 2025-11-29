@@ -92,13 +92,67 @@ const LOOT_ITEMS = {
     { name: '星辰剑', type: ItemType.Weapon, rarity: '传说' as ItemRarity, slot: EquipmentSlot.Weapon, effect: { attack: 80, speed: 10 } },
     { name: '仙灵剑', type: ItemType.Weapon, rarity: '仙品' as ItemRarity, slot: EquipmentSlot.Weapon, effect: { attack: 200, spirit: 50 } },
   ],
-  // 装备类（护甲）
+  // 装备类（护甲）- 包含所有部位
   armors: [
+    // 普通 - 头部
+    { name: '布帽', type: ItemType.Armor, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Head, effect: { defense: 3, hp: 15 } },
+    // 普通 - 肩部
+    { name: '布肩', type: ItemType.Armor, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Shoulder, effect: { defense: 3, hp: 15 } },
+    // 普通 - 胸甲
     { name: '布甲', type: ItemType.Armor, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Chest, effect: { defense: 5, hp: 20 } },
+    // 普通 - 手套
+    { name: '布手套', type: ItemType.Armor, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Gloves, effect: { defense: 3, hp: 15 } },
+    // 普通 - 裤腿
+    { name: '布裤', type: ItemType.Armor, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Legs, effect: { defense: 4, hp: 18 } },
+    // 普通 - 鞋子
+    { name: '布鞋', type: ItemType.Armor, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Boots, effect: { defense: 3, speed: 2 } },
+
+    // 普通 - 铁制装备
+    { name: '铁头盔', type: ItemType.Armor, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Head, effect: { defense: 8, hp: 30 } },
+    { name: '铁肩甲', type: ItemType.Armor, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Shoulder, effect: { defense: 8, hp: 30 } },
     { name: '铁甲', type: ItemType.Armor, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Chest, effect: { defense: 15, hp: 50 } },
+    { name: '铁护手', type: ItemType.Armor, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Gloves, effect: { defense: 8, hp: 30 } },
+    { name: '铁护腿', type: ItemType.Armor, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Legs, effect: { defense: 10, hp: 40 } },
+    { name: '铁战靴', type: ItemType.Armor, rarity: '普通' as ItemRarity, slot: EquipmentSlot.Boots, effect: { defense: 8, speed: 5 } },
+
+    // 稀有 - 头部
+    { name: '玄铁头盔', type: ItemType.Armor, rarity: '稀有' as ItemRarity, slot: EquipmentSlot.Head, effect: { defense: 25, hp: 60, spirit: 10 } },
+    // 稀有 - 肩部
+    { name: '玄铁肩甲', type: ItemType.Armor, rarity: '稀有' as ItemRarity, slot: EquipmentSlot.Shoulder, effect: { defense: 25, hp: 60, spirit: 10 } },
+    // 稀有 - 胸甲
     { name: '玄铁甲', type: ItemType.Armor, rarity: '稀有' as ItemRarity, slot: EquipmentSlot.Chest, effect: { defense: 40, hp: 100 } },
+    // 稀有 - 手套
+    { name: '玄铁护手', type: ItemType.Armor, rarity: '稀有' as ItemRarity, slot: EquipmentSlot.Gloves, effect: { defense: 25, hp: 60, spirit: 10 } },
+    // 稀有 - 裤腿
+    { name: '玄铁护腿', type: ItemType.Armor, rarity: '稀有' as ItemRarity, slot: EquipmentSlot.Legs, effect: { defense: 30, hp: 80 } },
+    // 稀有 - 鞋子
+    { name: '玄铁战靴', type: ItemType.Armor, rarity: '稀有' as ItemRarity, slot: EquipmentSlot.Boots, effect: { defense: 25, speed: 12 } },
+
+    // 传说 - 头部
+    { name: '星辰头冠', type: ItemType.Armor, rarity: '传说' as ItemRarity, slot: EquipmentSlot.Head, effect: { defense: 60, hp: 150, spirit: 20, attack: 10 } },
+    // 传说 - 肩部
+    { name: '星辰云肩', type: ItemType.Armor, rarity: '传说' as ItemRarity, slot: EquipmentSlot.Shoulder, effect: { defense: 60, hp: 150, spirit: 20, attack: 10 } },
+    // 传说 - 胸甲
     { name: '星辰战甲', type: ItemType.Armor, rarity: '传说' as ItemRarity, slot: EquipmentSlot.Chest, effect: { defense: 100, hp: 300, attack: 20 } },
+    // 传说 - 手套
+    { name: '星辰法手', type: ItemType.Armor, rarity: '传说' as ItemRarity, slot: EquipmentSlot.Gloves, effect: { defense: 60, hp: 150, spirit: 20, attack: 10 } },
+    // 传说 - 裤腿
+    { name: '星辰护腿', type: ItemType.Armor, rarity: '传说' as ItemRarity, slot: EquipmentSlot.Legs, effect: { defense: 75, hp: 200, attack: 15 } },
+    // 传说 - 鞋子
+    { name: '星辰战靴', type: ItemType.Armor, rarity: '传说' as ItemRarity, slot: EquipmentSlot.Boots, effect: { defense: 60, hp: 150, speed: 25 } },
+
+    // 仙品 - 头部
+    { name: '仙灵道冠', type: ItemType.Armor, rarity: '仙品' as ItemRarity, slot: EquipmentSlot.Head, effect: { defense: 150, hp: 400, spirit: 50, attack: 30 } },
+    // 仙品 - 肩部
+    { name: '仙灵云肩', type: ItemType.Armor, rarity: '仙品' as ItemRarity, slot: EquipmentSlot.Shoulder, effect: { defense: 150, hp: 400, spirit: 50, attack: 30 } },
+    // 仙品 - 胸甲
     { name: '仙灵法袍', type: ItemType.Armor, rarity: '仙品' as ItemRarity, slot: EquipmentSlot.Chest, effect: { defense: 250, hp: 800, spirit: 100 } },
+    // 仙品 - 手套
+    { name: '仙灵法手', type: ItemType.Armor, rarity: '仙品' as ItemRarity, slot: EquipmentSlot.Gloves, effect: { defense: 150, hp: 400, spirit: 50, attack: 30 } },
+    // 仙品 - 裤腿
+    { name: '仙灵法裤', type: ItemType.Armor, rarity: '仙品' as ItemRarity, slot: EquipmentSlot.Legs, effect: { defense: 180, hp: 500, spirit: 60 } },
+    // 仙品 - 鞋子
+    { name: '仙灵仙履', type: ItemType.Armor, rarity: '仙品' as ItemRarity, slot: EquipmentSlot.Boots, effect: { defense: 150, hp: 400, speed: 60 } },
   ],
   // 装备类（首饰）
   accessories: [
@@ -147,9 +201,9 @@ const generateLoot = (enemyStrength: number, adventureType: AdventureType, playe
       if (roll < 0.25) return '稀有';
       return '普通';
     } else {
-      // 普通历练：较低概率
-      if (roll < 0.02) return '传说';
-      if (roll < 0.15) return '稀有';
+      // 普通历练：较低概率（略微提升稀有度概率）
+      if (roll < 0.03) return '传说';
+      if (roll < 0.2) return '稀有';
       return '普通';
     }
   };
@@ -169,40 +223,41 @@ const generateLoot = (enemyStrength: number, adventureType: AdventureType, playe
     }>;
     let itemType: string;
 
-    if (itemTypeRoll < 0.3) {
-      // 30% 草药
+    if (itemTypeRoll < 0.25) {
+      // 25% 草药
       itemPool = LOOT_ITEMS.herbs as any;
       itemType = '草药';
-    } else if (itemTypeRoll < 0.5) {
+    } else if (itemTypeRoll < 0.45) {
       // 20% 丹药
       itemPool = LOOT_ITEMS.pills as any;
       itemType = '丹药';
-    } else if (itemTypeRoll < 0.7) {
-      // 20% 材料
+    } else if (itemTypeRoll < 0.6) {
+      // 15% 材料
       itemPool = LOOT_ITEMS.materials as any;
       itemType = '材料';
-    } else if (itemTypeRoll < 0.85) {
-      // 15% 装备（武器/护甲/首饰/戒指）
+    } else if (itemTypeRoll < 0.8) {
+      // 20% 装备（武器/护甲/首饰/戒指）
       const equipRoll = Math.random();
-      if (equipRoll < 0.3) {
+      if (equipRoll < 0.25) {
         itemPool = LOOT_ITEMS.weapons as any;
         itemType = '武器';
-      } else if (equipRoll < 0.6) {
+      } else if (equipRoll < 0.65) {
+        // 护甲概率提升到40%，因为护甲有6个部位需要覆盖
         itemPool = LOOT_ITEMS.armors as any;
         itemType = '护甲';
-      } else if (equipRoll < 0.8) {
+      } else if (equipRoll < 0.85) {
         itemPool = LOOT_ITEMS.accessories as any;
         itemType = '首饰';
       } else {
         itemPool = LOOT_ITEMS.rings as any;
         itemType = '戒指';
       }
-    } else if (itemTypeRoll < 0.95) {
-      // 10% 法宝
+    } else if (itemTypeRoll < 0.92) {
+      // 12% 法宝
       itemPool = LOOT_ITEMS.artifacts as any;
       itemType = '法宝';
     } else {
-      // 5% 丹方（稀有奖励）
+      // 8% 丹方（稀有奖励）
       // 丹方将在后面特殊处理
       itemType = '丹方';
       itemPool = []; // 丹方不使用常规物品池
