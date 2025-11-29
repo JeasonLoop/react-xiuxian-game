@@ -76,6 +76,10 @@ interface GameViewProps {
     onOpenSettings: () => void;
     onOpenStats: () => void;
     onUpdateViewedAchievements: () => void;
+    autoMeditate: boolean;
+    autoAdventure: boolean;
+    onToggleAutoMeditate: () => void;
+    onToggleAutoAdventure: () => void;
   };
 }
 
@@ -143,6 +147,10 @@ function GameView({
           onOpenRealm={handlers.onOpenRealm}
           onOpenAlchemy={handlers.onOpenAlchemy}
           onOpenSect={handlers.onOpenSect}
+          autoMeditate={handlers.autoMeditate}
+          autoAdventure={handlers.autoAdventure}
+          onToggleAutoMeditate={handlers.onToggleAutoMeditate}
+          onToggleAutoAdventure={handlers.onToggleAutoAdventure}
         />
       </main>
 

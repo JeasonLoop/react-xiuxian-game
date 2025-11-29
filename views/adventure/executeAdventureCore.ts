@@ -47,6 +47,7 @@ interface ExecuteAdventureCoreProps {
   onOpenBattleModal: (replay: BattleReplay) => void;
   realmName?: string;
   adventureType: AdventureType;
+  skipBattle?: boolean; // 是否跳过战斗（自动模式下）
 }
 
 export async function executeAdventureCore({
@@ -59,6 +60,7 @@ export async function executeAdventureCore({
   onOpenBattleModal,
   realmName,
   adventureType,
+  skipBattle = false,
 }: ExecuteAdventureCoreProps) {
   // Handle Visuals
   if (result.hpChange < 0) {
@@ -864,7 +866,7 @@ export async function executeAdventureCore({
     addLog(`获得物品: ${result.itemObtained.name}`, 'gain');
   }
 
-  if (battleContext) {
+  if (battleContext && !skipBattle) {
     onOpenBattleModal(battleContext);
   }
 

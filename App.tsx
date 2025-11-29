@@ -81,6 +81,8 @@ function App() {
   const [loading, setLoading] = useState(false); // 加载状态
   const [cooldown, setCooldown] = useState(0); // 冷却时间
   const [itemActionLog, setItemActionLog] = useState<{ text: string; type: string } | null>(null); // 物品操作轻提示
+  const [autoMeditate, setAutoMeditate] = useState(false); // 自动打坐
+  const [autoAdventure, setAutoAdventure] = useState(false); // 自动历练
 
   // 初始化所有模块化的 handlers
   const battleHandlers = useBattleHandlers({
@@ -199,6 +201,7 @@ function App() {
     onOpenBattleModal: (replay: BattleReplay) => {
       battleHandlers.openBattleModal(replay);
     },
+    skipBattle: autoAdventure, // 自动历练模式下跳过战斗
   });
 
   // 从 handlers 中提取函数
@@ -274,6 +277,42 @@ function App() {
     }, 1000);
     return () => clearInterval(timer);
   }, [player]); // 移除 cooldown 依赖，避免频繁重建定时器
+
+  // 自动打坐逻辑
+  useEffect(() => {
+    if (!autoMeditate || !player || loading || cooldown > 0) return;
+
+    const timer = setTimeout(() => {
+      if (autoMeditate && !loading && cooldown === 0 && player) {
+        if (loading || cooldown > 0 || !player) return;
+        meditationHandlers.handleMeditate();
+        setCooldown(1);
+      }
+    }, 100); // 短暂延迟，确保状态更新完成
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoMeditate, player, loading, cooldown]);
+
+  // 自动历练逻辑
+  useEffect(() => {
+    if (!autoAdventure || !player || loading || cooldown > 0) return;
+    if (player.hp < player.maxHp * 0.2) {
+      // 如果血量过低，停止自动历练
+      setAutoAdventure(false);
+      addLog('你身受重伤，自动历练已停止。请先打坐疗伤。', 'danger');
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      if (autoAdventure && !loading && cooldown === 0 && player && player.hp >= player.maxHp * 0.2) {
+        handleAdventure();
+      }
+    }, 100); // 短暂延迟，确保状态更新完成
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoAdventure, player, loading, cooldown]);
 
   // 从冒险 handlers 中提取函数
   const { handleAdventure, executeAdventure } = adventureHandlers;
@@ -397,6 +436,10 @@ function App() {
               viewedAchievements: [...prev.achievements],
             }));
           },
+          autoMeditate,
+          autoAdventure,
+          onToggleAutoMeditate: () => setAutoMeditate((prev) => !prev),
+          onToggleAutoAdventure: () => setAutoAdventure((prev) => !prev),
         }}
       />
 

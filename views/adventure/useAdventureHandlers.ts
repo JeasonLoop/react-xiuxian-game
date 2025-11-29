@@ -33,6 +33,7 @@ interface UseAdventureHandlersProps {
   cooldown: number;
   onOpenShop: (shopType: ShopType) => void;
   onOpenBattleModal: (replay: BattleReplay) => void;
+  skipBattle?: boolean; // 是否跳过战斗（自动模式下）
 }
 
 export function useAdventureHandlers({
@@ -46,6 +47,7 @@ export function useAdventureHandlers({
   cooldown,
   onOpenShop,
   onOpenBattleModal,
+  skipBattle = false,
 }: UseAdventureHandlersProps) {
   const executeAdventure = async (
     adventureType: AdventureType,
@@ -87,6 +89,7 @@ export function useAdventureHandlers({
         onOpenBattleModal,
         realmName,
         adventureType,
+        skipBattle,
       });
     } catch (e) {
       addLog('历练途中突发异变，你神识受损，不得不返回。', 'danger');
