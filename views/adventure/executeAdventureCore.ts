@@ -15,6 +15,7 @@ import {
   CULTIVATION_ARTS,
   PET_TEMPLATES,
   RARITY_MULTIPLIERS,
+  DISCOVERABLE_RECIPES,
 } from '../../constants';
 import { BattleReplay } from '../../services/battleService';
 import { generateAdventureEvent } from '../../services/aiService';
@@ -171,7 +172,22 @@ export async function executeAdventureCore({
         const isEquipment = isEquippable && equipmentSlot;
         const existingIdx = newInv.findIndex((i) => i.name === itemName);
 
-        if (existingIdx >= 0 && !isEquipment) {
+        // 处理丹方：需要添加 recipeData
+        let recipeData = undefined;
+        if (itemType === ItemType.Recipe) {
+          // 从 itemData 中获取 recipeName（如果存在）
+          const recipeName = (itemData as any).recipeName;
+          if (recipeName) {
+            // 从 DISCOVERABLE_RECIPES 中查找对应的配方
+            const recipe = DISCOVERABLE_RECIPES.find((r) => r.name === recipeName);
+            if (recipe) {
+              recipeData = recipe;
+            }
+          }
+        }
+
+        if (existingIdx >= 0 && !isEquipment && itemType !== ItemType.Recipe) {
+          // 丹方不能叠加，每个丹方都是独立的
           newInv[existingIdx] = {
             ...newInv[existingIdx],
             quantity: newInv[existingIdx].quantity + 1,
@@ -189,6 +205,7 @@ export async function executeAdventureCore({
             equipmentSlot: equipmentSlot,
             effect: finalEffect,
             permanentEffect: finalPermanentEffect,
+            recipeData: recipeData,
           };
           newInv.push(newItem);
         }
@@ -319,12 +336,26 @@ export async function executeAdventureCore({
         }
       }
 
+      // 处理丹方：需要添加 recipeData
+      let recipeData = undefined;
+      if (itemType === ItemType.Recipe) {
+        // 从 result.itemObtained 中获取 recipeName（如果存在）
+        const recipeName = (result.itemObtained as any).recipeName;
+        if (recipeName) {
+          // 从 DISCOVERABLE_RECIPES 中查找对应的配方
+          const recipe = DISCOVERABLE_RECIPES.find((r) => r.name === recipeName);
+          if (recipe) {
+            recipeData = recipe;
+          }
+        }
+      }
+
       // 装备类物品可以重复获得，但每个装备单独占一格（quantity始终为1）
       const isEquipment = isEquippable && equipmentSlot;
       const existingIdx = newInv.findIndex((i) => i.name === itemName);
 
-      if (existingIdx >= 0 && !isEquipment) {
-        // 非装备类物品可以叠加
+      if (existingIdx >= 0 && !isEquipment && itemType !== ItemType.Recipe) {
+        // 非装备类物品可以叠加，但丹方不能叠加
         newInv[existingIdx] = {
           ...newInv[existingIdx],
           quantity: newInv[existingIdx].quantity + 1,
@@ -343,6 +374,7 @@ export async function executeAdventureCore({
           equipmentSlot: equipmentSlot,
           effect: finalEffect,
           permanentEffect: finalPermanentEffect,
+          recipeData: recipeData,
         };
         newInv.push(newItem);
       }

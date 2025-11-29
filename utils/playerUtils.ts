@@ -53,6 +53,7 @@ export const createInitialPlayer = (name: string, talentId: string): PlayerStats
     lastTaskResetDate: new Date().toISOString().split('T')[0],
     viewedAchievements: [],
     natalArtifactId: null,
+    unlockedRecipes: [], // 已解锁的丹方名称列表
   };
 };
 

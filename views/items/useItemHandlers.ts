@@ -1,6 +1,6 @@
 import React from 'react';
-import { PlayerStats, Item, Pet } from '../../types';
-import { PET_TEMPLATES } from '../../constants';
+import { PlayerStats, Item, Pet, ItemType } from '../../types';
+import { PET_TEMPLATES, DISCOVERABLE_RECIPES } from '../../constants';
 import { uid } from '../../utils/gameUtils';
 
 interface UseItemHandlersProps {
@@ -129,8 +129,24 @@ export function useItemHandlers({
         }
       }
 
+      // 处理丹方使用
+      if (item.type === ItemType.Recipe && item.recipeData) {
+        const recipeName = item.recipeData.name;
+        // 检查是否已经解锁
+        if (newStats.unlockedRecipes.includes(recipeName)) {
+          addLog(`你已经学会了【${recipeName}】的炼制方法。`, 'normal');
+          // 即使已解锁，也要消耗丹方物品
+          return { ...newStats, inventory: newInv, pets: newPets };
+        }
+        // 解锁丹方
+        newStats.unlockedRecipes = [...newStats.unlockedRecipes, recipeName];
+        effectLogs.push(`✨ 学会了【${recipeName}】的炼制方法！`);
+        addLog(`你研读了【${item.name}】，学会了【${recipeName}】的炼制方法！现在可以在炼丹面板中炼制这种丹药了。`, 'special');
+        // 丹方使用后会被消耗（已在上面处理了数量减少）
+      }
+
       // 对于非灵兽蛋的物品，显示使用日志
-      if (effectLogs.length > 0 && !isPetEgg) {
+      if (effectLogs.length > 0 && !isPetEgg && item.type !== ItemType.Recipe) {
         addLog(`你使用了 ${item.name}。 ${effectLogs.join(' ')}`, 'gain');
       }
 

@@ -327,6 +327,70 @@ export const PILL_RECIPES: Recipe[] = [
   }
 ];
 
+// 可通过历练获得的额外丹方（这些不会在初始炼丹面板中显示，需要通过使用丹方物品解锁）
+export const DISCOVERABLE_RECIPES: Recipe[] = [
+  {
+    name: '凝神丹',
+    cost: 150,
+    ingredients: [{ name: '凝神花', qty: 3 }, { name: '聚灵草', qty: 2 }],
+    result: {
+      name: '凝神丹',
+      type: ItemType.Pill,
+      description: '凝神静气，提升神识。永久增加神识属性。',
+      rarity: '稀有',
+      effect: { spirit: 20 }
+    }
+  },
+  {
+    name: '强体丹',
+    cost: 200,
+    ingredients: [{ name: '血参', qty: 2 }, { name: '回气草', qty: 3 }],
+    result: {
+      name: '强体丹',
+      type: ItemType.Pill,
+      description: '强身健体，提升体魄。永久增加体魄属性。',
+      rarity: '稀有',
+      effect: { physique: 20 }
+    }
+  },
+  {
+    name: '破境丹',
+    cost: 800,
+    ingredients: [{ name: '千年灵芝', qty: 1 }, { name: '妖兽内丹', qty: 2 }],
+    result: {
+      name: '破境丹',
+      type: ItemType.Pill,
+      description: '突破境界的辅助丹药，大幅提升修为。',
+      rarity: '传说',
+      effect: { exp: 1000 }
+    }
+  },
+  {
+    name: '仙灵丹',
+    cost: 3000,
+    ingredients: [{ name: '万年仙草', qty: 1 }, { name: '高阶妖丹', qty: 3 }],
+    result: {
+      name: '仙灵丹',
+      type: ItemType.Pill,
+      description: '仙家灵丹，服用后修为与属性大幅提升。',
+      rarity: '传说',
+      effect: { exp: 2000, spirit: 50, physique: 50 }
+    }
+  },
+  {
+    name: '天元丹',
+    cost: 10000,
+    ingredients: [{ name: '万年灵乳', qty: 2 }, { name: '九叶芝草', qty: 2 }, { name: '龙鳞果', qty: 5 }],
+    result: {
+      name: '天元丹',
+      type: ItemType.Pill,
+      description: '天元级别的仙丹，服用后全属性大幅提升。',
+      rarity: '仙品',
+      effect: { exp: 10000, attack: 50, defense: 50, spirit: 100, physique: 100, speed: 30 }
+    }
+  }
+];
+
 // Upgrade Constants
 export const UPGRADE_MATERIAL_NAME = '炼器石';
 export const BASE_UPGRADE_COST_STONES = 50;

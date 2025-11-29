@@ -35,7 +35,8 @@ export enum ItemType {
   Weapon = '武器',
   Armor = '护甲',
   Accessory = '首饰',
-  Ring = '戒指'
+  Ring = '戒指',
+  Recipe = '丹方'
 }
 
 export type ItemRarity = '普通' | '稀有' | '传说' | '仙品';
@@ -70,6 +71,7 @@ export interface Item {
   isEquippable?: boolean;
   equipmentSlot?: EquipmentSlot; // 装备部位
   isNatal?: boolean; // 是否为本命法宝
+  recipeData?: Recipe; // 丹方数据（仅当 type 为 Recipe 时使用）
   effect?: {
     hp?: number;
     exp?: number;
@@ -189,6 +191,8 @@ export interface PlayerStats {
   viewedAchievements: string[]; // 已查看过的成就ID（用于角标显示）
   // 本命法宝系统
   natalArtifactId: string | null; // 本命法宝ID
+  // 丹方系统
+  unlockedRecipes: string[]; // 已解锁的丹方名称列表
 }
 
 export interface LogEntry {

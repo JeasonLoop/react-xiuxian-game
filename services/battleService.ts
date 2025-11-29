@@ -1,5 +1,5 @@
 import { AdventureResult, AdventureType, PlayerStats, RealmType, ItemRarity, ItemType, EquipmentSlot } from '../types';
-import { REALM_ORDER, RARITY_MULTIPLIERS } from '../constants';
+import { REALM_ORDER, RARITY_MULTIPLIERS, DISCOVERABLE_RECIPES } from '../constants';
 import { generateEnemyName } from './aiService';
 
 const randomId = () => Math.random().toString(36).slice(2, 9);
@@ -196,10 +196,41 @@ const generateLoot = (enemyStrength: number, adventureType: AdventureType, playe
         itemPool = LOOT_ITEMS.rings as any;
         itemType = '戒指';
       }
-    } else {
-      // 15% 法宝
+    } else if (itemTypeRoll < 0.95) {
+      // 10% 法宝
       itemPool = LOOT_ITEMS.artifacts as any;
       itemType = '法宝';
+    } else {
+      // 5% 丹方（稀有奖励）
+      // 丹方将在后面特殊处理
+      itemType = '丹方';
+      itemPool = []; // 丹方不使用常规物品池
+    }
+
+    // 特殊处理：丹方
+    if (itemType === '丹方') {
+      // 根据稀有度筛选可获得的丹方
+      const availableRecipes = DISCOVERABLE_RECIPES.filter((recipe) => {
+        const rarityOrder: ItemRarity[] = ['普通', '稀有', '传说', '仙品'];
+        const targetIndex = rarityOrder.indexOf(targetRarity);
+        const recipeIndex = rarityOrder.indexOf(recipe.result.rarity);
+        return recipeIndex <= targetIndex;
+      });
+
+      if (availableRecipes.length > 0) {
+        const selectedRecipe = pickOne(availableRecipes);
+        const item: AdventureResult['itemObtained'] & { recipeName?: string } = {
+          name: `${selectedRecipe.name}丹方`,
+          type: '丹方',
+          description: `记载了【${selectedRecipe.name}】炼制方法的古老丹方。使用后可学会炼制此丹药。`,
+          rarity: selectedRecipe.result.rarity,
+          isEquippable: false,
+          recipeName: selectedRecipe.name, // 用于在 executeAdventureCore 中查找对应的配方
+        };
+        lootItems.push(item);
+      }
+      // 如果没有可用的丹方，跳过这次生成
+      continue;
     }
 
     // 从对应稀有度的物品中随机选择

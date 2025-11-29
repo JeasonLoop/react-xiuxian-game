@@ -1,7 +1,7 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Item, PlayerStats, Recipe } from '../types';
-import { PILL_RECIPES } from '../constants';
+import { PILL_RECIPES, DISCOVERABLE_RECIPES } from '../constants';
 import { X, Sparkles, FlaskConical, CircleOff } from 'lucide-react';
 
 interface Props {
@@ -18,6 +18,14 @@ const AlchemyModal: React.FC<Props> = ({ isOpen, onClose, player, onCraft }) => 
     const item = player.inventory.find(i => i.name === itemName);
     return item ? item.quantity : 0;
   };
+
+  // 合并基础配方和已解锁的配方
+  const availableRecipes = useMemo(() => {
+    const unlocked = DISCOVERABLE_RECIPES.filter(recipe =>
+      player.unlockedRecipes.includes(recipe.name)
+    );
+    return [...PILL_RECIPES, ...unlocked];
+  }, [player.unlockedRecipes]);
 
   return (
     <div
@@ -43,7 +51,7 @@ const AlchemyModal: React.FC<Props> = ({ isOpen, onClose, player, onCraft }) => 
             <span>炼丹乃逆天而行，需耗费心神与灵石。</span>
           </div>
 
-          {PILL_RECIPES.map((recipe, idx) => {
+          {availableRecipes.map((recipe, idx) => {
             const canAfford = player.spiritStones >= recipe.cost;
             let hasIngredients = true;
 

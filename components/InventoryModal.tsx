@@ -68,6 +68,9 @@ const InventoryModal: React.FC<Props> = ({
       if (item.type === ItemType.Pill) {
         return 'pill';
       }
+      if (item.type === ItemType.Recipe) {
+        return 'consumable'; // 丹方归类为消耗品
+      }
       return 'consumable';
     };
 
@@ -605,12 +608,12 @@ const InventoryModal: React.FC<Props> = ({
                       </>
                     ) : (
                       <>
-                        {item.effect && (
+                        {(item.effect || item.type === ItemType.Recipe) && (
                           <button
                             onClick={() => onUseItem(item)}
                             className="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-200 text-xs py-2 rounded transition-colors"
                           >
-                            使用
+                            {item.type === ItemType.Recipe ? '研读' : '使用'}
                           </button>
                         )}
                         <button
