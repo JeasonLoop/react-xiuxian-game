@@ -1,7 +1,7 @@
 import React from 'react';
 import { PlayerStats, Item, ItemType, EquipmentSlot, ItemRarity } from '../../types';
 import { getItemStats } from '../../utils/itemUtils';
-import { UPGRADE_MATERIAL_NAME, getUpgradeMultiplier } from '../../constants';
+import { UPGRADE_MATERIAL_NAME, UPGRADE_STONE_NAME, UPGRADE_STONE_SUCCESS_BONUS, getUpgradeMultiplier, RARITY_MULTIPLIERS } from '../../constants';
 
 interface UseEquipmentHandlersProps {
   player: PlayerStats;
@@ -332,21 +332,64 @@ export function useEquipmentHandlers({
   const handleUpgradeItem = (
     item: Item,
     costStones: number,
-    costMats: number
+    costMats: number,
+    upgradeStones: number = 0
   ) => {
     setPlayer((prev) => {
       const matsItem = prev.inventory.find(
         (i) => i.name === UPGRADE_MATERIAL_NAME
       );
+      const upgradeStoneItem = prev.inventory.find(
+        (i) => i.name === UPGRADE_STONE_NAME
+      );
+
       if (
         prev.spiritStones < costStones ||
         !matsItem ||
-        matsItem.quantity < costMats
+        matsItem.quantity < costMats ||
+        !upgradeStoneItem ||
+        upgradeStoneItem.quantity < upgradeStones
       ) {
         return prev;
       }
 
-      const growthRate = getUpgradeMultiplier(item.rarity || '普通');
+      // 计算成功率
+      const currentLevel = item.level || 0;
+      const rarity = item.rarity || '普通';
+      const rarityMult = RARITY_MULTIPLIERS[rarity];
+      const baseSuccessRate = Math.max(0.1, 1 - (currentLevel * 0.1) - (rarityMult - 1) * 0.15);
+      const successRate = Math.min(1, baseSuccessRate + upgradeStones * UPGRADE_STONE_SUCCESS_BONUS);
+
+      // 判断是否成功
+      const isSuccess = Math.random() < successRate;
+
+      // 消耗材料
+      const newInventory = prev.inventory
+        .map((i) => {
+          if (i.name === UPGRADE_MATERIAL_NAME) {
+            return { ...i, quantity: i.quantity - costMats };
+          }
+          if (i.name === UPGRADE_STONE_NAME && upgradeStones > 0) {
+            return { ...i, quantity: i.quantity - upgradeStones };
+          }
+          return i;
+        })
+        .filter((i) => i.quantity > 0);
+
+      // 消耗灵石（无论成功失败都消耗）
+      const newSpiritStones = prev.spiritStones - costStones;
+
+      if (!isSuccess) {
+        addLog(`祭炼失败！${item.name} 未能提升品质，材料已消耗。`, 'danger');
+        return {
+          ...prev,
+          spiritStones: newSpiritStones,
+          inventory: newInventory,
+        };
+      }
+
+      // 成功：提升属性
+      const growthRate = getUpgradeMultiplier(rarity);
       const getNextStat = (val: number) => Math.floor(val * (1 + growthRate));
 
       const newEffect = {
@@ -367,21 +410,16 @@ export function useEquipmentHandlers({
         speed: item.effect?.speed ? getNextStat(item.effect.speed) : undefined,
       };
 
-      const newInventory = prev.inventory
-        .map((i) => {
-          if (i.name === UPGRADE_MATERIAL_NAME) {
-            return { ...i, quantity: i.quantity - costMats };
-          }
-          if (i.id === item.id) {
-            return {
-              ...i,
-              level: (i.level || 0) + 1,
-              effect: newEffect,
-            };
-          }
-          return i;
-        })
-        .filter((i) => i.quantity > 0);
+      const finalInventory = newInventory.map((i) => {
+        if (i.id === item.id) {
+          return {
+            ...i,
+            level: (i.level || 0) + 1,
+            effect: newEffect,
+          };
+        }
+        return i;
+      });
 
       let newAttack = prev.attack;
       let newDefense = prev.defense;
@@ -404,7 +442,7 @@ export function useEquipmentHandlers({
         newPhysique -= oldStats.physique;
         newSpeed -= oldStats.speed;
 
-        const newItem = { ...item, effect: newEffect };
+        const newItem = { ...item, effect: newEffect, level: (item.level || 0) + 1 };
         const newStats = getItemStats(newItem, isNatal);
 
         newAttack += newStats.attack;
@@ -419,8 +457,8 @@ export function useEquipmentHandlers({
 
       return {
         ...prev,
-        spiritStones: prev.spiritStones - costStones,
-        inventory: newInventory,
+        spiritStones: newSpiritStones,
+        inventory: finalInventory,
         attack: newAttack,
         defense: newDefense,
         maxHp: newMaxHp,

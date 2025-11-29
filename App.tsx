@@ -297,15 +297,16 @@ function App() {
     setIsUpgradeOpen(true);
   };
 
-  // handleUpgradeItem 需要关闭弹窗
+  // handleUpgradeItem 不关闭弹窗，让用户可以继续强化
   const handleUpgradeItem = (
     item: Item,
     costStones: number,
-    costMats: number
+    costMats: number,
+    upgradeStones: number = 0
   ) => {
-    equipmentHandlers.handleUpgradeItem(item, costStones, costMats);
-    setIsUpgradeOpen(false);
-    setItemToUpgrade(null);
+    equipmentHandlers.handleUpgradeItem(item, costStones, costMats, upgradeStones);
+    // 不关闭弹窗，让用户可以继续强化
+    // 弹窗会自动从 player.inventory 中获取最新的物品信息
   };
 
   // Sect handlers、Achievement、Pet、Lottery、Settings handlers 已全部移到对应模块

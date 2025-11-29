@@ -78,6 +78,7 @@ const LOOT_ITEMS = {
   materials: [
     { name: '灵石碎片', type: ItemType.Material, rarity: '普通' as ItemRarity },
     { name: '炼器石', type: ItemType.Material, rarity: '普通' as ItemRarity },
+    { name: '强化石', type: ItemType.Material, rarity: '稀有' as ItemRarity },
     { name: '精铁', type: ItemType.Material, rarity: '普通' as ItemRarity },
     { name: '玄铁', type: ItemType.Material, rarity: '稀有' as ItemRarity },
     { name: '星辰石', type: ItemType.Material, rarity: '稀有' as ItemRarity },

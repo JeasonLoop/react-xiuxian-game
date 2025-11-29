@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlayerStats } from '../../types';
-import { CULTIVATION_ARTS, TALENTS, ACHIEVEMENTS } from '../../constants';
+import { CULTIVATION_ARTS, TALENTS, ACHIEVEMENTS, REALM_ORDER } from '../../constants';
 
 interface UseMeditationHandlersProps {
   player: PlayerStats;
@@ -28,7 +28,16 @@ export function useMeditationHandlers({
   const handleMeditate = () => {
     if (!player) return;
 
-    let baseGain = 10 + player.realmLevel * 5;
+    // 根据境界计算基础修为
+    // 基础修为 = 境界基础值 * (1 + 境界层数 * 0.15)
+    const realmIndex = REALM_ORDER.indexOf(player.realm);
+
+    // 不同境界的基础修为倍数（基于境界等级）
+    const realmBaseMultipliers = [1, 2, 5, 10, 25, 50, 100];
+    const realmBaseMultiplier = realmBaseMultipliers[realmIndex] || 1;
+
+    // 基础修为 = 境界基础倍数 * (1 + 境界层数 * 0.15)
+    let baseGain = Math.floor(realmBaseMultiplier * 10 * (1 + player.realmLevel * 0.15));
 
     // Apply Active Art Bonus
     const activeArt = CULTIVATION_ARTS.find((a) => a.id === player.activeArtId);
@@ -42,13 +51,27 @@ export function useMeditationHandlers({
       baseGain = Math.floor(baseGain * (1 + talent.effects.expRate));
     }
 
-    // Slight randomness
-    const actualGain = Math.floor(baseGain * (0.8 + Math.random() * 0.4));
+    // 检查是否触发顿悟（0.1%概率）
+    const isEnlightenment = Math.random() < 0.001;
+    let actualGain: number;
+    let logMessage: string;
+
+    if (isEnlightenment) {
+      // 顿悟：获得30-50倍修为
+      const enlightenmentMultiplier = 30 + Math.random() * 20; // 3-5倍
+      actualGain = Math.floor(baseGain * enlightenmentMultiplier);
+      const artText = activeArt ? `，运转${activeArt.name}` : '';
+      logMessage = `✨ 你突然顿悟，灵台清明，对大道有了更深的理解${artText}！(+${actualGain} 修为)`;
+      addLog(logMessage, 'special');
+    } else {
+      // 正常修炼：小幅随机波动
+      actualGain = Math.floor(baseGain * (0.85 + Math.random() * 0.3)); // 85%-115%
+      const artText = activeArt ? `，运转${activeArt.name}` : '';
+      logMessage = `你潜心感悟大道${artText}。(+${actualGain} 修为)`;
+      addLog(logMessage);
+    }
 
     setPlayer((prev) => ({ ...prev, exp: prev.exp + actualGain }));
-
-    const artText = activeArt ? `，运转${activeArt.name}` : '';
-    addLog(`你潜心感悟大道${artText}。(+${actualGain} 修为)`);
     checkLevelUp(actualGain);
 
     // 检查首次打坐成就

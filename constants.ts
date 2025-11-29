@@ -393,8 +393,10 @@ export const DISCOVERABLE_RECIPES: Recipe[] = [
 
 // Upgrade Constants
 export const UPGRADE_MATERIAL_NAME = '炼器石';
+export const UPGRADE_STONE_NAME = '强化石';
 export const BASE_UPGRADE_COST_STONES = 50;
 export const BASE_UPGRADE_COST_MATS = 2;
+export const UPGRADE_STONE_SUCCESS_BONUS = 0.1; // 每颗强化石提高10%成功率
 
 // Returns percentage increase (0.1 = 10%)
 export const getUpgradeMultiplier = (rarity: ItemRarity = '普通') => {
@@ -1088,6 +1090,38 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         description: '用于强化法宝的基础材料',
         quantity: 5,
         rarity: '普通'
+      }
+    }
+  },
+  {
+    id: 'lottery-material-upgrade-stone',
+    name: '强化石',
+    type: 'item',
+    rarity: '稀有',
+    weight: 10,
+    value: {
+      item: {
+        name: '强化石',
+        type: ItemType.Material,
+        description: '提高装备强化成功率的珍贵材料，每颗可提高10%成功率',
+        quantity: 1,
+        rarity: '稀有'
+      }
+    }
+  },
+  {
+    id: 'lottery-material-upgrade-stone-3',
+    name: '强化石x3',
+    type: 'item',
+    rarity: '传说',
+    weight: 3,
+    value: {
+      item: {
+        name: '强化石',
+        type: ItemType.Material,
+        description: '提高装备强化成功率的珍贵材料，每颗可提高10%成功率',
+        quantity: 3,
+        rarity: '稀有'
       }
     }
   },
