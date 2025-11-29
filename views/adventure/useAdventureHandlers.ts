@@ -51,7 +51,8 @@ export function useAdventureHandlers({
 }: UseAdventureHandlersProps) {
   const executeAdventure = async (
     adventureType: AdventureType,
-    realmName?: string
+    realmName?: string,
+    riskLevel?: '低' | '中' | '高' | '极度危险'
   ) => {
     if (!player) {
       setLoading(false);
@@ -71,12 +72,13 @@ export function useAdventureHandlers({
       if (shouldTriggerBattle(player, adventureType)) {
         const battleResolution = await resolveBattleEncounter(
           player,
-          adventureType
+          adventureType,
+          riskLevel
         );
         result = battleResolution.adventureResult;
         battleContext = battleResolution.replay;
       } else {
-        result = await generateAdventureEvent(player, adventureType);
+        result = await generateAdventureEvent(player, adventureType, riskLevel);
       }
 
       await executeAdventureCore({
@@ -90,6 +92,7 @@ export function useAdventureHandlers({
         realmName,
         adventureType,
         skipBattle,
+        riskLevel,
       });
     } catch (e) {
       addLog('历练途中突发异变，你神识受损，不得不返回。', 'danger');

@@ -463,7 +463,7 @@ export const SECRET_REALMS: SecretRealm[] = [
     name: '万兽山脉',
     description: '外围相对安全，深处盘踞着可怕的妖兽。适合炼气、筑基期修士历练。',
     minRealm: RealmType.QiRefining,
-    cost: 50,
+    cost: 80,
     riskLevel: '中',
     drops: ['妖兽材料', '稀有草药', '攻击法器']
   },
@@ -472,7 +472,7 @@ export const SECRET_REALMS: SecretRealm[] = [
     name: '上古剑冢',
     description: '传说中上古剑修的埋骨之地，剑气纵横。非筑基期不可入。',
     minRealm: RealmType.Foundation,
-    cost: 200,
+    cost: 300,
     riskLevel: '高',
     drops: ['剑修功法', '残破灵宝', '剑意草']
   },
@@ -481,7 +481,7 @@ export const SECRET_REALMS: SecretRealm[] = [
     name: '雷罚炼狱',
     description: '终年雷霆不息，稍有不慎便会灰飞烟灭。',
     minRealm: RealmType.GoldenCore,
-    cost: 500,
+    cost: 800,
     riskLevel: '极度危险',
     drops: ['雷属性至宝', '仙品丹药材料', '天阶功法']
   }

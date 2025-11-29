@@ -38,10 +38,25 @@ const ENEMY_TITLES = [
   '荒野游魂', '古战场怨灵', '迷失修士', '堕落真人', '被诅咒者', '魔化修士', '邪化妖兽'
 ];
 
-const battleDifficulty: Record<AdventureType, number> = {
-  normal: 1,
-  lucky: 0.85,
-  secret_realm: 1.25
+// 根据风险等级计算战斗难度
+const getBattleDifficulty = (adventureType: AdventureType, riskLevel?: '低' | '中' | '高' | '极度危险'): number => {
+  if (adventureType === 'secret_realm' && riskLevel) {
+    // 秘境根据风险等级调整难度
+    const riskMultipliers = {
+      '低': 1.0,
+      '中': 1.25,
+      '高': 1.5,
+      '极度危险': 2.0
+    };
+    return riskMultipliers[riskLevel];
+  }
+  // 非秘境使用固定难度
+  const baseDifficulty: Record<AdventureType, number> = {
+    normal: 1,
+    lucky: 0.85,
+    secret_realm: 1.25
+  };
+  return baseDifficulty[adventureType];
 };
 
 const baseBattleChance: Record<AdventureType, number> = {
@@ -190,11 +205,32 @@ const generateLoot = (enemyStrength: number, adventureType: AdventureType, playe
   const getRarityChance = (): ItemRarity => {
     const roll = Math.random();
     if (adventureType === 'secret_realm') {
-      // 秘境：更高概率获得稀有物品
-      if (roll < 0.1) return '仙品';
-      if (roll < 0.3) return '传说';
-      if (roll < 0.6) return '稀有';
-      return '普通';
+      // 秘境：根据风险等级调整稀有度概率
+      if (riskLevel === '极度危险') {
+        // 极度危险：更高概率获得顶级物品
+        if (roll < 0.2) return '仙品';
+        if (roll < 0.5) return '传说';
+        if (roll < 0.85) return '稀有';
+        return '普通';
+      } else if (riskLevel === '高') {
+        // 高风险：较高概率
+        if (roll < 0.12) return '仙品';
+        if (roll < 0.4) return '传说';
+        if (roll < 0.75) return '稀有';
+        return '普通';
+      } else if (riskLevel === '中') {
+        // 中风险：中等概率
+        if (roll < 0.08) return '仙品';
+        if (roll < 0.3) return '传说';
+        if (roll < 0.65) return '稀有';
+        return '普通';
+      } else {
+        // 低风险：较低概率（但比普通历练高）
+        if (roll < 0.05) return '仙品';
+        if (roll < 0.2) return '传说';
+        if (roll < 0.55) return '稀有';
+        return '普通';
+      }
     } else if (adventureType === 'lucky') {
       // 机缘：中等概率
       if (roll < 0.05) return '传说';
@@ -371,7 +407,7 @@ export interface BattleResolution {
 
 const clampMin = (value: number, min: number) => (value < min ? min : value);
 
-const createEnemy = async (player: PlayerStats, adventureType: AdventureType): Promise<{
+const createEnemy = async (player: PlayerStats, adventureType: AdventureType, riskLevel?: '低' | '中' | '高' | '极度危险'): Promise<{
   name: string;
   title: string;
   realm: RealmType;
@@ -385,7 +421,7 @@ const createEnemy = async (player: PlayerStats, adventureType: AdventureType): P
   const realmOffset = adventureType === 'secret_realm' ? 1 : adventureType === 'lucky' ? -1 : 0;
   const targetIndex = clampMin(Math.min(REALM_ORDER.length - 1, currentRealmIndex + realmOffset), 0);
   const realm = REALM_ORDER[targetIndex];
-  const baseDifficulty = battleDifficulty[adventureType] || 1;
+  const baseDifficulty = getBattleDifficulty(adventureType, riskLevel);
 
   // 引入强度等级系统：弱敌、普通、强敌
   // 普通历练：40%弱敌，50%普通，10%强敌
@@ -424,18 +460,55 @@ const createEnemy = async (player: PlayerStats, adventureType: AdventureType): P
       strengthVariance = { min: 0.8, max: 1.2 };
     }
   } else if (adventureType === 'secret_realm') {
-    if (strengthRoll < 0.2) {
-      // 弱敌 20%
-      strengthMultiplier = 0.7 + Math.random() * 0.2; // 0.7 - 0.9
-      strengthVariance = { min: 0.65, max: 1.0 };
-    } else if (strengthRoll < 0.7) {
-      // 普通 50%
-      strengthMultiplier = 0.9 + Math.random() * 0.2; // 0.9 - 1.1
-      strengthVariance = { min: 0.8, max: 1.2 };
+    // 秘境历练：根据风险等级调整敌人强度分布
+    if (riskLevel === '极度危险') {
+      // 极度危险：5%弱敌，30%普通，65%强敌
+      if (strengthRoll < 0.05) {
+        strengthMultiplier = 0.9 + Math.random() * 0.2; // 0.9 - 1.1
+        strengthVariance = { min: 0.85, max: 1.2 };
+      } else if (strengthRoll < 0.35) {
+        strengthMultiplier = 1.1 + Math.random() * 0.2; // 1.1 - 1.3
+        strengthVariance = { min: 1.0, max: 1.4 };
+      } else {
+        strengthMultiplier = 1.3 + Math.random() * 0.4; // 1.3 - 1.7
+        strengthVariance = { min: 1.2, max: 1.8 };
+      }
+    } else if (riskLevel === '高') {
+      // 高风险：10%弱敌，40%普通，50%强敌
+      if (strengthRoll < 0.1) {
+        strengthMultiplier = 0.8 + Math.random() * 0.2; // 0.8 - 1.0
+        strengthVariance = { min: 0.75, max: 1.1 };
+      } else if (strengthRoll < 0.5) {
+        strengthMultiplier = 1.0 + Math.random() * 0.2; // 1.0 - 1.2
+        strengthVariance = { min: 0.9, max: 1.3 };
+      } else {
+        strengthMultiplier = 1.2 + Math.random() * 0.3; // 1.2 - 1.5
+        strengthVariance = { min: 1.1, max: 1.6 };
+      }
+    } else if (riskLevel === '中') {
+      // 中风险：20%弱敌，50%普通，30%强敌
+      if (strengthRoll < 0.2) {
+        strengthMultiplier = 0.7 + Math.random() * 0.2; // 0.7 - 0.9
+        strengthVariance = { min: 0.65, max: 1.0 };
+      } else if (strengthRoll < 0.7) {
+        strengthMultiplier = 0.9 + Math.random() * 0.2; // 0.9 - 1.1
+        strengthVariance = { min: 0.8, max: 1.2 };
+      } else {
+        strengthMultiplier = 1.1 + Math.random() * 0.3; // 1.1 - 1.4
+        strengthVariance = { min: 1.0, max: 1.5 };
+      }
     } else {
-      // 强敌 30%
-      strengthMultiplier = 1.1 + Math.random() * 0.3; // 1.1 - 1.4
-      strengthVariance = { min: 1.0, max: 1.5 };
+      // 低风险：30%弱敌，55%普通，15%强敌
+      if (strengthRoll < 0.3) {
+        strengthMultiplier = 0.6 + Math.random() * 0.2; // 0.6 - 0.8
+        strengthVariance = { min: 0.55, max: 0.9 };
+      } else if (strengthRoll < 0.85) {
+        strengthMultiplier = 0.8 + Math.random() * 0.2; // 0.8 - 1.0
+        strengthVariance = { min: 0.75, max: 1.1 };
+      } else {
+        strengthMultiplier = 1.0 + Math.random() * 0.2; // 1.0 - 1.2
+        strengthVariance = { min: 0.9, max: 1.3 };
+      }
     }
   }
 
@@ -491,9 +564,9 @@ export const shouldTriggerBattle = (player: PlayerStats, adventureType: Adventur
   return Math.random() < Math.max(0.05, chance);
 };
 
-export const resolveBattleEncounter = async (player: PlayerStats, adventureType: AdventureType): Promise<BattleResolution> => {
-  const enemy = await createEnemy(player, adventureType);
-  const difficulty = battleDifficulty[adventureType] || 1;
+export const resolveBattleEncounter = async (player: PlayerStats, adventureType: AdventureType, riskLevel?: '低' | '中' | '高' | '极度危险'): Promise<BattleResolution> => {
+  const enemy = await createEnemy(player, adventureType, riskLevel);
+  const difficulty = getBattleDifficulty(adventureType, riskLevel);
   let playerHp = player.hp;
   let enemyHp = enemy.maxHp;
   const rounds: BattleRoundLog[] = [];
@@ -539,19 +612,32 @@ export const resolveBattleEncounter = async (player: PlayerStats, adventureType:
 
   const hpLoss = Math.max(0, player.hp - playerHp);
 
+  // 根据风险等级调整奖励倍数
+  const getRewardMultiplier = (riskLevel?: '低' | '中' | '高' | '极度危险'): number => {
+    if (!riskLevel) return 1.0;
+    const multipliers = {
+      '低': 1.0,
+      '中': 1.3,
+      '高': 1.6,
+      '极度危险': 2.2
+    };
+    return multipliers[riskLevel];
+  };
+
+  const rewardMultiplier = adventureType === 'secret_realm' ? getRewardMultiplier(riskLevel) : 1.0;
   const baseExp = 25 + player.realmLevel * 12;
-  const rewardExp = Math.round(baseExp * difficulty);
-  const rewardStones = Math.max(3, Math.round((6 + player.realmLevel * 2) * difficulty));
+  const rewardExp = Math.round(baseExp * difficulty * rewardMultiplier);
+  const rewardStones = Math.max(3, Math.round((6 + player.realmLevel * 2) * difficulty * rewardMultiplier));
 
   const expChange = victory ? rewardExp : -Math.max(5, Math.round(rewardExp * 0.5));
   const spiritChange = victory ? rewardStones : -Math.max(2, Math.round(rewardStones * 0.6));
 
-  // 如果胜利，生成搜刮奖励
-  const lootItems: AdventureResult['itemObtained'][] = [];
-  if (victory) {
-    const loot = generateLoot(enemy.strengthMultiplier, adventureType, player.realm);
-    lootItems.push(...loot);
-  }
+      // 如果胜利，生成搜刮奖励
+      const lootItems: AdventureResult['itemObtained'][] = [];
+      if (victory) {
+        const loot = generateLoot(enemy.strengthMultiplier, adventureType, player.realm, riskLevel);
+        lootItems.push(...loot);
+      }
 
   const summary = victory
     ? `你斩杀了${enemy.title}${enemy.name}，耗费 ${hpLoss} 点气血。${lootItems.length > 0 ? '你搜刮了敌人的遗物。' : ''}`

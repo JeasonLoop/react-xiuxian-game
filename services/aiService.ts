@@ -117,7 +117,7 @@ const requestSpark = async (messages: ChatMessage[], temperature = 0.8) => {
   return content;
 };
 
-export const generateAdventureEvent = async (player: PlayerStats, adventureType: AdventureType = 'normal'): Promise<AdventureResult> => {
+export const generateAdventureEvent = async (player: PlayerStats, adventureType: AdventureType = 'normal', riskLevel?: '低' | '中' | '高' | '极度危险'): Promise<AdventureResult> => {
   if (!API_KEY) {
     return {
       story: "你静心打坐，四周一片寂静。（API Key 缺失，AI 功能已禁用）",
@@ -152,15 +152,28 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
         `;
         break;
       case 'secret_realm':
+        // 根据风险等级调整奖励范围
+        const getRewardRange = (risk: '低' | '中' | '高' | '极度危险' | undefined) => {
+          if (!risk) return { expMin: 50, expMax: 500, stonesMin: 100, stonesMax: 1000, rarity: '中等' };
+          const ranges = {
+            '低': { expMin: 50, expMax: 300, stonesMin: 100, stonesMax: 600, rarity: '较低' },
+            '中': { expMin: 100, expMax: 500, stonesMin: 200, stonesMax: 1000, rarity: '中等' },
+            '高': { expMin: 200, expMax: 800, stonesMin: 400, stonesMax: 1500, rarity: '较高' },
+            '极度危险': { expMin: 400, expMax: 1200, stonesMin: 800, stonesMax: 2500, rarity: '极高' }
+          };
+          return ranges[risk];
+        };
+        const rewardRange = getRewardRange(riskLevel);
+        const riskText = riskLevel ? `（${riskLevel}风险）` : '';
         typeInstructions = `
-            玩家正在【秘境】中探索。
+            玩家正在【秘境】中探索${riskText}。
             当前境界：${player.realm} (第 ${player.realmLevel} 层)
 
             环境险恶，但回报丰厚。可能遭遇强大的守护妖兽（高伤害风险）或发现外界绝迹的宝物。
-            如果发生战斗，伤害和奖励都应比平时更高。
+            如果发生战斗，伤害和奖励都应比平时更高。风险等级越高，奖励越丰厚。
             【重要】秘境中虽然危险，但主要是战斗伤害（hpChange可能为负），不应该降低玩家的永久属性（attack、defense、spirit、physique、speed、maxHp）。
-            物品稀有度：至少是"稀有"，有${Math.min(30 + realmIndex * 10, 70)}%几率"传说"，${Math.min(realmIndex * 5, 20)}%几率"仙品"。
-            修为奖励：${Math.floor(50 * realmMultiplier)}-${Math.floor(500 * realmMultiplier)}，灵石奖励：${Math.floor(100 * realmMultiplier)}-${Math.floor(1000 * realmMultiplier)}。
+            物品稀有度：${rewardRange.rarity}，至少是"稀有"，根据风险等级调整稀有度概率。
+            修为奖励：${Math.floor(rewardRange.expMin * realmMultiplier)}-${Math.floor(rewardRange.expMax * realmMultiplier)}，灵石奖励：${Math.floor(rewardRange.stonesMin * realmMultiplier)}-${Math.floor(rewardRange.stonesMax * realmMultiplier)}。
           `;
         break;
       default:

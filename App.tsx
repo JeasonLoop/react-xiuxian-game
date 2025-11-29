@@ -229,6 +229,9 @@ function App() {
       setDeathBattleData(lastBattleReplay);
       localStorage.removeItem(SAVE_KEY);
 
+      // 关闭战斗弹窗（如果打开的话）
+      setIsBattleModalOpen(false);
+
       // 生成死亡原因
       let reason = '';
       if (lastBattleReplay && !lastBattleReplay.victory) {
@@ -558,7 +561,7 @@ function App() {
           isLotteryOpen,
           isSettingsOpen,
           isShopOpen,
-          isBattleModalOpen,
+          isBattleModalOpen: isBattleModalOpen && !isDead, // 死亡时不显示战斗弹窗
         }}
         modalState={{
           currentShop,

@@ -10,7 +10,7 @@ interface UseRealmHandlersProps {
   loading: boolean;
   cooldown: number;
   setIsRealmOpen: (open: boolean) => void;
-  executeAdventure: (adventureType: 'secret_realm', realmName: string) => Promise<void>;
+  executeAdventure: (adventureType: 'secret_realm', realmName: string, riskLevel?: '低' | '中' | '高' | '极度危险') => Promise<void>;
 }
 
 /**
@@ -57,7 +57,7 @@ export function useRealmHandlers({
     setIsRealmOpen(false); // Close modal
 
     // Secret Realm Adventure
-    await executeAdventure('secret_realm', realm.name);
+    await executeAdventure('secret_realm', realm.name, realm.riskLevel);
   };
 
   return {

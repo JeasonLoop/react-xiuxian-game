@@ -61,7 +61,8 @@ export async function executeAdventureCore({
   realmName,
   adventureType,
   skipBattle = false,
-}: ExecuteAdventureCoreProps) {
+  riskLevel,
+}: ExecuteAdventureCoreProps & { riskLevel?: '低' | '中' | '高' | '极度危险' }) {
   // Handle Visuals
   if (result.hpChange < 0) {
     triggerVisual('damage', String(result.hpChange), 'text-red-500');
