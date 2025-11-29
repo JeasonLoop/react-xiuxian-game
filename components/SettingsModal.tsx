@@ -1,6 +1,7 @@
 import React, { useRef } from "react";
 import { X, Volume2, Music, Save, Globe, Upload, Download, Github } from "lucide-react";
 import { GameSettings } from "../types";
+import dayjs from "dayjs";
 
 interface Props {
   isOpen: boolean;
@@ -118,8 +119,7 @@ const SettingsModal: React.FC<Props> = ({
 
       // 创建文件名
       const playerName = saveData.player?.name || "player";
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
-      const fileName = `xiuxian-save-${playerName}-${timestamp}.json`;
+      const fileName = `xiuxian-save-${playerName}-${dayjs().format("YYYY-MM-DD HH:mm:ss")}.json`;
 
       // 创建下载链接
       const blob = new Blob([saved], { type: "application/json" });

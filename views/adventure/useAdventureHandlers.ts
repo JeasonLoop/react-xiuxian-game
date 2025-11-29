@@ -102,8 +102,7 @@ export function useAdventureHandlers({
   const handleAdventure = async () => {
     if (loading || cooldown > 0) return;
     if (player.hp < player.maxHp * 0.2) {
-      addLog('你身受重伤，不宜出行。请先打坐疗伤。', 'danger');
-      return;
+      addLog('你身受重伤，仍然强撑着继续历练...', 'danger');
     }
 
     // 根据境界计算机缘概率

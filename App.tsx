@@ -5,11 +5,13 @@ import {
   ShopType,
 } from './types';
 import StartScreen from './components/StartScreen';
+import DeathModal from './components/DeathModal';
 import {
   BattleReplay,
 } from './services/battleService';
 import { useGameState } from './hooks/useGameState';
 import { useGameEffects } from './hooks/useGameEffects';
+import { SAVE_KEY } from './utils/gameUtils';
 
 // 导入模块化的 handlers
 import {
@@ -44,6 +46,7 @@ function App() {
     logs, // 游戏日志
     setLogs, // 设置游戏日志
     handleStartGame, // 开始游戏
+    setGameStarted, // 设置游戏开始状态（用于涅槃重生）
   } = useGameState();
 
   // 使用自定义hooks管理游戏效果
@@ -83,6 +86,10 @@ function App() {
   const [itemActionLog, setItemActionLog] = useState<{ text: string; type: string } | null>(null); // 物品操作轻提示
   const [autoMeditate, setAutoMeditate] = useState(false); // 自动打坐
   const [autoAdventure, setAutoAdventure] = useState(false); // 自动历练
+  const [isDead, setIsDead] = useState(false); // 是否死亡
+  const [deathBattleData, setDeathBattleData] = useState<BattleReplay | null>(null); // 死亡时的战斗数据
+  const [deathReason, setDeathReason] = useState(''); // 死亡原因
+  const [lastBattleReplay, setLastBattleReplay] = useState<BattleReplay | null>(null); // 最近的战斗数据
 
   // 初始化所有模块化的 handlers
   const battleHandlers = useBattleHandlers({
@@ -199,7 +206,12 @@ function App() {
       shopHandlers.handleOpenShop(shopType);
     },
     onOpenBattleModal: (replay: BattleReplay) => {
-      battleHandlers.openBattleModal(replay);
+      // 保存最近的战斗数据，用于死亡统计
+      setLastBattleReplay(replay);
+      // 只有在非自动模式下才打开战斗弹窗
+      if (!autoAdventure) {
+        battleHandlers.openBattleModal(replay);
+      }
     },
     skipBattle: autoAdventure, // 自动历练模式下跳过战斗
   });
@@ -207,6 +219,56 @@ function App() {
   // 从 handlers 中提取函数
   const handleSkipBattleLogs = battleHandlers.handleSkipBattleLogs;
   const handleCloseBattleModal = battleHandlers.handleCloseBattleModal;
+
+  // 检测死亡
+  useEffect(() => {
+    if (!player || isDead) return;
+
+    if (player.hp <= 0) {
+      setIsDead(true);
+      setDeathBattleData(lastBattleReplay);
+      localStorage.removeItem(SAVE_KEY);
+
+      // 生成死亡原因
+      let reason = '';
+      if (lastBattleReplay && !lastBattleReplay.victory) {
+        reason = `在与${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}的战斗中，你力竭而亡。`;
+      } else if (lastBattleReplay) {
+        reason = `虽然战胜了${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}，但你伤势过重，最终不治身亡。`;
+      } else {
+        reason = '你在历练途中遭遇不测，伤势过重，最终不治身亡。';
+      }
+      setDeathReason(reason);
+
+      // 停止自动功能
+      setAutoMeditate(false);
+      setAutoAdventure(false);
+    }
+  }, [player?.hp, isDead, lastBattleReplay]);
+
+  // 涅槃重生功能
+  const handleRebirth = () => {
+    // 清除存档
+    try {
+      localStorage.removeItem(SAVE_KEY);
+    } catch (error) {
+      console.error('清除存档失败:', error);
+    }
+
+    // 重置所有状态
+    setIsDead(false);
+    setDeathBattleData(null);
+    setDeathReason('');
+    setLastBattleReplay(null);
+    setAutoMeditate(false);
+    setAutoAdventure(false);
+    setPlayer(null);
+    setLogs([]);
+    setGameStarted(false);
+
+    // 触发页面刷新或返回开始页面
+    // useGameState 的 handleStartGame 会处理新游戏
+  };
 
   const handleMeditate = () => {
     if (loading || cooldown > 0 || !player) return;
@@ -297,15 +359,16 @@ function App() {
   // 自动历练逻辑
   useEffect(() => {
     if (!autoAdventure || !player || loading || cooldown > 0) return;
-    if (player.hp < player.maxHp * 0.2) {
-      // 如果血量过低，停止自动历练
-      setAutoAdventure(false);
-      addLog('你身受重伤，自动历练已停止。请先打坐疗伤。', 'danger');
-      return;
-    }
+    // if (player.hp < player.maxHp * 0.2) {
+    //   // 如果血量过低，停止自动历练
+    //   setAutoAdventure(false);
+    //   addLog('你身受重伤，自动历练已停止。请先打坐疗伤。', 'danger');
+    //   return;
+    // }
 
+    // 生死有命！富贵在天！！！
     const timer = setTimeout(() => {
-      if (autoAdventure && !loading && cooldown === 0 && player && player.hp >= player.maxHp * 0.2) {
+      if (autoAdventure && !loading && cooldown === 0 && player) {
         handleAdventure();
       }
     }, 100); // 短暂延迟，确保状态更新完成
@@ -374,6 +437,16 @@ function App() {
 
   return (
     <>
+      {/* 死亡弹窗 - 无法关闭 */}
+      {isDead && player && (
+        <DeathModal
+          player={player}
+          battleData={deathBattleData}
+          deathReason={deathReason}
+          onRebirth={handleRebirth}
+        />
+      )}
+
       <GameView
         player={player}
         logs={logs}

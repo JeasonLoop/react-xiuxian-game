@@ -140,6 +140,7 @@ export function useGameState() {
   return {
     hasSave,
     gameStarted,
+    setGameStarted,
     player,
     setPlayer,
     settings,
