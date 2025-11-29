@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, ShoppingBag, Coins, Package, Filter } from 'lucide-react';
+import { X, ShoppingBag, Coins, Package, Filter, Trash } from 'lucide-react';
 import { Shop, ShopItem, Item, PlayerStats, RealmType, ItemRarity, ItemType } from '../types';
 import { REALM_ORDER, RARITY_MULTIPLIERS } from '../constants';
 
@@ -18,6 +18,8 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
   const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
   const [buyQuantities, setBuyQuantities] = useState<Record<string, number>>({});
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<ItemTypeFilter>('all');
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [selectedRarity, setSelectedRarity] = useState<'all' | ItemRarity>('all');
 
   if (!isOpen) return null;
 
@@ -149,21 +151,28 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
     return Math.max(1, Math.floor(totalValue * typeMultiplier));
   };
 
-  // 可出售的物品（排除已装备的，并根据类型筛选）
+  // 可出售的物品（排除已装备的，并根据类型和品质筛选）
   const sellableItems = useMemo(() => {
     let filtered = player.inventory.filter(item => {
       // 不能出售已装备的物品
       const isEquipped = Object.values(player.equippedItems).includes(item.id);
-      return !isEquipped;
+      if (isEquipped) return false;
+
+      // 按类型筛选
+      if (selectedTypeFilter !== 'all' && item.type !== selectedTypeFilter) {
+        return false;
+      }
+
+      // 按品质筛选
+      if (selectedRarity !== 'all' && item.rarity !== selectedRarity) {
+        return false;
+      }
+
+      return true;
     });
 
-    // 按类型筛选
-    if (selectedTypeFilter !== 'all') {
-      filtered = filtered.filter(item => item.type === selectedTypeFilter);
-    }
-
     return filtered;
-  }, [player.inventory, player.equippedItems, selectedTypeFilter]);
+  }, [player.inventory, player.equippedItems, selectedTypeFilter, selectedRarity]);
 
   // 获取所有可用的物品类型（用于筛选器，基于未筛选的原始数据）
   const availableTypes = useMemo(() => {
@@ -193,7 +202,51 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
     if (selectedTypeFilter !== 'all' && !availableTypes.includes(selectedTypeFilter as ItemType)) {
       setSelectedTypeFilter('all');
     }
+    // 切换标签页时清空选择
+    setSelectedItems(new Set());
   }, [activeTab, availableTypes, selectedTypeFilter]);
+
+  const handleToggleItem = (itemId: string) => {
+    setSelectedItems((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId);
+      } else {
+        newSet.add(itemId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedItems.size === sellableItems.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(sellableItems.map((item) => item.id)));
+    }
+  };
+
+  const handleBatchSell = () => {
+    if (selectedItems.size === 0) return;
+    const itemsToSell = sellableItems.filter((item) => selectedItems.has(item.id));
+    let totalPrice = 0;
+    itemsToSell.forEach((item) => {
+      const shopItem = shop.items.find((si) => si.name === item.name);
+      const sellPrice = shopItem?.sellPrice || calculateItemSellPrice(item);
+      totalPrice += sellPrice * item.quantity;
+    });
+
+    if (
+      window.confirm(
+        `确定要出售选中的 ${selectedItems.size} 件物品吗？将获得 ${totalPrice} 灵石。`
+      )
+    ) {
+      itemsToSell.forEach((item) => {
+        onSellItem(item);
+      });
+      setSelectedItems(new Set());
+    }
+  };
 
   return (
     <div
@@ -392,35 +445,91 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
                   <span className="text-stone-400">当前灵石: <span className="text-mystic-gold font-bold">{player.spiritStones}</span></span>
                   <span className="text-sm text-stone-500">可出售物品: {sellableItems.length}</span>
                 </div>
-                {/* 物品分类筛选器 */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <div className="flex items-center gap-2 text-stone-400 text-sm">
-                    <Filter size={16} />
-                    <span>分类:</span>
+                {/* 批量操作栏 */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={handleSelectAll}
+                      className="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-300 rounded text-sm border border-stone-600"
+                    >
+                      {selectedItems.size === sellableItems.length ? '取消全选' : '全选'}
+                    </button>
+                    <span className="text-sm text-stone-400">
+                      已选择: {selectedItems.size} / {sellableItems.length}
+                    </span>
                   </div>
                   <button
-                    onClick={() => setSelectedTypeFilter('all')}
-                    className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                      selectedTypeFilter === 'all'
-                        ? 'bg-mystic-gold/20 text-mystic-gold border border-mystic-gold/50'
-                        : 'bg-stone-800 text-stone-400 hover:text-stone-200 border border-stone-700'
+                    onClick={handleBatchSell}
+                    disabled={selectedItems.size === 0}
+                    className={`px-4 py-2 rounded text-sm font-bold transition-colors flex items-center gap-2 ${
+                      selectedItems.size > 0
+                        ? 'bg-green-900/20 hover:bg-green-900/30 text-green-400 border border-green-700/50'
+                        : 'bg-stone-700 text-stone-500 cursor-not-allowed border border-stone-600'
                     }`}
                   >
-                    全部
+                    <Trash size={16} />
+                    批量出售 ({selectedItems.size})
                   </button>
-                  {availableTypes.map(type => (
+                </div>
+                {/* 物品分类筛选器 */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 text-stone-400 text-sm">
+                      <Filter size={16} />
+                      <span>分类:</span>
+                    </div>
                     <button
-                      key={type}
-                      onClick={() => setSelectedTypeFilter(type)}
+                      onClick={() => {
+                        setSelectedTypeFilter('all');
+                        setSelectedItems(new Set());
+                      }}
                       className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                        selectedTypeFilter === type
+                        selectedTypeFilter === 'all'
                           ? 'bg-mystic-gold/20 text-mystic-gold border border-mystic-gold/50'
                           : 'bg-stone-800 text-stone-400 hover:text-stone-200 border border-stone-700'
                       }`}
                     >
-                      {type}
+                      全部
                     </button>
-                  ))}
+                    {availableTypes.map(type => (
+                      <button
+                        key={type}
+                        onClick={() => {
+                          setSelectedTypeFilter(type);
+                          setSelectedItems(new Set());
+                        }}
+                        className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                          selectedTypeFilter === type
+                            ? 'bg-mystic-gold/20 text-mystic-gold border border-mystic-gold/50'
+                            : 'bg-stone-800 text-stone-400 hover:text-stone-200 border border-stone-700'
+                        }`}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 text-stone-400 text-sm">
+                      <Filter size={16} />
+                      <span>品质:</span>
+                    </div>
+                    {(['all', '普通', '稀有', '传说', '仙品'] as const).map((rarity) => (
+                      <button
+                        key={rarity}
+                        onClick={() => {
+                          setSelectedRarity(rarity);
+                          setSelectedItems(new Set());
+                        }}
+                        className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                          selectedRarity === rarity
+                            ? 'bg-mystic-gold/20 text-mystic-gold border border-mystic-gold/50'
+                            : 'bg-stone-800 text-stone-400 hover:text-stone-200 border border-stone-700'
+                        }`}
+                      >
+                        {rarity === 'all' ? '全部' : rarity}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
               {sellableItems.length === 0 ? (
@@ -435,14 +544,27 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
                     const shopItem = shop.items.find(si => si.name === item.name);
                     const sellPrice = shopItem?.sellPrice || calculateItemSellPrice(item);
                     const rarity = item.rarity || '普通';
+                    const isSelected = selectedItems.has(item.id);
 
                     return (
                       <div
                         key={item.id}
-                        className={`bg-stone-900 rounded-lg p-4 border-2 ${getRarityColor(rarity).split(' ')[1]}`}
+                        className={`bg-stone-900 rounded-lg p-4 border-2 cursor-pointer transition-colors ${
+                          isSelected
+                            ? 'bg-green-900/30 border-green-600'
+                            : getRarityColor(rarity).split(' ')[1]
+                        }`}
+                        onClick={() => handleToggleItem(item.id)}
                       >
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
+                        <div className="flex items-start gap-2 mb-2">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => handleToggleItem(item.id)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="mt-1"
+                          />
+                          <div className="flex-1">
                             <h4 className={`font-bold ${getRarityColor(rarity).split(' ')[0]}`}>
                               {item.name}
                               {item.level && item.level > 0 && (
@@ -468,9 +590,17 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
                           <div className="flex items-center gap-1 text-green-400">
                             <Coins size={16} />
                             <span className="font-bold">{sellPrice}</span>
+                            {item.quantity > 1 && (
+                              <span className="text-xs text-stone-500">
+                                (总计: {sellPrice * item.quantity})
+                              </span>
+                            )}
                           </div>
                           <button
-                            onClick={() => onSellItem(item)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSellItem(item);
+                            }}
                             className="px-4 py-2 bg-green-900/20 hover:bg-green-900/30 text-green-400 rounded text-sm font-bold transition-colors border border-green-700/50"
                           >
                             出售

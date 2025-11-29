@@ -7,6 +7,7 @@ interface UseEquipmentHandlersProps {
   player: PlayerStats;
   setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
   addLog: (message: string, type?: string) => void;
+  setItemActionLog?: (log: { text: string; type: string } | null) => void;
 }
 
 /**
@@ -26,6 +27,7 @@ export function useEquipmentHandlers({
   player,
   setPlayer,
   addLog,
+  setItemActionLog,
 }: UseEquipmentHandlersProps) {
   const handleEquipItem = (item: Item, slot: EquipmentSlot) => {
     // 检查装备类型是否匹配
@@ -141,9 +143,19 @@ export function useEquipmentHandlers({
       newEquippedItems[slot] = item.id;
 
       if (oldSlot) {
-        addLog(`你将 ${item.name} 从${oldSlot}移动到${slot}。`, 'normal');
+        const logMessage = `你将 ${item.name} 从${oldSlot}移动到${slot}。`;
+        addLog(logMessage, 'normal');
+        if (setItemActionLog) {
+          setItemActionLog({ text: logMessage, type: 'normal' });
+          setTimeout(() => setItemActionLog(null), 3000);
+        }
       } else {
-        addLog(`你装备了 ${item.name} 到${slot}，实力有所提升。`, 'normal');
+        const logMessage = `你装备了 ${item.name} 到${slot}，实力有所提升。`;
+        addLog(logMessage, 'normal');
+        if (setItemActionLog) {
+          setItemActionLog({ text: logMessage, type: 'normal' });
+          setTimeout(() => setItemActionLog(null), 3000);
+        }
       }
 
       return {

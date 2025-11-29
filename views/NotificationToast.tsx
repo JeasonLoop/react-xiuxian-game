@@ -1,4 +1,5 @@
 import React from 'react';
+import { LogEntry } from '../types';
 
 interface PurchaseSuccessProps {
   item: string;
@@ -24,6 +25,42 @@ export function PurchaseSuccessToast({ item, quantity }: PurchaseSuccessProps) {
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+interface ItemActionToastProps {
+  log: LogEntry | null;
+}
+
+/**
+ * 物品使用/装备后的轻提示组件
+ * 显示与LogPanel相同格式的内容
+ */
+export function ItemActionToast({ log }: ItemActionToastProps) {
+  if (!log) return null;
+
+  const logClassName = (() => {
+    const baseClass = 'p-3 rounded border-l-4 font-serif text-sm shadow-2xl';
+    switch (log.type) {
+      case 'normal':
+        return `${baseClass} border-stone-600 text-stone-300 bg-ink-800/90`;
+      case 'gain':
+        return `${baseClass} border-mystic-jade text-emerald-100 bg-emerald-900/90`;
+      case 'danger':
+        return `${baseClass} border-mystic-blood text-red-100 bg-red-900/90`;
+      case 'special':
+        return `${baseClass} border-mystic-gold text-amber-100 bg-amber-900/90`;
+      default:
+        return `${baseClass} border-stone-600 text-stone-300 bg-ink-800/90`;
+    }
+  })();
+
+  return (
+    <div className="fixed top-20 right-4 z-[70] pointer-events-none animate-fade-in">
+      <div className={logClassName}>
+        {log.text}
       </div>
     </div>
   );

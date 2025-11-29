@@ -2024,6 +2024,491 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     }
   },
 
+  // 普通奖励 - 装备（头部）
+  {
+    id: 'lottery-head-cloth',
+    name: '布帽',
+    type: 'item',
+    rarity: '普通',
+    weight: 8,
+    value: {
+      item: {
+        name: '布帽',
+        type: ItemType.Armor,
+        description: '普通的布制帽子，提供基础防护',
+        quantity: 1,
+        rarity: '普通',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Head,
+        effect: { defense: 3, hp: 15 }
+      }
+    }
+  },
+  {
+    id: 'lottery-head-iron',
+    name: '铁头盔',
+    type: 'item',
+    rarity: '普通',
+    weight: 7,
+    value: {
+      item: {
+        name: '铁头盔',
+        type: ItemType.Armor,
+        description: '精铁打造的头盔，防御力不错',
+        quantity: 1,
+        rarity: '普通',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Head,
+        effect: { defense: 8, hp: 30 }
+      }
+    }
+  },
+  {
+    id: 'lottery-head-mystic',
+    name: '玄铁头盔',
+    type: 'item',
+    rarity: '稀有',
+    weight: 4,
+    value: {
+      item: {
+        name: '玄铁头盔',
+        type: ItemType.Armor,
+        description: '玄铁打造的头盔，防御力强劲',
+        quantity: 1,
+        rarity: '稀有',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Head,
+        effect: { defense: 25, hp: 60, spirit: 10 }
+      }
+    }
+  },
+  {
+    id: 'lottery-head-star',
+    name: '星辰头冠',
+    type: 'item',
+    rarity: '传说',
+    weight: 2,
+    value: {
+      item: {
+        name: '星辰头冠',
+        type: ItemType.Armor,
+        description: '蕴含星辰之力的头冠，威力强大',
+        quantity: 1,
+        rarity: '传说',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Head,
+        effect: { defense: 60, hp: 150, spirit: 20, attack: 10 }
+      }
+    }
+  },
+  {
+    id: 'lottery-head-immortal',
+    name: '仙灵道冠',
+    type: 'item',
+    rarity: '仙品',
+    weight: 1,
+    value: {
+      item: {
+        name: '仙灵道冠',
+        type: ItemType.Armor,
+        description: '仙灵所制的道冠，蕴含无上仙力',
+        quantity: 1,
+        rarity: '仙品',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Head,
+        effect: { defense: 150, hp: 400, spirit: 50, attack: 30 }
+      }
+    }
+  },
+
+  // 普通奖励 - 装备（肩部）
+  {
+    id: 'lottery-shoulder-cloth',
+    name: '布肩',
+    type: 'item',
+    rarity: '普通',
+    weight: 8,
+    value: {
+      item: {
+        name: '布肩',
+        type: ItemType.Armor,
+        description: '普通的布制肩甲，提供基础防护',
+        quantity: 1,
+        rarity: '普通',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Shoulder,
+        effect: { defense: 3, hp: 15 }
+      }
+    }
+  },
+  {
+    id: 'lottery-shoulder-iron',
+    name: '铁肩甲',
+    type: 'item',
+    rarity: '普通',
+    weight: 7,
+    value: {
+      item: {
+        name: '铁肩甲',
+        type: ItemType.Armor,
+        description: '精铁打造的肩甲，防御力不错',
+        quantity: 1,
+        rarity: '普通',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Shoulder,
+        effect: { defense: 8, hp: 30 }
+      }
+    }
+  },
+  {
+    id: 'lottery-shoulder-mystic',
+    name: '玄铁肩甲',
+    type: 'item',
+    rarity: '稀有',
+    weight: 4,
+    value: {
+      item: {
+        name: '玄铁肩甲',
+        type: ItemType.Armor,
+        description: '玄铁打造的肩甲，防御力强劲',
+        quantity: 1,
+        rarity: '稀有',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Shoulder,
+        effect: { defense: 25, hp: 60, spirit: 10 }
+      }
+    }
+  },
+  {
+    id: 'lottery-shoulder-star',
+    name: '星辰云肩',
+    type: 'item',
+    rarity: '传说',
+    weight: 2,
+    value: {
+      item: {
+        name: '星辰云肩',
+        type: ItemType.Armor,
+        description: '蕴含星辰之力的云肩，威力强大',
+        quantity: 1,
+        rarity: '传说',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Shoulder,
+        effect: { defense: 60, hp: 150, spirit: 20, attack: 10 }
+      }
+    }
+  },
+  {
+    id: 'lottery-shoulder-immortal',
+    name: '仙灵云肩',
+    type: 'item',
+    rarity: '仙品',
+    weight: 1,
+    value: {
+      item: {
+        name: '仙灵云肩',
+        type: ItemType.Armor,
+        description: '仙灵所制的云肩，蕴含无上仙力',
+        quantity: 1,
+        rarity: '仙品',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Shoulder,
+        effect: { defense: 150, hp: 400, spirit: 50, attack: 30 }
+      }
+    }
+  },
+
+  // 普通奖励 - 装备（手套）
+  {
+    id: 'lottery-gloves-cloth',
+    name: '布手套',
+    type: 'item',
+    rarity: '普通',
+    weight: 8,
+    value: {
+      item: {
+        name: '布手套',
+        type: ItemType.Armor,
+        description: '普通的布制手套，提供基础防护',
+        quantity: 1,
+        rarity: '普通',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Gloves,
+        effect: { defense: 3, hp: 15 }
+      }
+    }
+  },
+  {
+    id: 'lottery-gloves-iron',
+    name: '铁护手',
+    type: 'item',
+    rarity: '普通',
+    weight: 7,
+    value: {
+      item: {
+        name: '铁护手',
+        type: ItemType.Armor,
+        description: '精铁打造的护手，防御力不错',
+        quantity: 1,
+        rarity: '普通',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Gloves,
+        effect: { defense: 8, hp: 30 }
+      }
+    }
+  },
+  {
+    id: 'lottery-gloves-mystic',
+    name: '玄铁护手',
+    type: 'item',
+    rarity: '稀有',
+    weight: 4,
+    value: {
+      item: {
+        name: '玄铁护手',
+        type: ItemType.Armor,
+        description: '玄铁打造的护手，防御力强劲',
+        quantity: 1,
+        rarity: '稀有',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Gloves,
+        effect: { defense: 25, hp: 60, spirit: 10 }
+      }
+    }
+  },
+  {
+    id: 'lottery-gloves-star',
+    name: '星辰法手',
+    type: 'item',
+    rarity: '传说',
+    weight: 2,
+    value: {
+      item: {
+        name: '星辰法手',
+        type: ItemType.Armor,
+        description: '蕴含星辰之力的法手，威力强大',
+        quantity: 1,
+        rarity: '传说',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Gloves,
+        effect: { defense: 60, hp: 150, spirit: 20, attack: 10 }
+      }
+    }
+  },
+  {
+    id: 'lottery-gloves-immortal',
+    name: '仙灵法手',
+    type: 'item',
+    rarity: '仙品',
+    weight: 1,
+    value: {
+      item: {
+        name: '仙灵法手',
+        type: ItemType.Armor,
+        description: '仙灵所制的法手，蕴含无上仙力',
+        quantity: 1,
+        rarity: '仙品',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Gloves,
+        effect: { defense: 150, hp: 400, spirit: 50, attack: 30 }
+      }
+    }
+  },
+
+  // 普通奖励 - 装备（裤腿）
+  {
+    id: 'lottery-legs-cloth',
+    name: '布裤',
+    type: 'item',
+    rarity: '普通',
+    weight: 8,
+    value: {
+      item: {
+        name: '布裤',
+        type: ItemType.Armor,
+        description: '普通的布制裤子，提供基础防护',
+        quantity: 1,
+        rarity: '普通',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Legs,
+        effect: { defense: 4, hp: 18 }
+      }
+    }
+  },
+  {
+    id: 'lottery-legs-iron',
+    name: '铁护腿',
+    type: 'item',
+    rarity: '普通',
+    weight: 7,
+    value: {
+      item: {
+        name: '铁护腿',
+        type: ItemType.Armor,
+        description: '精铁打造的护腿，防御力不错',
+        quantity: 1,
+        rarity: '普通',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Legs,
+        effect: { defense: 10, hp: 40 }
+      }
+    }
+  },
+  {
+    id: 'lottery-legs-mystic',
+    name: '玄铁护腿',
+    type: 'item',
+    rarity: '稀有',
+    weight: 4,
+    value: {
+      item: {
+        name: '玄铁护腿',
+        type: ItemType.Armor,
+        description: '玄铁打造的护腿，防御力强劲',
+        quantity: 1,
+        rarity: '稀有',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Legs,
+        effect: { defense: 30, hp: 80 }
+      }
+    }
+  },
+  {
+    id: 'lottery-legs-star',
+    name: '星辰护腿',
+    type: 'item',
+    rarity: '传说',
+    weight: 2,
+    value: {
+      item: {
+        name: '星辰护腿',
+        type: ItemType.Armor,
+        description: '蕴含星辰之力的护腿，威力强大',
+        quantity: 1,
+        rarity: '传说',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Legs,
+        effect: { defense: 75, hp: 200, attack: 15 }
+      }
+    }
+  },
+  {
+    id: 'lottery-legs-immortal',
+    name: '仙灵法裤',
+    type: 'item',
+    rarity: '仙品',
+    weight: 1,
+    value: {
+      item: {
+        name: '仙灵法裤',
+        type: ItemType.Armor,
+        description: '仙灵所制的法裤，蕴含无上仙力',
+        quantity: 1,
+        rarity: '仙品',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Legs,
+        effect: { defense: 180, hp: 500, spirit: 60 }
+      }
+    }
+  },
+
+  // 普通奖励 - 装备（鞋子）
+  {
+    id: 'lottery-boots-cloth',
+    name: '布鞋',
+    type: 'item',
+    rarity: '普通',
+    weight: 8,
+    value: {
+      item: {
+        name: '布鞋',
+        type: ItemType.Armor,
+        description: '普通的布制鞋子，略微提升速度',
+        quantity: 1,
+        rarity: '普通',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Boots,
+        effect: { defense: 3, speed: 2 }
+      }
+    }
+  },
+  {
+    id: 'lottery-boots-iron',
+    name: '铁战靴',
+    type: 'item',
+    rarity: '普通',
+    weight: 7,
+    value: {
+      item: {
+        name: '铁战靴',
+        type: ItemType.Armor,
+        description: '精铁打造的战靴，防御力和速度都不错',
+        quantity: 1,
+        rarity: '普通',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Boots,
+        effect: { defense: 8, speed: 5 }
+      }
+    }
+  },
+  {
+    id: 'lottery-boots-mystic',
+    name: '玄铁战靴',
+    type: 'item',
+    rarity: '稀有',
+    weight: 4,
+    value: {
+      item: {
+        name: '玄铁战靴',
+        type: ItemType.Armor,
+        description: '玄铁打造的战靴，防御力和速度强劲',
+        quantity: 1,
+        rarity: '稀有',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Boots,
+        effect: { defense: 25, speed: 12 }
+      }
+    }
+  },
+  {
+    id: 'lottery-boots-star',
+    name: '星辰战靴',
+    type: 'item',
+    rarity: '传说',
+    weight: 2,
+    value: {
+      item: {
+        name: '星辰战靴',
+        type: ItemType.Armor,
+        description: '蕴含星辰之力的战靴，速度极快',
+        quantity: 1,
+        rarity: '传说',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Boots,
+        effect: { defense: 60, hp: 150, speed: 25 }
+      }
+    }
+  },
+  {
+    id: 'lottery-boots-immortal',
+    name: '仙灵仙履',
+    type: 'item',
+    rarity: '仙品',
+    weight: 1,
+    value: {
+      item: {
+        name: '仙灵仙履',
+        type: ItemType.Armor,
+        description: '仙灵所制的仙履，蕴含无上仙力，速度惊人',
+        quantity: 1,
+        rarity: '仙品',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Boots,
+        effect: { defense: 150, hp: 400, speed: 60 }
+      }
+    }
+  },
+
   // 普通奖励 - 灵宠
   {
     id: 'lottery-pet-fox',

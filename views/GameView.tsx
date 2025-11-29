@@ -6,7 +6,7 @@ import CombatVisuals from '../components/CombatVisuals';
 import MobileSidebar from '../components/MobileSidebar';
 import GameHeader from './GameHeader';
 import ActionBar from './ActionBar';
-import { PurchaseSuccessToast, LotteryRewardsToast } from './NotificationToast';
+import { PurchaseSuccessToast, LotteryRewardsToast, ItemActionToast } from './NotificationToast';
 
 /**
  * 游戏视图组件
@@ -33,6 +33,7 @@ interface GameViewProps {
   cooldown: number;
   purchaseSuccess: { item: string; quantity: number } | null;
   lotteryRewards: Array<{ type: string; name: string; quantity?: number }>;
+  itemActionLog: { text: string; type: string } | null;
   isMobileSidebarOpen: boolean;
   isMobileStatsOpen: boolean;
   modals: {
@@ -86,6 +87,7 @@ function GameView({
   cooldown,
   purchaseSuccess,
   lotteryRewards,
+  itemActionLog,
   isMobileSidebarOpen,
   isMobileStatsOpen,
   modals,
@@ -152,6 +154,16 @@ function GameView({
         />
       )}
       <LotteryRewardsToast rewards={lotteryRewards} />
+      {itemActionLog && (
+        <ItemActionToast
+          log={{
+            id: '',
+            text: itemActionLog.text,
+            type: itemActionLog.type as LogEntry['type'],
+            timestamp: Date.now(),
+          }}
+        />
+      )}
 
       {/* Mobile Sidebar */}
       <MobileSidebar

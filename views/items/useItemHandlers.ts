@@ -7,6 +7,7 @@ interface UseItemHandlersProps {
   player: PlayerStats;
   setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
   addLog: (message: string, type?: string) => void;
+  setItemActionLog?: (log: { text: string; type: string } | null) => void;
 }
 
 /**
@@ -20,6 +21,7 @@ interface UseItemHandlersProps {
 export function useItemHandlers({
   setPlayer,
   addLog,
+  setItemActionLog,
 }: UseItemHandlersProps) {
   const handleUseItem = (item: Item) => {
     setPlayer((prev) => {
@@ -151,7 +153,20 @@ export function useItemHandlers({
 
       // 对于非灵兽蛋的物品，显示使用日志
       if (effectLogs.length > 0 && !isPetEgg && item.type !== ItemType.Recipe) {
-        addLog(`你使用了 ${item.name}。 ${effectLogs.join(' ')}`, 'gain');
+        const logMessage = `你使用了 ${item.name}。 ${effectLogs.join(' ')}`;
+        addLog(logMessage, 'gain');
+        // 显示轻提示
+        if (setItemActionLog) {
+          setItemActionLog({ text: logMessage, type: 'gain' });
+          setTimeout(() => setItemActionLog(null), 3000);
+        }
+      } else if (item.type === ItemType.Recipe && effectLogs.length > 0) {
+        // 丹方使用后的提示
+        const logMessage = effectLogs[0];
+        if (setItemActionLog) {
+          setItemActionLog({ text: logMessage, type: 'special' });
+          setTimeout(() => setItemActionLog(null), 3000);
+        }
       }
 
       return { ...newStats, inventory: newInv, pets: newPets };

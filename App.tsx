@@ -80,6 +80,7 @@ function App() {
 
   const [loading, setLoading] = useState(false); // 加载状态
   const [cooldown, setCooldown] = useState(0); // 冷却时间
+  const [itemActionLog, setItemActionLog] = useState<{ text: string; type: string } | null>(null); // 物品操作轻提示
 
   // 初始化所有模块化的 handlers
   const battleHandlers = useBattleHandlers({
@@ -111,12 +112,14 @@ function App() {
     player,
     setPlayer,
     addLog,
+    setItemActionLog,
   });
 
   const equipmentHandlers = useEquipmentHandlers({
     player,
     setPlayer,
     addLog,
+    setItemActionLog,
   });
 
   const cultivationHandlers = useCultivationHandlers({
@@ -212,6 +215,13 @@ function App() {
 
   const handleUseItem = itemHandlers.handleUseItem;
   const handleDiscardItem = itemHandlers.handleDiscardItem;
+  const handleBatchDiscard = (itemIds: string[]) => {
+    setPlayer((prev) => {
+      const newInv = prev.inventory.filter((i) => !itemIds.includes(i.id));
+      addLog(`你批量丢弃了 ${itemIds.length} 件物品。`, 'normal');
+      return { ...prev, inventory: newInv };
+    });
+  };
 
   const handleEquipItem = equipmentHandlers.handleEquipItem;
   const handleUnequipItem = equipmentHandlers.handleUnequipItem;
@@ -333,6 +343,7 @@ function App() {
         cooldown={cooldown}
         purchaseSuccess={purchaseSuccess}
         lotteryRewards={lotteryRewards}
+        itemActionLog={itemActionLog}
         isMobileSidebarOpen={isMobileSidebarOpen}
         isMobileStatsOpen={isMobileStatsOpen}
         modals={{
@@ -444,6 +455,7 @@ function App() {
           handleUnequipItem,
           handleOpenUpgrade,
           handleDiscardItem,
+          handleBatchDiscard,
           handleRefineNatalArtifact,
           handleUnrefineNatalArtifact,
           handleUpgradeItem,

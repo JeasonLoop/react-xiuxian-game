@@ -1,9 +1,10 @@
 
 import React, { useState, useMemo } from 'react';
 import { Item, ItemType, ItemRarity, PlayerStats, EquipmentSlot } from '../types';
-import { X, Package, ShieldCheck, ArrowRight, Hammer, Trash2, Sparkles, ArrowUpDown } from 'lucide-react';
+import { X, Package, ShieldCheck, ArrowRight, Hammer, Trash2, Sparkles, ArrowUpDown, Trash } from 'lucide-react';
 import { RARITY_MULTIPLIERS } from '../constants';
 import EquipmentPanel from './EquipmentPanel';
+import BatchDiscardModal from './BatchDiscardModal';
 
 interface Props {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface Props {
   onUnequipItem: (slot: EquipmentSlot) => void;
   onUpgradeItem: (item: Item) => void;
   onDiscardItem: (item: Item) => void;
+  onBatchDiscard: (itemIds: string[]) => void;
   onRefineNatalArtifact?: (item: Item) => void;
   onUnrefineNatalArtifact?: () => void;
 }
@@ -33,6 +35,7 @@ const InventoryModal: React.FC<Props> = ({
   onUnequipItem,
   onUpgradeItem,
   onDiscardItem,
+  onBatchDiscard,
   onRefineNatalArtifact,
   onUnrefineNatalArtifact,
 }) => {
@@ -41,6 +44,11 @@ const InventoryModal: React.FC<Props> = ({
   const [selectedCategory, setSelectedCategory] = useState<ItemCategory>('all');
   const [selectedEquipmentSlot, setSelectedEquipmentSlot] = useState<EquipmentSlot | 'all'>('all');
   const [sortByRarity, setSortByRarity] = useState(true);
+  const [isBatchDiscardOpen, setIsBatchDiscardOpen] = useState(false);
+
+  const handleBatchDiscard = (itemIds: string[]) => {
+    onBatchDiscard(itemIds);
+  };
 
   // 过滤和排序物品
   const filteredAndSortedInventory = useMemo(() => {
@@ -237,6 +245,13 @@ const InventoryModal: React.FC<Props> = ({
             <Package size={18} className="md:w-5 md:h-5" /> 储物袋
           </h3>
           <div className="flex gap-2">
+            <button
+              onClick={() => setIsBatchDiscardOpen(true)}
+              className="px-2 md:px-3 py-1.5 md:py-1 rounded text-xs md:text-sm border transition-colors min-h-[44px] md:min-h-0 touch-manipulation bg-red-900/20 border-red-700 text-red-300 hover:bg-red-900/30"
+            >
+              <Trash size={14} className="inline mr-1" />
+              批量丢弃
+            </button>
             <button
               onClick={() => setShowEquipment(!showEquipment)}
               className={`px-2 md:px-3 py-1.5 md:py-1 rounded text-xs md:text-sm border transition-colors min-h-[44px] md:min-h-0 touch-manipulation ${
@@ -678,6 +693,14 @@ const InventoryModal: React.FC<Props> = ({
           )}
         </div>
       </div>
+
+      <BatchDiscardModal
+        isOpen={isBatchDiscardOpen}
+        onClose={() => setIsBatchDiscardOpen(false)}
+        inventory={inventory}
+        equippedItems={equippedItems}
+        onDiscardItems={handleBatchDiscard}
+      />
     </div>
   );
 };

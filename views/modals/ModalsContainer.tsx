@@ -79,6 +79,7 @@ interface ModalsContainerProps {
     handleUnequipItem: (slot: any) => void;
     handleOpenUpgrade: (item: Item) => void;
     handleDiscardItem: (item: Item) => void;
+    handleBatchDiscard: (itemIds: string[]) => void;
     handleRefineNatalArtifact: (item: Item) => void;
     handleUnrefineNatalArtifact: () => void;
     handleUpgradeItem: (item: Item, costStones: number, costMats: number) => void;
@@ -143,6 +144,7 @@ export default function ModalsContainer({
         onUnequipItem={handlers.handleUnequipItem}
         onUpgradeItem={handlers.handleOpenUpgrade}
         onDiscardItem={handlers.handleDiscardItem}
+        onBatchDiscard={handlers.handleBatchDiscard}
         onRefineNatalArtifact={handlers.handleRefineNatalArtifact}
         onUnrefineNatalArtifact={handlers.handleUnrefineNatalArtifact}
       />
