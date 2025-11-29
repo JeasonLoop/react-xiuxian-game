@@ -1,0 +1,70 @@
+@import "tailwindcss";
+@config "./tailwind.config.js";
+
+body {
+  font-family: "Noto Serif SC", serif;
+  background-color: #1c1c1a;
+  color: #e6e6dc;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* 移动端优化 */
+@media (max-width: 768px) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  button,
+  a {
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+  }
+}
+
+/* WebKit 浏览器 (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(28, 28, 26, 0.5);
+  border-radius: 5px;
+  border: 1px solid rgba(203, 161, 53, 0.1);
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #cba135 0%, #8a6d2f 100%);
+  border-radius: 5px;
+  border: 1px solid rgba(203, 161, 53, 0.3);
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #d4ad47 0%, #9a7d3f 100%);
+  box-shadow: 0 0 8px rgba(203, 161, 53, 0.5);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #b89530 0%, #7a5d2a 100%);
+}
+
+/* Firefox 浏览器 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cba135 rgba(28, 28, 26, 0.5);
+}
+
+/* 隐藏滚动条的工具类 */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
