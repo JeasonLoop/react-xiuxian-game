@@ -193,6 +193,9 @@ export interface PlayerStats {
   natalArtifactId: string | null; // 本命法宝ID
   // 丹方系统
   unlockedRecipes: string[]; // 已解锁的丹方名称列表
+  // 打坐回血速度加成
+  meditationHpRegenMultiplier: number; // 打坐回血速度加成倍数（默认1.0，打坐时增加）
+  meditationBoostEndTime: number | null; // 打坐回血加成结束时间戳（毫秒）
 }
 
 export interface LogEntry {

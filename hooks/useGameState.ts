@@ -58,6 +58,8 @@ export function useGameState() {
             viewedAchievements: savedData.player.viewedAchievements || [],
             natalArtifactId: savedData.player.natalArtifactId || null,
             unlockedRecipes: savedData.player.unlockedRecipes || [], // 兼容旧存档，确保 unlockedRecipes 存在
+            meditationHpRegenMultiplier: savedData.player.meditationHpRegenMultiplier ?? 1.0, // 兼容旧存档
+            meditationBoostEndTime: savedData.player.meditationBoostEndTime ?? null, // 兼容旧存档
           };
           setPlayer(loadedPlayer);
           setLogs(savedData.logs || []);

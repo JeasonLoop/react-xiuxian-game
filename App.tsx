@@ -324,15 +324,41 @@ function App() {
     const timer = setInterval(() => {
       setPlayer((prev) => {
         if (!prev) return prev; // 防止 prev 为 null
+
+        const now = Date.now();
+        let hpRegenMultiplier = prev.meditationHpRegenMultiplier || 1.0;
+        let meditationBoostEndTime = prev.meditationBoostEndTime;
+
+        // 检查打坐加成是否过期
+        if (meditationBoostEndTime && now >= meditationBoostEndTime) {
+          // 打坐加成已过期，恢复默认值
+          hpRegenMultiplier = 1.0;
+          meditationBoostEndTime = null;
+        }
+
+        // 计算回血量：基础回血 * 打坐加成倍数
+        const baseRegen = Math.max(1, Math.floor(prev.maxHp * 0.01));
+        const actualRegen = Math.floor(baseRegen * hpRegenMultiplier);
+
         if (prev.hp < prev.maxHp) {
           return {
             ...prev,
-            hp: Math.min(
-              prev.maxHp,
-              prev.hp + Math.max(1, Math.floor(prev.maxHp * 0.01))
-            ),
+            hp: Math.min(prev.maxHp, prev.hp + actualRegen),
+            meditationHpRegenMultiplier: hpRegenMultiplier,
+            meditationBoostEndTime: meditationBoostEndTime,
           };
         }
+
+        // 即使血量已满，也要更新打坐加成状态（清除过期加成）
+        if (hpRegenMultiplier !== prev.meditationHpRegenMultiplier ||
+            meditationBoostEndTime !== prev.meditationBoostEndTime) {
+          return {
+            ...prev,
+            meditationHpRegenMultiplier: hpRegenMultiplier,
+            meditationBoostEndTime: meditationBoostEndTime,
+          };
+        }
+
         return prev;
       });
       setCooldown((c) => (c > 0 ? c - 1 : 0));

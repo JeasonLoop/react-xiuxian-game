@@ -71,7 +71,27 @@ export function useMeditationHandlers({
       addLog(logMessage);
     }
 
-    setPlayer((prev) => ({ ...prev, exp: prev.exp + actualGain }));
+    setPlayer((prev) => {
+      const now = Date.now();
+      // 打坐时提高回血速度：基础2倍，根据境界和层数可以增加
+      // 基础倍数 = 2.0 + 境界层数 * 0.1（最高3.5倍）
+      const realmIndex = REALM_ORDER.indexOf(prev.realm);
+      const baseMultiplier = 2.0 + Math.min(prev.realmLevel * 0.1, 1.5); // 2.0 - 3.5倍
+      // 持续时间：基础30秒，根据境界增加（最高60秒）
+      const duration = 30000 + Math.min(realmIndex * 5000, 30000); // 30-60秒
+      const durationSeconds = Math.floor(duration / 1000);
+
+      // 添加回血速度提升提示
+      const multiplierText = baseMultiplier.toFixed(1);
+      addLog(`💚 打坐提升了你的回血速度（${multiplierText}倍），持续 ${durationSeconds} 秒`, 'gain');
+
+      return {
+        ...prev,
+        exp: prev.exp + actualGain,
+        meditationHpRegenMultiplier: baseMultiplier,
+        meditationBoostEndTime: now + duration,
+      };
+    });
     checkLevelUp(actualGain);
 
     // 检查首次打坐成就
