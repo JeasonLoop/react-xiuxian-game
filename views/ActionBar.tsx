@@ -19,7 +19,7 @@ interface ActionBarProps {
   onOpenSect: () => void;
 }
 
-export default function ActionBar({
+function ActionBar({
   loading,
   cooldown,
   onMeditate,
@@ -153,4 +153,6 @@ export default function ActionBar({
     </div>
   );
 }
+
+export default React.memo(ActionBar);
 

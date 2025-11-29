@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   BookOpen,
   Backpack,
@@ -37,7 +37,7 @@ interface GameHeaderProps {
   onOpenSettings: () => void;
 }
 
-export default function GameHeader({
+function GameHeader({
   player,
   onOpenMenu,
   onOpenCultivation,
@@ -48,8 +48,26 @@ export default function GameHeader({
   onOpenLottery,
   onOpenSettings,
 }: GameHeaderProps) {
-  const newAchievements = player.achievements.filter(
-    (a) => !player.viewedAchievements.includes(a)
+  const newAchievements = useMemo(
+    () => player.achievements.filter(
+      (a) => !player.viewedAchievements.includes(a)
+    ),
+    [player.achievements, player.viewedAchievements]
+  );
+
+  const newAchievementsCount = useMemo(
+    () => newAchievements.length,
+    [newAchievements.length]
+  );
+
+  const petsCount = useMemo(
+    () => player.pets.length,
+    [player.pets.length]
+  );
+
+  const lotteryTickets = useMemo(
+    () => player.lotteryTickets,
+    [player.lotteryTickets]
   );
 
   return (
@@ -93,9 +111,9 @@ export default function GameHeader({
         >
           <Trophy size={18} />
           <span>成就</span>
-          {newAchievements.length > 0 && (
+          {newAchievementsCount > 0 && (
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-              {newAchievements.length}
+              {newAchievementsCount}
             </span>
           )}
         </button>
@@ -105,9 +123,9 @@ export default function GameHeader({
         >
           <Sparkles size={18} />
           <span>灵宠</span>
-          {player.pets.length > 0 && (
+          {petsCount > 0 && (
             <span className="text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded">
-              {player.pets.length}
+              {petsCount}
             </span>
           )}
         </button>
@@ -117,9 +135,9 @@ export default function GameHeader({
         >
           <Gift size={18} />
           <span>抽奖</span>
-          {player.lotteryTickets > 0 && (
+          {lotteryTickets > 0 && (
             <span className="text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded">
-              {player.lotteryTickets}
+              {lotteryTickets}
             </span>
           )}
         </button>
@@ -134,4 +152,6 @@ export default function GameHeader({
     </header>
   );
 }
+
+export default React.memo(GameHeader);
 

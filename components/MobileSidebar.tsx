@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Menu, X, BookOpen, Backpack, Star, Trophy, Sparkles, Gift, Settings, BarChart3 } from 'lucide-react';
 
 interface Props {
@@ -32,7 +32,7 @@ const MobileSidebar: React.FC<Props> = ({
   petCount = 0,
   lotteryTickets = 0,
 }) => {
-  const menuItems = [
+  const menuItems = useMemo(() => [
     { icon: BarChart3, label: '属性', onClick: onOpenStats, color: 'text-mystic-gold' },
     { icon: BookOpen, label: '功法', onClick: onOpenCultivation, color: 'text-blue-400' },
     { icon: Backpack, label: '储物袋', onClick: onOpenInventory, color: 'text-green-400' },
@@ -59,12 +59,12 @@ const MobileSidebar: React.FC<Props> = ({
       badge: lotteryTickets > 0 ? lotteryTickets : undefined
     },
     { icon: Settings, label: '设置', onClick: onOpenSettings, color: 'text-stone-400' },
-  ];
+  ], [onOpenStats, onOpenCultivation, onOpenInventory, onOpenCharacter, onOpenAchievement, onOpenPet, onOpenLottery, onOpenSettings, achievementCount, petCount, lotteryTickets]);
 
-  const handleItemClick = (onClick: () => void) => {
+  const handleItemClick = useCallback((onClick: () => void) => {
     onClick();
     onClose();
-  };
+  }, [onClose]);
 
   return (
     <>
@@ -123,5 +123,5 @@ const MobileSidebar: React.FC<Props> = ({
   );
 };
 
-export default MobileSidebar;
+export default React.memo(MobileSidebar);
 

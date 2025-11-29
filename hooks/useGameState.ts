@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { PlayerStats, LogEntry, GameSettings } from '../types';
 import { createInitialPlayer } from '../utils/playerUtils';
 import { SAVE_KEY, SETTINGS_KEY } from '../utils/gameUtils';
@@ -115,10 +115,24 @@ export function useGameState() {
     saveGame(newPlayer, initialLogs);
   }, [saveGame]);
 
-  // 自动保存
+  // 自动保存 - 使用防抖机制，避免频繁保存导致卡顿
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   useEffect(() => {
     if (player && gameStarted && settings.autoSave) {
-      saveGame(player, logs);
+      // 清除之前的定时器
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      // 设置新的定时器，延迟2秒保存
+      saveTimeoutRef.current = setTimeout(() => {
+        saveGame(player, logs);
+      }, 2000);
+
+      return () => {
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+        }
+      };
     }
   }, [player, logs, settings.autoSave, saveGame, gameStarted]);
 
