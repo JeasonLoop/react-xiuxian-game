@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, ShoppingBag, Coins, Package } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { X, ShoppingBag, Coins, Package, Filter } from 'lucide-react';
 import { Shop, ShopItem, Item, PlayerStats, RealmType, ItemRarity, ItemType } from '../types';
 import { REALM_ORDER, RARITY_MULTIPLIERS } from '../constants';
 
@@ -12,9 +12,12 @@ interface Props {
   onSellItem: (item: Item) => void;
 }
 
+type ItemTypeFilter = 'all' | ItemType;
+
 const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, onSellItem }) => {
   const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
   const [buyQuantities, setBuyQuantities] = useState<Record<string, number>>({});
+  const [selectedTypeFilter, setSelectedTypeFilter] = useState<ItemTypeFilter>('all');
 
   if (!isOpen) return null;
 
@@ -46,13 +49,22 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
     }
   };
 
-  // 过滤可购买的物品（根据境界）
-  const availableItems = shop.items.filter(item => {
-    if (!item.minRealm) return true;
-    const itemRealmIndex = REALM_ORDER.indexOf(item.minRealm);
-    const playerRealmIndex = REALM_ORDER.indexOf(player.realm);
-    return playerRealmIndex >= itemRealmIndex;
-  });
+  // 过滤可购买的物品（根据境界和类型）
+  const availableItems = useMemo(() => {
+    let filtered = shop.items.filter(item => {
+      if (!item.minRealm) return true;
+      const itemRealmIndex = REALM_ORDER.indexOf(item.minRealm);
+      const playerRealmIndex = REALM_ORDER.indexOf(player.realm);
+      return playerRealmIndex >= itemRealmIndex;
+    });
+
+    // 按类型筛选
+    if (selectedTypeFilter !== 'all') {
+      filtered = filtered.filter(item => item.type === selectedTypeFilter);
+    }
+
+    return filtered;
+  }, [shop.items, player.realm, selectedTypeFilter]);
 
   // 计算物品出售价格（与 App.tsx 中的逻辑保持一致）
   const calculateItemSellPrice = (item: Item): number => {
@@ -137,12 +149,51 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
     return Math.max(1, Math.floor(totalValue * typeMultiplier));
   };
 
-  // 可出售的物品（排除已装备的）
-  const sellableItems = player.inventory.filter(item => {
-    // 不能出售已装备的物品
-    const isEquipped = Object.values(player.equippedItems).includes(item.id);
-    return !isEquipped;
-  });
+  // 可出售的物品（排除已装备的，并根据类型筛选）
+  const sellableItems = useMemo(() => {
+    let filtered = player.inventory.filter(item => {
+      // 不能出售已装备的物品
+      const isEquipped = Object.values(player.equippedItems).includes(item.id);
+      return !isEquipped;
+    });
+
+    // 按类型筛选
+    if (selectedTypeFilter !== 'all') {
+      filtered = filtered.filter(item => item.type === selectedTypeFilter);
+    }
+
+    return filtered;
+  }, [player.inventory, player.equippedItems, selectedTypeFilter]);
+
+  // 获取所有可用的物品类型（用于筛选器，基于未筛选的原始数据）
+  const availableTypes = useMemo(() => {
+    if (activeTab === 'buy') {
+      const types = new Set<ItemType>();
+      // 使用原始商店物品列表，只根据境界过滤
+      shop.items.filter(item => {
+        if (!item.minRealm) return true;
+        const itemRealmIndex = REALM_ORDER.indexOf(item.minRealm);
+        const playerRealmIndex = REALM_ORDER.indexOf(player.realm);
+        return playerRealmIndex >= itemRealmIndex;
+      }).forEach(item => types.add(item.type));
+      return Array.from(types);
+    } else {
+      const types = new Set<ItemType>();
+      // 使用原始库存列表，只排除已装备的物品
+      player.inventory.filter(item => {
+        const isEquipped = Object.values(player.equippedItems).includes(item.id);
+        return !isEquipped;
+      }).forEach(item => types.add(item.type));
+      return Array.from(types);
+    }
+  }, [activeTab, shop.items, player.realm, player.inventory, player.equippedItems]);
+
+  // 当切换标签页时，如果当前筛选的类型在新标签页中不存在，则重置为'all'
+  React.useEffect(() => {
+    if (selectedTypeFilter !== 'all' && !availableTypes.includes(selectedTypeFilter as ItemType)) {
+      setSelectedTypeFilter('all');
+    }
+  }, [activeTab, availableTypes, selectedTypeFilter]);
 
   return (
     <div
@@ -194,9 +245,41 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
         <div className="flex-1 overflow-y-auto p-4">
           {activeTab === 'buy' ? (
             <div>
-              <div className="mb-4 flex items-center justify-between">
-                <span className="text-stone-400">当前灵石: <span className="text-mystic-gold font-bold">{player.spiritStones}</span></span>
-                <span className={`text-sm ${getShopTypeColor(shop.type)}`}>{shop.type}</span>
+              <div className="mb-4 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-stone-400">当前灵石: <span className="text-mystic-gold font-bold">{player.spiritStones}</span></span>
+                  <span className={`text-sm ${getShopTypeColor(shop.type)}`}>{shop.type}</span>
+                </div>
+                {/* 物品分类筛选器 */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 text-stone-400 text-sm">
+                    <Filter size={16} />
+                    <span>分类:</span>
+                  </div>
+                  <button
+                    onClick={() => setSelectedTypeFilter('all')}
+                    className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                      selectedTypeFilter === 'all'
+                        ? 'bg-mystic-gold/20 text-mystic-gold border border-mystic-gold/50'
+                        : 'bg-stone-800 text-stone-400 hover:text-stone-200 border border-stone-700'
+                    }`}
+                  >
+                    全部
+                  </button>
+                  {availableTypes.map(type => (
+                    <button
+                      key={type}
+                      onClick={() => setSelectedTypeFilter(type)}
+                      className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                        selectedTypeFilter === type
+                          ? 'bg-mystic-gold/20 text-mystic-gold border border-mystic-gold/50'
+                          : 'bg-stone-800 text-stone-400 hover:text-stone-200 border border-stone-700'
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {availableItems.length === 0 ? (
@@ -304,9 +387,41 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
             </div>
           ) : (
             <div>
-              <div className="mb-4 flex items-center justify-between">
-                <span className="text-stone-400">当前灵石: <span className="text-mystic-gold font-bold">{player.spiritStones}</span></span>
-                <span className="text-sm text-stone-500">可出售物品: {sellableItems.length}</span>
+              <div className="mb-4 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-stone-400">当前灵石: <span className="text-mystic-gold font-bold">{player.spiritStones}</span></span>
+                  <span className="text-sm text-stone-500">可出售物品: {sellableItems.length}</span>
+                </div>
+                {/* 物品分类筛选器 */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-2 text-stone-400 text-sm">
+                    <Filter size={16} />
+                    <span>分类:</span>
+                  </div>
+                  <button
+                    onClick={() => setSelectedTypeFilter('all')}
+                    className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                      selectedTypeFilter === 'all'
+                        ? 'bg-mystic-gold/20 text-mystic-gold border border-mystic-gold/50'
+                        : 'bg-stone-800 text-stone-400 hover:text-stone-200 border border-stone-700'
+                    }`}
+                  >
+                    全部
+                  </button>
+                  {availableTypes.map(type => (
+                    <button
+                      key={type}
+                      onClick={() => setSelectedTypeFilter(type)}
+                      className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                        selectedTypeFilter === type
+                          ? 'bg-mystic-gold/20 text-mystic-gold border border-mystic-gold/50'
+                          : 'bg-stone-800 text-stone-400 hover:text-stone-200 border border-stone-700'
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
               </div>
               {sellableItems.length === 0 ? (
                 <div className="text-center text-stone-500 py-10">

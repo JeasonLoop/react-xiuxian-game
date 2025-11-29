@@ -21,8 +21,9 @@ const AlchemyModal: React.FC<Props> = ({ isOpen, onClose, player, onCraft }) => 
 
   // 合并基础配方和已解锁的配方
   const availableRecipes = useMemo(() => {
+    const unlockedRecipes = player.unlockedRecipes || [];
     const unlocked = DISCOVERABLE_RECIPES.filter(recipe =>
-      player.unlockedRecipes.includes(recipe.name)
+      unlockedRecipes.includes(recipe.name)
     );
     return [...PILL_RECIPES, ...unlocked];
   }, [player.unlockedRecipes]);
