@@ -45,6 +45,7 @@ const InventoryModal: React.FC<Props> = ({
   const [selectedEquipmentSlot, setSelectedEquipmentSlot] = useState<EquipmentSlot | 'all'>('all');
   const [sortByRarity, setSortByRarity] = useState(true);
   const [isBatchDiscardOpen, setIsBatchDiscardOpen] = useState(false);
+  const [mobileActiveTab, setMobileActiveTab] = useState<'equipment' | 'inventory'>('inventory');
 
   const handleBatchDiscard = (itemIds: string[]) => {
     onBatchDiscard(itemIds);
@@ -254,7 +255,7 @@ const InventoryModal: React.FC<Props> = ({
             </button>
             <button
               onClick={() => setShowEquipment(!showEquipment)}
-              className={`px-2 md:px-3 py-1.5 md:py-1 rounded text-xs md:text-sm border transition-colors min-h-[44px] md:min-h-0 touch-manipulation ${
+              className={`hidden md:flex px-3 py-1 rounded text-sm border transition-colors ${
                 showEquipment
                   ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
                   : 'bg-stone-700 border-stone-600 text-stone-300'
@@ -262,16 +263,51 @@ const InventoryModal: React.FC<Props> = ({
             >
               {showEquipment ? '隐藏' : '显示'}装备栏
             </button>
-            <button onClick={onClose} className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation">
+            <button
+              onClick={onClose}
+              className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+              aria-label="关闭"
+              title="关闭"
+            >
               <X size={24} />
+            </button>
+          </div>
+        </div>
+
+        {/* 移动端Tab切换 */}
+        <div className="md:hidden border-b border-stone-600 bg-ink-800">
+          <div className="flex">
+            <button
+              onClick={() => setMobileActiveTab('equipment')}
+              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+                mobileActiveTab === 'equipment'
+                  ? 'border-mystic-gold text-mystic-gold bg-mystic-gold/10'
+                  : 'border-transparent text-stone-400 hover:text-stone-300'
+              }`}
+            >
+              <ShieldCheck size={16} className="inline mr-2" />
+              装备栏位
+            </button>
+            <button
+              onClick={() => setMobileActiveTab('inventory')}
+              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors border-b-2 ${
+                mobileActiveTab === 'inventory'
+                  ? 'border-mystic-gold text-mystic-gold bg-mystic-gold/10'
+                  : 'border-transparent text-stone-400 hover:text-stone-300'
+              }`}
+            >
+              <Package size={16} className="inline mr-2" />
+              背包
             </button>
           </div>
         </div>
 
         <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
           {/* 装备面板 */}
-          {showEquipment && (
-            <div className="w-full md:w-1/2 border-b md:border-b-0 md:border-r border-stone-600 p-3 md:p-4 overflow-y-auto">
+          {(showEquipment || mobileActiveTab === 'equipment') && (
+            <div className={`w-full md:w-1/2 border-b md:border-b-0 md:border-r border-stone-600 p-3 md:p-4 overflow-y-auto ${
+              mobileActiveTab !== 'equipment' ? 'hidden md:block' : ''
+            }`}>
               <EquipmentPanel
                 equippedItems={equippedItems}
                 inventory={inventory}
@@ -281,7 +317,9 @@ const InventoryModal: React.FC<Props> = ({
           )}
 
           {/* 物品列表 */}
-          <div className={`${showEquipment ? 'w-full md:w-1/2' : 'w-full'} p-4 overflow-y-auto flex flex-col`}>
+          <div className={`${showEquipment ? 'w-full md:w-1/2' : 'w-full'} p-4 overflow-y-auto flex flex-col ${
+            mobileActiveTab !== 'inventory' ? 'hidden md:flex' : ''
+          }`}>
             {/* 分类标签和排序按钮 */}
             <div className="mb-4 flex flex-col gap-2">
               {/* 分类标签 */}
