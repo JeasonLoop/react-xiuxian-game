@@ -203,7 +203,22 @@ const InventoryModal: React.FC<Props> = ({
 
   const isItemEquipped = (item: Item): boolean => {
     if (!item.equipmentSlot) return false;
-    return equippedItems[item.equipmentSlot] === item.id;
+
+    // 检查物品是否在任何槽位装备
+    // 对于戒指、首饰、法宝，需要检查所有同类型槽位
+    if (item.type === ItemType.Ring) {
+      const ringSlots = [EquipmentSlot.Ring1, EquipmentSlot.Ring2, EquipmentSlot.Ring3, EquipmentSlot.Ring4];
+      return ringSlots.some(slot => equippedItems[slot] === item.id);
+    } else if (item.type === ItemType.Accessory) {
+      const accessorySlots = [EquipmentSlot.Accessory1, EquipmentSlot.Accessory2];
+      return accessorySlots.some(slot => equippedItems[slot] === item.id);
+    } else if (item.type === ItemType.Artifact) {
+      const artifactSlots = [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2];
+      return artifactSlots.some(slot => equippedItems[slot] === item.id);
+    } else {
+      // 其他装备类型直接检查对应槽位
+      return equippedItems[item.equipmentSlot] === item.id;
+    }
   };
 
   const comparison = calculateComparison();
