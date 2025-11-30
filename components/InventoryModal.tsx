@@ -173,6 +173,38 @@ const InventoryModal: React.FC<Props> = ({
     return filtered;
   }, [inventory, selectedCategory, selectedEquipmentSlot, sortByRarity]);
 
+  // 计算所有已装备物品的总属性（必须在条件返回之前）
+  const calculateTotalEquippedStats = useMemo(() => {
+    let totalAttack = 0;
+    let totalDefense = 0;
+    let totalHp = 0;
+
+    Object.values(equippedItems).forEach(itemId => {
+      if (itemId) {
+        const item = inventory.find(i => i.id === itemId);
+        if (item) {
+          // 在 useMemo 中直接计算属性，确保使用最新的 player.natalArtifactId
+          const isNatal = item.id === player.natalArtifactId;
+          const rarity = item.rarity || '普通';
+          const multiplier = RARITY_MULTIPLIERS[rarity] || 1;
+          const natalMultiplier = isNatal ? 1.5 : 1;
+
+          const stats = {
+            attack: item.effect?.attack ? Math.floor(item.effect.attack * multiplier * natalMultiplier) : 0,
+            defense: item.effect?.defense ? Math.floor(item.effect.defense * multiplier * natalMultiplier) : 0,
+            hp: item.effect?.hp ? Math.floor(item.effect.hp * multiplier * natalMultiplier) : 0,
+          };
+
+          totalAttack += stats.attack;
+          totalDefense += stats.defense;
+          totalHp += stats.hp;
+        }
+      }
+    });
+
+    return { attack: totalAttack, defense: totalDefense, hp: totalHp };
+  }, [equippedItems, inventory, player.natalArtifactId]);
+
   if (!isOpen) return null;
 
   const getRarityNameClasses = (rarity: ItemRarity | undefined) => {
@@ -219,9 +251,10 @@ const InventoryModal: React.FC<Props> = ({
   };
 
   const getItemStats = (item: Item) => {
+    const isNatal = item.id === player.natalArtifactId;
+    // 使用标准的 getItemStats 函数，但这里我们需要直接计算以保持兼容性
     const rarity = item.rarity || '普通';
     const multiplier = RARITY_MULTIPLIERS[rarity] || 1;
-    const isNatal = item.isNatal || false;
     const natalMultiplier = isNatal ? 1.5 : 1;
 
     return {
@@ -328,7 +361,7 @@ const InventoryModal: React.FC<Props> = ({
             </button>
             <button
               onClick={() => setShowEquipment(!showEquipment)}
-              className={`hidden md:flex px-3 py-1 rounded text-sm border transition-colors items-center ${
+              className={`hidden flex items-center justify-center md:flex px-3 py-1 rounded text-sm border transition-colors ${
                 showEquipment
                   ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
                   : 'bg-stone-700 border-stone-600 text-stone-300'
@@ -386,6 +419,7 @@ const InventoryModal: React.FC<Props> = ({
               <EquipmentPanel
                 equippedItems={equippedItems}
                 inventory={inventory}
+                player={player}
                 onUnequip={onUnequipItem}
               />
             </div>
@@ -697,150 +731,30 @@ const InventoryModal: React.FC<Props> = ({
                             )}
                           </div>
                         )}
-                      </div>
-
-                      <div className="mt-2 flex gap-1.5 flex-wrap">
-                        {item.isEquippable && item.equipmentSlot ? (
-                          <>
-                            {isEquipped ? (
-                              <button
-                                onClick={() =>
-                                  onUnequipItem(item.equipmentSlot!)
-                                }
-                                className="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-200 text-xs py-2 rounded transition-colors border border-stone-500"
-                              >
-                                卸下
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => {
-                                  // 对于戒指、首饰、法宝，自动找到第一个空槽位
-                                  let targetSlot = item.equipmentSlot!;
-                                  let hasEmptySlot = true;
-
-                                  if (item.type === ItemType.Ring) {
-                                    // 查找第一个空的戒指槽位
-                                    const ringSlots = [
-                                      EquipmentSlot.Ring1,
-                                      EquipmentSlot.Ring2,
-                                      EquipmentSlot.Ring3,
-                                      EquipmentSlot.Ring4,
-                                    ];
-                                    const emptyRingSlot = ringSlots.find(
-                                      (slot) => !equippedItems[slot]
-                                    );
-                                    if (emptyRingSlot) {
-                                      targetSlot = emptyRingSlot;
-                                    } else {
-                                      hasEmptySlot = false;
-                                    }
-                                  } else if (item.type === ItemType.Accessory) {
-                                    // 查找第一个空的首饰槽位
-                                    const accessorySlots = [
-                                      EquipmentSlot.Accessory1,
-                                      EquipmentSlot.Accessory2,
-                                    ];
-                                    const emptyAccessorySlot =
-                                      accessorySlots.find(
-                                        (slot) => !equippedItems[slot]
-                                      );
-                                    if (emptyAccessorySlot) {
-                                      targetSlot = emptyAccessorySlot;
-                                    } else {
-                                      hasEmptySlot = false;
-                                    }
-                                  } else if (item.type === ItemType.Artifact) {
-                                    // 查找第一个空的法宝槽位
-                                    const artifactSlots = [
-                                      EquipmentSlot.Artifact1,
-                                      EquipmentSlot.Artifact2,
-                                    ];
-                                    const emptyArtifactSlot =
-                                      artifactSlots.find(
-                                        (slot) => !equippedItems[slot]
-                                      );
-                                    if (emptyArtifactSlot) {
-                                      targetSlot = emptyArtifactSlot;
-                                    } else {
-                                      hasEmptySlot = false;
-                                    }
-                                  }
-
-                                  if (hasEmptySlot) {
-                                    onEquipItem(item, targetSlot);
-                                  } else {
-                                    // 如果没有空槽位，仍然尝试装备（会替换已装备的物品）
-                                    onEquipItem(item, targetSlot);
-                                  }
-                                }}
-                                className="flex-1 bg-mystic-gold/20 hover:bg-mystic-gold/30 text-mystic-gold text-xs py-2 rounded transition-colors border border-mystic-gold/50"
-                              >
-                                装备
-                              </button>
-                            )}
-                            {/* 本命法宝祭炼按钮（仅对法宝显示） */}
-                            {item.type === ItemType.Artifact &&
-                              onRefineNatalArtifact && (
-                                <button
-                                  onClick={() => {
-                                    if (
-                                      item.isNatal &&
-                                      onUnrefineNatalArtifact
-                                    ) {
-                                      onUnrefineNatalArtifact();
-                                    } else if (!item.isNatal) {
-                                      onRefineNatalArtifact(item);
-                                    }
-                                  }}
-                                  className={`px-3 text-xs py-2 rounded transition-colors border ${
-                                    item.isNatal
-                                      ? 'bg-mystic-gold/20 hover:bg-mystic-gold/30 text-mystic-gold border-mystic-gold/50'
-                                      : 'bg-purple-900/20 hover:bg-purple-900/30 text-purple-300 border-purple-700/50'
-                                  }`}
-                                  title={
-                                    item.isNatal
-                                      ? '解除本命祭炼'
-                                      : '祭炼为本命法宝'
-                                  }
-                                >
-                                  <Sparkles size={14} />
-                                </button>
-                              )}
-                            <button
-                              onClick={() => onUpgradeItem(item)}
-                              className="px-3 bg-stone-700 hover:bg-stone-600 text-stone-300 text-xs py-2 rounded transition-colors border border-stone-500"
-                              title="强化"
-                            >
-                              <Hammer size={14} />
-                            </button>
-                            <button
-                              onClick={() => onDiscardItem(item)}
-                              className="px-3 bg-red-900 hover:bg-red-800 text-red-200 text-xs py-2 rounded transition-colors border border-red-700"
-                              title="丢弃"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            {(item.effect || item.type === ItemType.Recipe) && (
-                              <button
-                                onClick={() => onUseItem(item)}
-                                className="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-200 text-xs py-2 rounded transition-colors"
-                              >
-                                {item.type === ItemType.Recipe
-                                  ? '研读'
-                                  : '使用'}
-                              </button>
-                            )}
-                            <button
-                              onClick={() => onDiscardItem(item)}
-                              className="px-3 bg-red-900 hover:bg-red-800 text-red-200 text-xs py-2 rounded transition-colors border border-red-700"
-                              title="丢弃"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </>
+                        <button
+                          onClick={() => onUpgradeItem(item)}
+                          className="px-3 bg-stone-700 hover:bg-stone-600 text-stone-300 text-xs py-2 rounded transition-colors border border-stone-500"
+                          title="强化"
+                        >
+                          <Hammer size={14} />
+                        </button>
+                        <button
+                          onClick={() => onDiscardItem(item)}
+                          className="px-3 bg-red-900 hover:bg-red-800 text-red-200 text-xs py-2 rounded transition-colors border border-red-700"
+                          title="丢弃"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        {(item.effect || item.type === ItemType.Recipe) && item.type !== ItemType.Material && (
+                          <button
+                            onClick={() => onUseItem(item)}
+                            className="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-200 text-xs py-2 rounded transition-colors"
+                          >
+                            {item.type === ItemType.Recipe ? '研读' : '使用'}
+                          </button>
                         )}
                       </div>
                     </div>
@@ -887,7 +801,21 @@ const InventoryModal: React.FC<Props> = ({
                 )}
             </div>
           ) : (
-            <span className="text-stone-500">悬停装备查看属性变化</span>
+            <div className="flex items-center gap-4">
+              <span className="text-stone-400">装备预览:</span>
+              {calculateTotalEquippedStats.attack > 0 && (
+                <span className="text-mystic-jade">攻击 +{calculateTotalEquippedStats.attack}</span>
+              )}
+              {calculateTotalEquippedStats.defense > 0 && (
+                <span className="text-mystic-jade">防御 +{calculateTotalEquippedStats.defense}</span>
+              )}
+              {calculateTotalEquippedStats.hp > 0 && (
+                <span className="text-mystic-jade">气血 +{calculateTotalEquippedStats.hp}</span>
+              )}
+              {calculateTotalEquippedStats.attack === 0 && calculateTotalEquippedStats.defense === 0 && calculateTotalEquippedStats.hp === 0 && (
+                <span className="text-stone-500">暂无装备</span>
+              )}
+            </div>
           )}
         </div>
       </div>

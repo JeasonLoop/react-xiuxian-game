@@ -1,11 +1,12 @@
 import React from 'react';
-import { EquipmentSlot, Item } from '../types';
-import { RARITY_MULTIPLIERS } from '../constants';
+import { EquipmentSlot, Item, PlayerStats } from '../types';
 import { ShieldCheck, X } from 'lucide-react';
+import { getItemStats } from '../utils/itemUtils';
 
 interface Props {
   equippedItems: Partial<Record<EquipmentSlot, string>>;
   inventory: Item[];
+  player: PlayerStats;
   onUnequip: (slot: EquipmentSlot) => void;
 }
 
@@ -75,7 +76,8 @@ const EquipmentPanel: React.FC<Props> = ({
         {slotConfig.map(({ slot, label }) => {
           const itemId = equippedItems[slot];
           const item = getItemById(itemId);
-          const stats = item ? getItemStats(item) : null;
+          const isNatal = item ? item.id === player.natalArtifactId : false;
+          const stats = item ? getItemStats(item, isNatal) : null;
           const rarity = item?.rarity || '普通';
 
           return (
