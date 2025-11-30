@@ -10,40 +10,18 @@ interface Props {
   onUnequip: (slot: EquipmentSlot) => void;
 }
 
-const EquipmentPanel: React.FC<Props> = ({
-  equippedItems,
-  inventory,
-  onUnequip,
-}) => {
+const EquipmentPanel: React.FC<Props> = ({ equippedItems, inventory, player, onUnequip }) => {
   const getItemById = (id: string | undefined): Item | null => {
     if (!id) return null;
-    return inventory.find((item) => item.id === id) || null;
-  };
-
-  const getItemStats = (item: Item) => {
-    const rarity = item.rarity || '普通';
-    const multiplier = RARITY_MULTIPLIERS[rarity] || 1;
-    return {
-      attack: item.effect?.attack
-        ? Math.floor(item.effect.attack * multiplier)
-        : 0,
-      defense: item.effect?.defense
-        ? Math.floor(item.effect.defense * multiplier)
-        : 0,
-      hp: item.effect?.hp ? Math.floor(item.effect.hp * multiplier) : 0,
-    };
+    return inventory.find(item => item.id === id) || null;
   };
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
-      case '稀有':
-        return 'border-blue-600 bg-blue-900/20';
-      case '传说':
-        return 'border-purple-600 bg-purple-900/20';
-      case '仙品':
-        return 'border-yellow-600 bg-yellow-900/20';
-      default:
-        return 'border-stone-600 bg-stone-800';
+      case '稀有': return 'border-blue-600 bg-blue-900/20';
+      case '传说': return 'border-purple-600 bg-purple-900/20';
+      case '仙品': return 'border-yellow-600 bg-yellow-900/20';
+      default: return 'border-stone-600 bg-stone-800';
     }
   };
 
@@ -84,9 +62,7 @@ const EquipmentPanel: React.FC<Props> = ({
             <div
               key={slot}
               className={`relative border-2 rounded-lg p-3 min-h-[100px] flex flex-col ${
-                item
-                  ? getRarityColor(rarity)
-                  : 'border-stone-700 bg-stone-800/50'
+                item ? getRarityColor(rarity) : 'border-stone-700 bg-stone-800/50'
               }`}
             >
               <div className="text-xs text-stone-400 mb-2">{label}</div>
@@ -97,25 +73,15 @@ const EquipmentPanel: React.FC<Props> = ({
                     <div className="font-bold text-sm mb-1 text-stone-200">
                       {item.name}
                       {item.level && item.level > 0 && (
-                        <span className="text-xs text-stone-500 ml-1">
-                          +{item.level}
-                        </span>
+                        <span className="text-xs text-stone-500 ml-1">+{item.level}</span>
                       )}
                     </div>
                     <div className="text-xs text-stone-400 mb-2">{rarity}</div>
                     {stats && (
                       <div className="text-xs space-y-0.5">
-                        {stats.attack > 0 && (
-                          <div className="text-red-400">攻 +{stats.attack}</div>
-                        )}
-                        {stats.defense > 0 && (
-                          <div className="text-blue-400">
-                            防 +{stats.defense}
-                          </div>
-                        )}
-                        {stats.hp > 0 && (
-                          <div className="text-green-400">血 +{stats.hp}</div>
-                        )}
+                        {stats.attack > 0 && <div className="text-red-400">攻 +{stats.attack}</div>}
+                        {stats.defense > 0 && <div className="text-blue-400">防 +{stats.defense}</div>}
+                        {stats.hp > 0 && <div className="text-green-400">血 +{stats.hp}</div>}
                       </div>
                     )}
                   </div>
@@ -141,3 +107,4 @@ const EquipmentPanel: React.FC<Props> = ({
 };
 
 export default EquipmentPanel;
+
