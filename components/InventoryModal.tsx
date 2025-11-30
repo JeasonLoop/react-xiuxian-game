@@ -671,7 +671,7 @@ const InventoryModal: React.FC<Props> = ({
                         </div>
                       )}
 
-                      <div>
+                      <>
                         <div className="flex justify-between items-start pr-16 mb-1">
                           <h4 className={getRarityNameClasses(item.rarity)}>
                             {item.name}{' '}
@@ -756,7 +756,7 @@ const InventoryModal: React.FC<Props> = ({
                             {item.type === ItemType.Recipe ? '研读' : '使用'}
                           </button>
                         )}
-                      </div>
+                      </>
                     </div>
                   );
                 })
