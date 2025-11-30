@@ -1062,7 +1062,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     id: 'lottery-pill-golden',
     name: '结金丹',
     type: 'item',
-    rarity: '稀有',
+    rarity: '传说',
     weight: 6,
     value: {
       item: {
@@ -1071,7 +1071,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         description: '有助于凝结金丹的珍贵丹药',
         quantity: 1,
         rarity: '稀有',
-        effect: { exp: 300, spirit: 20 }
+        effect: { exp: 30000, spirit: 20 }
       }
     }
   },
@@ -1088,7 +1088,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         description: '能够凝聚神魂的珍贵丹药',
         quantity: 1,
         rarity: '传说',
-        effect: { exp: 1000, spirit: 50, hp: 300 }
+        effect: { exp: 10000, spirit: 50, hp: 300 }
       }
     }
   },
@@ -1195,7 +1195,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
   },
   {
     id: 'lottery-material-upgrade-stone-3',
-    name: '强化石x3',
+    name: '强化石x10',
     type: 'item',
     rarity: '传说',
     weight: 3,
@@ -1204,7 +1204,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         name: '强化石',
         type: ItemType.Material,
         description: '提高装备强化成功率的珍贵材料，每颗可提高10%成功率',
-        quantity: 3,
+        quantity: 10,
         rarity: '稀有'
       }
     }
@@ -1519,7 +1519,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '仙品',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Weapon,
-        effect: { attack: 1000, defense: 200, hp: 500, spirit: 100 }
+        effect: { attack: 3000, defense: 200, hp: 500, spirit: 100 }
       }
     }
   },
@@ -1737,6 +1737,25 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     }
   },
   {
+    id: 'lottery-ring-daopath',
+    name: '大道戒指',
+    type: 'item',
+    rarity: '仙品',
+    weight: 1,
+    value: {
+      item: {
+        name: '大道戒指',
+        type: ItemType.Ring,
+        description: '蕴含大道之力的戒指，威力强大',
+        quantity: 1,
+        rarity: '仙品',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Ring1,
+        effect: { attack: 1000, defense: 1000, speed: 1000, spirit: 1000 }
+      }
+    }
+  },
+  {
     id: 'lottery-accessory-protect',
     name: '护身符',
     type: 'item',
@@ -1793,6 +1812,25 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
       }
     }
   },
+  {
+    id: 'lottery-accessory-shenpath',
+    name: '神道符',
+    type: 'item',
+    rarity: '仙品',
+    weight: 1,
+    value: {
+      item: {
+        name: '神道符',
+        type: ItemType.Accessory,
+        description: '蕴含神道的符箓，据说的得到的人可以窥探天机',
+        quantity: 1,
+        rarity: '仙品',
+        isEquippable: true,
+        equipmentSlot: EquipmentSlot.Accessory1,
+        effect: { attack: 2000, defense: 400, hp: 500, spirit: 30000 }
+      }
+    }
+  },
 
   // 普通奖励 - 法宝
   {
@@ -1830,25 +1868,6 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
         effect: { attack: 10, defense: 15, hp: 50 }
-      }
-    }
-  },
-  {
-    id: 'lottery-artifact-common-3',
-    name: '青莲剑',
-    type: 'item',
-    rarity: '普通',
-    weight: 5,
-    value: {
-      item: {
-        name: '青莲剑',
-        type: ItemType.Artifact,
-        description: '青莲道人所用法宝，剑身如莲，清雅脱俗',
-        quantity: 1,
-        rarity: '普通',
-        isEquippable: true,
-        equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 25, defense: 10, hp: 30 }
       }
     }
   },

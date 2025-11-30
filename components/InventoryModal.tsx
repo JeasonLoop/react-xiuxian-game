@@ -138,6 +138,38 @@ const InventoryModal: React.FC<Props> = ({
     return filtered;
   }, [inventory, selectedCategory, selectedEquipmentSlot, sortByRarity]);
 
+  // 计算所有已装备物品的总属性（必须在条件返回之前）
+  const calculateTotalEquippedStats = useMemo(() => {
+    let totalAttack = 0;
+    let totalDefense = 0;
+    let totalHp = 0;
+
+    Object.values(equippedItems).forEach(itemId => {
+      if (itemId) {
+        const item = inventory.find(i => i.id === itemId);
+        if (item) {
+          // 在 useMemo 中直接计算属性，确保使用最新的 player.natalArtifactId
+          const isNatal = item.id === player.natalArtifactId;
+          const rarity = item.rarity || '普通';
+          const multiplier = RARITY_MULTIPLIERS[rarity] || 1;
+          const natalMultiplier = isNatal ? 1.5 : 1;
+
+          const stats = {
+            attack: item.effect?.attack ? Math.floor(item.effect.attack * multiplier * natalMultiplier) : 0,
+            defense: item.effect?.defense ? Math.floor(item.effect.defense * multiplier * natalMultiplier) : 0,
+            hp: item.effect?.hp ? Math.floor(item.effect.hp * multiplier * natalMultiplier) : 0,
+          };
+
+          totalAttack += stats.attack;
+          totalDefense += stats.defense;
+          totalHp += stats.hp;
+        }
+      }
+    });
+
+    return { attack: totalAttack, defense: totalDefense, hp: totalHp };
+  }, [equippedItems, inventory, player.natalArtifactId]);
+
   if (!isOpen) return null;
 
   const getRarityNameClasses = (rarity: ItemRarity | undefined) => {
@@ -169,9 +201,10 @@ const InventoryModal: React.FC<Props> = ({
   };
 
   const getItemStats = (item: Item) => {
+    const isNatal = item.id === player.natalArtifactId;
+    // 使用标准的 getItemStats 函数，但这里我们需要直接计算以保持兼容性
     const rarity = item.rarity || '普通';
     const multiplier = RARITY_MULTIPLIERS[rarity] || 1;
-    const isNatal = item.isNatal || false;
     const natalMultiplier = isNatal ? 1.5 : 1;
 
     return {
@@ -255,7 +288,7 @@ const InventoryModal: React.FC<Props> = ({
             </button>
             <button
               onClick={() => setShowEquipment(!showEquipment)}
-              className={`hidden md:flex px-3 py-1 rounded text-sm border transition-colors ${
+              className={`hidden flex items-center justify-center md:flex px-3 py-1 rounded text-sm border transition-colors ${
                 showEquipment
                   ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
                   : 'bg-stone-700 border-stone-600 text-stone-300'
@@ -311,6 +344,7 @@ const InventoryModal: React.FC<Props> = ({
               <EquipmentPanel
                 equippedItems={equippedItems}
                 inventory={inventory}
+                player={player}
                 onUnequip={onUnequipItem}
               />
             </div>
@@ -676,7 +710,7 @@ const InventoryModal: React.FC<Props> = ({
                       </>
                     ) : (
                       <>
-                        {(item.effect || item.type === ItemType.Recipe) && (
+                        {(item.effect || item.type === ItemType.Recipe) && item.type !== ItemType.Material && (
                           <button
                             onClick={() => onUseItem(item)}
                             className="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-200 text-xs py-2 rounded transition-colors"
@@ -727,7 +761,21 @@ const InventoryModal: React.FC<Props> = ({
                )}
             </div>
           ) : (
-            <span className="text-stone-500">悬停装备查看属性变化</span>
+            <div className="flex items-center gap-4">
+              <span className="text-stone-400">装备预览:</span>
+              {calculateTotalEquippedStats.attack > 0 && (
+                <span className="text-mystic-jade">攻击 +{calculateTotalEquippedStats.attack}</span>
+              )}
+              {calculateTotalEquippedStats.defense > 0 && (
+                <span className="text-mystic-jade">防御 +{calculateTotalEquippedStats.defense}</span>
+              )}
+              {calculateTotalEquippedStats.hp > 0 && (
+                <span className="text-mystic-jade">气血 +{calculateTotalEquippedStats.hp}</span>
+              )}
+              {calculateTotalEquippedStats.attack === 0 && calculateTotalEquippedStats.defense === 0 && calculateTotalEquippedStats.hp === 0 && (
+                <span className="text-stone-500">暂无装备</span>
+              )}
+            </div>
           )}
         </div>
       </div>

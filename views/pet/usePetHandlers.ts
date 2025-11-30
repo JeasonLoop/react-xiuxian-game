@@ -1,6 +1,6 @@
 import React from 'react';
-import { PlayerStats } from '../../types';
-import { PET_TEMPLATES } from '../../constants';
+import { PlayerStats, ItemRarity } from '../../types';
+import { PET_TEMPLATES, REALM_DATA, REALM_ORDER, RARITY_MULTIPLIERS } from '../../constants';
 
 interface UsePetHandlersProps {
   player: PlayerStats;
@@ -88,6 +88,37 @@ export function usePetHandlers({
     setPlayer((prev) => {
       if (!prev) return prev;
 
+      // 先计算经验值（需要物品信息，在扣除之前计算）
+      let baseExp = 10; // 基础经验值
+
+      // 根据玩家境界计算基础经验值（境界越高，基础经验值越高）
+      const realmIndex = REALM_ORDER.indexOf(prev.realm);
+      const realmMultiplier = 1 + realmIndex * 0.5; // 每个境界增加50%基础经验
+      const levelMultiplier = 1 + prev.realmLevel * 0.1; // 每层增加10%
+      baseExp = Math.floor(baseExp * realmMultiplier * levelMultiplier);
+
+      // 根据物品品质计算经验倍率
+      let rarityMultiplier = 1;
+      if (feedType === 'item' && itemId) {
+        const item = prev.inventory.find(i => i.id === itemId);
+        if (item) {
+          const rarity = item.rarity || '普通';
+          rarityMultiplier = RARITY_MULTIPLIERS[rarity] || 1;
+        }
+      }
+
+      // 计算最终经验值（基础经验 * 品质倍率，有随机波动 ±20%）
+      let expGain = Math.floor(baseExp * rarityMultiplier);
+      const randomVariation = 0.8 + Math.random() * 0.4; // 0.8 到 1.2
+      expGain = Math.floor(expGain * randomVariation);
+
+      // 确保不超过升级所需经验
+      const expToNextLevel = pet.maxExp - pet.exp;
+      expGain = Math.min(expGain, expToNextLevel);
+
+      // 至少给1点经验
+      expGain = Math.max(1, expGain);
+
       // 扣除消耗
       let newHp = prev.hp;
       let newExp = prev.exp;
@@ -107,23 +138,6 @@ export function usePetHandlers({
       } else if (feedType === 'exp') {
         const expCost = Math.max(1, Math.floor(prev.exp * 0.05));
         newExp = Math.max(0, prev.exp - expCost);
-      }
-
-      // 给灵宠增加经验（随机20-50点，但最大可以直接提升一级）
-      const expGainMin = 20;
-      const expGainMax = 50;
-      // 计算最多能获得多少经验才能直接升一级
-      const expToNextLevel = pet.maxExp - pet.exp;
-      // 如果距离下一级很近，至少给最小经验值，否则在范围内随机
-      let expGain: number;
-      if (expToNextLevel < expGainMin) {
-        // 如果距离下一级很近，直接给剩余经验（会升级）
-        expGain = expToNextLevel;
-      } else {
-        const maxExpGain = Math.min(expGainMax, expToNextLevel);
-        expGain = Math.floor(
-          expGainMin + Math.random() * (maxExpGain - expGainMin + 1)
-        );
       }
 
       // 增加亲密度（每次喂养增加2-5点）

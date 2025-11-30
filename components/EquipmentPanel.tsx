@@ -1,28 +1,19 @@
 import React from 'react';
-import { EquipmentSlot, Item } from '../types';
-import { RARITY_MULTIPLIERS } from '../constants';
+import { EquipmentSlot, Item, PlayerStats } from '../types';
 import { ShieldCheck, X } from 'lucide-react';
+import { getItemStats } from '../utils/itemUtils';
 
 interface Props {
   equippedItems: Partial<Record<EquipmentSlot, string>>;
   inventory: Item[];
+  player: PlayerStats;
   onUnequip: (slot: EquipmentSlot) => void;
 }
 
-const EquipmentPanel: React.FC<Props> = ({ equippedItems, inventory, onUnequip }) => {
+const EquipmentPanel: React.FC<Props> = ({ equippedItems, inventory, player, onUnequip }) => {
   const getItemById = (id: string | undefined): Item | null => {
     if (!id) return null;
     return inventory.find(item => item.id === id) || null;
-  };
-
-  const getItemStats = (item: Item) => {
-    const rarity = item.rarity || '普通';
-    const multiplier = RARITY_MULTIPLIERS[rarity] || 1;
-    return {
-      attack: item.effect?.attack ? Math.floor(item.effect.attack * multiplier) : 0,
-      defense: item.effect?.defense ? Math.floor(item.effect.defense * multiplier) : 0,
-      hp: item.effect?.hp ? Math.floor(item.effect.hp * multiplier) : 0,
-    };
   };
 
   const getRarityColor = (rarity: string) => {
@@ -63,7 +54,8 @@ const EquipmentPanel: React.FC<Props> = ({ equippedItems, inventory, onUnequip }
         {slotConfig.map(({ slot, label }) => {
           const itemId = equippedItems[slot];
           const item = getItemById(itemId);
-          const stats = item ? getItemStats(item) : null;
+          const isNatal = item ? item.id === player.natalArtifactId : false;
+          const stats = item ? getItemStats(item, isNatal) : null;
           const rarity = item?.rarity || '普通';
 
           return (

@@ -439,13 +439,13 @@ function App() {
   };
 
   // handleUpgradeItem 不关闭弹窗，让用户可以继续强化
-  const handleUpgradeItem = (
+  const handleUpgradeItem = async (
     item: Item,
     costStones: number,
     costMats: number,
     upgradeStones: number = 0
-  ) => {
-    equipmentHandlers.handleUpgradeItem(item, costStones, costMats, upgradeStones);
+  ): Promise<'success' | 'failure' | 'error'> => {
+    return await equipmentHandlers.handleUpgradeItem(item, costStones, costMats, upgradeStones);
     // 不关闭弹窗，让用户可以继续强化
     // 弹窗会自动从 player.inventory 中获取最新的物品信息
   };
@@ -548,6 +548,7 @@ function App() {
       <ModalsContainer
         player={player}
         settings={settings}
+        setItemActionLog={setItemActionLog}
         modals={{
           isInventoryOpen,
           isCultivationOpen,

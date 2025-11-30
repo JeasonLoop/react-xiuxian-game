@@ -372,13 +372,14 @@ export function useEquipmentHandlers({
     return item; // 这个函数主要用于设置状态，实际逻辑在调用处
   };
 
-  const handleUpgradeItem = (
+  const handleUpgradeItem = async (
     item: Item,
     costStones: number,
     costMats: number,
     upgradeStones: number = 0
-  ) => {
-    setPlayer((prev) => {
+  ): Promise<'success' | 'failure' | 'error'> => {
+    return new Promise((resolve) => {
+      setPlayer((prev) => {
       const matsItem = prev.inventory.find(
         (i) => i.name === UPGRADE_MATERIAL_NAME
       );
@@ -393,6 +394,7 @@ export function useEquipmentHandlers({
         !upgradeStoneItem ||
         upgradeStoneItem.quantity < upgradeStones
       ) {
+        resolve('error');
         return prev;
       }
 
@@ -424,6 +426,7 @@ export function useEquipmentHandlers({
 
       if (!isSuccess) {
         addLog(`祭炼失败！${item.name} 未能提升品质，材料已消耗。`, 'danger');
+        resolve('failure');
         return {
           ...prev,
           spiritStones: newSpiritStones,
@@ -497,6 +500,7 @@ export function useEquipmentHandlers({
       }
 
       addLog(`祭炼成功！${item.name} 品质提升了。`, 'gain');
+      resolve('success');
 
       return {
         ...prev,
@@ -509,6 +513,7 @@ export function useEquipmentHandlers({
         physique: newPhysique,
         speed: Math.max(0, newSpeed),
       };
+      });
     });
   };
 

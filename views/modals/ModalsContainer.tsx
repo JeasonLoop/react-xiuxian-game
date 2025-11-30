@@ -30,6 +30,7 @@ import { RandomSectTask } from '../../services/randomService';
 interface ModalsContainerProps {
   player: PlayerStats;
   settings: GameSettings;
+  setItemActionLog?: (log: { text: string; type: string } | null) => void;
   modals: {
     isInventoryOpen: boolean;
     isCultivationOpen: boolean;
@@ -82,7 +83,7 @@ interface ModalsContainerProps {
     handleBatchDiscard: (itemIds: string[]) => void;
     handleRefineNatalArtifact: (item: Item) => void;
     handleUnrefineNatalArtifact: () => void;
-    handleUpgradeItem: (item: Item, costStones: number, costMats: number) => void;
+    handleUpgradeItem: (item: Item, costStones: number, costMats: number, upgradeStones?: number) => Promise<'success' | 'failure' | 'error'>;
     // Cultivation
     handleLearnArt: (art: CultivationArt) => void;
     handleActivateArt: (art: CultivationArt) => void;
@@ -119,6 +120,7 @@ interface ModalsContainerProps {
 export default function ModalsContainer({
   player,
   settings,
+  setItemActionLog,
   modals,
   modalState,
   handlers,
@@ -173,6 +175,7 @@ export default function ModalsContainer({
         item={modalState.itemToUpgrade}
         player={player}
         onConfirm={handlers.handleUpgradeItem}
+        setItemActionLog={setItemActionLog}
       />
 
       <SectModal

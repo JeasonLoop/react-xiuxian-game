@@ -2,18 +2,20 @@
 import React, { useState } from 'react';
 import { Item, PlayerStats } from '../types';
 import { UPGRADE_MATERIAL_NAME, UPGRADE_STONE_NAME, BASE_UPGRADE_COST_STONES, BASE_UPGRADE_COST_MATS, getUpgradeMultiplier, RARITY_MULTIPLIERS, UPGRADE_STONE_SUCCESS_BONUS } from '../constants';
-import { X, Hammer, ArrowRight, Shield, Zap, Heart, Plus, Minus } from 'lucide-react';
+import { X, Hammer, ArrowRight, Shield, Zap, Heart, Plus, Minus, Sparkles } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   item: Item | null;
   player: PlayerStats;
-  onConfirm: (item: Item, costStones: number, costMats: number, upgradeStones: number) => void;
+  onConfirm: (item: Item, costStones: number, costMats: number, upgradeStones: number) => Promise<'success' | 'failure' | 'error'>;
+  setItemActionLog?: (log: { text: string; type: string } | null) => void;
 }
 
-const ArtifactUpgradeModal: React.FC<Props> = ({ isOpen, onClose, item, player, onConfirm }) => {
+const ArtifactUpgradeModal: React.FC<Props> = ({ isOpen, onClose, item, player, onConfirm, setItemActionLog }) => {
   const [upgradeStones, setUpgradeStones] = useState(0);
+  const [isUpgrading, setIsUpgrading] = useState(false);
 
   if (!isOpen || !item) return null;
 
@@ -59,12 +61,33 @@ const ArtifactUpgradeModal: React.FC<Props> = ({ isOpen, onClose, item, player, 
   return (
     <div
       className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-[60] p-0 md:p-4 backdrop-blur-sm touch-manipulation"
-      onClick={onClose}
+      onClick={isUpgrading ? undefined : onClose}
     >
       <div
-        className="bg-paper-800 w-full h-[80vh] md:h-auto md:max-w-md md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-600 shadow-2xl flex flex-col"
+        className="bg-paper-800 w-full h-[80vh] md:h-auto md:max-w-md md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-600 shadow-2xl flex flex-col relative overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* 强化动画覆盖层 */}
+        {isUpgrading && (
+          <div className="absolute inset-0 bg-black/60 z-50 flex items-center justify-center">
+            <div className="text-center">
+              <div className="relative w-32 h-32 mx-auto mb-4">
+                {/* 旋转的圆圈动画 */}
+                <div className="absolute inset-0 border-4 border-mystic-gold border-t-transparent rounded-full animate-spin"></div>
+                {/* 中心闪烁效果 */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Sparkles className="text-mystic-gold animate-pulse" size={48} />
+                </div>
+              </div>
+              <div className="text-mystic-gold text-xl font-serif font-bold animate-pulse">
+                正在祭炼中...
+              </div>
+              <div className="text-stone-400 text-sm mt-2">
+                灵气汇聚中，请稍候
+              </div>
+            </div>
+          </div>
+        )}
         <div className="p-4 border-b border-stone-600 flex justify-between items-center bg-ink-800 rounded-t">
           <h3 className="text-xl font-serif text-mystic-gold flex items-center gap-2">
             <Hammer size={20} /> 法宝祭炼
@@ -187,19 +210,66 @@ const ArtifactUpgradeModal: React.FC<Props> = ({ isOpen, onClose, item, player, 
           </div>
 
           <button
-            onClick={() => {
-              onConfirm(currentItem, costStones, costMats, upgradeStones);
-              setUpgradeStones(0); // 重置强化石数量
+            onClick={async () => {
+              if (!canAfford || isUpgrading) return;
+
+              setIsUpgrading(true);
+
+              // 延迟1.5秒模拟强化动画
+              await new Promise(resolve => setTimeout(resolve, 1500));
+
+              try {
+                const result = await onConfirm(currentItem, costStones, costMats, upgradeStones);
+
+                if (result === 'success') {
+                  if (setItemActionLog) {
+                    setItemActionLog({
+                      text: `✨ 祭炼成功！${currentItem.name} 品质提升了！`,
+                      type: 'special'
+                    });
+                    setTimeout(() => setItemActionLog && setItemActionLog(null), 3000);
+                  }
+                  setUpgradeStones(0);
+                  // 延迟一下再关闭，让用户看到结果
+                  setTimeout(() => {
+                    setIsUpgrading(false);
+                    onClose();
+                  }, 500);
+                } else if (result === 'failure') {
+                  if (setItemActionLog) {
+                    setItemActionLog({
+                      text: `❌ 祭炼失败！${currentItem.name} 未能提升品质，材料已消耗。`,
+                      type: 'danger'
+                    });
+                    setTimeout(() => setItemActionLog && setItemActionLog(null), 3000);
+                  }
+                  setIsUpgrading(false);
+                  setUpgradeStones(0);
+                } else {
+                  // error - 材料不足等情况
+                  setIsUpgrading(false);
+                }
+              } catch (error) {
+                setIsUpgrading(false);
+                console.error('Upgrade error:', error);
+              }
             }}
-            disabled={!canAfford}
+            disabled={!canAfford || isUpgrading}
             className={`
-              w-full py-3 rounded font-serif font-bold text-lg transition-all
-              ${canAfford
+              w-full py-3 rounded font-serif font-bold text-lg transition-all relative overflow-hidden
+              ${canAfford && !isUpgrading
                 ? 'bg-mystic-gold/20 text-mystic-gold hover:bg-mystic-gold/30 border border-mystic-gold shadow-[0_0_15px_rgba(203,161,53,0.3)]'
                 : 'bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700'}
             `}
           >
-            {canAfford ? '开始祭炼' : '材料不足'}
+            {isUpgrading ? (
+              <div className="flex items-center justify-center gap-2">
+                <Sparkles className="animate-spin" size={20} />
+                <span>祭炼中...</span>
+              </div>
+            ) : (
+              canAfford ? '开始祭炼' : '材料不足'
+            )}
           </button>
         </div>
       </div>

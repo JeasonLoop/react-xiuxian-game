@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, Heart, Zap, Shield, Swords, Droplet, Package, Sparkles } from 'lucide-react';
 import { PlayerStats, Pet, Item, ItemType } from '../types';
-import { PET_TEMPLATES } from '../constants';
+import { PET_TEMPLATES, RARITY_MULTIPLIERS, REALM_ORDER } from '../constants';
 
 interface Props {
   isOpen: boolean;
@@ -31,9 +31,10 @@ const PetModal: React.FC<Props> = ({ isOpen, onClose, player, onActivatePet, onF
 
   const activePet = player.pets.find(p => p.id === player.activePetId);
 
-  // 可喂养的物品（草药、丹药、材料）
+  // 可喂养的物品（所有未装备的物品）
+  const equippedItemIds = new Set(Object.values(player.equippedItems).filter(Boolean));
   const feedableItems = player.inventory.filter(item =>
-    item.type === ItemType.Herb || item.type === ItemType.Pill || item.type === ItemType.Material
+    !equippedItemIds.has(item.id) && item.quantity > 0
   );
 
   const handleFeedClick = (petId: string) => {
@@ -222,7 +223,7 @@ const PetModal: React.FC<Props> = ({ isOpen, onClose, player, onActivatePet, onF
                     <Droplet className="text-red-400" size={20} />
                     <div className="flex-1 text-left">
                       <div className="font-bold">血量喂养</div>
-                      <div className="text-xs text-stone-400">消耗 200 点气血 (+20~50经验，+2~5亲密度)</div>
+                      <div className="text-xs text-stone-400">消耗 200 点气血 (经验根据境界计算，+2~5亲密度)</div>
                     </div>
                   </button>
 
@@ -235,7 +236,9 @@ const PetModal: React.FC<Props> = ({ isOpen, onClose, player, onActivatePet, onF
                     <div className="flex-1 text-left">
                       <div className="font-bold">物品喂养</div>
                       <div className="text-xs text-stone-400">
-                        {feedableItems.length === 0 ? '背包中没有可喂养物品' : '消耗物品 (+20~50经验，+2~5亲密度)'}
+                        {feedableItems.length === 0
+                          ? '背包中没有可喂养物品'
+                          : `消耗物品 (经验根据境界和物品品质计算，+2~5亲密度)`}
                       </div>
                     </div>
                   </button>
@@ -247,7 +250,7 @@ const PetModal: React.FC<Props> = ({ isOpen, onClose, player, onActivatePet, onF
                     <Sparkles className="text-purple-400" size={20} />
                     <div className="flex-1 text-left">
                       <div className="font-bold">修为喂养</div>
-                      <div className="text-xs text-stone-400">消耗 5% 当前修为 (+20~50经验，+2~5亲密度)</div>
+                      <div className="text-xs text-stone-400">消耗 5% 当前修为 (经验根据境界计算，+2~5亲密度)</div>
                     </div>
                   </button>
                 </div>
@@ -258,20 +261,38 @@ const PetModal: React.FC<Props> = ({ isOpen, onClose, player, onActivatePet, onF
                     {feedableItems.length === 0 ? (
                       <div className="text-center text-stone-500 py-4">背包中没有可喂养物品</div>
                     ) : (
-                      feedableItems.map(item => (
-                        <button
-                          key={item.id}
-                          onClick={() => setSelectedItemId(item.id)}
-                          className={`w-full px-3 py-2 rounded border text-left ${
-                            selectedItemId === item.id
-                              ? 'bg-blue-900 border-blue-600'
-                              : 'bg-stone-700 border-stone-600 hover:bg-stone-600'
-                          }`}
-                        >
-                          <div className="font-bold text-sm">{item.name}</div>
-                          <div className="text-xs text-stone-400">数量: {item.quantity}</div>
-                        </button>
-                      ))
+                      feedableItems.map(item => {
+                        // 计算预估经验值
+                        const rarity = item.rarity || '普通';
+                        const rarityMultiplier = RARITY_MULTIPLIERS[rarity] || 1;
+                        const realmIndex = REALM_ORDER.indexOf(player.realm);
+                        const realmMultiplier = 1 + realmIndex * 0.5;
+                        const levelMultiplier = 1 + player.realmLevel * 0.1;
+                        const baseExp = Math.floor(10 * realmMultiplier * levelMultiplier);
+                        const estimatedExp = Math.floor(baseExp * rarityMultiplier);
+
+                        return (
+                          <button
+                            key={item.id}
+                            onClick={() => setSelectedItemId(item.id)}
+                            className={`w-full px-3 py-2 rounded border text-left ${
+                              selectedItemId === item.id
+                                ? 'bg-blue-900 border-blue-600'
+                                : 'bg-stone-700 border-stone-600 hover:bg-stone-600'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="font-bold text-sm">{item.name}</div>
+                              <div className={`text-xs px-1.5 py-0.5 rounded ${getRarityColor(rarity)}`}>
+                                {rarity}
+                              </div>
+                            </div>
+                            <div className="text-xs text-stone-400 mt-1">
+                              数量: {item.quantity} · 预估经验: {estimatedExp}~{Math.floor(estimatedExp * 1.2)}
+                            </div>
+                          </button>
+                        );
+                      })
                     )}
                   </div>
                 </div>
