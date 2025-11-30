@@ -15,6 +15,7 @@
 ### 功能模块
 
 每个功能模块都遵循统一的组织结构：
+
 - `index.ts` - 模块导出文件
 - `useXxxHandlers.ts` - 业务逻辑处理函数（自定义 Hook）
 
@@ -120,6 +121,7 @@ const { handleOpenShop, handleBuyItem, handleSellItem } = useShopHandlers({
 ### Handlers 模式
 
 每个功能模块的 `useXxxHandlers.ts` 文件：
+
 - 接收必要的依赖（player、setPlayer、addLog 等）
 - 返回该模块相关的所有处理函数
 - 封装业务逻辑，保持组件纯净

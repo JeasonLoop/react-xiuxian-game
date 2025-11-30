@@ -7,7 +7,9 @@ interface UseBattleHandlersProps {
   isBattleModalOpen: boolean;
   setIsBattleModalOpen: (open: boolean) => void;
   revealedBattleRounds: number;
-  setRevealedBattleRounds: (rounds: number | ((prev: number) => number)) => void;
+  setRevealedBattleRounds: (
+    rounds: number | ((prev: number) => number)
+  ) => void;
   animationSpeed: string;
 }
 
@@ -52,4 +54,3 @@ export function useBattleHandlers({
     handleCloseBattleModal,
   };
 }
-

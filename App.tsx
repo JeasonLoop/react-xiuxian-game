@@ -1,14 +1,8 @@
-import React, { useState, useEffect,} from 'react';
-import {
-  Item,
-  Shop,
-  ShopType,
-} from './types';
+import React, { useState, useEffect } from 'react';
+import { Item, Shop, ShopType } from './types';
 import StartScreen from './components/StartScreen';
 import DeathModal from './components/DeathModal';
-import {
-  BattleReplay,
-} from './services/battleService';
+import { BattleReplay } from './services/battleService';
 import { useGameState } from './hooks/useGameState';
 import { useGameEffects } from './hooks/useGameEffects';
 import { SAVE_KEY } from './utils/gameUtils';
@@ -53,7 +47,6 @@ function App() {
   const { visualEffects, createAddLog, triggerVisual } = useGameEffects();
   const addLog = createAddLog(setLogs);
 
-
   const [isInventoryOpen, setIsInventoryOpen] = useState(false); // 背包是否打开
   const [isCultivationOpen, setIsCultivationOpen] = useState(false); // 功法是否打开
   const [isAlchemyOpen, setIsAlchemyOpen] = useState(false); // 炼丹是否打开
@@ -83,13 +76,20 @@ function App() {
 
   const [loading, setLoading] = useState(false); // 加载状态
   const [cooldown, setCooldown] = useState(0); // 冷却时间
-  const [itemActionLog, setItemActionLog] = useState<{ text: string; type: string } | null>(null); // 物品操作轻提示
+  const [itemActionLog, setItemActionLog] = useState<{
+    text: string;
+    type: string;
+  } | null>(null); // 物品操作轻提示
   const [autoMeditate, setAutoMeditate] = useState(false); // 自动打坐
   const [autoAdventure, setAutoAdventure] = useState(false); // 自动历练
   const [isDead, setIsDead] = useState(false); // 是否死亡
-  const [deathBattleData, setDeathBattleData] = useState<BattleReplay | null>(null); // 死亡时的战斗数据
+  const [deathBattleData, setDeathBattleData] = useState<BattleReplay | null>(
+    null
+  ); // 死亡时的战斗数据
   const [deathReason, setDeathReason] = useState(''); // 死亡原因
-  const [lastBattleReplay, setLastBattleReplay] = useState<BattleReplay | null>(null); // 最近的战斗数据
+  const [lastBattleReplay, setLastBattleReplay] = useState<BattleReplay | null>(
+    null
+  ); // 最近的战斗数据
 
   // 初始化所有模块化的 handlers
   const battleHandlers = useBattleHandlers({
@@ -294,7 +294,8 @@ function App() {
   const handleEquipItem = equipmentHandlers.handleEquipItem;
   const handleUnequipItem = equipmentHandlers.handleUnequipItem;
   const handleRefineNatalArtifact = equipmentHandlers.handleRefineNatalArtifact;
-  const handleUnrefineNatalArtifact = equipmentHandlers.handleUnrefineNatalArtifact;
+  const handleUnrefineNatalArtifact =
+    equipmentHandlers.handleUnrefineNatalArtifact;
 
   const handleLearnArt = cultivationHandlers.handleLearnArt;
   const handleActivateArt = cultivationHandlers.handleActivateArt;
@@ -353,8 +354,10 @@ function App() {
         }
 
         // 即使血量已满，也要更新打坐加成状态（清除过期加成）
-        if (hpRegenMultiplier !== prev.meditationHpRegenMultiplier ||
-            meditationBoostEndTime !== prev.meditationBoostEndTime) {
+        if (
+          hpRegenMultiplier !== prev.meditationHpRegenMultiplier ||
+          meditationBoostEndTime !== prev.meditationBoostEndTime
+        ) {
           return {
             ...prev,
             meditationHpRegenMultiplier: hpRegenMultiplier,
@@ -445,7 +448,12 @@ function App() {
     costMats: number,
     upgradeStones: number = 0
   ) => {
-    equipmentHandlers.handleUpgradeItem(item, costStones, costMats, upgradeStones);
+    equipmentHandlers.handleUpgradeItem(
+      item,
+      costStones,
+      costMats,
+      upgradeStones
+    );
     // 不关闭弹窗，让用户可以继续强化
     // 弹窗会自动从 player.inventory 中获取最新的物品信息
   };

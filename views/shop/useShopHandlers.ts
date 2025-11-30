@@ -11,7 +11,9 @@ interface UseShopHandlersProps {
   currentShop: Shop | null;
   setCurrentShop: (shop: Shop | null) => void;
   setIsShopOpen: (open: boolean) => void;
-  setPurchaseSuccess: (success: { item: string; quantity: number } | null) => void;
+  setPurchaseSuccess: (
+    success: { item: string; quantity: number } | null
+  ) => void;
 }
 
 /**
@@ -153,4 +155,3 @@ export function useShopHandlers({
     handleSellItem,
   };
 }
-

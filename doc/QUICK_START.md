@@ -7,7 +7,7 @@
 ### 必需环境
 
 - **Node.js** >= 18.0.0
-- **包管理器**: 
+- **包管理器**:
   - **pnpm** >= 8.0.0 (推荐)
   - 或 **npm** >= 9.0.0
   - 或 **yarn** >= 1.22.0
@@ -34,16 +34,19 @@ cd react-xiuxian-game
 ### 2. 安装依赖
 
 **使用 pnpm (推荐):**
+
 ```bash
 pnpm install
 ```
 
 **或使用 npm:**
+
 ```bash
 npm install
 ```
 
 **或使用 yarn:**
+
 ```bash
 yarn install
 ```
@@ -67,12 +70,14 @@ VITE_AI_API_URL=https://api.siliconflow.cn/v1/chat/completions
 2. 复制上面的内容到文件中
 3. 将 `your-api-key-here` 替换为你的实际 API Key
 
-> 💡 **获取 API Key**: 
+> 💡 **获取 API Key**:
+>
 > - 访问 [SiliconFlow](https://siliconflow.cn) 注册账号
 > - 创建 API Key
 > - 或使用其他兼容 OpenAI API 格式的服务
 >
-> ⚠️ **安全提示**: 
+> ⚠️ **安全提示**:
+>
 > - `.env.local` 文件已添加到 `.gitignore`，不会被提交到 Git
 > - 不要将 API Key 提交到代码仓库
 > - 如果 API Key 泄露，请立即在服务商处重新生成
@@ -211,4 +216,3 @@ pnpm install --save-dev @types/node
 ---
 
 **提示**: 建议使用 pnpm 作为包管理器，它比 npm 更快且更节省磁盘空间。
-

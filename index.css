@@ -1,8 +1,8 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 @config "./tailwind.config.js";
 
 body {
-  font-family: "Noto Serif SC", serif;
+  font-family: 'Noto Serif SC', serif;
   background-color: #1c1c1a;
   color: #e6e6dc;
   height: 100vh;
@@ -67,4 +67,3 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-

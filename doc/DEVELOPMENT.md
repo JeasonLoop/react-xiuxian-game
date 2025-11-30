@@ -300,16 +300,16 @@ import StatsPanel from './StatsPanel';
 export default function Component() {
   // 1. Hooks
   const [state, setState] = useState();
-  
+
   // 2. 计算值
   const computed = useMemo(() => {...}, [deps]);
-  
+
   // 3. 事件处理
   const handleClick = useCallback(() => {...}, [deps]);
-  
+
   // 4. 副作用
   useEffect(() => {...}, [deps]);
-  
+
   // 5. 渲染
   return <div>...</div>;
 }
@@ -477,6 +477,7 @@ git commit -m "docs: 更新文档"
 ```
 
 **类型**:
+
 - `feat`: 新功能
 - `fix`: Bug 修复
 - `docs`: 文档更新
@@ -501,4 +502,3 @@ git commit -m "docs: 更新文档"
 ---
 
 **提示**: 建议定期更新依赖，保持项目健康。
-

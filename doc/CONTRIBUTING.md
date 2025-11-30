@@ -156,16 +156,16 @@ import StatsPanel from './StatsPanel';
 export default function Component() {
   // 1. Hooks
   const [state, setState] = useState();
-  
+
   // 2. 计算值
   const computed = useMemo(() => {...}, [deps]);
-  
+
   // 3. 事件处理
   const handleClick = useCallback(() => {...}, [deps]);
-  
+
   // 4. 副作用
   useEffect(() => {...}, [deps]);
-  
+
   // 5. 渲染
   return <div>...</div>;
 }
@@ -276,4 +276,3 @@ npx tsc --noEmit
 ---
 
 **让我们一起打造更好的修仙游戏！** 🌟
-

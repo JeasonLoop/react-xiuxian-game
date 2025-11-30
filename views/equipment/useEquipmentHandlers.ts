@@ -1,7 +1,19 @@
 import React from 'react';
-import { PlayerStats, Item, ItemType, EquipmentSlot, ItemRarity } from '../../types';
+import {
+  PlayerStats,
+  Item,
+  ItemType,
+  EquipmentSlot,
+  ItemRarity,
+} from '../../types';
 import { getItemStats } from '../../utils/itemUtils';
-import { UPGRADE_MATERIAL_NAME, UPGRADE_STONE_NAME, UPGRADE_STONE_SUCCESS_BONUS, getUpgradeMultiplier, RARITY_MULTIPLIERS } from '../../constants';
+import {
+  UPGRADE_MATERIAL_NAME,
+  UPGRADE_STONE_NAME,
+  UPGRADE_STONE_SUCCESS_BONUS,
+  getUpgradeMultiplier,
+  RARITY_MULTIPLIERS,
+} from '../../constants';
 
 interface UseEquipmentHandlersProps {
   player: PlayerStats;
@@ -70,7 +82,10 @@ export function useEquipmentHandlers({
           return prev;
         }
       } else if (isArtifact) {
-        const artifactSlots = [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2];
+        const artifactSlots = [
+          EquipmentSlot.Artifact1,
+          EquipmentSlot.Artifact2,
+        ];
         if (!artifactSlots.includes(slot)) {
           addLog('法宝只能装备到法宝槽位！', 'danger');
           return prev;
@@ -93,7 +108,9 @@ export function useEquipmentHandlers({
 
       // 0. 如果该物品已经在其他槽位装备，先卸下旧槽位的装备
       let oldSlot: EquipmentSlot | null = null;
-      for (const [equippedSlot, equippedItemId] of Object.entries(prev.equippedItems)) {
+      for (const [equippedSlot, equippedItemId] of Object.entries(
+        prev.equippedItems
+      )) {
         if (equippedItemId === item.id && equippedSlot !== slot) {
           oldSlot = equippedSlot as EquipmentSlot;
           // 移除旧槽位的装备ID
@@ -400,8 +417,14 @@ export function useEquipmentHandlers({
       const currentLevel = item.level || 0;
       const rarity = item.rarity || '普通';
       const rarityMult = RARITY_MULTIPLIERS[rarity];
-      const baseSuccessRate = Math.max(0.1, 1 - (currentLevel * 0.1) - (rarityMult - 1) * 0.15);
-      const successRate = Math.min(1, baseSuccessRate + upgradeStones * UPGRADE_STONE_SUCCESS_BONUS);
+      const baseSuccessRate = Math.max(
+        0.1,
+        1 - currentLevel * 0.1 - (rarityMult - 1) * 0.15
+      );
+      const successRate = Math.min(
+        1,
+        baseSuccessRate + upgradeStones * UPGRADE_STONE_SUCCESS_BONUS
+      );
 
       // 判断是否成功
       const isSuccess = Math.random() < successRate;
@@ -485,7 +508,11 @@ export function useEquipmentHandlers({
         newPhysique -= oldStats.physique;
         newSpeed -= oldStats.speed;
 
-        const newItem = { ...item, effect: newEffect, level: (item.level || 0) + 1 };
+        const newItem = {
+          ...item,
+          effect: newEffect,
+          level: (item.level || 0) + 1,
+        };
         const newStats = getItemStats(newItem, isNatal);
 
         newAttack += newStats.attack;
@@ -521,4 +548,3 @@ export function useEquipmentHandlers({
     handleUpgradeItem,
   };
 }
-

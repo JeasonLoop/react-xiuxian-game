@@ -69,7 +69,9 @@ interface ModalsContainerProps {
     setItemToUpgrade: (item: Item | null) => void;
     setCurrentShop: (shop: Shop | null) => void;
     setBattleReplay: (replay: BattleReplay | null) => void;
-    setRevealedBattleRounds: (rounds: number | ((prev: number) => number)) => void;
+    setRevealedBattleRounds: (
+      rounds: number | ((prev: number) => number)
+    ) => void;
     // Battle
     handleSkipBattleLogs: () => void;
     handleCloseBattleModal: () => void;
@@ -82,7 +84,11 @@ interface ModalsContainerProps {
     handleBatchDiscard: (itemIds: string[]) => void;
     handleRefineNatalArtifact: (item: Item) => void;
     handleUnrefineNatalArtifact: () => void;
-    handleUpgradeItem: (item: Item, costStones: number, costMats: number) => void;
+    handleUpgradeItem: (
+      item: Item,
+      costStones: number,
+      costMats: number
+    ) => void;
     // Cultivation
     handleLearnArt: (art: CultivationArt) => void;
     handleActivateArt: (art: CultivationArt) => void;
@@ -93,7 +99,11 @@ interface ModalsContainerProps {
     handleLeaveSect: () => void;
     handleSectTask: (task: RandomSectTask) => void;
     handleSectPromote: () => void;
-    handleSectBuy: (itemTemplate: Partial<Item>, cost: number, quantity?: number) => void;
+    handleSectBuy: (
+      itemTemplate: Partial<Item>,
+      cost: number,
+      quantity?: number
+    ) => void;
     // Realm
     handleEnterRealm: (realm: any) => void;
     // Character
@@ -104,7 +114,11 @@ interface ModalsContainerProps {
     handleUpdateViewedAchievements: () => void;
     // Pet
     handleActivatePet: (petId: string) => void;
-    handleFeedPet: (petId: string, feedType: 'hp' | 'item' | 'exp', itemId?: string) => void;
+    handleFeedPet: (
+      petId: string,
+      feedType: 'hp' | 'item' | 'exp',
+      itemId?: string
+    ) => void;
     handleEvolvePet: (petId: string) => void;
     // Lottery
     handleDraw: (count: 1 | 10) => void;
@@ -248,4 +262,3 @@ export default function ModalsContainer({
     </>
   );
 }
-

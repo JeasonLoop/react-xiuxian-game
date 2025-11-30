@@ -14,16 +14,25 @@ const AchievementModal: React.FC<Props> = ({ isOpen, onClose, player }) => {
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
-      case '普通': return 'text-gray-400 border-gray-600';
-      case '稀有': return 'text-blue-400 border-blue-600';
-      case '传说': return 'text-purple-400 border-purple-600';
-      case '仙品': return 'text-yellow-400 border-yellow-600';
-      default: return 'text-gray-400 border-gray-600';
+      case '普通':
+        return 'text-gray-400 border-gray-600';
+      case '稀有':
+        return 'text-blue-400 border-blue-600';
+      case '传说':
+        return 'text-purple-400 border-purple-600';
+      case '仙品':
+        return 'text-yellow-400 border-yellow-600';
+      default:
+        return 'text-gray-400 border-gray-600';
     }
   };
 
-  const completedAchievements = ACHIEVEMENTS.filter(a => player.achievements.includes(a.id));
-  const incompleteAchievements = ACHIEVEMENTS.filter(a => !player.achievements.includes(a.id));
+  const completedAchievements = ACHIEVEMENTS.filter((a) =>
+    player.achievements.includes(a.id)
+  );
+  const incompleteAchievements = ACHIEVEMENTS.filter(
+    (a) => !player.achievements.includes(a.id)
+  );
 
   return (
     <div
@@ -39,7 +48,10 @@ const AchievementModal: React.FC<Props> = ({ isOpen, onClose, player }) => {
             <Trophy className="text-yellow-400 w-5 h-5 md:w-6 md:h-6" />
             成就系统
           </h2>
-          <button onClick={onClose} className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation">
+          <button
+            onClick={onClose}
+            className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+          >
             <X size={24} />
           </button>
         </div>
@@ -56,21 +68,28 @@ const AchievementModal: React.FC<Props> = ({ isOpen, onClose, player }) => {
             <div className="mb-6">
               <h3 className="text-lg font-bold mb-3 text-green-400">已达成</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {completedAchievements.map(achievement => (
+                {completedAchievements.map((achievement) => (
                   <div
                     key={achievement.id}
                     className={`bg-stone-900 rounded p-4 border-2 ${getRarityColor(achievement.rarity)}`}
                   >
                     <div className="flex items-start gap-3">
-                      <Trophy className="text-yellow-400 flex-shrink-0 mt-1" size={20} />
+                      <Trophy
+                        className="text-yellow-400 flex-shrink-0 mt-1"
+                        size={20}
+                      />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-bold">{achievement.name}</span>
-                          <span className={`text-xs ${getRarityColor(achievement.rarity).split(' ')[0]}`}>
+                          <span
+                            className={`text-xs ${getRarityColor(achievement.rarity).split(' ')[0]}`}
+                          >
                             ({achievement.rarity})
                           </span>
                         </div>
-                        <p className="text-sm text-stone-400 mb-2">{achievement.description}</p>
+                        <p className="text-sm text-stone-400 mb-2">
+                          {achievement.description}
+                        </p>
                         <div className="text-xs text-green-400">✓ 已完成</div>
                       </div>
                     </div>
@@ -85,21 +104,31 @@ const AchievementModal: React.FC<Props> = ({ isOpen, onClose, player }) => {
             <div>
               <h3 className="text-lg font-bold mb-3 text-stone-400">进行中</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {incompleteAchievements.map(achievement => (
+                {incompleteAchievements.map((achievement) => (
                   <div
                     key={achievement.id}
                     className="bg-stone-900 rounded p-4 border border-stone-700 opacity-60"
                   >
                     <div className="flex items-start gap-3">
-                      <Star className="text-stone-500 flex-shrink-0 mt-1" size={20} />
+                      <Star
+                        className="text-stone-500 flex-shrink-0 mt-1"
+                        size={20}
+                      />
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-bold text-stone-500">{achievement.name}</span>
-                          <span className="text-xs text-stone-600">({achievement.rarity})</span>
+                          <span className="font-bold text-stone-500">
+                            {achievement.name}
+                          </span>
+                          <span className="text-xs text-stone-600">
+                            ({achievement.rarity})
+                          </span>
                         </div>
-                        <p className="text-sm text-stone-500 mb-2">{achievement.description}</p>
+                        <p className="text-sm text-stone-500 mb-2">
+                          {achievement.description}
+                        </p>
                         <p className="text-xs text-stone-600">
-                          要求: {achievement.requirement.type} - {achievement.requirement.value}
+                          要求: {achievement.requirement.type} -{' '}
+                          {achievement.requirement.value}
                         </p>
                       </div>
                     </div>
@@ -115,4 +144,3 @@ const AchievementModal: React.FC<Props> = ({ isOpen, onClose, player }) => {
 };
 
 export default AchievementModal;
-

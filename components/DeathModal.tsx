@@ -27,10 +27,7 @@ const DeathModal: React.FC<DeathModalProps> = ({
           .filter((r) => r.attacker === 'enemy')
           .reduce((sum, r) => sum + r.damage, 0),
         critCount: battleData.rounds.filter((r) => r.crit).length,
-        maxDamage: Math.max(
-          ...battleData.rounds.map((r) => r.damage),
-          0
-        ),
+        maxDamage: Math.max(...battleData.rounds.map((r) => r.damage), 0),
       }
     : null;
 
@@ -40,11 +37,17 @@ const DeathModal: React.FC<DeathModalProps> = ({
         {/* 标题 */}
         <div className="text-center mb-3 md:mb-4">
           <div className="flex items-center justify-center gap-2 md:gap-3 mb-2 md:mb-3">
-            <Skull size={32} className="md:w-12 md:h-12 text-red-500 animate-pulse" />
+            <Skull
+              size={32}
+              className="md:w-12 md:h-12 text-red-500 animate-pulse"
+            />
             <h1 className="text-2xl md:text-3xl font-serif font-bold text-red-400">
               身死道消
             </h1>
-            <Skull size={32} className="md:w-12 md:h-12 text-red-500 animate-pulse" />
+            <Skull
+              size={32}
+              className="md:w-12 md:h-12 text-red-500 animate-pulse"
+            />
           </div>
           <p className="text-stone-300 text-sm md:text-base">
             {player.name} 在修仙路上遭遇不测...
@@ -57,7 +60,9 @@ const DeathModal: React.FC<DeathModalProps> = ({
             <Flame size={16} className="md:w-5 md:h-5" />
             死亡原因
           </h2>
-          <p className="text-stone-200 text-xs md:text-sm leading-relaxed">{deathReason}</p>
+          <p className="text-stone-200 text-xs md:text-sm leading-relaxed">
+            {deathReason}
+          </p>
         </div>
 
         {/* 战斗统计 */}
@@ -69,38 +74,50 @@ const DeathModal: React.FC<DeathModalProps> = ({
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
               <div className="bg-stone-900/50 rounded p-2">
-                <div className="text-stone-400 text-xs mb-0.5 md:mb-1">敌人</div>
+                <div className="text-stone-400 text-xs mb-0.5 md:mb-1">
+                  敌人
+                </div>
                 <div className="text-stone-200 font-bold text-sm md:text-base break-words">
                   {battleData.enemy.title}
                   {battleData.enemy.name}
                 </div>
               </div>
               <div className="bg-stone-900/50 rounded p-2">
-                <div className="text-stone-400 text-xs mb-0.5 md:mb-1">战斗回合</div>
+                <div className="text-stone-400 text-xs mb-0.5 md:mb-1">
+                  战斗回合
+                </div>
                 <div className="text-stone-200 font-bold text-sm md:text-base">
                   {battleStats.totalRounds} 回合
                 </div>
               </div>
               <div className="bg-stone-900/50 rounded p-2">
-                <div className="text-stone-400 text-xs mb-0.5 md:mb-1">造成伤害</div>
+                <div className="text-stone-400 text-xs mb-0.5 md:mb-1">
+                  造成伤害
+                </div>
                 <div className="text-red-300 font-bold text-sm md:text-base">
                   {battleStats.playerDamage}
                 </div>
               </div>
               <div className="bg-stone-900/50 rounded p-2">
-                <div className="text-stone-400 text-xs mb-0.5 md:mb-1">承受伤害</div>
+                <div className="text-stone-400 text-xs mb-0.5 md:mb-1">
+                  承受伤害
+                </div>
                 <div className="text-red-400 font-bold text-sm md:text-base">
                   {battleStats.enemyDamage}
                 </div>
               </div>
               <div className="bg-stone-900/50 rounded p-2">
-                <div className="text-stone-400 text-xs mb-0.5 md:mb-1">暴击次数</div>
+                <div className="text-stone-400 text-xs mb-0.5 md:mb-1">
+                  暴击次数
+                </div>
                 <div className="text-yellow-400 font-bold text-sm md:text-base">
                   {battleStats.critCount}
                 </div>
               </div>
               <div className="bg-stone-900/50 rounded p-2">
-                <div className="text-stone-400 text-xs mb-0.5 md:mb-1">最大伤害</div>
+                <div className="text-stone-400 text-xs mb-0.5 md:mb-1">
+                  最大伤害
+                </div>
                 <div className="text-orange-400 font-bold text-sm md:text-base">
                   {battleStats.maxDamage}
                 </div>
@@ -133,21 +150,33 @@ const DeathModal: React.FC<DeathModalProps> = ({
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             <div className="bg-stone-900/50 rounded p-1.5 md:p-2">
-              <div className="text-stone-400 text-[10px] md:text-xs mb-0.5 md:mb-1">境界</div>
-              <div className="text-stone-200 font-bold text-xs md:text-sm">{player.realm}</div>
+              <div className="text-stone-400 text-[10px] md:text-xs mb-0.5 md:mb-1">
+                境界
+              </div>
+              <div className="text-stone-200 font-bold text-xs md:text-sm">
+                {player.realm}
+              </div>
             </div>
             <div className="bg-stone-900/50 rounded p-1.5 md:p-2">
-              <div className="text-stone-400 text-[10px] md:text-xs mb-0.5 md:mb-1">层数</div>
+              <div className="text-stone-400 text-[10px] md:text-xs mb-0.5 md:mb-1">
+                层数
+              </div>
               <div className="text-stone-200 font-bold text-xs md:text-sm">
                 {player.realmLevel} 层
               </div>
             </div>
             <div className="bg-stone-900/50 rounded p-1.5 md:p-2">
-              <div className="text-stone-400 text-[10px] md:text-xs mb-0.5 md:mb-1">修为</div>
-              <div className="text-stone-200 font-bold text-xs md:text-sm">{player.exp}</div>
+              <div className="text-stone-400 text-[10px] md:text-xs mb-0.5 md:mb-1">
+                修为
+              </div>
+              <div className="text-stone-200 font-bold text-xs md:text-sm">
+                {player.exp}
+              </div>
             </div>
             <div className="bg-stone-900/50 rounded p-1.5 md:p-2">
-              <div className="text-stone-400 text-[10px] md:text-xs mb-0.5 md:mb-1">灵石</div>
+              <div className="text-stone-400 text-[10px] md:text-xs mb-0.5 md:mb-1">
+                灵石
+              </div>
               <div className="text-stone-200 font-bold text-xs md:text-sm">
                 {player.spiritStones}
               </div>
@@ -155,20 +184,36 @@ const DeathModal: React.FC<DeathModalProps> = ({
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
             <div className="bg-stone-900/50 rounded p-1.5 md:p-2">
-              <div className="text-stone-400 text-[10px] md:text-xs mb-0.5 md:mb-1">攻击</div>
-              <div className="text-red-300 font-bold text-xs md:text-sm">{player.attack}</div>
+              <div className="text-stone-400 text-[10px] md:text-xs mb-0.5 md:mb-1">
+                攻击
+              </div>
+              <div className="text-red-300 font-bold text-xs md:text-sm">
+                {player.attack}
+              </div>
             </div>
             <div className="bg-stone-900/50 rounded p-1.5 md:p-2">
-              <div className="text-stone-400 text-[10px] md:text-xs mb-0.5 md:mb-1">防御</div>
-              <div className="text-blue-300 font-bold text-xs md:text-sm">{player.defense}</div>
+              <div className="text-stone-400 text-[10px] md:text-xs mb-0.5 md:mb-1">
+                防御
+              </div>
+              <div className="text-blue-300 font-bold text-xs md:text-sm">
+                {player.defense}
+              </div>
             </div>
             <div className="bg-stone-900/50 rounded p-1.5 md:p-2">
-              <div className="text-stone-400 text-[10px] md:text-xs mb-0.5 md:mb-1">气血上限</div>
-              <div className="text-pink-300 font-bold text-xs md:text-sm">{player.maxHp}</div>
+              <div className="text-stone-400 text-[10px] md:text-xs mb-0.5 md:mb-1">
+                气血上限
+              </div>
+              <div className="text-pink-300 font-bold text-xs md:text-sm">
+                {player.maxHp}
+              </div>
             </div>
             <div className="bg-stone-900/50 rounded p-1.5 md:p-2">
-              <div className="text-stone-400 text-[10px] md:text-xs mb-0.5 md:mb-1">速度</div>
-              <div className="text-cyan-300 font-bold text-xs md:text-sm">{player.speed}</div>
+              <div className="text-stone-400 text-[10px] md:text-xs mb-0.5 md:mb-1">
+                速度
+              </div>
+              <div className="text-cyan-300 font-bold text-xs md:text-sm">
+                {player.speed}
+              </div>
             </div>
           </div>
         </div>
@@ -192,4 +237,3 @@ const DeathModal: React.FC<DeathModalProps> = ({
 };
 
 export default DeathModal;
-

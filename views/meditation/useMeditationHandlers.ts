@@ -1,6 +1,11 @@
 import React from 'react';
 import { PlayerStats } from '../../types';
-import { CULTIVATION_ARTS, TALENTS, ACHIEVEMENTS, REALM_ORDER } from '../../constants';
+import {
+  CULTIVATION_ARTS,
+  TALENTS,
+  ACHIEVEMENTS,
+  REALM_ORDER,
+} from '../../constants';
 
 interface UseMeditationHandlersProps {
   player: PlayerStats;
@@ -37,7 +42,9 @@ export function useMeditationHandlers({
     const realmBaseMultiplier = realmBaseMultipliers[realmIndex] || 1;
 
     // 基础修为 = 境界基础倍数 * (1 + 境界层数 * 0.15)
-    let baseGain = Math.floor(realmBaseMultiplier * 10 * (1 + player.realmLevel * 0.15));
+    let baseGain = Math.floor(
+      realmBaseMultiplier * 10 * (1 + player.realmLevel * 0.15)
+    );
 
     // Apply Active Art Bonus
     const activeArt = CULTIVATION_ARTS.find((a) => a.id === player.activeArtId);
@@ -83,7 +90,10 @@ export function useMeditationHandlers({
 
       // 添加回血速度提升提示
       const multiplierText = baseMultiplier.toFixed(1);
-      addLog(`💚 打坐提升了你的回血速度（${multiplierText}倍），持续 ${durationSeconds} 秒`, 'gain');
+      addLog(
+        `💚 打坐提升了你的回血速度（${multiplierText}倍），持续 ${durationSeconds} 秒`,
+        'gain'
+      );
 
       return {
         ...prev,
@@ -123,4 +133,3 @@ export function useMeditationHandlers({
     handleMeditate,
   };
 }
-

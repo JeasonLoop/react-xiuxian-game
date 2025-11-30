@@ -9,4 +9,3 @@ export const uid = () => {
 // localStorage 键名
 export const SAVE_KEY = 'xiuxian-game-save';
 export const SETTINGS_KEY = 'xiuxian-game-settings';
-

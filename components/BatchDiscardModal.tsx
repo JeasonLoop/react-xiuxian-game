@@ -120,17 +120,14 @@ const BatchDiscardModal: React.FC<Props> = ({
       onClick={onClose}
     >
       <div
-        className="bg-paper-800 w-full max-w-4xl max-h-[90vh] rounded-lg border border-stone-600 shadow-2xl flex flex-col"
+        className="bg-paper-800 w-full max-w-4xl max-h-[90vh] rounded-lg border border-stone-600 shadow-2xl flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 border-b border-stone-600 flex justify-between items-center bg-ink-800 rounded-t">
           <h3 className="text-xl font-serif text-mystic-gold flex items-center gap-2">
             <Trash2 size={20} /> 批量丢弃
           </h3>
-          <button
-            onClick={onClose}
-            className="text-stone-400 hover:text-white"
-          >
+          <button onClick={onClose} className="text-stone-400 hover:text-white">
             <X size={24} />
           </button>
         </div>
@@ -143,30 +140,30 @@ const BatchDiscardModal: React.FC<Props> = ({
                 <Filter size={16} />
                 <span>分类:</span>
               </div>
-              {(['all', 'equipment', 'pill', 'consumable'] as ItemCategory[]).map(
-                (category) => (
-                  <button
-                    key={category}
-                    onClick={() => {
-                      setSelectedCategory(category);
-                      setSelectedItems(new Set());
-                    }}
-                    className={`px-3 py-1.5 rounded text-sm border transition-colors ${
-                      selectedCategory === category
-                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                    }`}
-                  >
-                    {category === 'all'
-                      ? '全部'
-                      : category === 'equipment'
+              {(
+                ['all', 'equipment', 'pill', 'consumable'] as ItemCategory[]
+              ).map((category) => (
+                <button
+                  key={category}
+                  onClick={() => {
+                    setSelectedCategory(category);
+                    setSelectedItems(new Set());
+                  }}
+                  className={`px-3 py-1.5 rounded text-sm border transition-colors ${
+                    selectedCategory === category
+                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                  }`}
+                >
+                  {category === 'all'
+                    ? '全部'
+                    : category === 'equipment'
                       ? '装备'
                       : category === 'pill'
-                      ? '丹药'
-                      : '用品'}
-                  </button>
-                )
-              )}
+                        ? '丹药'
+                        : '用品'}
+                </button>
+              ))}
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
@@ -254,9 +251,9 @@ const BatchDiscardModal: React.FC<Props> = ({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <h4
-                          className={`font-bold text-sm ${getRarityColor(
-                            rarity
-                          ).split(' ')[0]}`}
+                          className={`font-bold text-sm ${
+                            getRarityColor(rarity).split(' ')[0]
+                          }`}
                         >
                           {item.name}
                         </h4>
@@ -292,4 +289,3 @@ const BatchDiscardModal: React.FC<Props> = ({
 };
 
 export default BatchDiscardModal;
-

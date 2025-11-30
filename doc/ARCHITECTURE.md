@@ -39,20 +39,20 @@
 
 ### 前端技术
 
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| React | 19.2.0 | UI 框架 |
-| TypeScript | 5.8.2 | 类型系统 |
-| Vite | 6.2.0 | 构建工具 |
-| Lucide React | 0.554.0 | 图标库 |
+| 技术         | 版本    | 用途     |
+| ------------ | ------- | -------- |
+| React        | 19.2.0  | UI 框架  |
+| TypeScript   | 5.8.2   | 类型系统 |
+| Vite         | 6.2.0   | 构建工具 |
+| Lucide React | 0.554.0 | 图标库   |
 
 ### 服务与 API
 
-| 服务 | 用途 |
-|------|------|
-| SiliconFlow API | AI 事件生成 |
+| 服务             | 用途           |
+| ---------------- | -------------- |
+| SiliconFlow API  | AI 事件生成    |
 | Vercel Functions | API 代理和部署 |
-| localStorage | 数据持久化 |
+| localStorage     | 数据持久化     |
 
 ## 📁 项目结构
 
@@ -104,16 +104,19 @@ react-xiuxian-game/
 **位置**: `components/`
 
 **职责**:
+
 - UI 渲染
 - 用户交互处理
 - 视觉反馈
 
 **特点**:
+
 - 纯函数组件（Functional Components）
 - 使用 React Hooks 管理本地状态
 - 通过 props 接收数据和回调
 
 **示例组件**:
+
 ```typescript
 // components/StatsPanel.tsx
 interface StatsPanelProps {
@@ -127,12 +130,14 @@ interface StatsPanelProps {
 **位置**: `services/`
 
 **职责**:
+
 - 游戏规则实现
 - AI 事件生成
 - 战斗计算
 - 数据转换
 
 **特点**:
+
 - 纯函数或类方法
 - 无副作用（除了 API 调用）
 - 可测试性强
@@ -140,11 +145,13 @@ interface StatsPanelProps {
 **核心服务**:
 
 #### aiService.ts
+
 - `generateAdventureEvent()` - 生成历练事件
 - `generateBreakthroughFlavorText()` - 生成突破描述
 - `generateEnemyName()` - 生成敌人名称
 
 #### battleService.ts
+
 - `shouldTriggerBattle()` - 判断是否触发战斗
 - `resolveBattleEncounter()` - 解析战斗结果
 - `createEnemy()` - 创建敌人
@@ -154,16 +161,19 @@ interface StatsPanelProps {
 **位置**: `App.tsx` (状态管理), `localStorage` (持久化)
 
 **职责**:
+
 - 状态管理
 - 数据持久化
 - 数据验证
 
 **状态管理**:
+
 - 使用 React `useState` 和 `useEffect`
 - 单一数据源（Single Source of Truth）
 - 自动保存到 localStorage
 
 **数据流**:
+
 ```
 用户操作 → 事件处理函数 → 更新状态 → 触发重渲染 → UI 更新
                 ↓
@@ -249,9 +259,9 @@ SiliconFlow API
 
 ```typescript
 const [playerName, setPlayerName] = useState('');
-<input 
-  value={playerName} 
-  onChange={(e) => setPlayerName(e.target.value)} 
+<input
+  value={playerName}
+  onChange={(e) => setPlayerName(e.target.value)}
 />
 ```
 
@@ -474,6 +484,7 @@ export const REALM_DATA: Record<RealmType, {...}> = {
 - **数据层**: 负责状态管理和持久化
 
 这种架构使得代码：
+
 - ✅ 易于维护
 - ✅ 易于测试
 - ✅ 易于扩展
@@ -482,7 +493,7 @@ export const REALM_DATA: Record<RealmType, {...}> = {
 ---
 
 **相关文档**:
+
 - [模块解析](./MODULES.md) - 详细的模块说明
 - [API 文档](./API.md) - API 使用说明
 - [开发指南](./DEVELOPMENT.md) - 开发实践
-
