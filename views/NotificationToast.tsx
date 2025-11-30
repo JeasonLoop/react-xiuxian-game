@@ -59,9 +59,7 @@ export function ItemActionToast({ log }: ItemActionToastProps) {
 
   return (
     <div className="fixed top-20 right-4 z-[70] pointer-events-none animate-fade-in">
-      <div className={logClassName}>
-        {log.text}
-      </div>
+      <div className={logClassName}>{log.text}</div>
     </div>
   );
 }
@@ -99,4 +97,3 @@ export function LotteryRewardsToast({ rewards }: LotteryRewardsProps) {
     </div>
   );
 }
-

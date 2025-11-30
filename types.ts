@@ -1,4 +1,3 @@
-
 export enum RealmType {
   QiRefining = '炼气期',
   Foundation = '筑基期',
@@ -6,7 +5,7 @@ export enum RealmType {
   NascentSoul = '元婴期',
   SpiritSevering = '化神期',
   VoidRefining = '炼虚期',
-  ImmortalAscension = '渡劫飞升'
+  ImmortalAscension = '渡劫飞升',
 }
 
 export interface CultivationArt {
@@ -36,7 +35,7 @@ export enum ItemType {
   Armor = '护甲',
   Accessory = '首饰',
   Ring = '戒指',
-  Recipe = '丹方'
+  Recipe = '丹方',
 }
 
 export type ItemRarity = '普通' | '稀有' | '传说' | '仙品';
@@ -57,7 +56,7 @@ export enum EquipmentSlot {
   Accessory2 = '首饰2',
   Artifact1 = '法宝1',
   Artifact2 = '法宝2',
-  Weapon = '武器'
+  Weapon = '武器',
 }
 
 export interface Item {
@@ -96,7 +95,7 @@ export enum SectRank {
   Outer = '外门弟子',
   Inner = '内门弟子',
   Core = '真传弟子',
-  Elder = '长老'
+  Elder = '长老',
 }
 
 export interface SecretRealm {
@@ -250,7 +249,8 @@ export interface AdventureResult {
       maxHp?: number;
     };
   };
-  itemsObtained?: Array<{ // 多个物品（用于搜刮等）
+  itemsObtained?: Array<{
+    // 多个物品（用于搜刮等）
     name: string;
     type: string;
     description: string;
@@ -276,12 +276,14 @@ export interface AdventureResult {
     };
   }>;
   petObtained?: string; // 获得的灵宠模板ID（如 "pet-spirit-fox"）
-  petOpportunity?: { // 灵宠机缘
+  petOpportunity?: {
+    // 灵宠机缘
     type: 'evolution' | 'level' | 'stats' | 'exp'; // 机缘类型：进化、提升等级、提升属性、获得经验
     petId?: string; // 影响的灵宠ID（可选，如果为空则随机选择玩家拥有的一个灵宠）
     levelGain?: number; // 提升的等级数（type为'level'时）
     expGain?: number; // 获得的经验值（type为'exp'时）
-    statsBoost?: { // 属性提升（type为'stats'时）
+    statsBoost?: {
+      // 属性提升（type为'stats'时）
       attack?: number;
       defense?: number;
       hp?: number;
@@ -447,7 +449,7 @@ export interface GameSettings {
 export enum ShopType {
   Village = '村庄',
   City = '城市',
-  Sect = '仙门'
+  Sect = '仙门',
 }
 
 export interface ShopItem {

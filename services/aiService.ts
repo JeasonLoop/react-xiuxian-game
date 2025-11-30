@@ -1,8 +1,17 @@
-import { PlayerStats, AdventureResult, AdventureType, RealmType } from "../types";
-import { REALM_ORDER } from "../constants";
-import { getAIConfig, validateAIConfig, getAIConfigInfo } from "../config/aiConfig";
+import {
+  PlayerStats,
+  AdventureResult,
+  AdventureType,
+  RealmType,
+} from '../types';
+import { REALM_ORDER } from '../constants';
+import {
+  getAIConfig,
+  validateAIConfig,
+  getAIConfigInfo,
+} from '../config/aiConfig';
 
-type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
+type ChatMessage = { role: 'system' | 'user' | 'assistant'; content: string };
 
 // 获取 AI 配置
 const aiConfig = getAIConfig();
@@ -21,10 +30,13 @@ const stripCodeFence = (text: string): string => {
   let output = text.trim();
 
   // 移除代码块标记
-  if (output.startsWith("```")) {
-    output = output.replace(/^```(?:json|JSON)?/i, "").replace(/```$/i, "").trim();
+  if (output.startsWith('```')) {
+    output = output
+      .replace(/^```(?:json|JSON)?/i, '')
+      .replace(/```$/i, '')
+      .trim();
   }
-  if (output.toLowerCase().startsWith("json")) {
+  if (output.toLowerCase().startsWith('json')) {
     output = output.slice(4).trim();
   }
 
@@ -67,32 +79,32 @@ const cleanJsonString = (jsonString: string): string => {
 };
 
 const parseMessageContent = (content: unknown): string => {
-  if (typeof content === "string") {
+  if (typeof content === 'string') {
     return stripCodeFence(content);
   }
   if (Array.isArray(content)) {
     return content
       .map((part) => {
-        if (typeof part === "string") return part;
-        if (typeof part === "object" && part !== null && "text" in part) {
-          return (part as { text?: string }).text || "";
+        if (typeof part === 'string') return part;
+        if (typeof part === 'object' && part !== null && 'text' in part) {
+          return (part as { text?: string }).text || '';
         }
-        return "";
+        return '';
       })
-      .join("");
+      .join('');
   }
-  return "";
+  return '';
 };
 
 const requestSpark = async (messages: ChatMessage[], temperature = 0.8) => {
   if (!API_KEY) {
-    throw new Error("AI API key is missing");
+    throw new Error('AI API key is missing');
   }
 
   const response = await fetch(API_URL, {
-    method: "POST",
+    method: 'POST',
     headers: {
-      "Content-Type": "application/json",
+      'Content-Type': 'application/json',
       Authorization: `Bearer ${API_KEY}`,
     },
     body: JSON.stringify({
@@ -111,29 +123,34 @@ const requestSpark = async (messages: ChatMessage[], temperature = 0.8) => {
   const content = parseMessageContent(data?.choices?.[0]?.message?.content);
 
   if (!content) {
-    throw new Error("Spark API returned empty content");
+    throw new Error('Spark API returned empty content');
   }
 
   return content;
 };
 
-export const generateAdventureEvent = async (player: PlayerStats, adventureType: AdventureType = 'normal', riskLevel?: '低' | '中' | '高' | '极度危险'): Promise<AdventureResult> => {
+export const generateAdventureEvent = async (
+  player: PlayerStats,
+  adventureType: AdventureType = 'normal',
+  riskLevel?: '低' | '中' | '高' | '极度危险'
+): Promise<AdventureResult> => {
   if (!API_KEY) {
     return {
-      story: "你静心打坐，四周一片寂静。（API Key 缺失，AI 功能已禁用）",
+      story: '你静心打坐，四周一片寂静。（API Key 缺失，AI 功能已禁用）',
       hpChange: 5,
       expChange: 10,
       spiritStonesChange: 0,
-      eventColor: 'normal'
+      eventColor: 'normal',
     };
   }
 
   try {
-    let typeInstructions = "";
+    let typeInstructions = '';
 
     // 根据境界调整事件类型和奖励
     const realmIndex = REALM_ORDER.indexOf(player.realm);
-    const realmMultiplier = 1 + (realmIndex * 0.3) + ((player.realmLevel - 1) * 0.1);
+    const realmMultiplier =
+      1 + realmIndex * 0.3 + (player.realmLevel - 1) * 0.1;
 
     switch (adventureType) {
       case 'lucky':
@@ -153,13 +170,46 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
         break;
       case 'secret_realm':
         // 根据风险等级调整奖励范围
-        const getRewardRange = (risk: '低' | '中' | '高' | '极度危险' | undefined) => {
-          if (!risk) return { expMin: 50, expMax: 500, stonesMin: 100, stonesMax: 1000, rarity: '中等' };
+        const getRewardRange = (
+          risk: '低' | '中' | '高' | '极度危险' | undefined
+        ) => {
+          if (!risk)
+            return {
+              expMin: 50,
+              expMax: 500,
+              stonesMin: 100,
+              stonesMax: 1000,
+              rarity: '中等',
+            };
           const ranges = {
-            '低': { expMin: 50, expMax: 300, stonesMin: 100, stonesMax: 600, rarity: '较低' },
-            '中': { expMin: 100, expMax: 500, stonesMin: 200, stonesMax: 1000, rarity: '中等' },
-            '高': { expMin: 200, expMax: 800, stonesMin: 400, stonesMax: 1500, rarity: '较高' },
-            '极度危险': { expMin: 400, expMax: 1200, stonesMin: 800, stonesMax: 2500, rarity: '极高' }
+            低: {
+              expMin: 50,
+              expMax: 300,
+              stonesMin: 100,
+              stonesMax: 600,
+              rarity: '较低',
+            },
+            中: {
+              expMin: 100,
+              expMax: 500,
+              stonesMin: 200,
+              stonesMax: 1000,
+              rarity: '中等',
+            },
+            高: {
+              expMin: 200,
+              expMax: 800,
+              stonesMin: 400,
+              stonesMax: 1500,
+              rarity: '较高',
+            },
+            极度危险: {
+              expMin: 400,
+              expMax: 1200,
+              stonesMin: 800,
+              stonesMax: 2500,
+              rarity: '极高',
+            },
           };
           return ranges[risk];
         };
@@ -275,11 +325,12 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
     const resultText = await requestSpark(
       [
         {
-          role: "system",
-          content: "你是一名严谨的修仙游戏GM，需要严格按照用户要求返回结构化数据。\n\n重要规则：\n1. 只返回JSON格式，不要有任何额外的文字说明、解释或描述\n2. 不要使用代码块标记（如```json```），直接返回纯JSON\n3. 所有数字值必须是纯数字格式，例如 \"spirit\": 8 而不是 \"spirit\": +8\n4. 不要添加任何注释或说明文字\n5. 确保JSON格式完全正确，可以被直接解析",
+          role: 'system',
+          content:
+            '你是一名严谨的修仙游戏GM，需要严格按照用户要求返回结构化数据。\n\n重要规则：\n1. 只返回JSON格式，不要有任何额外的文字说明、解释或描述\n2. 不要使用代码块标记（如```json```），直接返回纯JSON\n3. 所有数字值必须是纯数字格式，例如 "spirit": 8 而不是 "spirit": +8\n4. 不要添加任何注释或说明文字\n5. 确保JSON格式完全正确，可以被直接解析',
         },
         {
-          role: "user",
+          role: 'user',
           content: `${prompt}
 
 【输出要求】
@@ -419,32 +470,34 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
     try {
       return JSON.parse(cleanedJson) as AdventureResult;
     } catch (parseError) {
-      console.error("JSON解析失败，原始内容:", resultText);
-      console.error("清理后的内容:", cleanedJson);
-      console.error("解析错误:", parseError);
+      console.error('JSON解析失败，原始内容:', resultText);
+      console.error('清理后的内容:', cleanedJson);
+      console.error('解析错误:', parseError);
       throw new Error(`JSON解析失败: ${parseError}`);
     }
-
   } catch (error) {
-    console.error("Spark Adventure Error:", error);
+    console.error('Spark Adventure Error:', error);
     // Fallback in case of API error
     return {
-      story: "你在荒野中游荡了一番，可惜大道渺茫，此次一无所获。",
+      story: '你在荒野中游荡了一番，可惜大道渺茫，此次一无所获。',
       hpChange: 0,
       expChange: 5,
       spiritStonesChange: 0,
-      eventColor: 'normal'
+      eventColor: 'normal',
     };
   }
 };
 
-export const generateBreakthroughFlavorText = async (realm: string, success: boolean): Promise<string> => {
-  if (!API_KEY) return success ? "突破成功！" : "突破失败！";
+export const generateBreakthroughFlavorText = async (
+  realm: string,
+  success: boolean
+): Promise<string> => {
+  if (!API_KEY) return success ? '突破成功！' : '突破失败！';
 
   try {
     const prompt = `
       描述一名修仙者尝试突破到 ${realm} 的过程。
-      结果：${success ? "成功" : "失败"}。
+      结果：${success ? '成功' : '失败'}。
       请保持简短（不超过2句话），使用玄幻、仙侠风格，提及灵气涌动、经脉或天劫等元素。
       请使用中文输出。
     `;
@@ -452,21 +505,27 @@ export const generateBreakthroughFlavorText = async (realm: string, success: boo
     const content = await requestSpark(
       [
         {
-          role: "system",
-          content: "你是仙侠小说作家，擅长以唯美中文描绘修仙突破场景。",
+          role: 'system',
+          content: '你是仙侠小说作家，擅长以唯美中文描绘修仙突破场景。',
         },
-        { role: "user", content: prompt },
+        { role: 'user', content: prompt },
       ],
       0.8
     );
 
-    return content.trim() || (success ? "天地震动，你成功突破瓶颈！" : "你气血翻涌，突破失败了。");
+    return (
+      content.trim() ||
+      (success ? '天地震动，你成功突破瓶颈！' : '你气血翻涌，突破失败了。')
+    );
   } catch (e) {
-    return success ? "突破成功！" : "突破失败！";
+    return success ? '突破成功！' : '突破失败！';
   }
 };
 
-export const generateEnemyName = async (realm: RealmType, adventureType: AdventureType): Promise<{ name: string; title: string }> => {
+export const generateEnemyName = async (
+  realm: RealmType,
+  adventureType: AdventureType
+): Promise<{ name: string; title: string }> => {
   if (!API_KEY) {
     // 如果API不可用，返回空对象，让调用者使用预设列表
     return { name: '', title: '' };
@@ -476,11 +535,12 @@ export const generateEnemyName = async (realm: RealmType, adventureType: Adventu
     // RealmType 枚举的值已经是中文名称（如 '炼气期'、'筑基期'）
     const realmName = realm;
 
-    const adventureContext = adventureType === 'secret_realm'
-      ? '秘境中'
-      : adventureType === 'lucky'
-        ? '机缘之地'
-        : '荒野中';
+    const adventureContext =
+      adventureType === 'secret_realm'
+        ? '秘境中'
+        : adventureType === 'lucky'
+          ? '机缘之地'
+          : '荒野中';
 
     const prompt = `
       在修仙游戏中，玩家在${adventureContext}遭遇了一个敌人。
@@ -502,10 +562,11 @@ export const generateEnemyName = async (realm: RealmType, adventureType: Adventu
     const content = await requestSpark(
       [
         {
-          role: "system",
-          content: "你是修仙游戏的设计师，擅长创造符合仙侠风格的敌人名称。请严格返回JSON格式。",
+          role: 'system',
+          content:
+            '你是修仙游戏的设计师，擅长创造符合仙侠风格的敌人名称。请严格返回JSON格式。',
         },
-        { role: "user", content: prompt },
+        { role: 'user', content: prompt },
       ],
       0.9
     );
@@ -516,13 +577,13 @@ export const generateEnemyName = async (realm: RealmType, adventureType: Adventu
     if (parsed.name && parsed.title) {
       return {
         name: parsed.name.trim(),
-        title: parsed.title.trim()
+        title: parsed.title.trim(),
       };
     }
 
     return { name: '', title: '' };
   } catch (e) {
-    console.error("AI生成敌人名字失败:", e);
+    console.error('AI生成敌人名字失败:', e);
     return { name: '', title: '' };
   }
 };

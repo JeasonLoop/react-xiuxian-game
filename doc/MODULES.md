@@ -51,13 +51,15 @@ react-xiuxian-game/
 
 ### 1. App.tsx - 主应用组件
 
-**职责**: 
+**职责**:
+
 - 全局状态管理
 - 游戏核心逻辑协调
 - 事件处理分发
 - 数据持久化
 
 **关键状态**:
+
 ```typescript
 - player: PlayerStats          // 玩家数据
 - logs: LogEntry[]            // 游戏日志
@@ -66,6 +68,7 @@ react-xiuxian-game/
 ```
 
 **核心功能**:
+
 - 游戏初始化 (`handleStartGame`)
 - 历练系统 (`handleAdventure`)
 - 修炼系统 (`handleMeditate`, `handleBreakthrough`)
@@ -81,6 +84,7 @@ react-xiuxian-game/
 **核心类型**:
 
 #### 玩家相关
+
 ```typescript
 interface PlayerStats {
   name: string;
@@ -101,6 +105,7 @@ interface PlayerStats {
 ```
 
 #### 物品相关
+
 ```typescript
 interface Item {
   id: string;
@@ -116,6 +121,7 @@ interface Item {
 ```
 
 #### 其他类型
+
 - `RealmType` - 境界枚举
 - `ItemType` - 物品类型枚举
 - `EquipmentSlot` - 装备槽位枚举
@@ -131,6 +137,7 @@ interface Item {
 **核心常量**:
 
 #### 境界数据
+
 ```typescript
 export const REALM_DATA: Record<RealmType, {
   baseMaxHp: number;
@@ -141,6 +148,7 @@ export const REALM_DATA: Record<RealmType, {
 ```
 
 #### 功法数据
+
 ```typescript
 export const CULTIVATION_ARTS: CultivationArt[] = [
   // 心法（提升修炼速度）
@@ -149,6 +157,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
 ```
 
 #### 其他常量
+
 - `TALENTS` - 天赋列表
 - `TITLES` - 称号列表
 - `ACHIEVEMENTS` - 成就列表
@@ -184,6 +193,7 @@ generateEnemyName(
 ```
 
 **特点**:
+
 - 使用 SiliconFlow API
 - 支持多种事件类型（普通、机缘、秘境）
 - 自动清理和解析 JSON 响应
@@ -208,6 +218,7 @@ resolveBattleEncounter(
 ```
 
 **战斗机制**:
+
 - 回合制战斗
 - 基于速度的行动顺序
 - 暴击系统
@@ -343,6 +354,7 @@ components/*
 ### 1. 单一职责原则
 
 每个模块/组件只负责一个功能：
+
 - `BattleModal` 只负责战斗显示
 - `battleService` 只负责战斗计算
 - `aiService` 只负责 AI 交互
@@ -371,6 +383,7 @@ components/*
 ### 添加新功能模块
 
 1. **定义类型** (`types.ts`)
+
    ```typescript
    export interface NewFeature {
      // ...
@@ -378,6 +391,7 @@ components/*
    ```
 
 2. **定义常量** (`constants.ts`)
+
    ```typescript
    export const NEW_FEATURE_DATA = {
      // ...
@@ -385,6 +399,7 @@ components/*
    ```
 
 3. **实现服务** (`services/newFeatureService.ts`)
+
    ```typescript
    export const newFeatureFunction = () => {
      // ...
@@ -392,6 +407,7 @@ components/*
    ```
 
 4. **创建组件** (`components/NewFeatureModal.tsx`)
+
    ```typescript
    export default function NewFeatureModal({ ... }) {
      // ...
@@ -458,7 +474,7 @@ import StatsPanel from './StatsPanel';
 
 - **行数**: ~3100 行
 - **职责**: 游戏核心逻辑
-- **关键函数**: 
+- **关键函数**:
   - `handleAdventure()` - 历练处理
   - `handleMeditate()` - 打坐修炼
   - `handleBreakthrough()` - 突破境界
@@ -492,4 +508,3 @@ import StatsPanel from './StatsPanel';
 ---
 
 **提示**: 建议在修改代码前先阅读本文档，了解模块职责和依赖关系。
-

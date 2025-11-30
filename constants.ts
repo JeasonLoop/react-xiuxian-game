@@ -1,5 +1,25 @@
-
-import { RealmType, Item, ItemType, CultivationArt, ItemRarity, SectRank, SecretRealm, Recipe, Talent, Title, EncounterEvent, ExplorationLocation, Achievement, PetTemplate, PetSkill, LotteryPrize, EquipmentSlot, Shop, ShopType, ShopItem } from './types';
+import {
+  RealmType,
+  Item,
+  ItemType,
+  CultivationArt,
+  ItemRarity,
+  SectRank,
+  SecretRealm,
+  Recipe,
+  Talent,
+  Title,
+  EncounterEvent,
+  ExplorationLocation,
+  Achievement,
+  PetTemplate,
+  PetSkill,
+  LotteryPrize,
+  EquipmentSlot,
+  Shop,
+  ShopType,
+  ShopItem,
+} from './types';
 
 export const REALM_ORDER = [
   RealmType.QiRefining,
@@ -8,32 +28,91 @@ export const REALM_ORDER = [
   RealmType.NascentSoul,
   RealmType.SpiritSevering,
   RealmType.VoidRefining,
-  RealmType.ImmortalAscension
+  RealmType.ImmortalAscension,
 ];
 
-export const REALM_DATA: Record<RealmType, {
-  baseMaxHp: number;
-  baseAttack: number;
-  baseDefense: number;
-  baseSpirit: number; // 神识
-  basePhysique: number; // 体魄
-  baseSpeed: number; // 速度
-  maxExpBase: number
-}> = {
-  [RealmType.QiRefining]: { baseMaxHp: 100, baseAttack: 10, baseDefense: 5, baseSpirit: 5, basePhysique: 10, baseSpeed: 10, maxExpBase: 100 },
-  [RealmType.Foundation]: { baseMaxHp: 500, baseAttack: 50, baseDefense: 25, baseSpirit: 25, basePhysique: 50, baseSpeed: 30, maxExpBase: 1000 },
-  [RealmType.GoldenCore]: { baseMaxHp: 2500, baseAttack: 200, baseDefense: 100, baseSpirit: 100, basePhysique: 200, baseSpeed: 50, maxExpBase: 5000 },
-  [RealmType.NascentSoul]: { baseMaxHp: 10000, baseAttack: 1000, baseDefense: 500, baseSpirit: 500, basePhysique: 1000, baseSpeed: 100, maxExpBase: 25000 },
-  [RealmType.SpiritSevering]: { baseMaxHp: 50000, baseAttack: 5000, baseDefense: 2500, baseSpirit: 2500, basePhysique: 5000, baseSpeed: 200, maxExpBase: 100000 },
-  [RealmType.VoidRefining]: { baseMaxHp: 200000, baseAttack: 20000, baseDefense: 10000, baseSpirit: 10000, basePhysique: 20000, baseSpeed: 300, maxExpBase: 500000 },
-  [RealmType.ImmortalAscension]: { baseMaxHp: 1000000, baseAttack: 100000, baseDefense: 50000, baseSpirit: 50000, basePhysique: 100000, baseSpeed: 500, maxExpBase: 9999999 },
+export const REALM_DATA: Record<
+  RealmType,
+  {
+    baseMaxHp: number;
+    baseAttack: number;
+    baseDefense: number;
+    baseSpirit: number; // 神识
+    basePhysique: number; // 体魄
+    baseSpeed: number; // 速度
+    maxExpBase: number;
+  }
+> = {
+  [RealmType.QiRefining]: {
+    baseMaxHp: 100,
+    baseAttack: 10,
+    baseDefense: 5,
+    baseSpirit: 5,
+    basePhysique: 10,
+    baseSpeed: 10,
+    maxExpBase: 100,
+  },
+  [RealmType.Foundation]: {
+    baseMaxHp: 500,
+    baseAttack: 50,
+    baseDefense: 25,
+    baseSpirit: 25,
+    basePhysique: 50,
+    baseSpeed: 30,
+    maxExpBase: 1000,
+  },
+  [RealmType.GoldenCore]: {
+    baseMaxHp: 2500,
+    baseAttack: 200,
+    baseDefense: 100,
+    baseSpirit: 100,
+    basePhysique: 200,
+    baseSpeed: 50,
+    maxExpBase: 5000,
+  },
+  [RealmType.NascentSoul]: {
+    baseMaxHp: 10000,
+    baseAttack: 1000,
+    baseDefense: 500,
+    baseSpirit: 500,
+    basePhysique: 1000,
+    baseSpeed: 100,
+    maxExpBase: 25000,
+  },
+  [RealmType.SpiritSevering]: {
+    baseMaxHp: 50000,
+    baseAttack: 5000,
+    baseDefense: 2500,
+    baseSpirit: 2500,
+    basePhysique: 5000,
+    baseSpeed: 200,
+    maxExpBase: 100000,
+  },
+  [RealmType.VoidRefining]: {
+    baseMaxHp: 200000,
+    baseAttack: 20000,
+    baseDefense: 10000,
+    baseSpirit: 10000,
+    basePhysique: 20000,
+    baseSpeed: 300,
+    maxExpBase: 500000,
+  },
+  [RealmType.ImmortalAscension]: {
+    baseMaxHp: 1000000,
+    baseAttack: 100000,
+    baseDefense: 50000,
+    baseSpirit: 50000,
+    basePhysique: 100000,
+    baseSpeed: 500,
+    maxExpBase: 9999999,
+  },
 };
 
 export const RARITY_MULTIPLIERS: Record<ItemRarity, number> = {
-  '普通': 1,
-  '稀有': 1.5,
-  '传说': 2.5,
-  '仙品': 5.0
+  普通: 1,
+  稀有: 1.5,
+  传说: 2.5,
+  仙品: 5.0,
 };
 
 export const CULTIVATION_ARTS: CultivationArt[] = [
@@ -44,7 +123,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '基础的呼吸吐纳之术，微弱提升修炼速度。',
     realmRequirement: RealmType.QiRefining,
     cost: 0,
-    effects: { expRate: 0.1 }
+    effects: { expRate: 0.1 },
   },
   {
     id: 'art-iron-skin',
@@ -53,7 +132,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '锤炼皮肉，使其坚如凡铁。永久提升防御。',
     realmRequirement: RealmType.QiRefining,
     cost: 50,
-    effects: { defense: 5, hp: 20 }
+    effects: { defense: 5, hp: 20 },
   },
   {
     id: 'art-spirit-cloud',
@@ -62,7 +141,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '云灵宗入门心法，吸纳灵气如云雾缭绕。',
     realmRequirement: RealmType.QiRefining,
     cost: 100,
-    effects: { expRate: 0.25, attack: 5 }
+    effects: { expRate: 0.25, attack: 5 },
   },
   {
     id: 'art-fiery-fist',
@@ -71,7 +150,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '将灵气转化为烈火附着于双拳。大幅提升攻击力。',
     realmRequirement: RealmType.Foundation,
     cost: 300,
-    effects: { attack: 30 }
+    effects: { attack: 30 },
   },
   {
     id: 'art-jade-bone',
@@ -80,7 +159,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '锻骨如玉，百毒不侵。大幅提升气血与防御。',
     realmRequirement: RealmType.Foundation,
     cost: 500,
-    effects: { defense: 20, hp: 100 }
+    effects: { defense: 20, hp: 100 },
   },
   {
     id: 'art-pure-yang',
@@ -89,7 +168,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '至刚至阳的高深心法，修炼速度极快。',
     realmRequirement: RealmType.GoldenCore,
     cost: 2000,
-    effects: { expRate: 0.5, attack: 50 }
+    effects: { expRate: 0.5, attack: 50 },
   },
   {
     id: 'art-thunder-sword',
@@ -98,7 +177,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '引九天神雷入剑，威力绝伦，若是肉身不够强横恐遭反噬。',
     realmRequirement: RealmType.GoldenCore,
     cost: 3000,
-    effects: { attack: 150 }
+    effects: { attack: 150 },
   },
   {
     id: 'art-immortal-life',
@@ -107,7 +186,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '上古木系神功，生生不息，气血悠长。',
     realmRequirement: RealmType.NascentSoul,
     cost: 8000,
-    effects: { expRate: 0.6, hp: 2000 }
+    effects: { expRate: 0.6, hp: 2000 },
   },
   {
     id: 'art-void-body',
@@ -116,7 +195,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '炼化虚空之力入体，肉身成圣。',
     realmRequirement: RealmType.SpiritSevering,
     cost: 20000,
-    effects: { defense: 500, attack: 500, hp: 5000 }
+    effects: { defense: 500, attack: 500, hp: 5000 },
   },
   {
     id: 'art-wind-step',
@@ -125,7 +204,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '身法如风，行动迅捷。提升攻击和速度。',
     realmRequirement: RealmType.QiRefining,
     cost: 80,
-    effects: { attack: 8 }
+    effects: { attack: 8 },
   },
   {
     id: 'art-water-mirror',
@@ -134,7 +213,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '心如止水，明镜高悬。提升修炼速度和防御。',
     realmRequirement: RealmType.Foundation,
     cost: 400,
-    effects: { expRate: 0.3, defense: 15 }
+    effects: { expRate: 0.3, defense: 15 },
   },
   {
     id: 'art-earth-shield',
@@ -143,7 +222,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '引大地之力护体，防御力极强。',
     realmRequirement: RealmType.Foundation,
     cost: 600,
-    effects: { defense: 40, hp: 150 }
+    effects: { defense: 40, hp: 150 },
   },
   {
     id: 'art-ice-soul',
@@ -152,7 +231,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '心如寒冰，不为外物所动。大幅提升修炼速度。',
     realmRequirement: RealmType.GoldenCore,
     cost: 2500,
-    effects: { expRate: 0.6, defense: 30 }
+    effects: { expRate: 0.6, defense: 30 },
   },
   {
     id: 'art-dragon-fist',
@@ -161,7 +240,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '拳如真龙，威力无穷。大幅提升攻击力。',
     realmRequirement: RealmType.GoldenCore,
     cost: 3500,
-    effects: { attack: 200 }
+    effects: { attack: 200 },
   },
   {
     id: 'art-phoenix-rebirth',
@@ -170,7 +249,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '如凤凰涅槃，每次突破都能获得巨大提升。',
     realmRequirement: RealmType.NascentSoul,
     cost: 10000,
-    effects: { expRate: 0.7, hp: 3000, attack: 100 }
+    effects: { expRate: 0.7, hp: 3000, attack: 100 },
   },
   {
     id: 'art-star-destruction',
@@ -179,7 +258,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '引星辰之力，破灭万物。攻击力达到极致。',
     realmRequirement: RealmType.SpiritSevering,
     cost: 25000,
-    effects: { attack: 1000, defense: 200 }
+    effects: { attack: 1000, defense: 200 },
   },
   {
     id: 'art-universe-devour',
@@ -188,8 +267,8 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '吞噬天地灵气，修炼速度达到极致。',
     realmRequirement: RealmType.VoidRefining,
     cost: 50000,
-    effects: { expRate: 1.0, attack: 500, defense: 500, hp: 10000 }
-  }
+    effects: { expRate: 1.0, attack: 500, defense: 500, hp: 10000 },
+  },
 ];
 
 export const INITIAL_ITEMS: Item[] = [
@@ -199,7 +278,7 @@ export const INITIAL_ITEMS: Item[] = [
     type: ItemType.Material,
     description: '含有少量灵气的碎裂灵石。',
     quantity: 5,
-    rarity: '普通'
+    rarity: '普通',
   },
   {
     id: 'refining-stone',
@@ -207,7 +286,7 @@ export const INITIAL_ITEMS: Item[] = [
     type: ItemType.Material,
     description: '用于强化法宝的基础材料。',
     quantity: 10,
-    rarity: '普通'
+    rarity: '普通',
   },
   {
     id: 'healing-herb',
@@ -216,7 +295,7 @@ export const INITIAL_ITEMS: Item[] = [
     description: '常见的草药，用于治疗轻微外伤。',
     quantity: 2,
     rarity: '普通',
-    effect: { hp: 20 }
+    effect: { hp: 20 },
   },
   {
     id: 'spirit-gathering-grass',
@@ -224,7 +303,7 @@ export const INITIAL_ITEMS: Item[] = [
     type: ItemType.Herb,
     description: '吸收天地灵气的草药，炼制聚气丹的主材。',
     quantity: 5,
-    rarity: '普通'
+    rarity: '普通',
   },
   {
     id: 'iron-sword',
@@ -236,7 +315,7 @@ export const INITIAL_ITEMS: Item[] = [
     level: 0,
     isEquippable: true,
     equipmentSlot: EquipmentSlot.Weapon,
-    effect: { attack: 5 }
+    effect: { attack: 5 },
   },
   {
     id: 'cloth-robe',
@@ -248,7 +327,7 @@ export const INITIAL_ITEMS: Item[] = [
     level: 0,
     isEquippable: true,
     equipmentSlot: EquipmentSlot.Chest,
-    effect: { defense: 3, hp: 10 }
+    effect: { defense: 3, hp: 10 },
   },
 ];
 
@@ -262,69 +341,84 @@ export const PILL_RECIPES: Recipe[] = [
       type: ItemType.Pill,
       description: '短时间内大幅提升修炼速度（瞬间获得修为）。',
       rarity: '普通',
-      effect: { exp: 50 }
-    }
+      effect: { exp: 50 },
+    },
   },
   {
     name: '回春丹',
     cost: 20,
-    ingredients: [{ name: '止血草', qty: 3 }, { name: '聚灵草', qty: 1 }],
+    ingredients: [
+      { name: '止血草', qty: 3 },
+      { name: '聚灵草', qty: 1 },
+    ],
     result: {
       name: '回春丹',
       type: ItemType.Pill,
       description: '疗伤圣药，大幅恢复气血。',
       rarity: '稀有',
-      effect: { hp: 200 }
-    }
+      effect: { hp: 200 },
+    },
   },
   {
     name: '洗髓丹',
     cost: 100,
-    ingredients: [{ name: '紫猴花', qty: 2 }, { name: '天灵果', qty: 1 }],
+    ingredients: [
+      { name: '紫猴花', qty: 2 },
+      { name: '天灵果', qty: 1 },
+    ],
     result: {
       name: '洗髓丹',
       type: ItemType.Pill,
       description: '易筋洗髓，脱胎换骨。永久增加少量最大生命值。',
       rarity: '稀有',
-      effect: { hp: 50 } // Treated as permanent in App logic special case or simple maxHp boost
-    }
+      effect: { hp: 50 }, // Treated as permanent in App logic special case or simple maxHp boost
+    },
   },
   {
     name: '筑基丹',
     cost: 500,
-    ingredients: [{ name: '千年人参', qty: 2 }, { name: '妖兽内丹', qty: 1 }],
+    ingredients: [
+      { name: '千年人参', qty: 2 },
+      { name: '妖兽内丹', qty: 1 },
+    ],
     result: {
       name: '筑基丹',
       type: ItemType.Pill,
       description: '增加突破到筑基期的几率。服用后获得海量修为。',
       rarity: '传说',
-      effect: { exp: 500 }
-    }
+      effect: { exp: 500 },
+    },
   },
   {
     name: '龙血丹',
     cost: 2000,
-    ingredients: [{ name: '龙鳞果', qty: 3 }, { name: '高阶妖丹', qty: 2 }],
+    ingredients: [
+      { name: '龙鳞果', qty: 3 },
+      { name: '高阶妖丹', qty: 2 },
+    ],
     result: {
       name: '龙血丹',
       type: ItemType.Pill,
       description: '蕴含一丝真龙之血，服用后气血如龙。大幅增加气血上限。',
       rarity: '传说',
-      effect: { hp: 500 }
-    }
+      effect: { hp: 500 },
+    },
   },
   {
     name: '九转金丹',
     cost: 5000,
-    ingredients: [{ name: '万年灵乳', qty: 1 }, { name: '九叶芝草', qty: 1 }],
+    ingredients: [
+      { name: '万年灵乳', qty: 1 },
+      { name: '九叶芝草', qty: 1 },
+    ],
     result: {
       name: '九转金丹',
       type: ItemType.Pill,
       description: '传说中的仙丹，服用后甚至能让凡人立地飞升。',
       rarity: '仙品',
-      effect: { exp: 5000, attack: 10, defense: 10 }
-    }
-  }
+      effect: { exp: 5000, attack: 10, defense: 10 },
+    },
+  },
 ];
 
 // 可通过历练获得的额外丹方（这些不会在初始炼丹面板中显示，需要通过使用丹方物品解锁）
@@ -332,63 +426,86 @@ export const DISCOVERABLE_RECIPES: Recipe[] = [
   {
     name: '凝神丹',
     cost: 150,
-    ingredients: [{ name: '凝神花', qty: 3 }, { name: '聚灵草', qty: 2 }],
+    ingredients: [
+      { name: '凝神花', qty: 3 },
+      { name: '聚灵草', qty: 2 },
+    ],
     result: {
       name: '凝神丹',
       type: ItemType.Pill,
       description: '凝神静气，提升神识。永久增加神识属性。',
       rarity: '稀有',
-      effect: { spirit: 20 }
-    }
+      effect: { spirit: 20 },
+    },
   },
   {
     name: '强体丹',
     cost: 200,
-    ingredients: [{ name: '血参', qty: 2 }, { name: '回气草', qty: 3 }],
+    ingredients: [
+      { name: '血参', qty: 2 },
+      { name: '回气草', qty: 3 },
+    ],
     result: {
       name: '强体丹',
       type: ItemType.Pill,
       description: '强身健体，提升体魄。永久增加体魄属性。',
       rarity: '稀有',
-      effect: { physique: 20 }
-    }
+      effect: { physique: 20 },
+    },
   },
   {
     name: '破境丹',
     cost: 800,
-    ingredients: [{ name: '千年灵芝', qty: 1 }, { name: '妖兽内丹', qty: 2 }],
+    ingredients: [
+      { name: '千年灵芝', qty: 1 },
+      { name: '妖兽内丹', qty: 2 },
+    ],
     result: {
       name: '破境丹',
       type: ItemType.Pill,
       description: '突破境界的辅助丹药，大幅提升修为。',
       rarity: '传说',
-      effect: { exp: 1000 }
-    }
+      effect: { exp: 1000 },
+    },
   },
   {
     name: '仙灵丹',
     cost: 3000,
-    ingredients: [{ name: '万年仙草', qty: 1 }, { name: '高阶妖丹', qty: 3 }],
+    ingredients: [
+      { name: '万年仙草', qty: 1 },
+      { name: '高阶妖丹', qty: 3 },
+    ],
     result: {
       name: '仙灵丹',
       type: ItemType.Pill,
       description: '仙家灵丹，服用后修为与属性大幅提升。',
       rarity: '传说',
-      effect: { exp: 2000, spirit: 50, physique: 50 }
-    }
+      effect: { exp: 2000, spirit: 50, physique: 50 },
+    },
   },
   {
     name: '天元丹',
     cost: 10000,
-    ingredients: [{ name: '万年灵乳', qty: 2 }, { name: '九叶芝草', qty: 2 }, { name: '龙鳞果', qty: 5 }],
+    ingredients: [
+      { name: '万年灵乳', qty: 2 },
+      { name: '九叶芝草', qty: 2 },
+      { name: '龙鳞果', qty: 5 },
+    ],
     result: {
       name: '天元丹',
       type: ItemType.Pill,
       description: '天元级别的仙丹，服用后全属性大幅提升。',
       rarity: '仙品',
-      effect: { exp: 10000, attack: 50, defense: 50, spirit: 100, physique: 100, speed: 30 }
-    }
-  }
+      effect: {
+        exp: 10000,
+        attack: 50,
+        defense: 50,
+        spirit: 100,
+        physique: 100,
+        speed: 30,
+      },
+    },
+  },
 ];
 
 // Upgrade Constants
@@ -401,11 +518,16 @@ export const UPGRADE_STONE_SUCCESS_BONUS = 0.1; // 每颗强化石提高10%成�
 // Returns percentage increase (0.1 = 10%)
 export const getUpgradeMultiplier = (rarity: ItemRarity = '普通') => {
   switch (rarity) {
-    case '普通': return 0.10;
-    case '稀有': return 0.15;
-    case '传说': return 0.20;
-    case '仙品': return 0.25;
-    default: return 0.10;
+    case '普通':
+      return 0.1;
+    case '稀有':
+      return 0.15;
+    case '传说':
+      return 0.2;
+    case '仙品':
+      return 0.25;
+    default:
+      return 0.1;
   }
 };
 
@@ -423,36 +545,106 @@ export const SECTS: SectInfo[] = [
     id: 'sect-cloud',
     name: '云灵宗',
     description: '正道大宗，门风清正，适合大部分修士。',
-    reqRealm: RealmType.QiRefining
+    reqRealm: RealmType.QiRefining,
   },
   {
     id: 'sect-fire',
     name: '烈阳宗',
     description: '坐落于火山之上，专修火法，行事霸道。',
-    reqRealm: RealmType.Foundation
+    reqRealm: RealmType.Foundation,
   },
   {
     id: 'sect-sword',
     name: '万剑门',
     description: '一剑破万法。门徒皆为剑痴，攻击力极强。',
-    reqRealm: RealmType.Foundation
-  }
+    reqRealm: RealmType.Foundation,
+  },
 ];
 
-export const SECT_RANK_REQUIREMENTS: Record<SectRank, { contribution: number; realmIndex: number }> = {
+export const SECT_RANK_REQUIREMENTS: Record<
+  SectRank,
+  { contribution: number; realmIndex: number }
+> = {
   [SectRank.Outer]: { contribution: 0, realmIndex: 0 },
   [SectRank.Inner]: { contribution: 500, realmIndex: 1 }, // Foundation
   [SectRank.Core]: { contribution: 2000, realmIndex: 2 }, // Golden Core
   [SectRank.Elder]: { contribution: 10000, realmIndex: 3 }, // Nascent Soul
 };
 
-export const SECT_SHOP_ITEMS: { name: string; cost: number; item: Omit<Item, 'id'> }[] = [
-  { name: '炼器石', cost: 10, item: { name: '炼器石', type: ItemType.Material, description: '用于强化法宝的基础材料。', quantity: 1, rarity: '普通' } },
-  { name: '聚气丹', cost: 20, item: { name: '聚气丹', type: ItemType.Pill, description: '短时间内大幅提升修炼速度。', quantity: 1, rarity: '普通', effect: { exp: 50 } } },
-  { name: '紫猴花', cost: 50, item: { name: '紫猴花', type: ItemType.Herb, description: '炼制洗髓丹的材料，生长在悬崖峭壁。', quantity: 1, rarity: '稀有' } },
-  { name: '洗髓丹', cost: 100, item: { name: '洗髓丹', type: ItemType.Pill, description: '强身健体，略微提升最大气血。', quantity: 1, rarity: '稀有', effect: { hp: 50 } } },
-  { name: '筑基丹', cost: 1000, item: { name: '筑基丹', type: ItemType.Pill, description: '增加突破到筑基期的几率。', quantity: 1, rarity: '传说', effect: { exp: 500 } } },
-  { name: '高阶妖丹', cost: 500, item: { name: '高阶妖丹', type: ItemType.Material, description: '强大妖兽的内丹，灵气逼人。', quantity: 1, rarity: '稀有' } },
+export const SECT_SHOP_ITEMS: {
+  name: string;
+  cost: number;
+  item: Omit<Item, 'id'>;
+}[] = [
+  {
+    name: '炼器石',
+    cost: 10,
+    item: {
+      name: '炼器石',
+      type: ItemType.Material,
+      description: '用于强化法宝的基础材料。',
+      quantity: 1,
+      rarity: '普通',
+    },
+  },
+  {
+    name: '聚气丹',
+    cost: 20,
+    item: {
+      name: '聚气丹',
+      type: ItemType.Pill,
+      description: '短时间内大幅提升修炼速度。',
+      quantity: 1,
+      rarity: '普通',
+      effect: { exp: 50 },
+    },
+  },
+  {
+    name: '紫猴花',
+    cost: 50,
+    item: {
+      name: '紫猴花',
+      type: ItemType.Herb,
+      description: '炼制洗髓丹的材料，生长在悬崖峭壁。',
+      quantity: 1,
+      rarity: '稀有',
+    },
+  },
+  {
+    name: '洗髓丹',
+    cost: 100,
+    item: {
+      name: '洗髓丹',
+      type: ItemType.Pill,
+      description: '强身健体，略微提升最大气血。',
+      quantity: 1,
+      rarity: '稀有',
+      effect: { hp: 50 },
+    },
+  },
+  {
+    name: '筑基丹',
+    cost: 1000,
+    item: {
+      name: '筑基丹',
+      type: ItemType.Pill,
+      description: '增加突破到筑基期的几率。',
+      quantity: 1,
+      rarity: '传说',
+      effect: { exp: 500 },
+    },
+  },
+  {
+    name: '高阶妖丹',
+    cost: 500,
+    item: {
+      name: '高阶妖丹',
+      type: ItemType.Material,
+      description: '强大妖兽的内丹，灵气逼人。',
+      quantity: 1,
+      rarity: '稀有',
+    },
+  },
 ];
 
 // --- SECRET REALMS ---
@@ -461,11 +653,12 @@ export const SECRET_REALMS: SecretRealm[] = [
   {
     id: 'realm-beast-mountain',
     name: '万兽山脉',
-    description: '外围相对安全，深处盘踞着可怕的妖兽。适合炼气、筑基期修士历练。',
+    description:
+      '外围相对安全，深处盘踞着可怕的妖兽。适合炼气、筑基期修士历练。',
     minRealm: RealmType.QiRefining,
     cost: 80,
     riskLevel: '中',
-    drops: ['妖兽材料', '稀有草药', '攻击法器']
+    drops: ['妖兽材料', '稀有草药', '攻击法器'],
   },
   {
     id: 'realm-ancient-tomb',
@@ -474,7 +667,7 @@ export const SECRET_REALMS: SecretRealm[] = [
     minRealm: RealmType.Foundation,
     cost: 300,
     riskLevel: '高',
-    drops: ['剑修功法', '残破灵宝', '剑意草']
+    drops: ['剑修功法', '残破灵宝', '剑意草'],
   },
   {
     id: 'realm-thunder-purgatory',
@@ -483,8 +676,8 @@ export const SECRET_REALMS: SecretRealm[] = [
     minRealm: RealmType.GoldenCore,
     cost: 800,
     riskLevel: '极度危险',
-    drops: ['雷属性至宝', '仙品丹药材料', '天阶功法']
-  }
+    drops: ['雷属性至宝', '仙品丹药材料', '天阶功法'],
+  },
 ];
 
 // --- 角色系统：天赋 ---
@@ -495,21 +688,21 @@ export const TALENTS: Talent[] = [
     name: '凡体',
     description: '普通的修仙资质，没有任何特殊加成。',
     rarity: '普通',
-    effects: {}
+    effects: {},
   },
   {
     id: 'talent-strong-body',
     name: '强健体魄',
     description: '身体比常人强壮一些，气血略微提升。',
     rarity: '普通',
-    effects: { hp: 50 }
+    effects: { hp: 50 },
   },
   {
     id: 'talent-quick-learner',
     name: '悟性尚可',
     description: '学习能力稍强，修炼速度略微提升。',
     rarity: '普通',
-    effects: { expRate: 0.05 }
+    effects: { expRate: 0.05 },
   },
 
   // 稀有天赋（8个）
@@ -518,56 +711,63 @@ export const TALENTS: Talent[] = [
     name: '灵根',
     description: '拥有灵根，修炼速度提升10%。',
     rarity: '稀有',
-    effects: { expRate: 0.1 }
+    effects: { expRate: 0.1 },
   },
   {
     id: 'talent-iron-bone',
     name: '铁骨',
     description: '骨骼坚硬，防御力提升。',
     rarity: '稀有',
-    effects: { defense: 30, physique: 20 }
+    effects: { defense: 30, physique: 20 },
   },
   {
     id: 'talent-sharp-blade',
     name: '利刃',
     description: '天生适合使用武器，攻击力提升。',
     rarity: '稀有',
-    effects: { attack: 40 }
+    effects: { attack: 40 },
   },
   {
     id: 'talent-spirit-sense',
     name: '神识敏锐',
     description: '神识天生敏锐，神识和速度提升。',
     rarity: '稀有',
-    effects: { spirit: 25, speed: 15 }
+    effects: { spirit: 25, speed: 15 },
   },
   {
     id: 'talent-vitality',
     name: '生机勃勃',
     description: '生命力旺盛，气血上限大幅提升。',
     rarity: '稀有',
-    effects: { hp: 150, physique: 15 }
+    effects: { hp: 150, physique: 15 },
   },
   {
     id: 'talent-fast-cultivation',
     name: '修炼奇才',
     description: '修炼天赋出众，修炼速度提升15%。',
     rarity: '稀有',
-    effects: { expRate: 0.15 }
+    effects: { expRate: 0.15 },
   },
   {
     id: 'talent-lucky',
     name: '小有气运',
     description: '运气不错，幸运值提升。',
     rarity: '稀有',
-    effects: { luck: 20 }
+    effects: { luck: 20 },
   },
   {
     id: 'talent-balanced',
     name: '均衡发展',
     description: '各项属性均衡提升。',
     rarity: '稀有',
-    effects: { attack: 20, defense: 20, hp: 80, spirit: 15, physique: 15, speed: 10 }
+    effects: {
+      attack: 20,
+      defense: 20,
+      hp: 80,
+      spirit: 15,
+      physique: 15,
+      speed: 10,
+    },
   },
 
   // 传说天赋（6个）
@@ -576,42 +776,42 @@ export const TALENTS: Talent[] = [
     name: '仙体',
     description: '天生仙体，气血和防御大幅提升。',
     rarity: '传说',
-    effects: { hp: 200, defense: 50 }
+    effects: { hp: 200, defense: 50 },
   },
   {
     id: 'talent-sword-heart',
     name: '剑心',
     description: '天生剑心，攻击力大幅提升。',
     rarity: '传说',
-    effects: { attack: 100 }
+    effects: { attack: 100 },
   },
   {
     id: 'talent-thunder-body',
     name: '雷体',
     description: '拥有雷属性体质，攻击和速度大幅提升。',
     rarity: '传说',
-    effects: { attack: 80, speed: 40, spirit: 30 }
+    effects: { attack: 80, speed: 40, spirit: 30 },
   },
   {
     id: 'talent-dragon-blood',
     name: '龙血',
     description: '体内流淌着龙族血脉，气血和体魄大幅提升。',
     rarity: '传说',
-    effects: { hp: 300, physique: 50, defense: 40 }
+    effects: { hp: 300, physique: 50, defense: 40 },
   },
   {
     id: 'talent-genius',
     name: '修炼天才',
     description: '修炼天赋绝佳，修炼速度大幅提升。',
     rarity: '传说',
-    effects: { expRate: 0.25, spirit: 40 }
+    effects: { expRate: 0.25, spirit: 40 },
   },
   {
     id: 'talent-blessed',
     name: '天眷之人',
     description: '受天道眷顾，幸运值和修炼速度提升。',
     rarity: '传说',
-    effects: { luck: 35, expRate: 0.15 }
+    effects: { luck: 35, expRate: 0.15 },
   },
 
   // 仙品天赋（3个）
@@ -620,22 +820,39 @@ export const TALENTS: Talent[] = [
     name: '天运之子',
     description: '受天道眷顾，幸运值大幅提升，更容易遇到奇遇。',
     rarity: '仙品',
-    effects: { luck: 50, expRate: 0.2 }
+    effects: { luck: 50, expRate: 0.2 },
   },
   {
     id: 'talent-immortal-king',
     name: '仙王转世',
     description: '疑似仙王转世，各项属性大幅提升，修炼速度极快。',
     rarity: '仙品',
-    effects: { attack: 150, defense: 100, hp: 400, spirit: 60, physique: 60, speed: 50, expRate: 0.3 }
+    effects: {
+      attack: 150,
+      defense: 100,
+      hp: 400,
+      spirit: 60,
+      physique: 60,
+      speed: 50,
+      expRate: 0.3,
+    },
   },
   {
     id: 'talent-chaos-body',
     name: '混沌之体',
     description: '拥有传说中的混沌之体，所有属性全面提升，修炼速度极快。',
     rarity: '仙品',
-    effects: { attack: 120, defense: 80, hp: 350, spirit: 50, physique: 50, speed: 40, expRate: 0.25, luck: 30 }
-  }
+    effects: {
+      attack: 120,
+      defense: 80,
+      hp: 350,
+      spirit: 50,
+      physique: 50,
+      speed: 40,
+      expRate: 0.25,
+      luck: 30,
+    },
+  },
 ];
 
 // --- 角色系统：称号 ---
@@ -645,36 +862,36 @@ export const TITLES: Title[] = [
     name: '初入仙途',
     description: '刚刚踏入修仙之路的新人。',
     requirement: '初始称号',
-    effects: {}
+    effects: {},
   },
   {
     id: 'title-foundation',
     name: '筑基修士',
     description: '成功筑基，正式踏入修仙门槛。',
     requirement: '达到筑基期',
-    effects: { attack: 10, defense: 5 }
+    effects: { attack: 10, defense: 5 },
   },
   {
     id: 'title-golden-core',
     name: '金丹真人',
     description: '凝聚金丹，已是修仙界的中流砥柱。',
     requirement: '达到金丹期',
-    effects: { attack: 50, defense: 25, hp: 200 }
+    effects: { attack: 50, defense: 25, hp: 200 },
   },
   {
     id: 'title-nascent-soul',
     name: '元婴老祖',
     description: '修成元婴，可称一方老祖。',
     requirement: '达到元婴期',
-    effects: { attack: 200, defense: 100, hp: 1000 }
+    effects: { attack: 200, defense: 100, hp: 1000 },
   },
   {
     id: 'title-immortal',
     name: '飞升仙人',
     description: '渡劫飞升，已是真正的仙人。',
     requirement: '达到渡劫飞升',
-    effects: { attack: 1000, defense: 500, hp: 5000, expRate: 0.3 }
-  }
+    effects: { attack: 1000, defense: 500, hp: 5000, expRate: 0.3 },
+  },
 ];
 
 // --- 奇遇系统 ---
@@ -687,8 +904,8 @@ export const ENCOUNTER_EVENTS: EncounterEvent[] = [
     triggerChance: 0.3,
     rewards: {
       exp: 20,
-      items: [{ name: '聚灵草', rarity: '普通', quantity: 1 }]
-    }
+      items: [{ name: '聚灵草', rarity: '普通', quantity: 1 }],
+    },
   },
   {
     id: 'encounter-spirit-stone',
@@ -698,8 +915,8 @@ export const ENCOUNTER_EVENTS: EncounterEvent[] = [
     triggerChance: 0.15,
     rewards: {
       spiritStones: 100,
-      exp: 50
-    }
+      exp: 50,
+    },
   },
   {
     id: 'encounter-ancient-cave',
@@ -712,8 +929,8 @@ export const ENCOUNTER_EVENTS: EncounterEvent[] = [
     rewards: {
       exp: 500,
       spiritStones: 500,
-      items: [{ name: '上古功法残卷', rarity: '传说', quantity: 1 }]
-    }
+      items: [{ name: '上古功法残卷', rarity: '传说', quantity: 1 }],
+    },
   },
   {
     id: 'encounter-immortal-herb',
@@ -725,9 +942,9 @@ export const ENCOUNTER_EVENTS: EncounterEvent[] = [
     requirements: { minLuck: 50 },
     rewards: {
       exp: 2000,
-      items: [{ name: '万年仙草', rarity: '仙品', quantity: 1 }]
-    }
-  }
+      items: [{ name: '万年仙草', rarity: '仙品', quantity: 1 }],
+    },
+  },
 ];
 
 // --- 探索系统 ---
@@ -739,7 +956,7 @@ export const EXPLORATION_LOCATIONS: ExplorationLocation[] = [
     minRealm: RealmType.QiRefining,
     cost: 20,
     riskLevel: '低',
-    eventTypes: ['normal', 'lucky']
+    eventTypes: ['normal', 'lucky'],
   },
   {
     id: 'explore-mountain',
@@ -749,7 +966,7 @@ export const EXPLORATION_LOCATIONS: ExplorationLocation[] = [
     cost: 50,
     riskLevel: '中',
     eventTypes: ['normal', 'lucky'],
-    specialEncounters: ['encounter-ancient-cave']
+    specialEncounters: ['encounter-ancient-cave'],
   },
   {
     id: 'explore-abyss',
@@ -759,8 +976,8 @@ export const EXPLORATION_LOCATIONS: ExplorationLocation[] = [
     cost: 200,
     riskLevel: '高',
     eventTypes: ['normal', 'lucky', 'secret_realm'],
-    specialEncounters: ['encounter-immortal-herb']
-  }
+    specialEncounters: ['encounter-immortal-herb'],
+  },
 ];
 
 // --- 成就系统 ---
@@ -772,7 +989,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     category: 'cultivation',
     requirement: { type: 'custom', value: 1, target: 'meditate' },
     reward: { exp: 50, spiritStones: 10 },
-    rarity: '普通'
+    rarity: '普通',
   },
   {
     id: 'ach-foundation',
@@ -781,7 +998,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     category: 'cultivation',
     requirement: { type: 'realm', value: 1, target: RealmType.Foundation },
     reward: { exp: 500, spiritStones: 200, titleId: 'title-foundation' },
-    rarity: '稀有'
+    rarity: '稀有',
   },
   {
     id: 'ach-golden-core',
@@ -790,7 +1007,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     category: 'cultivation',
     requirement: { type: 'realm', value: 1, target: RealmType.GoldenCore },
     reward: { exp: 2000, spiritStones: 1000, titleId: 'title-golden-core' },
-    rarity: '传说'
+    rarity: '传说',
   },
   {
     id: 'ach-first-kill',
@@ -799,7 +1016,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     category: 'combat',
     requirement: { type: 'kill', value: 1 },
     reward: { exp: 100, spiritStones: 50 },
-    rarity: '普通'
+    rarity: '普通',
   },
   {
     id: 'ach-collector',
@@ -808,17 +1025,21 @@ export const ACHIEVEMENTS: Achievement[] = [
     category: 'collection',
     requirement: { type: 'collect', value: 10 },
     reward: { exp: 300, spiritStones: 200 },
-    rarity: '稀有'
+    rarity: '稀有',
   },
   {
     id: 'ach-immortal',
     name: '飞升成仙',
     description: '达到渡劫飞升境界',
     category: 'special',
-    requirement: { type: 'realm', value: 1, target: RealmType.ImmortalAscension },
+    requirement: {
+      type: 'realm',
+      value: 1,
+      target: RealmType.ImmortalAscension,
+    },
     reward: { exp: 10000, spiritStones: 10000, titleId: 'title-immortal' },
-    rarity: '仙品'
-  }
+    rarity: '仙品',
+  },
 ];
 
 // --- 灵宠系统 ---
@@ -828,29 +1049,29 @@ export const PET_SKILLS: PetSkill[] = [
     name: '撕咬',
     description: '基础攻击技能',
     type: 'attack',
-    effect: { damage: 10 }
+    effect: { damage: 10 },
   },
   {
     id: 'skill-heal',
     name: '治愈之光',
     description: '为主人恢复气血',
     type: 'support',
-    effect: { heal: 50 }
+    effect: { heal: 50 },
   },
   {
     id: 'skill-protect',
     name: '守护',
     description: '提升主人防御',
     type: 'defense',
-    effect: { buff: { defense: 20 } }
+    effect: { buff: { defense: 20 } },
   },
   {
     id: 'skill-blessing',
     name: '祝福',
     description: '提升主人攻击和防御',
     type: 'support',
-    effect: { buff: { attack: 30, defense: 15 } }
-  }
+    effect: { buff: { attack: 30, defense: 15 } },
+  },
 ];
 
 export const PET_TEMPLATES: PetTemplate[] = [
@@ -862,10 +1083,25 @@ export const PET_TEMPLATES: PetTemplate[] = [
     rarity: '普通',
     baseStats: { attack: 20, defense: 15, hp: 100, speed: 30 },
     skills: [
-      { id: 'skill-bite', name: '撕咬', description: '基础攻击', type: 'attack', effect: { damage: 10 } },
-      { id: 'skill-heal', name: '治愈之光', description: '恢复气血', type: 'support', effect: { heal: 50 } }
+      {
+        id: 'skill-bite',
+        name: '撕咬',
+        description: '基础攻击',
+        type: 'attack',
+        effect: { damage: 10 },
+      },
+      {
+        id: 'skill-heal',
+        name: '治愈之光',
+        description: '恢复气血',
+        type: 'support',
+        effect: { heal: 50 },
+      },
     ],
-    evolutionRequirements: { level: 10, items: [{ name: '聚灵草', quantity: 10 }] }
+    evolutionRequirements: {
+      level: 10,
+      items: [{ name: '聚灵草', quantity: 10 }],
+    },
   },
   {
     id: 'pet-thunder-tiger',
@@ -875,10 +1111,25 @@ export const PET_TEMPLATES: PetTemplate[] = [
     rarity: '稀有',
     baseStats: { attack: 50, defense: 30, hp: 200, speed: 40 },
     skills: [
-      { id: 'skill-bite', name: '撕咬', description: '基础攻击', type: 'attack', effect: { damage: 30 } },
-      { id: 'skill-thunder', name: '雷击', description: '雷属性攻击', type: 'attack', effect: { damage: 50 } }
+      {
+        id: 'skill-bite',
+        name: '撕咬',
+        description: '基础攻击',
+        type: 'attack',
+        effect: { damage: 30 },
+      },
+      {
+        id: 'skill-thunder',
+        name: '雷击',
+        description: '雷属性攻击',
+        type: 'attack',
+        effect: { damage: 50 },
+      },
     ],
-    evolutionRequirements: { level: 20, items: [{ name: '妖兽内丹', quantity: 5 }] }
+    evolutionRequirements: {
+      level: 20,
+      items: [{ name: '妖兽内丹', quantity: 5 }],
+    },
   },
   {
     id: 'pet-phoenix',
@@ -888,10 +1139,22 @@ export const PET_TEMPLATES: PetTemplate[] = [
     rarity: '仙品',
     baseStats: { attack: 200, defense: 150, hp: 1000, speed: 80 },
     skills: [
-      { id: 'skill-blessing', name: '祝福', description: '提升属性', type: 'support', effect: { buff: { attack: 50, defense: 30 } } },
-      { id: 'skill-rebirth', name: '涅槃', description: '复活主人', type: 'support', effect: { heal: 9999 } }
-    ]
-  }
+      {
+        id: 'skill-blessing',
+        name: '祝福',
+        description: '提升属性',
+        type: 'support',
+        effect: { buff: { attack: 50, defense: 30 } },
+      },
+      {
+        id: 'skill-rebirth',
+        name: '涅槃',
+        description: '复活主人',
+        type: 'support',
+        effect: { heal: 9999 },
+      },
+    ],
+  },
 ];
 
 // --- 抽奖系统 ---
@@ -903,7 +1166,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     type: 'spiritStones',
     rarity: '普通',
     weight: 35,
-    value: { spiritStones: 10 }
+    value: { spiritStones: 10 },
   },
   {
     id: 'lottery-stone-50',
@@ -911,7 +1174,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     type: 'spiritStones',
     rarity: '普通',
     weight: 25,
-    value: { spiritStones: 50 }
+    value: { spiritStones: 50 },
   },
   {
     id: 'lottery-stone-100',
@@ -919,7 +1182,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     type: 'spiritStones',
     rarity: '稀有',
     weight: 18,
-    value: { spiritStones: 100 }
+    value: { spiritStones: 100 },
   },
   {
     id: 'lottery-stone-500',
@@ -927,7 +1190,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     type: 'spiritStones',
     rarity: '稀有',
     weight: 8,
-    value: { spiritStones: 500 }
+    value: { spiritStones: 500 },
   },
   {
     id: 'lottery-stone-1000',
@@ -935,7 +1198,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     type: 'spiritStones',
     rarity: '传说',
     weight: 3,
-    value: { spiritStones: 1000 }
+    value: { spiritStones: 1000 },
   },
 
   // 普通奖励 - 修为
@@ -945,7 +1208,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     type: 'exp',
     rarity: '普通',
     weight: 30,
-    value: { exp: 50 }
+    value: { exp: 50 },
   },
   {
     id: 'lottery-exp-200',
@@ -953,7 +1216,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     type: 'exp',
     rarity: '普通',
     weight: 20,
-    value: { exp: 200 }
+    value: { exp: 200 },
   },
   {
     id: 'lottery-exp-500',
@@ -961,7 +1224,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     type: 'exp',
     rarity: '稀有',
     weight: 12,
-    value: { exp: 500 }
+    value: { exp: 500 },
   },
   {
     id: 'lottery-exp-2000',
@@ -969,7 +1232,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     type: 'exp',
     rarity: '传说',
     weight: 4,
-    value: { exp: 2000 }
+    value: { exp: 2000 },
   },
 
   // 普通奖励 - 丹药
@@ -986,9 +1249,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         description: '短时间内大幅提升修炼速度',
         quantity: 1,
         rarity: '普通',
-        effect: { exp: 50 }
-      }
-    }
+        effect: { exp: 50 },
+      },
+    },
   },
   {
     id: 'lottery-pill-qi-2',
@@ -1003,9 +1266,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         description: '短时间内大幅提升修炼速度',
         quantity: 3,
         rarity: '普通',
-        effect: { exp: 50 }
-      }
-    }
+        effect: { exp: 50 },
+      },
+    },
   },
   {
     id: 'lottery-pill-heal',
@@ -1020,9 +1283,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         description: '疗伤圣药，大幅恢复气血',
         quantity: 1,
         rarity: '稀有',
-        effect: { hp: 200 }
-      }
-    }
+        effect: { hp: 200 },
+      },
+    },
   },
   {
     id: 'lottery-pill-marrow',
@@ -1037,9 +1300,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         description: '易筋洗髓，脱胎换骨',
         quantity: 1,
         rarity: '稀有',
-        effect: { hp: 50 }
-      }
-    }
+        effect: { hp: 50 },
+      },
+    },
   },
   {
     id: 'lottery-pill-foundation',
@@ -1054,9 +1317,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         description: '增加突破到筑基期的几率',
         quantity: 1,
         rarity: '传说',
-        effect: { exp: 500 }
-      }
-    }
+        effect: { exp: 500 },
+      },
+    },
   },
   {
     id: 'lottery-pill-golden',
@@ -1071,9 +1334,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         description: '有助于凝结金丹的珍贵丹药',
         quantity: 1,
         rarity: '稀有',
-        effect: { exp: 300, spirit: 20 }
-      }
-    }
+        effect: { exp: 300, spirit: 20 },
+      },
+    },
   },
   {
     id: 'lottery-pill-soul',
@@ -1088,9 +1351,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         description: '能够凝聚神魂的珍贵丹药',
         quantity: 1,
         rarity: '传说',
-        effect: { exp: 1000, spirit: 50, hp: 300 }
-      }
-    }
+        effect: { exp: 1000, spirit: 50, hp: 300 },
+      },
+    },
   },
   {
     id: 'lottery-pill-dragon',
@@ -1105,9 +1368,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         description: '蕴含一丝真龙之血，气血如龙',
         quantity: 1,
         rarity: '传说',
-        effect: { hp: 500, attack: 20, defense: 20 }
-      }
-    }
+        effect: { hp: 500, attack: 20, defense: 20 },
+      },
+    },
   },
   {
     id: 'lottery-pill-phoenix',
@@ -1122,9 +1385,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         description: '蕴含凤凰涅槃之力的神丹',
         quantity: 1,
         rarity: '传说',
-        effect: { hp: 800, exp: 1500, attack: 30 }
-      }
-    }
+        effect: { hp: 800, exp: 1500, attack: 30 },
+      },
+    },
   },
   {
     id: 'lottery-pill-immortal',
@@ -1139,9 +1402,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         description: '传说中的仙丹，能让凡人立地飞升',
         quantity: 1,
         rarity: '仙品',
-        effect: { exp: 5000, attack: 10, defense: 10 }
-      }
-    }
+        effect: { exp: 5000, attack: 10, defense: 10 },
+      },
+    },
   },
 
   // 普通奖励 - 材料
@@ -1157,9 +1420,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         type: ItemType.Material,
         description: '用于强化法宝的基础材料',
         quantity: 5,
-        rarity: '普通'
-      }
-    }
+        rarity: '普通',
+      },
+    },
   },
   {
     id: 'lottery-material-refining-2',
@@ -1173,9 +1436,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         type: ItemType.Material,
         description: '用于强化法宝的基础材料',
         quantity: 10,
-        rarity: '普通'
-      }
-    }
+        rarity: '普通',
+      },
+    },
   },
   {
     id: 'lottery-material-upgrade-stone',
@@ -1189,9 +1452,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         type: ItemType.Material,
         description: '提高装备强化成功率的珍贵材料，每颗可提高10%成功率',
         quantity: 1,
-        rarity: '稀有'
-      }
-    }
+        rarity: '稀有',
+      },
+    },
   },
   {
     id: 'lottery-material-upgrade-stone-3',
@@ -1205,9 +1468,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         type: ItemType.Material,
         description: '提高装备强化成功率的珍贵材料，每颗可提高10%成功率',
         quantity: 3,
-        rarity: '稀有'
-      }
-    }
+        rarity: '稀有',
+      },
+    },
   },
   {
     id: 'lottery-material-spirit',
@@ -1221,9 +1484,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         type: ItemType.Material,
         description: '破碎的灵石，可用于炼器',
         quantity: 10,
-        rarity: '普通'
-      }
-    }
+        rarity: '普通',
+      },
+    },
   },
   {
     id: 'lottery-material-iron',
@@ -1237,9 +1500,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         type: ItemType.Material,
         description: '经过提炼的精铁，是炼器的好材料',
         quantity: 5,
-        rarity: '普通'
-      }
-    }
+        rarity: '普通',
+      },
+    },
   },
   {
     id: 'lottery-material-silver',
@@ -1253,9 +1516,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         type: ItemType.Material,
         description: '珍贵的炼器材料，能够提升法宝品质',
         quantity: 3,
-        rarity: '稀有'
-      }
-    }
+        rarity: '稀有',
+      },
+    },
   },
   {
     id: 'lottery-material-dragon-scale',
@@ -1269,9 +1532,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         type: ItemType.Material,
         description: '真龙身上的鳞片，是炼制顶级法宝的材料',
         quantity: 1,
-        rarity: '传说'
-      }
-    }
+        rarity: '传说',
+      },
+    },
   },
   {
     id: 'lottery-material-herb',
@@ -1285,9 +1548,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         type: ItemType.Herb,
         description: '吸收天地灵气的草药',
         quantity: 10,
-        rarity: '普通'
-      }
-    }
+        rarity: '普通',
+      },
+    },
   },
   {
     id: 'lottery-material-herb-2',
@@ -1301,9 +1564,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         type: ItemType.Herb,
         description: '吸收天地灵气的草药',
         quantity: 20,
-        rarity: '普通'
-      }
-    }
+        rarity: '普通',
+      },
+    },
   },
   {
     id: 'lottery-material-rare',
@@ -1317,9 +1580,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         type: ItemType.Herb,
         description: '炼制洗髓丹的材料',
         quantity: 3,
-        rarity: '稀有'
-      }
-    }
+        rarity: '稀有',
+      },
+    },
   },
   {
     id: 'lottery-material-snow-lotus',
@@ -1333,9 +1596,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         type: ItemType.Herb,
         description: '生长在极寒之地的灵花，药效极强',
         quantity: 2,
-        rarity: '稀有'
-      }
-    }
+        rarity: '稀有',
+      },
+    },
   },
   {
     id: 'lottery-material-legend',
@@ -1349,9 +1612,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         type: ItemType.Herb,
         description: '千年灵药，珍贵无比',
         quantity: 2,
-        rarity: '传说'
-      }
-    }
+        rarity: '传说',
+      },
+    },
   },
   {
     id: 'lottery-material-phoenix-feather',
@@ -1365,9 +1628,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         type: ItemType.Material,
         description: '凤凰身上的羽毛，蕴含涅槃之力',
         quantity: 1,
-        rarity: '传说'
-      }
-    }
+        rarity: '传说',
+      },
+    },
   },
 
   // 普通奖励 - 装备（武器）
@@ -1386,9 +1649,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Weapon,
-        effect: { attack: 10 }
-      }
-    }
+        effect: { attack: 10 },
+      },
+    },
   },
   {
     id: 'lottery-weapon-bronze',
@@ -1405,9 +1668,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Weapon,
-        effect: { attack: 12 }
-      }
-    }
+        effect: { attack: 12 },
+      },
+    },
   },
   {
     id: 'lottery-weapon-frost',
@@ -1424,9 +1687,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '稀有',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Weapon,
-        effect: { attack: 15 }
-      }
-    }
+        effect: { attack: 15 },
+      },
+    },
   },
   {
     id: 'lottery-weapon-fire',
@@ -1443,9 +1706,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '稀有',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Weapon,
-        effect: { attack: 18, hp: 20 }
-      }
-    }
+        effect: { attack: 18, hp: 20 },
+      },
+    },
   },
   {
     id: 'lottery-weapon-thunder',
@@ -1462,9 +1725,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '稀有',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Weapon,
-        effect: { attack: 20, speed: 10 }
-      }
-    }
+        effect: { attack: 20, speed: 10 },
+      },
+    },
   },
   {
     id: 'lottery-weapon-sky',
@@ -1481,9 +1744,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '传说',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Weapon,
-        effect: { attack: 200, defense: 50 }
-      }
-    }
+        effect: { attack: 200, defense: 50 },
+      },
+    },
   },
   {
     id: 'lottery-weapon-dragon',
@@ -1500,9 +1763,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '传说',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Weapon,
-        effect: { attack: 220, defense: 40, hp: 100 }
-      }
-    }
+        effect: { attack: 220, defense: 40, hp: 100 },
+      },
+    },
   },
   {
     id: 'lottery-weapon-immortal',
@@ -1519,9 +1782,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '仙品',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Weapon,
-        effect: { attack: 1000, defense: 200, hp: 500, spirit: 100 }
-      }
-    }
+        effect: { attack: 1000, defense: 200, hp: 500, spirit: 100 },
+      },
+    },
   },
 
   // 普通奖励 - 装备（防具）
@@ -1540,9 +1803,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Chest,
-        effect: { defense: 5, hp: 20 }
-      }
-    }
+        effect: { defense: 5, hp: 20 },
+      },
+    },
   },
   {
     id: 'lottery-armor-leather',
@@ -1559,9 +1822,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Chest,
-        effect: { defense: 8, hp: 30 }
-      }
-    }
+        effect: { defense: 8, hp: 30 },
+      },
+    },
   },
   {
     id: 'lottery-armor-cloud',
@@ -1578,9 +1841,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '稀有',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Chest,
-        effect: { defense: 15, hp: 50 }
-      }
-    }
+        effect: { defense: 15, hp: 50 },
+      },
+    },
   },
   {
     id: 'lottery-armor-iron',
@@ -1597,9 +1860,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '稀有',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Chest,
-        effect: { defense: 20, hp: 60 }
-      }
-    }
+        effect: { defense: 20, hp: 60 },
+      },
+    },
   },
   {
     id: 'lottery-armor-dragon',
@@ -1616,9 +1879,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '传说',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Chest,
-        effect: { defense: 150, hp: 500, attack: 30 }
-      }
-    }
+        effect: { defense: 150, hp: 500, attack: 30 },
+      },
+    },
   },
   {
     id: 'lottery-armor-phoenix',
@@ -1635,9 +1898,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '传说',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Chest,
-        effect: { defense: 140, hp: 450, speed: 30, spirit: 40 }
-      }
-    }
+        effect: { defense: 140, hp: 450, speed: 30, spirit: 40 },
+      },
+    },
   },
   {
     id: 'lottery-armor-immortal',
@@ -1654,9 +1917,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '仙品',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Chest,
-        effect: { defense: 800, hp: 3000, attack: 100, spirit: 200 }
-      }
-    }
+        effect: { defense: 800, hp: 3000, attack: 100, spirit: 200 },
+      },
+    },
   },
 
   // 普通奖励 - 装备（饰品）
@@ -1675,9 +1938,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Ring1,
-        effect: { attack: 2, defense: 2 }
-      }
-    }
+        effect: { attack: 2, defense: 2 },
+      },
+    },
   },
   {
     id: 'lottery-ring-silver',
@@ -1694,9 +1957,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Ring1,
-        effect: { attack: 4, defense: 4 }
-      }
-    }
+        effect: { attack: 4, defense: 4 },
+      },
+    },
   },
   {
     id: 'lottery-ring-gold',
@@ -1713,9 +1976,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '稀有',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Ring1,
-        effect: { attack: 15, defense: 15 }
-      }
-    }
+        effect: { attack: 15, defense: 15 },
+      },
+    },
   },
   {
     id: 'lottery-ring-star',
@@ -1732,9 +1995,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '传说',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Ring1,
-        effect: { attack: 40, defense: 40, speed: 20, spirit: 30 }
-      }
-    }
+        effect: { attack: 40, defense: 40, speed: 20, spirit: 30 },
+      },
+    },
   },
   {
     id: 'lottery-accessory-protect',
@@ -1751,9 +2014,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '稀有',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Accessory1,
-        effect: { defense: 20, hp: 100 }
-      }
-    }
+        effect: { defense: 20, hp: 100 },
+      },
+    },
   },
   {
     id: 'lottery-accessory-jade',
@@ -1770,9 +2033,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '稀有',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Accessory1,
-        effect: { spirit: 30, hp: 80, defense: 15 }
-      }
-    }
+        effect: { spirit: 30, hp: 80, defense: 15 },
+      },
+    },
   },
   {
     id: 'lottery-accessory-immortal',
@@ -1789,9 +2052,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '传说',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Accessory1,
-        effect: { attack: 50, defense: 50, hp: 300, spirit: 80 }
-      }
-    }
+        effect: { attack: 50, defense: 50, hp: 300, spirit: 80 },
+      },
+    },
   },
 
   // 普通奖励 - 法宝
@@ -1810,9 +2073,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 15, defense: 8, hp: 40, spirit: 10 }
-      }
-    }
+        effect: { attack: 15, defense: 8, hp: 40, spirit: 10 },
+      },
+    },
   },
   {
     id: 'lottery-artifact-common-2',
@@ -1829,9 +2092,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 10, defense: 15, hp: 50 }
-      }
-    }
+        effect: { attack: 10, defense: 15, hp: 50 },
+      },
+    },
   },
   {
     id: 'lottery-artifact-common-3',
@@ -1848,9 +2111,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 25, defense: 10, hp: 30 }
-      }
-    }
+        effect: { attack: 25, defense: 10, hp: 30 },
+      },
+    },
   },
   {
     id: 'lottery-artifact-rare-1',
@@ -1867,9 +2130,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '稀有',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 80, defense: 60, hp: 180, spirit: 30 }
-      }
-    }
+        effect: { attack: 80, defense: 60, hp: 180, spirit: 30 },
+      },
+    },
   },
   {
     id: 'lottery-artifact-rare-2',
@@ -1886,9 +2149,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '稀有',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 100, defense: 50, hp: 200, spirit: 20 }
-      }
-    }
+        effect: { attack: 100, defense: 50, hp: 200, spirit: 20 },
+      },
+    },
   },
   {
     id: 'lottery-artifact-rare-3',
@@ -1905,9 +2168,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '稀有',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 90, defense: 70, hp: 220 }
-      }
-    }
+        effect: { attack: 90, defense: 70, hp: 220 },
+      },
+    },
   },
   {
     id: 'lottery-artifact-legend-1',
@@ -1924,9 +2187,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '传说',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 450, defense: 250, hp: 900, spirit: 100 }
-      }
-    }
+        effect: { attack: 450, defense: 250, hp: 900, spirit: 100 },
+      },
+    },
   },
   {
     id: 'lottery-artifact-legend-2',
@@ -1943,9 +2206,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '传说',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 500, defense: 300, hp: 1000, spirit: 80 }
-      }
-    }
+        effect: { attack: 500, defense: 300, hp: 1000, spirit: 80 },
+      },
+    },
   },
   {
     id: 'lottery-artifact-legend-3',
@@ -1962,9 +2225,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '传说',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 550, defense: 250, hp: 1100, spirit: 120 }
-      }
-    }
+        effect: { attack: 550, defense: 250, hp: 1100, spirit: 120 },
+      },
+    },
   },
   {
     id: 'lottery-artifact-immortal-1',
@@ -1981,9 +2244,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '仙品',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 1800, defense: 900, hp: 4500, spirit: 500 }
-      }
-    }
+        effect: { attack: 1800, defense: 900, hp: 4500, spirit: 500 },
+      },
+    },
   },
   {
     id: 'lottery-artifact-immortal-2',
@@ -2000,9 +2263,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '仙品',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 2000, defense: 1000, hp: 5000, spirit: 600 }
-      }
-    }
+        effect: { attack: 2000, defense: 1000, hp: 5000, spirit: 600 },
+      },
+    },
   },
   {
     id: 'lottery-artifact-immortal-3',
@@ -2019,9 +2282,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '仙品',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 2200, defense: 1100, hp: 5500, spirit: 550 }
-      }
-    }
+        effect: { attack: 2200, defense: 1100, hp: 5500, spirit: 550 },
+      },
+    },
   },
 
   // 普通奖励 - 装备（头部）
@@ -2040,9 +2303,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Head,
-        effect: { defense: 3, hp: 15 }
-      }
-    }
+        effect: { defense: 3, hp: 15 },
+      },
+    },
   },
   {
     id: 'lottery-head-iron',
@@ -2059,9 +2322,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Head,
-        effect: { defense: 8, hp: 30 }
-      }
-    }
+        effect: { defense: 8, hp: 30 },
+      },
+    },
   },
   {
     id: 'lottery-head-mystic',
@@ -2078,9 +2341,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '稀有',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Head,
-        effect: { defense: 25, hp: 60, spirit: 10 }
-      }
-    }
+        effect: { defense: 25, hp: 60, spirit: 10 },
+      },
+    },
   },
   {
     id: 'lottery-head-star',
@@ -2097,9 +2360,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '传说',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Head,
-        effect: { defense: 60, hp: 150, spirit: 20, attack: 10 }
-      }
-    }
+        effect: { defense: 60, hp: 150, spirit: 20, attack: 10 },
+      },
+    },
   },
   {
     id: 'lottery-head-immortal',
@@ -2116,9 +2379,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '仙品',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Head,
-        effect: { defense: 150, hp: 400, spirit: 50, attack: 30 }
-      }
-    }
+        effect: { defense: 150, hp: 400, spirit: 50, attack: 30 },
+      },
+    },
   },
 
   // 普通奖励 - 装备（肩部）
@@ -2137,9 +2400,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Shoulder,
-        effect: { defense: 3, hp: 15 }
-      }
-    }
+        effect: { defense: 3, hp: 15 },
+      },
+    },
   },
   {
     id: 'lottery-shoulder-iron',
@@ -2156,9 +2419,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Shoulder,
-        effect: { defense: 8, hp: 30 }
-      }
-    }
+        effect: { defense: 8, hp: 30 },
+      },
+    },
   },
   {
     id: 'lottery-shoulder-mystic',
@@ -2175,9 +2438,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '稀有',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Shoulder,
-        effect: { defense: 25, hp: 60, spirit: 10 }
-      }
-    }
+        effect: { defense: 25, hp: 60, spirit: 10 },
+      },
+    },
   },
   {
     id: 'lottery-shoulder-star',
@@ -2194,9 +2457,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '传说',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Shoulder,
-        effect: { defense: 60, hp: 150, spirit: 20, attack: 10 }
-      }
-    }
+        effect: { defense: 60, hp: 150, spirit: 20, attack: 10 },
+      },
+    },
   },
   {
     id: 'lottery-shoulder-immortal',
@@ -2213,9 +2476,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '仙品',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Shoulder,
-        effect: { defense: 150, hp: 400, spirit: 50, attack: 30 }
-      }
-    }
+        effect: { defense: 150, hp: 400, spirit: 50, attack: 30 },
+      },
+    },
   },
 
   // 普通奖励 - 装备（手套）
@@ -2234,9 +2497,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Gloves,
-        effect: { defense: 3, hp: 15 }
-      }
-    }
+        effect: { defense: 3, hp: 15 },
+      },
+    },
   },
   {
     id: 'lottery-gloves-iron',
@@ -2253,9 +2516,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Gloves,
-        effect: { defense: 8, hp: 30 }
-      }
-    }
+        effect: { defense: 8, hp: 30 },
+      },
+    },
   },
   {
     id: 'lottery-gloves-mystic',
@@ -2272,9 +2535,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '稀有',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Gloves,
-        effect: { defense: 25, hp: 60, spirit: 10 }
-      }
-    }
+        effect: { defense: 25, hp: 60, spirit: 10 },
+      },
+    },
   },
   {
     id: 'lottery-gloves-star',
@@ -2291,9 +2554,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '传说',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Gloves,
-        effect: { defense: 60, hp: 150, spirit: 20, attack: 10 }
-      }
-    }
+        effect: { defense: 60, hp: 150, spirit: 20, attack: 10 },
+      },
+    },
   },
   {
     id: 'lottery-gloves-immortal',
@@ -2310,9 +2573,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '仙品',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Gloves,
-        effect: { defense: 150, hp: 400, spirit: 50, attack: 30 }
-      }
-    }
+        effect: { defense: 150, hp: 400, spirit: 50, attack: 30 },
+      },
+    },
   },
 
   // 普通奖励 - 装备（裤腿）
@@ -2331,9 +2594,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Legs,
-        effect: { defense: 4, hp: 18 }
-      }
-    }
+        effect: { defense: 4, hp: 18 },
+      },
+    },
   },
   {
     id: 'lottery-legs-iron',
@@ -2350,9 +2613,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Legs,
-        effect: { defense: 10, hp: 40 }
-      }
-    }
+        effect: { defense: 10, hp: 40 },
+      },
+    },
   },
   {
     id: 'lottery-legs-mystic',
@@ -2369,9 +2632,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '稀有',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Legs,
-        effect: { defense: 30, hp: 80 }
-      }
-    }
+        effect: { defense: 30, hp: 80 },
+      },
+    },
   },
   {
     id: 'lottery-legs-star',
@@ -2388,9 +2651,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '传说',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Legs,
-        effect: { defense: 75, hp: 200, attack: 15 }
-      }
-    }
+        effect: { defense: 75, hp: 200, attack: 15 },
+      },
+    },
   },
   {
     id: 'lottery-legs-immortal',
@@ -2407,9 +2670,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '仙品',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Legs,
-        effect: { defense: 180, hp: 500, spirit: 60 }
-      }
-    }
+        effect: { defense: 180, hp: 500, spirit: 60 },
+      },
+    },
   },
 
   // 普通奖励 - 装备（鞋子）
@@ -2428,9 +2691,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Boots,
-        effect: { defense: 3, speed: 2 }
-      }
-    }
+        effect: { defense: 3, speed: 2 },
+      },
+    },
   },
   {
     id: 'lottery-boots-iron',
@@ -2447,9 +2710,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Boots,
-        effect: { defense: 8, speed: 5 }
-      }
-    }
+        effect: { defense: 8, speed: 5 },
+      },
+    },
   },
   {
     id: 'lottery-boots-mystic',
@@ -2466,9 +2729,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '稀有',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Boots,
-        effect: { defense: 25, speed: 12 }
-      }
-    }
+        effect: { defense: 25, speed: 12 },
+      },
+    },
   },
   {
     id: 'lottery-boots-star',
@@ -2485,9 +2748,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '传说',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Boots,
-        effect: { defense: 60, hp: 150, speed: 25 }
-      }
-    }
+        effect: { defense: 60, hp: 150, speed: 25 },
+      },
+    },
   },
   {
     id: 'lottery-boots-immortal',
@@ -2504,9 +2767,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '仙品',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Boots,
-        effect: { defense: 150, hp: 400, speed: 60 }
-      }
-    }
+        effect: { defense: 150, hp: 400, speed: 60 },
+      },
+    },
   },
 
   // 普通奖励 - 灵宠
@@ -2516,7 +2779,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     type: 'pet',
     rarity: '普通',
     weight: 5,
-    value: { petId: 'pet-spirit-fox' }
+    value: { petId: 'pet-spirit-fox' },
   },
   {
     id: 'lottery-pet-tiger',
@@ -2524,7 +2787,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     type: 'pet',
     rarity: '稀有',
     weight: 3,
-    value: { petId: 'pet-thunder-tiger' }
+    value: { petId: 'pet-thunder-tiger' },
   },
   {
     id: 'lottery-pet-phoenix',
@@ -2532,7 +2795,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     type: 'pet',
     rarity: '仙品',
     weight: 1,
-    value: { petId: 'pet-phoenix' }
+    value: { petId: 'pet-phoenix' },
   },
 
   // 普通奖励 - 抽奖券
@@ -2542,7 +2805,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     type: 'ticket',
     rarity: '普通',
     weight: 15,
-    value: { tickets: 1 }
+    value: { tickets: 1 },
   },
   {
     id: 'lottery-ticket-3',
@@ -2550,7 +2813,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     type: 'ticket',
     rarity: '稀有',
     weight: 6,
-    value: { tickets: 3 }
+    value: { tickets: 3 },
   },
   {
     id: 'lottery-ticket-5',
@@ -2558,8 +2821,8 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     type: 'ticket',
     rarity: '传说',
     weight: 2,
-    value: { tickets: 5 }
-  }
+    value: { tickets: 5 },
+  },
 ];
 
 // --- 商店系统 ---
@@ -2579,7 +2842,7 @@ export const SHOPS: Shop[] = [
         rarity: '普通',
         price: 10,
         sellPrice: 3,
-        effect: { hp: 20 }
+        effect: { hp: 20 },
       },
       {
         id: 'shop-material-1',
@@ -2588,7 +2851,7 @@ export const SHOPS: Shop[] = [
         description: '用于强化法宝的基础材料。',
         rarity: '普通',
         price: 15,
-        sellPrice: 5
+        sellPrice: 5,
       },
       {
         id: 'shop-pill-1',
@@ -2598,7 +2861,7 @@ export const SHOPS: Shop[] = [
         rarity: '普通',
         price: 30,
         sellPrice: 10,
-        effect: { exp: 50 }
+        effect: { exp: 50 },
       },
       {
         id: 'shop-weapon-1',
@@ -2610,9 +2873,9 @@ export const SHOPS: Shop[] = [
         sellPrice: 15,
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Weapon,
-        effect: { attack: 3 }
-      }
-    ]
+        effect: { attack: 3 },
+      },
+    ],
   },
   {
     id: 'shop-city',
@@ -2627,7 +2890,7 @@ export const SHOPS: Shop[] = [
         description: '吸收天地灵气的草药，炼制聚气丹的主材。',
         rarity: '普通',
         price: 20,
-        sellPrice: 7
+        sellPrice: 7,
       },
       {
         id: 'shop-pill-2',
@@ -2637,7 +2900,7 @@ export const SHOPS: Shop[] = [
         rarity: '稀有',
         price: 100,
         sellPrice: 30,
-        effect: { hp: 200 }
+        effect: { hp: 200 },
       },
       {
         id: 'shop-weapon-2',
@@ -2649,7 +2912,7 @@ export const SHOPS: Shop[] = [
         sellPrice: 45,
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Weapon,
-        effect: { attack: 10 }
+        effect: { attack: 10 },
       },
       {
         id: 'shop-armor-1',
@@ -2661,7 +2924,7 @@ export const SHOPS: Shop[] = [
         sellPrice: 36,
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Chest,
-        effect: { defense: 5, hp: 20 }
+        effect: { defense: 5, hp: 20 },
       },
       {
         id: 'shop-ring-1',
@@ -2673,9 +2936,9 @@ export const SHOPS: Shop[] = [
         sellPrice: 24,
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Ring1,
-        effect: { attack: 2, defense: 2 }
-      }
-    ]
+        effect: { attack: 2, defense: 2 },
+      },
+    ],
   },
   {
     id: 'shop-sect',
@@ -2692,7 +2955,7 @@ export const SHOPS: Shop[] = [
         price: 500,
         sellPrice: 150,
         effect: { hp: 50 },
-        minRealm: RealmType.Foundation
+        minRealm: RealmType.Foundation,
       },
       {
         id: 'shop-weapon-3',
@@ -2705,7 +2968,7 @@ export const SHOPS: Shop[] = [
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Weapon,
         effect: { attack: 15 },
-        minRealm: RealmType.Foundation
+        minRealm: RealmType.Foundation,
       },
       {
         id: 'shop-armor-2',
@@ -2718,7 +2981,7 @@ export const SHOPS: Shop[] = [
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Chest,
         effect: { defense: 15, hp: 50 },
-        minRealm: RealmType.Foundation
+        minRealm: RealmType.Foundation,
       },
       {
         id: 'shop-pill-4',
@@ -2729,7 +2992,7 @@ export const SHOPS: Shop[] = [
         price: 2000,
         sellPrice: 600,
         effect: { exp: 500 },
-        minRealm: RealmType.QiRefining
+        minRealm: RealmType.QiRefining,
       },
       {
         id: 'shop-weapon-legend',
@@ -2742,7 +3005,7 @@ export const SHOPS: Shop[] = [
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Weapon,
         effect: { attack: 200, defense: 50 },
-        minRealm: RealmType.GoldenCore
+        minRealm: RealmType.GoldenCore,
       },
       {
         id: 'shop-armor-legend',
@@ -2755,7 +3018,7 @@ export const SHOPS: Shop[] = [
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Chest,
         effect: { defense: 150, hp: 500, attack: 30 },
-        minRealm: RealmType.NascentSoul
+        minRealm: RealmType.NascentSoul,
       },
       {
         id: 'shop-accessory-1',
@@ -2768,7 +3031,7 @@ export const SHOPS: Shop[] = [
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Accessory1,
         effect: { defense: 20, hp: 100 },
-        minRealm: RealmType.GoldenCore
+        minRealm: RealmType.GoldenCore,
       },
       {
         id: 'shop-weapon-immortal',
@@ -2781,7 +3044,7 @@ export const SHOPS: Shop[] = [
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Weapon,
         effect: { attack: 1000, defense: 200, hp: 500 },
-        minRealm: RealmType.SpiritSevering
+        minRealm: RealmType.SpiritSevering,
       },
       {
         id: 'shop-armor-immortal',
@@ -2794,8 +3057,8 @@ export const SHOPS: Shop[] = [
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Chest,
         effect: { defense: 800, hp: 2000, attack: 100 },
-        minRealm: RealmType.SpiritSevering
-      }
-    ]
-  }
+        minRealm: RealmType.SpiritSevering,
+      },
+    ],
+  },
 ];

@@ -15,7 +15,7 @@ function getProxyTarget() {
       // 如果解析失败，使用默认值
     }
   }
-  
+
   // 根据提供商选择目标
   const provider = process.env.VITE_AI_PROVIDER || 'siliconflow';
   switch (provider) {
@@ -49,12 +49,12 @@ export default async function handler(req, res) {
     const apiPath = req.url.replace(/^\/api/, '') || '/v1/chat/completions';
     const targetBase = getProxyTarget();
     const targetUrl = `${targetBase}${apiPath}`;
-    
+
     const response = await fetch(targetUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': req.headers.authorization || '',
+        Authorization: req.headers.authorization || '',
       },
       body: JSON.stringify(req.body),
     });
@@ -65,9 +65,9 @@ export default async function handler(req, res) {
     return res.status(response.status).json(data);
   } catch (error) {
     console.error('Proxy error:', error);
-    return res.status(500).json({ 
-      error: 'Proxy request failed', 
-      message: error.message 
+    return res.status(500).json({
+      error: 'Proxy request failed',
+      message: error.message,
     });
   }
 }
@@ -78,4 +78,3 @@ export const config = {
     bodyParser: true,
   },
 };
-

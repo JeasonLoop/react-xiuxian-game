@@ -2,37 +2,53 @@ import { Item, ItemType, ItemRarity, EquipmentSlot } from '../types';
 import { RARITY_MULTIPLIERS } from '../constants';
 
 // 已知物品的效果映射表（确保描述和实际效果一致）
-export const KNOWN_ITEM_EFFECTS: Record<string, { effect?: any; permanentEffect?: any }> = {
-  '止血草': { effect: { hp: 20 } },
-  '聚灵草': { effect: {} },
-  '回气草': { effect: { hp: 30 } },
-  '凝神花': { effect: { hp: 50, spirit: 5 } },
-  '血参': { effect: { hp: 80 } },
-  '千年灵芝': { effect: { hp: 1500 }, permanentEffect: { maxHp: 200, physique: 100 } },
-  '万年仙草': { effect: { hp: 3000 }, permanentEffect: { maxHp: 500, spirit: 50 } },
-  '回血丹': { effect: { hp: 50 } },
-  '聚气丹': { effect: { exp: 20 } },
-  '强体丹': { permanentEffect: { physique: 5 } },
-  '凝神丹': { permanentEffect: { spirit: 5 } },
-  '筑基丹': { effect: { exp: 100 } },
-  '破境丹': { effect: { exp: 200 } },
-  '仙灵丹': { effect: { exp: 500 }, permanentEffect: { maxHp: 100, physique: 70 } },
+export const KNOWN_ITEM_EFFECTS: Record<
+  string,
+  { effect?: any; permanentEffect?: any }
+> = {
+  止血草: { effect: { hp: 20 } },
+  聚灵草: { effect: {} },
+  回气草: { effect: { hp: 30 } },
+  凝神花: { effect: { hp: 50, spirit: 5 } },
+  血参: { effect: { hp: 80 } },
+  千年灵芝: {
+    effect: { hp: 1500 },
+    permanentEffect: { maxHp: 200, physique: 100 },
+  },
+  万年仙草: {
+    effect: { hp: 3000 },
+    permanentEffect: { maxHp: 500, spirit: 50 },
+  },
+  回血丹: { effect: { hp: 50 } },
+  聚气丹: { effect: { exp: 20 } },
+  强体丹: { permanentEffect: { physique: 5 } },
+  凝神丹: { permanentEffect: { spirit: 5 } },
+  筑基丹: { effect: { exp: 100 } },
+  破境丹: { effect: { exp: 200 } },
+  仙灵丹: {
+    effect: { exp: 500 },
+    permanentEffect: { maxHp: 100, physique: 70 },
+  },
 };
 
 // 规范化物品效果，确保已知物品的效果与描述一致
-export const normalizeItemEffect = (itemName: string, aiEffect?: any, aiPermanentEffect?: any) => {
+export const normalizeItemEffect = (
+  itemName: string,
+  aiEffect?: any,
+  aiPermanentEffect?: any
+) => {
   const knownItem = KNOWN_ITEM_EFFECTS[itemName];
   if (knownItem) {
     // 如果物品在已知列表中，使用预定义的效果
     return {
       effect: knownItem.effect || aiEffect || {},
-      permanentEffect: knownItem.permanentEffect || aiPermanentEffect || {}
+      permanentEffect: knownItem.permanentEffect || aiPermanentEffect || {},
     };
   }
   // 否则使用AI生成的效果
   return {
     effect: aiEffect || {},
-    permanentEffect: aiPermanentEffect || {}
+    permanentEffect: aiPermanentEffect || {},
   };
 };
 
@@ -66,7 +82,11 @@ export const inferItemTypeAndSlot = (
   }
 
   // 头部装备（优先检查，避免被其他规则误判）
-  if (combined.match(/头盔|头冠|道冠|法冠|仙冠|龙冠|凤冠|冠|帽|发簪|发带|头饰|面罩|头|首/)) {
+  if (
+    combined.match(
+      /头盔|头冠|道冠|法冠|仙冠|龙冠|凤冠|冠|帽|发簪|发带|头饰|面罩|头|首/
+    )
+  ) {
     return {
       type: ItemType.Armor,
       isEquippable: true,
@@ -137,10 +157,7 @@ export const inferItemTypeAndSlot = (
 
   // 首饰（项链、玉佩、手镯等）
   if (combined.match(/项链|玉佩|手镯|手链|吊坠|护符|符|佩|饰/)) {
-    const accessorySlots = [
-      EquipmentSlot.Accessory1,
-      EquipmentSlot.Accessory2,
-    ];
+    const accessorySlots = [EquipmentSlot.Accessory1, EquipmentSlot.Accessory2];
     return {
       type: ItemType.Accessory,
       isEquippable: true,
@@ -156,7 +173,8 @@ export const inferItemTypeAndSlot = (
   if (
     combined.match(
       /法宝|法器|仙器|神器|鼎|钟|镜|塔|扇|珠|印|盘|笔|袋|旗|炉|图/
-    ) && !combined.match(/剑|刀|枪|戟|鞭|棍|棒|矛|弓|弩|匕首/) // 确保不包含武器关键词
+    ) &&
+    !combined.match(/剑|刀|枪|戟|鞭|棍|棒|矛|弓|弩|匕首/) // 确保不包含武器关键词
   ) {
     const artifactSlots = [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2];
     return {
@@ -249,10 +267,10 @@ export const calculateItemSellPrice = (item: Item): number => {
 
   // 基础价格（根据稀有度）
   const basePrices: Record<ItemRarity, number> = {
-    '普通': 10,
-    '稀有': 50,
-    '传说': 300,
-    '仙品': 2000,
+    普通: 10,
+    稀有: 50,
+    传说: 300,
+    仙品: 2000,
   };
   let basePrice = basePrices[rarity];
 
@@ -308,10 +326,11 @@ export const calculateItemSellPrice = (item: Item): number => {
   }
 
   // 强化等级加成（每级增加20%价值）
-  const levelMultiplier = 1 + (level * 0.2);
+  const levelMultiplier = 1 + level * 0.2;
 
   // 计算最终价格
-  const totalValue = (basePrice + attributeValue + equipmentBonus) * levelMultiplier;
+  const totalValue =
+    (basePrice + attributeValue + equipmentBonus) * levelMultiplier;
 
   // 根据物品类型调整（消耗品价值较低）
   let typeMultiplier = 1;
@@ -324,4 +343,3 @@ export const calculateItemSellPrice = (item: Item): number => {
   // 最终价格（取整，最低为1）
   return Math.max(1, Math.floor(totalValue * typeMultiplier));
 };
-

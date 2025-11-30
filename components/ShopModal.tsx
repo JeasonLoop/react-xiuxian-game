@@ -1,6 +1,14 @@
 import React, { useState, useMemo } from 'react';
 import { X, ShoppingBag, Coins, Package, Filter, Trash } from 'lucide-react';
-import { Shop, ShopItem, Item, PlayerStats, RealmType, ItemRarity, ItemType } from '../types';
+import {
+  Shop,
+  ShopItem,
+  Item,
+  PlayerStats,
+  RealmType,
+  ItemRarity,
+  ItemType,
+} from '../types';
 import { REALM_ORDER, RARITY_MULTIPLIERS } from '../constants';
 
 interface Props {
@@ -14,21 +22,37 @@ interface Props {
 
 type ItemTypeFilter = 'all' | ItemType;
 
-const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, onSellItem }) => {
+const ShopModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  shop,
+  player,
+  onBuyItem,
+  onSellItem,
+}) => {
   const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
-  const [buyQuantities, setBuyQuantities] = useState<Record<string, number>>({});
-  const [selectedTypeFilter, setSelectedTypeFilter] = useState<ItemTypeFilter>('all');
+  const [buyQuantities, setBuyQuantities] = useState<Record<string, number>>(
+    {}
+  );
+  const [selectedTypeFilter, setSelectedTypeFilter] =
+    useState<ItemTypeFilter>('all');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [selectedRarity, setSelectedRarity] = useState<'all' | ItemRarity>('all');
+  const [selectedRarity, setSelectedRarity] = useState<'all' | ItemRarity>(
+    'all'
+  );
 
   if (!isOpen) return null;
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
-      case '稀有': return 'text-blue-400 border-blue-600';
-      case '传说': return 'text-purple-400 border-purple-600';
-      case '仙品': return 'text-yellow-400 border-yellow-600';
-      default: return 'text-gray-400 border-gray-600';
+      case '稀有':
+        return 'text-blue-400 border-blue-600';
+      case '传说':
+        return 'text-purple-400 border-purple-600';
+      case '仙品':
+        return 'text-yellow-400 border-yellow-600';
+      default:
+        return 'text-gray-400 border-gray-600';
     }
   };
 
@@ -44,16 +68,20 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
 
   const getShopTypeColor = (type: string) => {
     switch (type) {
-      case '村庄': return 'text-green-400';
-      case '城市': return 'text-blue-400';
-      case '仙门': return 'text-purple-400';
-      default: return 'text-stone-400';
+      case '村庄':
+        return 'text-green-400';
+      case '城市':
+        return 'text-blue-400';
+      case '仙门':
+        return 'text-purple-400';
+      default:
+        return 'text-stone-400';
     }
   };
 
   // 过滤可购买的物品（根据境界和类型）
   const availableItems = useMemo(() => {
-    let filtered = shop.items.filter(item => {
+    let filtered = shop.items.filter((item) => {
       if (!item.minRealm) return true;
       const itemRealmIndex = REALM_ORDER.indexOf(item.minRealm);
       const playerRealmIndex = REALM_ORDER.indexOf(player.realm);
@@ -62,7 +90,7 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
 
     // 按类型筛选
     if (selectedTypeFilter !== 'all') {
-      filtered = filtered.filter(item => item.type === selectedTypeFilter);
+      filtered = filtered.filter((item) => item.type === selectedTypeFilter);
     }
 
     return filtered;
@@ -75,10 +103,10 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
 
     // 基础价格（根据稀有度）
     const basePrices: Record<ItemRarity, number> = {
-      '普通': 10,
-      '稀有': 50,
-      '传说': 300,
-      '仙品': 2000,
+      普通: 10,
+      稀有: 50,
+      传说: 300,
+      仙品: 2000,
     };
     let basePrice = basePrices[rarity];
 
@@ -134,10 +162,11 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
     }
 
     // 强化等级加成（每级增加20%价值）
-    const levelMultiplier = 1 + (level * 0.2);
+    const levelMultiplier = 1 + level * 0.2;
 
     // 计算最终价格
-    const totalValue = (basePrice + attributeValue + equipmentBonus) * levelMultiplier;
+    const totalValue =
+      (basePrice + attributeValue + equipmentBonus) * levelMultiplier;
 
     // 根据物品类型调整（消耗品价值较低）
     let typeMultiplier = 1;
@@ -153,7 +182,7 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
 
   // 可出售的物品（排除已装备的，并根据类型和品质筛选）
   const sellableItems = useMemo(() => {
-    let filtered = player.inventory.filter(item => {
+    let filtered = player.inventory.filter((item) => {
       // 不能出售已装备的物品
       const isEquipped = Object.values(player.equippedItems).includes(item.id);
       if (isEquipped) return false;
@@ -172,34 +201,54 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
     });
 
     return filtered;
-  }, [player.inventory, player.equippedItems, selectedTypeFilter, selectedRarity]);
+  }, [
+    player.inventory,
+    player.equippedItems,
+    selectedTypeFilter,
+    selectedRarity,
+  ]);
 
   // 获取所有可用的物品类型（用于筛选器，基于未筛选的原始数据）
   const availableTypes = useMemo(() => {
     if (activeTab === 'buy') {
       const types = new Set<ItemType>();
       // 使用原始商店物品列表，只根据境界过滤
-      shop.items.filter(item => {
-        if (!item.minRealm) return true;
-        const itemRealmIndex = REALM_ORDER.indexOf(item.minRealm);
-        const playerRealmIndex = REALM_ORDER.indexOf(player.realm);
-        return playerRealmIndex >= itemRealmIndex;
-      }).forEach(item => types.add(item.type));
+      shop.items
+        .filter((item) => {
+          if (!item.minRealm) return true;
+          const itemRealmIndex = REALM_ORDER.indexOf(item.minRealm);
+          const playerRealmIndex = REALM_ORDER.indexOf(player.realm);
+          return playerRealmIndex >= itemRealmIndex;
+        })
+        .forEach((item) => types.add(item.type));
       return Array.from(types);
     } else {
       const types = new Set<ItemType>();
       // 使用原始库存列表，只排除已装备的物品
-      player.inventory.filter(item => {
-        const isEquipped = Object.values(player.equippedItems).includes(item.id);
-        return !isEquipped;
-      }).forEach(item => types.add(item.type));
+      player.inventory
+        .filter((item) => {
+          const isEquipped = Object.values(player.equippedItems).includes(
+            item.id
+          );
+          return !isEquipped;
+        })
+        .forEach((item) => types.add(item.type));
       return Array.from(types);
     }
-  }, [activeTab, shop.items, player.realm, player.inventory, player.equippedItems]);
+  }, [
+    activeTab,
+    shop.items,
+    player.realm,
+    player.inventory,
+    player.equippedItems,
+  ]);
 
   // 当切换标签页时，如果当前筛选的类型在新标签页中不存在，则重置为'all'
   React.useEffect(() => {
-    if (selectedTypeFilter !== 'all' && !availableTypes.includes(selectedTypeFilter as ItemType)) {
+    if (
+      selectedTypeFilter !== 'all' &&
+      !availableTypes.includes(selectedTypeFilter as ItemType)
+    ) {
       setSelectedTypeFilter('all');
     }
     // 切换标签页时清空选择
@@ -228,7 +277,9 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
 
   const handleBatchSell = () => {
     if (selectedItems.size === 0) return;
-    const itemsToSell = sellableItems.filter((item) => selectedItems.has(item.id));
+    const itemsToSell = sellableItems.filter((item) =>
+      selectedItems.has(item.id)
+    );
     let totalPrice = 0;
     itemsToSell.forEach((item) => {
       const shopItem = shop.items.find((si) => si.name === item.name);
@@ -265,7 +316,10 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
             </h3>
             <p className="text-sm text-stone-400 mt-1">{shop.description}</p>
           </div>
-          <button onClick={onClose} className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation">
+          <button
+            onClick={onClose}
+            className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+          >
             <X size={24} />
           </button>
         </div>
@@ -300,8 +354,15 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
             <div>
               <div className="mb-4 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-stone-400">当前灵石: <span className="text-mystic-gold font-bold">{player.spiritStones}</span></span>
-                  <span className={`text-sm ${getShopTypeColor(shop.type)}`}>{shop.type}</span>
+                  <span className="text-stone-400">
+                    当前灵石:{' '}
+                    <span className="text-mystic-gold font-bold">
+                      {player.spiritStones}
+                    </span>
+                  </span>
+                  <span className={`text-sm ${getShopTypeColor(shop.type)}`}>
+                    {shop.type}
+                  </span>
                 </div>
                 {/* 物品分类筛选器 */}
                 <div className="flex items-center gap-2 flex-wrap">
@@ -319,7 +380,7 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
                   >
                     全部
                   </button>
-                  {availableTypes.map(type => (
+                  {availableTypes.map((type) => (
                     <button
                       key={type}
                       onClick={() => setSelectedTypeFilter(type)}
@@ -340,33 +401,51 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
                     当前境界无法购买任何物品
                   </div>
                 ) : (
-                  availableItems.map(shopItem => {
+                  availableItems.map((shopItem) => {
                     const canBuy = canBuyItem(shopItem);
                     return (
                       <div
                         key={shopItem.id}
                         className={`bg-stone-900 rounded-lg p-4 border-2 ${
-                          canBuy ? getRarityColor(shopItem.rarity).split(' ')[1] : 'border-stone-700 opacity-60'
+                          canBuy
+                            ? getRarityColor(shopItem.rarity).split(' ')[1]
+                            : 'border-stone-700 opacity-60'
                         }`}
                       >
                         <div className="flex justify-between items-start mb-2">
                           <div>
-                            <h4 className={`font-bold ${getRarityColor(shopItem.rarity).split(' ')[0]}`}>
+                            <h4
+                              className={`font-bold ${getRarityColor(shopItem.rarity).split(' ')[0]}`}
+                            >
                               {shopItem.name}
                             </h4>
-                            <span className="text-xs text-stone-500">{shopItem.type}</span>
+                            <span className="text-xs text-stone-500">
+                              {shopItem.type}
+                            </span>
                           </div>
-                          <span className={`text-xs px-2 py-1 rounded ${getRarityColor(shopItem.rarity).split(' ')[1]} ${getRarityColor(shopItem.rarity).split(' ')[0]}`}>
+                          <span
+                            className={`text-xs px-2 py-1 rounded ${getRarityColor(shopItem.rarity).split(' ')[1]} ${getRarityColor(shopItem.rarity).split(' ')[0]}`}
+                          >
                             {shopItem.rarity}
                           </span>
                         </div>
-                        <p className="text-sm text-stone-400 mb-3">{shopItem.description}</p>
+                        <p className="text-sm text-stone-400 mb-3">
+                          {shopItem.description}
+                        </p>
                         {shopItem.effect && (
                           <div className="text-xs text-stone-400 mb-3 space-y-1">
-                            {shopItem.effect.attack && <div>攻击 +{shopItem.effect.attack}</div>}
-                            {shopItem.effect.defense && <div>防御 +{shopItem.effect.defense}</div>}
-                            {shopItem.effect.hp && <div>气血 +{shopItem.effect.hp}</div>}
-                            {shopItem.effect.exp && <div>修为 +{shopItem.effect.exp}</div>}
+                            {shopItem.effect.attack && (
+                              <div>攻击 +{shopItem.effect.attack}</div>
+                            )}
+                            {shopItem.effect.defense && (
+                              <div>防御 +{shopItem.effect.defense}</div>
+                            )}
+                            {shopItem.effect.hp && (
+                              <div>气血 +{shopItem.effect.hp}</div>
+                            )}
+                            {shopItem.effect.exp && (
+                              <div>修为 +{shopItem.effect.exp}</div>
+                            )}
                           </div>
                         )}
                         {shopItem.minRealm && (
@@ -380,17 +459,23 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
                             <span className="font-bold">{shopItem.price}</span>
                             {buyQuantities[shopItem.id] > 1 && (
                               <span className="text-xs text-stone-400 ml-1">
-                                x{buyQuantities[shopItem.id]} = {shopItem.price * buyQuantities[shopItem.id]}
+                                x{buyQuantities[shopItem.id]} ={' '}
+                                {shopItem.price * buyQuantities[shopItem.id]}
                               </span>
                             )}
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="flex items-center gap-1 border border-stone-600 rounded">
                               <button
-                                onClick={() => setBuyQuantities(prev => ({
-                                  ...prev,
-                                  [shopItem.id]: Math.max(1, (prev[shopItem.id] || 1) - 1)
-                                }))}
+                                onClick={() =>
+                                  setBuyQuantities((prev) => ({
+                                    ...prev,
+                                    [shopItem.id]: Math.max(
+                                      1,
+                                      (prev[shopItem.id] || 1) - 1
+                                    ),
+                                  }))
+                                }
                                 className="px-2 py-1 text-stone-400 hover:text-white"
                               >
                                 -
@@ -400,16 +485,24 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
                                 min="1"
                                 value={buyQuantities[shopItem.id] || 1}
                                 onChange={(e) => {
-                                  const val = Math.max(1, parseInt(e.target.value) || 1);
-                                  setBuyQuantities(prev => ({ ...prev, [shopItem.id]: val }));
+                                  const val = Math.max(
+                                    1,
+                                    parseInt(e.target.value) || 1
+                                  );
+                                  setBuyQuantities((prev) => ({
+                                    ...prev,
+                                    [shopItem.id]: val,
+                                  }));
                                 }}
                                 className="w-12 text-center bg-transparent text-stone-200 border-0 focus:outline-none"
                               />
                               <button
-                                onClick={() => setBuyQuantities(prev => ({
-                                  ...prev,
-                                  [shopItem.id]: (prev[shopItem.id] || 1) + 1
-                                }))}
+                                onClick={() =>
+                                  setBuyQuantities((prev) => ({
+                                    ...prev,
+                                    [shopItem.id]: (prev[shopItem.id] || 1) + 1,
+                                  }))
+                                }
                                 className="px-2 py-1 text-stone-400 hover:text-white"
                               >
                                 +
@@ -419,11 +512,22 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
                               onClick={() => {
                                 const qty = buyQuantities[shopItem.id] || 1;
                                 onBuyItem(shopItem, qty);
-                                setBuyQuantities(prev => ({ ...prev, [shopItem.id]: 1 }));
+                                setBuyQuantities((prev) => ({
+                                  ...prev,
+                                  [shopItem.id]: 1,
+                                }));
                               }}
-                              disabled={!canBuy || (shopItem.price * (buyQuantities[shopItem.id] || 1)) > player.spiritStones}
+                              disabled={
+                                !canBuy ||
+                                shopItem.price *
+                                  (buyQuantities[shopItem.id] || 1) >
+                                  player.spiritStones
+                              }
                               className={`px-4 py-2 rounded text-sm font-bold transition-colors ${
-                                canBuy && (shopItem.price * (buyQuantities[shopItem.id] || 1)) <= player.spiritStones
+                                canBuy &&
+                                shopItem.price *
+                                  (buyQuantities[shopItem.id] || 1) <=
+                                  player.spiritStones
                                   ? 'bg-mystic-gold/20 hover:bg-mystic-gold/30 text-mystic-gold border border-mystic-gold/50'
                                   : 'bg-stone-700 text-stone-500 cursor-not-allowed'
                               }`}
@@ -442,8 +546,15 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
             <div>
               <div className="mb-4 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-stone-400">当前灵石: <span className="text-mystic-gold font-bold">{player.spiritStones}</span></span>
-                  <span className="text-sm text-stone-500">可出售物品: {sellableItems.length}</span>
+                  <span className="text-stone-400">
+                    当前灵石:{' '}
+                    <span className="text-mystic-gold font-bold">
+                      {player.spiritStones}
+                    </span>
+                  </span>
+                  <span className="text-sm text-stone-500">
+                    可出售物品: {sellableItems.length}
+                  </span>
                 </div>
                 {/* 批量操作栏 */}
                 <div className="flex items-center justify-between">
@@ -452,7 +563,9 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
                       onClick={handleSelectAll}
                       className="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-300 rounded text-sm border border-stone-600"
                     >
-                      {selectedItems.size === sellableItems.length ? '取消全选' : '全选'}
+                      {selectedItems.size === sellableItems.length
+                        ? '取消全选'
+                        : '全选'}
                     </button>
                     <span className="text-sm text-stone-400">
                       已选择: {selectedItems.size} / {sellableItems.length}
@@ -491,7 +604,7 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
                     >
                       全部
                     </button>
-                    {availableTypes.map(type => (
+                    {availableTypes.map((type) => (
                       <button
                         key={type}
                         onClick={() => {
@@ -513,22 +626,24 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
                       <Filter size={16} />
                       <span>品质:</span>
                     </div>
-                    {(['all', '普通', '稀有', '传说', '仙品'] as const).map((rarity) => (
-                      <button
-                        key={rarity}
-                        onClick={() => {
-                          setSelectedRarity(rarity);
-                          setSelectedItems(new Set());
-                        }}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                          selectedRarity === rarity
-                            ? 'bg-mystic-gold/20 text-mystic-gold border border-mystic-gold/50'
-                            : 'bg-stone-800 text-stone-400 hover:text-stone-200 border border-stone-700'
-                        }`}
-                      >
-                        {rarity === 'all' ? '全部' : rarity}
-                      </button>
-                    ))}
+                    {(['all', '普通', '稀有', '传说', '仙品'] as const).map(
+                      (rarity) => (
+                        <button
+                          key={rarity}
+                          onClick={() => {
+                            setSelectedRarity(rarity);
+                            setSelectedItems(new Set());
+                          }}
+                          className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                            selectedRarity === rarity
+                              ? 'bg-mystic-gold/20 text-mystic-gold border border-mystic-gold/50'
+                              : 'bg-stone-800 text-stone-400 hover:text-stone-200 border border-stone-700'
+                          }`}
+                        >
+                          {rarity === 'all' ? '全部' : rarity}
+                        </button>
+                      )
+                    )}
                   </div>
                 </div>
               </div>
@@ -539,10 +654,13 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {sellableItems.map(item => {
+                  {sellableItems.map((item) => {
                     // 找到对应的商店物品来计算出售价格
-                    const shopItem = shop.items.find(si => si.name === item.name);
-                    const sellPrice = shopItem?.sellPrice || calculateItemSellPrice(item);
+                    const shopItem = shop.items.find(
+                      (si) => si.name === item.name
+                    );
+                    const sellPrice =
+                      shopItem?.sellPrice || calculateItemSellPrice(item);
                     const rarity = item.rarity || '普通';
                     const isSelected = selectedItems.has(item.id);
 
@@ -565,25 +683,41 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
                             className="mt-1"
                           />
                           <div className="flex-1">
-                            <h4 className={`font-bold ${getRarityColor(rarity).split(' ')[0]}`}>
+                            <h4
+                              className={`font-bold ${getRarityColor(rarity).split(' ')[0]}`}
+                            >
                               {item.name}
                               {item.level && item.level > 0 && (
-                                <span className="text-xs text-stone-500 ml-1">+{item.level}</span>
+                                <span className="text-xs text-stone-500 ml-1">
+                                  +{item.level}
+                                </span>
                               )}
                             </h4>
-                            <span className="text-xs text-stone-500">{item.type}</span>
+                            <span className="text-xs text-stone-500">
+                              {item.type}
+                            </span>
                           </div>
                           <span className="text-xs bg-stone-700 text-stone-300 px-1.5 py-0.5 rounded">
                             x{item.quantity}
                           </span>
                         </div>
-                        <p className="text-sm text-stone-400 mb-3">{item.description}</p>
+                        <p className="text-sm text-stone-400 mb-3">
+                          {item.description}
+                        </p>
                         {item.effect && (
                           <div className="text-xs text-stone-400 mb-3 space-y-1">
-                            {item.effect.attack && <div>攻击 +{item.effect.attack}</div>}
-                            {item.effect.defense && <div>防御 +{item.effect.defense}</div>}
-                            {item.effect.hp && <div>气血 +{item.effect.hp}</div>}
-                            {item.effect.exp && <div>修为 +{item.effect.exp}</div>}
+                            {item.effect.attack && (
+                              <div>攻击 +{item.effect.attack}</div>
+                            )}
+                            {item.effect.defense && (
+                              <div>防御 +{item.effect.defense}</div>
+                            )}
+                            {item.effect.hp && (
+                              <div>气血 +{item.effect.hp}</div>
+                            )}
+                            {item.effect.exp && (
+                              <div>修为 +{item.effect.exp}</div>
+                            )}
                           </div>
                         )}
                         <div className="flex items-center justify-between mt-3">
@@ -620,4 +754,3 @@ const ShopModal: React.FC<Props> = ({ isOpen, onClose, shop, player, onBuyItem, 
 };
 
 export default ShopModal;
-

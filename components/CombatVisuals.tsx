@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface VisualEffect {
@@ -39,7 +38,7 @@ const CombatVisuals: React.FC<Props> = ({ effects }) => {
             style={{
               textShadow: '0 2px 4px rgba(0,0,0,0.8)',
               left: `${50 + (Math.random() * 20 - 10)}%`, // Slight random X offset
-              top: `${50 + (Math.random() * 20 - 10)}%` // Slight random Y offset
+              top: `${50 + (Math.random() * 20 - 10)}%`, // Slight random Y offset
             }}
           >
             {effect.value}

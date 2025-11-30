@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { PlayerStats, RealmType, SecretRealm } from '../types';
 import { SECRET_REALMS, REALM_ORDER } from '../constants';
@@ -12,7 +11,12 @@ interface Props {
   onEnter: (realm: SecretRealm) => void;
 }
 
-const SecretRealmModal: React.FC<Props> = ({ isOpen, onClose, player, onEnter }) => {
+const SecretRealmModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  player,
+  onEnter,
+}) => {
   const [refreshKey, setRefreshKey] = useState(0);
 
   // 使用 useMemo 生成随机秘境列表，refreshKey 变化时重新生成
@@ -25,7 +29,7 @@ const SecretRealmModal: React.FC<Props> = ({ isOpen, onClose, player, onEnter })
   const getRealmIndex = (r: RealmType) => REALM_ORDER.indexOf(r);
 
   const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
+    setRefreshKey((prev) => prev + 1);
   };
 
   return (
@@ -50,7 +54,10 @@ const SecretRealmModal: React.FC<Props> = ({ isOpen, onClose, player, onEnter })
               <RefreshCw size={16} />
               <span className="hidden md:inline">刷新</span>
             </button>
-            <button onClick={onClose} className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation">
+            <button
+              onClick={onClose}
+              className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+            >
               <X size={24} />
             </button>
           </div>
@@ -69,26 +76,38 @@ const SecretRealmModal: React.FC<Props> = ({ isOpen, onClose, player, onEnter })
                 key={realm.id}
                 className={`
                   relative border flex flex-col p-5 rounded-lg transition-all duration-300 group
-                  ${locked
-                    ? 'bg-ink-900 border-stone-800 opacity-60'
-                    : 'bg-ink-800 border-purple-800 hover:border-purple-500 hover:bg-ink-800/80 hover:shadow-lg hover:shadow-purple-900/20'}
+                  ${
+                    locked
+                      ? 'bg-ink-900 border-stone-800 opacity-60'
+                      : 'bg-ink-800 border-purple-800 hover:border-purple-500 hover:bg-ink-800/80 hover:shadow-lg hover:shadow-purple-900/20'
+                  }
                 `}
               >
                 <div className="flex justify-between items-start mb-2">
-                  <h4 className={`text-xl font-serif font-bold ${locked ? 'text-stone-500' : 'text-purple-200 group-hover:text-purple-100'}`}>
+                  <h4
+                    className={`text-xl font-serif font-bold ${locked ? 'text-stone-500' : 'text-purple-200 group-hover:text-purple-100'}`}
+                  >
                     {realm.name}
                   </h4>
-                  <span className={`
+                  <span
+                    className={`
                     text-xs px-2 py-0.5 rounded border
-                    ${realm.riskLevel === '极度危险' ? 'text-red-500 border-red-900 bg-red-900/20' :
-                      realm.riskLevel === '高' ? 'text-orange-400 border-orange-900 bg-orange-900/20' :
-                      'text-yellow-400 border-yellow-900 bg-yellow-900/20'}
-                  `}>
+                    ${
+                      realm.riskLevel === '极度危险'
+                        ? 'text-red-500 border-red-900 bg-red-900/20'
+                        : realm.riskLevel === '高'
+                          ? 'text-orange-400 border-orange-900 bg-orange-900/20'
+                          : 'text-yellow-400 border-yellow-900 bg-yellow-900/20'
+                    }
+                  `}
+                  >
                     {realm.riskLevel}风险
                   </span>
                 </div>
 
-                <p className="text-sm text-stone-500 mb-4 h-12">{realm.description}</p>
+                <p className="text-sm text-stone-500 mb-4 h-12">
+                  {realm.description}
+                </p>
 
                 <div className="bg-ink-900/50 p-3 rounded border border-stone-800 mb-4 flex-1">
                   <div className="text-xs text-stone-500 mb-2 font-bold uppercase tracking-wider flex items-center gap-1">
@@ -96,7 +115,10 @@ const SecretRealmModal: React.FC<Props> = ({ isOpen, onClose, player, onEnter })
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {realm.drops.map((drop, i) => (
-                      <span key={i} className="text-xs text-purple-300/80 bg-purple-900/20 px-1.5 py-0.5 rounded">
+                      <span
+                        key={i}
+                        className="text-xs text-purple-300/80 bg-purple-900/20 px-1.5 py-0.5 rounded"
+                      >
                         {drop}
                       </span>
                     ))}
@@ -104,28 +126,42 @@ const SecretRealmModal: React.FC<Props> = ({ isOpen, onClose, player, onEnter })
                 </div>
 
                 <div className="mt-auto space-y-2">
-                   <div className="flex justify-between text-sm">
-                     <span className="text-stone-500">境界要求</span>
-                     <span className={isRealmEnough ? 'text-stone-300' : 'text-red-500'}>{realm.minRealm}</span>
-                   </div>
-                   <div className="flex justify-between text-sm">
-                     <span className="text-stone-500">门票消耗</span>
-                     <span className={canAfford ? 'text-mystic-gold' : 'text-red-500'}>{realm.cost} 灵石</span>
-                   </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-stone-500">境界要求</span>
+                    <span
+                      className={
+                        isRealmEnough ? 'text-stone-300' : 'text-red-500'
+                      }
+                    >
+                      {realm.minRealm}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-stone-500">门票消耗</span>
+                    <span
+                      className={
+                        canAfford ? 'text-mystic-gold' : 'text-red-500'
+                      }
+                    >
+                      {realm.cost} 灵石
+                    </span>
+                  </div>
 
-                   <button
-                     onClick={() => onEnter(realm)}
-                     disabled={locked || !canAfford}
-                     className={`
+                  <button
+                    onClick={() => onEnter(realm)}
+                    disabled={locked || !canAfford}
+                    className={`
                        w-full py-2.5 rounded font-serif font-bold text-sm flex items-center justify-center gap-2 mt-4 transition-all
-                       ${locked || !canAfford
-                         ? 'bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700'
-                         : 'bg-purple-900/40 text-purple-300 border border-purple-700 hover:bg-purple-800/60 hover:text-white hover:border-purple-500'}
+                       ${
+                         locked || !canAfford
+                           ? 'bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700'
+                           : 'bg-purple-900/40 text-purple-300 border border-purple-700 hover:bg-purple-800/60 hover:text-white hover:border-purple-500'
+                       }
                      `}
-                   >
-                     {locked ? '境界不足' : (!canAfford ? '灵石不足' : '进入秘境')}
-                     {!locked && canAfford && <Ticket size={16} />}
-                   </button>
+                  >
+                    {locked ? '境界不足' : !canAfford ? '灵石不足' : '进入秘境'}
+                    {!locked && canAfford && <Ticket size={16} />}
+                  </button>
                 </div>
               </div>
             );

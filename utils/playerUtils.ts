@@ -2,7 +2,10 @@ import { PlayerStats, RealmType } from '../types';
 import { REALM_DATA, INITIAL_ITEMS, TALENTS } from '../constants';
 
 // 创建初始玩家数据
-export const createInitialPlayer = (name: string, talentId: string): PlayerStats => {
+export const createInitialPlayer = (
+  name: string,
+  talentId: string
+): PlayerStats => {
   const initialTalent = TALENTS.find((t) => t.id === talentId);
   const talentAttack = initialTalent?.effects.attack || 0;
   const talentDefense = initialTalent?.effects.defense || 0;
@@ -58,4 +61,3 @@ export const createInitialPlayer = (name: string, talentId: string): PlayerStats
     meditationBoostEndTime: null, // 打坐回血加成结束时间戳（毫秒）
   };
 };
-

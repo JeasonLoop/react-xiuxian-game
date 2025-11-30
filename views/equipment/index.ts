@@ -1,2 +1,1 @@
 export { useEquipmentHandlers } from './useEquipmentHandlers';
-

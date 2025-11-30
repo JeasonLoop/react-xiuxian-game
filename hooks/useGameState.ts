@@ -47,19 +47,28 @@ export function useGameState() {
           // 确保加载的存档包含新字段
           const loadedPlayer = {
             ...savedData.player,
-            dailyTaskCount: savedData.player.dailyTaskCount && typeof savedData.player.dailyTaskCount === 'object'
-              ? savedData.player.dailyTaskCount
-              : typeof savedData.player.dailyTaskCount === 'number'
-                ? { instant: savedData.player.dailyTaskCount, short: 0, medium: 0, long: 0 } // 兼容旧存档
-                : { instant: 0, short: 0, medium: 0, long: 0 },
+            dailyTaskCount:
+              savedData.player.dailyTaskCount &&
+              typeof savedData.player.dailyTaskCount === 'object'
+                ? savedData.player.dailyTaskCount
+                : typeof savedData.player.dailyTaskCount === 'number'
+                  ? {
+                      instant: savedData.player.dailyTaskCount,
+                      short: 0,
+                      medium: 0,
+                      long: 0,
+                    } // 兼容旧存档
+                  : { instant: 0, short: 0, medium: 0, long: 0 },
             lastTaskResetDate:
               savedData.player.lastTaskResetDate ||
               new Date().toISOString().split('T')[0],
             viewedAchievements: savedData.player.viewedAchievements || [],
             natalArtifactId: savedData.player.natalArtifactId || null,
             unlockedRecipes: savedData.player.unlockedRecipes || [], // 兼容旧存档，确保 unlockedRecipes 存在
-            meditationHpRegenMultiplier: savedData.player.meditationHpRegenMultiplier ?? 1.0, // 兼容旧存档
-            meditationBoostEndTime: savedData.player.meditationBoostEndTime ?? null, // 兼容旧存档
+            meditationHpRegenMultiplier:
+              savedData.player.meditationHpRegenMultiplier ?? 1.0, // 兼容旧存档
+            meditationBoostEndTime:
+              savedData.player.meditationBoostEndTime ?? null, // 兼容旧存档
           };
           setPlayer(loadedPlayer);
           setLogs(savedData.logs || []);
@@ -94,29 +103,32 @@ export function useGameState() {
   );
 
   // 开始新游戏
-  const handleStartGame = useCallback((playerName: string, talentId: string) => {
-    const newPlayer = createInitialPlayer(playerName, talentId);
-    const initialTalent = TALENTS.find((t) => t.id === talentId);
-    const initialLogs: LogEntry[] = [
-      {
-        id: `${Date.now()}-1-${Math.random().toString(36).substr(2, 9)}`,
-        text: '欢迎来到修仙世界。你的长生之路就此开始。',
-        type: 'special',
-        timestamp: Date.now(),
-      },
-      {
-        id: `${Date.now()}-2-${Math.random().toString(36).substr(2, 9)}`,
-        text: `你天生拥有【${initialTalent?.name}】天赋。${initialTalent?.description}`,
-        type: 'special',
-        timestamp: Date.now(),
-      },
-    ];
-    setPlayer(newPlayer);
-    setLogs(initialLogs);
-    setGameStarted(true);
-    setHasSave(true);
-    saveGame(newPlayer, initialLogs);
-  }, [saveGame]);
+  const handleStartGame = useCallback(
+    (playerName: string, talentId: string) => {
+      const newPlayer = createInitialPlayer(playerName, talentId);
+      const initialTalent = TALENTS.find((t) => t.id === talentId);
+      const initialLogs: LogEntry[] = [
+        {
+          id: `${Date.now()}-1-${Math.random().toString(36).substr(2, 9)}`,
+          text: '欢迎来到修仙世界。你的长生之路就此开始。',
+          type: 'special',
+          timestamp: Date.now(),
+        },
+        {
+          id: `${Date.now()}-2-${Math.random().toString(36).substr(2, 9)}`,
+          text: `你天生拥有【${initialTalent?.name}】天赋。${initialTalent?.description}`,
+          type: 'special',
+          timestamp: Date.now(),
+        },
+      ];
+      setPlayer(newPlayer);
+      setLogs(initialLogs);
+      setGameStarted(true);
+      setHasSave(true);
+      saveGame(newPlayer, initialLogs);
+    },
+    [saveGame]
+  );
 
   // 自动保存 - 使用防抖机制，避免频繁保存导致卡顿
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -153,4 +165,3 @@ export function useGameState() {
     saveGame,
   };
 }
-

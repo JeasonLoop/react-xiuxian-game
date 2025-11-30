@@ -140,10 +140,15 @@ export function useBreakthroughHandlers({
           maxHp: newBaseMaxHp + bonusHp,
           hp: newBaseMaxHp + bonusHp, // Full heal
           attack: Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack,
-          defense: Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense,
+          defense:
+            Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense,
           spirit: Math.floor(stats.baseSpirit * levelMultiplier) + bonusSpirit,
-          physique: Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique,
-          speed: Math.max(0, Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed),
+          physique:
+            Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique,
+          speed: Math.max(
+            0,
+            Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed
+          ),
         };
       });
       setLoading(false);
@@ -271,10 +276,15 @@ export function useBreakthroughHandlers({
           maxHp: newBaseMaxHp + bonusHp,
           hp: newBaseMaxHp + bonusHp,
           attack: Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack,
-          defense: Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense,
+          defense:
+            Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense,
           spirit: Math.floor(stats.baseSpirit * levelMultiplier) + bonusSpirit,
-          physique: Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique,
-          speed: Math.max(0, Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed),
+          physique:
+            Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique,
+          speed: Math.max(
+            0,
+            Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed
+          ),
           inheritanceLevel: remainingInheritance,
         };
       }
@@ -288,4 +298,3 @@ export function useBreakthroughHandlers({
     handleUseInheritance,
   };
 }
-

@@ -7,7 +7,9 @@ interface UseLotteryHandlersProps {
   player: PlayerStats;
   setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
   addLog: (message: string, type?: string) => void;
-  setLotteryRewards: (rewards: Array<{ type: string; name: string; quantity?: number }>) => void;
+  setLotteryRewards: (
+    rewards: Array<{ type: string; name: string; quantity?: number }>
+  ) => void;
 }
 
 /**
@@ -175,4 +177,3 @@ export function useLotteryHandlers({
     handleDraw,
   };
 }
-

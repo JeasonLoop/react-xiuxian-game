@@ -76,4 +76,3 @@ export function useMeditation({
 
   return { handleMeditate };
 }
-

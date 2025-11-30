@@ -28,16 +28,19 @@
 ### 方法二：通过 Vercel CLI
 
 1. **安装 Vercel CLI**
+
    ```bash
    npm install -g vercel
    ```
 
 2. **登录 Vercel**
+
    ```bash
    vercel login
    ```
 
 3. **部署项目**
+
    ```bash
    vercel
    ```
@@ -59,7 +62,7 @@
 ```
 浏览器请求: /api/v2/chat/completions
        ↓
-Vercel Serverless Function (api/proxy.js): 
+Vercel Serverless Function (api/proxy.js):
   - 接收请求
   - 转发到 https://spark-api-open.xf-yun.com/v2/chat/completions
   - 添加 CORS 头
@@ -91,6 +94,7 @@ Vercel Function: 返回给浏览器（带正确的 CORS 头）
 3. 重新部署项目
 
 **注意**: 目前 API Key 已硬编码在代码中，如需更高安全性，建议：
+
 - 将 API Key 移到环境变量
 - 不要将 API Key 提交到 Git 仓库
 - 使用 `.env.local` 文件存储敏感信息
@@ -114,15 +118,18 @@ Vercel Function: 返回给浏览器（带正确的 CORS 头）
 ## 🛠️ 故障排查
 
 ### API 请求失败
+
 - 检查 Vercel 函数日志
 - 确认 API Key 是否有效
 - 检查 API 配额是否用完
 
 ### 页面 404
+
 - 确认 `vercel.json` 配置正确
 - 检查 build 输出目录是否为 `dist`
 
 ### 跨域错误
+
 - 确认 `vercel.json` 中的 rewrites 配置正确
 - 检查请求路径是否以 `/api` 开头
 
@@ -131,4 +138,3 @@ Vercel Function: 返回给浏览器（带正确的 CORS 头）
 - [Vercel 官方文档](https://vercel.com/docs)
 - [Vite 部署指南](https://vitejs.dev/guide/static-deploy.html)
 - [讯飞星火 API 文档](https://www.xfyun.cn/doc/spark/Web.html)
-

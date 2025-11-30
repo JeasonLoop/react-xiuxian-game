@@ -1,5 +1,16 @@
 import React, { useMemo, useCallback } from 'react';
-import { Menu, X, BookOpen, Backpack, Star, Trophy, Sparkles, Gift, Settings, BarChart3 } from 'lucide-react';
+import {
+  Menu,
+  X,
+  BookOpen,
+  Backpack,
+  Star,
+  Trophy,
+  Sparkles,
+  Gift,
+  Settings,
+  BarChart3,
+} from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -32,39 +43,82 @@ const MobileSidebar: React.FC<Props> = ({
   petCount = 0,
   lotteryTickets = 0,
 }) => {
-  const menuItems = useMemo(() => [
-    { icon: BarChart3, label: '属性', onClick: onOpenStats, color: 'text-mystic-gold' },
-    { icon: BookOpen, label: '功法', onClick: onOpenCultivation, color: 'text-blue-400' },
-    { icon: Backpack, label: '储物袋', onClick: onOpenInventory, color: 'text-green-400' },
-    { icon: Star, label: '角色', onClick: onOpenCharacter, color: 'text-yellow-400' },
-    {
-      icon: Trophy,
-      label: '成就',
-      onClick: onOpenAchievement,
-      color: 'text-purple-400',
-      badge: achievementCount > 0 ? achievementCount : undefined
-    },
-    {
-      icon: Sparkles,
-      label: '灵宠',
-      onClick: onOpenPet,
-      color: 'text-cyan-400',
-      badge: petCount > 0 ? petCount : undefined
-    },
-    {
-      icon: Gift,
-      label: '抽奖',
-      onClick: onOpenLottery,
-      color: 'text-orange-400',
-      badge: lotteryTickets > 0 ? lotteryTickets : undefined
-    },
-    { icon: Settings, label: '设置', onClick: onOpenSettings, color: 'text-stone-400' },
-  ], [onOpenStats, onOpenCultivation, onOpenInventory, onOpenCharacter, onOpenAchievement, onOpenPet, onOpenLottery, onOpenSettings, achievementCount, petCount, lotteryTickets]);
+  const menuItems = useMemo(
+    () => [
+      {
+        icon: BarChart3,
+        label: '属性',
+        onClick: onOpenStats,
+        color: 'text-mystic-gold',
+      },
+      {
+        icon: BookOpen,
+        label: '功法',
+        onClick: onOpenCultivation,
+        color: 'text-blue-400',
+      },
+      {
+        icon: Backpack,
+        label: '储物袋',
+        onClick: onOpenInventory,
+        color: 'text-green-400',
+      },
+      {
+        icon: Star,
+        label: '角色',
+        onClick: onOpenCharacter,
+        color: 'text-yellow-400',
+      },
+      {
+        icon: Trophy,
+        label: '成就',
+        onClick: onOpenAchievement,
+        color: 'text-purple-400',
+        badge: achievementCount > 0 ? achievementCount : undefined,
+      },
+      {
+        icon: Sparkles,
+        label: '灵宠',
+        onClick: onOpenPet,
+        color: 'text-cyan-400',
+        badge: petCount > 0 ? petCount : undefined,
+      },
+      {
+        icon: Gift,
+        label: '抽奖',
+        onClick: onOpenLottery,
+        color: 'text-orange-400',
+        badge: lotteryTickets > 0 ? lotteryTickets : undefined,
+      },
+      {
+        icon: Settings,
+        label: '设置',
+        onClick: onOpenSettings,
+        color: 'text-stone-400',
+      },
+    ],
+    [
+      onOpenStats,
+      onOpenCultivation,
+      onOpenInventory,
+      onOpenCharacter,
+      onOpenAchievement,
+      onOpenPet,
+      onOpenLottery,
+      onOpenSettings,
+      achievementCount,
+      petCount,
+      lotteryTickets,
+    ]
+  );
 
-  const handleItemClick = useCallback((onClick: () => void) => {
-    onClick();
-    onClose();
-  }, [onClose]);
+  const handleItemClick = useCallback(
+    (onClick: () => void) => {
+      onClick();
+      onClose();
+    },
+    [onClose]
+  );
 
   return (
     <>
@@ -107,7 +161,9 @@ const MobileSidebar: React.FC<Props> = ({
                   className="w-full flex items-center gap-3 px-4 py-4 bg-ink-800 hover:bg-ink-700 active:bg-ink-600 rounded border border-stone-700 mb-2 transition-colors touch-manipulation min-h-[56px]"
                 >
                   <Icon size={22} className={item.color} />
-                  <span className="text-stone-200 font-medium flex-1 text-left">{item.label}</span>
+                  <span className="text-stone-200 font-medium flex-1 text-left">
+                    {item.label}
+                  </span>
                   {item.badge !== undefined && (
                     <span className="bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
                       {item.badge}
@@ -124,4 +180,3 @@ const MobileSidebar: React.FC<Props> = ({
 };
 
 export default React.memo(MobileSidebar);
-

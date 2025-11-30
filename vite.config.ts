@@ -1,7 +1,7 @@
-import path from "path";
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import { codeInspectorPlugin } from "code-inspector-plugin";
+import path from 'path';
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { codeInspectorPlugin } from 'code-inspector-plugin';
 
 // 从环境变量获取代理目标，默认使用 SiliconFlow
 const getProxyTarget = () => {
@@ -29,7 +29,7 @@ const getProxyTarget = () => {
 };
 
 export default defineConfig({
-  base: "/", // Vercel 部署使用根路径
+  base: '/', // Vercel 部署使用根路径
   server: {
     proxy: {
       '/api': {
@@ -41,19 +41,19 @@ export default defineConfig({
             console.error('代理错误:', err);
           });
         },
-      }
-    }
+      },
+    },
   },
   plugins: [
     codeInspectorPlugin({
-      bundler: "vite",
-      hotKeys: ["altKey"],
+      bundler: 'vite',
+      hotKeys: ['altKey'],
     }),
     react(),
   ],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "."),
+      '@': path.resolve(__dirname, '.'),
     },
   },
 });

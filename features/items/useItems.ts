@@ -139,7 +139,9 @@ export function useItems({ player, setPlayer, addLog }: UseItemsParams) {
         setPlayer((prev) => {
           if (!prev) return prev;
           // 检查是否已装备
-          const isEquipped = Object.values(prev.equippedItems).includes(item.id);
+          const isEquipped = Object.values(prev.equippedItems).includes(
+            item.id
+          );
           if (isEquipped) {
             addLog('无法丢弃已装备的物品！请先卸下。', 'danger');
             return prev;
@@ -159,4 +161,3 @@ export function useItems({ player, setPlayer, addLog }: UseItemsParams) {
     handleDiscardItem,
   };
 }
-

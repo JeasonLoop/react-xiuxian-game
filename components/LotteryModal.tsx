@@ -18,7 +18,9 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
 
   const handleDraw = async (count: 1 | 10) => {
     if (player.lotteryTickets < count) {
-      alert(`抽奖券不足！需要 ${count} 张，当前拥有 ${player.lotteryTickets} 张`);
+      alert(
+        `抽奖券不足！需要 ${count} 张，当前拥有 ${player.lotteryTickets} 张`
+      );
       return;
     }
 
@@ -36,11 +38,16 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
-      case '普通': return 'text-gray-400 border-gray-600';
-      case '稀有': return 'text-blue-400 border-blue-600';
-      case '传说': return 'text-purple-400 border-purple-600';
-      case '仙品': return 'text-yellow-400 border-yellow-600';
-      default: return 'text-gray-400 border-gray-600';
+      case '普通':
+        return 'text-gray-400 border-gray-600';
+      case '稀有':
+        return 'text-blue-400 border-blue-600';
+      case '传说':
+        return 'text-purple-400 border-purple-600';
+      case '仙品':
+        return 'text-yellow-400 border-yellow-600';
+      default:
+        return 'text-gray-400 border-gray-600';
     }
   };
 
@@ -58,7 +65,10 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
             <Gift className="text-yellow-400 w-5 h-5 md:w-6 md:h-6" />
             抽奖系统
           </h2>
-          <button onClick={onClose} className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation">
+          <button
+            onClick={onClose}
+            className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+          >
             <X size={24} />
           </button>
         </div>
@@ -89,7 +99,10 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
             >
               {isDrawing ? (
                 <div className="flex flex-col items-center gap-2">
-                  <Sparkles className="animate-spin text-yellow-400" size={32} />
+                  <Sparkles
+                    className="animate-spin text-yellow-400"
+                    size={32}
+                  />
                   <span>抽奖中...</span>
                 </div>
               ) : (
@@ -108,7 +121,10 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
             >
               {isDrawing ? (
                 <div className="flex flex-col items-center gap-2">
-                  <Sparkles className="animate-spin text-yellow-400" size={32} />
+                  <Sparkles
+                    className="animate-spin text-yellow-400"
+                    size={32}
+                  />
                   <span>抽奖中...</span>
                 </div>
               ) : (
@@ -125,12 +141,14 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
           <div>
             <h3 className="text-lg font-bold mb-3">奖品池</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-y-auto">
-              {LOTTERY_PRIZES.map(prize => (
+              {LOTTERY_PRIZES.map((prize) => (
                 <div
                   key={prize.id}
                   className={`bg-stone-900 rounded p-3 border ${getRarityColor(prize.rarity).split(' ')[1]}`}
                 >
-                  <div className={`text-sm font-bold ${getRarityColor(prize.rarity).split(' ')[0]} mb-1`}>
+                  <div
+                    className={`text-sm font-bold ${getRarityColor(prize.rarity).split(' ')[0]} mb-1`}
+                  >
                     {prize.name}
                   </div>
                   <div className="text-xs text-stone-500">{prize.rarity}</div>
@@ -145,4 +163,3 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
 };
 
 export default LotteryModal;
-

@@ -12,9 +12,7 @@ interface UseSettingsHandlersProps {
  * @returns handleUpdateSettings 更新设置
  */
 
-export function useSettingsHandlers({
-  setSettings,
-}: UseSettingsHandlersProps) {
+export function useSettingsHandlers({ setSettings }: UseSettingsHandlersProps) {
   const handleUpdateSettings = (newSettings: Partial<GameSettings>) => {
     setSettings((prev) => ({ ...prev, ...newSettings }));
   };
@@ -23,4 +21,3 @@ export function useSettingsHandlers({
     handleUpdateSettings,
   };
 }
-

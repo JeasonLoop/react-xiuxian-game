@@ -15,7 +15,7 @@ const BattleModal: React.FC<BattleModalProps> = ({
   replay,
   revealedRounds,
   onSkip,
-  onClose
+  onClose,
 }) => {
   const logRef = useRef<HTMLDivElement | null>(null);
 
@@ -23,7 +23,7 @@ const BattleModal: React.FC<BattleModalProps> = ({
     if (!logRef.current) return;
     logRef.current.scrollTo({
       top: logRef.current.scrollHeight,
-      behavior: 'smooth'
+      behavior: 'smooth',
     });
   }, [revealedRounds, replay]);
 
@@ -32,7 +32,7 @@ const BattleModal: React.FC<BattleModalProps> = ({
       return {
         visibleRounds: [],
         isResolved: true,
-        progressText: '0 / 0'
+        progressText: '0 / 0',
       };
     }
     const total = replay.rounds.length || 1;
@@ -40,7 +40,7 @@ const BattleModal: React.FC<BattleModalProps> = ({
     return {
       visibleRounds: replay.rounds.slice(0, progress),
       isResolved: progress >= total,
-      progressText: `${progress} / ${total}`
+      progressText: `${progress} / ${total}`,
     };
   }, [replay, revealedRounds]);
 
@@ -61,7 +61,9 @@ const BattleModal: React.FC<BattleModalProps> = ({
       >
         <div className="flex items-center justify-between px-5 md:px-6 py-4 border-b border-stone-700">
           <div>
-            <div className="text-xs text-stone-500 uppercase tracking-widest">战斗遭遇</div>
+            <div className="text-xs text-stone-500 uppercase tracking-widest">
+              战斗遭遇
+            </div>
             <div className="flex items-center gap-2 text-lg md:text-xl font-serif text-mystic-gold">
               <Sword size={18} className="text-mystic-gold" />
               {replay.enemy.title}·{replay.enemy.name}
@@ -105,7 +107,9 @@ const BattleModal: React.FC<BattleModalProps> = ({
           className="flex-1 overflow-y-auto px-5 md:px-6 py-4 space-y-3 bg-ink-800/60 text-sm"
         >
           {visibleRounds.length === 0 ? (
-            <div className="text-center text-stone-500 py-6">战斗记录准备中...</div>
+            <div className="text-center text-stone-500 py-6">
+              战斗记录准备中...
+            </div>
           ) : (
             visibleRounds.map((round, idx) => (
               <div
@@ -118,11 +122,14 @@ const BattleModal: React.FC<BattleModalProps> = ({
               >
                 <div className="flex justify-between text-[11px] text-stone-400 mb-1">
                   <span>
-                    第 {idx + 1} 回合 · {round.attacker === 'player' ? '你的出手' : '敌方出手'}
+                    第 {idx + 1} 回合 ·{' '}
+                    {round.attacker === 'player' ? '你的出手' : '敌方出手'}
                   </span>
                   <span>
                     伤害 {round.damage}
-                    {round.crit && <span className="text-mystic-gold ml-1">· 暴击</span>}
+                    {round.crit && (
+                      <span className="text-mystic-gold ml-1">· 暴击</span>
+                    )}
                   </span>
                 </div>
                 <p>{round.description}</p>
@@ -140,8 +147,15 @@ const BattleModal: React.FC<BattleModalProps> = ({
             <div>战斗进度：{progressText} 回合</div>
             <div>损耗气血：{replay.hpLoss}</div>
             <div className="text-stone-300">
-              奖励：{replay.expChange >= 0 ? `+${replay.expChange}` : replay.expChange} 修为 ·{' '}
-              {replay.spiritChange >= 0 ? `+${replay.spiritChange}` : replay.spiritChange} 灵石
+              奖励：
+              {replay.expChange >= 0
+                ? `+${replay.expChange}`
+                : replay.expChange}{' '}
+              修为 ·{' '}
+              {replay.spiritChange >= 0
+                ? `+${replay.spiritChange}`
+                : replay.spiritChange}{' '}
+              灵石
             </div>
             <div>当前气血：{replay.playerHpAfter}</div>
           </div>
@@ -175,5 +189,3 @@ const BattleModal: React.FC<BattleModalProps> = ({
 };
 
 export default BattleModal;
-
-

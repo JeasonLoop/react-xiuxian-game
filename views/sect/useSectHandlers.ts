@@ -1,5 +1,12 @@
 import React from 'react';
-import { PlayerStats, Item, ItemType, ItemRarity, RealmType, SectRank } from '../../types';
+import {
+  PlayerStats,
+  Item,
+  ItemType,
+  ItemRarity,
+  RealmType,
+  SectRank,
+} from '../../types';
 import { SECTS, SECT_RANK_REQUIREMENTS } from '../../constants';
 import { RandomSectTask } from '../../services/randomService';
 import { uid } from '../../utils/gameUtils';
@@ -9,7 +16,9 @@ interface UseSectHandlersProps {
   setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
   addLog: (message: string, type?: string) => void;
   setIsSectOpen: (open: boolean) => void;
-  setPurchaseSuccess: (success: { item: string; quantity: number } | null) => void;
+  setPurchaseSuccess: (
+    success: { item: string; quantity: number } | null
+  ) => void;
 }
 
 /**
@@ -35,7 +44,7 @@ export function useSectHandlers({
 }: UseSectHandlersProps) {
   const handleJoinSect = (sectId: string, sectName?: string) => {
     // 先尝试从 SECTS 中查找
-    let sect = SECTS.find(s => s.id === sectId);
+    let sect = SECTS.find((s) => s.id === sectId);
 
     // 如果找不到，说明是随机生成的宗门，使用传入的名称或创建一个临时宗门对象
     if (!sect) {
@@ -45,7 +54,7 @@ export function useSectHandlers({
           id: sectId,
           name: sectName,
           description: '',
-          reqRealm: RealmType.QiRefining
+          reqRealm: RealmType.QiRefining,
         };
       } else {
         // 如果连名称都没有，尝试从 availableSects 中查找（但这需要从 SectModal 传递）
@@ -78,7 +87,12 @@ export function useSectHandlers({
     setPlayer((prev) => {
       // 检查每日任务限制
       const today = new Date().toISOString().split('T')[0];
-      let dailyTaskCount = prev.dailyTaskCount || { instant: 0, short: 0, medium: 0, long: 0 };
+      let dailyTaskCount = prev.dailyTaskCount || {
+        instant: 0,
+        short: 0,
+        medium: 0,
+        long: 0,
+      };
       let lastTaskResetDate = prev.lastTaskResetDate || today;
 
       // 如果日期变化，重置计数
@@ -99,9 +113,13 @@ export function useSectHandlers({
       const taskType = task.timeCost;
       const limitConfig = taskLimits[taskType];
       if (limitConfig) {
-        const currentCount = dailyTaskCount[taskType as keyof typeof dailyTaskCount] || 0;
+        const currentCount =
+          dailyTaskCount[taskType as keyof typeof dailyTaskCount] || 0;
         if (currentCount >= limitConfig.limit) {
-          addLog(`今日已完成${limitConfig.limit}次${limitConfig.name}任务，请明日再来。`, 'danger');
+          addLog(
+            `今日已完成${limitConfig.limit}次${limitConfig.name}任务，请明日再来。`,
+            'danger'
+          );
           return prev;
         }
         // 增加计数
@@ -294,4 +312,3 @@ export function useSectHandlers({
     handleSectBuy,
   };
 }
-

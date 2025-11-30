@@ -1,5 +1,13 @@
 import React from 'react';
-import { User, Sword, Mountain, Sparkles, Scroll, Play, Pause } from 'lucide-react';
+import {
+  User,
+  Sword,
+  Mountain,
+  Sparkles,
+  Scroll,
+  Play,
+  Pause,
+} from 'lucide-react';
 /**
  * 操作按钮栏组件
  * 包含打坐、历练、秘境、炼丹、宗门五个按钮
@@ -70,18 +78,15 @@ function ActionBar({
           }}
           className={`
             absolute top-1 right-1 p-1 rounded transition-all duration-200
-            ${autoMeditate
-              ? 'bg-mystic-jade/80 text-stone-900 hover:bg-mystic-jade'
-              : 'bg-stone-700/80 text-stone-400 hover:bg-stone-600'
+            ${
+              autoMeditate
+                ? 'bg-mystic-jade/80 text-stone-900 hover:bg-mystic-jade'
+                : 'bg-stone-700/80 text-stone-400 hover:bg-stone-600'
             }
           `}
           title={autoMeditate ? '关闭自动打坐' : '开启自动打坐'}
         >
-          {autoMeditate ? (
-            <Pause size={12} />
-          ) : (
-            <Play size={12} />
-          )}
+          {autoMeditate ? <Pause size={12} /> : <Play size={12} />}
         </button>
       </div>
 
@@ -102,7 +107,9 @@ function ActionBar({
           <Sword
             size={24}
             className={`md:w-6 md:h-6 mb-1.5 md:mb-2 text-mystic-gold ${
-              loading ? 'animate-spin' : 'group-active:scale-110 transition-transform'
+              loading
+                ? 'animate-spin'
+                : 'group-active:scale-110 transition-transform'
             }`}
           />
           <span className="font-serif font-bold text-base md:text-base">
@@ -119,18 +126,15 @@ function ActionBar({
           }}
           className={`
             absolute top-1 right-1 p-1 rounded transition-all duration-200
-            ${autoAdventure
-              ? 'bg-mystic-gold/80 text-stone-900 hover:bg-mystic-gold'
-              : 'bg-stone-700/80 text-stone-400 hover:bg-stone-600'
+            ${
+              autoAdventure
+                ? 'bg-mystic-gold/80 text-stone-900 hover:bg-mystic-gold'
+                : 'bg-stone-700/80 text-stone-400 hover:bg-stone-600'
             }
           `}
           title={autoAdventure ? '关闭自动历练' : '开启自动历练'}
         >
-          {autoAdventure ? (
-            <Pause size={12} />
-          ) : (
-            <Play size={12} />
-          )}
+          {autoAdventure ? <Pause size={12} /> : <Play size={12} />}
         </button>
       </div>
 
@@ -209,4 +213,3 @@ function ActionBar({
 }
 
 export default React.memo(ActionBar);
-

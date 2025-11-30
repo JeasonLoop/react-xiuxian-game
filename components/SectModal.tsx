@@ -1,9 +1,26 @@
-
 import React, { useState, useMemo } from 'react';
 import { PlayerStats, SectRank, RealmType, Item } from '../types';
-import { SECTS, SECT_RANK_REQUIREMENTS, SECT_SHOP_ITEMS, REALM_ORDER } from '../constants';
-import { generateRandomSects, generateRandomSectTasks, RandomSectTask } from '../services/randomService';
-import { X, Users, Award, ShoppingBag, Shield, Scroll, ArrowUp, RefreshCw } from 'lucide-react';
+import {
+  SECTS,
+  SECT_RANK_REQUIREMENTS,
+  SECT_SHOP_ITEMS,
+  REALM_ORDER,
+} from '../constants';
+import {
+  generateRandomSects,
+  generateRandomSectTasks,
+  RandomSectTask,
+} from '../services/randomService';
+import {
+  X,
+  Users,
+  Award,
+  ShoppingBag,
+  Shield,
+  Scroll,
+  ArrowUp,
+  RefreshCw,
+} from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -24,10 +41,14 @@ const SectModal: React.FC<Props> = ({
   onLeaveSect,
   onTask,
   onPromote,
-  onBuy
+  onBuy,
 }) => {
-  const [activeTab, setActiveTab] = useState<'hall' | 'mission' | 'shop'>('hall');
-  const [buyQuantities, setBuyQuantities] = useState<Record<number, number>>({});
+  const [activeTab, setActiveTab] = useState<'hall' | 'mission' | 'shop'>(
+    'hall'
+  );
+  const [buyQuantities, setBuyQuantities] = useState<Record<number, number>>(
+    {}
+  );
   const [refreshKey, setRefreshKey] = useState(0);
 
   // 生成随机宗门列表（未加入宗门时）
@@ -43,12 +64,14 @@ const SectModal: React.FC<Props> = ({
   }, [player.sectId, player.sectRank, refreshKey]);
 
   const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
+    setRefreshKey((prev) => prev + 1);
   };
 
   if (!isOpen) return null;
 
-  const currentSect = availableSects.find(s => s.id === player.sectId) || SECTS.find(s => s.id === player.sectId);
+  const currentSect =
+    availableSects.find((s) => s.id === player.sectId) ||
+    SECTS.find((s) => s.id === player.sectId);
   const getRealmIndex = (r: RealmType) => REALM_ORDER.indexOf(r);
 
   // -- Selection View (Not in a sect) --
@@ -69,22 +92,38 @@ const SectModal: React.FC<Props> = ({
                 <RefreshCw size={16} />
                 <span className="hidden md:inline">刷新</span>
               </button>
-              <button onClick={onClose} className="text-stone-400 hover:text-white">
+              <button
+                onClick={onClose}
+                className="text-stone-400 hover:text-white"
+              >
                 <X size={24} />
               </button>
             </div>
           </div>
 
           <div className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-3 gap-4">
-            {availableSects.map(sect => {
-              const canJoin = getRealmIndex(player.realm) >= getRealmIndex(sect.reqRealm);
+            {availableSects.map((sect) => {
+              const canJoin =
+                getRealmIndex(player.realm) >= getRealmIndex(sect.reqRealm);
               return (
-                <div key={sect.id} className="bg-ink-800 border border-stone-700 p-4 rounded flex flex-col">
-                  <h4 className="text-xl font-serif font-bold text-stone-200 mb-2">{sect.name}</h4>
-                  <p className="text-stone-400 text-sm mb-4 flex-1">{sect.description}</p>
+                <div
+                  key={sect.id}
+                  className="bg-ink-800 border border-stone-700 p-4 rounded flex flex-col"
+                >
+                  <h4 className="text-xl font-serif font-bold text-stone-200 mb-2">
+                    {sect.name}
+                  </h4>
+                  <p className="text-stone-400 text-sm mb-4 flex-1">
+                    {sect.description}
+                  </p>
 
                   <div className="text-xs text-stone-500 mb-4">
-                    入门要求: <span className={canJoin ? 'text-stone-300' : 'text-red-400'}>{sect.reqRealm}</span>
+                    入门要求:{' '}
+                    <span
+                      className={canJoin ? 'text-stone-300' : 'text-red-400'}
+                    >
+                      {sect.reqRealm}
+                    </span>
                   </div>
 
                   <button
@@ -98,9 +137,11 @@ const SectModal: React.FC<Props> = ({
                     disabled={!canJoin}
                     className={`
                       w-full py-2 rounded font-serif text-sm transition-colors border touch-manipulation
-                      ${canJoin
-                        ? 'bg-mystic-jade/20 text-mystic-jade border-mystic-jade hover:bg-mystic-jade/30 active:bg-mystic-jade/40'
-                        : 'bg-stone-800 text-stone-600 border-stone-700 cursor-not-allowed'}
+                      ${
+                        canJoin
+                          ? 'bg-mystic-jade/20 text-mystic-jade border-mystic-jade hover:bg-mystic-jade/30 active:bg-mystic-jade/40'
+                          : 'bg-stone-800 text-stone-600 border-stone-700 cursor-not-allowed'
+                      }
                     `}
                   >
                     {canJoin ? '拜入山门' : '境界不足'}
@@ -119,10 +160,13 @@ const SectModal: React.FC<Props> = ({
   // Promotion Logic
   const ranks = Object.values(SectRank);
   const currentRankIdx = ranks.indexOf(player.sectRank);
-  const nextRank = currentRankIdx < ranks.length - 1 ? ranks[currentRankIdx + 1] : null;
+  const nextRank =
+    currentRankIdx < ranks.length - 1 ? ranks[currentRankIdx + 1] : null;
   const nextReq = nextRank ? SECT_RANK_REQUIREMENTS[nextRank] : null;
 
-  const canPromote = nextRank && nextReq &&
+  const canPromote =
+    nextRank &&
+    nextReq &&
     player.sectContribution >= nextReq.contribution &&
     getRealmIndex(player.realm) >= nextReq.realmIndex;
 
@@ -138,15 +182,22 @@ const SectModal: React.FC<Props> = ({
         {/* Header */}
         <div className="p-3 md:p-4 border-b border-stone-600 bg-ink-800 md:rounded-t flex justify-between items-start">
           <div>
-             <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <h3 className="text-xl md:text-2xl font-serif text-mystic-gold">{currentSect?.name}</h3>
-                <span className="text-[10px] md:text-xs px-2 py-0.5 rounded bg-stone-700 text-stone-300 border border-stone-600">
-                  {player.sectRank}
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <h3 className="text-xl md:text-2xl font-serif text-mystic-gold">
+                {currentSect?.name}
+              </h3>
+              <span className="text-[10px] md:text-xs px-2 py-0.5 rounded bg-stone-700 text-stone-300 border border-stone-600">
+                {player.sectRank}
+              </span>
+            </div>
+            <div className="text-xs md:text-sm text-stone-400 flex gap-4">
+              <span>
+                宗门贡献:{' '}
+                <span className="text-white font-bold">
+                  {player.sectContribution}
                 </span>
-             </div>
-             <div className="text-xs md:text-sm text-stone-400 flex gap-4">
-               <span>宗门贡献: <span className="text-white font-bold">{player.sectContribution}</span></span>
-             </div>
+              </span>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             {activeTab === 'mission' && (
@@ -159,7 +210,10 @@ const SectModal: React.FC<Props> = ({
                 <span className="hidden md:inline">刷新</span>
               </button>
             )}
-            <button onClick={onClose} className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation">
+            <button
+              onClick={onClose}
+              className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+            >
               <X size={24} />
             </button>
           </div>
@@ -189,58 +243,84 @@ const SectModal: React.FC<Props> = ({
 
         {/* Content */}
         <div className="flex-1 p-6 overflow-y-auto bg-paper-800">
-
           {/* Main Hall */}
           {activeTab === 'hall' && (
             <div className="space-y-6">
               <div className="bg-ink-800 p-4 rounded border border-stone-700">
-                <h4 className="font-serif text-lg text-stone-200 mb-2 border-b border-stone-700 pb-2">身份晋升</h4>
+                <h4 className="font-serif text-lg text-stone-200 mb-2 border-b border-stone-700 pb-2">
+                  身份晋升
+                </h4>
                 {nextRank ? (
                   <div>
-                     <p className="text-sm text-stone-400 mb-4">
-                       下级职衔：<span className="text-stone-200 font-bold">{nextRank}</span>
-                     </p>
-                     <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-                        <div className="bg-ink-900 p-2 rounded">
-                          <span className="text-stone-500 block">所需贡献</span>
-                          <span className={player.sectContribution >= (nextReq?.contribution || 0) ? 'text-mystic-jade' : 'text-red-400'}>
-                            {player.sectContribution} / {nextReq?.contribution}
-                          </span>
-                        </div>
-                        <div className="bg-ink-900 p-2 rounded">
-                          <span className="text-stone-500 block">所需境界</span>
-                          <span className={getRealmIndex(player.realm) >= (nextReq?.realmIndex || 0) ? 'text-mystic-jade' : 'text-red-400'}>
-                            {Object.values(RealmType)[nextReq?.realmIndex || 0]}
-                          </span>
-                        </div>
-                     </div>
-                     <button
-                       onClick={onPromote}
-                       disabled={!canPromote}
-                       className={`
+                    <p className="text-sm text-stone-400 mb-4">
+                      下级职衔：
+                      <span className="text-stone-200 font-bold">
+                        {nextRank}
+                      </span>
+                    </p>
+                    <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+                      <div className="bg-ink-900 p-2 rounded">
+                        <span className="text-stone-500 block">所需贡献</span>
+                        <span
+                          className={
+                            player.sectContribution >=
+                            (nextReq?.contribution || 0)
+                              ? 'text-mystic-jade'
+                              : 'text-red-400'
+                          }
+                        >
+                          {player.sectContribution} / {nextReq?.contribution}
+                        </span>
+                      </div>
+                      <div className="bg-ink-900 p-2 rounded">
+                        <span className="text-stone-500 block">所需境界</span>
+                        <span
+                          className={
+                            getRealmIndex(player.realm) >=
+                            (nextReq?.realmIndex || 0)
+                              ? 'text-mystic-jade'
+                              : 'text-red-400'
+                          }
+                        >
+                          {Object.values(RealmType)[nextReq?.realmIndex || 0]}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={onPromote}
+                      disabled={!canPromote}
+                      className={`
                          w-full py-2 rounded font-serif text-sm transition-colors flex items-center justify-center gap-2
-                         ${canPromote
-                           ? 'bg-mystic-gold/20 text-mystic-gold border border-mystic-gold hover:bg-mystic-gold/30'
-                           : 'bg-stone-800 text-stone-600 border border-stone-700 cursor-not-allowed'}
+                         ${
+                           canPromote
+                             ? 'bg-mystic-gold/20 text-mystic-gold border border-mystic-gold hover:bg-mystic-gold/30'
+                             : 'bg-stone-800 text-stone-600 border border-stone-700 cursor-not-allowed'
+                         }
                        `}
-                     >
-                       <ArrowUp size={16} /> 申请晋升
-                     </button>
+                    >
+                      <ArrowUp size={16} /> 申请晋升
+                    </button>
                   </div>
                 ) : (
-                  <p className="text-mystic-gold text-center py-4">你已位极人臣，乃宗门之中流砥柱。</p>
+                  <p className="text-mystic-gold text-center py-4">
+                    你已位极人臣，乃宗门之中流砥柱。
+                  </p>
                 )}
               </div>
 
               <div className="bg-ink-800 p-4 rounded border border-stone-700">
-                 <h4 className="font-serif text-lg text-stone-200 mb-2 border-b border-stone-700 pb-2">退出宗门</h4>
-                 <p className="text-sm text-stone-500 mb-4">退出宗门将清空所有贡献值，且短期内不可再次加入。</p>
-                 <button
-                   onClick={onLeaveSect}
-                   className="px-4 py-2 border border-red-900 text-red-400 hover:bg-red-900/20 rounded text-sm transition-colors"
-                 >
-                   叛出宗门
-                 </button>
+                <h4 className="font-serif text-lg text-stone-200 mb-2 border-b border-stone-700 pb-2">
+                  退出宗门
+                </h4>
+                <p className="text-sm text-stone-500 mb-4">
+                  退出宗门将清空所有贡献值，且短期内不可再次加入。
+                </p>
+                <button
+                  onClick={onLeaveSect}
+                  className="px-4 py-2 border border-red-900 text-red-400 hover:bg-red-900/20 rounded text-sm transition-colors"
+                >
+                  叛出宗门
+                </button>
               </div>
             </div>
           )}
@@ -262,11 +342,18 @@ const SectModal: React.FC<Props> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {randomTasks.map((task) => {
                   const canComplete = (() => {
-                    if (task.cost?.spiritStones && player.spiritStones < task.cost.spiritStones) return false;
+                    if (
+                      task.cost?.spiritStones &&
+                      player.spiritStones < task.cost.spiritStones
+                    )
+                      return false;
                     if (task.cost?.items) {
                       for (const itemReq of task.cost.items) {
-                        const item = player.inventory.find(i => i.name === itemReq.name);
-                        if (!item || item.quantity < itemReq.quantity) return false;
+                        const item = player.inventory.find(
+                          (i) => i.name === itemReq.name
+                        );
+                        if (!item || item.quantity < itemReq.quantity)
+                          return false;
                       }
                     }
                     // 检查每日任务限制
@@ -280,14 +367,24 @@ const SectModal: React.FC<Props> = ({
                     };
                     const limit = taskLimits[task.timeCost];
                     if (limit) {
-                      const dailyTaskCount = lastReset === today
-                        ? (player.dailyTaskCount && typeof player.dailyTaskCount === 'object'
+                      const dailyTaskCount =
+                        lastReset === today
+                          ? player.dailyTaskCount &&
+                            typeof player.dailyTaskCount === 'object'
                             ? player.dailyTaskCount
                             : typeof player.dailyTaskCount === 'number'
-                              ? { instant: player.dailyTaskCount, short: 0, medium: 0, long: 0 }
-                              : { instant: 0, short: 0, medium: 0, long: 0 })
-                        : { instant: 0, short: 0, medium: 0, long: 0 };
-                      const currentCount = dailyTaskCount[task.timeCost as keyof typeof dailyTaskCount] || 0;
+                              ? {
+                                  instant: player.dailyTaskCount,
+                                  short: 0,
+                                  medium: 0,
+                                  long: 0,
+                                }
+                              : { instant: 0, short: 0, medium: 0, long: 0 }
+                          : { instant: 0, short: 0, medium: 0, long: 0 };
+                      const currentCount =
+                        dailyTaskCount[
+                          task.timeCost as keyof typeof dailyTaskCount
+                        ] || 0;
                       if (currentCount >= limit) return false;
                     }
                     return true;
@@ -297,38 +394,55 @@ const SectModal: React.FC<Props> = ({
                     instant: '瞬时',
                     short: '短暂',
                     medium: '中等',
-                    long: '较长'
+                    long: '较长',
                   }[task.timeCost];
 
                   return (
-                    <div key={task.id} className="bg-ink-800 p-4 rounded border border-stone-700 flex flex-col">
-                      <h4 className="font-serif font-bold text-stone-200 mb-1">{task.name}</h4>
-                      <p className="text-xs text-stone-500 mb-4 flex-1">{task.description}</p>
+                    <div
+                      key={task.id}
+                      className="bg-ink-800 p-4 rounded border border-stone-700 flex flex-col"
+                    >
+                      <h4 className="font-serif font-bold text-stone-200 mb-1">
+                        {task.name}
+                      </h4>
+                      <p className="text-xs text-stone-500 mb-4 flex-1">
+                        {task.description}
+                      </p>
 
                       <div className="space-y-2 mb-4">
                         {task.cost && (
                           <div className="text-xs text-red-400">
-                            消耗: {
-                              task.cost.spiritStones && <span>{task.cost.spiritStones} 灵石</span>
-                            }
-                            {task.cost.items && task.cost.items.map((item, idx) => (
-                              <span key={idx}>
-                                {idx > 0 && '、'}
-                                {item.quantity} {item.name}
-                              </span>
-                            ))}
+                            消耗:{' '}
+                            {task.cost.spiritStones && (
+                              <span>{task.cost.spiritStones} 灵石</span>
+                            )}
+                            {task.cost.items &&
+                              task.cost.items.map((item, idx) => (
+                                <span key={idx}>
+                                  {idx > 0 && '、'}
+                                  {item.quantity} {item.name}
+                                </span>
+                              ))}
                           </div>
                         )}
                         <div className="text-xs text-stone-400">
-                          奖励: <span className="text-mystic-gold">{task.reward.contribution} 贡献</span>
-                          {task.reward.exp && <span>、{task.reward.exp} 修为</span>}
-                          {task.reward.spiritStones && <span>、{task.reward.spiritStones} 灵石</span>}
-                          {task.reward.items && task.reward.items.map((item, idx) => (
-                            <span key={idx}>
-                              {idx === 0 && '、'}
-                              {item.quantity} {item.name}
-                            </span>
-                          ))}
+                          奖励:{' '}
+                          <span className="text-mystic-gold">
+                            {task.reward.contribution} 贡献
+                          </span>
+                          {task.reward.exp && (
+                            <span>、{task.reward.exp} 修为</span>
+                          )}
+                          {task.reward.spiritStones && (
+                            <span>、{task.reward.spiritStones} 灵石</span>
+                          )}
+                          {task.reward.items &&
+                            task.reward.items.map((item, idx) => (
+                              <span key={idx}>
+                                {idx === 0 && '、'}
+                                {item.quantity} {item.name}
+                              </span>
+                            ))}
                         </div>
                         <div className="text-xs text-stone-500">
                           耗时: {timeCostText}
@@ -344,14 +458,29 @@ const SectModal: React.FC<Props> = ({
                           };
                           const limit = taskLimits[task.timeCost];
                           if (limit) {
-                            const dailyTaskCount = lastReset === today
-                              ? (player.dailyTaskCount && typeof player.dailyTaskCount === 'object'
+                            const dailyTaskCount =
+                              lastReset === today
+                                ? player.dailyTaskCount &&
+                                  typeof player.dailyTaskCount === 'object'
                                   ? player.dailyTaskCount
                                   : typeof player.dailyTaskCount === 'number'
-                                    ? { instant: player.dailyTaskCount, short: 0, medium: 0, long: 0 }
-                                    : { instant: 0, short: 0, medium: 0, long: 0 })
-                              : { instant: 0, short: 0, medium: 0, long: 0 };
-                            const currentCount = dailyTaskCount[task.timeCost as keyof typeof dailyTaskCount] || 0;
+                                    ? {
+                                        instant: player.dailyTaskCount,
+                                        short: 0,
+                                        medium: 0,
+                                        long: 0,
+                                      }
+                                    : {
+                                        instant: 0,
+                                        short: 0,
+                                        medium: 0,
+                                        long: 0,
+                                      }
+                                : { instant: 0, short: 0, medium: 0, long: 0 };
+                            const currentCount =
+                              dailyTaskCount[
+                                task.timeCost as keyof typeof dailyTaskCount
+                              ] || 0;
                             return (
                               <div className="text-xs text-stone-500">
                                 今日已完成: {currentCount} / {limit} 次
@@ -389,10 +518,17 @@ const SectModal: React.FC<Props> = ({
                 const canBuy = player.sectContribution >= totalCost;
 
                 return (
-                  <div key={idx} className="bg-ink-800 p-3 rounded border border-stone-700 flex items-center justify-between">
+                  <div
+                    key={idx}
+                    className="bg-ink-800 p-3 rounded border border-stone-700 flex items-center justify-between"
+                  >
                     <div>
-                      <div className="font-bold text-stone-200">{item.name}</div>
-                      <div className="text-xs text-stone-500">{item.item.description}</div>
+                      <div className="font-bold text-stone-200">
+                        {item.name}
+                      </div>
+                      <div className="text-xs text-stone-500">
+                        {item.item.description}
+                      </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-mystic-gold font-bold">
@@ -406,7 +542,12 @@ const SectModal: React.FC<Props> = ({
                       <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1 border border-stone-600 rounded">
                           <button
-                            onClick={() => setBuyQuantities(prev => ({ ...prev, [idx]: Math.max(1, (prev[idx] || 1) - 1) }))}
+                            onClick={() =>
+                              setBuyQuantities((prev) => ({
+                                ...prev,
+                                [idx]: Math.max(1, (prev[idx] || 1) - 1),
+                              }))
+                            }
                             className="px-2 py-1 text-stone-400 hover:text-white"
                           >
                             -
@@ -416,13 +557,24 @@ const SectModal: React.FC<Props> = ({
                             min="1"
                             value={quantity}
                             onChange={(e) => {
-                              const val = Math.max(1, parseInt(e.target.value) || 1);
-                              setBuyQuantities(prev => ({ ...prev, [idx]: val }));
+                              const val = Math.max(
+                                1,
+                                parseInt(e.target.value) || 1
+                              );
+                              setBuyQuantities((prev) => ({
+                                ...prev,
+                                [idx]: val,
+                              }));
                             }}
                             className="w-12 text-center bg-transparent text-stone-200 border-0 focus:outline-none"
                           />
                           <button
-                            onClick={() => setBuyQuantities(prev => ({ ...prev, [idx]: (prev[idx] || 1) + 1 }))}
+                            onClick={() =>
+                              setBuyQuantities((prev) => ({
+                                ...prev,
+                                [idx]: (prev[idx] || 1) + 1,
+                              }))
+                            }
                             className="px-2 py-1 text-stone-400 hover:text-white"
                           >
                             +
@@ -431,14 +583,16 @@ const SectModal: React.FC<Props> = ({
                         <button
                           onClick={() => {
                             onBuy(item.item, item.cost, quantity);
-                            setBuyQuantities(prev => ({ ...prev, [idx]: 1 }));
+                            setBuyQuantities((prev) => ({ ...prev, [idx]: 1 }));
                           }}
                           disabled={!canBuy}
                           className={`
                             px-3 py-1.5 rounded text-xs border
-                            ${canBuy
-                              ? 'bg-stone-700 hover:bg-stone-600 text-stone-200 border-stone-600'
-                              : 'bg-stone-900 text-stone-600 border-stone-800 cursor-not-allowed'}
+                            ${
+                              canBuy
+                                ? 'bg-stone-700 hover:bg-stone-600 text-stone-200 border-stone-600'
+                                : 'bg-stone-900 text-stone-600 border-stone-800 cursor-not-allowed'
+                            }
                           `}
                         >
                           兑换
@@ -450,7 +604,6 @@ const SectModal: React.FC<Props> = ({
               })}
             </div>
           )}
-
         </div>
       </div>
     </div>

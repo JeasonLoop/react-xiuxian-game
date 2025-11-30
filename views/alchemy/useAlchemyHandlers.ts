@@ -1,5 +1,12 @@
 import React from 'react';
-import { PlayerStats, Recipe, Item, ItemType, EquipmentSlot, ItemRarity } from '../../types';
+import {
+  PlayerStats,
+  Recipe,
+  Item,
+  ItemType,
+  EquipmentSlot,
+  ItemRarity,
+} from '../../types';
 import { uid } from '../../utils/gameUtils';
 
 interface UseAlchemyHandlersProps {
@@ -71,7 +78,8 @@ export function useAlchemyHandlers({
         if (isEquipment) {
           newItem.isEquippable = true;
           if ('equipmentSlot' in recipe.result && recipe.result.equipmentSlot) {
-            newItem.equipmentSlot = recipe.result.equipmentSlot as EquipmentSlot;
+            newItem.equipmentSlot = recipe.result
+              .equipmentSlot as EquipmentSlot;
           } else {
             // 根据类型推断装备槽位
             if (recipe.result.type === ItemType.Artifact) {
@@ -122,4 +130,3 @@ export function useAlchemyHandlers({
     handleCraft,
   };
 }
-
