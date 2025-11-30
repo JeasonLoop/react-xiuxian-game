@@ -1,8 +1,8 @@
 
 import React, { useState, useMemo } from 'react';
 import { PlayerStats, SectRank, RealmType, Item } from '../types';
-import { SECTS, SECT_RANK_REQUIREMENTS, SECT_SHOP_ITEMS, REALM_ORDER } from '../constants';
-import { generateRandomSects, generateRandomSectTasks, RandomSectTask } from '../services/randomService';
+import { SECTS, SECT_RANK_REQUIREMENTS, REALM_ORDER } from '../constants';
+import { generateRandomSects, generateRandomSectTasks, generateSectShopItems, RandomSectTask } from '../services/randomService';
 import { X, Users, Award, ShoppingBag, Shield, Scroll, ArrowUp, RefreshCw } from 'lucide-react';
 
 interface Props {
@@ -30,6 +30,16 @@ const SectModal: React.FC<Props> = ({
   const [buyQuantities, setBuyQuantities] = useState<Record<number, number>>({});
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // 藏宝阁刷新相关状态
+  const [sectShopItems, setSectShopItems] = useState<Array<{ name: string; cost: number; item: Omit<Item, 'id'> }>>(() => generateSectShopItems());
+  const [shopRefreshTime, setShopRefreshTime] = useState<number>(() => Date.now() + 5 * 60 * 1000); // 5分钟后可刷新
+  const [shopRefreshCooldown, setShopRefreshCooldown] = useState<number>(() => {
+    // 初始化时计算剩余倒计时
+    const now = Date.now();
+    const refreshTime = Date.now() + 5 * 60 * 1000;
+    return Math.max(0, Math.floor((refreshTime - now) / 1000));
+  }); // 倒计时（秒）
+
   // 生成随机宗门列表（未加入宗门时）
   const availableSects = useMemo(() => {
     if (player.sectId) return SECTS;
@@ -45,6 +55,45 @@ const SectModal: React.FC<Props> = ({
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
   };
+
+  // 藏宝阁刷新处理
+  const handleShopRefresh = React.useCallback(() => {
+    const now = Date.now();
+    if (now >= shopRefreshTime) {
+      setSectShopItems(generateSectShopItems());
+      const newRefreshTime = now + 5 * 60 * 1000; // 设置下次刷新时间
+      setShopRefreshTime(newRefreshTime);
+      setShopRefreshCooldown(5 * 60); // 重置倒计时
+      setBuyQuantities({}); // 清空购买数量
+    }
+  }, [shopRefreshTime]);
+
+  // 藏宝阁倒计时更新
+  React.useEffect(() => {
+    if (activeTab !== 'shop' || !isOpen) return;
+
+    const updateCooldown = () => {
+      const now = Date.now();
+      const remaining = Math.max(0, Math.floor((shopRefreshTime - now) / 1000));
+      setShopRefreshCooldown(remaining);
+
+      // 如果倒计时结束，自动刷新
+      if (remaining === 0 && now >= shopRefreshTime) {
+        const newItems = generateSectShopItems();
+        setSectShopItems(newItems);
+        const newRefreshTime = now + 5 * 60 * 1000;
+        setShopRefreshTime(newRefreshTime);
+        setShopRefreshCooldown(5 * 60);
+        setBuyQuantities({});
+      }
+    };
+
+    // 立即更新一次
+    updateCooldown();
+
+    const interval = setInterval(updateCooldown, 1000);
+    return () => clearInterval(interval);
+  }, [activeTab, isOpen, shopRefreshTime]);
 
   if (!isOpen) return null;
 
@@ -383,7 +432,32 @@ const SectModal: React.FC<Props> = ({
           {/* Treasure Pavilion */}
           {activeTab === 'shop' && (
             <div className="space-y-4">
-              {SECT_SHOP_ITEMS.map((item, idx) => {
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-serif text-lg text-stone-200">藏宝阁</h4>
+                <div className="flex items-center gap-3">
+                  {shopRefreshCooldown > 0 ? (
+                    <span className="text-xs text-stone-400">
+                      {Math.floor(shopRefreshCooldown / 60)}:{(shopRefreshCooldown % 60).toString().padStart(2, '0')} 后可刷新
+                    </span>
+                  ) : (
+                    <span className="text-xs text-green-400">可刷新</span>
+                  )}
+                  <button
+                    onClick={handleShopRefresh}
+                    disabled={shopRefreshCooldown > 0}
+                    className={`px-3 py-1.5 rounded text-sm border flex items-center gap-1.5 transition-colors ${
+                      shopRefreshCooldown > 0
+                        ? 'bg-stone-800 text-stone-600 border-stone-700 cursor-not-allowed'
+                        : 'bg-blue-700 hover:bg-blue-600 text-stone-200 border-blue-600'
+                    }`}
+                    title={shopRefreshCooldown > 0 ? `还需等待 ${Math.floor(shopRefreshCooldown / 60)} 分 ${shopRefreshCooldown % 60} 秒` : '刷新藏宝阁物品（5分钟冷却）'}
+                  >
+                    <RefreshCw size={16} />
+                    <span>刷新</span>
+                  </button>
+                </div>
+              </div>
+              {sectShopItems.map((item, idx) => {
                 const quantity = buyQuantities[idx] || 1;
                 const totalCost = item.cost * quantity;
                 const canBuy = player.sectContribution >= totalCost;

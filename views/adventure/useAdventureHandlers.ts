@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayerStats, AdventureType, ShopType } from '../../types';
+import { PlayerStats, AdventureType, ShopType, RealmType } from '../../types';
 import { REALM_ORDER } from '../../constants';
 import { generateAdventureEvent } from '../../services/aiService';
 import { shouldTriggerBattle, resolveBattleEncounter, BattleReplay } from '../../services/battleService';
@@ -52,7 +52,9 @@ export function useAdventureHandlers({
   const executeAdventure = async (
     adventureType: AdventureType,
     realmName?: string,
-    riskLevel?: '低' | '中' | '高' | '极度危险'
+    riskLevel?: '低' | '中' | '高' | '极度危险',
+    realmMinRealm?: RealmType,
+    realmDescription?: string
   ) => {
     if (!player) {
       setLoading(false);
@@ -73,12 +75,13 @@ export function useAdventureHandlers({
         const battleResolution = await resolveBattleEncounter(
           player,
           adventureType,
-          riskLevel
+          riskLevel,
+          realmMinRealm
         );
         result = battleResolution.adventureResult;
         battleContext = battleResolution.replay;
       } else {
-        result = await generateAdventureEvent(player, adventureType, riskLevel);
+        result = await generateAdventureEvent(player, adventureType, riskLevel, realmName, realmDescription);
       }
 
       await executeAdventureCore({

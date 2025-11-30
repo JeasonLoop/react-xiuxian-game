@@ -37,8 +37,8 @@ const CultivationModal: React.FC<Props> = ({ isOpen, onClose, player, onLearnArt
 
         <div className="p-3 md:p-4 bg-paper-800 overflow-y-auto flex-1">
           <div className="mb-3 md:mb-4 text-xs md:text-sm text-stone-400 bg-ink-900/50 p-2 md:p-3 rounded border border-stone-700">
-            <p>心法（mental）：主修功法，激活后提升修炼效率。</p>
-            <p>体术（body）：辅修功法，习得后永久提升身体属性。</p>
+            <p>心法：主修功法，激活后提升修炼效率。</p>
+            <p>体术：辅修功法，习得后永久提升身体属性。</p>
           </div>
 
           <div className="grid grid-cols-1 gap-3 md:gap-4">

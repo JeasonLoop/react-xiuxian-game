@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayerStats, SecretRealm } from '../../types';
+import { PlayerStats, SecretRealm, RealmType } from '../../types';
 
 interface UseRealmHandlersProps {
   player: PlayerStats;
@@ -10,7 +10,7 @@ interface UseRealmHandlersProps {
   loading: boolean;
   cooldown: number;
   setIsRealmOpen: (open: boolean) => void;
-  executeAdventure: (adventureType: 'secret_realm', realmName: string, riskLevel?: '低' | '中' | '高' | '极度危险') => Promise<void>;
+  executeAdventure: (adventureType: 'secret_realm', realmName: string, riskLevel?: '低' | '中' | '高' | '极度危险', realmMinRealm?: RealmType, realmDescription?: string) => Promise<void>;
 }
 
 /**
@@ -56,8 +56,8 @@ export function useRealmHandlers({
     }));
     setIsRealmOpen(false); // Close modal
 
-    // Secret Realm Adventure
-    await executeAdventure('secret_realm', realm.name, realm.riskLevel);
+    // Secret Realm Adventure - 传递秘境的完整信息
+    await executeAdventure('secret_realm', realm.name, realm.riskLevel, realm.minRealm, realm.description);
   };
 
   return {
