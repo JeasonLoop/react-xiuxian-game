@@ -20,4 +20,3 @@ export function useGameCooldown(player: PlayerStats | null) {
 
   return { loading, setLoading, cooldown, setCooldown };
 }
-

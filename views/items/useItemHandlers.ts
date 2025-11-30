@@ -147,7 +147,10 @@ export function useItemHandlers({
         // 解锁丹方
         newStats.unlockedRecipes = [...newStats.unlockedRecipes, recipeName];
         effectLogs.push(`✨ 学会了【${recipeName}】的炼制方法！`);
-        addLog(`你研读了【${item.name}】，学会了【${recipeName}】的炼制方法！现在可以在炼丹面板中炼制这种丹药了。`, 'special');
+        addLog(
+          `你研读了【${item.name}】，学会了【${recipeName}】的炼制方法！现在可以在炼丹面板中炼制这种丹药了。`,
+          'special'
+        );
         // 丹方使用后会被消耗（已在上面处理了数量减少）
       }
 
@@ -195,4 +198,3 @@ export function useItemHandlers({
     handleDiscardItem,
   };
 }
-

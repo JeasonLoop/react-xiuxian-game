@@ -1,7 +1,12 @@
 import React from 'react';
 import { X, Star, Award } from 'lucide-react';
 import { PlayerStats, Talent, Title } from '../types';
-import { TALENTS, TITLES, RARITY_MULTIPLIERS, ACHIEVEMENTS } from '../constants';
+import {
+  TALENTS,
+  TITLES,
+  RARITY_MULTIPLIERS,
+  ACHIEVEMENTS,
+} from '../constants';
 
 interface Props {
   isOpen: boolean;
@@ -13,19 +18,32 @@ interface Props {
   onUseInheritance?: () => void;
 }
 
-const CharacterModal: React.FC<Props> = ({ isOpen, onClose, player, onSelectTalent, onSelectTitle, onAllocateAttribute, onUseInheritance }) => {
+const CharacterModal: React.FC<Props> = ({
+  isOpen,
+  onClose,
+  player,
+  onSelectTalent,
+  onSelectTitle,
+  onAllocateAttribute,
+  onUseInheritance,
+}) => {
   if (!isOpen) return null;
 
-  const currentTalent = TALENTS.find(t => t.id === player.talentId);
-  const currentTitle = TITLES.find(t => t.id === player.titleId);
+  const currentTalent = TALENTS.find((t) => t.id === player.talentId);
+  const currentTitle = TITLES.find((t) => t.id === player.titleId);
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
-      case '普通': return 'text-gray-400';
-      case '稀有': return 'text-blue-400';
-      case '传说': return 'text-purple-400';
-      case '仙品': return 'text-yellow-400';
-      default: return 'text-gray-400';
+      case '普通':
+        return 'text-gray-400';
+      case '稀有':
+        return 'text-blue-400';
+      case '传说':
+        return 'text-purple-400';
+      case '仙品':
+        return 'text-yellow-400';
+      default:
+        return 'text-gray-400';
     }
   };
 
@@ -39,8 +57,13 @@ const CharacterModal: React.FC<Props> = ({ isOpen, onClose, player, onSelectTale
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-stone-800 border-b border-stone-700 p-3 md:p-4 flex justify-between items-center">
-          <h2 className="text-lg md:text-xl font-serif text-mystic-gold">角色系统</h2>
-          <button onClick={onClose} className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation">
+          <h2 className="text-lg md:text-xl font-serif text-mystic-gold">
+            角色系统
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+          >
             <X size={24} />
           </button>
         </div>
@@ -106,12 +129,18 @@ const CharacterModal: React.FC<Props> = ({ isOpen, onClose, player, onSelectTale
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className={`font-bold ${getRarityColor(currentTalent.rarity)}`}>
+                      <span
+                        className={`font-bold ${getRarityColor(currentTalent.rarity)}`}
+                      >
                         {currentTalent.name}
                       </span>
-                      <span className="text-xs text-stone-500">({currentTalent.rarity})</span>
+                      <span className="text-xs text-stone-500">
+                        ({currentTalent.rarity})
+                      </span>
                     </div>
-                    <p className="text-sm text-stone-400 mb-2">{currentTalent.description}</p>
+                    <p className="text-sm text-stone-400 mb-2">
+                      {currentTalent.description}
+                    </p>
                     <div className="text-xs text-stone-500 italic">
                       * 天赋在游戏开始时随机生成，之后不可修改
                     </div>
@@ -136,10 +165,16 @@ const CharacterModal: React.FC<Props> = ({ isOpen, onClose, player, onSelectTale
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="font-bold text-yellow-400">{currentTitle.name}</span>
+                      <span className="font-bold text-yellow-400">
+                        {currentTitle.name}
+                      </span>
                     </div>
-                    <p className="text-sm text-stone-400 mb-1">{currentTitle.description}</p>
-                    <p className="text-xs text-stone-500">获得条件: {currentTitle.requirement}</p>
+                    <p className="text-sm text-stone-400 mb-1">
+                      {currentTitle.description}
+                    </p>
+                    <p className="text-xs text-stone-500">
+                      获得条件: {currentTitle.requirement}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -149,10 +184,16 @@ const CharacterModal: React.FC<Props> = ({ isOpen, onClose, player, onSelectTale
               </div>
             )}
             <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto">
-              {TITLES.filter(t => t.id !== player.titleId && player.achievements.some(a => {
-                const achievement = ACHIEVEMENTS.find(ach => ach.id === a);
-                return achievement?.reward?.titleId === t.id;
-              })).map(title => (
+              {TITLES.filter(
+                (t) =>
+                  t.id !== player.titleId &&
+                  player.achievements.some((a) => {
+                    const achievement = ACHIEVEMENTS.find(
+                      (ach) => ach.id === a
+                    );
+                    return achievement?.reward?.titleId === t.id;
+                  })
+              ).map((title) => (
                 <button
                   key={title.id}
                   onClick={() => onSelectTitle(title.id)}
@@ -160,8 +201,12 @@ const CharacterModal: React.FC<Props> = ({ isOpen, onClose, player, onSelectTale
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <span className="font-bold text-yellow-400">{title.name}</span>
-                      <p className="text-sm text-stone-400 mt-1">{title.description}</p>
+                      <span className="font-bold text-yellow-400">
+                        {title.name}
+                      </span>
+                      <p className="text-sm text-stone-400 mt-1">
+                        {title.description}
+                      </p>
                     </div>
                   </div>
                 </button>
@@ -175,4 +220,3 @@ const CharacterModal: React.FC<Props> = ({ isOpen, onClose, player, onSelectTale
 };
 
 export default CharacterModal;
-

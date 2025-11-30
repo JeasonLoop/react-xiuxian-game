@@ -134,4 +134,3 @@ const AI_PROVIDERS: Record<AIProvider, {...}> = {
 ```
 
 然后在 `vite.config.ts` 和 `api/proxy.js` 中添加对应的代理目标。
-

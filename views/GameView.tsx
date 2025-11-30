@@ -6,7 +6,11 @@ import CombatVisuals from '../components/CombatVisuals';
 import MobileSidebar from '../components/MobileSidebar';
 import GameHeader from './GameHeader';
 import ActionBar from './ActionBar';
-import { PurchaseSuccessToast, LotteryRewardsToast, ItemActionToast } from './NotificationToast';
+import {
+  PurchaseSuccessToast,
+  LotteryRewardsToast,
+  ItemActionToast,
+} from './NotificationToast';
 
 /**
  * 游戏视图组件
@@ -99,16 +103,13 @@ function GameView({
 }: GameViewProps) {
   // 缓存成就数量计算
   const achievementCount = useMemo(
-    () => player.achievements.filter(
-      (a) => !player.viewedAchievements.includes(a)
-    ).length,
+    () =>
+      player.achievements.filter((a) => !player.viewedAchievements.includes(a))
+        .length,
     [player.achievements, player.viewedAchievements]
   );
 
-  const petCount = useMemo(
-    () => player.pets.length,
-    [player.pets.length]
-  );
+  const petCount = useMemo(() => player.pets.length, [player.pets.length]);
 
   const lotteryTickets = useMemo(
     () => player.lotteryTickets,
@@ -208,4 +209,3 @@ function GameView({
 }
 
 export default React.memo(GameView);
-

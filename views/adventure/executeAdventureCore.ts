@@ -20,7 +20,10 @@ import {
 import { BattleReplay } from '../../services/battleService';
 import { generateAdventureEvent } from '../../services/aiService';
 import { uid } from '../../utils/gameUtils';
-import { normalizeItemEffect, inferItemTypeAndSlot } from '../../utils/itemUtils';
+import {
+  normalizeItemEffect,
+  inferItemTypeAndSlot,
+} from '../../utils/itemUtils';
 
 /**
  * 历练核心逻辑
@@ -62,7 +65,9 @@ export async function executeAdventureCore({
   adventureType,
   skipBattle = false,
   riskLevel,
-}: ExecuteAdventureCoreProps & { riskLevel?: '低' | '中' | '高' | '极度危险' }) {
+}: ExecuteAdventureCoreProps & {
+  riskLevel?: '低' | '中' | '高' | '极度危险';
+}) {
   // Handle Visuals
   if (result.hpChange < 0) {
     triggerVisual('damage', String(result.hpChange), 'text-red-500');
@@ -113,7 +118,9 @@ export async function executeAdventureCore({
         );
         // 如果推断出的类型与AI返回的类型不一致，使用推断的类型（代码规则优先）
         if (inferred.type !== itemType) {
-          console.log(`[物品类型修正] "${itemName}": AI返回类型="${itemType}", 推断类型="${inferred.type}", 使用推断类型`);
+          console.log(
+            `[物品类型修正] "${itemName}": AI返回类型="${itemType}", 推断类型="${inferred.type}", 使用推断类型`
+          );
         }
         itemType = inferred.type;
         isEquippable = inferred.isEquippable;
@@ -146,7 +153,9 @@ export async function executeAdventureCore({
           }
           // 清空 permanentEffect（装备不应该有 permanentEffect）
           finalPermanentEffect = undefined;
-          console.log(`[装备效果修正] "${itemName}": 将 permanentEffect 转换为 effect`);
+          console.log(
+            `[装备效果修正] "${itemName}": 将 permanentEffect 转换为 effect`
+          );
         }
 
         // 装备类物品应该使用 effect 而不是 permanentEffect
@@ -167,7 +176,9 @@ export async function executeAdventureCore({
           }
           // 清空 permanentEffect（装备不应该有 permanentEffect）
           finalPermanentEffect = undefined;
-          console.log(`[装备效果修正] "${itemName}": 将 permanentEffect 转换为 effect`);
+          console.log(
+            `[装备效果修正] "${itemName}": 将 permanentEffect 转换为 effect`
+          );
         }
 
         // 确保法宝有属性加成，且不能有exp加成
@@ -192,10 +203,10 @@ export async function executeAdventureCore({
               rarity === '普通'
                 ? 10
                 : rarity === '稀有'
-                ? 30
-                : rarity === '传说'
-                ? 80
-                : 200;
+                  ? 30
+                  : rarity === '传说'
+                    ? 80
+                    : 200;
             const attributeTypes = [
               'attack',
               'defense',
@@ -229,7 +240,9 @@ export async function executeAdventureCore({
           const recipeName = (itemData as any).recipeName;
           if (recipeName) {
             // 从 DISCOVERABLE_RECIPES 中查找对应的配方
-            const recipe = DISCOVERABLE_RECIPES.find((r) => r.name === recipeName);
+            const recipe = DISCOVERABLE_RECIPES.find(
+              (r) => r.name === recipeName
+            );
             if (recipe) {
               recipeData = recipe;
             }
@@ -306,7 +319,10 @@ export async function executeAdventureCore({
         itemType = ItemType.Artifact;
         isEquippable = true;
         // 随机分配一个法宝槽位
-        const artifactSlots = [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2];
+        const artifactSlots = [
+          EquipmentSlot.Artifact1,
+          EquipmentSlot.Artifact2,
+        ];
         equipmentSlot =
           artifactSlots[Math.floor(Math.random() * artifactSlots.length)];
       } else {
@@ -320,7 +336,9 @@ export async function executeAdventureCore({
         );
         // 如果推断出的类型与AI返回的类型不一致，使用推断的类型（代码规则优先）
         if (inferred.type !== itemType) {
-          console.log(`[物品类型修正] "${itemName}": AI返回类型="${itemType}", 推断类型="${inferred.type}", 使用推断类型`);
+          console.log(
+            `[物品类型修正] "${itemName}": AI返回类型="${itemType}", 推断类型="${inferred.type}", 使用推断类型`
+          );
         }
         itemType = inferred.type;
         isEquippable = inferred.isEquippable;
@@ -354,7 +372,9 @@ export async function executeAdventureCore({
         }
         // 清空 permanentEffect（装备不应该有 permanentEffect）
         finalPermanentEffect = undefined;
-        console.log(`[装备效果修正] "${itemName}": 将 permanentEffect 转换为 effect`);
+        console.log(
+          `[装备效果修正] "${itemName}": 将 permanentEffect 转换为 effect`
+        );
       }
 
       // 确保法宝有属性加成，且不能有exp加成
@@ -383,10 +403,10 @@ export async function executeAdventureCore({
             rarity === '普通'
               ? 10
               : rarity === '稀有'
-              ? 30
-              : rarity === '传说'
-              ? 80
-              : 200;
+                ? 30
+                : rarity === '传说'
+                  ? 80
+                  : 200;
 
           // 随机生成1-3种属性
           const attributeTypes = [
@@ -419,7 +439,9 @@ export async function executeAdventureCore({
         const recipeName = (result.itemObtained as any).recipeName;
         if (recipeName) {
           // 从 DISCOVERABLE_RECIPES 中查找对应的配方
-          const recipe = DISCOVERABLE_RECIPES.find((r) => r.name === recipeName);
+          const recipe = DISCOVERABLE_RECIPES.find(
+            (r) => r.name === recipeName
+          );
           if (recipe) {
             recipeData = recipe;
           }
@@ -505,10 +527,7 @@ export async function executeAdventureCore({
             affection: 50,
           };
           newPets.push(newPet);
-          addLog(
-            `✨ 你拯救了灵兽，获得了灵宠【${newPet.name}】！`,
-            'special'
-          );
+          addLog(`✨ 你拯救了灵兽，获得了灵宠【${newPet.name}】！`, 'special');
         } else {
           addLog(
             `你遇到了灵兽，但它似乎已经有了同类伙伴，便离开了。`,
@@ -613,8 +632,7 @@ export async function executeAdventureCore({
               result.petOpportunity.expGain &&
               result.petOpportunity.expGain > 0
             ) {
-              let petNewExp =
-                updatedPet.exp + result.petOpportunity.expGain;
+              let petNewExp = updatedPet.exp + result.petOpportunity.expGain;
               let petNewLevel = updatedPet.level;
               let petNewMaxExp = updatedPet.maxExp;
               let leveledUp = false;
@@ -695,8 +713,7 @@ export async function executeAdventureCore({
       adventureType === 'lucky' ? 0.05 : realmName ? 0.02 : 0.01;
     if (Math.random() < talentChance && !newTalentId) {
       const availableTalents = TALENTS.filter(
-        (t) =>
-          t.id !== 'talent-ordinary' && t.rarity !== '仙品' // 仙品天赋只能通过特殊方式获得
+        (t) => t.id !== 'talent-ordinary' && t.rarity !== '仙品' // 仙品天赋只能通过特殊方式获得
       );
       if (availableTalents.length > 0) {
         const randomTalent =
@@ -707,10 +724,7 @@ export async function executeAdventureCore({
         newMaxHp += randomTalent.effects.hp || 0;
         newHp += randomTalent.effects.hp || 0;
         newLuck += randomTalent.effects.luck || 0;
-        addLog(
-          `🌟 你在历练中觉醒了天赋【${randomTalent.name}】！`,
-          'special'
-        );
+        addLog(`🌟 你在历练中觉醒了天赋【${randomTalent.name}】！`, 'special');
       }
     }
 
@@ -838,10 +852,7 @@ export async function executeAdventureCore({
       ...prev,
       hp: Math.min(newMaxHp, finalHp), // 移除 Math.max(0, ...)，允许负数
       exp: Math.max(0, prev.exp + result.expChange), // 修为不能为负
-      spiritStones: Math.max(
-        0,
-        prev.spiritStones + result.spiritStonesChange
-      ), // 灵石不能为负
+      spiritStones: Math.max(0, prev.spiritStones + result.spiritStonesChange), // 灵石不能为负
       inventory: newInv,
       cultivationArts: newArts,
       talentId: newTalentId || prev.talentId,
@@ -932,9 +943,9 @@ export async function executeAdventureCore({
                 (secretRealmResult.itemObtained.rarity as ItemRarity) || '普通',
               level: 0,
               isEquippable: secretRealmResult.itemObtained.isEquippable,
-              equipmentSlot:
-                (secretRealmResult.itemObtained
-                  .equipmentSlot as EquipmentSlot | undefined),
+              equipmentSlot: secretRealmResult.itemObtained.equipmentSlot as
+                | EquipmentSlot
+                | undefined,
               effect: normalized.effect,
               permanentEffect: normalized.permanentEffect,
             };
@@ -978,9 +989,7 @@ export async function executeAdventureCore({
             if (reduction.spirit)
               reduction.spirit = Math.floor(reduction.spirit * scaleFactor);
             if (reduction.physique)
-              reduction.physique = Math.floor(
-                reduction.physique * scaleFactor
-              );
+              reduction.physique = Math.floor(reduction.physique * scaleFactor);
             if (reduction.speed)
               reduction.speed = Math.floor(reduction.speed * scaleFactor);
             if (reduction.maxHp)
@@ -1065,12 +1074,8 @@ export async function executeAdventureCore({
       });
       addLog(secretRealmResult.story, secretRealmResult.eventColor);
       if (secretRealmResult.itemObtained) {
-        addLog(
-          `获得物品: ${secretRealmResult.itemObtained.name}`,
-          'gain'
-        );
+        addLog(`获得物品: ${secretRealmResult.itemObtained.name}`, 'gain');
       }
     }, 1000);
   }
 }
-

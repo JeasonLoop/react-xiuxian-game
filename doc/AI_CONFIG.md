@@ -37,6 +37,7 @@ pnpm dev
 ### SiliconFlow（推荐）
 
 **配置**:
+
 ```bash
 VITE_AI_PROVIDER=siliconflow
 VITE_AI_KEY=your-siliconflow-key
@@ -46,6 +47,7 @@ VITE_AI_MODEL=Qwen/Qwen2.5-72B-Instruct
 **获取 API Key**: https://siliconflow.cn
 
 **特点**:
+
 - 国内访问速度快
 - 支持多种开源模型
 - 价格相对便宜
@@ -53,6 +55,7 @@ VITE_AI_MODEL=Qwen/Qwen2.5-72B-Instruct
 ### OpenAI
 
 **配置**:
+
 ```bash
 VITE_AI_PROVIDER=openai
 VITE_AI_KEY=sk-your-openai-key
@@ -62,6 +65,7 @@ VITE_AI_MODEL=gpt-3.5-turbo
 **获取 API Key**: https://platform.openai.com
 
 **特点**:
+
 - 模型质量高
 - 需要科学上网（国内）
 - 价格相对较高
@@ -69,6 +73,7 @@ VITE_AI_MODEL=gpt-3.5-turbo
 ### 自定义服务
 
 **配置**:
+
 ```bash
 VITE_AI_PROVIDER=custom
 VITE_AI_KEY=your-custom-key
@@ -77,6 +82,7 @@ VITE_AI_MODEL=your-model-name
 ```
 
 **要求**:
+
 - API 必须兼容 OpenAI API 格式
 - 支持 POST `/v1/chat/completions` 端点
 - 使用 Bearer token 认证
@@ -88,6 +94,7 @@ VITE_AI_MODEL=your-model-name
 **原因**: API 路径不正确
 
 **解决方法**:
+
 1. 检查 `VITE_AI_API_URL` 是否正确
 2. 确保路径包含 `/v1/chat/completions`
 3. 开发环境推荐 `VITE_AI_USE_PROXY=true`（默认即为 true，可避免 CORS）
@@ -98,6 +105,7 @@ VITE_AI_MODEL=your-model-name
 **原因**: API Key 无效或缺失
 
 **解决方法**:
+
 1. 检查 `.env.local` 文件是否存在
 2. 检查 `VITE_AI_KEY` 是否正确
 3. 重启开发服务器（环境变量更改后需要重启）
@@ -108,6 +116,7 @@ VITE_AI_MODEL=your-model-name
 **原因**: 直接请求 API 时遇到 CORS 限制
 
 **解决方法**:
+
 1. 开发环境：设置 `VITE_AI_USE_PROXY=true`（使用 Vite 代理）
 2. 生产环境：使用 Vercel Function 代理（已配置）
 3. 如果 API 支持 CORS，可以设置 `VITE_AI_USE_PROXY=false`
@@ -117,6 +126,7 @@ VITE_AI_MODEL=your-model-name
 **原因**: Vite 代理配置问题
 
 **解决方法**:
+
 1. 检查 `vite.config.ts` 中的代理配置
 2. 确保代理目标 URL 正确
 3. 检查端口是否正确（默认 5173）

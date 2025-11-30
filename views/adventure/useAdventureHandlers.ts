@@ -2,7 +2,11 @@ import React from 'react';
 import { PlayerStats, AdventureType, ShopType, RealmType } from '../../types';
 import { REALM_ORDER } from '../../constants';
 import { generateAdventureEvent } from '../../services/aiService';
-import { shouldTriggerBattle, resolveBattleEncounter, BattleReplay } from '../../services/battleService';
+import {
+  shouldTriggerBattle,
+  resolveBattleEncounter,
+  BattleReplay,
+} from '../../services/battleService';
 import { executeAdventureCore } from './executeAdventureCore';
 
 /**
@@ -142,4 +146,3 @@ export function useAdventureHandlers({
     executeAdventure,
   };
 }
-

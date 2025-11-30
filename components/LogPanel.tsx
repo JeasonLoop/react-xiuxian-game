@@ -1,4 +1,10 @@
-import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react';
+import React, {
+  useRef,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from 'react';
 import { LogEntry } from '../types';
 
 interface Props {
@@ -17,7 +23,8 @@ const LogItem = React.memo<{ log: LogEntry }>(({ log }) => {
   );
 
   const logClassName = useMemo(() => {
-    const baseClass = 'p-2 md:p-3 rounded border-l-2 font-serif text-xs md:text-sm lg:text-base leading-relaxed animate-fade-in';
+    const baseClass =
+      'p-2 md:p-3 rounded border-l-2 font-serif text-xs md:text-sm lg:text-base leading-relaxed animate-fade-in';
     switch (log.type) {
       case 'normal':
         return `${baseClass} border-stone-600 text-stone-300 bg-ink-800/50`;
@@ -137,7 +144,7 @@ const LogPanel: React.FC<Props> = ({ logs, className }) => {
 
     container.scrollTo({
       top: container.scrollHeight,
-      behavior: 'smooth'
+      behavior: 'smooth',
     });
 
     // 更新自动滚动状态
@@ -150,7 +157,9 @@ const LogPanel: React.FC<Props> = ({ logs, className }) => {
   }, []);
 
   return (
-    <div className={`flex-1 bg-ink-900 relative min-h-[200px] md:min-h-[300px] ${className || ''}`}>
+    <div
+      className={`flex-1 bg-ink-900 relative min-h-[200px] md:min-h-[300px] ${className || ''}`}
+    >
       {/* 滚动容器 */}
       <div
         ref={containerRef}
@@ -193,7 +202,11 @@ const LogPanel: React.FC<Props> = ({ logs, className }) => {
             stroke="currentColor"
             strokeWidth={2.5}
           >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M19 14l-7 7m0 0l-7-7m7 7V3"
+            />
           </svg>
         </button>
       )}

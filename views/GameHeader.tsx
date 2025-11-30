@@ -49,9 +49,8 @@ function GameHeader({
   onOpenSettings,
 }: GameHeaderProps) {
   const newAchievements = useMemo(
-    () => player.achievements.filter(
-      (a) => !player.viewedAchievements.includes(a)
-    ),
+    () =>
+      player.achievements.filter((a) => !player.viewedAchievements.includes(a)),
     [player.achievements, player.viewedAchievements]
   );
 
@@ -60,10 +59,7 @@ function GameHeader({
     [newAchievements.length]
   );
 
-  const petsCount = useMemo(
-    () => player.pets.length,
-    [player.pets.length]
-  );
+  const petsCount = useMemo(() => player.pets.length, [player.pets.length]);
 
   const lotteryTickets = useMemo(
     () => player.lotteryTickets,
@@ -154,4 +150,3 @@ function GameHeader({
 }
 
 export default React.memo(GameHeader);
-

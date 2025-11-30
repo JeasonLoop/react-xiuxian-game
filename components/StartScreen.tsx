@@ -14,13 +14,14 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
   // 只在组件首次加载时随机生成一个天赋（使用useMemo确保只执行一次）
   const initialRandomTalentId = useMemo(() => {
     const availableTalents = TALENTS;
-    const randomTalent = availableTalents[Math.floor(Math.random() * availableTalents.length)];
+    const randomTalent =
+      availableTalents[Math.floor(Math.random() * availableTalents.length)];
     return randomTalent.id;
   }, []); // 空依赖数组，确保只执行一次
 
   // 如果没有选择天赋，使用初始随机天赋
   const finalTalentId = selectedTalentId || initialRandomTalentId;
-  const selectedTalent = TALENTS.find(t => t.id === finalTalentId);
+  const selectedTalent = TALENTS.find((t) => t.id === finalTalentId);
 
   const handleStart = () => {
     if (!playerName.trim()) {
@@ -32,10 +33,14 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
-      case '稀有': return 'text-blue-400 border-blue-500';
-      case '传说': return 'text-purple-400 border-purple-500';
-      case '仙品': return 'text-yellow-400 border-yellow-500';
-      default: return 'text-stone-300 border-stone-500';
+      case '稀有':
+        return 'text-blue-400 border-blue-500';
+      case '传说':
+        return 'text-purple-400 border-purple-500';
+      case '仙品':
+        return 'text-yellow-400 border-yellow-500';
+      default:
+        return 'text-stone-300 border-stone-500';
     }
   };
 
@@ -72,14 +77,22 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
               <Sparkles size={18} className="md:w-5 md:h-5" />
               天生天赋（随机生成，不可修改）
             </label>
-            <div className={`p-3 md:p-4 rounded border-2 ${getRarityColor(selectedTalent?.rarity || '普通')} bg-stone-800/50`}>
+            <div
+              className={`p-3 md:p-4 rounded border-2 ${getRarityColor(selectedTalent?.rarity || '普通')} bg-stone-800/50`}
+            >
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg md:text-xl font-bold">{selectedTalent?.name}</h3>
-                <span className={`px-2 py-1 rounded text-[10px] md:text-xs font-semibold ${getRarityColor(selectedTalent?.rarity || '普通')}`}>
+                <h3 className="text-lg md:text-xl font-bold">
+                  {selectedTalent?.name}
+                </h3>
+                <span
+                  className={`px-2 py-1 rounded text-[10px] md:text-xs font-semibold ${getRarityColor(selectedTalent?.rarity || '普通')}`}
+                >
                   {selectedTalent?.rarity}
                 </span>
               </div>
-              <p className="text-stone-300 mb-2 md:mb-3 text-xs md:text-sm">{selectedTalent?.description}</p>
+              <p className="text-stone-300 mb-2 md:mb-3 text-xs md:text-sm">
+                {selectedTalent?.description}
+              </p>
               <div className="grid grid-cols-2 gap-2 text-xs md:text-sm">
                 {selectedTalent?.effects.attack && (
                   <div className="flex items-center gap-1 text-stone-300">
@@ -107,7 +120,10 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
                 )}
                 {selectedTalent?.effects.physique && (
                   <div className="flex items-center gap-1 text-stone-300">
-                    <Shield size={14} className="md:w-4 md:h-4 text-green-400" />
+                    <Shield
+                      size={14}
+                      className="md:w-4 md:h-4 text-green-400"
+                    />
                     <span>体魄 +{selectedTalent.effects.physique}</span>
                   </div>
                 )}
@@ -119,13 +135,22 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
                 )}
                 {selectedTalent?.effects.expRate && (
                   <div className="flex items-center gap-1 text-stone-300">
-                    <Sparkles size={14} className="md:w-4 md:h-4 text-purple-400" />
-                    <span>修炼速度 +{Math.round(selectedTalent.effects.expRate * 100)}%</span>
+                    <Sparkles
+                      size={14}
+                      className="md:w-4 md:h-4 text-purple-400"
+                    />
+                    <span>
+                      修炼速度 +
+                      {Math.round(selectedTalent.effects.expRate * 100)}%
+                    </span>
                   </div>
                 )}
                 {selectedTalent?.effects.luck && (
                   <div className="flex items-center gap-1 text-stone-300">
-                    <Sparkles size={14} className="md:w-4 md:h-4 text-yellow-400" />
+                    <Sparkles
+                      size={14}
+                      className="md:w-4 md:h-4 text-yellow-400"
+                    />
                     <span>幸运 +{selectedTalent.effects.luck}</span>
                   </div>
                 )}
@@ -152,4 +177,3 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
 };
 
 export default StartScreen;
-

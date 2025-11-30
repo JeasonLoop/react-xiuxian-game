@@ -64,4 +64,3 @@ export function useRealmHandlers({
     handleEnterRealm,
   };
 }
-

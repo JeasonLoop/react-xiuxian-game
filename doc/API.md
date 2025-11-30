@@ -12,8 +12,8 @@
 
 ```typescript
 // services/aiService.ts
-const DEFAULT_API_URL = "https://api.siliconflow.cn/v1/chat/completions";
-const DEFAULT_MODEL = "Qwen/Qwen2.5-72B-Instruct";
+const DEFAULT_API_URL = 'https://api.siliconflow.cn/v1/chat/completions';
+const DEFAULT_MODEL = 'Qwen/Qwen2.5-72B-Instruct';
 
 // API Key 必须从环境变量获取，不再硬编码
 const API_KEY = import.meta.env.VITE_AI_KEY;
@@ -33,6 +33,7 @@ VITE_AI_API_URL=https://api.siliconflow.cn/v1/chat/completions
 ```
 
 **获取 API Key**:
+
 - 访问 [SiliconFlow](https://siliconflow.cn) 注册账号
 - 创建 API Key
 - 将 API Key 配置到 `.env.local` 文件中
@@ -44,6 +45,7 @@ VITE_AI_API_URL=https://api.siliconflow.cn/v1/chat/completions
 生成历练事件。
 
 **函数签名**:
+
 ```typescript
 generateAdventureEvent(
   player: PlayerStats,
@@ -52,6 +54,7 @@ generateAdventureEvent(
 ```
 
 **参数**:
+
 - `player: PlayerStats` - 玩家当前状态
 - `adventureType: AdventureType` - 事件类型
   - `'normal'` - 普通历练
@@ -59,6 +62,7 @@ generateAdventureEvent(
   - `'secret_realm'` - 秘境探索
 
 **返回**:
+
 ```typescript
 interface AdventureResult {
   story: string;                    // 事件描述
@@ -91,12 +95,14 @@ interface AdventureResult {
 ```
 
 **使用示例**:
+
 ```typescript
 const result = await generateAdventureEvent(player, 'normal');
 console.log(result.story); // "你在荒野中发现了一株灵草..."
 ```
 
 **错误处理**:
+
 - API 调用失败时返回默认事件
 - JSON 解析失败时抛出错误
 - 自动清理 JSON 格式问题
@@ -106,6 +112,7 @@ console.log(result.story); // "你在荒野中发现了一株灵草..."
 生成突破境界的描述文本。
 
 **函数签名**:
+
 ```typescript
 generateBreakthroughFlavorText(
   realm: string,
@@ -114,12 +121,14 @@ generateBreakthroughFlavorText(
 ```
 
 **参数**:
+
 - `realm: string` - 目标境界名称
 - `success: boolean` - 是否突破成功
 
 **返回**: `Promise<string>` - 突破描述文本
 
 **使用示例**:
+
 ```typescript
 const text = await generateBreakthroughFlavorText('筑基期', true);
 // "天地震动，你成功突破瓶颈！"
@@ -130,6 +139,7 @@ const text = await generateBreakthroughFlavorText('筑基期', true);
 生成敌人名称和称号。
 
 **函数签名**:
+
 ```typescript
 generateEnemyName(
   realm: RealmType,
@@ -138,24 +148,28 @@ generateEnemyName(
 ```
 
 **参数**:
+
 - `realm: RealmType` - 敌人境界
 - `adventureType: AdventureType` - 历练类型
 
 **返回**:
+
 ```typescript
 {
-  name: string;    // 敌人名字（2-4个字）
-  title: string;   // 敌人称号（2-5个字）
+  name: string; // 敌人名字（2-4个字）
+  title: string; // 敌人称号（2-5个字）
 }
 ```
 
 **使用示例**:
+
 ```typescript
 const enemy = await generateEnemyName(RealmType.QiRefining, 'normal');
 // { name: "血牙狼", title: "荒原妖兽" }
 ```
 
 **降级方案**:
+
 - AI 生成失败时使用预设列表
 - 15% 概率使用 AI 生成，85% 使用预设
 
@@ -167,7 +181,7 @@ const enemy = await generateEnemyName(RealmType.QiRefining, 'normal');
 {
   model: string;
   messages: Array<{
-    role: "system" | "user" | "assistant";
+    role: 'system' | 'user' | 'assistant';
     content: string;
   }>;
   temperature: number; // 0-1，控制随机性
@@ -204,6 +218,7 @@ AI 返回的 JSON 可能包含格式问题，代码会自动处理：
 判断是否触发战斗。
 
 **函数签名**:
+
 ```typescript
 shouldTriggerBattle(
   player: PlayerStats,
@@ -212,11 +227,13 @@ shouldTriggerBattle(
 ```
 
 **触发概率**:
+
 - 普通历练: 22% 基础概率
 - 机缘历练: 8% 基础概率
 - 秘境历练: 45% 基础概率
 
 **影响因素**:
+
 - 境界越高，概率越高
 - 速度越高，概率越高
 - 幸运越高，概率越低
@@ -226,6 +243,7 @@ shouldTriggerBattle(
 解析战斗结果。
 
 **函数签名**:
+
 ```typescript
 resolveBattleEncounter(
   player: PlayerStats,
@@ -234,6 +252,7 @@ resolveBattleEncounter(
 ```
 
 **返回**:
+
 ```typescript
 interface BattleResolution {
   adventureResult: AdventureResult;
@@ -263,6 +282,7 @@ interface BattleReplay {
 ```
 
 **战斗机制**:
+
 - 回合制战斗
 - 基于速度的行动顺序
 - 伤害计算: `attack * 0.9 - defense * 0.45`
@@ -270,11 +290,13 @@ interface BattleReplay {
 - 最大回合数: 40 回合
 
 **敌人强度**:
+
 - 弱敌: 60-80% 玩家强度
 - 普通: 80-100% 玩家强度
 - 强敌: 100-120% 玩家强度
 
 **奖励系统**:
+
 - 胜利: 获得经验和灵石，可能获得搜刮物品
 - 失败: 损失经验和灵石，保留 8% 气血
 
@@ -307,22 +329,22 @@ export default async function handler(req, res) {
   // 设置 CORS 头
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  
+
   // 处理 OPTIONS 预检请求
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
-  
+
   // 转发请求到目标 API
   const response = await fetch(targetUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${API_KEY}`
+      Authorization: `Bearer ${API_KEY}`,
     },
-    body: JSON.stringify(req.body)
+    body: JSON.stringify(req.body),
   });
-  
+
   // 返回结果
   const data = await response.json();
   res.status(200).json(data);
@@ -348,17 +370,20 @@ export default async function handler(req, res) {
 ### API Key 管理
 
 **当前实现**:
+
 - ✅ API Key 必须通过环境变量配置
 - ✅ 已移除硬编码的 API Key
 - ✅ `.env.local` 文件已加入 `.gitignore`
 
 **配置方法**:
+
 1. 创建 `.env.local` 文件（不会被提交到 Git）
 2. 配置 `VITE_AI_KEY=your-api-key-here`
 3. 不要将 API Key 提交到代码仓库
 4. 如果 API Key 泄露，立即在服务商处重新生成
 
 **生产环境部署**:
+
 - Vercel: 在项目设置中添加环境变量 `VITE_AI_KEY`
 - 其他平台: 根据平台文档配置环境变量
 
@@ -378,11 +403,11 @@ try {
 } catch (error) {
   // 返回默认事件
   return {
-    story: "你在荒野中游荡了一番，可惜大道渺茫，此次一无所获。",
+    story: '你在荒野中游荡了一番，可惜大道渺茫，此次一无所获。',
     hpChange: 0,
     expChange: 5,
     spiritStonesChange: 0,
-    eventColor: 'normal'
+    eventColor: 'normal',
   };
 }
 ```
@@ -426,8 +451,8 @@ try {
 
 ```typescript
 // services/aiService.ts
-console.log("API Response:", resultText);
-console.log("Parsed JSON:", JSON.parse(cleanedJson));
+console.log('API Response:', resultText);
+console.log('Parsed JSON:', JSON.parse(cleanedJson));
 ```
 
 ### 测试 API
@@ -435,7 +460,7 @@ console.log("Parsed JSON:", JSON.parse(cleanedJson));
 ```typescript
 // 测试函数
 const testAPI = async () => {
-  const player = createInitialPlayer("测试", "talent-ordinary");
+  const player = createInitialPlayer('测试', 'talent-ordinary');
   const result = await generateAdventureEvent(player, 'normal');
   console.log(result);
 };
@@ -456,4 +481,3 @@ const testAPI = async () => {
 ---
 
 **注意**: API Key 是敏感信息，请妥善保管，不要泄露。
-

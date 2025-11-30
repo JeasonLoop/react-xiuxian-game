@@ -9,7 +9,7 @@
 [![Vite](https://img.shields.io/badge/Vite-6.2.0-646CFF?logo=vite)](https://vitejs.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-*踏上修仙之路，体验从炼气到飞升的完整修仙历程*
+_踏上修仙之路，体验从炼气到飞升的完整修仙历程_
 
 </div>
 
@@ -52,11 +52,13 @@ cd react-xiuxian-game
 #### 2️⃣ 安装依赖
 
 使用 **pnpm** (推荐):
+
 ```bash
 pnpm install
 ```
 
 或使用 **npm**:
+
 ```bash
 npm install
 ```
@@ -79,7 +81,8 @@ VITE_AI_KEY=your-api-key-here
 # VITE_AI_MODEL=Qwen/Qwen2.5-72B-Instruct  # 默认模型
 ```
 
-> 💡 **获取 API Key**: 
+> 💡 **获取 API Key**:
+>
 > - 访问 [SiliconFlow](https://siliconflow.cn) 注册账号并创建 API Key
 > - 如需使用其他 AI 服务，设置 `VITE_AI_PROVIDER` 环境变量
 >

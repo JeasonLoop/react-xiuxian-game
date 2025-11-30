@@ -18,11 +18,14 @@ export interface AIConfig {
 }
 
 // 预设的 AI 服务配置
-const AI_PROVIDERS: Record<AIProvider, {
-  defaultUrl: string;
-  defaultModel: string;
-  proxyPath: string;
-}> = {
+const AI_PROVIDERS: Record<
+  AIProvider,
+  {
+    defaultUrl: string;
+    defaultModel: string;
+    proxyPath: string;
+  }
+> = {
   siliconflow: {
     defaultUrl: 'https://api.siliconflow.cn/v1/chat/completions',
     defaultModel: 'Qwen/Qwen2.5-72B-Instruct',
@@ -47,7 +50,8 @@ export function getAIConfig(): AIConfig {
   const isDev = import.meta.env.DEV;
 
   // 从环境变量获取配置
-  const provider = (import.meta.env.VITE_AI_PROVIDER || 'siliconflow') as AIProvider;
+  const provider = (import.meta.env.VITE_AI_PROVIDER ||
+    'siliconflow') as AIProvider;
   const apiKey = import.meta.env.VITE_AI_KEY || '';
   const customApiUrl = import.meta.env.VITE_AI_API_URL;
   const customModel = import.meta.env.VITE_AI_MODEL;
@@ -98,11 +102,15 @@ export function getAIConfig(): AIConfig {
 /**
  * 验证配置
  */
-export function validateAIConfig(config: AIConfig): { valid: boolean; error?: string } {
+export function validateAIConfig(config: AIConfig): {
+  valid: boolean;
+  error?: string;
+} {
   if (!config.apiKey) {
     return {
       valid: false,
-      error: 'VITE_AI_KEY 环境变量未设置。请创建 .env.local 文件并配置 API Key。',
+      error:
+        'VITE_AI_KEY 环境变量未设置。请创建 .env.local 文件并配置 API Key。',
     };
   }
 
@@ -141,4 +149,3 @@ AI 服务配置:
 ${validation.error ? `- 错误: ${validation.error}` : ''}
   `.trim();
 }
-
