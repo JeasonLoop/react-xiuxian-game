@@ -83,6 +83,7 @@ interface ModalsContainerProps {
     handleOpenUpgrade: (item: Item) => void;
     handleDiscardItem: (item: Item) => void;
     handleBatchDiscard: (itemIds: string[]) => void;
+    handleBatchUse?: (itemIds: string[]) => void;
     handleRefineNatalArtifact: (item: Item) => void;
     handleUnrefineNatalArtifact: () => void;
     handleUpgradeItem: (item: Item, costStones: number, costMats: number, upgradeStones?: number) => Promise<'success' | 'failure' | 'error'>;
@@ -117,6 +118,7 @@ interface ModalsContainerProps {
       feedType: 'hp' | 'item' | 'exp',
       itemId?: string
     ) => void;
+    handleBatchFeedItems?: (petId: string, itemIds: string[]) => void;
     handleEvolvePet: (petId: string) => void;
     // Lottery
     handleDraw: (count: 1 | 10) => void;
@@ -159,6 +161,7 @@ export default function ModalsContainer({
         onUpgradeItem={handlers.handleOpenUpgrade}
         onDiscardItem={handlers.handleDiscardItem}
         onBatchDiscard={handlers.handleBatchDiscard}
+        onBatchUse={handlers.handleBatchUse}
         onRefineNatalArtifact={handlers.handleRefineNatalArtifact}
         onUnrefineNatalArtifact={handlers.handleUnrefineNatalArtifact}
       />
@@ -231,6 +234,7 @@ export default function ModalsContainer({
         player={player}
         onActivatePet={handlers.handleActivatePet}
         onFeedPet={handlers.handleFeedPet}
+        onBatchFeedItems={handlers.handleBatchFeedItems}
         onEvolvePet={handlers.handleEvolvePet}
       />
 

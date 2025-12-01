@@ -1,10 +1,11 @@
 
 import React, { useState, useMemo } from 'react';
 import { Item, ItemType, ItemRarity, PlayerStats, EquipmentSlot } from '../types';
-import { X, Package, ShieldCheck, ArrowRight, Hammer, Trash2, Sparkles, ArrowUpDown, Trash } from 'lucide-react';
+import { X, Package, ShieldCheck, ArrowRight, Hammer, Trash2, Sparkles, ArrowUpDown, Trash, Zap } from 'lucide-react';
 import { RARITY_MULTIPLIERS } from '../constants';
 import EquipmentPanel from './EquipmentPanel';
 import BatchDiscardModal from './BatchDiscardModal';
+import BatchUseModal from './BatchUseModal';
 
 interface Props {
   isOpen: boolean;
@@ -18,6 +19,7 @@ interface Props {
   onUpgradeItem: (item: Item) => void;
   onDiscardItem: (item: Item) => void;
   onBatchDiscard: (itemIds: string[]) => void;
+  onBatchUse?: (itemIds: string[]) => void;
   onRefineNatalArtifact?: (item: Item) => void;
   onUnrefineNatalArtifact?: () => void;
 }
@@ -36,6 +38,7 @@ const InventoryModal: React.FC<Props> = ({
   onUpgradeItem,
   onDiscardItem,
   onBatchDiscard,
+  onBatchUse,
   onRefineNatalArtifact,
   onUnrefineNatalArtifact,
 }) => {
@@ -45,10 +48,17 @@ const InventoryModal: React.FC<Props> = ({
   const [selectedEquipmentSlot, setSelectedEquipmentSlot] = useState<EquipmentSlot | 'all'>('all');
   const [sortByRarity, setSortByRarity] = useState(true);
   const [isBatchDiscardOpen, setIsBatchDiscardOpen] = useState(false);
+  const [isBatchUseOpen, setIsBatchUseOpen] = useState(false);
   const [mobileActiveTab, setMobileActiveTab] = useState<'equipment' | 'inventory'>('inventory');
 
   const handleBatchDiscard = (itemIds: string[]) => {
     onBatchDiscard(itemIds);
+  };
+
+  const handleBatchUse = (itemIds: string[]) => {
+    if (onBatchUse) {
+      onBatchUse(itemIds);
+    }
   };
 
   // 过滤和排序物品
@@ -279,6 +289,15 @@ const InventoryModal: React.FC<Props> = ({
             <Package size={18} className="md:w-5 md:h-5" /> 储物袋
           </h3>
           <div className="flex gap-2">
+            {onBatchUse && (
+              <button
+                onClick={() => setIsBatchUseOpen(true)}
+                className="px-2 md:px-3 py-1.5 md:py-1 rounded text-xs md:text-sm border transition-colors min-h-[44px] md:min-h-0 touch-manipulation bg-green-900/20 border-green-700 text-green-300 hover:bg-green-900/30"
+              >
+                <Zap size={14} className="inline mr-1" />
+                批量使用
+              </button>
+            )}
             <button
               onClick={() => setIsBatchDiscardOpen(true)}
               className="px-2 md:px-3 py-1.5 md:py-1 rounded text-xs md:text-sm border transition-colors min-h-[44px] md:min-h-0 touch-manipulation bg-red-900/20 border-red-700 text-red-300 hover:bg-red-900/30"
@@ -793,6 +812,16 @@ const InventoryModal: React.FC<Props> = ({
         equippedItems={equippedItems}
         onDiscardItems={handleBatchDiscard}
       />
+
+      {onBatchUse && (
+        <BatchUseModal
+          isOpen={isBatchUseOpen}
+          onClose={() => setIsBatchUseOpen(false)}
+          inventory={inventory}
+          equippedItems={equippedItems}
+          onUseItems={handleBatchUse}
+        />
+      )}
     </div>
   );
 };

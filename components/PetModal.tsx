@@ -8,9 +8,11 @@ import {
   Droplet,
   Package,
   Sparkles,
+  Layers,
 } from 'lucide-react';
 import { PlayerStats, Pet, Item, ItemType } from '../types';
 import { PET_TEMPLATES, RARITY_MULTIPLIERS, REALM_ORDER } from '../constants';
+import BatchFeedModal from './BatchFeedModal';
 
 interface Props {
   isOpen: boolean;
@@ -22,6 +24,7 @@ interface Props {
     feedType: 'hp' | 'item' | 'exp',
     itemId?: string
   ) => void;
+  onBatchFeedItems?: (petId: string, itemIds: string[]) => void;
   onEvolvePet: (petId: string) => void;
 }
 
@@ -31,11 +34,14 @@ const PetModal: React.FC<Props> = ({
   player,
   onActivatePet,
   onFeedPet,
+  onBatchFeedItems,
   onEvolvePet,
 }) => {
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [feedType, setFeedType] = useState<'hp' | 'item' | 'exp' | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [isBatchFeedOpen, setIsBatchFeedOpen] = useState(false);
+  const [batchFeedPetId, setBatchFeedPetId] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -177,6 +183,18 @@ const PetModal: React.FC<Props> = ({
                 >
                   喂养
                 </button>
+                {onBatchFeedItems && (
+                  <button
+                    onClick={() => {
+                      setBatchFeedPetId(activePet.id);
+                      setIsBatchFeedOpen(true);
+                    }}
+                    className="px-4 py-2 bg-blue-900 hover:bg-blue-800 rounded border border-blue-700 text-sm"
+                    title="批量喂养"
+                  >
+                    <Layers size={16} />
+                  </button>
+                )}
                 {activePet.evolutionStage < 2 && (
                   <button
                     onClick={() => onEvolvePet(activePet.id)}
@@ -251,12 +269,26 @@ const PetModal: React.FC<Props> = ({
                         style={{ width: `${(pet.exp / pet.maxExp) * 100}%` }}
                       />
                     </div>
-                    <button
-                      onClick={() => handleFeedClick(pet.id)}
-                      className="w-full px-3 py-1.5 bg-green-900 hover:bg-green-800 rounded border border-green-700 text-xs"
-                    >
-                      喂养
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleFeedClick(pet.id)}
+                        className="flex-1 px-3 py-1.5 bg-green-900 hover:bg-green-800 rounded border border-green-700 text-xs"
+                      >
+                        喂养
+                      </button>
+                      {onBatchFeedItems && (
+                        <button
+                          onClick={() => {
+                            setBatchFeedPetId(pet.id);
+                            setIsBatchFeedOpen(true);
+                          }}
+                          className="px-3 py-1.5 bg-blue-900 hover:bg-blue-800 rounded border border-blue-700 text-xs"
+                          title="批量喂养"
+                        >
+                          <Layers size={14} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -386,6 +418,20 @@ const PetModal: React.FC<Props> = ({
               </div>
             </div>
           </div>
+        )}
+
+        {/* 批量喂养弹窗 */}
+        {onBatchFeedItems && batchFeedPetId && (
+          <BatchFeedModal
+            isOpen={isBatchFeedOpen}
+            onClose={() => {
+              setIsBatchFeedOpen(false);
+              setBatchFeedPetId(null);
+            }}
+            player={player}
+            petId={batchFeedPetId}
+            onFeedItems={onBatchFeedItems}
+          />
         )}
       </div>
     </div>

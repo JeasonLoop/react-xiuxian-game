@@ -347,6 +347,24 @@ function App() {
 
   const handleUseItem = itemHandlers.handleUseItem;
   const handleDiscardItem = itemHandlers.handleDiscardItem;
+  const handleBatchUse = async (itemIds: string[]) => {
+    if (itemIds.length === 0) return;
+
+    // 获取所有要使用的物品
+    const itemsToUse = itemIds
+      .map((id) => player.inventory.find((item) => item.id === id))
+      .filter((item): item is typeof player.inventory[0] => item !== undefined);
+
+    // 批量使用：逐个使用物品（使用延迟以避免状态更新冲突）
+    for (const item of itemsToUse) {
+      if (item.quantity > 0) {
+        handleUseItem(item);
+        // 添加小延迟以确保状态更新完成
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+    }
+  };
+
   const handleBatchDiscard = (itemIds: string[]) => {
     setPlayer((prev) => {
       const newInv = prev.inventory.filter((i) => !itemIds.includes(i.id));
@@ -389,6 +407,7 @@ function App() {
   const handleUpdateSettings = settingsHandlers.handleUpdateSettings;
   const handleActivatePet = petHandlers.handleActivatePet;
   const handleFeedPet = petHandlers.handleFeedPet;
+  const handleBatchFeedItems = petHandlers.handleBatchFeedItems;
   const handleEvolvePet = petHandlers.handleEvolvePet;
   const handleDraw = lotteryHandlers.handleDraw;
   const handleJoinSect = sectHandlers.handleJoinSect;
@@ -706,6 +725,7 @@ function App() {
           handleOpenUpgrade,
           handleDiscardItem,
           handleBatchDiscard,
+          handleBatchUse,
           handleRefineNatalArtifact,
           handleUnrefineNatalArtifact,
           handleUpgradeItem,
@@ -731,6 +751,7 @@ function App() {
           },
           handleActivatePet,
           handleFeedPet,
+          handleBatchFeedItems,
           handleEvolvePet,
           handleDraw,
           handleUpdateSettings,

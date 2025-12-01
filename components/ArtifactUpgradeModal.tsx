@@ -65,12 +65,14 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
   const rarityMult = RARITY_MULTIPLIERS[rarity];
 
   // Cost Calculation - 每次强化后炼器石需求增加
+  // 灵石消耗：基础消耗 * (等级+1) * 品质倍率 * (1 + 等级 * 0.25) - 高等级增长更快
   const costStones = Math.floor(
-    BASE_UPGRADE_COST_STONES * (currentLevel + 1) * rarityMult
+    BASE_UPGRADE_COST_STONES * (currentLevel + 1) * rarityMult * (1 + currentLevel * 0.25)
   );
+  // 材料消耗：基础消耗 * 品质倍率 * (等级+1) * (1 + 等级 * 0.5) - 高等级和品质消耗大幅增加
   const costMats = Math.floor(
-    BASE_UPGRADE_COST_MATS * (currentLevel + 1) * (1 + currentLevel * 0.2)
-  ); // 每次强化后增加20%
+    BASE_UPGRADE_COST_MATS * rarityMult * (currentLevel + 1) * (1 + currentLevel * 0.5)
+  );
 
   // 计算基础成功率（根据稀有度和等级）
   const baseSuccessRate = Math.max(
