@@ -613,38 +613,42 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
   }
 };
 
+// 突破描述模板库（15条通用描述）
+const BREAKTHROUGH_DESCRIPTIONS = [
+  (playerName: string, realm: string) => `${playerName}盘膝而坐，运转功法，体内灵气如江河般奔腾不息。随着一声轻喝，瓶颈应声而破，${playerName}成功突破到了${realm}！周身灵气翻涌，实力大增。`,
+  (playerName: string, realm: string) => `天地灵气汇聚，${playerName}闭目凝神，引导灵气冲击瓶颈。经脉中传来阵阵轰鸣，如雷鸣般震撼。终于，${playerName}突破了桎梏，踏入了${realm}的境界！`,
+  (playerName: string, realm: string) => `${playerName}静坐洞府，周身霞光万丈。体内灵气核心剧烈震动，灵气如潮水般涌入。伴随着一声长啸，${playerName}成功突破到了${realm}，修为突飞猛进！`,
+  (playerName: string, realm: string) => `月夜之下，${playerName}立于山巅，引动天地灵气。星辰之力汇聚而来，化作一道光柱直冲云霄。${playerName}在灵气的洗礼下，成功突破到了${realm}，实力更上一层楼！`,
+  (playerName: string, realm: string) => `${playerName}运转心法，体内灵气如火山爆发般喷涌而出。经脉在灵气的冲击下不断扩张，最终突破了瓶颈。${playerName}成功踏入了${realm}的境界，周身气息更加深邃。`,
+  (playerName: string, realm: string) => `雷声轰鸣，${playerName}在雷劫中淬炼己身。天雷之力不断轰击，却无法撼动${playerName}的意志。最终，${playerName}在雷劫中涅槃重生，成功突破到了${realm}！`,
+  (playerName: string, realm: string) => `${playerName}深入秘境，寻得一处灵脉。盘坐于灵脉之上，${playerName}运转功法，疯狂吸收天地灵气。随着灵气的不断涌入，${playerName}成功突破到了${realm}的境界！`,
+  (playerName: string, realm: string) => `天地异象显现，${playerName}周身环绕着五彩霞光。体内灵气如龙蛇般游走，不断冲击着境界壁垒。终于，壁垒破碎，${playerName}成功突破到了${realm}，实力暴涨！`,
+  (playerName: string, realm: string) => `${playerName}服下灵丹，药力在体内化开。配合功法运转，${playerName}引导药力冲击瓶颈。在灵丹的辅助下，${playerName}成功突破到了${realm}，修为精进！`,
+  (playerName: string, realm: string) => `生死之间，${playerName}在绝境中领悟大道。体内灵气在生死边缘爆发，如凤凰涅槃般重生。${playerName}在绝境中突破，成功踏入了${realm}的境界！`,
+  (playerName: string, realm: string) => `${playerName}闭关修炼，日复一日地积累修为。终于，在某个清晨，${playerName}感受到瓶颈松动。全力冲击之下，${playerName}成功突破到了${realm}，出关时已是另一番天地！`,
+  (playerName: string, realm: string) => `天地震动，${playerName}在突破的瞬间，体内传来阵阵龙吟。灵气如真龙般在经脉中游走，最终冲破桎梏。${playerName}成功突破到了${realm}，龙威显现！`,
+  (playerName: string, realm: string) => `${playerName}在战斗中感悟，生死搏杀中激发潜能。战斗中积累的感悟如潮水般涌来，${playerName}在战斗中突破，成功踏入了${realm}的境界！`,
+  (playerName: string, realm: string) => `星辰之力降临，${playerName}沐浴在星光之中。体内灵气与星辰之力交融，不断淬炼着肉身和神魂。最终，${playerName}在星辰之力的帮助下，成功突破到了${realm}！`,
+  (playerName: string, realm: string) => `${playerName}寻得一处上古遗迹，在其中获得了传承。传承之力在体内爆发，${playerName}借助传承之力冲击瓶颈。在传承的帮助下，${playerName}成功突破到了${realm}的境界！`,
+];
+
 export const generateBreakthroughFlavorText = async (
   realm: string,
-  success: boolean
+  success: boolean,
+  playerName?: string
 ): Promise<string> => {
-  if (!API_KEY) return success ? '突破成功！' : '突破失败！';
-
-  try {
-    const prompt = `
-      描述一名修仙者尝试突破到 ${realm} 的过程。
-      结果：${success ? '成功' : '失败'}。
-      请保持简短（不超过2句话），使用玄幻、仙侠风格，提及灵气涌动、经脉或天劫等元素。
-      请使用中文输出。
-    `;
-
-    const content = await requestSpark(
-      [
-        {
-          role: 'system',
-          content: '你是仙侠小说作家，擅长以唯美中文描绘修仙突破场景。',
-        },
-        { role: 'user', content: prompt },
-      ],
-      0.8
-    );
-
-    return (
-      content.trim() ||
-      (success ? '天地震动，你成功突破瓶颈！' : '你气血翻涌，突破失败了。')
-    );
-  } catch (e) {
-    return success ? '突破成功！' : '突破失败！';
+  if (!success) {
+    return playerName
+      ? `${playerName}尝试冲击瓶颈，奈何根基不稳，惨遭反噬！`
+      : '你尝试冲击瓶颈，奈何根基不稳，惨遭反噬！';
   }
+
+  // 不使用AI，直接从描述库中随机选择
+  const randomIndex = Math.floor(Math.random() * BREAKTHROUGH_DESCRIPTIONS.length);
+  const descriptionTemplate = BREAKTHROUGH_DESCRIPTIONS[randomIndex];
+  const name = playerName || '你';
+
+  return descriptionTemplate(name, realm);
 };
 
 export const generateEnemyName = async (

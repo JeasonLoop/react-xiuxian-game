@@ -50,17 +50,13 @@ export function useBreakthroughHandlers({
         }
       }
 
+      const realmText = isRealmUpgrade ? nextRealm : `${player.realm} 第 ${nextLevel} 层`;
       const flavor = await generateBreakthroughFlavorText(
-        isRealmUpgrade ? nextRealm : `第 ${nextLevel} 层`,
-        true
+        realmText,
+        true,
+        player.name
       );
       addLog(flavor, 'special');
-      addLog(
-        isRealmUpgrade
-          ? `恭喜！你的境界提升到了 ${nextRealm} ！`
-          : `恭喜！你突破到了第 ${nextLevel} 层！`,
-        'special'
-      );
 
       setPlayer((prev) => {
         const stats = REALM_DATA[nextRealm];
