@@ -29,6 +29,7 @@ export default {
         'float-up': 'floatUp 1s ease-out forwards',
         slash: 'slash 0.3s ease-out forwards',
         'fade-in': 'fadeIn 0.3s ease-out forwards',
+        'glow-pulse': 'glowPulse 3s ease-in-out infinite',
       },
       keyframes: {
         shake: {
@@ -68,6 +69,16 @@ export default {
         fadeIn: {
           '0%': { opacity: '0', transform: 'translateY(10px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        glowPulse: {
+          '0%, 100%': {
+            opacity: '1',
+            filter: 'drop-shadow(0 0 30px rgba(203, 161, 53, 0.5))',
+          },
+          '50%': {
+            opacity: '0.9',
+            filter: 'drop-shadow(0 0 50px rgba(203, 161, 53, 0.8))',
+          },
         },
       },
     },

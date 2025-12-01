@@ -47,18 +47,66 @@ export function useAchievementHandlers({
         if (newAchievements.includes(achievement.id)) return;
 
         let completed = false;
+        const stats = prev.statistics || {
+          killCount: 0,
+          meditateCount: 0,
+          adventureCount: 0,
+          equipCount: 0,
+          petCount: 0,
+          recipeCount: 0,
+          artCount: 0,
+          breakthroughCount: 0,
+          secretRealmCount: 0,
+        };
+
+        // 检查不同类型的成就
         if (achievement.requirement.type === 'realm') {
           const realmIndex = REALM_ORDER.indexOf(
             achievement.requirement.target as RealmType
           );
           const playerRealmIndex = REALM_ORDER.indexOf(prev.realm);
           completed = playerRealmIndex >= realmIndex;
-        } else if (
-          achievement.requirement.type === 'custom' &&
-          achievement.requirement.target === 'meditate'
-        ) {
-          // 这个需要在打坐时单独检查
-          return;
+        } else if (achievement.requirement.type === 'kill') {
+          // 击杀成就
+          completed = stats.killCount >= achievement.requirement.value;
+        } else if (achievement.requirement.type === 'collect') {
+          // 收集成就：检查背包中不同物品的数量
+          const uniqueItems = new Set(prev.inventory.map((item) => item.name));
+          completed = uniqueItems.size >= achievement.requirement.value;
+        } else if (achievement.requirement.type === 'meditate') {
+          // 打坐成就
+          completed = stats.meditateCount >= achievement.requirement.value;
+        } else if (achievement.requirement.type === 'adventure') {
+          // 历练成就
+          completed = stats.adventureCount >= achievement.requirement.value;
+        } else if (achievement.requirement.type === 'equip') {
+          // 装备成就
+          completed = stats.equipCount >= achievement.requirement.value;
+        } else if (achievement.requirement.type === 'pet') {
+          // 灵宠成就
+          completed = prev.pets.length >= achievement.requirement.value;
+        } else if (achievement.requirement.type === 'recipe') {
+          // 丹方成就
+          completed = prev.unlockedRecipes.length >= achievement.requirement.value;
+        } else if (achievement.requirement.type === 'art') {
+          // 功法成就
+          completed = prev.cultivationArts.length >= achievement.requirement.value;
+        } else if (achievement.requirement.type === 'breakthrough') {
+          // 突破成就
+          completed = stats.breakthroughCount >= achievement.requirement.value;
+        } else if (achievement.requirement.type === 'secret_realm') {
+          // 秘境成就
+          completed = stats.secretRealmCount >= achievement.requirement.value;
+        } else if (achievement.requirement.type === 'lottery') {
+          // 抽奖成就
+          completed = (prev.lotteryCount || 0) >= achievement.requirement.value;
+        } else if (achievement.requirement.type === 'custom') {
+          // 自定义成就（如首次打坐等，需要在特定地方单独检查）
+          if (achievement.requirement.target === 'meditate') {
+            // 这个需要在打坐时单独检查
+            return;
+          }
+          // 其他自定义成就可以根据需要添加
         }
 
         if (completed) {

@@ -69,6 +69,17 @@ export function useGameState() {
               savedData.player.meditationHpRegenMultiplier ?? 1.0, // 兼容旧存档
             meditationBoostEndTime:
               savedData.player.meditationBoostEndTime ?? null, // 兼容旧存档
+            statistics: savedData.player.statistics || {
+              killCount: 0,
+              meditateCount: 0,
+              adventureCount: 0,
+              equipCount: 0,
+              petCount: 0,
+              recipeCount: savedData.player.unlockedRecipes?.length || 0,
+              artCount: savedData.player.cultivationArts?.length || 0,
+              breakthroughCount: 0,
+              secretRealmCount: 0,
+            },
           };
           setPlayer(loadedPlayer);
           setLogs(savedData.logs || []);

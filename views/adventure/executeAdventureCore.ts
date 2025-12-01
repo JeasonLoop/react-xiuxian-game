@@ -98,6 +98,32 @@ export async function executeAdventureCore({
     let newLotteryTickets = prev.lotteryTickets;
     let newInheritanceLevel = prev.inheritanceLevel;
     let newPets = [...prev.pets];
+    // 更新统计
+    const stats = prev.statistics || {
+      killCount: 0,
+      meditateCount: 0,
+      adventureCount: 0,
+      equipCount: 0,
+      petCount: 0,
+      recipeCount: 0,
+      artCount: 0,
+      breakthroughCount: 0,
+      secretRealmCount: 0,
+    };
+    let newStats = { ...stats };
+
+    // 更新历练次数
+    newStats.adventureCount += 1;
+
+    // 更新秘境次数
+    if (realmName) {
+      newStats.secretRealmCount += 1;
+    }
+
+    // 更新战斗胜利次数
+    if (battleContext && battleContext.victory) {
+      newStats.killCount += 1;
+    }
 
     // 处理获得的多个物品（搜刮奖励等）
     if (result.itemsObtained && result.itemsObtained.length > 0) {
@@ -256,19 +282,38 @@ export async function executeAdventureCore({
             quantity: newInv[existingIdx].quantity + 1,
           };
         } else {
+          // 检查是否为传说或仙品装备，随机添加保命机会
+          const rarity = (itemData.rarity as ItemRarity) || '普通';
+          let reviveChances: number | undefined = undefined;
+
+          // 只有武器和法宝类型的传说/仙品装备可能有保命机会
+          if ((rarity === '传说' || rarity === '仙品') &&
+              (itemType === ItemType.Weapon || itemType === ItemType.Artifact)) {
+            // 传说装备30%概率有保命，仙品装备60%概率有保命
+            const hasRevive = rarity === '传说'
+              ? Math.random() < 0.3
+              : Math.random() < 0.6;
+
+            if (hasRevive) {
+              // 随机1-3次保命机会
+              reviveChances = Math.floor(Math.random() * 3) + 1;
+            }
+          }
+
           const newItem: Item = {
             id: uid(),
             name: itemName,
             type: itemType,
             description: itemData.description,
             quantity: 1,
-            rarity: (itemData.rarity as ItemRarity) || '普通',
+            rarity: rarity,
             level: 0,
             isEquippable: isEquippable,
             equipmentSlot: equipmentSlot,
             effect: finalEffect,
             permanentEffect: finalPermanentEffect,
             recipeData: recipeData,
+            reviveChances: reviveChances,
           };
           newInv.push(newItem);
         }
@@ -460,19 +505,41 @@ export async function executeAdventureCore({
         };
       } else {
         // 装备类物品或新物品，创建新物品（每个装备单独占一格）
+        // 检查是否为传说或仙品装备，随机添加保命机会
+        const rarity = (result.itemObtained.rarity as ItemRarity) || '普通';
+        let reviveChances: number | undefined = undefined;
+
+        // 检查是否从itemObtained中已经有保命机会（从battleService生成）
+        if ((result.itemObtained as any).reviveChances !== undefined) {
+          reviveChances = (result.itemObtained as any).reviveChances;
+        } else if ((rarity === '传说' || rarity === '仙品') &&
+                   (itemType === ItemType.Weapon || itemType === ItemType.Artifact)) {
+          // 只有武器和法宝类型的传说/仙品装备可能有保命机会
+          // 传说装备30%概率有保命，仙品装备60%概率有保命
+          const hasRevive = rarity === '传说'
+            ? Math.random() < 0.3
+            : Math.random() < 0.6;
+
+          if (hasRevive) {
+            // 随机1-3次保命机会
+            reviveChances = Math.floor(Math.random() * 3) + 1;
+          }
+        }
+
         const newItem: Item = {
           id: uid(),
           name: itemName,
           type: itemType,
           description: result.itemObtained.description,
           quantity: 1, // 装备quantity始终为1
-          rarity: (result.itemObtained.rarity as ItemRarity) || '普通',
+          rarity: rarity,
           level: 0,
           isEquippable: isEquippable,
           equipmentSlot: equipmentSlot,
           effect: finalEffect,
           permanentEffect: finalPermanentEffect,
           recipeData: recipeData,
+          reviveChances: reviveChances,
         };
         newInv.push(newItem);
       }
@@ -527,6 +594,7 @@ export async function executeAdventureCore({
             affection: 50,
           };
           newPets.push(newPet);
+          newStats.petCount += 1;
           addLog(`✨ 你拯救了灵兽，获得了灵宠【${newPet.name}】！`, 'special');
         } else {
           addLog(
@@ -696,6 +764,7 @@ export async function executeAdventureCore({
         // 确保功法没有被重复添加
         if (!newArts.includes(randomArt.id)) {
           newArts.push(randomArt.id);
+          newStats.artCount += 1;
           newAttack += randomArt.effects.attack || 0;
           newDefense += randomArt.effects.defense || 0;
           newMaxHp += randomArt.effects.hp || 0;
@@ -866,6 +935,7 @@ export async function executeAdventureCore({
       lotteryTickets: newLotteryTickets,
       inheritanceLevel: newInheritanceLevel,
       pets: newPets,
+      statistics: newStats,
     };
   });
 

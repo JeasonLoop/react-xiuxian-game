@@ -59,5 +59,16 @@ export const createInitialPlayer = (
     unlockedRecipes: [], // 已解锁的丹方名称列表
     meditationHpRegenMultiplier: 1.0, // 打坐回血速度加成倍数（默认1.0）
     meditationBoostEndTime: null, // 打坐回血加成结束时间戳（毫秒）
+    statistics: {
+      killCount: 0,
+      meditateCount: 0,
+      adventureCount: 0,
+      equipCount: 0,
+      petCount: 0,
+      recipeCount: 0,
+      artCount: 0,
+      breakthroughCount: 0,
+      secretRealmCount: 0,
+    },
   };
 };

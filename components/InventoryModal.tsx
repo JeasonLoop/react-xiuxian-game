@@ -602,6 +602,12 @@ const InventoryModal: React.FC<Props> = ({
                       </div>
                     )}
 
+                    {item.reviveChances && item.reviveChances > 0 && (
+                      <div className="text-xs text-yellow-400 mb-2 flex items-center gap-1 font-bold">
+                        💫 保命机会：{item.reviveChances}次
+                      </div>
+                    )}
+
                     {item.effect && (
                       <div className="text-xs text-stone-400 mb-2 grid grid-cols-2 gap-1">
                         {stats.attack > 0 && <span>攻 +{stats.attack}</span>}
