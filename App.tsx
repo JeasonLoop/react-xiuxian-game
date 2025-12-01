@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Item, Shop, ShopType, EquipmentSlot } from './types';
+import { Item, Shop, ShopItem, ShopType, EquipmentSlot } from './types';
 import WelcomeScreen from './components/WelcomeScreen';
 import StartScreen from './components/StartScreen';
 import DeathModal from './components/DeathModal';
@@ -87,6 +87,7 @@ function App() {
   } | null>(null); // 物品操作轻提示
   const [autoMeditate, setAutoMeditate] = useState(false); // 自动打坐
   const [autoAdventure, setAutoAdventure] = useState(false); // 自动历练
+  const [autoAdventurePausedByShop, setAutoAdventurePausedByShop] = useState(false); // 自动历练是否因商店暂停
   const [isDead, setIsDead] = useState(false); // 是否死亡
   const [deathBattleData, setDeathBattleData] = useState<BattleReplay | null>(
     null
@@ -207,6 +208,11 @@ function App() {
     loading,
     cooldown,
     onOpenShop: (shopType: ShopType) => {
+      // 如果正在自动历练，暂停自动历练
+      if (autoAdventure) {
+        setAutoAdventurePausedByShop(true);
+        setAutoAdventure(false);
+      }
       // 复用 shopHandlers 的逻辑
       shopHandlers.handleOpenShop(shopType);
     },
@@ -314,11 +320,7 @@ function App() {
   // 涅槃重生功能
   const handleRebirth = () => {
     // 清除存档
-    try {
-      localStorage.removeItem(SAVE_KEY);
-    } catch (error) {
-      console.error('清除存档失败:', error);
-    }
+    localStorage.removeItem(SAVE_KEY);
 
     // 重置所有状态
     setIsDead(false);
@@ -371,6 +373,19 @@ function App() {
   // 提取新的模块化 handlers
   const handleBuyItem = shopHandlers.handleBuyItem;
   const handleSellItem = shopHandlers.handleSellItem;
+
+  const handleRefreshShop = (newItems: ShopItem[]) => {
+    if (!currentShop) return;
+    setCurrentShop({
+      ...currentShop,
+      items: newItems,
+    });
+    setPlayer((prev) => ({
+      ...prev,
+      spiritStones: prev.spiritStones - 100, // 扣除刷新费用
+    }));
+    addLog('商店物品已刷新！', 'special');
+  };
   const handleUpdateSettings = settingsHandlers.handleUpdateSettings;
   const handleActivatePet = petHandlers.handleActivatePet;
   const handleFeedPet = petHandlers.handleFeedPet;
@@ -427,7 +442,7 @@ function App() {
 
   // 自动历练逻辑
   useEffect(() => {
-    if (!autoAdventure || !player || loading || cooldown > 0) return;
+    if (!autoAdventure || !player || loading || cooldown > 0 || isShopOpen) return;
     // if (player.hp < player.maxHp * 0.2) {
     //   // 如果血量过低，停止自动历练
     //   setAutoAdventure(false);
@@ -669,7 +684,14 @@ function App() {
           setIsSettingsOpen: (open: boolean) => setIsSettingsOpen(open),
           setIsShopOpen: (open: boolean) => {
             setIsShopOpen(open);
-            if (!open) setCurrentShop(null);
+            if (!open) {
+              setCurrentShop(null);
+              // 如果自动历练是因为商店暂停的，恢复自动历练
+              if (autoAdventurePausedByShop) {
+                setAutoAdventurePausedByShop(false);
+                setAutoAdventure(true);
+              }
+            }
           },
           setIsBattleModalOpen: (open: boolean) => setIsBattleModalOpen(open),
           setItemToUpgrade,
@@ -714,6 +736,7 @@ function App() {
           handleUpdateSettings,
           handleBuyItem,
           handleSellItem,
+          handleRefreshShop,
         }}
       />
     </>

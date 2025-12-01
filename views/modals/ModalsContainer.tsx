@@ -125,6 +125,7 @@ interface ModalsContainerProps {
     // Shop
     handleBuyItem: (shopItem: any, quantity?: number) => void;
     handleSellItem: (item: Item) => void;
+    handleRefreshShop?: (newItems: ShopItem[]) => void;
   };
 }
 
@@ -258,6 +259,7 @@ export default function ModalsContainer({
           player={player}
           onBuyItem={handlers.handleBuyItem}
           onSellItem={handlers.handleSellItem}
+          onRefreshShop={handlers.handleRefreshShop}
         />
       )}
     </>

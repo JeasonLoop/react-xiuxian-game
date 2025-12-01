@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, ShoppingBag, Coins, Package, Filter, Trash } from 'lucide-react';
+import { X, ShoppingBag, Coins, Package, Filter, Trash, RefreshCw } from 'lucide-react';
 import {
   Shop,
   ShopItem,
@@ -10,6 +10,7 @@ import {
   ItemType,
 } from '../types';
 import { REALM_ORDER, RARITY_MULTIPLIERS } from '../constants';
+import { generateShopItems } from '../services/shopService';
 
 interface Props {
   isOpen: boolean;
@@ -18,6 +19,7 @@ interface Props {
   player: PlayerStats;
   onBuyItem: (shopItem: ShopItem, quantity?: number) => void;
   onSellItem: (item: Item) => void;
+  onRefreshShop?: (newItems: ShopItem[]) => void;
 }
 
 type ItemTypeFilter = 'all' | ItemType;
@@ -29,6 +31,7 @@ const ShopModal: React.FC<Props> = ({
   player,
   onBuyItem,
   onSellItem,
+  onRefreshShop,
 }) => {
   const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
   const [buyQuantities, setBuyQuantities] = useState<Record<string, number>>(
@@ -316,12 +319,35 @@ const ShopModal: React.FC<Props> = ({
             </h3>
             <p className="text-sm text-stone-400 mt-1">{shop.description}</p>
           </div>
-          <button
-            onClick={onClose}
-            className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
-          >
-            <X size={24} />
-          </button>
+          <div className="flex items-center gap-2">
+            {onRefreshShop && (
+              <button
+                onClick={() => {
+                  const refreshCost = 100; // 刷新费用
+                  if (player.spiritStones < refreshCost) {
+                    alert('灵石不足！刷新需要100灵石。');
+                    return;
+                  }
+                  if (window.confirm(`确定要花费 ${refreshCost} 灵石刷新商店物品吗？`)) {
+                    const newItems = generateShopItems(shop.type, player.realm, true);
+                    onRefreshShop(newItems);
+                  }
+                }}
+                className="flex items-center gap-1 px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded border border-stone-600 transition-colors text-sm"
+                title="花费100灵石刷新商店物品（小概率出现高级物品）"
+              >
+                <RefreshCw size={16} />
+                <span className="hidden md:inline">刷新</span>
+                <span className="text-xs text-stone-400">(100)</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+            >
+              <X size={24} />
+            </button>
+          </div>
         </div>
 
         {/* 标签页 */}
