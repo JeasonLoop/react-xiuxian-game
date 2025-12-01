@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Item, Shop, ShopType } from './types';
+import { Item, Shop, ShopType, EquipmentSlot } from './types';
 import WelcomeScreen from './components/WelcomeScreen';
 import StartScreen from './components/StartScreen';
 import DeathModal from './components/DeathModal';
@@ -230,6 +230,63 @@ function App() {
     if (!player || isDead) return;
 
     if (player.hp <= 0) {
+      // 检查是否有保命装备
+      let reviveItem: Item | null = null;
+      let reviveSlot: EquipmentSlot | null = null;
+
+      // 遍历所有装备槽位，查找有保命机会的装备
+      for (const [slot, itemId] of Object.entries(player.equippedItems)) {
+        if (!itemId) continue;
+        const item = player.inventory.find(i => i.id === itemId);
+        if (item && item.reviveChances && item.reviveChances > 0) {
+          reviveItem = item;
+          reviveSlot = slot as EquipmentSlot;
+          break;
+        }
+      }
+
+      if (reviveItem && reviveSlot) {
+        // 有保命装备，消耗一次保命机会并复活
+        setPlayer((prev) => {
+          if (!prev) return prev;
+
+          const newInventory = prev.inventory.map(item => {
+            if (item.id === reviveItem!.id) {
+              const newChances = (item.reviveChances || 0) - 1;
+              addLog(
+                `💫 ${item.name}的保命之力被触发！你留下一口气，从死亡边缘被拉了回来。剩余保命机会：${newChances}次`,
+                'special'
+              );
+              return {
+                ...item,
+                reviveChances: newChances,
+              };
+            }
+            return item;
+          });
+
+          // 如果保命机会用完了，从装备栏移除
+          const updatedItem = newInventory.find(i => i.id === reviveItem!.id);
+          const newEquippedItems = { ...prev.equippedItems };
+          if (updatedItem && (!updatedItem.reviveChances || updatedItem.reviveChances <= 0)) {
+            delete newEquippedItems[reviveSlot!];
+            addLog(`⚠️ ${reviveItem!.name}的保命之力已耗尽，自动卸下。`, 'danger');
+          }
+
+          // 复活：恢复10%最大气血
+          const reviveHp = Math.max(1, Math.floor(prev.maxHp * 0.1));
+
+          return {
+            ...prev,
+            inventory: newInventory,
+            equippedItems: newEquippedItems,
+            hp: reviveHp,
+          };
+        });
+        return; // 不触发死亡
+      }
+
+      // 没有保命装备，正常死亡
       setIsDead(true);
       setDeathBattleData(lastBattleReplay);
       localStorage.removeItem(SAVE_KEY);
@@ -252,7 +309,7 @@ function App() {
       setAutoMeditate(false);
       setAutoAdventure(false);
     }
-  }, [player?.hp, isDead, lastBattleReplay]);
+  }, [player?.hp, isDead, lastBattleReplay, addLog]);
 
   // 涅槃重生功能
   const handleRebirth = () => {
@@ -334,39 +391,13 @@ function App() {
       setPlayer((prev) => {
         if (!prev) return prev; // 防止 prev 为 null
 
-        const now = Date.now();
-        let hpRegenMultiplier = prev.meditationHpRegenMultiplier || 1.0;
-        let meditationBoostEndTime = prev.meditationBoostEndTime;
-
-        // 检查打坐加成是否过期
-        if (meditationBoostEndTime && now >= meditationBoostEndTime) {
-          // 打坐加成已过期，恢复默认值
-          hpRegenMultiplier = 1.0;
-          meditationBoostEndTime = null;
-        }
-
-        // 计算回血量：基础回血 * 打坐加成倍数
+        // 计算基础回血量（不再使用打坐加成，因为打坐时已经直接回血了）
         const baseRegen = Math.max(1, Math.floor(prev.maxHp * 0.01));
-        const actualRegen = Math.floor(baseRegen * hpRegenMultiplier);
 
         if (prev.hp < prev.maxHp) {
           return {
             ...prev,
-            hp: Math.min(prev.maxHp, prev.hp + actualRegen),
-            meditationHpRegenMultiplier: hpRegenMultiplier,
-            meditationBoostEndTime: meditationBoostEndTime,
-          };
-        }
-
-        // 即使血量已满，也要更新打坐加成状态（清除过期加成）
-        if (
-          hpRegenMultiplier !== prev.meditationHpRegenMultiplier ||
-          meditationBoostEndTime !== prev.meditationBoostEndTime
-        ) {
-          return {
-            ...prev,
-            meditationHpRegenMultiplier: hpRegenMultiplier,
-            meditationBoostEndTime: meditationBoostEndTime,
+            hp: Math.min(prev.maxHp, prev.hp + baseRegen),
           };
         }
 

@@ -71,6 +71,7 @@ export interface Item {
   equipmentSlot?: EquipmentSlot; // 装备部位
   isNatal?: boolean; // 是否为本命法宝
   recipeData?: Recipe; // 丹方数据（仅当 type 为 Recipe 时使用）
+  reviveChances?: number; // 保命机会次数（1-3次），仅传说和仙品装备可能有
   effect?: {
     hp?: number;
     exp?: number;
