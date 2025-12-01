@@ -496,6 +496,7 @@ export interface ShopItem {
   equipmentSlot?: EquipmentSlot;
   isEquippable?: boolean;
   minRealm?: RealmType; // 最低境界要求
+  reviveChances?: number; // 保命机会次数（1-3次），仅传说和仙品装备可能有
 }
 
 export interface Shop {
