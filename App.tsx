@@ -378,6 +378,7 @@ function App() {
   const handleDraw = lotteryHandlers.handleDraw;
   const handleJoinSect = sectHandlers.handleJoinSect;
   const handleLeaveSect = sectHandlers.handleLeaveSect;
+  const handleSafeLeaveSect = sectHandlers.handleSafeLeaveSect;
   const handleSectTask = sectHandlers.handleSectTask;
   const handleSectPromote = sectHandlers.handleSectPromote;
   const handleSectBuy = sectHandlers.handleSectBuy;
@@ -483,8 +484,8 @@ function App() {
     costStones: number,
     costMats: number,
     upgradeStones: number = 0
-  ) => {
-    equipmentHandlers.handleUpgradeItem(
+  ): Promise<'success' | 'failure' | 'error'> => {
+    const result = await equipmentHandlers.handleUpgradeItem(
       item,
       costStones,
       costMats,
@@ -492,6 +493,7 @@ function App() {
     );
     // 不关闭弹窗，让用户可以继续强化
     // 弹窗会自动从 player.inventory 中获取最新的物品信息
+    return result || 'success';
   };
 
   // Sect handlers、Achievement、Pet、Lottery、Settings handlers 已全部移到对应模块
@@ -690,6 +692,7 @@ function App() {
           handleCraft,
           handleJoinSect,
           handleLeaveSect,
+          handleSafeLeaveSect,
           handleSectTask,
           handleSectPromote,
           handleSectBuy,

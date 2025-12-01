@@ -666,7 +666,8 @@ const LOOT_ITEMS = {
 const generateLoot = (
   enemyStrength: number,
   adventureType: AdventureType,
-  playerRealm: RealmType
+  playerRealm: RealmType,
+  riskLevel?: '低' | '中' | '高' | '极度危险'
 ): AdventureResult['itemObtained'][] => {
   const lootItems: AdventureResult['itemObtained'][] = [];
 
@@ -1226,7 +1227,7 @@ export const resolveBattleEncounter = async (player: PlayerStats, adventureType:
   }
 
   // 生成更丰富的战斗描述（如果有秘境信息，会结合秘境特点）
-  const generateBattleSummary = (victory: boolean, enemy: Enemy, hpLoss: number, hasLoot: boolean, realmName?: string): string => {
+  const generateBattleSummary = (victory: boolean, enemy: { name: string; title: string }, hpLoss: number, hasLoot: boolean, realmName?: string): string => {
     // 如果有秘境名称，生成与秘境相关的描述
     if (realmName && adventureType === 'secret_realm') {
       const realmContext = `在${realmName}中，`;

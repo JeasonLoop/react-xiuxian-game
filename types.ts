@@ -15,6 +15,15 @@ export interface CultivationArt {
   description: string;
   realmRequirement: RealmType;
   cost: number;
+  sectId?: string | null; // 所属宗门ID，null表示通用功法
+  attributeRequirements?: {
+    // 属性要求
+    attack?: number;
+    defense?: number;
+    spirit?: number;
+    physique?: number;
+    speed?: number;
+  };
   effects: {
     attack?: number;
     defense?: number;
@@ -164,6 +173,8 @@ export interface PlayerStats {
   sectId: string | null;
   sectRank: SectRank;
   sectContribution: number;
+  betrayedSects: string[]; // 背叛过的宗门ID列表
+  sectHuntEndTime: number | null; // 宗门追杀结束时间戳（毫秒），null表示未被追杀
   // 角色系统扩展
   talentId: string | null; // 天赋ID（游戏开始时随机生成，之后不可修改）
   titleId: string | null; // 称号ID

@@ -94,7 +94,8 @@ interface ModalsContainerProps {
     // Sect
     handleJoinSect: (sectId: string, sectName?: string) => void;
     handleLeaveSect: () => void;
-    handleSectTask: (task: RandomSectTask) => void;
+    handleSafeLeaveSect: () => void;
+    handleSectTask: (task: RandomSectTask, encounterResult?: any) => void;
     handleSectPromote: () => void;
     handleSectBuy: (
       itemTemplate: Partial<Item>,
@@ -194,6 +195,7 @@ export default function ModalsContainer({
         player={player}
         onJoinSect={handlers.handleJoinSect}
         onLeaveSect={handlers.handleLeaveSect}
+        onSafeLeaveSect={handlers.handleSafeLeaveSect}
         onTask={handlers.handleSectTask}
         onPromote={handlers.handleSectPromote}
         onBuy={handlers.handleSectBuy}

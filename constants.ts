@@ -141,6 +141,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '云灵宗入门心法，吸纳灵气如云雾缭绕。',
     realmRequirement: RealmType.QiRefining,
     cost: 100,
+    sectId: 'sect-cloud', // 云灵宗专属
     effects: { expRate: 0.25, attack: 5 },
   },
   {
@@ -533,11 +534,19 @@ export const getUpgradeMultiplier = (rarity: ItemRarity = '普通') => {
 
 // --- SECT CONSTANTS ---
 
+export type SectGrade = '天' | '地' | '玄' | '黄'; // 宗门等级：天最高，黄最低
+
 export interface SectInfo {
   id: string;
   name: string;
   description: string;
   reqRealm: RealmType;
+  grade: SectGrade; // 宗门等级
+  exitCost?: {
+    // 安全退出宗门的代价
+    spiritStones?: number;
+    items?: { name: string; quantity: number }[];
+  };
 }
 
 export const SECTS: SectInfo[] = [
@@ -546,18 +555,198 @@ export const SECTS: SectInfo[] = [
     name: '云灵宗',
     description: '正道大宗，门风清正，适合大部分修士。',
     reqRealm: RealmType.QiRefining,
+    grade: '玄',
+    exitCost: {
+      spiritStones: 500,
+      items: [{ name: '聚灵草', quantity: 10 }],
+    },
   },
   {
     id: 'sect-fire',
     name: '烈阳宗',
     description: '坐落于火山之上，专修火法，行事霸道。',
     reqRealm: RealmType.Foundation,
+    grade: '地',
+    exitCost: {
+      spiritStones: 2000,
+      items: [{ name: '炼器石', quantity: 20 }],
+    },
   },
   {
     id: 'sect-sword',
     name: '万剑门',
     description: '一剑破万法。门徒皆为剑痴，攻击力极强。',
     reqRealm: RealmType.Foundation,
+    grade: '地',
+    exitCost: {
+      spiritStones: 2000,
+      items: [{ name: '精铁', quantity: 15 }],
+    },
+  },
+  {
+    id: 'sect-temple',
+    name: '天音寺',
+    description: '佛门圣地，慈悲为怀，防御力出众。',
+    reqRealm: RealmType.QiRefining,
+    grade: '玄',
+    exitCost: {
+      spiritStones: 500,
+      items: [{ name: '止血草', quantity: 10 }],
+    },
+  },
+  {
+    id: 'sect-taoist',
+    name: '太虚观',
+    description: '道门正统，修炼速度极快。',
+    reqRealm: RealmType.Foundation,
+    grade: '地',
+    exitCost: {
+      spiritStones: 2000,
+      items: [{ name: '聚灵草', quantity: 15 }],
+    },
+  },
+  {
+    id: 'sect-blood',
+    name: '血魔宗',
+    description: '魔道宗门，行事狠辣，但实力强大。',
+    reqRealm: RealmType.GoldenCore,
+    grade: '天',
+    exitCost: {
+      spiritStones: 10000,
+      items: [{ name: '妖兽内丹', quantity: 5 }],
+    },
+  },
+  {
+    id: 'sect-lotus',
+    name: '青莲剑派',
+    description: '剑修圣地，剑法精妙。',
+    reqRealm: RealmType.Foundation,
+    grade: '地',
+    exitCost: {
+      spiritStones: 2000,
+      items: [{ name: '精铁', quantity: 15 }],
+    },
+  },
+  {
+    id: 'sect-xuantian',
+    name: '玄天宗',
+    description: '正道大宗，底蕴深厚。',
+    reqRealm: RealmType.GoldenCore,
+    grade: '天',
+    exitCost: {
+      spiritStones: 10000,
+      items: [{ name: '千年人参', quantity: 3 }],
+    },
+  },
+  {
+    id: 'sect-jiuyou',
+    name: '九幽门',
+    description: '魔道宗门，阴险狡诈。',
+    reqRealm: RealmType.GoldenCore,
+    grade: '天',
+    exitCost: {
+      spiritStones: 10000,
+      items: [{ name: '妖兽内丹', quantity: 5 }],
+    },
+  },
+  {
+    id: 'sect-star',
+    name: '星辰阁',
+    description: '神秘组织，掌握星辰之力。',
+    reqRealm: RealmType.NascentSoul,
+    grade: '天',
+    exitCost: {
+      spiritStones: 50000,
+      items: [{ name: '星辰石', quantity: 10 }],
+    },
+  },
+  {
+    id: 'sect-dragon',
+    name: '龙族圣地',
+    description: '龙族后裔建立的宗门，血脉强大。',
+    reqRealm: RealmType.NascentSoul,
+    grade: '天',
+    exitCost: {
+      spiritStones: 50000,
+      items: [{ name: '龙鳞果', quantity: 5 }],
+    },
+  },
+  {
+    id: 'sect-phoenix',
+    name: '凤凰宫',
+    description: '凤凰血脉传承，涅槃重生。',
+    reqRealm: RealmType.NascentSoul,
+    grade: '天',
+    exitCost: {
+      spiritStones: 50000,
+      items: [{ name: '九叶芝草', quantity: 3 }],
+    },
+  },
+  {
+    id: 'sect-thunder',
+    name: '雷神殿',
+    description: '专修雷法，攻击力极强。',
+    reqRealm: RealmType.GoldenCore,
+    grade: '地',
+    exitCost: {
+      spiritStones: 2000,
+      items: [{ name: '炼器石', quantity: 20 }],
+    },
+  },
+  {
+    id: 'sect-ice',
+    name: '冰魄宗',
+    description: '冰属性修士的圣地，防御力强。',
+    reqRealm: RealmType.Foundation,
+    grade: '黄',
+    exitCost: {
+      spiritStones: 300,
+      items: [{ name: '聚灵草', quantity: 5 }],
+    },
+  },
+  {
+    id: 'sect-poison',
+    name: '毒王谷',
+    description: '毒修聚集地，擅长用毒。',
+    reqRealm: RealmType.Foundation,
+    grade: '黄',
+    exitCost: {
+      spiritStones: 300,
+      items: [{ name: '止血草', quantity: 5 }],
+    },
+  },
+  {
+    id: 'sect-illusion',
+    name: '幻月门',
+    description: '幻术宗门，擅长迷惑敌人。',
+    reqRealm: RealmType.Foundation,
+    grade: '黄',
+    exitCost: {
+      spiritStones: 300,
+      items: [{ name: '聚灵草', quantity: 5 }],
+    },
+  },
+  {
+    id: 'sect-diamond',
+    name: '金刚寺',
+    description: '体修宗门，肉身强大。',
+    reqRealm: RealmType.QiRefining,
+    grade: '玄',
+    exitCost: {
+      spiritStones: 500,
+      items: [{ name: '炼器石', quantity: 10 }],
+    },
+  },
+  {
+    id: 'sect-yinyang',
+    name: '阴阳教',
+    description: '阴阳调和，攻防兼备。',
+    reqRealm: RealmType.GoldenCore,
+    grade: '地',
+    exitCost: {
+      spiritStones: 2000,
+      items: [{ name: '聚灵草', quantity: 15 }],
+    },
   },
 ];
 
