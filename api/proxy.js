@@ -17,10 +17,12 @@ function getProxyTarget() {
   }
 
   // 根据提供商选择目标
-  const provider = process.env.VITE_AI_PROVIDER || 'siliconflow';
+  const provider = process.env.VITE_AI_PROVIDER || 'glm';
   switch (provider) {
     case 'openai':
       return 'https://api.openai.com';
+    case 'glm':
+      return 'https://open.bigmodel.cn';
     case 'siliconflow':
     default:
       return 'https://api.siliconflow.cn';
@@ -46,7 +48,12 @@ export default async function handler(req, res) {
 
   try {
     // 从请求路径中提取实际路径（去掉 /api 前缀）
-    const apiPath = req.url.replace(/^\/api/, '') || '/v1/chat/completions';
+    // 根据提供商选择默认路径
+    const provider = process.env.VITE_AI_PROVIDER || 'glm';
+    const defaultPath = provider === 'glm'
+      ? '/api/paas/v4/chat/completions'
+      : '/v1/chat/completions';
+    const apiPath = req.url.replace(/^\/api/, '') || defaultPath;
     const targetBase = getProxyTarget();
     const targetUrl = `${targetBase}${apiPath}`;
 

@@ -6,7 +6,7 @@
  * 如需切换，设置环境变量 VITE_AI_PROVIDER
  */
 
-export type AIProvider = 'siliconflow' | 'openai' | 'custom';
+export type AIProvider = 'siliconflow' | 'openai' | 'glm' | 'custom';
 
 export interface AIConfig {
   provider: AIProvider;
@@ -36,6 +36,11 @@ const AI_PROVIDERS: Record<
     defaultModel: 'gpt-3.5-turbo',
     proxyPath: '/api/v1/chat/completions',
   },
+  glm: {
+    defaultUrl: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+    defaultModel: 'glm-4.5',
+    proxyPath: '/api/paas/v4/chat/completions',
+  },
   custom: {
     defaultUrl: '',
     defaultModel: '',
@@ -51,14 +56,14 @@ export function getAIConfig(): AIConfig {
 
   // 从环境变量获取配置
   const provider = (import.meta.env.VITE_AI_PROVIDER ||
-    'siliconflow') as AIProvider;
+    'glm') as AIProvider;
   const apiKey = import.meta.env.VITE_AI_KEY || '';
   const customApiUrl = import.meta.env.VITE_AI_API_URL;
   const customModel = import.meta.env.VITE_AI_MODEL;
   const proxyPreference = import.meta.env.VITE_AI_USE_PROXY;
 
   // 获取预设配置
-  const providerConfig = AI_PROVIDERS[provider] || AI_PROVIDERS.siliconflow;
+  const providerConfig = AI_PROVIDERS[provider] || AI_PROVIDERS.glm;
 
   // 构建配置
   const apiUrl = providerConfig.defaultUrl;
