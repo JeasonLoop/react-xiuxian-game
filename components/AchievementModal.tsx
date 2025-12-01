@@ -87,7 +87,7 @@ const AchievementModal: React.FC<Props> = ({ isOpen, onClose, player }) => {
         className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[80vh] md:h-auto md:max-w-3xl md:max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-stone-800 border-b border-stone-700 p-3 md:p-4 flex justify-between items-center">
+        <div className="z-50 sticky top-0 bg-stone-800 border-b border-stone-700 p-3 md:p-4 flex justify-between items-center">
           <h2 className="text-lg md:text-xl font-serif text-mystic-gold flex items-center gap-2">
             <Trophy className="text-yellow-400 w-5 h-5 md:w-6 md:h-6" />
             成就系统
