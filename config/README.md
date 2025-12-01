@@ -2,7 +2,7 @@
 
 本目录包含 AI 服务的配置系统，支持多种 AI 服务提供商，方便切换和调整。
 
-**默认配置**: 项目默认使用 **SiliconFlow** 作为 AI 接口，无需额外配置即可使用。
+**默认配置**: 项目默认使用 **GLM (智谱AI)** 作为 AI 接口，无需额外配置即可使用。
 
 ## 快速开始
 
@@ -11,22 +11,37 @@
 创建 `.env.local` 文件（参考 `.env.example`）：
 
 ```bash
-# AI 提供商（可选，默认: siliconflow）
-# 如果不设置，将自动使用 SiliconFlow
-# VITE_AI_PROVIDER=siliconflow
+# AI 提供商（可选，默认: glm）
+# 如果不设置，将自动使用 GLM (智谱AI)
+# VITE_AI_PROVIDER=glm
 
 # 设置 API Key（必需）
 VITE_AI_KEY=your-api-key-here
 
-# 可选：自定义模型（默认: Qwen/Qwen2.5-72B-Instruct）
-# VITE_AI_MODEL=Qwen/Qwen2.5-72B-Instruct
+# 可选：自定义模型（默认: glm-4.5）
+# VITE_AI_MODEL=glm-4.5
 ```
 
-**最小配置**: 只需设置 `VITE_AI_KEY`，其他配置使用默认值（SiliconFlow）。
+**最小配置**: 只需设置 `VITE_AI_KEY`，其他配置使用默认值（GLM）。
 
 ### 2. 支持的提供商
 
-#### SiliconFlow (推荐)
+#### GLM (智谱AI) - 默认推荐
+
+```bash
+VITE_AI_PROVIDER=glm
+VITE_AI_KEY=your-glm-api-key
+VITE_AI_MODEL=glm-4.5
+```
+
+**获取 API Key**: https://open.bigmodel.cn
+
+**特点**:
+- 国内访问速度快
+- 支持 GLM-4.5 等高质量模型
+- API 兼容 OpenAI 格式
+
+#### SiliconFlow
 
 ```bash
 VITE_AI_PROVIDER=siliconflow
@@ -63,7 +78,7 @@ VITE_AI_MODEL=your-model-name
 
 ### 可选配置
 
-- `VITE_AI_PROVIDER`: 提供商 (`siliconflow` | `openai` | `custom`)，默认 `siliconflow`
+- `VITE_AI_PROVIDER`: 提供商 (`glm` | `siliconflow` | `openai` | `custom`)，默认 `glm`
 - `VITE_AI_MODEL`: 模型名称，根据提供商使用默认值
 - `VITE_AI_API_URL`: 完整 API URL，如果设置则覆盖提供商默认 URL
 - `VITE_AI_USE_PROXY`: 是否使用代理（开发环境），默认 `true`

@@ -7,14 +7,14 @@
 在项目根目录创建 `.env.local` 文件：
 
 ```bash
-# 选择 AI 提供商（siliconflow | openai | custom）
-VITE_AI_PROVIDER=siliconflow
+# 选择 AI 提供商（glm | siliconflow | openai | custom）
+VITE_AI_PROVIDER=glm
 
 # 设置 API Key（必需）
 VITE_AI_KEY=your-api-key-here
 
 # 可选：自定义模型
-VITE_AI_MODEL=Qwen/Qwen2.5-72B-Instruct
+VITE_AI_MODEL=glm-4.5
 
 # 可选：自定义 API URL（如果设置则覆盖提供商默认 URL）
 # VITE_AI_API_URL=https://api.siliconflow.cn/v1/chat/completions
@@ -34,7 +34,26 @@ pnpm dev
 
 ## 支持的提供商
 
-### SiliconFlow（推荐）
+### GLM (智谱AI) - 默认推荐
+
+**配置**:
+
+```bash
+VITE_AI_PROVIDER=glm
+VITE_AI_KEY=your-glm-api-key
+VITE_AI_MODEL=glm-4.5
+```
+
+**获取 API Key**: https://open.bigmodel.cn
+
+**特点**:
+
+- 国内访问速度快
+- 支持 GLM-4.5 等高质量模型
+- API 兼容 OpenAI 格式
+- 适合中文场景
+
+### SiliconFlow
 
 **配置**:
 
@@ -173,10 +192,15 @@ curl 'https://api.siliconflow.cn/v1/chat/completions' \
 只需修改 `.env.local` 文件：
 
 ```bash
-# 从 SiliconFlow 切换到 OpenAI
+# 从 GLM 切换到 OpenAI
 VITE_AI_PROVIDER=openai
 VITE_AI_KEY=sk-your-openai-key
 VITE_AI_MODEL=gpt-3.5-turbo
+
+# 或切换到 SiliconFlow
+VITE_AI_PROVIDER=siliconflow
+VITE_AI_KEY=your-siliconflow-key
+VITE_AI_MODEL=Qwen/Qwen2.5-72B-Instruct
 ```
 
 然后重启开发服务器。
