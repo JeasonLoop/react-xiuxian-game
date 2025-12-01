@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayerStats, Shop, GameSettings, Item } from '../../types';
+import { PlayerStats, Shop, GameSettings, Item, ShopItem } from '../../types';
 import InventoryModal from '../../components/InventoryModal';
 import CultivationModal from '../../components/CultivationModal';
 import AlchemyModal from '../../components/AlchemyModal';
