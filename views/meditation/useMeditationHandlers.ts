@@ -99,10 +99,27 @@ export function useMeditationHandlers({
         );
       }
 
+      // 更新统计
+      const stats = prev.statistics || {
+        killCount: 0,
+        meditateCount: 0,
+        adventureCount: 0,
+        equipCount: 0,
+        petCount: 0,
+        recipeCount: 0,
+        artCount: 0,
+        breakthroughCount: 0,
+        secretRealmCount: 0,
+      };
+
       return {
         ...prev,
         exp: prev.exp + actualGain,
         hp: newHp,
+        statistics: {
+          ...stats,
+          meditateCount: stats.meditateCount + 1,
+        },
       };
     });
     checkLevelUp(actualGain);

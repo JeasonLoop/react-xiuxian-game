@@ -27,6 +27,50 @@ const AchievementModal: React.FC<Props> = ({ isOpen, onClose, player }) => {
     }
   };
 
+  const getRequirementTypeText = (type: string) => {
+    const typeMap: Record<string, string> = {
+      realm: '境界',
+      kill: '击杀',
+      collect: '收集',
+      meditate: '打坐',
+      adventure: '历练',
+      equip: '装备',
+      pet: '灵宠',
+      recipe: '丹方',
+      art: '功法',
+      breakthrough: '突破',
+      secret_realm: '秘境',
+      lottery: '抽奖',
+      custom: '特殊',
+    };
+    return typeMap[type] || type;
+  };
+
+  const getRequirementText = (achievement: Achievement) => {
+    const typeText = getRequirementTypeText(achievement.requirement.type);
+    if (achievement.requirement.type === 'realm' && achievement.requirement.target) {
+      return `达到${achievement.requirement.target}`;
+    }
+    return `${typeText} ${achievement.requirement.value}${getRequirementUnit(achievement.requirement.type)}`;
+  };
+
+  const getRequirementUnit = (type: string) => {
+    const unitMap: Record<string, string> = {
+      kill: '个敌人',
+      collect: '种物品',
+      meditate: '次',
+      adventure: '次',
+      equip: '件',
+      pet: '个',
+      recipe: '个',
+      art: '种',
+      breakthrough: '次',
+      secret_realm: '次',
+      lottery: '次',
+    };
+    return unitMap[type] || '';
+  };
+
   const completedAchievements = ACHIEVEMENTS.filter((a) =>
     player.achievements.includes(a.id)
   );
@@ -127,8 +171,7 @@ const AchievementModal: React.FC<Props> = ({ isOpen, onClose, player }) => {
                           {achievement.description}
                         </p>
                         <p className="text-xs text-stone-600">
-                          要求: {achievement.requirement.type} -{' '}
-                          {achievement.requirement.value}
+                          要求: {getRequirementText(achievement)}
                         </p>
                       </div>
                     </div>

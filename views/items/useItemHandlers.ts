@@ -146,6 +146,22 @@ export function useItemHandlers({
         }
         // 解锁丹方
         newStats.unlockedRecipes = [...newStats.unlockedRecipes, recipeName];
+        // 更新统计
+        const stats = newStats.statistics || {
+          killCount: 0,
+          meditateCount: 0,
+          adventureCount: 0,
+          equipCount: 0,
+          petCount: 0,
+          recipeCount: 0,
+          artCount: 0,
+          breakthroughCount: 0,
+          secretRealmCount: 0,
+        };
+        newStats.statistics = {
+          ...stats,
+          recipeCount: newStats.unlockedRecipes.length,
+        };
         effectLogs.push(`✨ 学会了【${recipeName}】的炼制方法！`);
         addLog(
           `你研读了【${item.name}】，学会了【${recipeName}】的炼制方法！现在可以在炼丹面板中炼制这种丹药了。`,

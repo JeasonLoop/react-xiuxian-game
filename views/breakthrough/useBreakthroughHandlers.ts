@@ -131,6 +131,19 @@ export function useBreakthroughHandlers({
         const excessExp = Math.max(0, prev.exp - prev.maxExp);
         const newExp = excessExp;
 
+        // 更新统计
+        const playerStats = prev.statistics || {
+          killCount: 0,
+          meditateCount: 0,
+          adventureCount: 0,
+          equipCount: 0,
+          petCount: 0,
+          recipeCount: 0,
+          artCount: 0,
+          breakthroughCount: 0,
+          secretRealmCount: 0,
+        };
+
         return {
           ...prev,
           realm: nextRealm,
@@ -149,6 +162,10 @@ export function useBreakthroughHandlers({
             0,
             Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed
           ),
+          statistics: {
+            ...playerStats,
+            breakthroughCount: playerStats.breakthroughCount + 1,
+          },
         };
       });
       setLoading(false);

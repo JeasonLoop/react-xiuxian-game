@@ -98,6 +98,32 @@ export async function executeAdventureCore({
     let newLotteryTickets = prev.lotteryTickets;
     let newInheritanceLevel = prev.inheritanceLevel;
     let newPets = [...prev.pets];
+    // 更新统计
+    const stats = prev.statistics || {
+      killCount: 0,
+      meditateCount: 0,
+      adventureCount: 0,
+      equipCount: 0,
+      petCount: 0,
+      recipeCount: 0,
+      artCount: 0,
+      breakthroughCount: 0,
+      secretRealmCount: 0,
+    };
+    let newStats = { ...stats };
+
+    // 更新历练次数
+    newStats.adventureCount += 1;
+
+    // 更新秘境次数
+    if (realmName) {
+      newStats.secretRealmCount += 1;
+    }
+
+    // 更新战斗胜利次数
+    if (battleContext && battleContext.victory) {
+      newStats.killCount += 1;
+    }
 
     // 处理获得的多个物品（搜刮奖励等）
     if (result.itemsObtained && result.itemsObtained.length > 0) {
@@ -568,6 +594,7 @@ export async function executeAdventureCore({
             affection: 50,
           };
           newPets.push(newPet);
+          newStats.petCount += 1;
           addLog(`✨ 你拯救了灵兽，获得了灵宠【${newPet.name}】！`, 'special');
         } else {
           addLog(
@@ -737,6 +764,7 @@ export async function executeAdventureCore({
         // 确保功法没有被重复添加
         if (!newArts.includes(randomArt.id)) {
           newArts.push(randomArt.id);
+          newStats.artCount += 1;
           newAttack += randomArt.effects.attack || 0;
           newDefense += randomArt.effects.defense || 0;
           newMaxHp += randomArt.effects.hp || 0;
@@ -907,6 +935,7 @@ export async function executeAdventureCore({
       lotteryTickets: newLotteryTickets,
       inheritanceLevel: newInheritanceLevel,
       pets: newPets,
+      statistics: newStats,
     };
   });
 

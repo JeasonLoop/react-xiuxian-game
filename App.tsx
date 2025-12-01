@@ -496,12 +496,22 @@ function App() {
 
   // Sect handlers、Achievement、Pet、Lottery、Settings handlers 已全部移到对应模块
 
-  // 检查成就（境界变化时）
+  // 检查成就（境界变化、统计变化时）
   useEffect(() => {
     if (player) {
       checkAchievements();
     }
-  }, [player?.realm, player?.realmLevel, checkAchievements]);
+  }, [
+    player?.realm,
+    player?.realmLevel,
+    player?.statistics,
+    player?.inventory.length,
+    player?.pets.length,
+    player?.cultivationArts.length,
+    player?.unlockedRecipes?.length,
+    player?.lotteryCount,
+    checkAchievements,
+  ]);
 
   // 显示欢迎界面
   if (showWelcome) {
