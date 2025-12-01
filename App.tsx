@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Item, Shop, ShopType } from './types';
+import WelcomeScreen from './components/WelcomeScreen';
 import StartScreen from './components/StartScreen';
 import DeathModal from './components/DeathModal';
 import { BattleReplay } from './services/battleService';
@@ -32,6 +33,7 @@ import {
 function App() {
   // 使用自定义hooks管理游戏状态
   const {
+    hasSave, // 是否有存档
     gameStarted, // 游戏是否开始
     player, // 玩家数据
     setPlayer, // 设置玩家数据
@@ -42,6 +44,9 @@ function App() {
     handleStartGame, // 开始游戏
     setGameStarted, // 设置游戏开始状态（用于涅槃重生）
   } = useGameState();
+
+  // 欢迎界面状态 - 总是显示欢迎界面，让用户选择继续或开始
+  const [showWelcome, setShowWelcome] = useState(true);
 
   // 使用自定义hooks管理游戏效果
   const { visualEffects, createAddLog, triggerVisual } = useGameEffects();
@@ -467,9 +472,35 @@ function App() {
     }
   }, [player?.realm, player?.realmLevel, checkAchievements]);
 
-  // 显示开始界面
-  if (!gameStarted || !player) {
+  // 显示欢迎界面
+  if (showWelcome) {
+    return (
+      <WelcomeScreen
+        hasSave={hasSave}
+        onStart={() => setShowWelcome(false)}
+        onContinue={() => {
+          // 继续游戏：跳过欢迎界面和取名界面，直接进入游戏
+          setShowWelcome(false);
+        }}
+      />
+    );
+  }
+
+  // 显示开始界面（取名界面）- 只有在没有存档且游戏未开始时才显示
+  if (!hasSave && (!gameStarted || !player)) {
     return <StartScreen onStart={handleStartGame} />;
+  }
+
+  // 如果有存档但 player 还在加载中，显示加载状态
+  if (hasSave && !player) {
+    return (
+      <div className="fixed inset-0 bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 flex items-center justify-center z-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mystic-gold mx-auto mb-4"></div>
+          <p className="text-stone-400 text-lg">加载存档中...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
