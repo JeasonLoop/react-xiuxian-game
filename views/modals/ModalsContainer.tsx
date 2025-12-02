@@ -108,7 +108,9 @@ interface ModalsContainerProps {
     // Character
     handleSelectTalent: (talentId: string) => void;
     handleSelectTitle: (titleId: string) => void;
-    handleAllocateAttribute: (type: 'attack' | 'defense' | 'hp') => void;
+    handleAllocateAttribute: (
+      type: 'attack' | 'defense' | 'hp' | 'spirit' | 'physique' | 'speed'
+    ) => void;
     handleUseInheritance: () => void;
     handleUpdateViewedAchievements: () => void;
     // Pet

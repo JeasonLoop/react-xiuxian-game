@@ -143,6 +143,15 @@ export function useBreakthroughHandlers({
           secretRealmCount: 0,
         };
 
+        // 突破时给予属性点：境界升级给3点，层数升级给1点
+        const attributePointsGained = isRealmUpgrade ? 3 : 1;
+        if (attributePointsGained > 0) {
+          addLog(
+            `✨ 突破成功！获得 ${attributePointsGained} 点可分配属性点！`,
+            'gain'
+          );
+        }
+
         return {
           ...prev,
           realm: nextRealm,
@@ -161,6 +170,7 @@ export function useBreakthroughHandlers({
             0,
             Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed
           ),
+          attributePoints: prev.attributePoints + attributePointsGained,
           statistics: {
             ...playerStats,
             breakthroughCount: playerStats.breakthroughCount + 1,
@@ -278,8 +288,28 @@ export function useBreakthroughHandlers({
         const excessExp = Math.max(0, prev.exp - prev.maxExp);
         const newExp = excessExp;
 
+        // 计算传承突破获得的属性点（每个境界升级给3点，层数升级给1点）
+        let attributePointsGained = 0;
+        let tempRealm = prev.realm;
+        let tempLevel = prev.realmLevel;
+        for (let i = 0; i < breakthroughCount; i++) {
+          const isRealmUpgrade = tempLevel >= 9;
+          if (isRealmUpgrade) {
+            attributePointsGained += 3;
+            const realms = Object.values(RealmType);
+            const currentIndex = realms.indexOf(tempRealm);
+            if (currentIndex < realms.length - 1) {
+              tempRealm = realms[currentIndex + 1];
+              tempLevel = 1;
+            }
+          } else {
+            attributePointsGained += 1;
+            tempLevel++;
+          }
+        }
+
         addLog(
-          `🌟 你使用了传承，连续突破了 ${breakthroughCount} 个境界！`,
+          `🌟 你使用了传承，连续突破了 ${breakthroughCount} 个境界！获得 ${attributePointsGained} 点属性点！`,
           'special'
         );
 
@@ -301,6 +331,7 @@ export function useBreakthroughHandlers({
             0,
             Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed
           ),
+          attributePoints: prev.attributePoints + attributePointsGained,
           inheritanceLevel: remainingInheritance,
         };
       }
