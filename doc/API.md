@@ -329,27 +329,42 @@ export default async function handler(req, res) {
   // 设置 CORS 头
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   // 处理 OPTIONS 预检请求
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
-  // 转发请求到目标 API
+  // 🔐 安全：从服务器端环境变量读取 API Key（不从前端请求获取）
+  const apiKey = process.env.VITE_AI_KEY;
+  if (!apiKey) {
+    return res.status(500).json({
+      error: 'API Key not configured',
+      message: 'VITE_AI_KEY environment variable is not set on the server',
+    });
+  }
+
+  // 转发请求到目标 API（使用服务器端的 API Key）
   const response = await fetch(targetUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${API_KEY}`,
+      Authorization: `Bearer ${apiKey}`, // 使用服务器端的 API Key
     },
     body: JSON.stringify(req.body),
   });
 
   // 返回结果
   const data = await response.json();
-  res.status(200).json(data);
+  res.status(response.status).json(data);
 }
 ```
+
+**重要说明**：
+- ✅ 前端请求**不包含** Authorization 头（API Key 完全隐藏）
+- ✅ API Key 从服务器端环境变量 `VITE_AI_KEY` 读取
+- ✅ 代理服务器自动添加 Authorization 头，前端无法看到 API Key
 
 ### Vercel 配置
 
@@ -367,25 +382,57 @@ export default async function handler(req, res) {
 
 ## 🔐 安全考虑
 
-### API Key 管理
+### API Key 安全机制
 
 **当前实现**:
 
 - ✅ API Key 必须通过环境变量配置
 - ✅ 已移除硬编码的 API Key
 - ✅ `.env.local` 文件已加入 `.gitignore`
+- ✅ **使用代理模式时，API Key 不会暴露给前端**
+
+**安全机制说明**:
+
+#### 使用代理模式（推荐，默认）
+
+当使用代理（`VITE_AI_USE_PROXY=true` 或生产环境）时：
+
+- ✅ **API Key 完全隐藏**：前端请求不包含 Authorization 头
+- ✅ **服务器端处理**：代理服务器从环境变量读取 API Key
+- ✅ **安全传输**：API Key 只在服务器端使用，不会通过网络传输到客户端
+- ✅ **无法查看**：用户无法在浏览器开发者工具中看到 API Key
+
+**工作流程**：
+```
+前端 → /api/proxy（无 Authorization 头）
+     ↓
+服务器端代理 → 从环境变量读取 VITE_AI_KEY → 添加 Authorization 头 → AI 服务
+```
+
+#### 直连模式（不推荐）
+
+当 `VITE_AI_USE_PROXY=false` 时：
+
+- ⚠️ **API Key 暴露**：前端请求包含 Authorization 头
+- ⚠️ **安全风险**：任何人都可以在浏览器开发者工具中查看 API Key
+- ⚠️ **仅限开发**：仅建议在本地开发且 API 支持 CORS 时使用
 
 **配置方法**:
 
-1. 创建 `.env.local` 文件（不会被提交到 Git）
-2. 配置 `VITE_AI_KEY=your-api-key-here`
-3. 不要将 API Key 提交到代码仓库
-4. 如果 API Key 泄露，立即在服务商处重新生成
+1. **本地开发**：创建 `.env.local` 文件（不会被提交到 Git）
+   ```bash
+   VITE_AI_KEY=your-api-key-here
+   VITE_AI_USE_PROXY=true  # 推荐：使用代理模式
+   ```
 
-**生产环境部署**:
+2. **生产环境**：在部署平台配置环境变量
+   - Vercel: 项目设置 → Environment Variables → 添加 `VITE_AI_KEY`
+   - 其他平台: 根据平台文档配置环境变量
 
-- Vercel: 在项目设置中添加环境变量 `VITE_AI_KEY`
-- 其他平台: 根据平台文档配置环境变量
+3. **安全提示**:
+   - 🚨 不要将 API Key 提交到代码仓库
+   - 🚨 如果 API Key 泄露，立即在服务商处重新生成
+   - 🚨 生产环境必须使用代理模式
 
 ### 请求限制
 

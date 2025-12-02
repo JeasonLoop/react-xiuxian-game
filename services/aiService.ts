@@ -18,6 +18,7 @@ const aiConfig = getAIConfig();
 const API_URL = aiConfig.apiUrl;
 const API_MODEL = aiConfig.model;
 const API_KEY = aiConfig.apiKey;
+const USE_PROXY = aiConfig.useProxy;
 
 // 验证配置
 const validation = validateAIConfig(aiConfig);
@@ -97,16 +98,25 @@ const parseMessageContent = (content: unknown): string => {
 };
 
 const requestSpark = async (messages: ChatMessage[], temperature = 0.8) => {
-  if (!API_KEY) {
+  // 如果使用代理，API Key 在服务器端处理，前端不需要发送
+  // 如果不使用代理，需要检查 API Key 是否存在
+  if (!USE_PROXY && !API_KEY) {
     throw new Error('AI API key is missing');
+  }
+
+  // 构建请求头：使用代理时不发送 Authorization（由服务器端处理）
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  // 只有在不使用代理时才在前端添加 Authorization 头
+  if (!USE_PROXY && API_KEY) {
+    headers.Authorization = `Bearer ${API_KEY}`;
   }
 
   const response = await fetch(API_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${API_KEY}`,
-    },
+    headers,
     body: JSON.stringify({
       model: API_MODEL,
       messages,
