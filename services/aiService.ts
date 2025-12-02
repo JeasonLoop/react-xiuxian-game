@@ -97,7 +97,7 @@ const parseMessageContent = (content: unknown): string => {
   return '';
 };
 
-const requestSpark = async (messages: ChatMessage[], temperature = 0.8) => {
+const requestModel = async (messages: ChatMessage[], temperature = 0.8) => {
   // 如果使用代理，API Key 在服务器端处理，前端不需要发送
   // 如果不使用代理，需要检查 API Key 是否存在
   if (!USE_PROXY && !API_KEY) {
@@ -457,7 +457,7 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
       如果获得物品，请设定合理的属性加成和稀有度。
     `;
 
-    const resultText = await requestSpark(
+    const resultText = await requestModel(
       [
         {
           role: 'system',
@@ -698,7 +698,7 @@ export const generateEnemyName = async (
       只返回JSON，不要其他内容。
     `;
 
-    const content = await requestSpark(
+    const content = await requestModel(
       [
         {
           role: 'system',
