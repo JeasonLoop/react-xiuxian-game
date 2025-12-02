@@ -51,10 +51,13 @@ export function useBreakthroughHandlers({
       }
 
       const realmText = isRealmUpgrade ? nextRealm : `${player.realm} 第 ${nextLevel} 层`;
+      // 传递目标境界用于选择描述模板（如果是境界升级则用新境界，否则用当前境界）
+      const targetRealmForDescription = isRealmUpgrade ? nextRealm : player.realm;
       const flavor = await generateBreakthroughFlavorText(
         realmText,
         true,
-        player.name
+        player.name,
+        targetRealmForDescription // 传递目标境界，用于选择对应的描述模板
       );
       addLog(flavor, 'special');
 

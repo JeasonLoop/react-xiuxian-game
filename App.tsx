@@ -34,6 +34,7 @@ function App() {
   // 使用自定义hooks管理游戏状态
   const {
     hasSave, // 是否有存档
+    setHasSave, // 设置是否有存档
     gameStarted, // 游戏是否开始
     player, // 玩家数据
     setPlayer, // 设置玩家数据
@@ -332,6 +333,7 @@ function App() {
     setPlayer(null);
     setLogs([]);
     setGameStarted(false);
+    setHasSave(false); // 重要：更新 hasSave 状态，避免卡在加载存档页面
 
     // 触发页面刷新或返回开始页面
     // useGameState 的 handleStartGame 会处理新游戏

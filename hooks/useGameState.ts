@@ -84,6 +84,11 @@ export function useGameState() {
           setPlayer(loadedPlayer);
           setLogs(savedData.logs || []);
           setGameStarted(true);
+        } else {
+          // 如果 hasSave 为 true 但 localStorage 中没有存档，更新状态
+          // 这可以防止在重生后卡在加载页面
+          setHasSave(false);
+          setGameStarted(false);
         }
       } catch (error) {
         console.error('加载存档失败:', error);
@@ -164,6 +169,7 @@ export function useGameState() {
 
   return {
     hasSave,
+    setHasSave,
     gameStarted,
     setGameStarted,
     player,
