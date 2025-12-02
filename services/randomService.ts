@@ -1,5 +1,5 @@
 import { SecretRealm, RealmType, Item, ItemType } from '../types';
-import { REALM_ORDER, SectInfo } from '../constants';
+import { REALM_ORDER, SectInfo, SectGrade } from '../constants';
 
 const randomId = () => Math.random().toString(36).slice(2, 9);
 
@@ -162,6 +162,7 @@ export interface RandomSectTask {
   name: string;
   description: string;
   type: 'patrol' | 'donate_stone' | 'donate_herb' | 'collect' | 'hunt';
+  difficulty: '简单' | '普通' | '困难' | '极难'; // 任务难度
   cost?: {
     spiritStones?: number;
     items?: { name: string; quantity: number }[];
@@ -273,11 +274,34 @@ export const generateRandomSects = (
     const name = sectData.name;
     const description = sectData.description;
 
+    // 根据境界随机分配宗门等级
+    const grades: SectGrade[] = ['黄', '玄', '地', '天'];
+    const gradeWeights = [0.4, 0.3, 0.2, 0.1]; // 黄最多，天最少
+    let grade: SectGrade = '黄';
+    const rand = Math.random();
+    if (rand < gradeWeights[0]) grade = '黄';
+    else if (rand < gradeWeights[0] + gradeWeights[1]) grade = '玄';
+    else if (rand < gradeWeights[0] + gradeWeights[1] + gradeWeights[2]) grade = '地';
+    else grade = '天';
+
+    // 根据等级设置退出代价
+    const exitCostMultiplier = {
+      '黄': 1,
+      '玄': 2,
+      '地': 5,
+      '天': 10,
+    }[grade];
+
     sects.push({
       id: `sect-${randomId()}`,
       name,
       description,
       reqRealm,
+      grade,
+      exitCost: {
+        spiritStones: Math.floor(300 * exitCostMultiplier),
+        items: [{ name: '聚灵草', quantity: Math.floor(5 * exitCostMultiplier) }],
+      },
     });
   }
 
@@ -304,15 +328,27 @@ export const generateRandomSectTasks = (
           ? 2
           : 3;
 
+  // 难度配置
+  const difficulties: Array<'简单' | '普通' | '困难' | '极难'> = ['简单', '普通', '困难', '极难'];
+
   for (let i = 0; i < count; i++) {
     const type = taskTypes[Math.floor(Math.random() * taskTypes.length)];
     const name = TASK_NAMES[Math.floor(Math.random() * TASK_NAMES.length)];
     const description =
       TASK_DESCRIPTIONS[Math.floor(Math.random() * TASK_DESCRIPTIONS.length)];
 
+    // 随机选择难度
+    const difficulty = difficulties[Math.floor(Math.random() * difficulties.length)];
+    const difficultyMultiplier = {
+      '简单': 0.7,
+      '普通': 1.0,
+      '困难': 1.5,
+      '极难': 2.5,
+    }[difficulty];
+
     let cost: RandomSectTask['cost'] = {};
     let reward: RandomSectTask['reward'] = {
-      contribution: Math.floor((10 + Math.random() * 40) * rankMultiplier),
+      contribution: Math.floor((10 + Math.random() * 40) * rankMultiplier * difficultyMultiplier),
     };
     const timeCosts: Array<'instant' | 'short' | 'medium' | 'long'> = [
       'instant',
@@ -326,14 +362,14 @@ export const generateRandomSectTasks = (
       case 'patrol':
         // 巡逻任务：瞬时完成，只给贡献
         reward.contribution = Math.floor(
-          (10 + Math.random() * 20) * rankMultiplier
+          (10 + Math.random() * 20) * rankMultiplier * difficultyMultiplier
         );
         break;
       case 'donate_stone':
         // 上交灵石：消耗灵石，给贡献和少量灵石
-        cost.spiritStones = Math.floor(50 + Math.random() * 150);
+        cost.spiritStones = Math.floor((50 + Math.random() * 150) * difficultyMultiplier);
         reward.contribution = Math.floor(
-          (20 + Math.random() * 30) * rankMultiplier
+          (20 + Math.random() * 30) * rankMultiplier * difficultyMultiplier
         );
         reward.spiritStones = Math.floor(cost.spiritStones * 0.3);
         break;
@@ -343,11 +379,11 @@ export const generateRandomSectTasks = (
         cost.items = [
           {
             name: herbNames[Math.floor(Math.random() * herbNames.length)],
-            quantity: 1 + Math.floor(Math.random() * 3),
+            quantity: Math.floor((1 + Math.random() * 3) * difficultyMultiplier),
           },
         ];
         reward.contribution = Math.floor(
-          (15 + Math.random() * 25) * rankMultiplier
+          (15 + Math.random() * 25) * rankMultiplier * difficultyMultiplier
         );
         break;
       case 'collect':
@@ -358,25 +394,25 @@ export const generateRandomSectTasks = (
             name: materialNames[
               Math.floor(Math.random() * materialNames.length)
             ],
-            quantity: 1 + Math.floor(Math.random() * 2),
+            quantity: Math.floor((1 + Math.random() * 2) * difficultyMultiplier),
           },
         ];
         reward.contribution = Math.floor(
-          (25 + Math.random() * 35) * rankMultiplier
+          (25 + Math.random() * 35) * rankMultiplier * difficultyMultiplier
         );
         reward.items = [
           {
             name: '聚气丹',
-            quantity: 1,
+            quantity: Math.floor(difficultyMultiplier),
           },
         ];
         break;
       case 'hunt':
         // 猎杀任务：需要战斗，给贡献和经验
         reward.contribution = Math.floor(
-          (30 + Math.random() * 40) * rankMultiplier
+          (30 + Math.random() * 40) * rankMultiplier * difficultyMultiplier
         );
-        reward.exp = Math.floor((50 + Math.random() * 100) * rankMultiplier);
+        reward.exp = Math.floor((50 + Math.random() * 100) * rankMultiplier * difficultyMultiplier);
         break;
     }
 
@@ -385,6 +421,7 @@ export const generateRandomSectTasks = (
       name,
       description,
       type,
+      difficulty,
       cost,
       reward,
       timeCost,
@@ -413,20 +450,34 @@ const SECT_SHOP_ITEM_POOL: Array<{ name: string; cost: number; item: Omit<Item, 
   { name: '天灵草', cost: 35, item: { name: '天灵草', type: ItemType.Herb, description: '珍贵的灵草，可用于炼制高级丹药。', quantity: 1, rarity: '稀有' } },
 ];
 
+// 二楼高级物品池
+const SECT_SHOP_ITEM_POOL_FLOOR2: Array<{ name: string; cost: number; item: Omit<Item, 'id'> }> = [
+  { name: '天外陨铁', cost: 800, item: { name: '天外陨铁', type: ItemType.Material, description: '来自天外的神秘金属，炼制仙器的材料。', quantity: 1, rarity: '传说' } },
+  { name: '仙晶', cost: 1500, item: { name: '仙晶', type: ItemType.Material, description: '蕴含仙气的晶石，极其珍贵。', quantity: 1, rarity: '仙品' } },
+  { name: '九转金丹', cost: 3000, item: { name: '九转金丹', type: ItemType.Pill, description: '传说中的仙丹，服用后甚至能让凡人立地飞升。', quantity: 1, rarity: '仙品', effect: { exp: 5000, attack: 10, defense: 10 } } },
+  { name: '天元丹', cost: 2000, item: { name: '天元丹', type: ItemType.Pill, description: '天元级别的仙丹，服用后全属性大幅提升。', quantity: 1, rarity: '仙品', effect: { exp: 10000, attack: 50, defense: 50, spirit: 100, physique: 100, speed: 30 } } },
+  { name: '万年灵乳', cost: 1200, item: { name: '万年灵乳', type: ItemType.Material, description: '万年灵脉中凝聚的精华，炼制仙丹的珍贵材料。', quantity: 1, rarity: '传说' } },
+  { name: '九叶芝草', cost: 1000, item: { name: '九叶芝草', type: ItemType.Herb, description: '九叶灵芝，炼制仙丹的顶级材料。', quantity: 1, rarity: '传说' } },
+  { name: '龙鳞果', cost: 900, item: { name: '龙鳞果', type: ItemType.Herb, description: '龙族栖息地生长的灵果，蕴含龙族血脉之力。', quantity: 1, rarity: '传说' } },
+];
+
 // 生成宗门商店物品（藏宝阁物品，每次刷新4-8个）
-export const generateSectShopItems = (): Array<{ name: string; cost: number; item: Omit<Item, 'id'> }> => {
+export const generateSectShopItems = (floor: 1 | 2 = 1): Array<{ name: string; cost: number; item: Omit<Item, 'id'> }> => {
   const itemCount = 4 + Math.floor(Math.random() * 5); // 4-8个物品
   const items: Array<{ name: string; cost: number; item: Omit<Item, 'id'> }> = [];
   const usedItems = new Set<string>();
 
+  // 根据楼层选择物品池
+  const itemPool = floor === 2 ? SECT_SHOP_ITEM_POOL_FLOOR2 : SECT_SHOP_ITEM_POOL;
+
   for (let i = 0; i < itemCount; i++) {
     // 随机选择一个物品
-    let selectedItem = SECT_SHOP_ITEM_POOL[Math.floor(Math.random() * SECT_SHOP_ITEM_POOL.length)];
+    let selectedItem = itemPool[Math.floor(Math.random() * itemPool.length)];
 
     // 避免重复（但如果池子不够大，允许少量重复）
     let attempts = 0;
-    while (usedItems.has(selectedItem.name) && attempts < 10 && usedItems.size < SECT_SHOP_ITEM_POOL.length) {
-      selectedItem = SECT_SHOP_ITEM_POOL[Math.floor(Math.random() * SECT_SHOP_ITEM_POOL.length)];
+    while (usedItems.has(selectedItem.name) && attempts < 10 && usedItems.size < itemPool.length) {
+      selectedItem = itemPool[Math.floor(Math.random() * itemPool.length)];
       attempts++;
     }
 

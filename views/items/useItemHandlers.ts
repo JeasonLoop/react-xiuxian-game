@@ -146,6 +146,22 @@ export function useItemHandlers({
         }
         // 解锁丹方
         newStats.unlockedRecipes = [...newStats.unlockedRecipes, recipeName];
+        // 更新统计
+        const stats = newStats.statistics || {
+          killCount: 0,
+          meditateCount: 0,
+          adventureCount: 0,
+          equipCount: 0,
+          petCount: 0,
+          recipeCount: 0,
+          artCount: 0,
+          breakthroughCount: 0,
+          secretRealmCount: 0,
+        };
+        newStats.statistics = {
+          ...stats,
+          recipeCount: newStats.unlockedRecipes.length,
+        };
         effectLogs.push(`✨ 学会了【${recipeName}】的炼制方法！`);
         addLog(
           `你研读了【${item.name}】，学会了【${recipeName}】的炼制方法！现在可以在炼丹面板中炼制这种丹药了。`,
@@ -193,8 +209,172 @@ export function useItemHandlers({
     }
   };
 
+  const handleBatchUseItems = (itemIds: string[]) => {
+    if (itemIds.length === 0) return;
+
+    setPlayer((prev) => {
+      let currentPlayer = prev;
+      // 逐个使用物品
+      itemIds.forEach((itemId) => {
+        const item = currentPlayer.inventory.find((i) => i.id === itemId);
+        if (!item) return;
+
+        // 创建一个临时的 Item 对象用于使用
+        const itemToUse: Item = { ...item };
+        // 调用 handleUseItem 的逻辑（复用）
+        // 由于我们需要在 setPlayer 内部处理，所以直接在这里实现逻辑
+        const newInv = currentPlayer.inventory
+          .map((i) => {
+            if (i.id === itemId) return { ...i, quantity: i.quantity - 1 };
+            return i;
+          })
+          .filter((i) => i.quantity > 0);
+
+        const effectLogs = [];
+        let newStats = { ...currentPlayer };
+        let newPets = [...currentPlayer.pets];
+
+        // 处理灵兽蛋孵化
+        const isPetEgg =
+          itemToUse.name.includes('蛋') ||
+          itemToUse.name.toLowerCase().includes('egg') ||
+          itemToUse.name.includes('灵兽蛋') ||
+          itemToUse.name.includes('灵宠蛋') ||
+          (itemToUse.description &&
+            (itemToUse.description.includes('孵化') ||
+              itemToUse.description.includes('灵宠') ||
+              itemToUse.description.includes('灵兽') ||
+              itemToUse.description.includes('宠物')));
+
+        if (isPetEgg) {
+          const availablePets = PET_TEMPLATES.filter((t) => {
+            if (itemToUse.rarity === '普通')
+              return t.rarity === '普通' || t.rarity === '稀有';
+            if (itemToUse.rarity === '稀有')
+              return t.rarity === '稀有' || t.rarity === '传说';
+            if (itemToUse.rarity === '传说')
+              return t.rarity === '传说' || t.rarity === '仙品';
+            if (itemToUse.rarity === '仙品') return t.rarity === '仙品';
+            return true;
+          });
+
+          if (availablePets.length > 0) {
+            const randomTemplate =
+              availablePets[Math.floor(Math.random() * availablePets.length)];
+            const newPet: Pet = {
+              id: uid(),
+              name: randomTemplate.name,
+              species: randomTemplate.species,
+              level: 1,
+              exp: 0,
+              maxExp: 100,
+              rarity: randomTemplate.rarity,
+              stats: { ...randomTemplate.baseStats },
+              skills: [...randomTemplate.skills],
+              evolutionStage: 0,
+              affection: 50,
+            };
+            newPets.push(newPet);
+            effectLogs.push(`✨ 孵化出了灵宠【${newPet.name}】！`);
+          }
+        }
+
+        // 处理临时效果
+        if (itemToUse.effect?.hp) {
+          newStats.hp = Math.min(newStats.maxHp, newStats.hp + itemToUse.effect.hp);
+          effectLogs.push(`恢复了 ${itemToUse.effect.hp} 点气血。`);
+        }
+        if (itemToUse.effect?.exp) {
+          newStats.exp += itemToUse.effect.exp;
+          effectLogs.push(`增长了 ${itemToUse.effect.exp} 点修为。`);
+        }
+
+        // 处理永久效果
+        if (itemToUse.permanentEffect) {
+          const permLogs = [];
+          if (itemToUse.permanentEffect.attack) {
+            newStats.attack += itemToUse.permanentEffect.attack;
+            permLogs.push(`攻击力永久 +${itemToUse.permanentEffect.attack}`);
+          }
+          if (itemToUse.permanentEffect.defense) {
+            newStats.defense += itemToUse.permanentEffect.defense;
+            permLogs.push(`防御力永久 +${itemToUse.permanentEffect.defense}`);
+          }
+          if (itemToUse.permanentEffect.spirit) {
+            newStats.spirit += itemToUse.permanentEffect.spirit;
+            permLogs.push(`神识永久 +${itemToUse.permanentEffect.spirit}`);
+          }
+          if (itemToUse.permanentEffect.physique) {
+            newStats.physique += itemToUse.permanentEffect.physique;
+            permLogs.push(`体魄永久 +${itemToUse.permanentEffect.physique}`);
+          }
+          if (itemToUse.permanentEffect.speed) {
+            newStats.speed += itemToUse.permanentEffect.speed;
+            permLogs.push(`速度永久 +${itemToUse.permanentEffect.speed}`);
+          }
+          if (itemToUse.permanentEffect.maxHp) {
+            newStats.maxHp += itemToUse.permanentEffect.maxHp;
+            newStats.hp += itemToUse.permanentEffect.maxHp;
+            permLogs.push(`气血上限永久 +${itemToUse.permanentEffect.maxHp}`);
+          }
+          if (permLogs.length > 0) {
+            effectLogs.push(`✨ ${permLogs.join('，')}`);
+          }
+        }
+
+        // 处理丹方使用
+        if (itemToUse.type === ItemType.Recipe && itemToUse.recipeData) {
+          const recipeName = itemToUse.recipeData.name;
+          if (!newStats.unlockedRecipes) {
+            newStats.unlockedRecipes = [];
+          }
+          if (!newStats.unlockedRecipes.includes(recipeName)) {
+            newStats.unlockedRecipes = [...newStats.unlockedRecipes, recipeName];
+            const stats = newStats.statistics || {
+              killCount: 0,
+              meditateCount: 0,
+              adventureCount: 0,
+              equipCount: 0,
+              petCount: 0,
+              recipeCount: 0,
+              artCount: 0,
+              breakthroughCount: 0,
+              secretRealmCount: 0,
+            };
+            newStats.statistics = {
+              ...stats,
+              recipeCount: newStats.unlockedRecipes.length,
+            };
+            effectLogs.push(`✨ 学会了【${recipeName}】的炼制方法！`);
+          }
+        }
+
+        // 更新当前玩家状态
+        currentPlayer = {
+          ...newStats,
+          inventory: newInv,
+          pets: newPets,
+        };
+
+        // 对于非灵兽蛋的物品，显示使用日志（批量使用时只记录最后几个）
+        if (effectLogs.length > 0 && !isPetEgg && itemToUse.type !== ItemType.Recipe) {
+          const logMessage = `使用了 ${itemToUse.name}。 ${effectLogs.join(' ')}`;
+          addLog(logMessage, 'gain');
+        }
+      });
+
+      return currentPlayer;
+    });
+
+    // 批量使用完成提示
+    if (itemIds.length > 0) {
+      addLog(`批量使用了 ${itemIds.length} 件物品。`, 'gain');
+    }
+  };
+
   return {
     handleUseItem,
     handleDiscardItem,
+    handleBatchUseItems,
   };
 }

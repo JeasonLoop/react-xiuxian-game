@@ -141,6 +141,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '云灵宗入门心法，吸纳灵气如云雾缭绕。',
     realmRequirement: RealmType.QiRefining,
     cost: 100,
+    sectId: 'sect-cloud', // 云灵宗专属
     effects: { expRate: 0.25, attack: 5 },
   },
   {
@@ -533,11 +534,19 @@ export const getUpgradeMultiplier = (rarity: ItemRarity = '普通') => {
 
 // --- SECT CONSTANTS ---
 
+export type SectGrade = '天' | '地' | '玄' | '黄'; // 宗门等级：天最高，黄最低
+
 export interface SectInfo {
   id: string;
   name: string;
   description: string;
   reqRealm: RealmType;
+  grade: SectGrade; // 宗门等级
+  exitCost?: {
+    // 安全退出宗门的代价
+    spiritStones?: number;
+    items?: { name: string; quantity: number }[];
+  };
 }
 
 export const SECTS: SectInfo[] = [
@@ -546,18 +555,198 @@ export const SECTS: SectInfo[] = [
     name: '云灵宗',
     description: '正道大宗，门风清正，适合大部分修士。',
     reqRealm: RealmType.QiRefining,
+    grade: '玄',
+    exitCost: {
+      spiritStones: 500,
+      items: [{ name: '聚灵草', quantity: 10 }],
+    },
   },
   {
     id: 'sect-fire',
     name: '烈阳宗',
     description: '坐落于火山之上，专修火法，行事霸道。',
     reqRealm: RealmType.Foundation,
+    grade: '地',
+    exitCost: {
+      spiritStones: 2000,
+      items: [{ name: '炼器石', quantity: 20 }],
+    },
   },
   {
     id: 'sect-sword',
     name: '万剑门',
     description: '一剑破万法。门徒皆为剑痴，攻击力极强。',
     reqRealm: RealmType.Foundation,
+    grade: '地',
+    exitCost: {
+      spiritStones: 2000,
+      items: [{ name: '精铁', quantity: 15 }],
+    },
+  },
+  {
+    id: 'sect-temple',
+    name: '天音寺',
+    description: '佛门圣地，慈悲为怀，防御力出众。',
+    reqRealm: RealmType.QiRefining,
+    grade: '玄',
+    exitCost: {
+      spiritStones: 500,
+      items: [{ name: '止血草', quantity: 10 }],
+    },
+  },
+  {
+    id: 'sect-taoist',
+    name: '太虚观',
+    description: '道门正统，修炼速度极快。',
+    reqRealm: RealmType.Foundation,
+    grade: '地',
+    exitCost: {
+      spiritStones: 2000,
+      items: [{ name: '聚灵草', quantity: 15 }],
+    },
+  },
+  {
+    id: 'sect-blood',
+    name: '血魔宗',
+    description: '魔道宗门，行事狠辣，但实力强大。',
+    reqRealm: RealmType.GoldenCore,
+    grade: '天',
+    exitCost: {
+      spiritStones: 10000,
+      items: [{ name: '妖兽内丹', quantity: 5 }],
+    },
+  },
+  {
+    id: 'sect-lotus',
+    name: '青莲剑派',
+    description: '剑修圣地，剑法精妙。',
+    reqRealm: RealmType.Foundation,
+    grade: '地',
+    exitCost: {
+      spiritStones: 2000,
+      items: [{ name: '精铁', quantity: 15 }],
+    },
+  },
+  {
+    id: 'sect-xuantian',
+    name: '玄天宗',
+    description: '正道大宗，底蕴深厚。',
+    reqRealm: RealmType.GoldenCore,
+    grade: '天',
+    exitCost: {
+      spiritStones: 10000,
+      items: [{ name: '千年人参', quantity: 3 }],
+    },
+  },
+  {
+    id: 'sect-jiuyou',
+    name: '九幽门',
+    description: '魔道宗门，阴险狡诈。',
+    reqRealm: RealmType.GoldenCore,
+    grade: '天',
+    exitCost: {
+      spiritStones: 10000,
+      items: [{ name: '妖兽内丹', quantity: 5 }],
+    },
+  },
+  {
+    id: 'sect-star',
+    name: '星辰阁',
+    description: '神秘组织，掌握星辰之力。',
+    reqRealm: RealmType.NascentSoul,
+    grade: '天',
+    exitCost: {
+      spiritStones: 50000,
+      items: [{ name: '星辰石', quantity: 10 }],
+    },
+  },
+  {
+    id: 'sect-dragon',
+    name: '龙族圣地',
+    description: '龙族后裔建立的宗门，血脉强大。',
+    reqRealm: RealmType.NascentSoul,
+    grade: '天',
+    exitCost: {
+      spiritStones: 50000,
+      items: [{ name: '龙鳞果', quantity: 5 }],
+    },
+  },
+  {
+    id: 'sect-phoenix',
+    name: '凤凰宫',
+    description: '凤凰血脉传承，涅槃重生。',
+    reqRealm: RealmType.NascentSoul,
+    grade: '天',
+    exitCost: {
+      spiritStones: 50000,
+      items: [{ name: '九叶芝草', quantity: 3 }],
+    },
+  },
+  {
+    id: 'sect-thunder',
+    name: '雷神殿',
+    description: '专修雷法，攻击力极强。',
+    reqRealm: RealmType.GoldenCore,
+    grade: '地',
+    exitCost: {
+      spiritStones: 2000,
+      items: [{ name: '炼器石', quantity: 20 }],
+    },
+  },
+  {
+    id: 'sect-ice',
+    name: '冰魄宗',
+    description: '冰属性修士的圣地，防御力强。',
+    reqRealm: RealmType.Foundation,
+    grade: '黄',
+    exitCost: {
+      spiritStones: 300,
+      items: [{ name: '聚灵草', quantity: 5 }],
+    },
+  },
+  {
+    id: 'sect-poison',
+    name: '毒王谷',
+    description: '毒修聚集地，擅长用毒。',
+    reqRealm: RealmType.Foundation,
+    grade: '黄',
+    exitCost: {
+      spiritStones: 300,
+      items: [{ name: '止血草', quantity: 5 }],
+    },
+  },
+  {
+    id: 'sect-illusion',
+    name: '幻月门',
+    description: '幻术宗门，擅长迷惑敌人。',
+    reqRealm: RealmType.Foundation,
+    grade: '黄',
+    exitCost: {
+      spiritStones: 300,
+      items: [{ name: '聚灵草', quantity: 5 }],
+    },
+  },
+  {
+    id: 'sect-diamond',
+    name: '金刚寺',
+    description: '体修宗门，肉身强大。',
+    reqRealm: RealmType.QiRefining,
+    grade: '玄',
+    exitCost: {
+      spiritStones: 500,
+      items: [{ name: '炼器石', quantity: 10 }],
+    },
+  },
+  {
+    id: 'sect-yinyang',
+    name: '阴阳教',
+    description: '阴阳调和，攻防兼备。',
+    reqRealm: RealmType.GoldenCore,
+    grade: '地',
+    exitCost: {
+      spiritStones: 2000,
+      items: [{ name: '聚灵草', quantity: 15 }],
+    },
   },
 ];
 
@@ -1039,6 +1228,214 @@ export const ACHIEVEMENTS: Achievement[] = [
     },
     reward: { exp: 10000, spiritStones: 10000, titleId: 'title-immortal' },
     rarity: '仙品',
+  },
+  // 新增20个成就
+  {
+    id: 'ach-nascent-soul',
+    name: '元婴出窍',
+    description: '突破到元婴期',
+    category: 'cultivation',
+    requirement: { type: 'realm', value: 1, target: RealmType.NascentSoul },
+    reward: { exp: 5000, spiritStones: 3000 },
+    rarity: '传说',
+  },
+  {
+    id: 'ach-spirit-severing',
+    name: '化神之境',
+    description: '突破到化神期',
+    category: 'cultivation',
+    requirement: { type: 'realm', value: 1, target: RealmType.SpiritSevering },
+    reward: { exp: 8000, spiritStones: 5000 },
+    rarity: '传说',
+  },
+  {
+    id: 'ach-void-refining',
+    name: '炼虚合道',
+    description: '突破到炼虚期',
+    category: 'cultivation',
+    requirement: { type: 'realm', value: 1, target: RealmType.VoidRefining },
+    reward: { exp: 12000, spiritStones: 8000 },
+    rarity: '仙品',
+  },
+  {
+    id: 'ach-killer-10',
+    name: '十人斩',
+    description: '击败10个敌人',
+    category: 'combat',
+    requirement: { type: 'kill', value: 10 },
+    reward: { exp: 200, spiritStones: 100 },
+    rarity: '普通',
+  },
+  {
+    id: 'ach-killer-50',
+    name: '百战不殆',
+    description: '击败50个敌人',
+    category: 'combat',
+    requirement: { type: 'kill', value: 50 },
+    reward: { exp: 1000, spiritStones: 500 },
+    rarity: '稀有',
+  },
+  {
+    id: 'ach-killer-100',
+    name: '千人斩',
+    description: '击败100个敌人',
+    category: 'combat',
+    requirement: { type: 'kill', value: 100 },
+    reward: { exp: 3000, spiritStones: 1500 },
+    rarity: '传说',
+  },
+  {
+    id: 'ach-collector-20',
+    name: '物品收藏家',
+    description: '收集20种不同的物品',
+    category: 'collection',
+    requirement: { type: 'collect', value: 20 },
+    reward: { exp: 500, spiritStones: 300 },
+    rarity: '稀有',
+  },
+  {
+    id: 'ach-collector-50',
+    name: '收藏大师',
+    description: '收集50种不同的物品',
+    category: 'collection',
+    requirement: { type: 'collect', value: 50 },
+    reward: { exp: 2000, spiritStones: 1000 },
+    rarity: '传说',
+  },
+  {
+    id: 'ach-meditate-10',
+    name: '勤修不辍',
+    description: '完成10次打坐修炼',
+    category: 'cultivation',
+    requirement: { type: 'meditate', value: 10 },
+    reward: { exp: 150, spiritStones: 50 },
+    rarity: '普通',
+  },
+  {
+    id: 'ach-meditate-50',
+    name: '闭关苦修',
+    description: '完成50次打坐修炼',
+    category: 'cultivation',
+    requirement: { type: 'meditate', value: 50 },
+    reward: { exp: 800, spiritStones: 300 },
+    rarity: '稀有',
+  },
+  {
+    id: 'ach-meditate-100',
+    name: '道心坚定',
+    description: '完成100次打坐修炼',
+    category: 'cultivation',
+    requirement: { type: 'meditate', value: 100 },
+    reward: { exp: 2000, spiritStones: 1000 },
+    rarity: '传说',
+  },
+  {
+    id: 'ach-adventure-20',
+    name: '历练新手',
+    description: '完成20次历练',
+    category: 'exploration',
+    requirement: { type: 'adventure', value: 20 },
+    reward: { exp: 300, spiritStones: 150 },
+    rarity: '普通',
+  },
+  {
+    id: 'ach-adventure-100',
+    name: '历练老手',
+    description: '完成100次历练',
+    category: 'exploration',
+    requirement: { type: 'adventure', value: 100 },
+    reward: { exp: 1500, spiritStones: 800 },
+    rarity: '稀有',
+  },
+  {
+    id: 'ach-equip-5',
+    name: '装备齐全',
+    description: '装备5件物品',
+    category: 'collection',
+    requirement: { type: 'equip', value: 5 },
+    reward: { exp: 200, spiritStones: 100 },
+    rarity: '普通',
+  },
+  {
+    id: 'ach-pet-1',
+    name: '灵宠伙伴',
+    description: '获得第一个灵宠',
+    category: 'special',
+    requirement: { type: 'pet', value: 1 },
+    reward: { exp: 500, spiritStones: 200 },
+    rarity: '稀有',
+  },
+  {
+    id: 'ach-pet-3',
+    name: '灵宠大师',
+    description: '获得3个灵宠',
+    category: 'special',
+    requirement: { type: 'pet', value: 3 },
+    reward: { exp: 1500, spiritStones: 800 },
+    rarity: '传说',
+  },
+  {
+    id: 'ach-recipe-5',
+    name: '丹道入门',
+    description: '解锁5个丹方',
+    category: 'collection',
+    requirement: { type: 'recipe', value: 5 },
+    reward: { exp: 400, spiritStones: 200 },
+    rarity: '稀有',
+  },
+  {
+    id: 'ach-art-3',
+    name: '功法初成',
+    description: '学习3种功法',
+    category: 'cultivation',
+    requirement: { type: 'art', value: 3 },
+    reward: { exp: 600, spiritStones: 300 },
+    rarity: '稀有',
+  },
+  {
+    id: 'ach-art-10',
+    name: '功法大成',
+    description: '学习10种功法',
+    category: 'cultivation',
+    requirement: { type: 'art', value: 10 },
+    reward: { exp: 3000, spiritStones: 1500 },
+    rarity: '传说',
+  },
+  {
+    id: 'ach-breakthrough-5',
+    name: '突破达人',
+    description: '完成5次突破',
+    category: 'cultivation',
+    requirement: { type: 'breakthrough', value: 5 },
+    reward: { exp: 1000, spiritStones: 500 },
+    rarity: '稀有',
+  },
+  {
+    id: 'ach-secret-realm-5',
+    name: '秘境探索者',
+    description: '进入5次秘境',
+    category: 'exploration',
+    requirement: { type: 'secret_realm', value: 5 },
+    reward: { exp: 2000, spiritStones: 1000 },
+    rarity: '传说',
+  },
+  {
+    id: 'ach-lottery-10',
+    name: '抽奖新手',
+    description: '进行10次抽奖',
+    category: 'special',
+    requirement: { type: 'lottery', value: 10 },
+    reward: { exp: 300, spiritStones: 200 },
+    rarity: '普通',
+  },
+  {
+    id: 'ach-lottery-50',
+    name: '抽奖达人',
+    description: '进行50次抽奖',
+    category: 'special',
+    requirement: { type: 'lottery', value: 50 },
+    reward: { exp: 2000, spiritStones: 1500 },
+    rarity: '稀有',
   },
 ];
 

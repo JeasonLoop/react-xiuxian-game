@@ -50,17 +50,16 @@ export function useBreakthroughHandlers({
         }
       }
 
+      const realmText = isRealmUpgrade ? nextRealm : `${player.realm} 第 ${nextLevel} 层`;
+      // 传递目标境界用于选择描述模板（如果是境界升级则用新境界，否则用当前境界）
+      const targetRealmForDescription = isRealmUpgrade ? nextRealm : player.realm;
       const flavor = await generateBreakthroughFlavorText(
-        isRealmUpgrade ? nextRealm : `第 ${nextLevel} 层`,
-        true
+        realmText,
+        true,
+        player.name,
+        targetRealmForDescription // 传递目标境界，用于选择对应的描述模板
       );
       addLog(flavor, 'special');
-      addLog(
-        isRealmUpgrade
-          ? `恭喜！你的境界提升到了 ${nextRealm} ！`
-          : `恭喜！你突破到了第 ${nextLevel} 层！`,
-        'special'
-      );
 
       setPlayer((prev) => {
         const stats = REALM_DATA[nextRealm];
@@ -131,6 +130,28 @@ export function useBreakthroughHandlers({
         const excessExp = Math.max(0, prev.exp - prev.maxExp);
         const newExp = excessExp;
 
+        // 更新统计
+        const playerStats = prev.statistics || {
+          killCount: 0,
+          meditateCount: 0,
+          adventureCount: 0,
+          equipCount: 0,
+          petCount: 0,
+          recipeCount: 0,
+          artCount: 0,
+          breakthroughCount: 0,
+          secretRealmCount: 0,
+        };
+
+        // 突破时给予属性点：境界升级给3点，层数升级给1点
+        const attributePointsGained = isRealmUpgrade ? 3 : 1;
+        if (attributePointsGained > 0) {
+          addLog(
+            `✨ 突破成功！获得 ${attributePointsGained} 点可分配属性点！`,
+            'gain'
+          );
+        }
+
         return {
           ...prev,
           realm: nextRealm,
@@ -149,6 +170,11 @@ export function useBreakthroughHandlers({
             0,
             Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed
           ),
+          attributePoints: prev.attributePoints + attributePointsGained,
+          statistics: {
+            ...playerStats,
+            breakthroughCount: playerStats.breakthroughCount + 1,
+          },
         };
       });
       setLoading(false);
@@ -262,8 +288,28 @@ export function useBreakthroughHandlers({
         const excessExp = Math.max(0, prev.exp - prev.maxExp);
         const newExp = excessExp;
 
+        // 计算传承突破获得的属性点（每个境界升级给3点，层数升级给1点）
+        let attributePointsGained = 0;
+        let tempRealm = prev.realm;
+        let tempLevel = prev.realmLevel;
+        for (let i = 0; i < breakthroughCount; i++) {
+          const isRealmUpgrade = tempLevel >= 9;
+          if (isRealmUpgrade) {
+            attributePointsGained += 3;
+            const realms = Object.values(RealmType);
+            const currentIndex = realms.indexOf(tempRealm);
+            if (currentIndex < realms.length - 1) {
+              tempRealm = realms[currentIndex + 1];
+              tempLevel = 1;
+            }
+          } else {
+            attributePointsGained += 1;
+            tempLevel++;
+          }
+        }
+
         addLog(
-          `🌟 你使用了传承，连续突破了 ${breakthroughCount} 个境界！`,
+          `🌟 你使用了传承，连续突破了 ${breakthroughCount} 个境界！获得 ${attributePointsGained} 点属性点！`,
           'special'
         );
 
@@ -285,6 +331,7 @@ export function useBreakthroughHandlers({
             0,
             Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed
           ),
+          attributePoints: prev.attributePoints + attributePointsGained,
           inheritanceLevel: remainingInheritance,
         };
       }

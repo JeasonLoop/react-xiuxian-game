@@ -69,10 +69,26 @@ export function useGameState() {
               savedData.player.meditationHpRegenMultiplier ?? 1.0, // 兼容旧存档
             meditationBoostEndTime:
               savedData.player.meditationBoostEndTime ?? null, // 兼容旧存档
+            statistics: savedData.player.statistics || {
+              killCount: 0,
+              meditateCount: 0,
+              adventureCount: 0,
+              equipCount: 0,
+              petCount: 0,
+              recipeCount: savedData.player.unlockedRecipes?.length || 0,
+              artCount: savedData.player.cultivationArts?.length || 0,
+              breakthroughCount: 0,
+              secretRealmCount: 0,
+            },
           };
           setPlayer(loadedPlayer);
           setLogs(savedData.logs || []);
           setGameStarted(true);
+        } else {
+          // 如果 hasSave 为 true 但 localStorage 中没有存档，更新状态
+          // 这可以防止在重生后卡在加载页面
+          setHasSave(false);
+          setGameStarted(false);
         }
       } catch (error) {
         console.error('加载存档失败:', error);
@@ -153,6 +169,7 @@ export function useGameState() {
 
   return {
     hasSave,
+    setHasSave,
     gameStarted,
     setGameStarted,
     player,
