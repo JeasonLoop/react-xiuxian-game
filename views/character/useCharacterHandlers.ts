@@ -68,7 +68,9 @@ export function useCharacterHandlers({
     });
   };
 
-  const handleAllocateAttribute = (type: 'attack' | 'defense' | 'hp') => {
+  const handleAllocateAttribute = (
+    type: 'attack' | 'defense' | 'hp' | 'spirit' | 'physique' | 'speed'
+  ) => {
     if (!player || player.attributePoints <= 0) return;
 
     setPlayer((prev) => {
@@ -77,6 +79,9 @@ export function useCharacterHandlers({
       let newDefense = prev.defense;
       let newMaxHp = prev.maxHp;
       let newHp = prev.hp;
+      let newSpirit = prev.spirit;
+      let newPhysique = prev.physique;
+      let newSpeed = prev.speed;
 
       if (type === 'attack') {
         newAttack += 5;
@@ -88,6 +93,17 @@ export function useCharacterHandlers({
         newMaxHp += 20;
         newHp += 20;
         addLog('你分配了1点属性点到气血 (+20)', 'gain');
+      } else if (type === 'spirit') {
+        newSpirit += 3;
+        addLog('你分配了1点属性点到神识 (+3)', 'gain');
+      } else if (type === 'physique') {
+        newPhysique += 3;
+        newMaxHp += 10; // 体魄也增加气血上限
+        newHp += 10;
+        addLog('你分配了1点属性点到体魄 (+3体魄, +10气血)', 'gain');
+      } else if (type === 'speed') {
+        newSpeed += 2;
+        addLog('你分配了1点属性点到速度 (+2)', 'gain');
       }
 
       return {
@@ -97,13 +113,33 @@ export function useCharacterHandlers({
         defense: newDefense,
         maxHp: newMaxHp,
         hp: newHp,
+        spirit: newSpirit,
+        physique: newPhysique,
+        speed: newSpeed,
       };
     });
+  };
+
+  const handleResetAttributes = () => {
+    if (!player) return;
+
+    // 计算重置成本：每点已分配属性点需要100灵石
+    const allocatedPoints = 0; // 这里需要追踪已分配的属性点，暂时设为0
+    const cost = allocatedPoints * 100;
+
+    if (player.spiritStones < cost) {
+      addLog(`重置属性需要 ${cost} 灵石，你的灵石不足！`, 'danger');
+      return;
+    }
+
+    // 暂时提示功能未完全实现
+    addLog('属性重置功能需要追踪已分配属性点，暂时未完全实现。', 'danger');
   };
 
   return {
     handleSelectTalent,
     handleSelectTitle,
     handleAllocateAttribute,
+    handleResetAttributes,
   };
 }

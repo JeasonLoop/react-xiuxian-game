@@ -17,14 +17,16 @@ const getProxyTarget = () => {
   }
 
   // 根据提供商选择目标
-  const provider = process.env.VITE_AI_PROVIDER || 'siliconflow';
+  const provider = process.env.VITE_AI_PROVIDER || 'glm';
   switch (provider) {
     case 'openai':
       return 'https://api.openai.com';
+    case 'glm':
+      return 'https://open.bigmodel.cn';
     case 'siliconflow':
       return 'https://api.siliconflow.cn';
     default:
-      return 'https://api.siliconflow.cn';
+      return 'https://open.bigmodel.cn';
   }
 };
 

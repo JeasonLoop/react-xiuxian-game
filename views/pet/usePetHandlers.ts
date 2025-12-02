@@ -239,9 +239,32 @@ export function usePetHandlers({
     });
   };
 
+  const handleBatchFeedItems = async (petId: string, itemIds: string[]) => {
+    if (!player || itemIds.length === 0) return;
+
+    const pet = player.pets.find((p) => p.id === petId);
+    if (!pet) return;
+
+    // 批量喂养：逐个喂养物品（使用延迟以避免状态更新冲突）
+    for (const itemId of itemIds) {
+      const item = player.inventory.find((i) => i.id === itemId);
+      if (item && item.quantity > 0) {
+        handleFeedPet(petId, 'item', itemId);
+        // 添加小延迟以确保状态更新完成
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        // 更新 player 引用以便下次循环使用最新状态
+        // 注意：由于 React 的状态更新是异步的，这里可能不能完全同步
+        // 但延迟可以帮助避免冲突
+      }
+    }
+
+    addLog(`批量喂养完成，共使用了 ${itemIds.length} 件物品喂养【${pet.name}】。`, 'gain');
+  };
+
   return {
     handleActivatePet,
     handleFeedPet,
+    handleBatchFeedItems,
     handleEvolvePet,
   };
 }

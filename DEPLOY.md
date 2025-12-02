@@ -77,27 +77,47 @@ Vercel Function: 返回给浏览器（带正确的 CORS 头）
 ### 技术细节
 
 - 使用 Vercel Serverless Function 而不是简单的 rewrites
-- 自动转发 `Authorization` 头和请求体
+- **安全机制**：API Key 从服务器端环境变量读取，不从前端请求获取
 - 添加正确的 CORS 响应头
 - 支持 OPTIONS 预检请求
+- 前端请求不包含 Authorization 头（由服务器端自动添加）
 
-## 📝 环境变量（可选）
+## 📝 环境变量配置（必需）
 
-如果想使用环境变量管理 API Key（更安全），可以在 Vercel Dashboard 设置：
+**重要**：为了确保 API Key 安全，必须在 Vercel Dashboard 配置环境变量：
 
 1. 进入项目设置 → Environment Variables
 2. 添加以下变量：
-   - `VITE_AI_API_KEY`: 你的讯飞星火 API Key
-   - `VITE_AI_API_URL`: `/api/v2/chat/completions`（可选）
-   - `VITE_AI_MODEL`: `spark-x`（可选）
+   - `VITE_AI_KEY`: 你的 AI API Key（必需）
+   - `VITE_AI_PROVIDER`: AI 提供商（可选，默认: `glm`）
+     - `glm` - 智谱AI（推荐）
+     - `siliconflow` - SiliconFlow
+     - `openai` - OpenAI
+   - `VITE_AI_MODEL`: 模型名称（可选，根据提供商使用默认值）
+   - `VITE_AI_API_URL`: 自定义 API URL（可选）
+   - `VITE_AI_USE_PROXY`: 是否使用代理（可选，默认: `true`）
 
 3. 重新部署项目
 
-**注意**: 目前 API Key 已硬编码在代码中，如需更高安全性，建议：
+### 🔐 API Key 安全机制
 
-- 将 API Key 移到环境变量
-- 不要将 API Key 提交到 Git 仓库
-- 使用 `.env.local` 文件存储敏感信息
+**使用代理模式（默认，推荐）**：
+- ✅ API Key 只在服务器端使用，不会暴露给前端
+- ✅ 前端请求不包含 Authorization 头
+- ✅ 代理服务器自动从环境变量读取 API Key
+- ✅ 完全隐藏 API Key，提高安全性
+
+**工作原理**：
+```
+前端 → /api/proxy（无 API Key）
+     ↓
+Vercel Function → 从环境变量读取 VITE_AI_KEY → AI 服务
+```
+
+**重要提示**：
+- 🚨 **生产环境必须配置 `VITE_AI_KEY` 环境变量**
+- 🚨 **不要将 API Key 提交到 Git 仓库**
+- 🚨 **使用 `.env.local` 文件存储本地开发用的 API Key（已加入 .gitignore）**
 
 ## 🔍 验证部署
 
@@ -119,9 +139,11 @@ Vercel Function: 返回给浏览器（带正确的 CORS 头）
 
 ### API 请求失败
 
-- 检查 Vercel 函数日志
+- 检查 Vercel 函数日志（Function Logs）
+- 确认 `VITE_AI_KEY` 环境变量是否已配置
 - 确认 API Key 是否有效
 - 检查 API 配额是否用完
+- 如果看到 "API Key not configured" 错误，说明环境变量未设置
 
 ### 页面 404
 

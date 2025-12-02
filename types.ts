@@ -15,6 +15,15 @@ export interface CultivationArt {
   description: string;
   realmRequirement: RealmType;
   cost: number;
+  sectId?: string | null; // 所属宗门ID，null表示通用功法
+  attributeRequirements?: {
+    // 属性要求
+    attack?: number;
+    defense?: number;
+    spirit?: number;
+    physique?: number;
+    speed?: number;
+  };
   effects: {
     attack?: number;
     defense?: number;
@@ -71,6 +80,7 @@ export interface Item {
   equipmentSlot?: EquipmentSlot; // 装备部位
   isNatal?: boolean; // 是否为本命法宝
   recipeData?: Recipe; // 丹方数据（仅当 type 为 Recipe 时使用）
+  reviveChances?: number; // 保命机会次数（1-3次），仅传说和仙品装备可能有
   effect?: {
     hp?: number;
     exp?: number;
@@ -163,6 +173,8 @@ export interface PlayerStats {
   sectId: string | null;
   sectRank: SectRank;
   sectContribution: number;
+  betrayedSects: string[]; // 背叛过的宗门ID列表
+  sectHuntEndTime: number | null; // 宗门追杀结束时间戳（毫秒），null表示未被追杀
   // 角色系统扩展
   talentId: string | null; // 天赋ID（游戏开始时随机生成，之后不可修改）
   titleId: string | null; // 称号ID
@@ -195,6 +207,18 @@ export interface PlayerStats {
   // 打坐回血速度加成
   meditationHpRegenMultiplier: number; // 打坐回血速度加成倍数（默认1.0，打坐时增加）
   meditationBoostEndTime: number | null; // 打坐回血加成结束时间戳（毫秒）
+  // 成就统计系统
+  statistics: {
+    killCount: number; // 击杀敌人数量
+    meditateCount: number; // 打坐次数
+    adventureCount: number; // 历练次数
+    equipCount: number; // 装备物品数量
+    petCount: number; // 获得灵宠数量
+    recipeCount: number; // 解锁丹方数量
+    artCount: number; // 学习功法数量
+    breakthroughCount: number; // 突破次数
+    secretRealmCount: number; // 进入秘境次数
+  };
 }
 
 export interface LogEntry {
@@ -472,6 +496,7 @@ export interface ShopItem {
   equipmentSlot?: EquipmentSlot;
   isEquippable?: boolean;
   minRealm?: RealmType; // 最低境界要求
+  reviveChances?: number; // 保命机会次数（1-3次），仅传说和仙品装备可能有
 }
 
 export interface Shop {

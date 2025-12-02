@@ -666,7 +666,8 @@ const LOOT_ITEMS = {
 const generateLoot = (
   enemyStrength: number,
   adventureType: AdventureType,
-  playerRealm: RealmType
+  playerRealm: RealmType,
+  riskLevel?: '低' | '中' | '高' | '极度危险'
 ): AdventureResult['itemObtained'][] => {
   const lootItems: AdventureResult['itemObtained'][] = [];
 
@@ -831,7 +832,26 @@ const generateLoot = (
       }
     } else {
       const selected = pickOne(availableItems);
-      const item: AdventureResult['itemObtained'] = {
+
+      // 检查是否为传说或仙品装备，随机添加保命机会
+      let reviveChances: number | undefined = undefined;
+      const rarity = selected.rarity;
+
+      // 只有武器和法宝类型的传说/仙品装备可能有保命机会
+      if ((rarity === '传说' || rarity === '仙品') &&
+          (itemType === '武器' || itemType === '法宝')) {
+        // 传说装备3%概率有保命，仙品装备6%概率有保命
+        const hasRevive = rarity === '传说'
+          ? Math.random() < 0.03
+          : Math.random() < 0.06;
+
+        if (hasRevive) {
+          // 随机1-3次保命机会
+          reviveChances = Math.floor(Math.random() * 3) + 1;
+        }
+      }
+
+      const item: AdventureResult['itemObtained'] & { reviveChances?: number } = {
         name: selected.name,
         type: itemType,
         description: `${selected.name}，从敌人身上搜刮获得。`,
@@ -840,6 +860,7 @@ const generateLoot = (
         equipmentSlot: selected.slot as string | undefined,
         effect: selected.effect,
         permanentEffect: selected.permanentEffect,
+        reviveChances: reviveChances,
       };
       lootItems.push(item);
     }
@@ -1085,9 +1106,10 @@ const createEnemy = async (player: PlayerStats, adventureType: AdventureType, ri
 };
 
 const calcDamage = (attack: number, defense: number) => {
-  const base = attack * 0.9 - defense * 0.45;
-  const minDamage = Math.max(5, attack * 0.25);
-  const randomFactor = 0.9 + Math.random() * 0.25;
+  // 调整伤害计算，降低死亡率：降低基础伤害和最小伤害
+  const base = attack * 0.75 - defense * 0.5; // 降低攻击系数，提高防御系数
+  const minDamage = Math.max(3, attack * 0.2); // 降低最小伤害
+  const randomFactor = 0.85 + Math.random() * 0.3; // 增加随机性
   return Math.round(Math.max(minDamage, base) * randomFactor);
 };
 
@@ -1205,7 +1227,7 @@ export const resolveBattleEncounter = async (player: PlayerStats, adventureType:
   }
 
   // 生成更丰富的战斗描述（如果有秘境信息，会结合秘境特点）
-  const generateBattleSummary = (victory: boolean, enemy: Enemy, hpLoss: number, hasLoot: boolean, realmName?: string): string => {
+  const generateBattleSummary = (victory: boolean, enemy: { name: string; title: string }, hpLoss: number, hasLoot: boolean, realmName?: string): string => {
     // 如果有秘境名称，生成与秘境相关的描述
     if (realmName && adventureType === 'secret_realm') {
       const realmContext = `在${realmName}中，`;

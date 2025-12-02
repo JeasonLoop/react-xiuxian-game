@@ -77,6 +77,11 @@ const EquipmentPanel: React.FC<Props> = ({ equippedItems, inventory, player, onU
                       )}
                     </div>
                     <div className="text-xs text-stone-400 mb-2">{rarity}</div>
+                    {item.reviveChances && item.reviveChances > 0 && (
+                      <div className="text-xs text-yellow-400 mb-1 font-bold">
+                        💫 保命 {item.reviveChances}次
+                      </div>
+                    )}
                     {stats && (
                       <div className="text-xs space-y-0.5">
                         {stats.attack > 0 && <div className="text-red-400">攻 +{stats.attack}</div>}

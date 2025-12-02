@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Item, PlayerStats } from '../types';
 import {
   UPGRADE_MATERIAL_NAME,
@@ -18,6 +18,7 @@ import {
   Heart,
   Plus,
   Minus,
+  Sparkles,
 } from 'lucide-react';
 
 interface Props {
@@ -30,7 +31,8 @@ interface Props {
     costStones: number,
     costMats: number,
     upgradeStones: number
-  ) => void;
+  ) => Promise<'success' | 'failure' | 'error'>;
+  setItemActionLog?: (log: { text: string; type: string } | null) => void;
 }
 
 const ArtifactUpgradeModal: React.FC<Props> = ({
@@ -39,9 +41,18 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
   item,
   player,
   onConfirm,
+  setItemActionLog
 }) => {
   const [upgradeStones, setUpgradeStones] = useState(0);
   const [isUpgrading, setIsUpgrading] = useState(false);
+
+  // 当 Modal 打开时重置状态
+  useEffect(() => {
+    if (isOpen && item) {
+      setUpgradeStones(0);
+      setIsUpgrading(false);
+    }
+  }, [isOpen, item]);
 
   if (!isOpen || !item) return null;
 
@@ -54,12 +65,14 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
   const rarityMult = RARITY_MULTIPLIERS[rarity];
 
   // Cost Calculation - 每次强化后炼器石需求增加
+  // 灵石消耗：基础消耗 * (等级+1) * 品质倍率 * (1 + 等级 * 0.25) - 高等级增长更快
   const costStones = Math.floor(
-    BASE_UPGRADE_COST_STONES * (currentLevel + 1) * rarityMult
+    BASE_UPGRADE_COST_STONES * (currentLevel + 1) * rarityMult * (1 + currentLevel * 0.25)
   );
+  // 材料消耗：基础消耗 * 品质倍率 * (等级+1) * (1 + 等级 * 0.5) - 高等级和品质消耗大幅增加
   const costMats = Math.floor(
-    BASE_UPGRADE_COST_MATS * (currentLevel + 1) * (1 + currentLevel * 0.2)
-  ); // 每次强化后增加20%
+    BASE_UPGRADE_COST_MATS * rarityMult * (currentLevel + 1) * (1 + currentLevel * 0.5)
+  );
 
   // 计算基础成功率（根据稀有度和等级）
   const baseSuccessRate = Math.max(
@@ -220,7 +233,9 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
           {/* Cost */}
           <div className="space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-stone-400">灵石消耗</span>
+              <span className={playerStones >= costStones ? 'text-stone-400' : 'text-red-400'}>
+                灵石消耗
+              </span>
               <span
                 className={
                   playerStones >= costStones
@@ -232,7 +247,9 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
               </span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-stone-400">{UPGRADE_MATERIAL_NAME}</span>
+              <span className={playerMats >= costMats ? 'text-stone-400' : 'text-red-400'}>
+                {UPGRADE_MATERIAL_NAME}
+              </span>
               <span
                 className={
                   playerMats >= costMats ? 'text-stone-200' : 'text-red-400'
@@ -242,7 +259,7 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
               </span>
             </div>
             <div className="flex justify-between items-center text-sm">
-              <span className="text-stone-400">
+              <span className={upgradeStones <= playerUpgradeStones ? 'text-stone-400' : 'text-red-400'}>
                 {UPGRADE_STONE_NAME} (每颗+10%成功率)
               </span>
               <div className="flex items-center gap-2">
@@ -317,11 +334,41 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
                   setUpgradeStones(0);
                 } else {
                   // error - 材料不足等情况
+                  if (setItemActionLog) {
+                    // 检查具体缺少什么材料
+                    const missingItems: string[] = [];
+                    if (playerStones < costStones) {
+                      missingItems.push('灵石');
+                    }
+                    if (playerMats < costMats) {
+                      missingItems.push(UPGRADE_MATERIAL_NAME);
+                    }
+                    if (upgradeStones > 0 && playerUpgradeStones < upgradeStones) {
+                      missingItems.push(UPGRADE_STONE_NAME);
+                    }
+
+                    const errorMsg = missingItems.length > 0
+                      ? `⚠️ ${missingItems.join('、')}不足，无法进行祭炼！`
+                      : `⚠️ 材料不足，无法进行祭炼！`;
+
+                    setItemActionLog({
+                      text: errorMsg,
+                      type: 'danger'
+                    });
+                    setTimeout(() => setItemActionLog && setItemActionLog(null), 3000);
+                  }
                   setIsUpgrading(false);
                 }
               } catch (error) {
                 setIsUpgrading(false);
                 console.error('Upgrade error:', error);
+                if (setItemActionLog) {
+                  setItemActionLog({
+                    text: `❌ 祭炼过程中发生错误，请重试！`,
+                    type: 'danger'
+                  });
+                  setTimeout(() => setItemActionLog && setItemActionLog(null), 3000);
+                }
               }
             }}
             disabled={!canAfford || isUpgrading}

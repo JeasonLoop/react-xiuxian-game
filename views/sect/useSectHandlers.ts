@@ -9,6 +9,7 @@ import {
 } from '../../types';
 import { SECTS, SECT_RANK_REQUIREMENTS } from '../../constants';
 import { RandomSectTask } from '../../services/randomService';
+import { AdventureResult } from '../../types';
 import { uid } from '../../utils/gameUtils';
 
 interface UseSectHandlersProps {
@@ -55,6 +56,11 @@ export function useSectHandlers({
           name: sectName,
           description: '',
           reqRealm: RealmType.QiRefining,
+          grade: '黄', // 默认等级
+          exitCost: {
+            spiritStones: 300,
+            items: [{ name: '聚灵草', quantity: 5 }],
+          },
         };
       } else {
         // 如果连名称都没有，尝试从 availableSects 中查找（但这需要从 SectModal 传递）
@@ -73,17 +79,90 @@ export function useSectHandlers({
   };
 
   const handleLeaveSect = () => {
-    setPlayer((prev) => ({
-      ...prev,
-      sectId: null,
-      sectRank: SectRank.Outer,
-      sectContribution: 0,
-    }));
-    addLog(`你叛出了宗门，从此成为一名散修。`, 'danger');
+    // 直接背叛，会被追杀
+    setPlayer((prev) => {
+      if (!prev.sectId) return prev;
+
+      const betrayedSects = [...(prev.betrayedSects || [])];
+      if (!betrayedSects.includes(prev.sectId)) {
+        betrayedSects.push(prev.sectId);
+      }
+
+      // 设置追杀时间（7天）
+      const huntDuration = 7 * 24 * 60 * 60 * 1000; // 7天
+      const huntEndTime = Date.now() + huntDuration;
+
+      return {
+        ...prev,
+        sectId: null,
+        sectRank: SectRank.Outer,
+        sectContribution: 0,
+        betrayedSects,
+        sectHuntEndTime: huntEndTime,
+      };
+    });
+    addLog(`你叛出了宗门，从此成为一名散修。宗门已发布追杀令，你需小心行事！`, 'danger');
     setIsSectOpen(false);
   };
 
-  const handleSectTask = (task: RandomSectTask) => {
+  const handleSafeLeaveSect = () => {
+    // 安全退出，需要支付代价
+    setPlayer((prev) => {
+      if (!prev.sectId) return prev;
+
+      const sect = SECTS.find((s) => s.id === prev.sectId);
+      if (!sect || !sect.exitCost) {
+        addLog('无法安全退出该宗门。', 'danger');
+        return prev;
+      }
+
+      // 检查是否有足够的资源
+      let updatedInventory = [...prev.inventory];
+      let stoneCost = sect.exitCost.spiritStones || 0;
+
+      if (prev.spiritStones < stoneCost) {
+        addLog(`灵石不足，需要 ${stoneCost} 灵石。`, 'danger');
+        return prev;
+      }
+
+      if (sect.exitCost.items) {
+        for (const itemReq of sect.exitCost.items) {
+          const itemIdx = updatedInventory.findIndex(
+            (i) => i.name === itemReq.name
+          );
+          if (
+            itemIdx === -1 ||
+            updatedInventory[itemIdx].quantity < itemReq.quantity
+          ) {
+            addLog(
+              `物品不足，需要 ${itemReq.quantity} 个【${itemReq.name}】。`,
+              'danger'
+            );
+            return prev;
+          }
+          updatedInventory[itemIdx] = {
+            ...updatedInventory[itemIdx],
+            quantity: updatedInventory[itemIdx].quantity - itemReq.quantity,
+          };
+        }
+        updatedInventory = updatedInventory.filter((i) => i.quantity > 0);
+      }
+
+      addLog(`你花费了代价，安全退出了【${sect.name}】。`, 'normal');
+      setIsSectOpen(false);
+
+      return {
+        ...prev,
+        sectId: null,
+        sectRank: SectRank.Outer,
+        sectContribution: 0,
+        spiritStones: prev.spiritStones - stoneCost,
+        inventory: updatedInventory,
+      };
+    });
+  };
+
+  const handleSectTask = (task: RandomSectTask, encounterResult?: AdventureResult) => {
     setPlayer((prev) => {
       // 检查每日任务限制
       const today = new Date().toISOString().split('T')[0];
@@ -169,6 +248,13 @@ export function useSectHandlers({
       let expGain = task.reward.exp || 0;
       let stoneGain = task.reward.spiritStones || 0;
 
+      // 如果有奇遇结果，添加奇遇奖励
+      if (encounterResult) {
+        expGain += encounterResult.expChange || 0;
+        stoneGain += encounterResult.spiritStonesChange || 0;
+        // 注意：hpChange会在后面单独处理
+      }
+
       // 添加奖励物品
       if (task.reward.items) {
         task.reward.items.forEach((rewardItem) => {
@@ -210,10 +296,19 @@ export function useSectHandlers({
 
       addLog(`你完成了任务【${task.name}】，获得了 ${rewardText}。`, 'gain');
 
+      // 处理奇遇的HP变化
+      let newHp = prev.hp;
+      let newMaxHp = prev.maxHp;
+      if (encounterResult && encounterResult.hpChange) {
+        newHp = Math.max(0, Math.min(prev.maxHp, prev.hp + encounterResult.hpChange));
+      }
+
       return {
         ...prev,
         spiritStones: prev.spiritStones - stoneCost + stoneGain,
         exp: prev.exp + expGain,
+        hp: newHp,
+        maxHp: newMaxHp,
         inventory: updatedInventory,
         sectContribution: prev.sectContribution + contribGain,
         dailyTaskCount,
@@ -307,6 +402,7 @@ export function useSectHandlers({
   return {
     handleJoinSect,
     handleLeaveSect,
+    handleSafeLeaveSect,
     handleSectTask,
     handleSectPromote,
     handleSectBuy,

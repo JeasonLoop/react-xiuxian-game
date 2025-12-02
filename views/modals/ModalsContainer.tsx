@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayerStats, Shop, GameSettings, Item } from '../../types';
+import { PlayerStats, Shop, GameSettings, Item, ShopItem } from '../../types';
 import InventoryModal from '../../components/InventoryModal';
 import CultivationModal from '../../components/CultivationModal';
 import AlchemyModal from '../../components/AlchemyModal';
@@ -83,6 +83,7 @@ interface ModalsContainerProps {
     handleOpenUpgrade: (item: Item) => void;
     handleDiscardItem: (item: Item) => void;
     handleBatchDiscard: (itemIds: string[]) => void;
+    handleBatchUse?: (itemIds: string[]) => void;
     handleRefineNatalArtifact: (item: Item) => void;
     handleUnrefineNatalArtifact: () => void;
     handleUpgradeItem: (item: Item, costStones: number, costMats: number, upgradeStones?: number) => Promise<'success' | 'failure' | 'error'>;
@@ -94,7 +95,8 @@ interface ModalsContainerProps {
     // Sect
     handleJoinSect: (sectId: string, sectName?: string) => void;
     handleLeaveSect: () => void;
-    handleSectTask: (task: RandomSectTask) => void;
+    handleSafeLeaveSect: () => void;
+    handleSectTask: (task: RandomSectTask, encounterResult?: any) => void;
     handleSectPromote: () => void;
     handleSectBuy: (
       itemTemplate: Partial<Item>,
@@ -106,7 +108,9 @@ interface ModalsContainerProps {
     // Character
     handleSelectTalent: (talentId: string) => void;
     handleSelectTitle: (titleId: string) => void;
-    handleAllocateAttribute: (type: 'attack' | 'defense' | 'hp') => void;
+    handleAllocateAttribute: (
+      type: 'attack' | 'defense' | 'hp' | 'spirit' | 'physique' | 'speed'
+    ) => void;
     handleUseInheritance: () => void;
     handleUpdateViewedAchievements: () => void;
     // Pet
@@ -116,6 +120,7 @@ interface ModalsContainerProps {
       feedType: 'hp' | 'item' | 'exp',
       itemId?: string
     ) => void;
+    handleBatchFeedItems?: (petId: string, itemIds: string[]) => void;
     handleEvolvePet: (petId: string) => void;
     // Lottery
     handleDraw: (count: 1 | 10) => void;
@@ -124,6 +129,7 @@ interface ModalsContainerProps {
     // Shop
     handleBuyItem: (shopItem: any, quantity?: number) => void;
     handleSellItem: (item: Item) => void;
+    handleRefreshShop?: (newItems: ShopItem[]) => void;
   };
 }
 
@@ -157,6 +163,7 @@ export default function ModalsContainer({
         onUpgradeItem={handlers.handleOpenUpgrade}
         onDiscardItem={handlers.handleDiscardItem}
         onBatchDiscard={handlers.handleBatchDiscard}
+        onBatchUse={handlers.handleBatchUse}
         onRefineNatalArtifact={handlers.handleRefineNatalArtifact}
         onUnrefineNatalArtifact={handlers.handleUnrefineNatalArtifact}
       />
@@ -194,6 +201,7 @@ export default function ModalsContainer({
         player={player}
         onJoinSect={handlers.handleJoinSect}
         onLeaveSect={handlers.handleLeaveSect}
+        onSafeLeaveSect={handlers.handleSafeLeaveSect}
         onTask={handlers.handleSectTask}
         onPromote={handlers.handleSectPromote}
         onBuy={handlers.handleSectBuy}
@@ -228,6 +236,7 @@ export default function ModalsContainer({
         player={player}
         onActivatePet={handlers.handleActivatePet}
         onFeedPet={handlers.handleFeedPet}
+        onBatchFeedItems={handlers.handleBatchFeedItems}
         onEvolvePet={handlers.handleEvolvePet}
       />
 
@@ -256,6 +265,7 @@ export default function ModalsContainer({
           player={player}
           onBuyItem={handlers.handleBuyItem}
           onSellItem={handlers.handleSellItem}
+          onRefreshShop={handlers.handleRefreshShop}
         />
       )}
     </>

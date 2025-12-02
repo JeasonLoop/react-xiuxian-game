@@ -79,27 +79,47 @@ export function useMeditationHandlers({
     }
 
     setPlayer((prev) => {
-      const now = Date.now();
-      // 打坐时提高回血速度：基础2倍，根据境界和层数可以增加
+      // 打坐时直接加速回血：基础2倍，根据境界和层数可以增加
       // 基础倍数 = 2.0 + 境界层数 * 0.1（最高3.5倍）
-      const realmIndex = REALM_ORDER.indexOf(prev.realm);
       const baseMultiplier = 2.0 + Math.min(prev.realmLevel * 0.1, 1.5); // 2.0 - 3.5倍
-      // 持续时间：基础30秒，根据境界增加（最高60秒）
-      const duration = 30000 + Math.min(realmIndex * 5000, 30000); // 30-60秒
-      const durationSeconds = Math.floor(duration / 1000);
 
-      // 添加回血速度提升提示
+      // 计算回血量：基础回血 * 打坐加成倍数
+      const baseRegen = Math.max(1, Math.floor(prev.maxHp * 0.01));
+      const actualRegen = Math.floor(baseRegen * baseMultiplier);
+
+      // 直接恢复血量
+      const newHp = Math.min(prev.maxHp, prev.hp + actualRegen);
+
+      // 添加回血提示
       const multiplierText = baseMultiplier.toFixed(1);
-      addLog(
-        `💚 打坐提升了你的回血速度（${multiplierText}倍），持续 ${durationSeconds} 秒`,
-        'gain'
-      );
+      if (newHp > prev.hp) {
+        addLog(
+          `💚 打坐加速回血，恢复 ${actualRegen} 点气血（${multiplierText}倍速度）`,
+          'gain'
+        );
+      }
+
+      // 更新统计
+      const stats = prev.statistics || {
+        killCount: 0,
+        meditateCount: 0,
+        adventureCount: 0,
+        equipCount: 0,
+        petCount: 0,
+        recipeCount: 0,
+        artCount: 0,
+        breakthroughCount: 0,
+        secretRealmCount: 0,
+      };
 
       return {
         ...prev,
         exp: prev.exp + actualGain,
-        meditationHpRegenMultiplier: baseMultiplier,
-        meditationBoostEndTime: now + duration,
+        hp: newHp,
+        statistics: {
+          ...stats,
+          meditateCount: stats.meditateCount + 1,
+        },
       };
     });
     checkLevelUp(actualGain);

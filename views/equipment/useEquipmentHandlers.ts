@@ -175,6 +175,27 @@ export function useEquipmentHandlers({
         }
       }
 
+      // 更新统计（只有新装备时才增加计数）
+      const playerStats = prev.statistics || {
+        killCount: 0,
+        meditateCount: 0,
+        adventureCount: 0,
+        equipCount: 0,
+        petCount: 0,
+        recipeCount: 0,
+        artCount: 0,
+        breakthroughCount: 0,
+        secretRealmCount: 0,
+      };
+      let updatedStatistics = { ...playerStats };
+      // 如果之前没有装备在这个槽位，或者是从其他槽位移过来的，增加计数
+      if (!currentEquippedId || currentEquippedId !== item.id) {
+        if (!oldSlot) {
+          // 新装备，不是移动
+          updatedStatistics.equipCount += 1;
+        }
+      }
+
       return {
         ...prev,
         equippedItems: newEquippedItems,
@@ -185,6 +206,7 @@ export function useEquipmentHandlers({
         spirit: newSpirit,
         physique: newPhysique,
         speed: Math.max(0, newSpeed),
+        statistics: updatedStatistics,
       };
     });
   };
@@ -404,12 +426,20 @@ export function useEquipmentHandlers({
         (i) => i.name === UPGRADE_STONE_NAME
       );
 
+      // 检查灵石和材料
       if (
         prev.spiritStones < costStones ||
         !matsItem ||
-        matsItem.quantity < costMats ||
-        !upgradeStoneItem ||
-        upgradeStoneItem.quantity < upgradeStones
+        matsItem.quantity < costMats
+      ) {
+        resolve('error');
+        return prev;
+      }
+
+      // 只有当使用强化石时才检查强化石
+      if (
+        upgradeStones > 0 &&
+        (!upgradeStoneItem || upgradeStoneItem.quantity < upgradeStones)
       ) {
         resolve('error');
         return prev;

@@ -1,5 +1,6 @@
 import React from 'react';
 import { PlayerStats, CultivationArt } from '../../types';
+import { SECTS } from '../../constants';
 
 interface UseCultivationHandlersProps {
   player: PlayerStats;
@@ -23,7 +24,45 @@ export function useCultivationHandlers({
   addLog,
 }: UseCultivationHandlersProps) {
   const handleLearnArt = (art: CultivationArt) => {
-    if (!player || player.spiritStones < art.cost) return;
+    if (!player || player.spiritStones < art.cost) {
+      addLog('灵石不足！', 'danger');
+      return;
+    }
+
+    // 检查宗门要求
+    if (art.sectId !== null && art.sectId !== undefined) {
+      if (player.sectId !== art.sectId) {
+        const sect = SECTS.find((s) => s.id === art.sectId);
+        const sectName = sect ? sect.name : art.sectId;
+        addLog(`该功法为【${sectName}】专属功法，你无法学习。`, 'danger');
+        return;
+      }
+    }
+
+    // 检查属性要求
+    if (art.attributeRequirements) {
+      const reqs = art.attributeRequirements;
+      if (reqs.attack && player.attack < reqs.attack) {
+        addLog(`学习该功法需要攻击力达到 ${reqs.attack}，你当前攻击力为 ${player.attack}。`, 'danger');
+        return;
+      }
+      if (reqs.defense && player.defense < reqs.defense) {
+        addLog(`学习该功法需要防御力达到 ${reqs.defense}，你当前防御力为 ${player.defense}。`, 'danger');
+        return;
+      }
+      if (reqs.spirit && player.spirit < reqs.spirit) {
+        addLog(`学习该功法需要神识达到 ${reqs.spirit}，你当前神识为 ${player.spirit}。`, 'danger');
+        return;
+      }
+      if (reqs.physique && player.physique < reqs.physique) {
+        addLog(`学习该功法需要体魄达到 ${reqs.physique}，你当前体魄为 ${player.physique}。`, 'danger');
+        return;
+      }
+      if (reqs.speed && player.speed < reqs.speed) {
+        addLog(`学习该功法需要速度达到 ${reqs.speed}，你当前速度为 ${player.speed}。`, 'danger');
+        return;
+      }
+    }
 
     setPlayer((prev) => {
       const newStones = prev.spiritStones - art.cost;

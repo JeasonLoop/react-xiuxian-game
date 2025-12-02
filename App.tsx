@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Item, Shop, ShopType } from './types';
+import { Item, Shop, ShopItem, ShopType, EquipmentSlot } from './types';
 import WelcomeScreen from './components/WelcomeScreen';
 import StartScreen from './components/StartScreen';
 import DeathModal from './components/DeathModal';
@@ -34,6 +34,7 @@ function App() {
   // 使用自定义hooks管理游戏状态
   const {
     hasSave, // 是否有存档
+    setHasSave, // 设置是否有存档
     gameStarted, // 游戏是否开始
     player, // 玩家数据
     setPlayer, // 设置玩家数据
@@ -87,6 +88,7 @@ function App() {
   } | null>(null); // 物品操作轻提示
   const [autoMeditate, setAutoMeditate] = useState(false); // 自动打坐
   const [autoAdventure, setAutoAdventure] = useState(false); // 自动历练
+  const [autoAdventurePausedByShop, setAutoAdventurePausedByShop] = useState(false); // 自动历练是否因商店暂停
   const [isDead, setIsDead] = useState(false); // 是否死亡
   const [deathBattleData, setDeathBattleData] = useState<BattleReplay | null>(
     null
@@ -207,6 +209,11 @@ function App() {
     loading,
     cooldown,
     onOpenShop: (shopType: ShopType) => {
+      // 如果正在自动历练，暂停自动历练
+      if (autoAdventure) {
+        setAutoAdventurePausedByShop(true);
+        setAutoAdventure(false);
+      }
       // 复用 shopHandlers 的逻辑
       shopHandlers.handleOpenShop(shopType);
     },
@@ -230,6 +237,63 @@ function App() {
     if (!player || isDead) return;
 
     if (player.hp <= 0) {
+      // 检查是否有保命装备
+      let reviveItem: Item | null = null;
+      let reviveSlot: EquipmentSlot | null = null;
+
+      // 遍历所有装备槽位，查找有保命机会的装备
+      for (const [slot, itemId] of Object.entries(player.equippedItems)) {
+        if (!itemId) continue;
+        const item = player.inventory.find(i => i.id === itemId);
+        if (item && item.reviveChances && item.reviveChances > 0) {
+          reviveItem = item;
+          reviveSlot = slot as EquipmentSlot;
+          break;
+        }
+      }
+
+      if (reviveItem && reviveSlot) {
+        // 有保命装备，消耗一次保命机会并复活
+        setPlayer((prev) => {
+          if (!prev) return prev;
+
+          const newInventory = prev.inventory.map(item => {
+            if (item.id === reviveItem!.id) {
+              const newChances = (item.reviveChances || 0) - 1;
+              addLog(
+                `💫 ${item.name}的保命之力被触发！你留下一口气，从死亡边缘被拉了回来。剩余保命机会：${newChances}次`,
+                'special'
+              );
+              return {
+                ...item,
+                reviveChances: newChances,
+              };
+            }
+            return item;
+          });
+
+          // 如果保命机会用完了，从装备栏移除
+          const updatedItem = newInventory.find(i => i.id === reviveItem!.id);
+          const newEquippedItems = { ...prev.equippedItems };
+          if (updatedItem && (!updatedItem.reviveChances || updatedItem.reviveChances <= 0)) {
+            delete newEquippedItems[reviveSlot!];
+            addLog(`⚠️ ${reviveItem!.name}的保命之力已耗尽，自动卸下。`, 'danger');
+          }
+
+          // 复活：恢复10%最大气血
+          const reviveHp = Math.max(1, Math.floor(prev.maxHp * 0.1));
+
+          return {
+            ...prev,
+            inventory: newInventory,
+            equippedItems: newEquippedItems,
+            hp: reviveHp,
+          };
+        });
+        return; // 不触发死亡
+      }
+
+      // 没有保命装备，正常死亡
       setIsDead(true);
       setDeathBattleData(lastBattleReplay);
       localStorage.removeItem(SAVE_KEY);
@@ -252,16 +316,12 @@ function App() {
       setAutoMeditate(false);
       setAutoAdventure(false);
     }
-  }, [player?.hp, isDead, lastBattleReplay]);
+  }, [player?.hp, isDead, lastBattleReplay, addLog]);
 
   // 涅槃重生功能
   const handleRebirth = () => {
     // 清除存档
-    try {
-      localStorage.removeItem(SAVE_KEY);
-    } catch (error) {
-      console.error('清除存档失败:', error);
-    }
+    localStorage.removeItem(SAVE_KEY);
 
     // 重置所有状态
     setIsDead(false);
@@ -273,6 +333,7 @@ function App() {
     setPlayer(null);
     setLogs([]);
     setGameStarted(false);
+    setHasSave(false); // 重要：更新 hasSave 状态，避免卡在加载存档页面
 
     // 触发页面刷新或返回开始页面
     // useGameState 的 handleStartGame 会处理新游戏
@@ -288,6 +349,24 @@ function App() {
 
   const handleUseItem = itemHandlers.handleUseItem;
   const handleDiscardItem = itemHandlers.handleDiscardItem;
+  const handleBatchUse = async (itemIds: string[]) => {
+    if (itemIds.length === 0) return;
+
+    // 获取所有要使用的物品
+    const itemsToUse = itemIds
+      .map((id) => player.inventory.find((item) => item.id === id))
+      .filter((item): item is typeof player.inventory[0] => item !== undefined);
+
+    // 批量使用：逐个使用物品（使用延迟以避免状态更新冲突）
+    for (const item of itemsToUse) {
+      if (item.quantity > 0) {
+        handleUseItem(item);
+        // 添加小延迟以确保状态更新完成
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+    }
+  };
+
   const handleBatchDiscard = (itemIds: string[]) => {
     setPlayer((prev) => {
       const newInv = prev.inventory.filter((i) => !itemIds.includes(i.id));
@@ -314,13 +393,28 @@ function App() {
   // 提取新的模块化 handlers
   const handleBuyItem = shopHandlers.handleBuyItem;
   const handleSellItem = shopHandlers.handleSellItem;
+
+  const handleRefreshShop = (newItems: ShopItem[]) => {
+    if (!currentShop) return;
+    setCurrentShop({
+      ...currentShop,
+      items: newItems,
+    });
+    setPlayer((prev) => ({
+      ...prev,
+      spiritStones: prev.spiritStones - 100, // 扣除刷新费用
+    }));
+    addLog('商店物品已刷新！', 'special');
+  };
   const handleUpdateSettings = settingsHandlers.handleUpdateSettings;
   const handleActivatePet = petHandlers.handleActivatePet;
   const handleFeedPet = petHandlers.handleFeedPet;
+  const handleBatchFeedItems = petHandlers.handleBatchFeedItems;
   const handleEvolvePet = petHandlers.handleEvolvePet;
   const handleDraw = lotteryHandlers.handleDraw;
   const handleJoinSect = sectHandlers.handleJoinSect;
   const handleLeaveSect = sectHandlers.handleLeaveSect;
+  const handleSafeLeaveSect = sectHandlers.handleSafeLeaveSect;
   const handleSectTask = sectHandlers.handleSectTask;
   const handleSectPromote = sectHandlers.handleSectPromote;
   const handleSectBuy = sectHandlers.handleSectBuy;
@@ -334,39 +428,13 @@ function App() {
       setPlayer((prev) => {
         if (!prev) return prev; // 防止 prev 为 null
 
-        const now = Date.now();
-        let hpRegenMultiplier = prev.meditationHpRegenMultiplier || 1.0;
-        let meditationBoostEndTime = prev.meditationBoostEndTime;
-
-        // 检查打坐加成是否过期
-        if (meditationBoostEndTime && now >= meditationBoostEndTime) {
-          // 打坐加成已过期，恢复默认值
-          hpRegenMultiplier = 1.0;
-          meditationBoostEndTime = null;
-        }
-
-        // 计算回血量：基础回血 * 打坐加成倍数
+        // 计算基础回血量（不再使用打坐加成，因为打坐时已经直接回血了）
         const baseRegen = Math.max(1, Math.floor(prev.maxHp * 0.01));
-        const actualRegen = Math.floor(baseRegen * hpRegenMultiplier);
 
         if (prev.hp < prev.maxHp) {
           return {
             ...prev,
-            hp: Math.min(prev.maxHp, prev.hp + actualRegen),
-            meditationHpRegenMultiplier: hpRegenMultiplier,
-            meditationBoostEndTime: meditationBoostEndTime,
-          };
-        }
-
-        // 即使血量已满，也要更新打坐加成状态（清除过期加成）
-        if (
-          hpRegenMultiplier !== prev.meditationHpRegenMultiplier ||
-          meditationBoostEndTime !== prev.meditationBoostEndTime
-        ) {
-          return {
-            ...prev,
-            meditationHpRegenMultiplier: hpRegenMultiplier,
-            meditationBoostEndTime: meditationBoostEndTime,
+            hp: Math.min(prev.maxHp, prev.hp + baseRegen),
           };
         }
 
@@ -395,7 +463,7 @@ function App() {
 
   // 自动历练逻辑
   useEffect(() => {
-    if (!autoAdventure || !player || loading || cooldown > 0) return;
+    if (!autoAdventure || !player || loading || cooldown > 0 || isShopOpen) return;
     // if (player.hp < player.maxHp * 0.2) {
     //   // 如果血量过低，停止自动历练
     //   setAutoAdventure(false);
@@ -452,8 +520,8 @@ function App() {
     costStones: number,
     costMats: number,
     upgradeStones: number = 0
-  ) => {
-    equipmentHandlers.handleUpgradeItem(
+  ): Promise<'success' | 'failure' | 'error'> => {
+    const result = await equipmentHandlers.handleUpgradeItem(
       item,
       costStones,
       costMats,
@@ -461,16 +529,27 @@ function App() {
     );
     // 不关闭弹窗，让用户可以继续强化
     // 弹窗会自动从 player.inventory 中获取最新的物品信息
+    return result || 'success';
   };
 
   // Sect handlers、Achievement、Pet、Lottery、Settings handlers 已全部移到对应模块
 
-  // 检查成就（境界变化时）
+  // 检查成就（境界变化、统计变化时）
   useEffect(() => {
     if (player) {
       checkAchievements();
     }
-  }, [player?.realm, player?.realmLevel, checkAchievements]);
+  }, [
+    player?.realm,
+    player?.realmLevel,
+    player?.statistics,
+    player?.inventory.length,
+    player?.pets.length,
+    player?.cultivationArts.length,
+    player?.unlockedRecipes?.length,
+    player?.lotteryCount,
+    checkAchievements,
+  ]);
 
   // 显示欢迎界面
   if (showWelcome) {
@@ -626,7 +705,14 @@ function App() {
           setIsSettingsOpen: (open: boolean) => setIsSettingsOpen(open),
           setIsShopOpen: (open: boolean) => {
             setIsShopOpen(open);
-            if (!open) setCurrentShop(null);
+            if (!open) {
+              setCurrentShop(null);
+              // 如果自动历练是因为商店暂停的，恢复自动历练
+              if (autoAdventurePausedByShop) {
+                setAutoAdventurePausedByShop(false);
+                setAutoAdventure(true);
+              }
+            }
           },
           setIsBattleModalOpen: (open: boolean) => setIsBattleModalOpen(open),
           setItemToUpgrade,
@@ -641,6 +727,7 @@ function App() {
           handleOpenUpgrade,
           handleDiscardItem,
           handleBatchDiscard,
+          handleBatchUse,
           handleRefineNatalArtifact,
           handleUnrefineNatalArtifact,
           handleUpgradeItem,
@@ -649,6 +736,7 @@ function App() {
           handleCraft,
           handleJoinSect,
           handleLeaveSect,
+          handleSafeLeaveSect,
           handleSectTask,
           handleSectPromote,
           handleSectBuy,
@@ -665,11 +753,13 @@ function App() {
           },
           handleActivatePet,
           handleFeedPet,
+          handleBatchFeedItems,
           handleEvolvePet,
           handleDraw,
           handleUpdateSettings,
           handleBuyItem,
           handleSellItem,
+          handleRefreshShop,
         }}
       />
     </>

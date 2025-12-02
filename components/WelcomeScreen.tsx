@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sparkles, Play } from 'lucide-react';
+import logo from '../assets/images/logo.png';
 
 interface Props {
   hasSave: boolean;
@@ -16,80 +17,80 @@ const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
       </div>
 
       {/* 主要内容区域 */}
-      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full p-4 md:p-8">
+      <div className="relative z-10 flex flex-col items-center justify-center w-full h-full p-3 sm:p-4 md:p-6 lg:p-8">
         {/* Logo 图片 */}
-        <div className="mb-8 md:mb-12 animate-fade-in">
+        <div className="mb-4 sm:mb-6 md:mb-8 lg:mb-12 animate-fade-in">
           <div className="relative">
             <img
-              src="/assets/images/logo.png"
+              src={logo}
               alt="云灵修仙传"
-              className="max-w-[90vw] max-h-[50vh] md:max-w-[600px] md:max-h-[400px] object-contain drop-shadow-2xl relative z-10 animate-glow-pulse"
+              className="w-[70vw] max-w-[280px] sm:w-[60vw] sm:max-w-[400px] md:max-w-[500px] lg:max-w-[600px] h-auto max-h-[30vh] sm:max-h-[35vh] md:max-h-[40vh] lg:max-h-[400px] object-contain drop-shadow-2xl relative z-10 animate-glow-pulse"
             />
             {/* 光晕效果 */}
             <div
-              className="absolute inset-0 -z-0 blur-3xl opacity-30 animate-glow-pulse"
+              className="absolute inset-0 -z-0 blur-2xl sm:blur-3xl opacity-20 sm:opacity-30 animate-glow-pulse"
               style={{
                 background: 'radial-gradient(circle, rgba(203, 161, 53, 0.6) 0%, transparent 70%)',
-                transform: 'scale(1.5)',
+                transform: 'scale(1.3)',
               }}
             />
           </div>
         </div>
 
         {/* 游戏标题 */}
-        <div className="text-center mb-8 md:mb-12 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-serif font-bold text-mystic-gold tracking-widest mb-3 md:mb-4 drop-shadow-lg">
+        <div className="text-center mb-4 sm:mb-6 md:mb-8 lg:mb-12 px-4 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-serif font-bold text-mystic-gold tracking-wide sm:tracking-wider md:tracking-widest mb-2 sm:mb-3 md:mb-4 drop-shadow-lg">
             云灵修仙传
           </h1>
-          <p className="text-stone-400 text-base md:text-xl lg:text-2xl font-light">
+          <p className="text-stone-400 text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl font-light px-2">
             踏上你的长生之路
           </p>
         </div>
 
         {/* 游戏按钮 */}
-        <div className="animate-fade-in flex flex-col gap-3 md:gap-4 w-full max-w-md" style={{ animationDelay: '0.4s' }}>
+        <div className="animate-fade-in flex flex-col gap-2 sm:gap-3 md:gap-4 w-full max-w-xs sm:max-w-sm md:max-w-md px-4 sm:px-0" style={{ animationDelay: '0.4s' }}>
           {hasSave ? (
             // 有存档：显示继续游戏和新游戏按钮
             <>
               <button
                 onClick={onContinue}
-                className="group relative px-8 md:px-12 py-4 md:py-5 bg-gradient-to-r from-mystic-jade to-green-600 text-stone-900 font-bold text-lg md:text-xl rounded-lg transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 active:scale-95 flex items-center justify-center gap-3 min-h-[60px] md:min-h-[70px] touch-manipulation overflow-hidden"
+                className="group relative px-4 sm:px-6 md:px-8 lg:px-12 py-3 sm:py-3.5 md:py-4 lg:py-5 bg-gradient-to-r from-mystic-jade to-green-600 text-stone-900 font-bold text-sm sm:text-base md:text-lg lg:text-xl rounded-lg transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 active:scale-95 flex items-center justify-center gap-2 sm:gap-3 min-h-[50px] sm:min-h-[55px] md:min-h-[60px] lg:min-h-[70px] touch-manipulation overflow-hidden"
               >
                 {/* 按钮光效 */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
 
-                <Play size={24} className="md:w-7 md:h-7 relative z-10" />
-                <span className="relative z-10">继续游戏</span>
+                <Play size={20} className="sm:w-6 sm:h-6 md:w-7 md:h-7 relative z-10 flex-shrink-0" />
+                <span className="relative z-10 whitespace-nowrap">继续游戏</span>
               </button>
               <button
                 onClick={onStart}
-                className="group relative px-8 md:px-12 py-4 md:py-5 bg-gradient-to-r from-stone-600 to-stone-700 text-stone-200 font-bold text-base md:text-lg rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 flex items-center justify-center gap-3 min-h-[50px] md:min-h-[60px] touch-manipulation overflow-hidden border border-stone-500"
+                className="group relative px-4 sm:px-6 md:px-8 lg:px-12 py-2.5 sm:py-3 md:py-4 lg:py-5 bg-gradient-to-r from-stone-600 to-stone-700 text-stone-200 font-bold text-xs sm:text-sm md:text-base lg:text-lg rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 flex items-center justify-center gap-2 sm:gap-3 min-h-[45px] sm:min-h-[50px] md:min-h-[55px] lg:min-h-[60px] touch-manipulation overflow-hidden border border-stone-500"
               >
                 {/* 按钮光效 */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
 
-                <Sparkles size={20} className="md:w-6 md:h-6 relative z-10" />
-                <span className="relative z-10">新游戏</span>
+                <Sparkles size={18} className="sm:w-5 sm:h-5 md:w-6 md:h-6 relative z-10 flex-shrink-0" />
+                <span className="relative z-10 whitespace-nowrap">新游戏</span>
               </button>
             </>
           ) : (
             // 没有存档：显示开始游戏按钮
             <button
               onClick={onStart}
-              className="group relative px-8 md:px-12 py-4 md:py-5 bg-gradient-to-r from-mystic-gold to-yellow-600 text-stone-900 font-bold text-lg md:text-xl rounded-lg transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 active:scale-95 flex items-center justify-center gap-3 min-h-[60px] md:min-h-[70px] touch-manipulation overflow-hidden"
+              className="group relative px-4 sm:px-6 md:px-8 lg:px-12 py-3 sm:py-3.5 md:py-4 lg:py-5 bg-gradient-to-r from-mystic-gold to-yellow-600 text-stone-900 font-bold text-sm sm:text-base md:text-lg lg:text-xl rounded-lg transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 active:scale-95 flex items-center justify-center gap-2 sm:gap-3 min-h-[50px] sm:min-h-[55px] md:min-h-[60px] lg:min-h-[70px] touch-manipulation overflow-hidden"
             >
               {/* 按钮光效 */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
 
-              <Sparkles size={24} className="md:w-7 md:h-7 relative z-10" />
-              <span className="relative z-10">开始游戏</span>
+              <Sparkles size={20} className="sm:w-6 sm:h-6 md:w-7 md:h-7 relative z-10 flex-shrink-0" />
+              <span className="relative z-10 whitespace-nowrap">开始游戏</span>
             </button>
           )}
         </div>
 
         {/* 底部装饰文字 */}
-        <div className="absolute bottom-8 md:bottom-12 left-0 right-0 text-center animate-fade-in" style={{ animationDelay: '0.6s' }}>
-          <p className="text-stone-500 text-xs md:text-sm">
+        <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 lg:bottom-12 left-0 right-0 text-center animate-fade-in px-4" style={{ animationDelay: '0.6s' }}>
+          <p className="text-stone-500 text-[10px] sm:text-xs md:text-sm">
             探索无尽的修仙世界
           </p>
         </div>

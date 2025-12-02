@@ -7,24 +7,55 @@
 在项目根目录创建 `.env.local` 文件：
 
 ```bash
-# 选择 AI 提供商（siliconflow | openai | custom）
-VITE_AI_PROVIDER=siliconflow
+# 选择 AI 提供商（glm | siliconflow | openai | custom）
+VITE_AI_PROVIDER=glm
 
 # 设置 API Key（必需）
 VITE_AI_KEY=your-api-key-here
 
 # 可选：自定义模型
-VITE_AI_MODEL=Qwen/Qwen2.5-72B-Instruct
+VITE_AI_MODEL=glm-4.5
 
 # 可选：自定义 API URL（如果设置则覆盖提供商默认 URL）
 # VITE_AI_API_URL=https://api.siliconflow.cn/v1/chat/completions
 
 # 可选：是否通过 /api 代理
 # 未设置时：开发环境默认 true，生产环境默认 false
-# 显式设置为 true 可在 Vercel 等环境走 /api 代理
-# 显式设置为 false 则无论环境都直连远程 API
+# 显式设置为 true 可在 Vercel 等环境走 /api 代理（推荐：API Key 不会暴露给前端）
+# 显式设置为 false 则无论环境都直连远程 API（API Key 会在前端请求头中可见）
 # VITE_AI_USE_PROXY=true
 ```
+
+## 🔐 API Key 安全机制
+
+### 使用代理模式（推荐，默认）
+
+当 `VITE_AI_USE_PROXY=true`（开发环境默认）或使用 Vercel 等生产环境时：
+
+- ✅ **API Key 安全**：API Key 只在服务器端使用，不会暴露给前端
+- ✅ **前端请求**：前端不发送 Authorization 头，API Key 完全隐藏
+- ✅ **服务器端处理**：代理服务器从环境变量读取 API Key 并添加到请求头
+- ✅ **生产环境**：在 Vercel 等平台部署时，需要在平台的环境变量中配置 `VITE_AI_KEY`
+
+**工作原理**：
+```
+前端请求 → /api/proxy（不包含 API Key）
+         ↓
+服务器端代理 → 从环境变量读取 API Key → AI 服务
+```
+
+### 直连模式（不推荐）
+
+当 `VITE_AI_USE_PROXY=false` 时：
+
+- ⚠️ **API Key 暴露**：API Key 会在前端请求头中可见
+- ⚠️ **安全风险**：任何人都可以在浏览器开发者工具中查看 API Key
+- ⚠️ **仅限开发**：仅建议在本地开发且 API 支持 CORS 时使用
+
+**重要提示**：
+- 🚨 **生产环境必须使用代理模式**，确保 API Key 安全
+- 🚨 **不要在代码中硬编码 API Key**
+- 🚨 **不要将 `.env.local` 文件提交到 Git**
 
 ### 2. 重启开发服务器
 
@@ -34,7 +65,26 @@ pnpm dev
 
 ## 支持的提供商
 
-### SiliconFlow（推荐）
+### GLM (智谱AI) - 默认推荐
+
+**配置**:
+
+```bash
+VITE_AI_PROVIDER=glm
+VITE_AI_KEY=your-glm-api-key
+VITE_AI_MODEL=glm-4.5
+```
+
+**获取 API Key**: https://open.bigmodel.cn
+
+**特点**:
+
+- 国内访问速度快
+- 支持 GLM-4.5 等高质量模型
+- API 兼容 OpenAI 格式
+- 适合中文场景
+
+### SiliconFlow
 
 **配置**:
 
@@ -155,28 +205,34 @@ console.log('AI Config:', window.__AI_CONFIG__);
 使用 curl 测试：
 
 ```bash
-# 开发环境（通过代理）
+# 开发环境（通过代理，不需要 Authorization 头，由服务器端处理）
 curl 'http://localhost:5173/api/v1/chat/completions' \
-  -H 'Authorization: Bearer your-api-key' \
   -H 'Content-Type: application/json' \
   -d '{"model":"Qwen/Qwen2.5-72B-Instruct","messages":[{"role":"user","content":"Hello"}]}'
 
-# 直接请求（如果 API 支持 CORS）
+# 直接请求（如果 API 支持 CORS，需要 Authorization 头）
 curl 'https://api.siliconflow.cn/v1/chat/completions' \
   -H 'Authorization: Bearer your-api-key' \
   -H 'Content-Type: application/json' \
   -d '{"model":"Qwen/Qwen2.5-72B-Instruct","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
+**注意**：使用代理时，前端请求不需要（也不应该）包含 Authorization 头，API Key 由服务器端自动添加。
+
 ## 切换提供商
 
 只需修改 `.env.local` 文件：
 
 ```bash
-# 从 SiliconFlow 切换到 OpenAI
+# 从 GLM 切换到 OpenAI
 VITE_AI_PROVIDER=openai
 VITE_AI_KEY=sk-your-openai-key
 VITE_AI_MODEL=gpt-3.5-turbo
+
+# 或切换到 SiliconFlow
+VITE_AI_PROVIDER=siliconflow
+VITE_AI_KEY=your-siliconflow-key
+VITE_AI_MODEL=Qwen/Qwen2.5-72B-Instruct
 ```
 
 然后重启开发服务器。

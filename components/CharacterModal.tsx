@@ -1,12 +1,14 @@
-import React from 'react';
-import { X, Star, Award } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Star, Award, Info, RotateCcw } from 'lucide-react';
 import { PlayerStats, Talent, Title } from '../types';
 import {
   TALENTS,
   TITLES,
   RARITY_MULTIPLIERS,
   ACHIEVEMENTS,
+  CULTIVATION_ARTS,
 } from '../constants';
+import { getItemStats } from '../utils/itemUtils';
 
 interface Props {
   isOpen: boolean;
@@ -14,8 +16,11 @@ interface Props {
   player: PlayerStats;
   onSelectTalent: (talentId: string) => void;
   onSelectTitle: (titleId: string) => void;
-  onAllocateAttribute: (type: 'attack' | 'defense' | 'hp') => void;
+  onAllocateAttribute: (
+    type: 'attack' | 'defense' | 'hp' | 'spirit' | 'physique' | 'speed'
+  ) => void;
   onUseInheritance?: () => void;
+  onResetAttributes?: () => void;
 }
 
 const CharacterModal: React.FC<Props> = ({
@@ -26,11 +31,108 @@ const CharacterModal: React.FC<Props> = ({
   onSelectTitle,
   onAllocateAttribute,
   onUseInheritance,
+  onResetAttributes,
 }) => {
   if (!isOpen) return null;
 
+  const [showAttributeDetails, setShowAttributeDetails] = useState(false);
   const currentTalent = TALENTS.find((t) => t.id === player.talentId);
   const currentTitle = TITLES.find((t) => t.id === player.titleId);
+
+  // 计算属性来源
+  const calculateAttributeSources = () => {
+    const baseStats = {
+      attack: 0,
+      defense: 0,
+      hp: 0,
+      spirit: 0,
+      physique: 0,
+      speed: 0,
+    };
+
+    // 天赋加成
+    if (currentTalent) {
+      baseStats.attack += currentTalent.effects.attack || 0;
+      baseStats.defense += currentTalent.effects.defense || 0;
+      baseStats.hp += currentTalent.effects.hp || 0;
+      baseStats.spirit += currentTalent.effects.spirit || 0;
+      baseStats.physique += currentTalent.effects.physique || 0;
+      baseStats.speed += currentTalent.effects.speed || 0;
+    }
+
+    // 称号加成
+    if (currentTitle) {
+      baseStats.attack += currentTitle.effects.attack || 0;
+      baseStats.defense += currentTitle.effects.defense || 0;
+      baseStats.hp += currentTitle.effects.hp || 0;
+      baseStats.spirit += currentTitle.effects.spirit || 0;
+      baseStats.physique += currentTitle.effects.physique || 0;
+      baseStats.speed += currentTitle.effects.speed || 0;
+    }
+
+    // 功法加成
+    let artStats = {
+      attack: 0,
+      defense: 0,
+      hp: 0,
+      spirit: 0,
+      physique: 0,
+      speed: 0,
+    };
+    player.cultivationArts.forEach((artId) => {
+      const art = CULTIVATION_ARTS.find((a) => a.id === artId);
+      if (art) {
+        artStats.attack += art.effects.attack || 0;
+        artStats.defense += art.effects.defense || 0;
+        artStats.hp += art.effects.hp || 0;
+        artStats.spirit += art.effects.spirit || 0;
+        artStats.physique += art.effects.physique || 0;
+        artStats.speed += art.effects.speed || 0;
+      }
+    });
+
+    // 装备加成
+    let equipmentStats = {
+      attack: 0,
+      defense: 0,
+      hp: 0,
+      spirit: 0,
+      physique: 0,
+      speed: 0,
+    };
+    Object.values(player.equippedItems).forEach((itemId) => {
+      const equippedItem = player.inventory.find((i) => i.id === itemId);
+      if (equippedItem && equippedItem.effect) {
+        const isNatal = equippedItem.id === player.natalArtifactId;
+        const itemStats = getItemStats(equippedItem, isNatal);
+        equipmentStats.attack += itemStats.attack;
+        equipmentStats.defense += itemStats.defense;
+        equipmentStats.hp += itemStats.hp;
+        equipmentStats.spirit += itemStats.spirit;
+        equipmentStats.physique += itemStats.physique;
+        equipmentStats.speed += itemStats.speed;
+      }
+    });
+
+    return {
+      base: baseStats,
+      talent: baseStats,
+      title: currentTitle
+        ? {
+            attack: currentTitle.effects.attack || 0,
+            defense: currentTitle.effects.defense || 0,
+            hp: currentTitle.effects.hp || 0,
+            spirit: currentTitle.effects.spirit || 0,
+            physique: currentTitle.effects.physique || 0,
+            speed: currentTitle.effects.speed || 0,
+          }
+        : { attack: 0, defense: 0, hp: 0, spirit: 0, physique: 0, speed: 0 },
+      art: artStats,
+      equipment: equipmentStats,
+    };
+  };
+
+  const attributeSources = calculateAttributeSources();
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
@@ -88,6 +190,88 @@ const CharacterModal: React.FC<Props> = ({
             </div>
           )}
 
+          {/* 属性详情面板 */}
+          <div className="bg-stone-900 rounded p-4 border border-stone-700">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <Info className="text-blue-400" size={20} />
+                角色属性
+              </h3>
+              <button
+                onClick={() => setShowAttributeDetails(!showAttributeDetails)}
+                className="text-xs text-stone-400 hover:text-stone-300"
+              >
+                {showAttributeDetails ? '隐藏详情' : '显示详情'}
+              </button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+              <div>
+                <span className="text-stone-400">攻击:</span>{' '}
+                <span className="text-red-400 font-bold">{player.attack}</span>
+              </div>
+              <div>
+                <span className="text-stone-400">防御:</span>{' '}
+                <span className="text-blue-400 font-bold">{player.defense}</span>
+              </div>
+              <div>
+                <span className="text-stone-400">气血:</span>{' '}
+                <span className="text-green-400 font-bold">
+                  {player.hp}/{player.maxHp}
+                </span>
+              </div>
+              <div>
+                <span className="text-stone-400">神识:</span>{' '}
+                <span className="text-purple-400 font-bold">{player.spirit}</span>
+              </div>
+              <div>
+                <span className="text-stone-400">体魄:</span>{' '}
+                <span className="text-orange-400 font-bold">
+                  {player.physique}
+                </span>
+              </div>
+              <div>
+                <span className="text-stone-400">速度:</span>{' '}
+                <span className="text-yellow-400 font-bold">{player.speed}</span>
+              </div>
+            </div>
+            {showAttributeDetails && (
+              <div className="mt-3 pt-3 border-t border-stone-700 text-xs space-y-1">
+                <div className="text-stone-500 mb-2">属性来源分解:</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <span className="text-stone-400">基础:</span> 攻击{' '}
+                    {attributeSources.base.attack}, 防御{' '}
+                    {attributeSources.base.defense}, 气血{' '}
+                    {attributeSources.base.hp}
+                  </div>
+                  <div>
+                    <span className="text-stone-400">天赋:</span> 攻击{' '}
+                    {currentTalent?.effects.attack || 0}, 防御{' '}
+                    {currentTalent?.effects.defense || 0}, 气血{' '}
+                    {currentTalent?.effects.hp || 0}
+                  </div>
+                  <div>
+                    <span className="text-stone-400">称号:</span> 攻击{' '}
+                    {attributeSources.title.attack}, 防御{' '}
+                    {attributeSources.title.defense}, 气血{' '}
+                    {attributeSources.title.hp}
+                  </div>
+                  <div>
+                    <span className="text-stone-400">功法:</span> 攻击{' '}
+                    {attributeSources.art.attack}, 防御{' '}
+                    {attributeSources.art.defense}, 气血 {attributeSources.art.hp}
+                  </div>
+                  <div>
+                    <span className="text-stone-400">装备:</span> 攻击{' '}
+                    {attributeSources.equipment.attack}, 防御{' '}
+                    {attributeSources.equipment.defense}, 气血{' '}
+                    {attributeSources.equipment.hp}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* 属性点分配 */}
           {player.attributePoints > 0 && (
             <div className="bg-stone-900 rounded p-4 border border-stone-700">
@@ -95,24 +279,42 @@ const CharacterModal: React.FC<Props> = ({
                 <Star className="text-yellow-400" size={20} />
                 可分配属性点: {player.attributePoints}
               </h3>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 <button
                   onClick={() => onAllocateAttribute('attack')}
-                  className="px-4 py-2 bg-red-900 hover:bg-red-800 rounded border border-red-700"
+                  className="px-3 py-2 text-sm bg-red-900 hover:bg-red-800 rounded border border-red-700"
                 >
                   攻击 +5
                 </button>
                 <button
                   onClick={() => onAllocateAttribute('defense')}
-                  className="px-4 py-2 bg-blue-900 hover:bg-blue-800 rounded border border-blue-700"
+                  className="px-3 py-2 text-sm bg-blue-900 hover:bg-blue-800 rounded border border-blue-700"
                 >
                   防御 +3
                 </button>
                 <button
                   onClick={() => onAllocateAttribute('hp')}
-                  className="px-4 py-2 bg-green-900 hover:bg-green-800 rounded border border-green-700"
+                  className="px-3 py-2 text-sm bg-green-900 hover:bg-green-800 rounded border border-green-700"
                 >
                   气血 +20
+                </button>
+                <button
+                  onClick={() => onAllocateAttribute('spirit')}
+                  className="px-3 py-2 text-sm bg-purple-900 hover:bg-purple-800 rounded border border-purple-700"
+                >
+                  神识 +3
+                </button>
+                <button
+                  onClick={() => onAllocateAttribute('physique')}
+                  className="px-3 py-2 text-sm bg-orange-900 hover:bg-orange-800 rounded border border-orange-700"
+                >
+                  体魄 +3
+                </button>
+                <button
+                  onClick={() => onAllocateAttribute('speed')}
+                  className="px-3 py-2 text-sm bg-yellow-900 hover:bg-yellow-800 rounded border border-yellow-700"
+                >
+                  速度 +2
                 </button>
               </div>
             </div>

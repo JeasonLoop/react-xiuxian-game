@@ -18,6 +18,7 @@ const aiConfig = getAIConfig();
 const API_URL = aiConfig.apiUrl;
 const API_MODEL = aiConfig.model;
 const API_KEY = aiConfig.apiKey;
+const USE_PROXY = aiConfig.useProxy;
 
 // 验证配置
 const validation = validateAIConfig(aiConfig);
@@ -96,17 +97,26 @@ const parseMessageContent = (content: unknown): string => {
   return '';
 };
 
-const requestSpark = async (messages: ChatMessage[], temperature = 0.8) => {
-  if (!API_KEY) {
+const requestModel = async (messages: ChatMessage[], temperature = 0.8) => {
+  // 如果使用代理，API Key 在服务器端处理，前端不需要发送
+  // 如果不使用代理，需要检查 API Key 是否存在
+  if (!USE_PROXY && !API_KEY) {
     throw new Error('AI API key is missing');
+  }
+
+  // 构建请求头：使用代理时不发送 Authorization（由服务器端处理）
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  // 只有在不使用代理时才在前端添加 Authorization 头
+  if (!USE_PROXY && API_KEY) {
+    headers.Authorization = `Bearer ${API_KEY}`;
   }
 
   const response = await fetch(API_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${API_KEY}`,
-    },
+    headers,
     body: JSON.stringify({
       model: API_MODEL,
       messages,
@@ -447,7 +457,7 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
       如果获得物品，请设定合理的属性加成和稀有度。
     `;
 
-    const resultText = await requestSpark(
+    const resultText = await requestModel(
       [
         {
           role: 'system',
@@ -613,38 +623,107 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
   }
 };
 
+// 突破描述模板库 - 按境界渐进式描述
+const BREAKTHROUGH_DESCRIPTIONS: Record<string, Array<(playerName: string, realm: string) => string>> = {
+  // 炼气期 - 入门阶段，描述简单朴实
+  '炼气期': [
+    (playerName: string, realm: string) => `${playerName}盘膝而坐，按照基础功法运转，体内微弱的灵气开始流动。随着灵气的积累，${playerName}感受到瓶颈的松动，成功突破到了${realm}！`,
+    (playerName: string, realm: string) => `${playerName}静心凝神，引导体内稀薄的灵气冲击经脉。经过一番努力，灵气终于冲破阻碍，${playerName}成功踏入了${realm}的境界！`,
+    (playerName: string, realm: string) => `${playerName}日复一日地修炼，体内灵气逐渐充盈。终于，在某个时刻，${playerName}感受到境界的突破，成功达到了${realm}！`,
+    (playerName: string, realm: string) => `${playerName}运转基础心法，灵气在经脉中缓缓流动。随着修炼的深入，${playerName}成功突破了瓶颈，踏入了${realm}的境界！`,
+    (playerName: string, realm: string) => `${playerName}在修炼中感受到灵气的增长，体内传来轻微的震动。经过不懈努力，${playerName}成功突破到了${realm}，修为略有精进！`,
+  ],
+
+  // 筑基期 - 奠定基础，描述开始有气势
+  '筑基期': [
+    (playerName: string, realm: string) => `${playerName}盘膝而坐，运转功法，体内灵气如溪流般汇聚。随着灵气的不断积累，${playerName}感受到根基的稳固，成功突破到了${realm}！周身灵气翻涌，实力明显提升。`,
+    (playerName: string, realm: string) => `天地灵气缓缓汇聚，${playerName}闭目凝神，引导灵气冲击瓶颈。经脉中传来阵阵轻响，如细流汇入江河。终于，${playerName}突破了桎梏，踏入了${realm}的境界！`,
+    (playerName: string, realm: string) => `${playerName}静坐修炼，周身泛起淡淡光华。体内灵气核心开始凝聚，灵气如泉水般涌入。伴随着一声轻喝，${playerName}成功突破到了${realm}，修为稳步提升！`,
+    (playerName: string, realm: string) => `${playerName}运转心法，体内灵气如江河般奔腾不息。经脉在灵气的滋养下不断强化，最终突破了瓶颈。${playerName}成功踏入了${realm}的境界，根基更加稳固！`,
+    (playerName: string, realm: string) => `${playerName}闭关修炼，日复一日地积累修为。终于，在某个清晨，${playerName}感受到瓶颈松动。全力冲击之下，${playerName}成功突破到了${realm}，出关时已是另一番天地！`,
+  ],
+
+  // 金丹期 - 凝聚金丹，描述更加宏大
+  '金丹期': [
+    (playerName: string, realm: string) => `${playerName}盘膝而坐，运转功法，体内灵气如江河般奔腾不息。随着一声轻喝，瓶颈应声而破，${playerName}成功突破到了${realm}！周身灵气翻涌，实力大增。`,
+    (playerName: string, realm: string) => `天地灵气汇聚，${playerName}闭目凝神，引导灵气冲击瓶颈。经脉中传来阵阵轰鸣，如雷鸣般震撼。终于，${playerName}突破了桎梏，踏入了${realm}的境界！`,
+    (playerName: string, realm: string) => `${playerName}静坐洞府，周身霞光万丈。体内灵气核心剧烈震动，灵气如潮水般涌入。伴随着一声长啸，${playerName}成功突破到了${realm}，修为突飞猛进！`,
+    (playerName: string, realm: string) => `${playerName}运转心法，体内灵气如火山爆发般喷涌而出。经脉在灵气的冲击下不断扩张，最终突破了瓶颈。${playerName}成功踏入了${realm}的境界，周身气息更加深邃。`,
+    (playerName: string, realm: string) => `${playerName}服下灵丹，药力在体内化开。配合功法运转，${playerName}引导药力冲击瓶颈。在灵丹的辅助下，${playerName}成功突破到了${realm}，修为精进！`,
+  ],
+
+  // 元婴期 - 元婴出窍，描述更加神秘
+  '元婴期': [
+    (playerName: string, realm: string) => `天地异象显现，${playerName}周身环绕着五彩霞光。体内灵气如龙蛇般游走，不断冲击着境界壁垒。终于，壁垒破碎，${playerName}成功突破到了${realm}，实力暴涨！`,
+    (playerName: string, realm: string) => `${playerName}深入秘境，寻得一处灵脉。盘坐于灵脉之上，${playerName}运转功法，疯狂吸收天地灵气。随着灵气的不断涌入，${playerName}成功突破到了${realm}的境界！`,
+    (playerName: string, realm: string) => `月夜之下，${playerName}立于山巅，引动天地灵气。星辰之力汇聚而来，化作一道光柱直冲云霄。${playerName}在灵气的洗礼下，成功突破到了${realm}，实力更上一层楼！`,
+    (playerName: string, realm: string) => `${playerName}在战斗中感悟，生死搏杀中激发潜能。战斗中积累的感悟如潮水般涌来，${playerName}在战斗中突破，成功踏入了${realm}的境界！`,
+    (playerName: string, realm: string) => `天地震动，${playerName}在突破的瞬间，体内传来阵阵龙吟。灵气如真龙般在经脉中游走，最终冲破桎梏。${playerName}成功突破到了${realm}，龙威显现！`,
+  ],
+
+  // 化神期 - 神识化神，描述更加超凡
+  '化神期': [
+    (playerName: string, realm: string) => `雷声轰鸣，${playerName}在雷劫中淬炼己身。天雷之力不断轰击，却无法撼动${playerName}的意志。最终，${playerName}在雷劫中涅槃重生，成功突破到了${realm}！`,
+    (playerName: string, realm: string) => `星辰之力降临，${playerName}沐浴在星光之中。体内灵气与星辰之力交融，不断淬炼着肉身和神魂。最终，${playerName}在星辰之力的帮助下，成功突破到了${realm}！`,
+    (playerName: string, realm: string) => `生死之间，${playerName}在绝境中领悟大道。体内灵气在生死边缘爆发，如凤凰涅槃般重生。${playerName}在绝境中突破，成功踏入了${realm}的境界！`,
+    (playerName: string, realm: string) => `${playerName}寻得一处上古遗迹，在其中获得了传承。传承之力在体内爆发，${playerName}借助传承之力冲击瓶颈。在传承的帮助下，${playerName}成功突破到了${realm}的境界！`,
+    (playerName: string, realm: string) => `天地变色，${playerName}周身环绕着强大的威压。神识如实质般显现，不断冲击着境界壁垒。终于，${playerName}的神识突破桎梏，成功踏入了${realm}的境界！`,
+  ],
+
+  // 炼虚期 - 虚空炼体，描述接近仙人
+  '炼虚期': [
+    (playerName: string, realm: string) => `虚空震动，${playerName}在虚空中淬炼己身。空间之力不断撕扯着肉身，却无法撼动${playerName}的意志。最终，${playerName}在虚空中涅槃重生，成功突破到了${realm}！`,
+    (playerName: string, realm: string) => `天地法则显现，${playerName}周身环绕着法则之力。体内灵气与法则交融，不断淬炼着肉身和神魂。最终，${playerName}在法则的帮助下，成功突破到了${realm}！`,
+    (playerName: string, realm: string) => `九天神雷降临，${playerName}在雷劫中淬炼己身。天雷之力不断轰击，却无法撼动${playerName}的意志。最终，${playerName}在雷劫中涅槃重生，成功突破到了${realm}！`,
+    (playerName: string, realm: string) => `天地异象显现，${playerName}周身环绕着仙光。体内灵气如仙气般流转，不断冲击着境界壁垒。终于，壁垒破碎，${playerName}成功突破到了${realm}，实力暴涨！`,
+    (playerName: string, realm: string) => `${playerName}在虚空中感悟，空间之力不断涌入体内。肉身在空间之力的淬炼下不断强化，最终突破了瓶颈。${playerName}成功踏入了${realm}的境界，接近仙人！`,
+  ],
+
+  // 渡劫飞升 - 成仙之路，描述最为宏大
+  '渡劫飞升': [
+    (playerName: string, realm: string) => `九天之上，雷劫降临！${playerName}在九重天劫中淬炼己身。天雷之力不断轰击，却无法撼动${playerName}的意志。最终，${playerName}在雷劫中涅槃重生，成功突破到了${realm}！`,
+    (playerName: string, realm: string) => `天地法则显现，${playerName}周身环绕着仙光。体内灵气如仙气般流转，不断冲击着境界壁垒。终于，壁垒破碎，${playerName}成功突破到了${realm}，实力暴涨！`,
+    (playerName: string, realm: string) => `虚空震动，${playerName}在虚空中感悟大道。空间之力不断涌入体内，肉身在空间之力的淬炼下不断强化。最终，${playerName}成功踏入了${realm}的境界，成仙之路已开启！`,
+    (playerName: string, realm: string) => `九天神雷降临，${playerName}在雷劫中淬炼己身。天雷之力不断轰击，却无法撼动${playerName}的意志。最终，${playerName}在雷劫中涅槃重生，成功突破到了${realm}！`,
+    (playerName: string, realm: string) => `天地异象显现，${playerName}周身环绕着仙光。体内灵气如仙气般流转，不断冲击着境界壁垒。终于，壁垒破碎，${playerName}成功突破到了${realm}，成仙之路已开启！`,
+  ],
+};
+
 export const generateBreakthroughFlavorText = async (
   realm: string,
-  success: boolean
+  success: boolean,
+  playerName?: string,
+  currentRealm?: string
 ): Promise<string> => {
-  if (!API_KEY) return success ? '突破成功！' : '突破失败！';
-
-  try {
-    const prompt = `
-      描述一名修仙者尝试突破到 ${realm} 的过程。
-      结果：${success ? '成功' : '失败'}。
-      请保持简短（不超过2句话），使用玄幻、仙侠风格，提及灵气涌动、经脉或天劫等元素。
-      请使用中文输出。
-    `;
-
-    const content = await requestSpark(
-      [
-        {
-          role: 'system',
-          content: '你是仙侠小说作家，擅长以唯美中文描绘修仙突破场景。',
-        },
-        { role: 'user', content: prompt },
-      ],
-      0.8
-    );
-
-    return (
-      content.trim() ||
-      (success ? '天地震动，你成功突破瓶颈！' : '你气血翻涌，突破失败了。')
-    );
-  } catch (e) {
-    return success ? '突破成功！' : '突破失败！';
+  if (!success) {
+    // 失败描述也根据境界区分
+    if (currentRealm === '渡劫飞升' || currentRealm === '炼虚期') {
+      return playerName
+        ? `${playerName}尝试冲击瓶颈，奈何天劫之力过于强大，惨遭反噬！修为大损，需要重新积累。`
+        : '你尝试冲击瓶颈，奈何天劫之力过于强大，惨遭反噬！修为大损，需要重新积累。';
+    } else if (currentRealm === '化神期' || currentRealm === '元婴期') {
+      return playerName
+        ? `${playerName}尝试冲击瓶颈，奈何根基不稳，神识受损，惨遭反噬！`
+        : '你尝试冲击瓶颈，奈何根基不稳，神识受损，惨遭反噬！';
+    } else {
+      return playerName
+        ? `${playerName}尝试冲击瓶颈，奈何根基不稳，惨遭反噬！`
+        : '你尝试冲击瓶颈，奈何根基不稳，惨遭反噬！';
+    }
   }
+
+  // 根据目标境界选择描述模板
+  // 如果 realm 包含"第 X 层"，则提取境界名称
+  const realmName = realm.includes('第') ? realm.split('第')[0].trim() : realm;
+
+  // 获取对应境界的描述模板，如果没有则使用通用描述
+  const descriptions = BREAKTHROUGH_DESCRIPTIONS[realmName] || BREAKTHROUGH_DESCRIPTIONS['金丹期'];
+
+  const randomIndex = Math.floor(Math.random() * descriptions.length);
+  const descriptionTemplate = descriptions[randomIndex];
+  const name = playerName || '你';
+
+  return descriptionTemplate(name, realm);
 };
 
 export const generateEnemyName = async (
@@ -684,7 +763,7 @@ export const generateEnemyName = async (
       只返回JSON，不要其他内容。
     `;
 
-    const content = await requestSpark(
+    const content = await requestModel(
       [
         {
           role: 'system',
