@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sparkles, Play } from 'lucide-react';
+import logo from '../assets/images/logo.png';
 
 interface Props {
   hasSave: boolean;
@@ -21,7 +22,7 @@ const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
         <div className="mb-4 sm:mb-6 md:mb-8 lg:mb-12 animate-fade-in">
           <div className="relative">
             <img
-              src="/assets/images/logo.png"
+              src={logo}
               alt="云灵修仙传"
               className="w-[70vw] max-w-[280px] sm:w-[60vw] sm:max-w-[400px] md:max-w-[500px] lg:max-w-[600px] h-auto max-h-[30vh] sm:max-h-[35vh] md:max-h-[40vh] lg:max-h-[400px] object-contain drop-shadow-2xl relative z-10 animate-glow-pulse"
             />
