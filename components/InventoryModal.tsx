@@ -24,7 +24,7 @@ interface Props {
   onUnrefineNatalArtifact?: () => void;
 }
 
-type ItemCategory = 'all' | 'equipment' | 'pill' | 'consumable';
+type ItemCategory = 'all' | 'equipment' | 'pill' | 'consumable' | 'recipe';
 
 // 物品项组件 - 使用 memo 优化性能
 interface InventoryItemProps {
@@ -202,7 +202,25 @@ const InventoryItem = memo<InventoryItemProps>(({
           <>
             {isEquipped ? (
               <button
-                onClick={() => onUnequipItem(item.equipmentSlot!)}
+                onClick={() => {
+                  // 找到实际装备的槽位
+                  let actualSlot: EquipmentSlot | null = null;
+                  if (item.type === ItemType.Ring) {
+                    const ringSlots = [EquipmentSlot.Ring1, EquipmentSlot.Ring2, EquipmentSlot.Ring3, EquipmentSlot.Ring4];
+                    actualSlot = ringSlots.find(slot => equippedItems[slot] === item.id) || null;
+                  } else if (item.type === ItemType.Accessory) {
+                    const accessorySlots = [EquipmentSlot.Accessory1, EquipmentSlot.Accessory2];
+                    actualSlot = accessorySlots.find(slot => equippedItems[slot] === item.id) || null;
+                  } else if (item.type === ItemType.Artifact) {
+                    const artifactSlots = [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2];
+                    actualSlot = artifactSlots.find(slot => equippedItems[slot] === item.id) || null;
+                  } else {
+                    actualSlot = item.equipmentSlot;
+                  }
+                  if (actualSlot) {
+                    onUnequipItem(actualSlot);
+                  }
+                }}
                 className="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-200 text-xs py-2 rounded transition-colors border border-stone-500"
               >
                 卸下
@@ -346,6 +364,9 @@ const InventoryModal: React.FC<Props> = ({
 
     // 判断物品分类
     const getItemCategory = (item: Item): ItemCategory => {
+      if (item.type === ItemType.Recipe) {
+        return 'recipe'; // 丹方单独分类
+      }
       if (item.isEquippable ||
           item.type === ItemType.Weapon ||
           item.type === ItemType.Armor ||
@@ -356,9 +377,6 @@ const InventoryModal: React.FC<Props> = ({
       }
       if (item.type === ItemType.Pill) {
         return 'pill';
-      }
-      if (item.type === ItemType.Recipe) {
-        return 'consumable'; // 丹方归类为消耗品
       }
       return 'consumable';
     };
@@ -662,6 +680,17 @@ const InventoryModal: React.FC<Props> = ({
                   } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
                 >
                   用品
+                </button>
+                <button
+                  onClick={() => handleCategoryChange('recipe')}
+                  disabled={isPending}
+                  className={`px-3 py-1.5 rounded text-sm border transition-colors ${
+                    selectedCategory === 'recipe'
+                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                  } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
+                >
+                  丹方
                 </button>
               </div>
               {/* 装备部位细分（仅在装备分类时显示） */}

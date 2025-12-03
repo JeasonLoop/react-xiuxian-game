@@ -81,11 +81,6 @@ const DebugModal: React.FC<Props> = ({
   );
   const [itemFilter, setItemFilter] = useState<ItemType | 'all'>('all');
 
-  // 当player变化时更新本地状态
-  useEffect(() => {
-    setLocalPlayer(player);
-  }, [player]);
-
   // 过滤装备
   const filteredEquipment = useMemo(() => {
     if (equipmentFilter === 'all') return EQUIPMENT_TEMPLATES;
@@ -209,10 +204,18 @@ const DebugModal: React.FC<Props> = ({
       effect: template.effect,
     };
 
-    setLocalPlayer((prev) => ({
-      ...prev,
-      inventory: [...prev.inventory, newItem],
-    }));
+    setLocalPlayer((prev) => {
+      const updated = {
+        ...prev,
+        inventory: [...prev.inventory, newItem],
+      };
+      // 立即更新到实际玩家状态
+      onUpdatePlayer({
+        inventory: updated.inventory,
+      });
+      return updated;
+    });
+    alert(`已添加装备：${template.name}`);
   };
 
   // 选择天赋
@@ -235,18 +238,32 @@ const DebugModal: React.FC<Props> = ({
     let luckChange =
       (newTalent.effects.luck || 0) - (oldTalent?.effects.luck || 0);
 
-    setLocalPlayer((prev) => ({
-      ...prev,
+    const updatedPlayer = {
+      ...localPlayer,
       talentId: talent.id,
-      attack: prev.attack + attackChange,
-      defense: prev.defense + defenseChange,
-      maxHp: prev.maxHp + hpChange,
-      hp: prev.hp + hpChange,
-      spirit: prev.spirit + spiritChange,
-      physique: prev.physique + physiqueChange,
-      speed: prev.speed + speedChange,
-      luck: prev.luck + luckChange,
-    }));
+      attack: localPlayer.attack + attackChange,
+      defense: localPlayer.defense + defenseChange,
+      maxHp: localPlayer.maxHp + hpChange,
+      hp: localPlayer.hp + hpChange,
+      spirit: localPlayer.spirit + spiritChange,
+      physique: localPlayer.physique + physiqueChange,
+      speed: localPlayer.speed + speedChange,
+      luck: localPlayer.luck + luckChange,
+    };
+    setLocalPlayer(updatedPlayer);
+    // 立即更新到实际玩家状态
+    onUpdatePlayer({
+      talentId: talent.id,
+      attack: updatedPlayer.attack,
+      defense: updatedPlayer.defense,
+      maxHp: updatedPlayer.maxHp,
+      hp: updatedPlayer.hp,
+      spirit: updatedPlayer.spirit,
+      physique: updatedPlayer.physique,
+      speed: updatedPlayer.speed,
+      luck: updatedPlayer.luck,
+    });
+    alert(`已选择天赋：${talent.name}`);
   };
 
   // 获取稀有度颜色
@@ -293,46 +310,86 @@ const DebugModal: React.FC<Props> = ({
       (newTitle.effects.defense || 0) - (oldTitle?.effects.defense || 0);
     let hpChange = (newTitle.effects.hp || 0) - (oldTitle?.effects.hp || 0);
 
-    setLocalPlayer((prev) => ({
-      ...prev,
+    const updatedPlayer = {
+      ...localPlayer,
       titleId: title.id,
-      attack: prev.attack + attackChange,
-      defense: prev.defense + defenseChange,
-      maxHp: prev.maxHp + hpChange,
-      hp: prev.hp + hpChange,
-    }));
+      attack: localPlayer.attack + attackChange,
+      defense: localPlayer.defense + defenseChange,
+      maxHp: localPlayer.maxHp + hpChange,
+      hp: localPlayer.hp + hpChange,
+    };
+    setLocalPlayer(updatedPlayer);
+    // 立即更新到实际玩家状态
+    onUpdatePlayer({
+      titleId: title.id,
+      attack: updatedPlayer.attack,
+      defense: updatedPlayer.defense,
+      maxHp: updatedPlayer.maxHp,
+      hp: updatedPlayer.hp,
+    });
+    alert(`已选择称号：${title.name}`);
   };
 
   // 学习功法
   const handleLearnCultivationArt = (art: CultivationArt) => {
     if (localPlayer.cultivationArts.includes(art.id)) {
+      alert('该功法已学习');
       return; // 已经学习过了
     }
-    setLocalPlayer((prev) => ({
-      ...prev,
-      cultivationArts: [...prev.cultivationArts, art.id],
-    }));
+    setLocalPlayer((prev) => {
+      const updated = {
+        ...prev,
+        cultivationArts: [...prev.cultivationArts, art.id],
+      };
+      // 立即更新到实际玩家状态
+      onUpdatePlayer({
+        cultivationArts: updated.cultivationArts,
+      });
+      return updated;
+    });
+    alert(`已学习功法：${art.name}`);
   };
 
   // 加入宗门
   const handleJoinSect = (sectId: string) => {
-    setLocalPlayer((prev) => ({
-      ...prev,
-      sectId: sectId,
-      sectRank: '外门' as any, // SectRank.Outer
-      sectContribution: 0,
-    }));
+    const sect = SECTS.find(s => s.id === sectId);
+    setLocalPlayer((prev) => {
+      const updated = {
+        ...prev,
+        sectId: sectId,
+        sectRank: '外门' as any, // SectRank.Outer
+        sectContribution: 0,
+      };
+      // 立即更新到实际玩家状态
+      onUpdatePlayer({
+        sectId: sectId,
+        sectRank: '外门' as any,
+        sectContribution: 0,
+      });
+      return updated;
+    });
+    alert(`已加入宗门：${sect?.name || sectId}`);
   };
 
   // 完成成就
   const handleCompleteAchievement = (achievementId: string) => {
     if (localPlayer.achievements.includes(achievementId)) {
+      alert('该成就已完成');
       return; // 已经完成了
     }
-    setLocalPlayer((prev) => ({
-      ...prev,
-      achievements: [...prev.achievements, achievementId],
-    }));
+    const achievement = ACHIEVEMENTS.find(a => a.id === achievementId);
+    setLocalPlayer((prev) => {
+      const updated = {
+        ...prev,
+        achievements: [...prev.achievements, achievementId],
+      };
+      // 立即更新到实际玩家状态
+      onUpdatePlayer({
+        achievements: updated.achievements,
+      });
+      return updated;
+    });
+    alert(`已完成成就：${achievement?.name || achievementId}`);
   };
 
   // 添加灵宠
@@ -351,10 +408,18 @@ const DebugModal: React.FC<Props> = ({
       affection: 50,
     };
 
-    setLocalPlayer((prev) => ({
-      ...prev,
-      pets: [...prev.pets, newPet],
-    }));
+    setLocalPlayer((prev) => {
+      const updated = {
+        ...prev,
+        pets: [...prev.pets, newPet],
+      };
+      // 立即更新到实际玩家状态
+      onUpdatePlayer({
+        pets: updated.pets,
+      });
+      return updated;
+    });
+    alert(`已添加灵宠：${template.name}`);
   };
 
   // 添加物品
@@ -371,21 +436,38 @@ const DebugModal: React.FC<Props> = ({
       permanentEffect: (itemTemplate as any).permanentEffect,
     };
 
-    setLocalPlayer((prev) => ({
-      ...prev,
-      inventory: [...prev.inventory, newItem],
-    }));
+    setLocalPlayer((prev) => {
+      const updated = {
+        ...prev,
+        inventory: [...prev.inventory, newItem],
+      };
+      // 立即更新到实际玩家状态
+      onUpdatePlayer({
+        inventory: updated.inventory,
+      });
+      return updated;
+    });
+    alert(`已添加物品：${newItem.name}`);
   };
 
   // 解锁丹方
   const handleUnlockRecipe = (recipeName: string) => {
     if (localPlayer.unlockedRecipes.includes(recipeName)) {
+      alert('该丹方已解锁');
       return; // 已经解锁了
     }
-    setLocalPlayer((prev) => ({
-      ...prev,
-      unlockedRecipes: [...prev.unlockedRecipes, recipeName],
-    }));
+    setLocalPlayer((prev) => {
+      const updated = {
+        ...prev,
+        unlockedRecipes: [...prev.unlockedRecipes, recipeName],
+      };
+      // 立即更新到实际玩家状态
+      onUpdatePlayer({
+        unlockedRecipes: updated.unlockedRecipes,
+      });
+      return updated;
+    });
+    alert(`已解锁丹方：${recipeName}`);
   };
 
   // 关闭调试模式
