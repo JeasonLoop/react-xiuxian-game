@@ -1731,9 +1731,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         description: '有助于凝结金丹的珍贵丹药',
         quantity: 1,
         rarity: '稀有',
-        effect: { exp: 30000, spirit: 20 }
-      }
-    }
+        effect: { exp: 30000, spirit: 20 },
+      },
+    },
   },
   {
     id: 'lottery-pill-soul',
@@ -1748,9 +1748,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         description: '能够凝聚神魂的珍贵丹药',
         quantity: 1,
         rarity: '传说',
-        effect: { exp: 10000, spirit: 50, hp: 300 }
-      }
-    }
+        effect: { exp: 10000, spirit: 50, hp: 300 },
+      },
+    },
   },
   {
     id: 'lottery-pill-dragon',
@@ -1865,9 +1865,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         type: ItemType.Material,
         description: '提高装备强化成功率的珍贵材料，每颗可提高10%成功率',
         quantity: 10,
-        rarity: '稀有'
-      }
-    }
+        rarity: '稀有',
+      },
+    },
   },
   {
     id: 'lottery-material-spirit',
@@ -2179,9 +2179,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '仙品',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Weapon,
-        effect: { attack: 3000, defense: 200, hp: 500, spirit: 100 }
-      }
-    }
+        effect: { attack: 3000, defense: 200, hp: 500, spirit: 100 },
+      },
+    },
   },
 
   // 普通奖励 - 装备（防具）
@@ -2354,7 +2354,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Ring1,
-        effect: { attack: 4, defense: 4 },
+        effect: { defense: 5 },
       },
     },
   },
@@ -2392,7 +2392,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '传说',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Ring1,
-        effect: { attack: 40, defense: 40, speed: 20, spirit: 30 },
+        effect: { attack: 40, defense: 40, speed: 20 },
       },
     },
   },
@@ -2411,26 +2411,26 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '仙品',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Ring1,
-        effect: { attack: 1000, defense: 1000, speed: 1000, spirit: 1000 }
-      }
-    }
+        effect: { attack: 1000, defense: 1000, speed: 1000, spirit: 1000 },
+      },
+    },
   },
   {
     id: 'lottery-accessory-protect',
     name: '护身符',
     type: 'item',
-    rarity: '稀有',
+    rarity: '普通',
     weight: 5,
     value: {
       item: {
         name: '护身符',
         type: ItemType.Accessory,
-        description: '仙门特制的护身符，提供强大的防护',
+        description: '普通的护身符，提供基础防护',
         quantity: 1,
-        rarity: '稀有',
+        rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Accessory1,
-        effect: { defense: 20, hp: 100 },
+        effect: { defense: 3, hp: 15 },
       },
     },
   },
@@ -2487,9 +2487,9 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '仙品',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Accessory1,
-        effect: { attack: 2000, defense: 400, hp: 500, spirit: 30000 }
-      }
-    }
+        effect: { attack: 2000, defense: 400, hp: 500, spirit: 30000 },
+      },
+    },
   },
 
   // 普通奖励 - 法宝
@@ -2508,7 +2508,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 15, defense: 8, hp: 40, spirit: 10 },
+        effect: { spirit: 10, exp: 5 },
       },
     },
   },
@@ -2527,7 +2527,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '普通',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 10, defense: 15, hp: 50 },
+        effect: { defense: 10, hp: 30 },
       },
     },
   },
@@ -2546,7 +2546,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '稀有',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 80, defense: 60, hp: 180, spirit: 30 },
+        effect: { spirit: 30, defense: 20 },
       },
     },
   },
@@ -2603,7 +2603,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '传说',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 450, defense: 250, hp: 900, spirit: 100 },
+        effect: { attack: 50, defense: 50, spirit: 50 },
       },
     },
   },
@@ -2660,7 +2660,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
         rarity: '仙品',
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Artifact1,
-        effect: { attack: 1800, defense: 900, hp: 4500, spirit: 500 },
+        effect: { attack: 150, defense: 150, spirit: 150, hp: 500 },
       },
     },
   },
@@ -3241,6 +3241,21 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
   },
 ];
 
+// --- 装备模板列表（从抽奖奖品中提取） ---
+export const EQUIPMENT_TEMPLATES = LOTTERY_PRIZES.filter(
+  (prize) => prize.type === 'item' && prize.value.item?.isEquippable
+).map((prize) => {
+  const item = prize.value.item!;
+  return {
+    name: item.name,
+    type: item.type,
+    rarity: item.rarity || '普通',
+    slot: item.equipmentSlot!,
+    effect: item.effect,
+    description: item.description,
+  };
+});
+
 // --- 商店系统 ---
 
 export const SHOPS: Shop[] = [
@@ -3440,13 +3455,13 @@ export const SHOPS: Shop[] = [
         id: 'shop-accessory-1',
         name: '护身符',
         type: ItemType.Accessory,
-        description: '仙门特制的护身符，提供强大的防护。',
-        rarity: '稀有',
+        description: '普通的护身符，提供基础防护。',
+        rarity: '普通',
         price: 1000,
         sellPrice: 300,
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Accessory1,
-        effect: { defense: 20, hp: 100 },
+        effect: { defense: 3, hp: 15 },
         minRealm: RealmType.GoldenCore,
       },
       {

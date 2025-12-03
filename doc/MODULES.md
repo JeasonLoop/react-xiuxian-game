@@ -6,7 +6,7 @@
 
 ```
 react-xiuxian-game/
-├── components/              # React 组件
+├── components/              # UI 组件层（纯展示组件）
 │   ├── AchievementModal.tsx    # 成就系统弹窗
 │   ├── AlchemyModal.tsx        # 炼丹系统弹窗
 │   ├── ArtifactUpgradeModal.tsx # 法宝强化弹窗
@@ -25,19 +25,110 @@ react-xiuxian-game/
 │   ├── SettingsModal.tsx       # 游戏设置弹窗
 │   ├── ShopModal.tsx           # 商店系统弹窗
 │   ├── StartScreen.tsx         # 游戏开始界面
+│   ├── WelcomeScreen.tsx       # 欢迎界面
+│   ├── DeathModal.tsx          # 死亡弹窗
+│   ├── BatchDiscardModal.tsx   # 批量丢弃弹窗
 │   └── StatsPanel.tsx          # 属性显示面板
 │
-├── services/               # 业务逻辑服务
-│   ├── aiService.ts       # AI 事件生成服务
+├── views/                  # 视图层（业务逻辑 + UI 组合）
+│   ├── GameView.tsx           # 主游戏视图
+│   ├── GameHeader.tsx         # 游戏头部导航
+│   ├── ActionBar.tsx          # 操作按钮栏
+│   ├── NotificationToast.tsx  # 通知弹窗
+│   ├── ModalsContainer.tsx    # 弹窗容器
+│   ├── adventure/              # 历练模块
+│   │   ├── index.ts
+│   │   ├── useAdventureHandlers.ts
+│   │   └── executeAdventureCore.ts
+│   ├── meditation/             # 打坐模块
+│   │   ├── index.ts
+│   │   └── useMeditationHandlers.ts
+│   ├── breakthrough/           # 突破模块
+│   │   ├── index.ts
+│   │   └── useBreakthroughHandlers.ts
+│   ├── battle/                 # 战斗模块
+│   │   ├── index.ts
+│   │   └── useBattleHandlers.ts
+│   ├── items/                  # 物品模块
+│   │   ├── index.ts
+│   │   └── useItemHandlers.ts
+│   ├── equipment/              # 装备模块
+│   │   ├── index.ts
+│   │   └── useEquipmentHandlers.ts
+│   ├── cultivation/            # 修炼模块
+│   │   ├── index.ts
+│   │   └── useCultivationHandlers.ts
+│   ├── alchemy/                # 炼丹模块
+│   │   ├── index.ts
+│   │   └── useAlchemyHandlers.ts
+│   ├── character/              # 角色模块
+│   │   ├── index.ts
+│   │   └── useCharacterHandlers.ts
+│   ├── shop/                   # 商店模块
+│   │   ├── index.ts
+│   │   └── useShopHandlers.ts
+│   ├── settings/               # 设置模块
+│   │   ├── index.ts
+│   │   └── useSettingsHandlers.ts
+│   ├── realm/                  # 秘境模块
+│   │   ├── index.ts
+│   │   └── useRealmHandlers.ts
+│   ├── pet/                    # 灵宠模块
+│   │   ├── index.ts
+│   │   └── usePetHandlers.ts
+│   ├── lottery/                # 抽奖模块
+│   │   ├── index.ts
+│   │   └── useLotteryHandlers.ts
+│   ├── sect/                   # 宗门模块
+│   │   ├── index.ts
+│   │   └── useSectHandlers.ts
+│   └── achievement/            # 成就模块
+│       ├── index.ts
+│       └── useAchievementHandlers.ts
+│
+├── features/               # 功能模块（可复用的 Hooks）
+│   ├── battle/                 # 战斗相关
+│   │   └── useBattleModal.ts
+│   ├── game/                   # 游戏通用功能
+│   │   └── useGameCooldown.ts
+│   ├── items/                  # 物品管理
+│   │   └── useItems.ts
+│   ├── meditation/              # 打坐功能
+│   │   └── useMeditation.ts
+│   ├── modal/                   # 模态框状态管理
+│   │   └── useModalState.ts
+│   ├── shop/                    # 商店功能
+│   │   └── useShop.ts
+│   ├── index.ts                 # 统一导出
+│   └── README.md                # 功能模块说明
+│
+├── hooks/                  # 通用 Hooks
+│   ├── useGameState.ts      # 游戏状态管理
+│   └── useGameEffects.ts   # 游戏副作用处理
+│
+├── utils/                  # 工具函数
+│   ├── gameUtils.ts        # 游戏工具函数
+│   ├── itemUtils.ts        # 物品工具函数
+│   └── playerUtils.ts      # 玩家工具函数
+│
+├── services/               # 业务逻辑服务层
+│   ├── aiService.ts        # AI 事件生成服务
 │   ├── battleService.ts   # 战斗系统服务
 │   └── randomService.ts   # 随机事件服务
+│
+├── config/                 # 配置文件
+│   ├── aiConfig.ts        # AI 配置（支持多提供商）
+│   └── README.md          # 配置说明
 │
 ├── api/                    # API 代理层
 │   └── proxy.js           # Vercel Serverless Function
 │
+├── assets/                 # 静态资源
+│   └── images/            # 图片资源
+│
 ├── doc/                    # 项目文档
 │
-├── App.tsx                 # 主应用组件（状态管理核心）
+├── App.tsx                 # 主应用组件（协调器）
 ├── index.tsx               # 应用入口文件
 ├── types.ts                # TypeScript 类型定义
 ├── constants.ts            # 游戏常量配置
@@ -49,35 +140,193 @@ react-xiuxian-game/
 
 ## 🧩 核心模块详解
 
-### 1. App.tsx - 主应用组件
+### 1. App.tsx - 主应用组件（协调器）
 
 **职责**:
 
-- 全局状态管理
-- 游戏核心逻辑协调
-- 事件处理分发
-- 数据持久化
+- 应用入口和路由协调
+- 全局状态管理（通过 `useGameState`）
+- 模块整合和 Handlers 调用
+- 欢迎界面和游戏视图切换
 
 **关键状态**:
+
+通过 `useGameState` Hook 管理：
 
 ```typescript
 - player: PlayerStats          // 玩家数据
 - logs: LogEntry[]            // 游戏日志
 - settings: GameSettings      // 游戏设置
-- 各种 Modal 的开关状态
+- gameStarted: boolean        // 游戏是否开始
+- hasSave: boolean            // 是否有存档
 ```
 
 **核心功能**:
 
-- 游戏初始化 (`handleStartGame`)
-- 历练系统 (`handleAdventure`)
-- 修炼系统 (`handleMeditate`, `handleBreakthrough`)
-- 装备系统 (`handleEquip`, `handleUnequip`)
-- 存档系统 (`saveGame`, `loadGame`)
+- 使用 `useGameState` 管理全局状态
+- 使用 `useGameEffects` 处理副作用（自动保存等）
+- 导入并使用各模块的 Handlers
+- 渲染 `GameView` 和 `ModalsContainer`
 
-**代码规模**: ~3100 行（包含所有游戏逻辑）
+**代码规模**: 大幅简化，主要作为协调器
 
-### 2. types.ts - 类型定义
+### 2. hooks/ - 状态管理 Hooks
+
+#### useGameState.ts
+
+**职责**: 封装游戏全局状态管理逻辑
+
+**核心功能**:
+
+- 状态初始化（从 localStorage 加载）
+- 状态更新方法
+- 存档和读档
+- 游戏开始处理
+
+**返回**:
+
+```typescript
+{
+  hasSave: boolean;
+  gameStarted: boolean;
+  player: PlayerStats;
+  setPlayer: (player: PlayerStats) => void;
+  settings: GameSettings;
+  setSettings: (settings: GameSettings) => void;
+  logs: LogEntry[];
+  setLogs: (logs: LogEntry[]) => void;
+  handleStartGame: (playerName: string) => void;
+  setGameStarted: (started: boolean) => void;
+}
+```
+
+#### useGameEffects.ts
+
+**职责**: 处理游戏副作用
+
+**核心功能**:
+
+- 自动保存游戏状态
+- 成就检查
+- 其他副作用处理
+
+### 3. views/ - 视图层
+
+**职责**: 组合 UI 组件，处理用户交互，调用业务逻辑
+
+**组织方式**:
+
+每个功能模块包含：
+- `index.ts` - 模块导出（导出 Handlers 和组件）
+- `useXxxHandlers.ts` - 业务逻辑处理函数（自定义 Hook）
+
+**核心视图组件**:
+
+#### GameView.tsx
+
+- 主游戏视图，整合所有游戏界面
+- 使用各模块的 Handlers
+- 渲染游戏头部、操作栏、属性面板等
+
+#### GameHeader.tsx
+
+- 游戏头部导航栏
+- 菜单按钮和功能入口
+
+#### ActionBar.tsx
+
+- 操作按钮栏
+- 提供打坐、历练、秘境、炼丹、宗门等核心操作
+
+#### ModalsContainer.tsx
+
+- 统一管理所有模态框的显示和状态
+- 包含各种功能面板的模态框组件
+
+**Handlers 模式**:
+
+每个模块的 `useXxxHandlers.ts` 文件：
+
+```typescript
+export function useXxxHandlers({
+  player,
+  setPlayer,
+  addLog,
+  // ... 其他依赖
+}) {
+  const handleAction = useCallback(() => {
+    // 业务逻辑
+    // 调用 services 或 utils
+    // 更新状态
+  }, [dependencies]);
+  
+  return { handleAction, ... };
+}
+```
+
+### 4. features/ - 功能模块
+
+**职责**: 提供可复用的功能 Hooks
+
+**特点**:
+
+- 功能导向的组织方式
+- 跨模块共享的功能
+- 独立的功能模块
+
+**主要模块**:
+
+- `battle/useBattleModal.ts` - 战斗弹窗状态管理
+- `game/useGameCooldown.ts` - 游戏冷却时间管理
+- `modal/useModalState.ts` - 模态框状态管理
+- `items/useItems.ts` - 物品管理功能
+- `meditation/useMeditation.ts` - 打坐功能
+- `shop/useShop.ts` - 商店功能
+
+### 5. utils/ - 工具函数
+
+**职责**: 提供通用的工具函数
+
+**核心工具**:
+
+#### gameUtils.ts
+
+- 游戏通用工具函数
+- 存档/读档相关函数
+- 游戏状态验证
+
+#### itemUtils.ts
+
+- 物品相关工具函数
+- 物品查找、过滤、排序
+- 物品效果计算
+
+#### playerUtils.ts
+
+- 玩家相关工具函数
+- 属性计算
+- 玩家数据验证
+
+### 6. config/ - 配置文件
+
+**职责**: 管理应用配置
+
+**核心配置**:
+
+#### aiConfig.ts
+
+- AI 服务配置
+- 支持多种 AI 提供商（SiliconFlow、OpenAI 等）
+- 环境变量管理
+- 配置验证
+
+**特点**:
+
+- 灵活的配置系统
+- 支持多提供商切换
+- 环境变量配置
+
+### 7. types.ts - 类型定义
 
 **职责**: 定义所有 TypeScript 类型和接口
 
@@ -130,7 +379,7 @@ interface Item {
 - `Pet` - 灵宠数据
 - `Achievement` - 成就数据
 
-### 3. constants.ts - 游戏常量
+### 8. constants.ts - 游戏常量
 
 **职责**: 定义游戏配置和常量数据
 
@@ -166,7 +415,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
 - `SHOPS` - 商店数据
 - `SECRET_REALMS` - 秘境数据
 
-### 4. services/ - 服务层
+### 9. services/ - 服务层
 
 #### aiService.ts - AI 事件生成
 
@@ -229,7 +478,7 @@ resolveBattleEncounter(
 
 **职责**: 生成随机宗门任务等随机事件
 
-### 5. components/ - UI 组件层
+### 10. components/ - UI 组件层
 
 #### 弹窗组件 (Modal Components)
 
@@ -328,14 +577,26 @@ interface ModalProps {
 ## 🔗 模块依赖关系
 
 ```
-App.tsx (核心)
-  ├── components/* (UI 组件)
-  ├── services/* (业务逻辑)
+App.tsx (协调器)
+  ├── hooks/
+  │   ├── useGameState.ts (状态管理)
+  │   └── useGameEffects.ts (副作用处理)
+  ├── views/
+  │   ├── GameView.tsx (主视图)
+  │   ├── ModalsContainer.tsx (弹窗容器)
+  │   └── */useXxxHandlers.ts (业务逻辑 Handlers)
+  └── components/* (UI 组件)
+
+views/*/useXxxHandlers.ts
+  ├── features/* (可复用功能 Hooks)
+  ├── services/* (业务逻辑服务)
+  ├── utils/* (工具函数)
   ├── types.ts (类型定义)
   └── constants.ts (常量配置)
 
 services/
   ├── aiService.ts
+  │   ├── config/aiConfig.ts (AI 配置)
   │   └── types.ts
   ├── battleService.ts
   │   ├── types.ts
@@ -343,6 +604,11 @@ services/
   │   └── aiService.ts (生成敌人名称)
   └── randomService.ts
       └── types.ts
+
+features/*
+  ├── services/* (业务逻辑服务)
+  ├── utils/* (工具函数)
+  └── types.ts
 
 components/*
   ├── types.ts
@@ -361,10 +627,13 @@ components/*
 
 ### 2. 关注点分离
 
-- **UI 逻辑** → `components/`
-- **业务逻辑** → `services/`
+- **UI 展示** → `components/` (纯展示组件)
+- **视图组合** → `views/` (组合组件 + Handlers)
+- **业务逻辑** → `services/`, `utils/` (服务层和工具函数)
+- **功能复用** → `features/` (可复用的功能 Hooks)
+- **状态管理** → `hooks/` (状态管理 Hooks)
 - **数据定义** → `types.ts`, `constants.ts`
-- **状态管理** → `App.tsx`
+- **配置管理** → `config/`
 
 ### 3. 可复用性
 
@@ -398,7 +667,7 @@ components/*
    };
    ```
 
-3. **实现服务** (`services/newFeatureService.ts`)
+3. **实现服务** (`services/newFeatureService.ts`) 或工具函数 (`utils/`)
 
    ```typescript
    export const newFeatureFunction = () => {
@@ -406,7 +675,7 @@ components/*
    };
    ```
 
-4. **创建组件** (`components/NewFeatureModal.tsx`)
+4. **创建 UI 组件** (`components/NewFeatureModal.tsx`)
 
    ```typescript
    export default function NewFeatureModal({ ... }) {
@@ -414,10 +683,30 @@ components/*
    }
    ```
 
-5. **集成到 App** (`App.tsx`)
+5. **创建视图 Handlers** (`views/newFeature/useNewFeatureHandlers.ts`)
+
    ```typescript
-   const [isNewFeatureOpen, setIsNewFeatureOpen] = useState(false);
-   // ...
+   export function useNewFeatureHandlers({ player, setPlayer, addLog }) {
+     const handleAction = useCallback(() => {
+       // 业务逻辑
+     }, [dependencies]);
+     
+     return { handleAction };
+   }
+   ```
+
+6. **导出模块** (`views/newFeature/index.ts`)
+
+   ```typescript
+   export { useNewFeatureHandlers } from './useNewFeatureHandlers';
+   ```
+
+7. **在 GameView 中使用** (`views/GameView.tsx`)
+
+   ```typescript
+   import { useNewFeatureHandlers } from './newFeature';
+   
+   const { handleAction } = useNewFeatureHandlers({ ... });
    ```
 
 ### 添加新境界
@@ -472,14 +761,38 @@ import StatsPanel from './StatsPanel';
 
 ### App.tsx
 
-- **行数**: ~3100 行
-- **职责**: 游戏核心逻辑
-- **关键函数**:
+- **职责**: 应用协调器
+- **关键功能**:
+  - 使用 `useGameState` 管理全局状态
+  - 使用 `useGameEffects` 处理副作用
+  - 导入各模块 Handlers
+  - 渲染欢迎界面和游戏视图
+
+### hooks/useGameState.ts
+
+- **职责**: 游戏状态管理核心
+- **关键功能**:
+  - 状态初始化（从 localStorage）
+  - 状态更新方法
+  - 存档和读档
+  - 游戏开始处理
+
+### views/GameView.tsx
+
+- **职责**: 主游戏视图
+- **关键功能**:
+  - 整合所有游戏界面
+  - 使用各模块 Handlers
+  - 渲染游戏头部、操作栏、属性面板等
+
+### views/*/useXxxHandlers.ts
+
+- **职责**: 各模块的业务逻辑处理
+- **关键函数** (以 adventure 为例):
   - `handleAdventure()` - 历练处理
-  - `handleMeditate()` - 打坐修炼
-  - `handleBreakthrough()` - 突破境界
-  - `handleEquip()` - 装备物品
-  - `checkAchievements()` - 成就检查
+  - `handleMeditate()` - 打坐修炼 (meditation 模块)
+  - `handleBreakthrough()` - 突破境界 (breakthrough 模块)
+  - `handleEquip()` - 装备物品 (equipment 模块)
 
 ### constants.ts
 

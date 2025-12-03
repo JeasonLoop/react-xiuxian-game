@@ -58,7 +58,9 @@ doc/
 ├── API.md                 # API 和服务文档
 ├── DEVELOPMENT.md         # 开发指南
 ├── GAMEPLAY.md            # 游戏玩法说明
-└── CONTRIBUTING.md        # 贡献指南
+├── CONTRIBUTING.md        # 贡献指南
+├── SAVE_FORMAT.md         # 存档格式说明
+└── AI_CONFIG.md           # AI 配置说明
 ```
 
 ## 🔍 快速查找

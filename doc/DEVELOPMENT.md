@@ -425,10 +425,28 @@ pnpm remove package-name
 
 ### 添加新组件
 
+#### 1. 创建纯 UI 组件（components/）
+
 1. 在 `components/` 目录创建文件
 2. 定义组件和 Props 接口
-3. 实现组件逻辑
-4. 在 `App.tsx` 中导入和使用
+3. 实现组件逻辑（纯展示，无业务逻辑）
+
+#### 2. 创建视图模块（views/）
+
+1. 在 `views/` 目录创建功能模块文件夹
+2. 创建 `useXxxHandlers.ts` 文件，实现业务逻辑 Handlers
+3. 创建 `index.ts` 文件，导出 Handlers
+4. 在 `views/GameView.tsx` 中使用 Handlers
+5. 在 `views/ModalsContainer.tsx` 中添加模态框（如需要）
+
+#### 3. 添加可复用功能（features/）
+
+如果功能需要跨模块复用：
+
+1. 在 `features/` 目录创建功能模块
+2. 实现功能 Hook
+3. 在 `features/index.ts` 中导出
+4. 在需要的 Handlers 中使用
 
 ### 样式规范
 

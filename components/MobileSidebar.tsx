@@ -10,6 +10,7 @@ import {
   Gift,
   Settings,
   BarChart3,
+  Bug,
 } from 'lucide-react';
 
 interface Props {
@@ -23,6 +24,8 @@ interface Props {
   onOpenPet: () => void;
   onOpenLottery: () => void;
   onOpenSettings: () => void;
+  onOpenDebug?: () => void;
+  isDebugModeEnabled?: boolean;
   achievementCount?: number;
   petCount?: number;
   lotteryTickets?: number;
@@ -39,6 +42,8 @@ const MobileSidebar: React.FC<Props> = ({
   onOpenPet,
   onOpenLottery,
   onOpenSettings,
+  onOpenDebug,
+  isDebugModeEnabled = false,
   achievementCount = 0,
   petCount = 0,
   lotteryTickets = 0,
@@ -96,6 +101,16 @@ const MobileSidebar: React.FC<Props> = ({
         onClick: onOpenSettings,
         color: 'text-stone-400',
       },
+      ...(isDebugModeEnabled && onOpenDebug
+        ? [
+            {
+              icon: Bug,
+              label: '调试',
+              onClick: onOpenDebug,
+              color: 'text-red-400',
+            },
+          ]
+        : []),
     ],
     [
       onOpenStats,
@@ -106,6 +121,8 @@ const MobileSidebar: React.FC<Props> = ({
       onOpenPet,
       onOpenLottery,
       onOpenSettings,
+      onOpenDebug,
+      isDebugModeEnabled,
       achievementCount,
       petCount,
       lotteryTickets,
