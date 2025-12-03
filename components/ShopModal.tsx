@@ -18,7 +18,7 @@ interface Props {
   shop: Shop;
   player: PlayerStats;
   onBuyItem: (shopItem: ShopItem, quantity?: number) => void;
-  onSellItem: (item: Item) => void;
+  onSellItem: (item: Item, quantity?: number) => void;
   onRefreshShop?: (newItems: ShopItem[]) => void;
 }
 
@@ -296,7 +296,8 @@ const ShopModal: React.FC<Props> = ({
       )
     ) {
       itemsToSell.forEach((item) => {
-        onSellItem(item);
+        // 出售该物品的全部数量
+        onSellItem(item, item.quantity);
       });
       setSelectedItems(new Set());
     }

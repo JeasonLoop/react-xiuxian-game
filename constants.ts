@@ -3493,3 +3493,507 @@ export const SHOPS: Shop[] = [
     ],
   },
 ];
+
+// ==================== 回合制战斗系统配置 ====================
+
+import { BattleSkill, BattlePotion } from './types';
+
+// 功法战斗技能配置
+export const CULTIVATION_ART_BATTLE_SKILLS: Record<string, BattleSkill[]> = {
+  // 天雷剑诀 - 攻击技能
+  'art-thunder-sword': [
+    {
+      id: 'skill-thunder-sword',
+      name: '天雷剑诀',
+      description: '引九天神雷入剑，对敌人造成大量法术伤害，有较高暴击率。',
+      type: 'attack',
+      source: 'cultivation_art',
+      sourceId: 'art-thunder-sword',
+      effects: [],
+      cost: { mana: 30 },
+      cooldown: 0,
+      maxCooldown: 2,
+      target: 'enemy',
+      damage: {
+        base: 50,
+        multiplier: 1.5, // 150%攻击力
+        type: 'magical', // 法术伤害（基于神识）
+        critChance: 0.25,
+        critMultiplier: 2.0,
+      },
+    },
+  ],
+  // 长生诀 - 治疗技能
+  'art-immortal-life': [
+    {
+      id: 'skill-immortal-heal',
+      name: '长生回春',
+      description: '运转长生诀，恢复大量气血。',
+      type: 'heal',
+      source: 'cultivation_art',
+      sourceId: 'art-immortal-life',
+      effects: [],
+      cost: { mana: 25 },
+      cooldown: 0,
+      maxCooldown: 3,
+      target: 'self',
+      heal: {
+        base: 100,
+        multiplier: 0.2, // 20%最大气血
+      },
+    },
+  ],
+  // 烈火拳 - 攻击技能
+  'art-fiery-fist': [
+    {
+      id: 'skill-fiery-fist',
+      name: '烈火拳',
+      description: '将灵气转化为烈火附着于双拳，造成物理伤害并可能灼烧敌人。',
+      type: 'attack',
+      source: 'cultivation_art',
+      sourceId: 'art-fiery-fist',
+      effects: [
+        {
+          type: 'debuff',
+          target: 'enemy',
+          debuff: {
+            id: 'burn',
+            name: '灼烧',
+            type: 'burn',
+            value: 10, // 每回合伤害
+            duration: 2,
+            source: 'skill-fiery-fist',
+            description: '每回合受到火焰伤害',
+          },
+        },
+      ],
+      cost: { mana: 20 },
+      cooldown: 0,
+      maxCooldown: 2,
+      target: 'enemy',
+      damage: {
+        base: 30,
+        multiplier: 1.2,
+        type: 'physical',
+        critChance: 0.15,
+        critMultiplier: 1.8,
+      },
+    },
+  ],
+  // 纯阳无极功 - 被动效果（在战斗初始化时应用）
+  'art-pure-yang': [
+    {
+      id: 'skill-pure-yang-buff',
+      name: '纯阳护体',
+      description: '纯阳无极功的被动效果，提升攻击力和暴击率。',
+      type: 'buff',
+      source: 'cultivation_art',
+      sourceId: 'art-pure-yang',
+      effects: [
+        {
+          type: 'buff',
+          target: 'self',
+          buff: {
+            id: 'pure-yang-attack',
+            name: '纯阳之力',
+            type: 'attack',
+            value: 0.15, // 15%攻击力提升
+            duration: -1, // 永久（战斗期间）
+            source: 'art-pure-yang',
+            description: '攻击力提升15%',
+          },
+        },
+        {
+          type: 'buff',
+          target: 'self',
+          buff: {
+            id: 'pure-yang-crit',
+            name: '纯阳暴击',
+            type: 'crit',
+            value: 0.1, // 10%暴击率提升
+            duration: -1,
+            source: 'art-pure-yang',
+            description: '暴击率提升10%',
+          },
+        },
+      ],
+      cost: {},
+      cooldown: 0,
+      maxCooldown: 0,
+      target: 'self',
+    },
+  ],
+  // 御风步 - 速度提升技能
+  'art-wind-step': [
+    {
+      id: 'skill-wind-step',
+      name: '御风步',
+      description: '身法如风，提升速度，增加闪避和暴击率。',
+      type: 'buff',
+      source: 'cultivation_art',
+      sourceId: 'art-wind-step',
+      effects: [
+        {
+          type: 'buff',
+          target: 'self',
+          buff: {
+            id: 'wind-speed',
+            name: '御风',
+            type: 'speed',
+            value: 0.2, // 20%速度提升
+            duration: 3,
+            source: 'art-wind-step',
+            description: '速度提升20%，持续3回合',
+          },
+        },
+        {
+          type: 'buff',
+          target: 'self',
+          buff: {
+            id: 'wind-crit',
+            name: '风之暴击',
+            type: 'crit',
+            value: 0.15, // 15%暴击率提升
+            duration: 3,
+            source: 'art-wind-step',
+            description: '暴击率提升15%，持续3回合',
+          },
+        },
+      ],
+      cost: { mana: 20 },
+      cooldown: 0,
+      maxCooldown: 3,
+      target: 'self',
+    },
+  ],
+  // 水镜心法 - 防御技能
+  'art-water-mirror': [
+    {
+      id: 'skill-water-mirror',
+      name: '水镜护体',
+      description: '心如止水，明镜高悬，大幅提升防御力。',
+      type: 'buff',
+      source: 'cultivation_art',
+      sourceId: 'art-water-mirror',
+      effects: [
+        {
+          type: 'buff',
+          target: 'self',
+          buff: {
+            id: 'water-defense',
+            name: '水镜',
+            type: 'defense',
+            value: 0.3, // 30%防御力提升
+            duration: 3,
+            source: 'art-water-mirror',
+            description: '防御力提升30%，持续3回合',
+          },
+        },
+      ],
+      cost: { mana: 25 },
+      cooldown: 0,
+      maxCooldown: 3,
+      target: 'self',
+    },
+  ],
+  // 厚土护体 - 防御和护盾
+  'art-earth-shield': [
+    {
+      id: 'skill-earth-shield',
+      name: '厚土护体',
+      description: '引大地之力护体，大幅提升防御并形成护盾。',
+      type: 'buff',
+      source: 'cultivation_art',
+      sourceId: 'art-earth-shield',
+      effects: [
+        {
+          type: 'buff',
+          target: 'self',
+          buff: {
+            id: 'earth-defense',
+            name: '厚土',
+            type: 'defense',
+            value: 0.4, // 40%防御力提升
+            duration: 4,
+            source: 'art-earth-shield',
+            description: '防御力提升40%，持续4回合',
+          },
+        },
+        {
+          type: 'buff',
+          target: 'self',
+          buff: {
+            id: 'earth-shield',
+            name: '大地护盾',
+            type: 'shield',
+            value: 200, // 护盾值
+            duration: 4,
+            source: 'art-earth-shield',
+            description: '获得200点护盾，持续4回合',
+          },
+        },
+      ],
+      cost: { mana: 30 },
+      cooldown: 0,
+      maxCooldown: 4,
+      target: 'self',
+    },
+  ],
+  // 龙拳 - 高伤害攻击技能
+  'art-dragon-fist': [
+    {
+      id: 'skill-dragon-fist',
+      name: '龙拳',
+      description: '拳如真龙，威力无穷，造成大量物理伤害。',
+      type: 'attack',
+      source: 'cultivation_art',
+      sourceId: 'art-dragon-fist',
+      effects: [],
+      cost: { mana: 35 },
+      cooldown: 0,
+      maxCooldown: 3,
+      target: 'enemy',
+      damage: {
+        base: 80,
+        multiplier: 1.8,
+        type: 'physical',
+        critChance: 0.2,
+        critMultiplier: 2.2,
+      },
+    },
+  ],
+  // 星辰破灭诀 - 终极攻击技能
+  'art-star-destruction': [
+    {
+      id: 'skill-star-destruction',
+      name: '星辰破灭',
+      description: '引星辰之力，破灭万物，造成巨额法术伤害。',
+      type: 'attack',
+      source: 'cultivation_art',
+      sourceId: 'art-star-destruction',
+      effects: [],
+      cost: { mana: 50 },
+      cooldown: 0,
+      maxCooldown: 5,
+      target: 'enemy',
+      damage: {
+        base: 150,
+        multiplier: 2.5,
+        type: 'magical',
+        critChance: 0.3,
+        critMultiplier: 2.5,
+      },
+    },
+  ],
+};
+
+// 法宝战斗技能配置
+export const ARTIFACT_BATTLE_SKILLS: Record<string, BattleSkill[]> = {
+  // 星辰盘 - 防御和攻击技能
+  'artifact-star-disk': [
+    {
+      id: 'skill-star-shield',
+      name: '星辰护盾',
+      description: '星辰盘释放护盾，大幅提升防御力。',
+      type: 'defense',
+      source: 'artifact',
+      sourceId: 'artifact-star-disk',
+      effects: [
+        {
+          type: 'buff',
+          target: 'self',
+          buff: {
+            id: 'star-shield',
+            name: '星辰护盾',
+            type: 'defense',
+            value: 0.3, // 30%防御力提升
+            duration: 2,
+            source: 'artifact-star-disk',
+            description: '防御力提升30%，持续2回合',
+          },
+        },
+      ],
+      cost: { mana: 20 },
+      cooldown: 0,
+      maxCooldown: 3,
+      target: 'self',
+    },
+    {
+      id: 'skill-star-burst',
+      name: '星辰爆裂',
+      description: '星辰盘释放星辰之力，对敌人造成法术伤害。',
+      type: 'attack',
+      source: 'artifact',
+      sourceId: 'artifact-star-disk',
+      effects: [],
+      cost: { mana: 40 },
+      cooldown: 0,
+      maxCooldown: 4,
+      target: 'enemy',
+      damage: {
+        base: 30,
+        multiplier: 1.2,
+        type: 'magical',
+        critChance: 0.15,
+        critMultiplier: 2.0,
+      },
+    },
+  ],
+  // 仙灵宝珠 - 强力技能
+  'artifact-immortal-bead': [
+    {
+      id: 'skill-immortal-blessing',
+      name: '仙灵祝福',
+      description: '仙灵宝珠释放祝福，全面提升属性。',
+      type: 'buff',
+      source: 'artifact',
+      sourceId: 'artifact-immortal-bead',
+      effects: [
+        {
+          type: 'buff',
+          target: 'self',
+          buff: {
+            id: 'immortal-attack',
+            name: '仙灵攻击',
+            type: 'attack',
+            value: 0.25, // 25%攻击力提升
+            duration: 3,
+            source: 'artifact-immortal-bead',
+            description: '攻击力提升25%，持续3回合',
+          },
+        },
+        {
+          type: 'buff',
+          target: 'self',
+          buff: {
+            id: 'immortal-defense',
+            name: '仙灵防御',
+            type: 'defense',
+            value: 0.25, // 25%防御力提升
+            duration: 3,
+            source: 'artifact-immortal-bead',
+            description: '防御力提升25%，持续3回合',
+          },
+        },
+      ],
+      cost: { mana: 50 },
+      cooldown: 0,
+      maxCooldown: 5,
+      target: 'self',
+    },
+  ],
+};
+
+// 武器战斗技能配置
+export const WEAPON_BATTLE_SKILLS: Record<string, BattleSkill[]> = {
+  // 仙灵剑 - 剑舞技能
+  'weapon-immortal-sword': [
+    {
+      id: 'skill-sword-dance',
+      name: '剑舞',
+      description: '剑光如舞，连续攻击敌人，造成多次伤害。',
+      type: 'attack',
+      source: 'weapon',
+      sourceId: 'weapon-immortal-sword',
+      effects: [],
+      cost: { mana: 25 },
+      cooldown: 0,
+      maxCooldown: 2,
+      target: 'enemy',
+      damage: {
+        base: 40,
+        multiplier: 1.3,
+        type: 'physical',
+        critChance: 0.2,
+        critMultiplier: 2.0,
+      },
+    },
+  ],
+  // 星辰剑 - 星辰斩
+  'weapon-star-sword': [
+    {
+      id: 'skill-star-slash',
+      name: '星辰斩',
+      description: '引星辰之力入剑，造成高额物理伤害。',
+      type: 'attack',
+      source: 'weapon',
+      sourceId: 'weapon-star-sword',
+      effects: [],
+      cost: { mana: 30 },
+      cooldown: 0,
+      maxCooldown: 3,
+      target: 'enemy',
+      damage: {
+        base: 60,
+        multiplier: 1.5,
+        type: 'physical',
+        critChance: 0.25,
+        critMultiplier: 2.2,
+      },
+    },
+  ],
+};
+
+// 战斗可用丹药配置
+export const BATTLE_POTIONS: Record<string, BattlePotion> = {
+  '回血丹': {
+    itemId: 'potion-heal-basic',
+    name: '回血丹',
+    type: 'heal',
+    effect: {
+      heal: 50,
+    },
+    cooldown: 0,
+    itemType: ItemType.Pill,
+  },
+  '回春丹': {
+    itemId: 'potion-heal-advanced',
+    name: '回春丹',
+    type: 'heal',
+    effect: {
+      heal: 200,
+    },
+    cooldown: 0,
+    itemType: ItemType.Pill,
+  },
+  '强体丹': {
+    itemId: 'potion-strength',
+    name: '强体丹',
+    type: 'buff',
+    effect: {
+      buffs: [
+        {
+          id: 'strength-boost',
+          name: '强体',
+          type: 'attack',
+          value: 50, // 攻击力+50
+          duration: 3,
+          source: '强体丹',
+          description: '攻击力提升50点，持续3回合',
+        },
+      ],
+    },
+    cooldown: 5,
+    itemType: ItemType.Pill,
+  },
+  '凝神丹': {
+    itemId: 'potion-spirit',
+    name: '凝神丹',
+    type: 'buff',
+    effect: {
+      buffs: [
+        {
+          id: 'spirit-boost',
+          name: '凝神',
+          type: 'custom',
+          value: 30, // 神识+30（影响法术伤害）
+          duration: 3,
+          source: '凝神丹',
+          description: '神识提升30点，持续3回合',
+        },
+      ],
+    },
+    cooldown: 5,
+    itemType: ItemType.Pill,
+  },
+};
