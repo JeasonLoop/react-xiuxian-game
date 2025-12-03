@@ -343,6 +343,6 @@ pnpm preview      # 或 npm run preview
 
 **🌟 愿你在修仙路上，早日飞升成仙！🌟**
 
-Made with ❤️ by [Your Name]
+Made with ❤️ by [JeasonLoop]
 
 </div>
