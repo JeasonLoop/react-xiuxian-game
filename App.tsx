@@ -432,15 +432,22 @@ function App() {
   const handleSellItem = shopHandlers.handleSellItem;
 
   const handleRefreshShop = (newItems: ShopItem[]) => {
-    if (!currentShop) return;
+    if (!currentShop || !player) return;
+    if (player.spiritStones < 100) {
+      addLog('灵石不足，无法刷新商店。', 'danger');
+      return;
+    }
     setCurrentShop({
       ...currentShop,
       items: newItems,
     });
-    setPlayer((prev) => ({
-      ...prev,
-      spiritStones: prev.spiritStones - 100, // 扣除刷新费用
-    }));
+    setPlayer((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        spiritStones: prev.spiritStones - 100, // 扣除刷新费用
+      };
+    });
     addLog('商店物品已刷新！', 'special');
   };
   const handleUpdateSettings = settingsHandlers.handleUpdateSettings;

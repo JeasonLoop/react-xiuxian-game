@@ -6,6 +6,7 @@ import {
   PlayerAction,
   Item,
   PlayerStats,
+  RealmType,
 } from '../types';
 import {
   executePlayerAction,
@@ -21,7 +22,7 @@ interface TurnBasedBattleModalProps {
   player: PlayerStats;
   adventureType: 'normal' | 'lucky' | 'secret_realm';
   riskLevel?: '低' | '中' | '高' | '极度危险';
-  realmMinRealm?: string;
+  realmMinRealm?: RealmType;
   onClose: (result?: {
     victory: boolean;
     hpLoss: number;

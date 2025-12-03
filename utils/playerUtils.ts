@@ -1,4 +1,4 @@
-import { PlayerStats, RealmType } from '../types';
+import { PlayerStats, RealmType, SectRank } from '../types';
 import { REALM_DATA, INITIAL_ITEMS, TALENTS, CULTIVATION_ARTS } from '../constants';
 
 // 创建初始玩家数据
@@ -35,7 +35,7 @@ export const createInitialPlayer = (
     activeArtId: 'art-basic-breath', // 默认激活吐纳诀
     equippedItems: {},
     sectId: null,
-    sectRank: '外门' as any,
+    sectRank: SectRank.Outer,
     sectContribution: 0,
     betrayedSects: [], // 背叛过的宗门列表
     sectHuntEndTime: null, // 宗门追杀结束时间

@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayerStats, Shop, GameSettings, Item, ShopItem } from '../../types';
+import { PlayerStats, Shop, GameSettings, Item, ShopItem, RealmType } from '../../types';
 import InventoryModal from '../../components/InventoryModal';
 import CultivationModal from '../../components/CultivationModal';
 import AlchemyModal from '../../components/AlchemyModal';
@@ -56,7 +56,7 @@ interface ModalsContainerProps {
     turnBasedBattleParams?: {
       adventureType: 'normal' | 'lucky' | 'secret_realm';
       riskLevel?: '低' | '中' | '高' | '极度危险';
-      realmMinRealm?: string;
+      realmMinRealm?: RealmType;
     } | null;
   };
   handlers: {

@@ -30,6 +30,7 @@ import {
   PetTemplate,
   Achievement,
   Recipe,
+  SectRank,
 } from '../types';
 import {
   REALM_DATA,
@@ -357,13 +358,13 @@ const DebugModal: React.FC<Props> = ({
       const updated = {
         ...prev,
         sectId: sectId,
-        sectRank: '外门' as any, // SectRank.Outer
+        sectRank: SectRank.Outer,
         sectContribution: 0,
       };
       // 立即更新到实际玩家状态
       onUpdatePlayer({
         sectId: sectId,
-        sectRank: '外门' as any,
+        sectRank: SectRank.Outer,
         sectContribution: 0,
       });
       return updated;
