@@ -7,6 +7,15 @@ import {
   Minus,
   Package,
   Sparkles,
+  BookOpen,
+  Award,
+  Building2,
+  MapPin,
+  Trophy,
+  Heart,
+  FlaskConical,
+  Scroll,
+  Power,
 } from 'lucide-react';
 import {
   PlayerStats,
@@ -16,252 +25,39 @@ import {
   EquipmentSlot,
   ItemRarity,
   Talent,
+  Title,
+  CultivationArt,
+  PetTemplate,
+  Achievement,
+  Recipe,
 } from '../types';
-import { REALM_DATA, REALM_ORDER, TALENTS } from '../constants';
+import {
+  REALM_DATA,
+  REALM_ORDER,
+  TALENTS,
+  TITLES,
+  CULTIVATION_ARTS,
+  PET_TEMPLATES,
+  ACHIEVEMENTS,
+  PILL_RECIPES,
+  DISCOVERABLE_RECIPES,
+  INITIAL_ITEMS,
+  SECTS,
+  SECRET_REALMS,
+} from '../constants';
+import { LOOT_ITEMS } from '../services/battleService';
 
 // 生成唯一ID
 const uid = () =>
   Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
 
 // 装备模板列表（从battleService的LOOT_ITEMS中提取）
-const EQUIPMENT_TEMPLATES: Array<{
-  name: string;
-  type: ItemType;
-  rarity: ItemRarity;
-  slot: EquipmentSlot;
-  effect?: {
-    attack?: number;
-    defense?: number;
-    hp?: number;
-    spirit?: number;
-    physique?: number;
-    speed?: number;
-    exp?: number;
-  };
-  description?: string;
-}> = [
-  // 武器
-  {
-    name: '精铁剑',
-    type: ItemType.Weapon,
-    rarity: '普通',
-    slot: EquipmentSlot.Weapon,
-    effect: { attack: 10 },
-    description: '普通的精铁剑',
-  },
-  {
-    name: '玄铁刀',
-    type: ItemType.Weapon,
-    rarity: '稀有',
-    slot: EquipmentSlot.Weapon,
-    effect: { attack: 30 },
-    description: '锋利的玄铁刀',
-  },
-  {
-    name: '星辰剑',
-    type: ItemType.Weapon,
-    rarity: '传说',
-    slot: EquipmentSlot.Weapon,
-    effect: { attack: 80, speed: 10 },
-    description: '蕴含星辰之力的宝剑',
-  },
-  {
-    name: '仙灵剑',
-    type: ItemType.Weapon,
-    rarity: '仙品',
-    slot: EquipmentSlot.Weapon,
-    effect: { attack: 200, spirit: 50 },
-    description: '仙灵之力凝聚的神剑',
-  },
-  // 护甲 - 头部
-  {
-    name: '布帽',
-    type: ItemType.Armor,
-    rarity: '普通',
-    slot: EquipmentSlot.Head,
-    effect: { defense: 3, hp: 15 },
-    description: '普通的布帽',
-  },
-  {
-    name: '铁头盔',
-    type: ItemType.Armor,
-    rarity: '普通',
-    slot: EquipmentSlot.Head,
-    effect: { defense: 8, hp: 30 },
-    description: '坚固的铁制头盔',
-  },
-  {
-    name: '玄铁头盔',
-    type: ItemType.Armor,
-    rarity: '稀有',
-    slot: EquipmentSlot.Head,
-    effect: { defense: 25, hp: 60, spirit: 10 },
-    description: '玄铁打造的头盔',
-  },
-  {
-    name: '星辰头冠',
-    type: ItemType.Armor,
-    rarity: '传说',
-    slot: EquipmentSlot.Head,
-    effect: { defense: 60, hp: 150, spirit: 20, attack: 10 },
-    description: '星辰之力凝聚的头冠',
-  },
-  {
-    name: '仙灵道冠',
-    type: ItemType.Armor,
-    rarity: '仙品',
-    slot: EquipmentSlot.Head,
-    effect: { defense: 150, hp: 400, spirit: 50, attack: 30 },
-    description: '仙灵道冠',
-  },
-  // 护甲 - 胸甲
-  {
-    name: '布甲',
-    type: ItemType.Armor,
-    rarity: '普通',
-    slot: EquipmentSlot.Chest,
-    effect: { defense: 5, hp: 20 },
-    description: '普通的布甲',
-  },
-  {
-    name: '铁甲',
-    type: ItemType.Armor,
-    rarity: '普通',
-    slot: EquipmentSlot.Chest,
-    effect: { defense: 15, hp: 50 },
-    description: '坚固的铁甲',
-  },
-  {
-    name: '玄铁甲',
-    type: ItemType.Armor,
-    rarity: '稀有',
-    slot: EquipmentSlot.Chest,
-    effect: { defense: 40, hp: 100 },
-    description: '玄铁打造的护甲',
-  },
-  {
-    name: '星辰战甲',
-    type: ItemType.Armor,
-    rarity: '传说',
-    slot: EquipmentSlot.Chest,
-    effect: { defense: 100, hp: 300, attack: 20 },
-    description: '星辰战甲',
-  },
-  {
-    name: '仙灵法袍',
-    type: ItemType.Armor,
-    rarity: '仙品',
-    slot: EquipmentSlot.Chest,
-    effect: { defense: 250, hp: 800, spirit: 100 },
-    description: '仙灵法袍',
-  },
-  // 首饰
-  {
-    name: '护身符',
-    type: ItemType.Accessory,
-    rarity: '普通',
-    slot: EquipmentSlot.Accessory1,
-    effect: { defense: 3, hp: 15 },
-    description: '普通的护身符',
-  },
-  {
-    name: '聚灵玉佩',
-    type: ItemType.Accessory,
-    rarity: '稀有',
-    slot: EquipmentSlot.Accessory1,
-    effect: { spirit: 20, exp: 10 },
-    description: '聚灵玉佩',
-  },
-  {
-    name: '星辰项链',
-    type: ItemType.Accessory,
-    rarity: '传说',
-    slot: EquipmentSlot.Accessory1,
-    effect: { attack: 30, defense: 30, speed: 15 },
-    description: '星辰项链',
-  },
-  {
-    name: '仙灵手镯',
-    type: ItemType.Accessory,
-    rarity: '仙品',
-    slot: EquipmentSlot.Accessory1,
-    effect: { attack: 80, defense: 80, hp: 200 },
-    description: '仙灵手镯',
-  },
-  // 戒指
-  {
-    name: '铁戒指',
-    type: ItemType.Ring,
-    rarity: '普通',
-    slot: EquipmentSlot.Ring1,
-    effect: { attack: 5 },
-    description: '普通的铁戒指',
-  },
-  {
-    name: '金戒指',
-    type: ItemType.Ring,
-    rarity: '稀有',
-    slot: EquipmentSlot.Ring1,
-    effect: { attack: 15, defense: 15 },
-    description: '金戒指',
-  },
-  {
-    name: '星辰戒指',
-    type: ItemType.Ring,
-    rarity: '传说',
-    slot: EquipmentSlot.Ring1,
-    effect: { attack: 40, defense: 40, speed: 20 },
-    description: '星辰戒指',
-  },
-  {
-    name: '仙灵戒指',
-    type: ItemType.Ring,
-    rarity: '仙品',
-    slot: EquipmentSlot.Ring1,
-    effect: { attack: 100, defense: 100, spirit: 50 },
-    description: '仙灵戒指',
-  },
-  // 法宝
-  {
-    name: '聚灵珠',
-    type: ItemType.Artifact,
-    rarity: '普通',
-    slot: EquipmentSlot.Artifact1,
-    effect: { spirit: 10, exp: 5 },
-    description: '聚灵珠',
-  },
-  {
-    name: '护体符',
-    type: ItemType.Artifact,
-    rarity: '普通',
-    slot: EquipmentSlot.Artifact1,
-    effect: { defense: 10, hp: 30 },
-    description: '护体符',
-  },
-  {
-    name: '玄灵镜',
-    type: ItemType.Artifact,
-    rarity: '稀有',
-    slot: EquipmentSlot.Artifact1,
-    effect: { spirit: 30, defense: 20 },
-    description: '玄灵镜',
-  },
-  {
-    name: '星辰盘',
-    type: ItemType.Artifact,
-    rarity: '传说',
-    slot: EquipmentSlot.Artifact1,
-    effect: { attack: 50, defense: 50, spirit: 50 },
-    description: '星辰盘',
-  },
-  {
-    name: '仙灵宝珠',
-    type: ItemType.Artifact,
-    rarity: '仙品',
-    slot: EquipmentSlot.Artifact1,
-    effect: { attack: 150, defense: 150, spirit: 150, hp: 500 },
-    description: '仙灵宝珠',
-  },
+const EQUIPMENT_TEMPLATES = [
+  ...LOOT_ITEMS.weapons,
+  ...LOOT_ITEMS.armors,
+  ...LOOT_ITEMS.accessories,
+  ...LOOT_ITEMS.rings,
+  ...LOOT_ITEMS.artifacts,
 ];
 
 interface Props {
@@ -278,12 +74,21 @@ const DebugModal: React.FC<Props> = ({
   onUpdatePlayer,
 }) => {
   const [localPlayer, setLocalPlayer] = useState<PlayerStats>(player);
-  const [activeTab, setActiveTab] = useState<'equipment' | 'talent'>(
-    'equipment'
-  );
+  const [activeTab, setActiveTab] = useState<
+    | 'equipment'
+    | 'talent'
+    | 'title'
+    | 'cultivation'
+    | 'sect'
+    | 'achievement'
+    | 'pet'
+    | 'item'
+    | 'recipe'
+  >('equipment');
   const [equipmentFilter, setEquipmentFilter] = useState<ItemRarity | 'all'>(
     'all'
   );
+  const [itemFilter, setItemFilter] = useState<ItemType | 'all'>('all');
 
   // 当player变化时更新本地状态
   useEffect(() => {
@@ -295,6 +100,49 @@ const DebugModal: React.FC<Props> = ({
     if (equipmentFilter === 'all') return EQUIPMENT_TEMPLATES;
     return EQUIPMENT_TEMPLATES.filter((eq) => eq.rarity === equipmentFilter);
   }, [equipmentFilter]);
+
+  // 合并所有物品列表
+  const allItems = useMemo(() => {
+    const items: Array<{
+      name: string;
+      type: ItemType;
+      description: string;
+      rarity?: ItemRarity;
+      effect?: any;
+      permanentEffect?: any;
+    }> = [];
+
+    // 从初始物品
+    INITIAL_ITEMS.forEach((item) => {
+      items.push({
+        name: item.name,
+        type: item.type,
+        description: item.description,
+        rarity: item.rarity,
+        effect: item.effect,
+        permanentEffect: item.permanentEffect,
+      });
+    });
+
+    // 从丹药配方
+    [...PILL_RECIPES, ...DISCOVERABLE_RECIPES].forEach((recipe) => {
+      items.push({
+        name: recipe.result.name,
+        type: recipe.result.type,
+        description: recipe.result.description,
+        rarity: recipe.result.rarity,
+        effect: recipe.result.effect,
+      });
+    });
+
+    return items;
+  }, []);
+
+  // 过滤物品
+  const filteredItems = useMemo(() => {
+    if (itemFilter === 'all') return allItems;
+    return allItems.filter((item) => item.type === itemFilter);
+  }, [allItems, itemFilter]);
 
   if (!isOpen) return null;
 
@@ -361,7 +209,7 @@ const DebugModal: React.FC<Props> = ({
       id: uid(),
       name: template.name,
       type: template.type,
-      description: template.description || `${template.name}的装备`,
+      description: (template as any).description || `${template.name}的装备`,
       quantity: 1,
       rarity: template.rarity,
       level: 0,
@@ -439,6 +287,127 @@ const DebugModal: React.FC<Props> = ({
         return 'bg-yellow-900/20';
       default:
         return 'bg-stone-800/50';
+    }
+  };
+
+  // 选择称号
+  const handleSelectTitle = (title: Title) => {
+    const oldTitle = TITLES.find((t) => t.id === localPlayer.titleId);
+    const newTitle = title;
+
+    // 计算属性变化
+    let attackChange =
+      (newTitle.effects.attack || 0) - (oldTitle?.effects.attack || 0);
+    let defenseChange =
+      (newTitle.effects.defense || 0) - (oldTitle?.effects.defense || 0);
+    let hpChange = (newTitle.effects.hp || 0) - (oldTitle?.effects.hp || 0);
+
+    setLocalPlayer((prev) => ({
+      ...prev,
+      titleId: title.id,
+      attack: prev.attack + attackChange,
+      defense: prev.defense + defenseChange,
+      maxHp: prev.maxHp + hpChange,
+      hp: prev.hp + hpChange,
+    }));
+  };
+
+  // 学习功法
+  const handleLearnCultivationArt = (art: CultivationArt) => {
+    if (localPlayer.cultivationArts.includes(art.id)) {
+      return; // 已经学习过了
+    }
+    setLocalPlayer((prev) => ({
+      ...prev,
+      cultivationArts: [...prev.cultivationArts, art.id],
+    }));
+  };
+
+  // 加入宗门
+  const handleJoinSect = (sectId: string) => {
+    setLocalPlayer((prev) => ({
+      ...prev,
+      sectId: sectId,
+      sectRank: '外门' as any, // SectRank.Outer
+      sectContribution: 0,
+    }));
+  };
+
+  // 完成成就
+  const handleCompleteAchievement = (achievementId: string) => {
+    if (localPlayer.achievements.includes(achievementId)) {
+      return; // 已经完成了
+    }
+    setLocalPlayer((prev) => ({
+      ...prev,
+      achievements: [...prev.achievements, achievementId],
+    }));
+  };
+
+  // 添加灵宠
+  const handleAddPet = (template: PetTemplate) => {
+    const newPet = {
+      id: uid(),
+      name: template.name,
+      species: template.species,
+      level: 1,
+      exp: 0,
+      maxExp: 100,
+      rarity: template.rarity,
+      stats: { ...template.baseStats },
+      skills: template.skills,
+      evolutionStage: 0,
+      affection: 50,
+    };
+
+    setLocalPlayer((prev) => ({
+      ...prev,
+      pets: [...prev.pets, newPet],
+    }));
+  };
+
+  // 添加物品
+  const handleAddItem = (itemTemplate: Partial<Item> | Recipe['result']) => {
+    const newItem: Item = {
+      id: uid(),
+      name: itemTemplate.name || '未知物品',
+      type: itemTemplate.type || ItemType.Material,
+      description: itemTemplate.description || '',
+      quantity: 1,
+      rarity: itemTemplate.rarity || '普通',
+      level: 0,
+      effect: itemTemplate.effect,
+      permanentEffect: (itemTemplate as any).permanentEffect,
+    };
+
+    setLocalPlayer((prev) => ({
+      ...prev,
+      inventory: [...prev.inventory, newItem],
+    }));
+  };
+
+  // 解锁丹方
+  const handleUnlockRecipe = (recipeName: string) => {
+    if (localPlayer.unlockedRecipes.includes(recipeName)) {
+      return; // 已经解锁了
+    }
+    setLocalPlayer((prev) => ({
+      ...prev,
+      unlockedRecipes: [...prev.unlockedRecipes, recipeName],
+    }));
+  };
+
+  // 关闭调试模式
+  const handleDisableDebugMode = () => {
+    if (
+      window.confirm(
+        '确定要关闭调试模式吗？关闭后需要重新点击游戏名称5次才能再次启用。'
+      )
+    ) {
+      const DEBUG_MODE_KEY = 'xiuxian-debug-mode';
+      localStorage.removeItem(DEBUG_MODE_KEY);
+      // 刷新页面以应用更改
+      window.location.reload();
     }
   };
 
@@ -851,32 +820,118 @@ const DebugModal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* 装备和天赋选择 */}
+          {/* 游戏内容选择 */}
           <div>
             <div className="flex items-center justify-between mb-3 border-b border-stone-700 pb-2">
-              <h3 className="font-bold text-stone-200">装备与天赋</h3>
-              <div className="flex gap-2">
+              <h3 className="font-bold text-stone-200">游戏内容</h3>
+              <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => setActiveTab('equipment')}
-                  className={`px-3 py-1 rounded text-sm transition-colors ${
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
                     activeTab === 'equipment'
                       ? 'bg-red-700 text-white'
                       : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
                   }`}
+                  title="装备"
                 >
-                  <Package size={16} className="inline mr-1" />
+                  <Package size={14} className="inline mr-1" />
                   装备
                 </button>
                 <button
                   onClick={() => setActiveTab('talent')}
-                  className={`px-3 py-1 rounded text-sm transition-colors ${
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
                     activeTab === 'talent'
                       ? 'bg-red-700 text-white'
                       : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
                   }`}
+                  title="天赋"
                 >
-                  <Sparkles size={16} className="inline mr-1" />
+                  <Sparkles size={14} className="inline mr-1" />
                   天赋
+                </button>
+                <button
+                  onClick={() => setActiveTab('title')}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    activeTab === 'title'
+                      ? 'bg-red-700 text-white'
+                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                  }`}
+                  title="称号"
+                >
+                  <Award size={14} className="inline mr-1" />
+                  称号
+                </button>
+                <button
+                  onClick={() => setActiveTab('cultivation')}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    activeTab === 'cultivation'
+                      ? 'bg-red-700 text-white'
+                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                  }`}
+                  title="功法"
+                >
+                  <BookOpen size={14} className="inline mr-1" />
+                  功法
+                </button>
+                <button
+                  onClick={() => setActiveTab('sect')}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    activeTab === 'sect'
+                      ? 'bg-red-700 text-white'
+                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                  }`}
+                  title="宗门"
+                >
+                  <Building2 size={14} className="inline mr-1" />
+                  宗门
+                </button>
+                <button
+                  onClick={() => setActiveTab('achievement')}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    activeTab === 'achievement'
+                      ? 'bg-red-700 text-white'
+                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                  }`}
+                  title="成就"
+                >
+                  <Trophy size={14} className="inline mr-1" />
+                  成就
+                </button>
+                <button
+                  onClick={() => setActiveTab('pet')}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    activeTab === 'pet'
+                      ? 'bg-red-700 text-white'
+                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                  }`}
+                  title="灵宠"
+                >
+                  <Heart size={14} className="inline mr-1" />
+                  灵宠
+                </button>
+                <button
+                  onClick={() => setActiveTab('item')}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    activeTab === 'item'
+                      ? 'bg-red-700 text-white'
+                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                  }`}
+                  title="物品"
+                >
+                  <FlaskConical size={14} className="inline mr-1" />
+                  物品
+                </button>
+                <button
+                  onClick={() => setActiveTab('recipe')}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    activeTab === 'recipe'
+                      ? 'bg-red-700 text-white'
+                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                  }`}
+                  title="丹方"
+                >
+                  <Scroll size={14} className="inline mr-1" />
+                  丹方
                 </button>
               </div>
             </div>
@@ -920,7 +975,7 @@ const DebugModal: React.FC<Props> = ({
                         </span>
                       </div>
                       <p className="text-xs text-stone-400 mb-2">
-                        {equipment.description || equipment.name}
+                        {(equipment as any).description || equipment.name}
                       </p>
                       <div className="text-xs space-y-1">
                         <div className="text-stone-300">
@@ -1046,25 +1101,649 @@ const DebugModal: React.FC<Props> = ({
                 </div>
               </div>
             )}
+
+            {/* 称号选择 */}
+            {activeTab === 'title' && (
+              <div>
+                <div className="text-sm text-stone-400 mb-3">
+                  当前称号：
+                  <span className="text-stone-200 ml-2">
+                    {TITLES.find((t) => t.id === localPlayer.titleId)?.name ||
+                      '无'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                  {TITLES.map((title) => {
+                    const isSelected = localPlayer.titleId === title.id;
+                    return (
+                      <div
+                        key={title.id}
+                        className={`border-2 rounded-lg p-3 cursor-pointer transition-all hover:scale-105 ${
+                          isSelected
+                            ? 'border-red-500 bg-red-900/20'
+                            : 'border-stone-600 bg-stone-800/50'
+                        }`}
+                        onClick={() => handleSelectTitle(title)}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-bold text-sm">{title.name}</h4>
+                          {isSelected && (
+                            <span className="text-xs px-2 py-0.5 rounded bg-red-700 text-white">
+                              已选择
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-stone-400 mb-2">
+                          {title.description}
+                        </p>
+                        <div className="text-xs text-stone-300 mb-2">
+                          <span className="text-stone-500">要求：</span>
+                          {title.requirement}
+                        </div>
+                        {Object.keys(title.effects).length > 0 && (
+                          <div className="text-xs text-stone-300">
+                            <span className="text-stone-500">效果：</span>
+                            {Object.entries(title.effects)
+                              .map(([key, value]) => {
+                                const keyMap: Record<string, string> = {
+                                  attack: '攻击',
+                                  defense: '防御',
+                                  hp: '气血',
+                                  spirit: '神识',
+                                  physique: '体魄',
+                                  speed: '速度',
+                                  expRate: '修炼速度',
+                                };
+                                if (key === 'expRate') {
+                                  return `${keyMap[key] || key}+${(value * 100).toFixed(0)}%`;
+                                }
+                                return `${keyMap[key] || key}+${value}`;
+                              })
+                              .join(', ')}
+                          </div>
+                        )}
+                        <button
+                          className={`mt-2 w-full text-xs py-1 rounded transition-colors ${
+                            isSelected
+                              ? 'bg-stone-700 text-stone-400 cursor-not-allowed'
+                              : 'bg-red-700 hover:bg-red-600 text-white'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isSelected) {
+                              handleSelectTitle(title);
+                            }
+                          }}
+                          disabled={isSelected}
+                        >
+                          {isSelected ? '已选择' : '选择称号'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 功法选择 */}
+            {activeTab === 'cultivation' && (
+              <div>
+                <div className="text-sm text-stone-400 mb-3">
+                  已学功法：{localPlayer.cultivationArts.length} 种
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                  {CULTIVATION_ARTS.map((art) => {
+                    const isLearned = localPlayer.cultivationArts.includes(
+                      art.id
+                    );
+                    const isActive = localPlayer.activeArtId === art.id;
+                    return (
+                      <div
+                        key={art.id}
+                        className={`border-2 rounded-lg p-3 cursor-pointer transition-all hover:scale-105 ${
+                          isActive
+                            ? 'border-red-500 bg-red-900/20'
+                            : isLearned
+                              ? 'border-green-500 bg-green-900/20'
+                              : 'border-stone-600 bg-stone-800/50'
+                        }`}
+                        onClick={() => {
+                          if (!isLearned) {
+                            handleLearnCultivationArt(art);
+                          }
+                        }}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-bold text-sm">{art.name}</h4>
+                          <div className="flex items-center gap-1">
+                            {isActive && (
+                              <span className="text-xs px-2 py-0.5 rounded bg-red-700 text-white">
+                                激活中
+                              </span>
+                            )}
+                            {isLearned && !isActive && (
+                              <span className="text-xs px-2 py-0.5 rounded bg-green-700 text-white">
+                                已学习
+                              </span>
+                            )}
+                            <span className="text-xs px-2 py-0.5 rounded bg-stone-700">
+                              {art.type === 'mental' ? '心法' : '体术'}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-stone-400 mb-2">
+                          {art.description}
+                        </p>
+                        <div className="text-xs text-stone-300 mb-2">
+                          <span className="text-stone-500">境界要求：</span>
+                          {art.realmRequirement}
+                        </div>
+                        {Object.keys(art.effects).length > 0 && (
+                          <div className="text-xs text-stone-300">
+                            <span className="text-stone-500">效果：</span>
+                            {Object.entries(art.effects)
+                              .map(([key, value]) => {
+                                const keyMap: Record<string, string> = {
+                                  attack: '攻击',
+                                  defense: '防御',
+                                  hp: '气血',
+                                  spirit: '神识',
+                                  physique: '体魄',
+                                  speed: '速度',
+                                  expRate: '修炼速度',
+                                };
+                                if (key === 'expRate') {
+                                  return `${keyMap[key] || key}+${(value * 100).toFixed(0)}%`;
+                                }
+                                return `${keyMap[key] || key}+${value}`;
+                              })
+                              .join(', ')}
+                          </div>
+                        )}
+                        <button
+                          className={`mt-2 w-full text-xs py-1 rounded transition-colors ${
+                            isLearned
+                              ? 'bg-stone-700 text-stone-400 cursor-not-allowed'
+                              : 'bg-red-700 hover:bg-red-600 text-white'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isLearned) {
+                              handleLearnCultivationArt(art);
+                            }
+                          }}
+                          disabled={isLearned}
+                        >
+                          {isLearned ? '已学习' : '学习功法'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 宗门选择 */}
+            {activeTab === 'sect' && (
+              <div>
+                <div className="text-sm text-stone-400 mb-3">
+                  当前宗门：
+                  <span className="text-stone-200 ml-2">
+                    {localPlayer.sectId
+                      ? SECTS.find((s) => s.id === localPlayer.sectId)?.name ||
+                        '未知'
+                      : '无'}
+                  </span>
+                  {localPlayer.sectId && (
+                    <span className="text-stone-200 ml-2">
+                      ({localPlayer.sectRank})
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                  {SECTS.map((sect) => {
+                    const isJoined = localPlayer.sectId === sect.id;
+                    return (
+                      <div
+                        key={sect.id}
+                        className={`border-2 rounded-lg p-3 cursor-pointer transition-all hover:scale-105 ${
+                          isJoined
+                            ? 'border-red-500 bg-red-900/20'
+                            : 'border-stone-600 bg-stone-800/50'
+                        }`}
+                        onClick={() => {
+                          if (!isJoined) {
+                            handleJoinSect(sect.id);
+                          }
+                        }}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-bold text-sm">{sect.name}</h4>
+                          <div className="flex items-center gap-1">
+                            {isJoined && (
+                              <span className="text-xs px-2 py-0.5 rounded bg-red-700 text-white">
+                                已加入
+                              </span>
+                            )}
+                            <span className="text-xs px-2 py-0.5 rounded bg-stone-700">
+                              {sect.grade}级
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-stone-400 mb-2">
+                          {sect.description}
+                        </p>
+                        <div className="text-xs text-stone-300">
+                          <span className="text-stone-500">境界要求：</span>
+                          {sect.reqRealm}
+                        </div>
+                        <button
+                          className={`mt-2 w-full text-xs py-1 rounded transition-colors ${
+                            isJoined
+                              ? 'bg-stone-700 text-stone-400 cursor-not-allowed'
+                              : 'bg-red-700 hover:bg-red-600 text-white'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isJoined) {
+                              handleJoinSect(sect.id);
+                            }
+                          }}
+                          disabled={isJoined}
+                        >
+                          {isJoined ? '已加入' : '加入宗门'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 成就选择 */}
+            {activeTab === 'achievement' && (
+              <div>
+                <div className="text-sm text-stone-400 mb-3">
+                  已完成成就：{localPlayer.achievements.length} /{' '}
+                  {ACHIEVEMENTS.length}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                  {ACHIEVEMENTS.map((achievement) => {
+                    const isCompleted = localPlayer.achievements.includes(
+                      achievement.id
+                    );
+                    return (
+                      <div
+                        key={achievement.id}
+                        className={`border-2 rounded-lg p-3 cursor-pointer transition-all hover:scale-105 ${
+                          isCompleted
+                            ? 'border-green-500 bg-green-900/20'
+                            : getRarityColor(achievement.rarity)
+                        } ${getRarityBgColor(achievement.rarity)}`}
+                        onClick={() => {
+                          if (!isCompleted) {
+                            handleCompleteAchievement(achievement.id);
+                          }
+                        }}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-bold text-sm">
+                            {achievement.name}
+                          </h4>
+                          <div className="flex items-center gap-1">
+                            {isCompleted && (
+                              <span className="text-xs px-2 py-0.5 rounded bg-green-700 text-white">
+                                已完成
+                              </span>
+                            )}
+                            <span className="text-xs px-2 py-0.5 rounded bg-stone-700">
+                              {achievement.rarity}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-stone-400 mb-2">
+                          {achievement.description}
+                        </p>
+                        <div className="text-xs text-stone-300 mb-2">
+                          <span className="text-stone-500">要求：</span>
+                          {achievement.requirement.type === 'realm'
+                            ? `达到${achievement.requirement.target}`
+                            : achievement.requirement.type === 'kill'
+                              ? `击败${achievement.requirement.value}个敌人`
+                              : achievement.requirement.type === 'collect'
+                                ? `收集${achievement.requirement.value}种物品`
+                                : achievement.requirement.type === 'meditate'
+                                  ? `完成${achievement.requirement.value}次打坐`
+                                  : achievement.requirement.type === 'adventure'
+                                    ? `完成${achievement.requirement.value}次历练`
+                                    : achievement.requirement.type === 'equip'
+                                      ? `装备${achievement.requirement.value}件物品`
+                                      : achievement.requirement.type === 'pet'
+                                        ? `获得${achievement.requirement.value}个灵宠`
+                                        : achievement.requirement.type ===
+                                            'recipe'
+                                          ? `解锁${achievement.requirement.value}个丹方`
+                                          : achievement.requirement.type ===
+                                              'art'
+                                            ? `学习${achievement.requirement.value}种功法`
+                                            : achievement.requirement.type ===
+                                                'breakthrough'
+                                              ? `完成${achievement.requirement.value}次突破`
+                                              : achievement.requirement.type ===
+                                                  'secret_realm'
+                                                ? `进入${achievement.requirement.value}次秘境`
+                                                : achievement.requirement
+                                                      .type === 'lottery'
+                                                  ? `进行${achievement.requirement.value}次抽奖`
+                                                  : `${achievement.requirement.type} ${achievement.requirement.value}`}
+                        </div>
+                        {achievement.reward && (
+                          <div className="text-xs text-stone-300">
+                            <span className="text-stone-500">奖励：</span>
+                            {[
+                              achievement.reward.exp &&
+                                `修为+${achievement.reward.exp}`,
+                              achievement.reward.spiritStones &&
+                                `灵石+${achievement.reward.spiritStones}`,
+                              achievement.reward.titleId && '称号',
+                            ]
+                              .filter(Boolean)
+                              .join(', ')}
+                          </div>
+                        )}
+                        <button
+                          className={`mt-2 w-full text-xs py-1 rounded transition-colors ${
+                            isCompleted
+                              ? 'bg-stone-700 text-stone-400 cursor-not-allowed'
+                              : 'bg-red-700 hover:bg-red-600 text-white'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isCompleted) {
+                              handleCompleteAchievement(achievement.id);
+                            }
+                          }}
+                          disabled={isCompleted}
+                        >
+                          {isCompleted ? '已完成' : '完成成就'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 灵宠选择 */}
+            {activeTab === 'pet' && (
+              <div>
+                <div className="text-sm text-stone-400 mb-3">
+                  拥有灵宠：{localPlayer.pets.length} 只
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                  {PET_TEMPLATES.map((template) => {
+                    const hasPet = localPlayer.pets.some(
+                      (p) => p.species === template.species
+                    );
+                    return (
+                      <div
+                        key={template.id}
+                        className={`border-2 rounded-lg p-3 cursor-pointer transition-all hover:scale-105 ${getRarityColor(
+                          template.rarity
+                        )} ${getRarityBgColor(template.rarity)}`}
+                        onClick={() => handleAddPet(template)}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-bold text-sm">{template.name}</h4>
+                          <div className="flex items-center gap-1">
+                            {hasPet && (
+                              <span className="text-xs px-2 py-0.5 rounded bg-green-700 text-white">
+                                已拥有
+                              </span>
+                            )}
+                            <span className="text-xs px-2 py-0.5 rounded bg-stone-700">
+                              {template.rarity}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-stone-400 mb-2">
+                          {template.description}
+                        </p>
+                        <div className="text-xs text-stone-300 mb-2">
+                          <span className="text-stone-500">种类：</span>
+                          {template.species}
+                        </div>
+                        <div className="text-xs text-stone-300">
+                          <span className="text-stone-500">基础属性：</span>
+                          攻击{template.baseStats.attack} 防御
+                          {template.baseStats.defense} 气血
+                          {template.baseStats.hp} 速度
+                          {template.baseStats.speed}
+                        </div>
+                        <button
+                          className="mt-2 w-full bg-red-700 hover:bg-red-600 text-white text-xs py-1 rounded transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleAddPet(template);
+                          }}
+                        >
+                          添加灵宠
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* 物品选择 */}
+            {activeTab === 'item' && (
+              <div>
+                {/* 物品类型筛选 */}
+                <div className="flex gap-2 mb-3 flex-wrap">
+                  {(['all', ...Object.values(ItemType)] as const).map(
+                    (type) => (
+                      <button
+                        key={type}
+                        onClick={() => setItemFilter(type)}
+                        className={`px-3 py-1 rounded text-sm transition-colors ${
+                          itemFilter === type
+                            ? 'bg-red-700 text-white'
+                            : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                        }`}
+                      >
+                        {type === 'all' ? '全部' : type}
+                      </button>
+                    )
+                  )}
+                </div>
+
+                {/* 物品卡片列表 */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                  {filteredItems.map((item, index) => (
+                    <div
+                      key={`${item.name}-${index}`}
+                      className={`border-2 rounded-lg p-3 cursor-pointer transition-all hover:scale-105 ${
+                        item.rarity
+                          ? getRarityColor(item.rarity)
+                          : 'border-stone-600'
+                      } ${
+                        item.rarity
+                          ? getRarityBgColor(item.rarity)
+                          : 'bg-stone-800/50'
+                      }`}
+                      onClick={() => handleAddItem(item)}
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-bold text-sm">{item.name}</h4>
+                        {item.rarity && (
+                          <span className="text-xs px-2 py-0.5 rounded bg-stone-700">
+                            {item.rarity}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-stone-400 mb-2">
+                        {item.description}
+                      </p>
+                      <div className="text-xs text-stone-300 mb-1">
+                        <span className="text-stone-500">类型：</span>
+                        {item.type}
+                      </div>
+                      {item.effect && (
+                        <div className="text-xs text-stone-300">
+                          <span className="text-stone-500">效果：</span>
+                          {Object.entries(item.effect)
+                            .map(([key, value]) => {
+                              const keyMap: Record<string, string> = {
+                                attack: '攻击',
+                                defense: '防御',
+                                hp: '气血',
+                                spirit: '神识',
+                                physique: '体魄',
+                                speed: '速度',
+                                exp: '经验',
+                              };
+                              return `${keyMap[key] || key}+${value}`;
+                            })
+                            .join(', ')}
+                        </div>
+                      )}
+                      <button
+                        className="mt-2 w-full bg-red-700 hover:bg-red-600 text-white text-xs py-1 rounded transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAddItem(item);
+                        }}
+                      >
+                        添加到背包
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 丹方选择 */}
+            {activeTab === 'recipe' && (
+              <div>
+                <div className="text-sm text-stone-400 mb-3">
+                  已解锁丹方：{localPlayer.unlockedRecipes.length} 个
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                  {[...PILL_RECIPES, ...DISCOVERABLE_RECIPES].map((recipe) => {
+                    const isUnlocked = localPlayer.unlockedRecipes.includes(
+                      recipe.name
+                    );
+                    return (
+                      <div
+                        key={recipe.name}
+                        className={`border-2 rounded-lg p-3 cursor-pointer transition-all hover:scale-105 ${
+                          isUnlocked
+                            ? 'border-green-500 bg-green-900/20'
+                            : getRarityColor(recipe.result.rarity)
+                        } ${getRarityBgColor(recipe.result.rarity)}`}
+                        onClick={() => {
+                          if (!isUnlocked) {
+                            handleUnlockRecipe(recipe.name);
+                          }
+                        }}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-bold text-sm">{recipe.name}</h4>
+                          <div className="flex items-center gap-1">
+                            {isUnlocked && (
+                              <span className="text-xs px-2 py-0.5 rounded bg-green-700 text-white">
+                                已解锁
+                              </span>
+                            )}
+                            <span className="text-xs px-2 py-0.5 rounded bg-stone-700">
+                              {recipe.result.rarity}
+                            </span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-stone-400 mb-2">
+                          {recipe.result.description}
+                        </p>
+                        <div className="text-xs text-stone-300 mb-2">
+                          <span className="text-stone-500">材料：</span>
+                          {recipe.ingredients
+                            .map((ing) => `${ing.name}x${ing.qty}`)
+                            .join(', ')}
+                        </div>
+                        <div className="text-xs text-stone-300 mb-2">
+                          <span className="text-stone-500">成本：</span>
+                          {recipe.cost} 灵石
+                        </div>
+                        {recipe.result.effect && (
+                          <div className="text-xs text-stone-300">
+                            <span className="text-stone-500">效果：</span>
+                            {Object.entries(recipe.result.effect)
+                              .map(([key, value]) => {
+                                const keyMap: Record<string, string> = {
+                                  attack: '攻击',
+                                  defense: '防御',
+                                  hp: '气血',
+                                  spirit: '神识',
+                                  physique: '体魄',
+                                  speed: '速度',
+                                  exp: '经验',
+                                };
+                                return `${keyMap[key] || key}+${value}`;
+                              })
+                              .join(', ')}
+                          </div>
+                        )}
+                        <button
+                          className={`mt-2 w-full text-xs py-1 rounded transition-colors ${
+                            isUnlocked
+                              ? 'bg-stone-700 text-stone-400 cursor-not-allowed'
+                              : 'bg-red-700 hover:bg-red-600 text-white'
+                          }`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!isUnlocked) {
+                              handleUnlockRecipe(recipe.name);
+                            }
+                          }}
+                          disabled={isUnlocked}
+                        >
+                          {isUnlocked ? '已解锁' : '解锁丹方'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="bg-stone-800 border-t border-stone-700 p-3 md:p-4 flex justify-end gap-2 shrink-0">
+        <div className="bg-stone-800 border-t border-stone-700 p-3 md:p-4 flex justify-between items-center shrink-0">
           <button
-            onClick={handleReset}
-            className="flex items-center gap-2 px-4 py-2 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded border border-stone-600 transition-colors"
+            onClick={handleDisableDebugMode}
+            className="flex items-center gap-2 px-4 py-2 bg-orange-700 hover:bg-orange-600 text-white rounded border border-orange-600 transition-colors"
+            title="关闭调试模式"
           >
-            <RotateCcw size={16} />
-            重置
+            <Power size={16} />
+            关闭调试模式
           </button>
-          <button
-            onClick={handleSave}
-            className="flex items-center gap-2 px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded border border-red-600 transition-colors"
-          >
-            <Save size={16} />
-            保存修改
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleReset}
+              className="flex items-center gap-2 px-4 py-2 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded border border-stone-600 transition-colors"
+            >
+              <RotateCcw size={16} />
+              重置
+            </button>
+            <button
+              onClick={handleSave}
+              className="flex items-center gap-2 px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded border border-red-600 transition-colors"
+            >
+              <Save size={16} />
+              保存修改
+            </button>
+          </div>
         </div>
       </div>
     </div>

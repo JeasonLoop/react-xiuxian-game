@@ -182,7 +182,7 @@ const pickOne = <T>(list: T[]): T =>
   list[Math.floor(Math.random() * list.length)];
 
 // 搜刮奖励物品名称库
-const LOOT_ITEMS = {
+export const LOOT_ITEMS = {
   // 草药类
   herbs: [
     {
