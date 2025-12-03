@@ -341,6 +341,11 @@ function App() {
 
   const handleMeditate = () => {
     if (loading || cooldown > 0 || !player) return;
+    // 如果正在自动历练，则不能手动打坐
+    if (autoAdventure) {
+      addLog('正在历练中，无法打坐。请先停止自动历练。', 'danger');
+      return;
+    }
     meditationHandlers.handleMeditate();
     setCooldown(1);
   };
@@ -447,11 +452,12 @@ function App() {
 
   // 自动打坐逻辑
   useEffect(() => {
-    if (!autoMeditate || !player || loading || cooldown > 0) return;
+    // 如果正在自动历练，则不能自动打坐
+    if (!autoMeditate || !player || loading || cooldown > 0 || autoAdventure) return;
 
     const timer = setTimeout(() => {
-      if (autoMeditate && !loading && cooldown === 0 && player) {
-        if (loading || cooldown > 0 || !player) return;
+      if (autoMeditate && !loading && cooldown === 0 && player && !autoAdventure) {
+        if (loading || cooldown > 0 || !player || autoAdventure) return;
         meditationHandlers.handleMeditate();
         setCooldown(1);
       }
@@ -459,11 +465,12 @@ function App() {
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoMeditate, player, loading, cooldown]);
+  }, [autoMeditate, player, loading, cooldown, autoAdventure]);
 
   // 自动历练逻辑
   useEffect(() => {
-    if (!autoAdventure || !player || loading || cooldown > 0 || isShopOpen) return;
+    // 如果正在自动打坐，则不能自动历练
+    if (!autoAdventure || !player || loading || cooldown > 0 || isShopOpen || autoMeditate) return;
     // if (player.hp < player.maxHp * 0.2) {
     //   // 如果血量过低，停止自动历练
     //   setAutoAdventure(false);
@@ -473,17 +480,27 @@ function App() {
 
     // 生死有命！富贵在天！！！
     const timer = setTimeout(() => {
-      if (autoAdventure && !loading && cooldown === 0 && player) {
+      if (autoAdventure && !loading && cooldown === 0 && player && !autoMeditate) {
         handleAdventure();
       }
     }, 100); // 短暂延迟，确保状态更新完成
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoAdventure, player, loading, cooldown]);
+  }, [autoAdventure, player, loading, cooldown, autoMeditate]);
 
   // 从冒险 handlers 中提取函数
-  const { handleAdventure, executeAdventure } = adventureHandlers;
+  const { handleAdventure: originalHandleAdventure, executeAdventure } = adventureHandlers;
+
+  // 包装handleAdventure，添加自动打坐检查
+  const handleAdventure = async () => {
+    // 如果正在自动打坐，则不能手动历练
+    if (autoMeditate) {
+      addLog('正在打坐中，无法历练。请先停止自动打坐。', 'danger');
+      return;
+    }
+    await originalHandleAdventure();
+  };
 
   // 现在可以使用 executeAdventure 初始化 realmHandlers
   const realmHandlers = useRealmHandlers({
@@ -658,8 +675,28 @@ function App() {
           },
           autoMeditate,
           autoAdventure,
-          onToggleAutoMeditate: () => setAutoMeditate((prev) => !prev),
-          onToggleAutoAdventure: () => setAutoAdventure((prev) => !prev),
+          onToggleAutoMeditate: () => {
+            setAutoMeditate((prev) => {
+              const newValue = !prev;
+              // 如果开启自动打坐，则关闭自动历练
+              if (newValue && autoAdventure) {
+                setAutoAdventure(false);
+                addLog('已关闭自动历练，开启自动打坐。', 'normal');
+              }
+              return newValue;
+            });
+          },
+          onToggleAutoAdventure: () => {
+            setAutoAdventure((prev) => {
+              const newValue = !prev;
+              // 如果开启自动历练，则关闭自动打坐
+              if (newValue && autoMeditate) {
+                setAutoMeditate(false);
+                addLog('已关闭自动打坐，开启自动历练。', 'normal');
+              }
+              return newValue;
+            });
+          },
         }}
       />
 
