@@ -3,6 +3,7 @@ import { Item, Shop, ShopItem, ShopType, EquipmentSlot } from './types';
 import WelcomeScreen from './components/WelcomeScreen';
 import StartScreen from './components/StartScreen';
 import DeathModal from './components/DeathModal';
+import DebugModal from './components/DebugModal';
 import { BattleReplay } from './services/battleService';
 import { useGameState } from './hooks/useGameState';
 import { useGameEffects } from './hooks/useGameEffects';
@@ -49,6 +50,13 @@ function App() {
   // 欢迎界面状态 - 总是显示欢迎界面，让用户选择继续或开始
   const [showWelcome, setShowWelcome] = useState(true);
 
+  // 检查调试模式是否启用
+  useEffect(() => {
+    const DEBUG_MODE_KEY = 'xiuxian-debug-mode';
+    const debugMode = localStorage.getItem(DEBUG_MODE_KEY) === 'true';
+    setIsDebugModeEnabled(debugMode);
+  }, []);
+
   // 使用自定义hooks管理游戏效果
   const { visualEffects, createAddLog, triggerVisual } = useGameEffects();
   const addLog = createAddLog(setLogs);
@@ -65,6 +73,8 @@ function App() {
   const [isLotteryOpen, setIsLotteryOpen] = useState(false); // 抽奖是否打开
   const [isSettingsOpen, setIsSettingsOpen] = useState(false); // 设置是否打开
   const [isShopOpen, setIsShopOpen] = useState(false); // 商店是否打开
+  const [isDebugOpen, setIsDebugOpen] = useState(false); // 调试弹窗是否打开
+  const [isDebugModeEnabled, setIsDebugModeEnabled] = useState(false); // 调试模式是否启用
   const [currentShop, setCurrentShop] = useState<Shop | null>(null); // 当前商店
   const [itemToUpgrade, setItemToUpgrade] = useState<Item | null>(null); // 当前升级物品
   const [purchaseSuccess, setPurchaseSuccess] = useState<{
@@ -88,7 +98,8 @@ function App() {
   } | null>(null); // 物品操作轻提示
   const [autoMeditate, setAutoMeditate] = useState(false); // 自动打坐
   const [autoAdventure, setAutoAdventure] = useState(false); // 自动历练
-  const [autoAdventurePausedByShop, setAutoAdventurePausedByShop] = useState(false); // 自动历练是否因商店暂停
+  const [autoAdventurePausedByShop, setAutoAdventurePausedByShop] =
+    useState(false); // 自动历练是否因商店暂停
   const [isDead, setIsDead] = useState(false); // 是否死亡
   const [deathBattleData, setDeathBattleData] = useState<BattleReplay | null>(
     null
@@ -244,7 +255,7 @@ function App() {
       // 遍历所有装备槽位，查找有保命机会的装备
       for (const [slot, itemId] of Object.entries(player.equippedItems)) {
         if (!itemId) continue;
-        const item = player.inventory.find(i => i.id === itemId);
+        const item = player.inventory.find((i) => i.id === itemId);
         if (item && item.reviveChances && item.reviveChances > 0) {
           reviveItem = item;
           reviveSlot = slot as EquipmentSlot;
@@ -257,7 +268,7 @@ function App() {
         setPlayer((prev) => {
           if (!prev) return prev;
 
-          const newInventory = prev.inventory.map(item => {
+          const newInventory = prev.inventory.map((item) => {
             if (item.id === reviveItem!.id) {
               const newChances = (item.reviveChances || 0) - 1;
               addLog(
@@ -273,11 +284,17 @@ function App() {
           });
 
           // 如果保命机会用完了，从装备栏移除
-          const updatedItem = newInventory.find(i => i.id === reviveItem!.id);
+          const updatedItem = newInventory.find((i) => i.id === reviveItem!.id);
           const newEquippedItems = { ...prev.equippedItems };
-          if (updatedItem && (!updatedItem.reviveChances || updatedItem.reviveChances <= 0)) {
+          if (
+            updatedItem &&
+            (!updatedItem.reviveChances || updatedItem.reviveChances <= 0)
+          ) {
             delete newEquippedItems[reviveSlot!];
-            addLog(`⚠️ ${reviveItem!.name}的保命之力已耗尽，自动卸下。`, 'danger');
+            addLog(
+              `⚠️ ${reviveItem!.name}的保命之力已耗尽，自动卸下。`,
+              'danger'
+            );
           }
 
           // 复活：恢复10%最大气血
@@ -360,7 +377,9 @@ function App() {
     // 获取所有要使用的物品
     const itemsToUse = itemIds
       .map((id) => player.inventory.find((item) => item.id === id))
-      .filter((item): item is typeof player.inventory[0] => item !== undefined);
+      .filter(
+        (item): item is (typeof player.inventory)[0] => item !== undefined
+      );
 
     // 批量使用：逐个使用物品（使用延迟以避免状态更新冲突）
     for (const item of itemsToUse) {
@@ -453,10 +472,17 @@ function App() {
   // 自动打坐逻辑
   useEffect(() => {
     // 如果正在自动历练，则不能自动打坐
-    if (!autoMeditate || !player || loading || cooldown > 0 || autoAdventure) return;
+    if (!autoMeditate || !player || loading || cooldown > 0 || autoAdventure)
+      return;
 
     const timer = setTimeout(() => {
-      if (autoMeditate && !loading && cooldown === 0 && player && !autoAdventure) {
+      if (
+        autoMeditate &&
+        !loading &&
+        cooldown === 0 &&
+        player &&
+        !autoAdventure
+      ) {
         if (loading || cooldown > 0 || !player || autoAdventure) return;
         meditationHandlers.handleMeditate();
         setCooldown(1);
@@ -470,7 +496,15 @@ function App() {
   // 自动历练逻辑
   useEffect(() => {
     // 如果正在自动打坐，则不能自动历练
-    if (!autoAdventure || !player || loading || cooldown > 0 || isShopOpen || autoMeditate) return;
+    if (
+      !autoAdventure ||
+      !player ||
+      loading ||
+      cooldown > 0 ||
+      isShopOpen ||
+      autoMeditate
+    )
+      return;
     // if (player.hp < player.maxHp * 0.2) {
     //   // 如果血量过低，停止自动历练
     //   setAutoAdventure(false);
@@ -480,7 +514,13 @@ function App() {
 
     // 生死有命！富贵在天！！！
     const timer = setTimeout(() => {
-      if (autoAdventure && !loading && cooldown === 0 && player && !autoMeditate) {
+      if (
+        autoAdventure &&
+        !loading &&
+        cooldown === 0 &&
+        player &&
+        !autoMeditate
+      ) {
         handleAdventure();
       }
     }, 100); // 短暂延迟，确保状态更新完成
@@ -490,7 +530,8 @@ function App() {
   }, [autoAdventure, player, loading, cooldown, autoMeditate]);
 
   // 从冒险 handlers 中提取函数
-  const { handleAdventure: originalHandleAdventure, executeAdventure } = adventureHandlers;
+  const { handleAdventure: originalHandleAdventure, executeAdventure } =
+    adventureHandlers;
 
   // 包装handleAdventure，添加自动打坐检查
   const handleAdventure = async () => {
@@ -674,6 +715,7 @@ function App() {
           onOpenPet: () => setIsPetOpen(true),
           onOpenLottery: () => setIsLotteryOpen(true),
           onOpenSettings: () => setIsSettingsOpen(true),
+          onOpenDebug: () => setIsDebugOpen(true),
           onOpenStats: () => setIsMobileStatsOpen(true),
           onUpdateViewedAchievements: () => {
             setPlayer((prev) => ({
@@ -706,7 +748,23 @@ function App() {
             });
           },
         }}
+        isDebugModeEnabled={isDebugModeEnabled}
       />
+
+      {/* 调试弹窗 */}
+      {player && isDebugModeEnabled && (
+        <DebugModal
+          isOpen={isDebugOpen}
+          onClose={() => setIsDebugOpen(false)}
+          player={player}
+          onUpdatePlayer={(updates) => {
+            setPlayer((prev) => {
+              if (!prev) return prev;
+              return { ...prev, ...updates };
+            });
+          }}
+        />
+      )}
 
       <ModalsContainer
         player={player}
