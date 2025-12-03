@@ -3241,6 +3241,21 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
   },
 ];
 
+// --- 装备模板列表（从抽奖奖品中提取） ---
+export const EQUIPMENT_TEMPLATES = LOTTERY_PRIZES.filter(
+  (prize) => prize.type === 'item' && prize.value.item?.isEquippable
+).map((prize) => {
+  const item = prize.value.item!;
+  return {
+    name: item.name,
+    type: item.type,
+    rarity: item.rarity || '普通',
+    slot: item.equipmentSlot!,
+    effect: item.effect,
+    description: item.description,
+  };
+});
+
 // --- 商店系统 ---
 
 export const SHOPS: Shop[] = [

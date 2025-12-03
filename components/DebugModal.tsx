@@ -44,21 +44,12 @@ import {
   INITIAL_ITEMS,
   SECTS,
   SECRET_REALMS,
+  EQUIPMENT_TEMPLATES,
 } from '../constants';
-import { LOOT_ITEMS } from '../services/battleService';
 
 // 生成唯一ID
 const uid = () =>
   Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
-
-// 装备模板列表（从battleService的LOOT_ITEMS中提取）
-const EQUIPMENT_TEMPLATES = [
-  ...LOOT_ITEMS.weapons,
-  ...LOOT_ITEMS.armors,
-  ...LOOT_ITEMS.accessories,
-  ...LOOT_ITEMS.rings,
-  ...LOOT_ITEMS.artifacts,
-];
 
 interface Props {
   isOpen: boolean;
