@@ -614,9 +614,17 @@ function App() {
     return (
       <WelcomeScreen
         hasSave={hasSave}
-        onStart={() => setShowWelcome(false)}
+        onStart={() => {
+          // 新游戏：清除存档并重置状态
+          localStorage.removeItem(SAVE_KEY);
+          setHasSave(false);
+          setGameStarted(false);
+          setPlayer(null);
+          setLogs([]);
+          setShowWelcome(false);
+        }}
         onContinue={() => {
-          // 继续游戏：跳过欢迎界面和取名界面，直接进入游戏
+          // 继续游戏：跳过欢迎界面和取名界面，直接进入游戏（自动加载存档）
           setShowWelcome(false);
         }}
       />
