@@ -894,6 +894,7 @@ function App() {
           handleTurnBasedBattleClose: (result, updatedInventory?) => {
             setIsTurnBasedBattleOpen(false);
             setTurnBasedBattleParams(null);
+            setLoading(false); // 战斗结束后清除loading状态
 
             if (result) {
               // 更新玩家状态
