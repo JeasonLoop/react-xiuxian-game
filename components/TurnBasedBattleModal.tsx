@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Shield, Sword, X, Zap, Option, ArrowRight } from 'lucide-react';
+import {
+  Shield,
+  Sword,
+  X,
+  Zap,
+  Option,
+  ArrowRight,
+  FastForward,
+} from 'lucide-react';
 import {
   BattleState,
   BattleSkill,
@@ -23,22 +31,25 @@ interface TurnBasedBattleModalProps {
   adventureType: 'normal' | 'lucky' | 'secret_realm';
   riskLevel?: '低' | '中' | '高' | '极度危险';
   realmMinRealm?: RealmType;
-  onClose: (result?: {
-    victory: boolean;
-    hpLoss: number;
-    expChange: number;
-    spiritChange: number;
-    items?: Array<{
-      name: string;
-      type: string;
-      description: string;
-      rarity?: string;
-      isEquippable?: boolean;
-      equipmentSlot?: string;
-      effect?: any;
-      permanentEffect?: any;
-    }>;
-  }, updatedInventory?: Item[]) => void;
+  onClose: (
+    result?: {
+      victory: boolean;
+      hpLoss: number;
+      expChange: number;
+      spiritChange: number;
+      items?: Array<{
+        name: string;
+        type: string;
+        description: string;
+        rarity?: string;
+        isEquippable?: boolean;
+        equipmentSlot?: string;
+        effect?: any;
+        permanentEffect?: any;
+      }>;
+    },
+    updatedInventory?: Item[]
+  ) => void;
 }
 
 const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
@@ -88,19 +99,30 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
         // 战斗结束，计算奖励
         const victory = newState.enemy.hp <= 0;
         const hpLoss = player.hp - newState.player.hp;
-        const rewards = calculateBattleRewards(newState, player, adventureType, riskLevel);
-        onClose({
-          victory,
-          hpLoss,
-          expChange: rewards.expChange,
-          spiritChange: rewards.spiritChange,
-          items: rewards.items,
-        }, newState.playerInventory);
+        const rewards = calculateBattleRewards(
+          newState,
+          player,
+          adventureType,
+          riskLevel
+        );
+        onClose(
+          {
+            victory,
+            hpLoss,
+            expChange: rewards.expChange,
+            spiritChange: rewards.spiritChange,
+            items: rewards.items,
+          },
+          newState.playerInventory
+        );
         return;
       }
 
       // 如果玩家还有剩余行动次数，继续玩家回合
-      if (newState.waitingForPlayerAction && newState.playerActionsRemaining > 0) {
+      if (
+        newState.waitingForPlayerAction &&
+        newState.playerActionsRemaining > 0
+      ) {
         setBattleState(newState);
         setIsProcessing(false);
         return; // 继续等待玩家行动
@@ -115,14 +137,22 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
           if (checkBattleEnd(newState)) {
             const victory = newState.enemy.hp <= 0;
             const hpLoss = player.hp - newState.player.hp;
-            const rewards = calculateBattleRewards(newState, player, adventureType, riskLevel);
-            onClose({
-              victory,
-              hpLoss,
-              expChange: rewards.expChange,
-              spiritChange: rewards.spiritChange,
-              items: rewards.items,
-            }, newState.playerInventory);
+            const rewards = calculateBattleRewards(
+              newState,
+              player,
+              adventureType,
+              riskLevel
+            );
+            onClose(
+              {
+                victory,
+                hpLoss,
+                expChange: rewards.expChange,
+                spiritChange: rewards.spiritChange,
+                items: rewards.items,
+              },
+              newState.playerInventory
+            );
             return;
           }
 
@@ -144,28 +174,88 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
     }
   };
 
+  // 跳过战斗
+  const handleSkipBattle = () => {
+    if (!battleState || isProcessing) return;
+
+    setIsProcessing(true);
+    let currentState = { ...battleState };
+    let isBattleEnded = false;
+    let loopCount = 0;
+    const MAX_LOOPS = 200; // 防止死循环
+
+    try {
+      while (!isBattleEnded && loopCount < MAX_LOOPS) {
+        loopCount++;
+
+        // 玩家回合
+        if (
+          currentState.waitingForPlayerAction &&
+          currentState.playerActionsRemaining > 0
+        ) {
+          currentState = executePlayerAction(currentState, { type: 'attack' });
+          isBattleEnded = checkBattleEnd(currentState);
+          if (isBattleEnded) break;
+        }
+
+        // 敌人回合 (如果玩家行动耗尽或不是玩家回合)
+        if (
+          !isBattleEnded &&
+          (!currentState.waitingForPlayerAction ||
+            currentState.playerActionsRemaining <= 0)
+        ) {
+          currentState = executeEnemyTurn(currentState);
+          isBattleEnded = checkBattleEnd(currentState);
+        }
+      }
+
+      // 战斗结束结算
+      const victory = currentState.enemy.hp <= 0;
+      const hpLoss = player.hp - currentState.player.hp;
+      const rewards = calculateBattleRewards(
+        currentState,
+        player,
+        adventureType,
+        riskLevel
+      );
+
+      onClose(
+        {
+          victory,
+          hpLoss,
+          expChange: rewards.expChange,
+          spiritChange: rewards.spiritChange,
+          items: rewards.items,
+        },
+        currentState.playerInventory
+      );
+    } catch (error) {
+      console.error('跳过战斗出错:', error);
+      setErrorMessage('跳过战斗出错');
+      setIsProcessing(false);
+    }
+  };
+
   // 获取可用技能（检查冷却和MP）
   const availableSkills = useMemo(() => {
     if (!battleState) return [];
-    return battleState.player.skills.filter(
-      (skill) => {
-        const cooldownOk = (battleState.player.cooldowns[skill.id] || 0) === 0;
-        const manaOk = !skill.cost.mana || (battleState.player.mana || 0) >= skill.cost.mana;
-        return cooldownOk && manaOk;
-      }
-    );
+    return battleState.player.skills.filter((skill) => {
+      const cooldownOk = (battleState.player.cooldowns[skill.id] || 0) === 0;
+      const manaOk =
+        !skill.cost.mana || (battleState.player.mana || 0) >= skill.cost.mana;
+      return cooldownOk && manaOk;
+    });
   }, [battleState]);
 
   // 获取冷却中或MP不足的技能
   const unavailableSkills = useMemo(() => {
     if (!battleState) return [];
-    return battleState.player.skills.filter(
-      (skill) => {
-        const onCooldown = (battleState.player.cooldowns[skill.id] || 0) > 0;
-        const notEnoughMana = skill.cost.mana && (battleState.player.mana || 0) < skill.cost.mana;
-        return onCooldown || notEnoughMana;
-      }
-    );
+    return battleState.player.skills.filter((skill) => {
+      const onCooldown = (battleState.player.cooldowns[skill.id] || 0) > 0;
+      const notEnoughMana =
+        skill.cost.mana && (battleState.player.mana || 0) < skill.cost.mana;
+      return onCooldown || notEnoughMana;
+    });
   }, [battleState]);
 
   // 获取可用丹药（从战斗状态中的背包获取，因为物品使用会更新背包）
@@ -190,13 +280,16 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
     <div
       className="fixed inset-0 bg-black/80 flex items-center justify-center z-[80] p-4"
       onClick={(e) => {
-        if (e.target === e.currentTarget && !battleState.waitingForPlayerAction) {
+        if (
+          e.target === e.currentTarget &&
+          !battleState.waitingForPlayerAction
+        ) {
           // 只在战斗结束时允许点击外部关闭
         }
       }}
     >
       <div
-        className="bg-ink-900 border border-stone-700 w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl flex flex-col"
+        className="bg-ink-900 border border-stone-700 w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 头部 */}
@@ -212,19 +305,31 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                 {enemyUnit.realm}
               </span>
             </div>
-            {battleState.waitingForPlayerAction && battleState.playerActionsRemaining > 0 && (
-              <div className="text-xs text-emerald-400 mt-1">
-                剩余行动次数: {battleState.playerActionsRemaining} / {battleState.playerMaxActions}
-              </div>
-            )}
+            {battleState.waitingForPlayerAction &&
+              battleState.playerActionsRemaining > 0 && (
+                <div className="text-xs text-emerald-400 mt-1">
+                  剩余行动次数: {battleState.playerActionsRemaining} /{' '}
+                  {battleState.playerMaxActions}
+                </div>
+              )}
           </div>
-          <button
-            onClick={() => onClose()}
-            className="p-2 rounded border border-stone-600 text-stone-200 hover:bg-stone-700/40"
-            title="关闭战斗"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSkipBattle}
+              disabled={isProcessing}
+              className="p-2 rounded border border-stone-600 text-stone-200 hover:bg-stone-700/40 disabled:opacity-50"
+              title="跳过战斗"
+            >
+              <FastForward size={18} />
+            </button>
+            <button
+              onClick={() => onClose()}
+              className="p-2 rounded border border-stone-600 text-stone-200 hover:bg-stone-700/40"
+              title="关闭战斗"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* 战斗区域 */}
@@ -232,7 +337,9 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
           {/* 敌人信息 */}
           <div className="bg-rose-900/20 border border-rose-700/40 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-rose-300 font-semibold">{enemyUnit.name}</span>
+              <span className="text-rose-300 font-semibold">
+                {enemyUnit.name}
+              </span>
               <span className="text-xs text-stone-400">
                 HP: {enemyUnit.hp} / {enemyUnit.maxHp}
               </span>
@@ -253,12 +360,16 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
           {/* 玩家信息 */}
           <div className="bg-emerald-900/20 border border-emerald-700/40 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-emerald-300 font-semibold">{playerUnit.name}</span>
+              <span className="text-emerald-300 font-semibold">
+                {playerUnit.name}
+              </span>
               <span className="text-xs text-stone-400">
-                HP: {playerUnit.hp} / {playerUnit.maxHp} · MP: {playerUnit.mana || 0} / {playerUnit.maxMana || 100}
+                HP: {playerUnit.hp} / {playerUnit.maxHp} · MP:{' '}
+                {playerUnit.mana || 0} / {playerUnit.maxMana || 100}
                 {battleState.waitingForPlayerAction && (
                   <span className="text-emerald-400 ml-2">
-                    · 行动: {battleState.playerActionsRemaining}/{battleState.playerMaxActions}
+                    · 行动: {battleState.playerActionsRemaining}/
+                    {battleState.playerMaxActions}
                   </span>
                 )}
               </span>
@@ -375,7 +486,10 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                       <button
                         key={skill.id}
                         onClick={() =>
-                          handlePlayerAction({ type: 'skill', skillId: skill.id })
+                          handlePlayerAction({
+                            type: 'skill',
+                            skillId: skill.id,
+                          })
                         }
                         className="w-full text-left p-2 rounded border border-blue-700/50 bg-blue-900/20 hover:bg-blue-900/40 text-sm"
                       >
@@ -384,7 +498,9 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                             {skill.name}
                           </span>
                           <span className="text-xs text-stone-400">
-                            {skill.cost.mana ? `消耗灵力: ${skill.cost.mana}` : ''}
+                            {skill.cost.mana
+                              ? `消耗灵力: ${skill.cost.mana}`
+                              : ''}
                           </span>
                         </div>
                         <div className="text-xs text-stone-400 mt-1">
@@ -396,11 +512,16 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                 </div>
                 {unavailableSkills.length > 0 && (
                   <>
-                    <div className="text-xs text-stone-500 mt-3 mb-2">不可用技能</div>
+                    <div className="text-xs text-stone-500 mt-3 mb-2">
+                      不可用技能
+                    </div>
                     <div className="space-y-2">
                       {unavailableSkills.map((skill) => {
-                        const onCooldown = (battleState.player.cooldowns[skill.id] || 0) > 0;
-                        const notEnoughMana = skill.cost.mana && (battleState.player.mana || 0) < skill.cost.mana;
+                        const onCooldown =
+                          (battleState.player.cooldowns[skill.id] || 0) > 0;
+                        const notEnoughMana =
+                          skill.cost.mana &&
+                          (battleState.player.mana || 0) < skill.cost.mana;
                         return (
                           <div
                             key={skill.id}
@@ -411,8 +532,10 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                                 {skill.name}
                               </span>
                               <span className="text-xs text-stone-500">
-                                {onCooldown && `冷却: ${battleState.player.cooldowns[skill.id]} 回合`}
-                                {notEnoughMana && `灵力不足 (需要 ${skill.cost.mana}, 当前 ${battleState.player.mana || 0})`}
+                                {onCooldown &&
+                                  `冷却: ${battleState.player.cooldowns[skill.id]} 回合`}
+                                {notEnoughMana &&
+                                  `灵力不足 (需要 ${skill.cost.mana}, 当前 ${battleState.player.mana || 0})`}
                               </span>
                             </div>
                           </div>
@@ -441,7 +564,10 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                         <button
                           key={item.id}
                           onClick={() =>
-                            handlePlayerAction({ type: 'item', itemId: item.id })
+                            handlePlayerAction({
+                              type: 'item',
+                              itemId: item.id,
+                            })
                           }
                           className="w-full text-left p-2 rounded border border-purple-700/50 bg-purple-900/20 hover:bg-purple-900/40 text-sm"
                         >
@@ -478,7 +604,9 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
         {/* 错误提示 */}
         {errorMessage && (
           <div className="border-t border-stone-700 px-6 py-4 bg-rose-900/20 border-rose-700/40">
-            <div className="text-center text-rose-300 text-sm">{errorMessage}</div>
+            <div className="text-center text-rose-300 text-sm">
+              {errorMessage}
+            </div>
           </div>
         )}
       </div>
@@ -487,4 +615,3 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
 };
 
 export default TurnBasedBattleModal;
-
