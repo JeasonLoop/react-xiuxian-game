@@ -14,6 +14,8 @@ import {
   Buff,
   Debuff,
   Item,
+  Pet,
+  PetSkill,
 } from '../types';
 import {
   REALM_ORDER,
@@ -292,6 +294,23 @@ export const LOOT_ITEMS = {
     { name: '星辰石', type: ItemType.Material, rarity: '稀有' as ItemRarity },
     { name: '天外陨铁', type: ItemType.Material, rarity: '传说' as ItemRarity },
     { name: '仙晶', type: ItemType.Material, rarity: '仙品' as ItemRarity },
+    // 灵宠进化材料
+    { name: '聚灵草', type: ItemType.Material, rarity: '普通' as ItemRarity },
+    { name: '妖兽内丹', type: ItemType.Material, rarity: '普通' as ItemRarity },
+    { name: '灵兽精血', type: ItemType.Material, rarity: '稀有' as ItemRarity },
+    { name: '月华石', type: ItemType.Material, rarity: '稀有' as ItemRarity },
+    { name: '星辰碎片', type: ItemType.Material, rarity: '稀有' as ItemRarity },
+    { name: '龙鳞片', type: ItemType.Material, rarity: '传说' as ItemRarity },
+    { name: '凤凰羽', type: ItemType.Material, rarity: '传说' as ItemRarity },
+    { name: '麒麟角', type: ItemType.Material, rarity: '传说' as ItemRarity },
+    { name: '仙灵果', type: ItemType.Material, rarity: '稀有' as ItemRarity },
+    { name: '九转金丹', type: ItemType.Material, rarity: '传说' as ItemRarity },
+    { name: '天材地宝', type: ItemType.Material, rarity: '传说' as ItemRarity },
+    { name: '神兽精魄', type: ItemType.Material, rarity: '传说' as ItemRarity },
+    { name: '混沌石', type: ItemType.Material, rarity: '仙品' as ItemRarity },
+    { name: '大道碎片', type: ItemType.Material, rarity: '仙品' as ItemRarity },
+    { name: '仙灵本源', type: ItemType.Material, rarity: '仙品' as ItemRarity },
+    { name: '造化神液', type: ItemType.Material, rarity: '仙品' as ItemRarity },
   ],
   // 装备类（武器）
   weapons: [
@@ -683,6 +702,10 @@ const generateLoot = (
   riskLevel?: '低' | '中' | '高' | '极度危险'
 ): AdventureResult['itemObtained'][] => {
   const lootItems: AdventureResult['itemObtained'][] = [];
+  // 用于追踪已选择的物品，避免重复（装备类物品按名称+稀有度去重）
+  const selectedItems = new Set<string>();
+  // 用于追踪已选择的物品类型，避免连续获得相同类型
+  const selectedTypes: string[] = [];
 
   // 根据敌人强度决定奖励数量（1-3个物品）
   const numItems =
@@ -692,6 +715,10 @@ const generateLoot = (
         ? 1 + Math.floor(Math.random() * 2)
         : 2 + Math.floor(Math.random() * 2);
 
+  // 根据玩家境界调整稀有度概率（高境界更容易获得高级物品）
+  const realmIndex = REALM_ORDER.indexOf(playerRealm);
+  const realmRarityBonus = realmIndex * 0.05; // 每个境界增加5%高级物品概率
+
   // 根据敌人强度和类型决定稀有度分布
   const getRarityChance = (): ItemRarity => {
     const roll = Math.random();
@@ -699,47 +726,57 @@ const generateLoot = (
       // 秘境：根据风险等级调整稀有度概率
       if (riskLevel === '极度危险') {
         // 极度危险：更高概率获得顶级物品
-        if (roll < 0.2) return '仙品';
-        if (roll < 0.5) return '传说';
-        if (roll < 0.85) return '稀有';
+        if (roll < 0.2 + realmRarityBonus) return '仙品';
+        if (roll < 0.5 + realmRarityBonus * 0.5) return '传说';
+        if (roll < 0.85 + realmRarityBonus * 0.3) return '稀有';
         return '普通';
       } else if (riskLevel === '高') {
         // 高风险：较高概率
-        if (roll < 0.12) return '仙品';
-        if (roll < 0.4) return '传说';
-        if (roll < 0.75) return '稀有';
+        if (roll < 0.12 + realmRarityBonus) return '仙品';
+        if (roll < 0.4 + realmRarityBonus * 0.5) return '传说';
+        if (roll < 0.75 + realmRarityBonus * 0.3) return '稀有';
         return '普通';
       } else if (riskLevel === '中') {
         // 中风险：中等概率
-        if (roll < 0.08) return '仙品';
-        if (roll < 0.3) return '传说';
-        if (roll < 0.65) return '稀有';
+        if (roll < 0.08 + realmRarityBonus) return '仙品';
+        if (roll < 0.3 + realmRarityBonus * 0.5) return '传说';
+        if (roll < 0.65 + realmRarityBonus * 0.3) return '稀有';
         return '普通';
       } else {
         // 低风险：较低概率（但比普通历练高）
-        if (roll < 0.05) return '仙品';
-        if (roll < 0.2) return '传说';
-        if (roll < 0.55) return '稀有';
+        if (roll < 0.05 + realmRarityBonus) return '仙品';
+        if (roll < 0.2 + realmRarityBonus * 0.5) return '传说';
+        if (roll < 0.55 + realmRarityBonus * 0.3) return '稀有';
         return '普通';
       }
     } else if (adventureType === 'lucky') {
       // 机缘：中等概率
-      if (roll < 0.05) return '传说';
-      if (roll < 0.25) return '稀有';
+      if (roll < 0.05 + realmRarityBonus * 0.5) return '传说';
+      if (roll < 0.25 + realmRarityBonus * 0.3) return '稀有';
       return '普通';
     } else {
       // 普通历练：较低概率（略微提升稀有度概率）
-      if (roll < 0.03) return '传说';
-      if (roll < 0.2) return '稀有';
+      if (roll < 0.03 + realmRarityBonus * 0.5) return '传说';
+      if (roll < 0.2 + realmRarityBonus * 0.3) return '稀有';
       return '普通';
     }
   };
 
-  for (let i = 0; i < numItems; i++) {
+  // 最大尝试次数，避免无限循环
+  let maxAttempts = numItems * 10;
+  let attempts = 0;
+
+  while (lootItems.length < numItems && attempts < maxAttempts) {
+    attempts++;
     const targetRarity = getRarityChance();
 
-    // 根据稀有度选择物品类型
-    const itemTypeRoll = Math.random();
+    // 根据稀有度选择物品类型，避免连续获得相同类型
+    let itemTypeRoll = Math.random();
+    // 如果上一个物品是装备类，降低再次获得装备的概率
+    if (selectedTypes.length > 0 && selectedTypes[selectedTypes.length - 1] !== '草药' && selectedTypes[selectedTypes.length - 1] !== '丹药' && selectedTypes[selectedTypes.length - 1] !== '材料') {
+      itemTypeRoll = Math.random() * 0.7; // 降低装备类概率
+    }
+
     let itemPool: Array<{
       name: string;
       type: ItemType;
@@ -750,27 +787,40 @@ const generateLoot = (
     }>;
     let itemType: string;
 
-    if (itemTypeRoll < 0.25) {
-      // 25% 草药
+    if (itemTypeRoll < 0.3) {
+      // 30% 草药
       itemPool = LOOT_ITEMS.herbs as any;
       itemType = '草药';
-    } else if (itemTypeRoll < 0.45) {
-      // 20% 丹药
+    } else if (itemTypeRoll < 0.55) {
+      // 25% 丹药
       itemPool = LOOT_ITEMS.pills as any;
       itemType = '丹药';
-    } else if (itemTypeRoll < 0.6) {
+    } else if (itemTypeRoll < 0.7) {
       // 15% 材料
       itemPool = LOOT_ITEMS.materials as any;
       itemType = '材料';
-    } else if (itemTypeRoll < 0.8) {
-      // 20% 装备（武器/护甲/首饰/戒指）
+    } else if (itemTypeRoll < 0.85) {
+      // 15% 装备（武器/护甲/首饰/戒指）
       const equipRoll = Math.random();
-      if (equipRoll < 0.25) {
+      if (equipRoll < 0.3) {
         itemPool = LOOT_ITEMS.weapons as any;
         itemType = '武器';
-      } else if (equipRoll < 0.65) {
-        // 护甲概率提升到40%，因为护甲有6个部位需要覆盖
-        itemPool = LOOT_ITEMS.armors as any;
+      } else if (equipRoll < 0.7) {
+        // 护甲概率40%，因为护甲有6个部位需要覆盖
+        // 先随机选择一个部位，确保每个部位有相等的概率
+        const armorSlots = [
+          EquipmentSlot.Head,
+          EquipmentSlot.Shoulder,
+          EquipmentSlot.Chest,
+          EquipmentSlot.Gloves,
+          EquipmentSlot.Legs,
+          EquipmentSlot.Boots,
+        ];
+        const selectedSlot = armorSlots[Math.floor(Math.random() * armorSlots.length)];
+        // 从护甲池中筛选出该部位的装备
+        const slotFilteredArmors = (LOOT_ITEMS.armors as any).filter((item: any) => item.slot === selectedSlot);
+        // 如果该部位没有装备，则使用全部护甲池（降级处理）
+        itemPool = slotFilteredArmors.length > 0 ? slotFilteredArmors : (LOOT_ITEMS.armors as any);
         itemType = '护甲';
       } else if (equipRoll < 0.85) {
         itemPool = LOOT_ITEMS.accessories as any;
@@ -779,29 +829,33 @@ const generateLoot = (
         itemPool = LOOT_ITEMS.rings as any;
         itemType = '戒指';
       }
-    } else if (itemTypeRoll < 0.92) {
-      // 12% 法宝
+    } else if (itemTypeRoll < 0.95) {
+      // 10% 法宝
       itemPool = LOOT_ITEMS.artifacts as any;
       itemType = '法宝';
     } else {
-      // 8% 丹方（稀有奖励）
-      // 丹方将在后面特殊处理
+      // 5% 丹方（稀有奖励）
       itemType = '丹方';
       itemPool = []; // 丹方不使用常规物品池
     }
 
     // 特殊处理：丹方
     if (itemType === '丹方') {
-      // 根据稀有度筛选可获得的丹方
+      // 根据稀有度筛选可获得的丹方，排除已选择的
       const availableRecipes = DISCOVERABLE_RECIPES.filter((recipe) => {
         const rarityOrder: ItemRarity[] = ['普通', '稀有', '传说', '仙品'];
         const targetIndex = rarityOrder.indexOf(targetRarity);
         const recipeIndex = rarityOrder.indexOf(recipe.result.rarity);
-        return recipeIndex <= targetIndex;
+        const recipeKey = `${recipe.name}丹方-${recipe.result.rarity}`;
+        return recipeIndex <= targetIndex && !selectedItems.has(recipeKey);
       });
 
       if (availableRecipes.length > 0) {
         const selectedRecipe = pickOne(availableRecipes);
+        const recipeKey = `${selectedRecipe.name}丹方-${selectedRecipe.result.rarity}`;
+        selectedItems.add(recipeKey);
+        selectedTypes.push(itemType);
+
         const item: AdventureResult['itemObtained'] & { recipeName?: string } =
           {
             name: `${selectedRecipe.name}丹方`,
@@ -817,34 +871,50 @@ const generateLoot = (
       continue;
     }
 
-    // 从对应稀有度的物品中随机选择
-    const availableItems = itemPool.filter(
-      (item) => item.rarity === targetRarity
-    );
+    // 从对应稀有度的物品中随机选择，排除已选择的装备
+    let availableItems = itemPool.filter((item) => {
+      if (item.rarity !== targetRarity) return false;
+      // 对于装备类物品，检查是否已选择（按名称+稀有度+槽位去重）
+      if (item.slot !== undefined) {
+        const itemKey = `${item.name}-${item.rarity}-${item.slot}`;
+        return !selectedItems.has(itemKey);
+      }
+      // 对于非装备类物品，只按名称+稀有度去重
+      const itemKey = `${item.name}-${item.rarity}`;
+      return !selectedItems.has(itemKey);
+    });
+
+    // 如果过滤后没有可用物品，尝试降级选择
     if (availableItems.length === 0) {
-      // 如果没有对应稀有度的物品，降级选择
       const fallbackItems = itemPool.filter((item) => {
         const rarityOrder: ItemRarity[] = ['普通', '稀有', '传说', '仙品'];
         const targetIndex = rarityOrder.indexOf(targetRarity);
         const itemIndex = rarityOrder.indexOf(item.rarity);
-        return itemIndex <= targetIndex;
+        if (itemIndex > targetIndex) return false;
+
+        // 同样检查是否已选择
+        if (item.slot !== undefined) {
+          const itemKey = `${item.name}-${item.rarity}-${item.slot}`;
+          return !selectedItems.has(itemKey);
+        }
+        const itemKey = `${item.name}-${item.rarity}`;
+        return !selectedItems.has(itemKey);
       });
-      if (fallbackItems.length > 0) {
-        const selected = pickOne(fallbackItems);
-        const item: AdventureResult['itemObtained'] = {
-          name: selected.name,
-          type: itemType,
-          description: `${selected.name}，从敌人身上搜刮获得。`,
-          rarity: selected.rarity,
-          isEquippable: selected.slot !== undefined,
-          equipmentSlot: selected.slot as string | undefined,
-          effect: selected.effect,
-          permanentEffect: selected.permanentEffect,
-        };
-        lootItems.push(item);
-      }
-    } else {
+      availableItems = fallbackItems;
+    }
+
+    if (availableItems.length > 0) {
       const selected = pickOne(availableItems);
+
+      // 标记为已选择
+      if (selected.slot !== undefined) {
+        const itemKey = `${selected.name}-${selected.rarity}-${selected.slot}`;
+        selectedItems.add(itemKey);
+      } else {
+        const itemKey = `${selected.name}-${selected.rarity}`;
+        selectedItems.add(itemKey);
+      }
+      selectedTypes.push(itemType);
 
       // 检查是否为传说或仙品装备，随机添加保命机会
       let reviveChances: number | undefined = undefined;
@@ -917,6 +987,7 @@ export interface BattleReplay {
 export interface BattleResolution {
   adventureResult: AdventureResult;
   replay: BattleReplay;
+  petSkillCooldowns?: Record<string, number>; // 战斗结束后的灵宠技能冷却状态
 }
 
 const clampMin = (value: number, min: number) => (value < min ? min : value);
@@ -1159,6 +1230,19 @@ export const resolveBattleEncounter = async (player: PlayerStats, adventureType:
   let attacker: 'player' | 'enemy' =
     (player.speed || 0) >= enemy.speed ? 'player' : 'enemy';
 
+  // 获取激活的灵宠
+  const activePet = player.activePetId
+    ? player.pets.find((p) => p.id === player.activePetId)
+    : null;
+
+  // 初始化灵宠技能冷却（如果还没有）
+  let petSkillCooldowns: Record<string, number> = {};
+  if (activePet && !activePet.skillCooldowns) {
+    petSkillCooldowns = {};
+  } else if (activePet) {
+    petSkillCooldowns = { ...activePet.skillCooldowns };
+  }
+
   while (playerHp > 0 && enemyHp > 0 && rounds.length < 40) {
     const isPlayerTurn = attacker === 'player';
     const damage = calcDamage(
@@ -1191,6 +1275,131 @@ export const resolveBattleEncounter = async (player: PlayerStats, adventureType:
       enemyHpAfter: enemyHp,
     });
 
+    // 玩家回合后，灵宠可以行动（附加攻击或释放技能）
+    if (isPlayerTurn && activePet && enemyHp > 0) {
+      // 更新技能冷却
+      Object.keys(petSkillCooldowns).forEach((skillId) => {
+        if (petSkillCooldowns[skillId] > 0) {
+          petSkillCooldowns[skillId]--;
+        }
+      });
+
+      // 决定灵宠行动：根据亲密度和等级动态调整技能释放概率
+      // 基础概率30%，亲密度每10点增加2%，等级每10级增加1%，最高70%
+      const baseProbability = 0.3;
+      const affectionBonus = (activePet.affection / 100) * 0.2; // 亲密度加成，最高20%
+      const levelBonus = (activePet.level / 100) * 0.1; // 等级加成，最高10%
+      const skillProbability = Math.min(0.7, baseProbability + affectionBonus + levelBonus);
+      const useSkill = Math.random() < skillProbability;
+      let petAction: 'attack' | 'skill' | null = null;
+      let usedSkill: PetSkill | null = null;
+
+      if (useSkill && activePet.skills.length > 0) {
+        // 查找可用的技能（冷却时间为0或未设置冷却）
+        const availableSkills = activePet.skills.filter(
+          (skill) => !petSkillCooldowns[skill.id] || petSkillCooldowns[skill.id] <= 0
+        );
+
+        if (availableSkills.length > 0) {
+          usedSkill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
+          petAction = 'skill';
+        } else {
+          petAction = 'attack';
+        }
+      } else {
+        petAction = 'attack';
+      }
+
+      if (petAction === 'skill' && usedSkill) {
+        // 释放技能
+        let petDamage = 0;
+        let petHeal = 0;
+        let petBuff: { attack?: number; defense?: number; hp?: number } | undefined;
+
+        if (usedSkill.effect.damage) {
+          // 技能伤害：基础伤害值 + 灵宠攻击力加成 + 等级加成
+          const baseSkillDamage = usedSkill.effect.damage;
+          // 根据进化阶段增加攻击力倍率
+          const evolutionMultiplier = 1.0 + activePet.evolutionStage * 0.5;
+          const attackMultiplier = 1.0 + (activePet.level / 50); // 每50级增加100%攻击力
+          // 攻击力加成从30%提升到100%，并应用进化倍率
+          const attackBonus = Math.floor(activePet.stats.attack * evolutionMultiplier * attackMultiplier * 1.0); // 100%攻击力加成
+          const levelBonus = Math.floor(activePet.level * 5); // 每级+5伤害（从2提升到5）
+          const affectionBonus = Math.floor(activePet.affection * 0.8); // 亲密度对技能伤害也有加成
+          const skillDamage = baseSkillDamage + attackBonus + levelBonus + affectionBonus;
+          petDamage = calcDamage(skillDamage, enemy.defense);
+          enemyHp = Math.max(0, enemyHp - petDamage);
+        }
+
+        if (usedSkill.effect.heal) {
+          // 治疗玩家
+          petHeal = Math.floor(
+            usedSkill.effect.heal * (1 + activePet.level * 0.05) * (1 + activePet.affection / 200)
+          );
+          playerHp = Math.min(player.maxHp, playerHp + petHeal);
+        }
+
+        if (usedSkill.effect.buff) {
+          petBuff = usedSkill.effect.buff;
+        }
+
+        // 设置技能冷却
+        if (usedSkill.cooldown) {
+          petSkillCooldowns[usedSkill.id] = usedSkill.cooldown;
+        }
+
+        // 构建技能描述
+        let skillDesc = `【${activePet.name}】释放了【${usedSkill.name}】！`;
+        if (petDamage > 0) {
+          skillDesc += `对敌人造成 ${petDamage} 点伤害。`;
+        }
+        if (petHeal > 0) {
+          skillDesc += `为你恢复了 ${petHeal} 点气血。`;
+        }
+        if (petBuff) {
+          const buffParts: string[] = [];
+          if (petBuff.attack) buffParts.push(`攻击+${petBuff.attack}`);
+          if (petBuff.defense) buffParts.push(`防御+${petBuff.defense}`);
+          if (petBuff.hp) buffParts.push(`气血+${petBuff.hp}`);
+          if (buffParts.length > 0) {
+            skillDesc += `你获得了${buffParts.join('、')}的增益。`;
+          }
+        }
+
+        rounds.push({
+          id: randomId(),
+          attacker: 'player',
+          damage: petDamage,
+          crit: false,
+          description: skillDesc,
+          playerHpAfter: playerHp,
+          enemyHpAfter: enemyHp,
+        });
+      } else {
+        // 普通攻击：基础攻击力 + 攻击力百分比加成 + 等级加成 + 亲密度加成
+        const baseAttack = activePet.stats.attack;
+        // 根据进化阶段增加攻击力倍率（幼年期1.0，成熟期1.5，完全体2.0）
+        const evolutionMultiplier = 1.0 + activePet.evolutionStage * 0.5;
+        const attackMultiplier = 1.0 + (activePet.level / 50); // 每50级增加100%攻击力
+        const levelBonus = Math.floor(activePet.level * 8); // 每级+8攻击（从3提升到8）
+        const affectionBonus = Math.floor(activePet.affection * 1.5); // 亲密度加成（从0.5提升到1.5）
+        // 最终攻击力 = (基础攻击力 * 进化倍率 * 等级倍率) + 等级加成 + 亲密度加成
+        const petAttackDamage = Math.floor(baseAttack * evolutionMultiplier * attackMultiplier) + levelBonus + affectionBonus;
+        const petDamage = calcDamage(petAttackDamage, enemy.defense);
+        enemyHp = Math.max(0, enemyHp - petDamage);
+
+        rounds.push({
+          id: randomId(),
+          attacker: 'player',
+          damage: petDamage,
+          crit: false,
+          description: `【${activePet.name}】紧随其后发动攻击，造成 ${petDamage} 点伤害。`,
+          playerHpAfter: playerHp,
+          enemyHpAfter: enemyHp,
+        });
+      }
+    }
+
     if (playerHp <= 0 || enemyHp <= 0) {
       break;
     }
@@ -1218,11 +1427,23 @@ export const resolveBattleEncounter = async (player: PlayerStats, adventureType:
 
   const rewardMultiplier =
     adventureType === 'secret_realm' ? getRewardMultiplier(riskLevel) : 1.0;
-  const baseExp = 25 + player.realmLevel * 12;
+
+  // 根据境界计算基础奖励（高境界获得更多奖励）
+  const realmIndex = REALM_ORDER.indexOf(player.realm);
+  // 境界基础倍数：每个境界大幅增加奖励倍数（指数增长）
+  const realmBaseMultipliers = [1, 2, 4, 8, 16, 32, 64];
+  const realmBaseMultiplier = realmBaseMultipliers[realmIndex] || 1;
+
+  // 基础修为 = 境界基础倍数 * (基础值 + 境界等级 * 系数) * 境界等级加成
+  const levelMultiplier = 1 + (player.realmLevel - 1) * 0.2; // 每级增加20%
+  const baseExp = Math.round(realmBaseMultiplier * (50 + player.realmLevel * 25) * levelMultiplier);
   const rewardExp = Math.round(baseExp * difficulty * rewardMultiplier);
+
+  // 基础灵石 = 境界基础倍数 * (基础值 + 境界等级 * 系数) * 境界等级加成
+  const baseStones = Math.round(realmBaseMultiplier * (15 + player.realmLevel * 5) * levelMultiplier);
   const rewardStones = Math.max(
-    3,
-    Math.round((6 + player.realmLevel * 2) * difficulty * rewardMultiplier)
+    10,
+    Math.round(baseStones * difficulty * rewardMultiplier)
   );
 
   const expChange = victory
@@ -1293,6 +1514,16 @@ export const resolveBattleEncounter = async (player: PlayerStats, adventureType:
     itemsObtained: lootItems.length > 0 ? lootItems : undefined,
   };
 
+  // 清理冷却时间为0的技能冷却（节省存储空间）
+  const finalPetSkillCooldowns: Record<string, number> = {};
+  if (activePet) {
+    Object.keys(petSkillCooldowns).forEach((skillId) => {
+      if (petSkillCooldowns[skillId] > 0) {
+        finalPetSkillCooldowns[skillId] = petSkillCooldowns[skillId];
+      }
+    });
+  }
+
   return {
     adventureResult,
     replay: {
@@ -1307,6 +1538,7 @@ export const resolveBattleEncounter = async (player: PlayerStats, adventureType:
       expChange,
       spiritChange,
     },
+    petSkillCooldowns: Object.keys(finalPetSkillCooldowns).length > 0 ? finalPetSkillCooldowns : undefined,
   };
 };
 
@@ -1354,11 +1586,22 @@ export const calculateBattleRewards = (
   // 综合奖励倍数
   const totalRewardMultiplier = difficulty * riskRewardMultiplier * strengthRewardMultiplier;
 
-  const baseExp = 25 + player.realmLevel * 12;
+  // 根据境界计算基础奖励（高境界获得更多奖励）
+  const realmIndex = REALM_ORDER.indexOf(player.realm);
+  // 境界基础倍数：每个境界大幅增加奖励倍数（指数增长）
+  const realmBaseMultipliers = [1, 2, 4, 8, 16, 32, 64];
+  const realmBaseMultiplier = realmBaseMultipliers[realmIndex] || 1;
+
+  // 基础修为 = 境界基础倍数 * (基础值 + 境界等级 * 系数) * 境界等级加成
+  const levelMultiplier = 1 + (player.realmLevel - 1) * 0.2; // 每级增加20%
+  const baseExp = Math.round(realmBaseMultiplier * (50 + player.realmLevel * 25) * levelMultiplier);
   const rewardExp = Math.round(baseExp * totalRewardMultiplier);
+
+  // 基础灵石 = 境界基础倍数 * (基础值 + 境界等级 * 系数) * 境界等级加成
+  const baseStones = Math.round(realmBaseMultiplier * (15 + player.realmLevel * 5) * levelMultiplier);
   const rewardStones = Math.max(
-    3,
-    Math.round((6 + player.realmLevel * 2) * totalRewardMultiplier)
+    10,
+    Math.round(baseStones * totalRewardMultiplier)
   );
 
   const expChange = victory
@@ -1418,6 +1661,21 @@ export const initializeTurnBasedBattle = async (
     isDefending: false,
   };
 
+  // 获取激活的灵宠
+  const activePet = player.activePetId
+    ? player.pets.find((p) => p.id === player.activePetId)
+    : null;
+
+  // 初始化灵宠技能冷却
+  let petSkillCooldowns: Record<string, number> = {};
+  if (activePet) {
+    if (activePet.skillCooldowns) {
+      petSkillCooldowns = { ...activePet.skillCooldowns };
+    } else {
+      petSkillCooldowns = {};
+    }
+  }
+
   // 确定先手
   const playerFirst = (playerUnit.speed || 0) >= enemyUnit.speed;
 
@@ -1457,6 +1715,8 @@ export const initializeTurnBasedBattle = async (
     enemyStrengthMultiplier: enemyData.strengthMultiplier, // 保存敌人强度倍数
     adventureType, // 保存历练类型
     riskLevel, // 保存风险等级
+    activePet, // 保存激活的灵宠
+    petSkillCooldowns, // 保存灵宠技能冷却
   };
 };
 
@@ -1628,6 +1888,25 @@ export function executePlayerAction(
   // 减少剩余行动次数
   newState.playerActionsRemaining -= 1;
 
+  // 玩家行动后，灵宠可以行动（如果敌人还没死）
+  if (newState.activePet && newState.enemy.hp > 0) {
+    // 更新灵宠技能冷却
+    const petSkillCooldowns = newState.petSkillCooldowns || {};
+    const newPetSkillCooldowns: Record<string, number> = {};
+    Object.keys(petSkillCooldowns).forEach((skillId) => {
+      if (petSkillCooldowns[skillId] > 0) {
+        newPetSkillCooldowns[skillId] = petSkillCooldowns[skillId] - 1;
+      }
+    });
+    newState.petSkillCooldowns = newPetSkillCooldowns;
+
+    const petAction = executePetAction(newState);
+    if (petAction) {
+      newState.history.push(petAction);
+      newState = updateBattleStateAfterAction(newState, petAction);
+    }
+  }
+
   // 如果还有剩余行动次数，继续玩家回合；否则切换到敌人回合
   if (newState.playerActionsRemaining > 0) {
     // 继续玩家回合，可以再次行动
@@ -1685,6 +1964,18 @@ export function executeEnemyTurn(battleState: BattleState): BattleState {
 
   // 减少剩余行动次数
   newState.enemyActionsRemaining -= 1;
+
+  // 敌人回合结束后，更新灵宠技能冷却（如果存在）
+  if (newState.activePet && newState.petSkillCooldowns) {
+    const petSkillCooldowns = newState.petSkillCooldowns;
+    const updatedCooldowns: Record<string, number> = {};
+    Object.keys(petSkillCooldowns).forEach((skillId) => {
+      if (petSkillCooldowns[skillId] > 0) {
+        updatedCooldowns[skillId] = petSkillCooldowns[skillId] - 1;
+      }
+    });
+    newState.petSkillCooldowns = updatedCooldowns;
+  }
 
   // 如果还有剩余行动次数，继续敌人回合；否则切换到玩家回合
   if (newState.enemyActionsRemaining > 0) {
@@ -2070,4 +2361,185 @@ function generateSkillDescription(
     return `你使用【${skill.name}】，恢复了 ${heal} 点气血。`;
   }
   return `你使用【${skill.name}】。`;
+}
+
+/**
+ * 执行灵宠行动
+ */
+function executePetAction(battleState: BattleState): BattleAction | null {
+  if (!battleState.activePet || battleState.enemy.hp <= 0) {
+    return null;
+  }
+
+  const activePet = battleState.activePet;
+  const petSkillCooldowns = battleState.petSkillCooldowns || {};
+
+  // 决定灵宠行动：根据亲密度和等级动态调整技能释放概率
+  // 基础概率30%，亲密度每10点增加2%，等级每10级增加1%，最高70%
+  const baseProbability = 0.3;
+  const affectionBonus = (activePet.affection / 100) * 0.2; // 亲密度加成，最高20%
+  const levelBonus = (activePet.level / 100) * 0.1; // 等级加成，最高10%
+  const skillProbability = Math.min(0.7, baseProbability + affectionBonus + levelBonus);
+  const useSkill = Math.random() < skillProbability;
+  let petAction: 'attack' | 'skill' | null = null;
+  let usedSkill: PetSkill | null = null;
+
+  if (useSkill && activePet.skills.length > 0) {
+    // 查找可用的技能（冷却时间为0或未设置冷却）
+    const availableSkills = activePet.skills.filter(
+      (skill) => !petSkillCooldowns[skill.id] || petSkillCooldowns[skill.id] <= 0
+    );
+
+    if (availableSkills.length > 0) {
+      usedSkill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
+      petAction = 'skill';
+    } else {
+      petAction = 'attack';
+    }
+  } else {
+    petAction = 'attack';
+  }
+
+  if (petAction === 'skill' && usedSkill) {
+    // 释放技能
+    let petDamage = 0;
+    let petHeal = 0;
+    let petBuff: { attack?: number; defense?: number; hp?: number } | undefined;
+
+    if (usedSkill.effect.damage) {
+      // 技能伤害：基础伤害值 + 灵宠攻击力加成 + 等级加成
+      const baseSkillDamage = usedSkill.effect.damage;
+      // 根据进化阶段增加攻击力倍率
+      const evolutionMultiplier = 1.0 + activePet.evolutionStage * 0.5;
+      const attackMultiplier = 1.0 + (activePet.level / 50); // 每50级增加100%攻击力
+      // 攻击力加成从30%提升到100%，并应用进化倍率
+      const attackBonus = Math.floor(activePet.stats.attack * evolutionMultiplier * attackMultiplier * 1.0); // 100%攻击力加成
+      const levelBonus = Math.floor(activePet.level * 5); // 每级+5伤害（从2提升到5）
+      const affectionBonus = Math.floor(activePet.affection * 0.8); // 亲密度对技能伤害也有加成
+      const skillDamage = baseSkillDamage + attackBonus + levelBonus + affectionBonus;
+      petDamage = calcDamage(skillDamage, battleState.enemy.defense);
+      battleState.enemy.hp = Math.max(0, battleState.enemy.hp - petDamage);
+    }
+
+    if (usedSkill.effect.heal) {
+      // 治疗玩家
+      petHeal = Math.floor(
+        usedSkill.effect.heal * (1 + activePet.level * 0.05) * (1 + activePet.affection / 200)
+      );
+      battleState.player.hp = Math.min(battleState.player.maxHp, battleState.player.hp + petHeal);
+    }
+
+    if (usedSkill.effect.buff) {
+      petBuff = usedSkill.effect.buff;
+      // 应用Buff到玩家
+      if (petBuff.attack) {
+        battleState.player.buffs.push({
+          id: randomId(),
+          name: `${activePet.name}的攻击增益`,
+          type: 'attack',
+          value: petBuff.attack,
+          duration: 3, // 默认3回合
+          source: `pet_${activePet.id}`,
+        });
+      }
+      if (petBuff.defense) {
+        battleState.player.buffs.push({
+          id: randomId(),
+          name: `${activePet.name}的防御增益`,
+          type: 'defense',
+          value: petBuff.defense,
+          duration: 3,
+          source: `pet_${activePet.id}`,
+        });
+      }
+      if (petBuff.hp) {
+        battleState.player.maxHp += petBuff.hp;
+        battleState.player.hp += petBuff.hp;
+      }
+    }
+
+    // 设置技能冷却
+    if (usedSkill.cooldown) {
+      const updatedCooldowns = { ...petSkillCooldowns };
+      updatedCooldowns[usedSkill.id] = usedSkill.cooldown;
+      battleState.petSkillCooldowns = updatedCooldowns;
+    }
+
+    // 构建技能描述
+    let skillDesc = `【${activePet.name}】释放了【${usedSkill.name}】！`;
+    if (petDamage > 0) {
+      skillDesc += `对敌人造成 ${petDamage} 点伤害。`;
+    }
+    if (petHeal > 0) {
+      skillDesc += `为你恢复了 ${petHeal} 点气血。`;
+    }
+    if (petBuff) {
+      const buffParts: string[] = [];
+      if (petBuff.attack) buffParts.push(`攻击+${petBuff.attack}`);
+      if (petBuff.defense) buffParts.push(`防御+${petBuff.defense}`);
+      if (petBuff.hp) buffParts.push(`气血+${petBuff.hp}`);
+      if (buffParts.length > 0) {
+        skillDesc += `你获得了${buffParts.join('、')}的增益。`;
+      }
+    }
+
+    return {
+      id: randomId(),
+      round: battleState.round,
+      turn: 'player',
+      actor: 'player',
+      actionType: 'skill',
+      skillId: usedSkill.id,
+      target: 'enemy',
+      result: {
+        damage: petDamage,
+        heal: petHeal,
+        buffs: petBuff ? [
+          ...(petBuff.attack ? [{
+            id: randomId(),
+            name: `${activePet.name}的攻击增益`,
+            type: 'attack' as const,
+            value: petBuff.attack,
+            duration: 3,
+            source: `pet_${activePet.id}`,
+          }] : []),
+          ...(petBuff.defense ? [{
+            id: randomId(),
+            name: `${activePet.name}的防御增益`,
+            type: 'defense' as const,
+            value: petBuff.defense,
+            duration: 3,
+            source: `pet_${activePet.id}`,
+          }] : []),
+        ] : [],
+      },
+      description: skillDesc,
+    };
+  } else {
+    // 普通攻击：基础攻击力 + 等级加成 + 亲密度加成
+    // 普通攻击：基础攻击力 + 攻击力百分比加成 + 等级加成 + 亲密度加成
+    const baseAttack = activePet.stats.attack;
+    // 根据进化阶段增加攻击力倍率（幼年期1.0，成熟期1.5，完全体2.0）
+    const evolutionMultiplier = 1.0 + activePet.evolutionStage * 0.5;
+    const attackMultiplier = 1.0 + (activePet.level / 50); // 每50级增加100%攻击力
+    const levelBonus = Math.floor(activePet.level * 8); // 每级+8攻击（从3提升到8）
+    const affectionBonus = Math.floor(activePet.affection * 1.5); // 亲密度加成（从0.5提升到1.5）
+    // 最终攻击力 = (基础攻击力 * 进化倍率 * 等级倍率) + 等级加成 + 亲密度加成
+    const petAttackDamage = Math.floor(baseAttack * evolutionMultiplier * attackMultiplier) + levelBonus + affectionBonus;
+    const petDamage = calcDamage(petAttackDamage, battleState.enemy.defense);
+    battleState.enemy.hp = Math.max(0, battleState.enemy.hp - petDamage);
+
+    return {
+      id: randomId(),
+      round: battleState.round,
+      turn: 'player',
+      actor: 'player',
+      actionType: 'attack',
+      target: 'enemy',
+      result: {
+        damage: petDamage,
+      },
+      description: `【${activePet.name}】紧随其后发动攻击，造成 ${petDamage} 点伤害。`,
+    };
+  }
 }

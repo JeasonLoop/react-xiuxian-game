@@ -16,6 +16,7 @@ import {
   PET_TEMPLATES,
   RARITY_MULTIPLIERS,
   DISCOVERABLE_RECIPES,
+  getRandomPetName,
 } from '../../constants';
 import { BattleReplay } from '../../services/battleService';
 import { generateAdventureEvent } from '../../services/aiService';
@@ -43,6 +44,7 @@ import {
 interface ExecuteAdventureCoreProps {
   result: AdventureResult;
   battleContext: BattleReplay | null;
+  petSkillCooldowns?: Record<string, number>; // 战斗结束后的灵宠技能冷却状态
   player: PlayerStats;
   setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
   addLog: (message: string, type?: string) => void;
@@ -56,6 +58,7 @@ interface ExecuteAdventureCoreProps {
 export async function executeAdventureCore({
   result,
   battleContext,
+  petSkillCooldowns,
   player,
   setPlayer,
   addLog,
@@ -123,6 +126,38 @@ export async function executeAdventureCore({
     // 更新战斗胜利次数
     if (battleContext && battleContext.victory) {
       newStats.killCount += 1;
+    }
+
+    // 更新灵宠技能冷却（如果有战斗且灵宠激活）
+    if (petSkillCooldowns && prev.activePetId) {
+      newPets = newPets.map((pet) => {
+        if (pet.id === prev.activePetId) {
+          // 合并技能冷却，保留已有的冷却时间（取较大值，防止覆盖）
+          const updatedCooldowns = { ...pet.skillCooldowns };
+          Object.keys(petSkillCooldowns).forEach((skillId) => {
+            const newCooldown = petSkillCooldowns[skillId];
+            if (newCooldown > 0) {
+              // 如果已有冷却，取较大值；否则使用新的冷却
+              updatedCooldowns[skillId] = Math.max(
+                updatedCooldowns[skillId] || 0,
+                newCooldown
+              );
+            }
+          });
+          // 清理冷却时间为0的技能
+          const finalCooldowns: Record<string, number> = {};
+          Object.keys(updatedCooldowns).forEach((skillId) => {
+            if (updatedCooldowns[skillId] > 0) {
+              finalCooldowns[skillId] = updatedCooldowns[skillId];
+            }
+          });
+          return {
+            ...pet,
+            skillCooldowns: Object.keys(finalCooldowns).length > 0 ? finalCooldowns : undefined,
+          };
+        }
+        return pet;
+      });
     }
 
     // 处理获得的多个物品（搜刮奖励等）
@@ -582,7 +617,7 @@ export async function executeAdventureCore({
         if (!hasSameSpecies) {
           const newPet: Pet = {
             id: uid(),
-            name: petTemplate.name,
+            name: getRandomPetName(petTemplate),
             species: petTemplate.species,
             level: 1,
             exp: 0,
@@ -633,10 +668,10 @@ export async function executeAdventureCore({
             if (updatedPet.evolutionStage < 2) {
               updatedPet.evolutionStage += 1;
               updatedPet.stats = {
-                attack: Math.floor(updatedPet.stats.attack * 1.5),
-                defense: Math.floor(updatedPet.stats.defense * 1.5),
-                hp: Math.floor(updatedPet.stats.hp * 1.5),
-                speed: Math.floor(updatedPet.stats.speed * 1.2),
+                attack: Math.floor(updatedPet.stats.attack * 3.0),
+                defense: Math.floor(updatedPet.stats.defense * 3.0),
+                hp: Math.floor(updatedPet.stats.hp * 3.0),
+                speed: Math.floor(updatedPet.stats.speed * 1.5),
               };
               newPets[petIndex] = updatedPet;
               addLog(

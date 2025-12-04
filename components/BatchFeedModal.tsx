@@ -10,7 +10,7 @@ interface Props {
   onFeedItems: (petId: string, itemIds: string[]) => void;
 }
 
-type ItemCategory = 'all' | 'pill' | 'consumable';
+type ItemCategory = 'all' | 'pill' | 'consumable' | 'equipment';
 type RarityFilter = 'all' | ItemRarity;
 
 const BatchFeedModal: React.FC<Props> = ({
@@ -32,19 +32,33 @@ const BatchFeedModal: React.FC<Props> = ({
     if (item.type === ItemType.Pill) {
       return 'pill';
     }
+    if (item.isEquippable ||
+        item.type === ItemType.Weapon ||
+        item.type === ItemType.Armor ||
+        item.type === ItemType.Accessory ||
+        item.type === ItemType.Ring ||
+        item.type === ItemType.Artifact) {
+      return 'equipment';
+    }
     return 'consumable';
   };
 
   // 可喂养的物品（所有未装备的物品）
   const equippedItemIds = new Set(Object.values(player.equippedItems).filter(Boolean));
 
-  // 过滤物品
-  const filteredItems = useMemo(() => {
-    let filtered = player.inventory.filter((item) => {
+  // 所有可喂养的物品（不考虑筛选）
+  const allFeedableItems = useMemo(() => {
+    return player.inventory.filter((item) => {
       // 只显示可喂养的物品（未装备且数量>0）
       if (equippedItemIds.has(item.id)) return false;
       if (item.quantity <= 0) return false;
+      return true;
+    });
+  }, [player.inventory, equippedItemIds]);
 
+  // 过滤物品
+  const filteredItems = useMemo(() => {
+    let filtered = allFeedableItems.filter((item) => {
       // 按分类过滤
       if (selectedCategory !== 'all') {
         const category = getItemCategory(item);
@@ -60,7 +74,7 @@ const BatchFeedModal: React.FC<Props> = ({
     });
 
     return filtered;
-  }, [player.inventory, equippedItemIds, selectedCategory, selectedRarity]);
+  }, [allFeedableItems, selectedCategory, selectedRarity]);
 
   const handleToggleItem = (itemId: string) => {
     setSelectedItems((prev) => {
@@ -113,6 +127,33 @@ const BatchFeedModal: React.FC<Props> = ({
       });
       setSelectedItems(newSet);
       setItemQuantities(newQty);
+    }
+  };
+
+  // 喂养全部物品（所有可喂养的物品，使用全部数量）
+  const handleFeedAll = () => {
+    if (allFeedableItems.length === 0 || !pet) return;
+
+    // 构建喂养列表（使用所有数量）
+    const itemsToFeed: string[] = [];
+    allFeedableItems.forEach((item) => {
+      for (let i = 0; i < item.quantity; i++) {
+        itemsToFeed.push(item.id);
+      }
+    });
+
+    const totalCount = itemsToFeed.length;
+    const totalItems = allFeedableItems.length;
+
+    if (
+      window.confirm(
+        `确定要用所有 ${totalItems} 种物品（共 ${totalCount} 件）喂养【${pet.name}】吗？\n这将消耗所有可喂养的物品！`
+      )
+    ) {
+      onFeedItems(petId, itemsToFeed);
+      setSelectedItems(new Set());
+      setItemQuantities(new Map());
+      onClose();
     }
   };
 
@@ -195,7 +236,7 @@ const BatchFeedModal: React.FC<Props> = ({
                 <Filter size={16} />
                 <span>分类:</span>
               </div>
-              {(['all', 'pill', 'consumable'] as ItemCategory[]).map((category) => (
+              {(['all', 'pill', 'consumable', 'equipment'] as ItemCategory[]).map((category) => (
                 <button
                   key={category}
                   onClick={() => {
@@ -213,7 +254,9 @@ const BatchFeedModal: React.FC<Props> = ({
                     ? '全部'
                     : category === 'pill'
                       ? '丹药'
-                      : '用品'}
+                      : category === 'equipment'
+                        ? '装备'
+                        : '用品'}
                 </button>
               ))}
             </div>
@@ -246,15 +289,22 @@ const BatchFeedModal: React.FC<Props> = ({
           </div>
 
           {/* 操作栏 */}
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="mb-4 flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-4 flex-wrap">
               <button
                 onClick={handleSelectAll}
                 className="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-300 rounded text-sm border border-stone-600"
               >
                 {selectedItems.size === filteredItems.length
                   ? '取消全选'
-                  : '全选'}
+                  : '全选当前'}
+              </button>
+              <button
+                onClick={handleFeedAll}
+                className="px-3 py-1.5 bg-orange-700 hover:bg-orange-600 text-orange-200 rounded text-sm border border-orange-600"
+                title="喂养所有可喂养的物品（使用全部数量）"
+              >
+                喂养全部 ({allFeedableItems.reduce((sum, item) => sum + item.quantity, 0)} 件)
               </button>
               <span className="text-sm text-stone-400">
                 已选择: {selectedItems.size} / {filteredItems.length} ({totalSelectedQuantity} 件)
@@ -269,7 +319,7 @@ const BatchFeedModal: React.FC<Props> = ({
                   : 'bg-stone-700 text-stone-500 cursor-not-allowed border border-stone-600'
               }`}
             >
-              喂养 ({totalSelectedQuantity})
+              喂养选中 ({totalSelectedQuantity})
             </button>
           </div>
 

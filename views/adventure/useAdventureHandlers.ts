@@ -83,6 +83,8 @@ export function useAdventureHandlers({
       let result;
       let battleContext: BattleReplay | null = null;
 
+      let battleResolution: Awaited<ReturnType<typeof resolveBattleEncounter>> | undefined;
+
       if (shouldTriggerBattle(player, adventureType)) {
         // 如果使用回合制战斗系统，打开回合制战斗界面
         if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
@@ -96,7 +98,7 @@ export function useAdventureHandlers({
         }
 
         // 否则使用旧的自动战斗系统
-        const battleResolution = await resolveBattleEncounter(
+        battleResolution = await resolveBattleEncounter(
           player,
           adventureType,
           riskLevel,
@@ -111,6 +113,7 @@ export function useAdventureHandlers({
       await executeAdventureCore({
         result,
         battleContext,
+        petSkillCooldowns: battleResolution?.petSkillCooldowns,
         player,
         setPlayer,
         addLog,

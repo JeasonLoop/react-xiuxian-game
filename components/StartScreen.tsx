@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Talent } from '../types';
 import { TALENTS } from '../constants';
 import { Sparkles, Sword, Shield, Heart, Zap, User } from 'lucide-react';
+import { showError } from '../utils/toastUtils';
 
 interface Props {
   onStart: (playerName: string, talentId: string) => void;
@@ -25,7 +26,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
 
   const handleStart = () => {
     if (!playerName.trim()) {
-      alert('请输入修仙者名称！');
+      showError('请输入修仙者名称！');
       return;
     }
     onStart(playerName.trim(), finalTalentId);

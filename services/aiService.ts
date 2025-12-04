@@ -153,10 +153,14 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
   try {
     let typeInstructions = '';
 
-    // 根据境界调整事件类型和奖励
+    // 根据境界调整事件类型和奖励（指数增长，高境界奖励大幅提升）
     const realmIndex = REALM_ORDER.indexOf(player.realm);
-    const realmMultiplier =
-      1 + realmIndex * 0.3 + (player.realmLevel - 1) * 0.1;
+    // 境界倍数：指数增长 [1, 2, 4, 8, 16, 32, 64]
+    const realmBaseMultipliers = [1, 2, 4, 8, 16, 32, 64];
+    const realmBaseMultiplier = realmBaseMultipliers[realmIndex] || 1;
+    // 境界等级加成：每级增加30%
+    const levelMultiplier = 1 + (player.realmLevel - 1) * 0.3;
+    const realmMultiplier = realmBaseMultiplier * levelMultiplier;
 
     switch (adventureType) {
       case 'lucky':

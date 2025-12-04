@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Gift, Sparkles } from 'lucide-react';
 import { PlayerStats, LotteryPrize } from '../types';
 import { LOTTERY_PRIZES } from '../constants';
+import { showError } from '../utils/toastUtils';
 
 interface Props {
   isOpen: boolean;
@@ -18,7 +19,7 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
 
   const handleDraw = async (count: 1 | 10) => {
     if (player.lotteryTickets < count) {
-      alert(
+      showError(
         `抽奖券不足！需要 ${count} 张，当前拥有 ${player.lotteryTickets} 张`
       );
       return;
@@ -137,23 +138,46 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
             </button>
           </div>
 
-          {/* 奖品池预览 */}
+          {/* 奖品稀有度分布 */}
           <div>
-            <h3 className="text-lg font-bold mb-3">奖品池</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-y-auto">
-              {LOTTERY_PRIZES.map((prize) => (
-                <div
-                  key={prize.id}
-                  className={`bg-stone-900 rounded p-3 border ${getRarityColor(prize.rarity).split(' ')[1]}`}
-                >
+            <h3 className="text-lg font-bold mb-3">奖品稀有度分布</h3>
+            <div className="space-y-3">
+              {(['普通', '稀有', '传说', '仙品'] as const).map((rarity) => {
+                const prizesOfRarity = LOTTERY_PRIZES.filter((p) => p.rarity === rarity);
+                const totalWeight = LOTTERY_PRIZES.reduce((sum, p) => sum + p.weight, 0);
+                const rarityWeight = prizesOfRarity.reduce((sum, p) => sum + p.weight, 0);
+                const probability = ((rarityWeight / totalWeight) * 100).toFixed(1);
+
+                return (
                   <div
-                    className={`text-sm font-bold ${getRarityColor(prize.rarity).split(' ')[0]} mb-1`}
+                    key={rarity}
+                    className={`bg-stone-900 rounded p-3 border ${getRarityColor(rarity).split(' ')[1]}`}
                   >
-                    {prize.name}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className={`text-sm font-bold ${getRarityColor(rarity).split(' ')[0]}`}>
+                          {rarity}
+                        </div>
+                        <div className="text-xs text-stone-500">
+                          ({prizesOfRarity.length} 种奖品)
+                        </div>
+                      </div>
+                      <div className="text-sm font-bold text-yellow-400">
+                        {probability}%
+                      </div>
+                    </div>
+                    <div className="mt-2 bg-stone-800 rounded-full h-2 overflow-hidden">
+                      <div
+                        className={`h-full ${rarity === '普通' ? 'bg-gray-500' : rarity === '稀有' ? 'bg-blue-500' : rarity === '传说' ? 'bg-purple-500' : 'bg-yellow-500'}`}
+                        style={{ width: `${probability}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="text-xs text-stone-500">{prize.rarity}</div>
-                </div>
-              ))}
+                );
+              })}
+            </div>
+            <div className="mt-4 text-xs text-stone-500 text-center">
+              💡 十连抽必出稀有以上品质
             </div>
           </div>
         </div>

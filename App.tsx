@@ -9,6 +9,9 @@ import { useGameState } from './hooks/useGameState';
 import { useGameEffects } from './hooks/useGameEffects';
 import { SAVE_KEY, uid } from './utils/gameUtils';
 import { normalizeItemEffect, inferItemTypeAndSlot } from './utils/itemUtils';
+import { setGlobalAlertSetter } from './utils/toastUtils';
+import AlertModal from './components/AlertModal';
+import { AlertType } from './components/AlertModal';
 
 // 导入模块化的 handlers
 import {
@@ -103,7 +106,25 @@ function App() {
   const [itemActionLog, setItemActionLog] = useState<{
     text: string;
     type: string;
-  } | null>(null); // 物品操作轻提示
+  } | null>(null); // 物品操作轻提示（保留用于其他功能）
+
+  // Alert 弹窗状态
+  const [alertState, setAlertState] = useState<{
+    isOpen: boolean;
+    type: AlertType;
+    title?: string;
+    message: string;
+    onConfirm?: () => void;
+    showCancel?: boolean;
+  } | null>(null);
+
+  // 初始化全局 alert
+  useEffect(() => {
+    setGlobalAlertSetter((alert) => {
+      setAlertState(alert);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [autoMeditate, setAutoMeditate] = useState(false); // 自动打坐
   const [autoAdventure, setAutoAdventure] = useState(false); // 自动历练
   const [autoAdventurePausedByShop, setAutoAdventurePausedByShop] =
@@ -194,6 +215,7 @@ function App() {
     player,
     setPlayer,
     addLog,
+    setItemActionLog,
   });
 
   const lotteryHandlers = useLotteryHandlers({
@@ -786,6 +808,20 @@ function App() {
         />
       )}
 
+      {/* Alert 提示弹窗 */}
+      {alertState && (
+        <AlertModal
+          isOpen={alertState.isOpen}
+          onClose={() => setAlertState(null)}
+          type={alertState.type}
+          title={alertState.title}
+          message={alertState.message}
+          onConfirm={alertState.onConfirm}
+          showCancel={alertState.showCancel}
+          onCancel={alertState.onCancel}
+        />
+      )}
+
       <ModalsContainer
         player={player}
         settings={settings}
@@ -904,6 +940,36 @@ function App() {
                 const newExp = Math.max(0, prev.exp + result.expChange);
                 const newSpiritStones = Math.max(0, prev.spiritStones + result.spiritChange);
 
+                // 更新灵宠技能冷却（如果有）
+                let newPets = [...prev.pets];
+                if (result.petSkillCooldowns && prev.activePetId) {
+                  newPets = newPets.map((pet) => {
+                    if (pet.id === prev.activePetId) {
+                      const updatedCooldowns = { ...pet.skillCooldowns };
+                      Object.keys(result.petSkillCooldowns).forEach((skillId) => {
+                        const newCooldown = result.petSkillCooldowns![skillId];
+                        if (newCooldown > 0) {
+                          updatedCooldowns[skillId] = Math.max(
+                            updatedCooldowns[skillId] || 0,
+                            newCooldown
+                          );
+                        }
+                      });
+                      const finalCooldowns: Record<string, number> = {};
+                      Object.keys(updatedCooldowns).forEach((skillId) => {
+                        if (updatedCooldowns[skillId] > 0) {
+                          finalCooldowns[skillId] = updatedCooldowns[skillId];
+                        }
+                      });
+                      return {
+                        ...pet,
+                        skillCooldowns: Object.keys(finalCooldowns).length > 0 ? finalCooldowns : undefined,
+                      };
+                    }
+                    return pet;
+                  });
+                }
+
                 // 更新战斗统计
                 const newStatistics = { ...prev.statistics };
                 if (result.victory) {
@@ -980,6 +1046,7 @@ function App() {
                   spiritStones: newSpiritStones,
                   statistics: newStatistics,
                   inventory: newInventory,
+                  pets: newPets,
                 };
               });
             }

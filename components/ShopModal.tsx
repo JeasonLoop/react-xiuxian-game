@@ -19,6 +19,7 @@ import {
 } from '../types';
 import { REALM_ORDER, RARITY_MULTIPLIERS } from '../constants';
 import { generateShopItems } from '../services/shopService';
+import { showError } from '../utils/toastUtils';
 
 interface Props {
   isOpen: boolean;
@@ -334,7 +335,7 @@ const ShopModal: React.FC<Props> = ({
                 onClick={() => {
                   const refreshCost = 100; // 刷新费用
                   if (player.spiritStones < refreshCost) {
-                    alert('灵石不足！刷新需要100灵石。');
+                    showError('灵石不足！刷新需要100灵石。');
                     return;
                   }
                   if (

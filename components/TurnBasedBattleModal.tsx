@@ -47,6 +47,7 @@ interface TurnBasedBattleModalProps {
         effect?: any;
         permanentEffect?: any;
       }>;
+      petSkillCooldowns?: Record<string, number>; // 灵宠技能冷却状态
     },
     updatedInventory?: Item[]
   ) => void;
@@ -105,6 +106,15 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
           adventureType,
           riskLevel
         );
+        // 清理冷却时间为0的技能冷却
+        const finalPetSkillCooldowns: Record<string, number> = {};
+        if (newState.petSkillCooldowns) {
+          Object.keys(newState.petSkillCooldowns).forEach((skillId) => {
+            if (newState.petSkillCooldowns![skillId] > 0) {
+              finalPetSkillCooldowns[skillId] = newState.petSkillCooldowns![skillId];
+            }
+          });
+        }
         onClose(
           {
             victory,
@@ -112,6 +122,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
             expChange: rewards.expChange,
             spiritChange: rewards.spiritChange,
             items: rewards.items,
+            petSkillCooldowns: Object.keys(finalPetSkillCooldowns).length > 0 ? finalPetSkillCooldowns : undefined,
           },
           newState.playerInventory
         );

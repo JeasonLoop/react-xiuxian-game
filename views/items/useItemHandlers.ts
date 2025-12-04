@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlayerStats, Item, Pet, ItemType } from '../../types';
-import { PET_TEMPLATES, DISCOVERABLE_RECIPES } from '../../constants';
+import { PET_TEMPLATES, DISCOVERABLE_RECIPES, getRandomPetName } from '../../constants';
 import { uid } from '../../utils/gameUtils';
 
 interface UseItemHandlersProps {
@@ -263,7 +263,7 @@ export function useItemHandlers({
               availablePets[Math.floor(Math.random() * availablePets.length)];
             const newPet: Pet = {
               id: uid(),
-              name: randomTemplate.name,
+              name: getRandomPetName(randomTemplate),
               species: randomTemplate.species,
               level: 1,
               exp: 0,

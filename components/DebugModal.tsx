@@ -31,6 +31,7 @@ import {
   Achievement,
   Recipe,
   SectRank,
+  Pet,
 } from '../types';
 import {
   REALM_DATA,
@@ -46,7 +47,10 @@ import {
   SECTS,
   SECRET_REALMS,
   EQUIPMENT_TEMPLATES,
+  LOTTERY_PRIZES,
+  SECT_SHOP_ITEMS,
 } from '../constants';
+import { showSuccess, showError, showInfo } from '../utils/toastUtils';
 
 // 生成唯一ID
 const uid = () =>
@@ -77,10 +81,17 @@ const DebugModal: React.FC<Props> = ({
     | 'item'
     | 'recipe'
   >('equipment');
+
+  // 当 player 更新时同步 localPlayer
+  useEffect(() => {
+    setLocalPlayer(player);
+  }, [player]);
   const [equipmentFilter, setEquipmentFilter] = useState<ItemRarity | 'all'>(
     'all'
   );
   const [itemFilter, setItemFilter] = useState<ItemType | 'all'>('all');
+  const [editingPetId, setEditingPetId] = useState<string | null>(null);
+  const [editingPet, setEditingPet] = useState<Pet | null>(null);
 
   // 过滤装备
   const filteredEquipment = useMemo(() => {
@@ -97,29 +108,82 @@ const DebugModal: React.FC<Props> = ({
       rarity?: ItemRarity;
       effect?: any;
       permanentEffect?: any;
+      isEquippable?: boolean;
+      equipmentSlot?: EquipmentSlot;
+      level?: number;
     }> = [];
+    const itemNames = new Set<string>(); // 用于去重
 
     // 从初始物品
     INITIAL_ITEMS.forEach((item) => {
-      items.push({
-        name: item.name,
-        type: item.type,
-        description: item.description,
-        rarity: item.rarity,
-        effect: item.effect,
-        permanentEffect: item.permanentEffect,
-      });
+      if (!itemNames.has(item.name)) {
+        itemNames.add(item.name);
+        items.push({
+          name: item.name,
+          type: item.type,
+          description: item.description,
+          rarity: item.rarity,
+          effect: item.effect,
+          permanentEffect: item.permanentEffect,
+          isEquippable: item.isEquippable,
+          equipmentSlot: item.equipmentSlot,
+          level: item.level,
+        });
+      }
     });
 
     // 从丹药配方
     [...PILL_RECIPES, ...DISCOVERABLE_RECIPES].forEach((recipe) => {
-      items.push({
-        name: recipe.result.name,
-        type: recipe.result.type,
-        description: recipe.result.description,
-        rarity: recipe.result.rarity,
-        effect: recipe.result.effect,
-      });
+      if (!itemNames.has(recipe.result.name)) {
+        itemNames.add(recipe.result.name);
+        items.push({
+          name: recipe.result.name,
+          type: recipe.result.type,
+          description: recipe.result.description,
+          rarity: recipe.result.rarity,
+          effect: recipe.result.effect,
+          permanentEffect: recipe.result.effect,
+        });
+      }
+    });
+
+    // 从抽奖奖品中提取物品
+    LOTTERY_PRIZES.forEach((prize) => {
+      if (prize.type === 'item' && prize.value.item) {
+        const item = prize.value.item;
+        if (!itemNames.has(item.name)) {
+          itemNames.add(item.name);
+          items.push({
+            name: item.name,
+            type: item.type,
+            description: item.description,
+            rarity: item.rarity,
+            effect: item.effect,
+            permanentEffect: item.permanentEffect,
+            isEquippable: item.isEquippable,
+            equipmentSlot: item.equipmentSlot,
+            level: item.level,
+          });
+        }
+      }
+    });
+
+    // 从宗门商店物品
+    SECT_SHOP_ITEMS.forEach((shopItem) => {
+      if (!itemNames.has(shopItem.item.name)) {
+        itemNames.add(shopItem.item.name);
+        items.push({
+          name: shopItem.item.name,
+          type: shopItem.item.type,
+          description: shopItem.item.description,
+          rarity: shopItem.item.rarity,
+          effect: shopItem.item.effect,
+          permanentEffect: shopItem.item.permanentEffect,
+          isEquippable: shopItem.item.isEquippable,
+          equipmentSlot: shopItem.item.equipmentSlot,
+          level: shopItem.item.level,
+        });
+      }
     });
 
     return items;
@@ -216,7 +280,7 @@ const DebugModal: React.FC<Props> = ({
       });
       return updated;
     });
-    alert(`已添加装备：${template.name}`);
+    showSuccess(`已添加装备：${template.name}`);
   };
 
   // 选择天赋
@@ -264,7 +328,7 @@ const DebugModal: React.FC<Props> = ({
       speed: updatedPlayer.speed,
       luck: updatedPlayer.luck,
     });
-    alert(`已选择天赋：${talent.name}`);
+    showSuccess(`已选择天赋：${talent.name}`);
   };
 
   // 获取稀有度颜色
@@ -328,13 +392,13 @@ const DebugModal: React.FC<Props> = ({
       maxHp: updatedPlayer.maxHp,
       hp: updatedPlayer.hp,
     });
-    alert(`已选择称号：${title.name}`);
+    showSuccess(`已选择称号：${title.name}`);
   };
 
   // 学习功法
   const handleLearnCultivationArt = (art: CultivationArt) => {
     if (localPlayer.cultivationArts.includes(art.id)) {
-      alert('该功法已学习');
+      showError('该功法已学习');
       return; // 已经学习过了
     }
     setLocalPlayer((prev) => {
@@ -348,7 +412,7 @@ const DebugModal: React.FC<Props> = ({
       });
       return updated;
     });
-    alert(`已学习功法：${art.name}`);
+    showSuccess(`已学习功法：${art.name}`);
   };
 
   // 加入宗门
@@ -369,13 +433,13 @@ const DebugModal: React.FC<Props> = ({
       });
       return updated;
     });
-    alert(`已加入宗门：${sect?.name || sectId}`);
+    showSuccess(`已加入宗门：${sect?.name || sectId}`);
   };
 
   // 完成成就
   const handleCompleteAchievement = (achievementId: string) => {
     if (localPlayer.achievements.includes(achievementId)) {
-      alert('该成就已完成');
+      showError('该成就已完成');
       return; // 已经完成了
     }
     const achievement = ACHIEVEMENTS.find(a => a.id === achievementId);
@@ -390,7 +454,7 @@ const DebugModal: React.FC<Props> = ({
       });
       return updated;
     });
-    alert(`已完成成就：${achievement?.name || achievementId}`);
+    showSuccess(`已完成成就：${achievement?.name || achievementId}`);
   };
 
   // 添加灵宠
@@ -420,7 +484,7 @@ const DebugModal: React.FC<Props> = ({
       });
       return updated;
     });
-    alert(`已添加灵宠：${template.name}`);
+    showSuccess(`已添加灵宠：${template.name}`);
   };
 
   // 添加物品
@@ -432,7 +496,9 @@ const DebugModal: React.FC<Props> = ({
       description: itemTemplate.description || '',
       quantity: 1,
       rarity: itemTemplate.rarity || '普通',
-      level: 0,
+      level: (itemTemplate as any).level ?? 0,
+      isEquippable: (itemTemplate as any).isEquippable,
+      equipmentSlot: (itemTemplate as any).equipmentSlot,
       effect: itemTemplate.effect,
       permanentEffect: (itemTemplate as any).permanentEffect,
     };
@@ -448,13 +514,13 @@ const DebugModal: React.FC<Props> = ({
       });
       return updated;
     });
-    alert(`已添加物品：${newItem.name}`);
+    showSuccess(`已添加物品：${newItem.name}`);
   };
 
   // 解锁丹方
   const handleUnlockRecipe = (recipeName: string) => {
     if (localPlayer.unlockedRecipes.includes(recipeName)) {
-      alert('该丹方已解锁');
+      showError('该丹方已解锁');
       return; // 已经解锁了
     }
     setLocalPlayer((prev) => {
@@ -468,7 +534,7 @@ const DebugModal: React.FC<Props> = ({
       });
       return updated;
     });
-    alert(`已解锁丹方：${recipeName}`);
+    showSuccess(`已解锁丹方：${recipeName}`);
   };
 
   // 关闭调试模式
@@ -1554,58 +1620,297 @@ const DebugModal: React.FC<Props> = ({
                 <div className="text-sm text-stone-400 mb-3">
                   拥有灵宠：{localPlayer.pets.length} 只
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
-                  {PET_TEMPLATES.map((template) => {
-                    const hasPet = localPlayer.pets.some(
-                      (p) => p.species === template.species
-                    );
-                    return (
-                      <div
-                        key={template.id}
-                        className={`border-2 rounded-lg p-3 cursor-pointer transition-all hover:scale-105 ${getRarityColor(
-                          template.rarity
-                        )} ${getRarityBgColor(template.rarity)}`}
-                        onClick={() => handleAddPet(template)}
-                      >
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-bold text-sm">{template.name}</h4>
-                          <div className="flex items-center gap-1">
-                            {hasPet && (
-                              <span className="text-xs px-2 py-0.5 rounded bg-green-700 text-white">
-                                已拥有
-                              </span>
-                            )}
-                            <span className="text-xs px-2 py-0.5 rounded bg-stone-700">
-                              {template.rarity}
-                            </span>
+
+                {/* 当前灵宠列表 */}
+                {localPlayer.pets.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="font-bold text-stone-200 mb-2 border-b border-stone-700 pb-1">
+                      当前灵宠
+                    </h4>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {localPlayer.pets.map((pet) => (
+                        <div
+                          key={pet.id}
+                          className="border border-stone-700 rounded-lg p-3 bg-stone-800/50"
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <h5 className="font-bold text-sm text-stone-200">
+                                {pet.name}
+                              </h5>
+                              <p className="text-xs text-stone-400">
+                                {pet.species} | Lv.{pet.level} | 亲密度: {pet.affection}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setEditingPetId(pet.id);
+                                setEditingPet({ ...pet });
+                              }}
+                              className="px-2 py-1 bg-blue-700 hover:bg-blue-600 text-white text-xs rounded"
+                            >
+                              编辑
+                            </button>
+                          </div>
+                          <div className="text-xs text-stone-300">
+                            攻击: {pet.stats.attack} | 防御: {pet.stats.defense} | 气血: {pet.stats.hp} | 速度: {pet.stats.speed}
                           </div>
                         </div>
-                        <p className="text-xs text-stone-400 mb-2">
-                          {template.description}
-                        </p>
-                        <div className="text-xs text-stone-300 mb-2">
-                          <span className="text-stone-500">种类：</span>
-                          {template.species}
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 编辑灵宠弹窗 */}
+                {editingPet && editingPetId && (
+                  <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-stone-800 border border-stone-700 rounded-lg p-4 max-w-md w-full max-h-[90vh] overflow-y-auto">
+                      <h3 className="font-bold text-stone-200 mb-4">编辑灵宠：{editingPet.name}</h3>
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-sm text-stone-400 mb-1">等级</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={editingPet.level}
+                            onChange={(e) =>
+                              setEditingPet({
+                                ...editingPet,
+                                level: Math.max(1, parseInt(e.target.value) || 1),
+                              })
+                            }
+                            className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                          />
                         </div>
-                        <div className="text-xs text-stone-300">
-                          <span className="text-stone-500">基础属性：</span>
-                          攻击{template.baseStats.attack} 防御
-                          {template.baseStats.defense} 气血
-                          {template.baseStats.hp} 速度
-                          {template.baseStats.speed}
+                        <div>
+                          <label className="block text-sm text-stone-400 mb-1">经验值</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={editingPet.exp}
+                            onChange={(e) =>
+                              setEditingPet({
+                                ...editingPet,
+                                exp: Math.max(0, parseInt(e.target.value) || 0),
+                              })
+                            }
+                            className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                          />
                         </div>
+                        <div>
+                          <label className="block text-sm text-stone-400 mb-1">最大经验值</label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={editingPet.maxExp}
+                            onChange={(e) =>
+                              setEditingPet({
+                                ...editingPet,
+                                maxExp: Math.max(1, parseInt(e.target.value) || 1),
+                              })
+                            }
+                            className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm text-stone-400 mb-1">亲密度 (0-100)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={editingPet.affection}
+                            onChange={(e) =>
+                              setEditingPet({
+                                ...editingPet,
+                                affection: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)),
+                              })
+                            }
+                            className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm text-stone-400 mb-1">进化阶段 (0-2)</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="2"
+                            value={editingPet.evolutionStage}
+                            onChange={(e) =>
+                              setEditingPet({
+                                ...editingPet,
+                                evolutionStage: Math.max(0, Math.min(2, parseInt(e.target.value) || 0)),
+                              })
+                            }
+                            className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm text-stone-400 mb-1">攻击力</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={editingPet.stats.attack}
+                            onChange={(e) =>
+                              setEditingPet({
+                                ...editingPet,
+                                stats: {
+                                  ...editingPet.stats,
+                                  attack: Math.max(0, parseInt(e.target.value) || 0),
+                                },
+                              })
+                            }
+                            className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm text-stone-400 mb-1">防御力</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={editingPet.stats.defense}
+                            onChange={(e) =>
+                              setEditingPet({
+                                ...editingPet,
+                                stats: {
+                                  ...editingPet.stats,
+                                  defense: Math.max(0, parseInt(e.target.value) || 0),
+                                },
+                              })
+                            }
+                            className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm text-stone-400 mb-1">气血</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={editingPet.stats.hp}
+                            onChange={(e) =>
+                              setEditingPet({
+                                ...editingPet,
+                                stats: {
+                                  ...editingPet.stats,
+                                  hp: Math.max(0, parseInt(e.target.value) || 0),
+                                },
+                              })
+                            }
+                            className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm text-stone-400 mb-1">速度</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={editingPet.stats.speed}
+                            onChange={(e) =>
+                              setEditingPet({
+                                ...editingPet,
+                                stats: {
+                                  ...editingPet.stats,
+                                  speed: Math.max(0, parseInt(e.target.value) || 0),
+                                },
+                              })
+                            }
+                            className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2 mt-4">
                         <button
-                          className="mt-2 w-full bg-red-700 hover:bg-red-600 text-white text-xs py-1 rounded transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleAddPet(template);
+                          onClick={() => {
+                            if (!editingPet) return;
+                            const updatedPets = localPlayer.pets.map((p) =>
+                              p.id === editingPetId ? editingPet : p
+                            );
+                            setLocalPlayer((prev) => ({
+                              ...prev,
+                              pets: updatedPets,
+                            }));
+                            onUpdatePlayer({
+                              pets: updatedPets,
+                            });
+                            setEditingPet(null);
+                            setEditingPetId(null);
+                            showSuccess('已更新灵宠参数');
                           }}
+                          className="flex-1 bg-green-700 hover:bg-green-600 text-white py-2 rounded"
                         >
-                          添加灵宠
+                          保存
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingPet(null);
+                            setEditingPetId(null);
+                          }}
+                          className="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-200 py-2 rounded"
+                        >
+                          取消
                         </button>
                       </div>
-                    );
-                  })}
+                    </div>
+                  </div>
+                )}
+
+                {/* 添加新灵宠 */}
+                <div className="mt-4">
+                  <h4 className="font-bold text-stone-200 mb-2 border-b border-stone-700 pb-1">
+                    添加新灵宠
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                    {PET_TEMPLATES.map((template) => {
+                      const hasPet = localPlayer.pets.some(
+                        (p) => p.species === template.species
+                      );
+                      return (
+                        <div
+                          key={template.id}
+                          className={`border-2 rounded-lg p-3 cursor-pointer transition-all hover:scale-105 ${getRarityColor(
+                            template.rarity
+                          )} ${getRarityBgColor(template.rarity)}`}
+                          onClick={() => handleAddPet(template)}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <h4 className="font-bold text-sm">{template.name}</h4>
+                            <div className="flex items-center gap-1">
+                              {hasPet && (
+                                <span className="text-xs px-2 py-0.5 rounded bg-green-700 text-white">
+                                  已拥有
+                                </span>
+                              )}
+                              <span className="text-xs px-2 py-0.5 rounded bg-stone-700">
+                                {template.rarity}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-xs text-stone-400 mb-2">
+                            {template.description}
+                          </p>
+                          <div className="text-xs text-stone-300 mb-2">
+                            <span className="text-stone-500">种类：</span>
+                            {template.species}
+                          </div>
+                          <div className="text-xs text-stone-300">
+                            <span className="text-stone-500">基础属性：</span>
+                            攻击{template.baseStats.attack} 防御
+                            {template.baseStats.defense} 气血
+                            {template.baseStats.hp} 速度
+                            {template.baseStats.speed}
+                          </div>
+                          <button
+                            className="mt-2 w-full bg-red-700 hover:bg-red-600 text-white text-xs py-1 rounded transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddPet(template);
+                            }}
+                          >
+                            添加灵宠
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             )}
@@ -1664,7 +1969,7 @@ const DebugModal: React.FC<Props> = ({
                         {item.type}
                       </div>
                       {item.effect && (
-                        <div className="text-xs text-stone-300">
+                        <div className="text-xs text-stone-300 mb-1">
                           <span className="text-stone-500">效果：</span>
                           {Object.entries(item.effect)
                             .map(([key, value]) => {
@@ -1680,6 +1985,30 @@ const DebugModal: React.FC<Props> = ({
                               return `${keyMap[key] || key}+${value}`;
                             })
                             .join(', ')}
+                        </div>
+                      )}
+                      {item.permanentEffect && (
+                        <div className="text-xs text-yellow-300 mb-1">
+                          <span className="text-stone-500">永久效果：</span>
+                          {Object.entries(item.permanentEffect)
+                            .map(([key, value]) => {
+                              const keyMap: Record<string, string> = {
+                                attack: '攻击',
+                                defense: '防御',
+                                maxHp: '最大气血',
+                                spirit: '神识',
+                                physique: '体魄',
+                                speed: '速度',
+                              };
+                              return `${keyMap[key] || key}+${value}`;
+                            })
+                            .join(', ')}
+                        </div>
+                      )}
+                      {item.isEquippable && (
+                        <div className="text-xs text-blue-300 mb-1">
+                          <span className="text-stone-500">可装备：</span>
+                          {item.equipmentSlot || '未知部位'}
                         </div>
                       )}
                       <button

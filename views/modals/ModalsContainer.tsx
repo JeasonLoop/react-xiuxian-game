@@ -154,6 +154,7 @@ interface ModalsContainerProps {
         effect?: any;
         permanentEffect?: any;
       }>;
+      petSkillCooldowns?: Record<string, number>; // 灵宠技能冷却状态
     }, updatedInventory?: Item[]) => void;
   };
 }

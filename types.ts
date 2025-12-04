@@ -407,8 +407,9 @@ export interface Pet {
     speed: number; // 速度，影响战斗中的行动顺序
   };
   skills: PetSkill[];
-  evolutionStage: number; // 进化阶段 0-2
+  evolutionStage: number; // 进化阶段 0-2 (0=幼年期, 1=成熟期, 2=完全体)
   affection: number; // 亲密度 0-100
+  skillCooldowns?: Record<string, number>; // 技能冷却时间追踪
 }
 
 export interface PetSkill {
@@ -427,9 +428,11 @@ export interface PetSkill {
 export interface PetTemplate {
   id: string;
   name: string;
+  nameVariants?: string[]; // 名字变体，用于随机生成多样化名字
   species: string;
   description: string;
   rarity: ItemRarity;
+  image?: string; // 灵宠图片（emoji或SVG路径）
   baseStats: {
     attack: number;
     defense: number;
@@ -438,8 +441,24 @@ export interface PetTemplate {
   };
   skills: PetSkill[];
   evolutionRequirements?: {
-    level: number;
+    // 幼年期 -> 成熟期 (evolutionStage 0 -> 1)
+    stage1?: {
+      level: number;
+      items?: { name: string; quantity: number }[];
+    };
+    // 成熟期 -> 完全体 (evolutionStage 1 -> 2)
+    stage2?: {
+      level: number;
+      items?: { name: string; quantity: number }[];
+    };
+    // 兼容旧版本（如果没有stage1/stage2，使用这个）
+    level?: number;
     items?: { name: string; quantity: number }[];
+  };
+  // 进化后的名称（可选，如果不提供则使用原名称）
+  evolutionNames?: {
+    stage1?: string; // 成熟期名称
+    stage2?: string; // 完全体名称
   };
 }
 
@@ -655,6 +674,9 @@ export interface BattleState {
   enemyStrengthMultiplier?: number; // 敌人强度倍数（用于奖励计算）
   adventureType: AdventureType; // 历练类型
   riskLevel?: '低' | '中' | '高' | '极度危险'; // 风险等级
+  // 灵宠系统
+  activePet?: Pet | null; // 激活的灵宠
+  petSkillCooldowns?: Record<string, number>; // 灵宠技能冷却
 }
 
 // 玩家行动选择

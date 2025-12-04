@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { GameSettings } from '../types';
 import dayjs from 'dayjs';
+import { showError, showSuccess, showInfo } from '../utils/toastUtils';
 
 interface Props {
   isOpen: boolean;
@@ -41,7 +42,7 @@ const SettingsModal: React.FC<Props> = ({
     // 支持 .json 和 .txt 文件
     const fileName = file.name.toLowerCase();
     if (!fileName.endsWith('.json') && !fileName.endsWith('.txt')) {
-      alert('请选择 .json 或 .txt 格式的存档文件！');
+      showError('请选择 .json 或 .txt 格式的存档文件！');
       return;
     }
 
@@ -53,24 +54,24 @@ const SettingsModal: React.FC<Props> = ({
       try {
         saveData = JSON.parse(text);
       } catch (parseError) {
-        alert('存档文件格式错误！请确保文件内容是有效的JSON格式。');
+        showError('存档文件格式错误！请确保文件内容是有效的JSON格式。');
         console.error('JSON解析错误:', parseError);
         return;
       }
 
       // 验证存档数据结构
       if (!saveData || typeof saveData !== 'object') {
-        alert('存档文件格式不正确！文件内容必须是有效的JSON对象。');
+        showError('存档文件格式不正确！文件内容必须是有效的JSON对象。');
         return;
       }
 
       if (!saveData.player || typeof saveData.player !== 'object') {
-        alert('存档文件格式不正确！缺少必要的玩家数据。');
+        showError('存档文件格式不正确！缺少必要的玩家数据。');
         return;
       }
 
       if (!Array.isArray(saveData.logs)) {
-        alert('存档文件格式不正确！日志数据必须是数组格式。');
+        showError('存档文件格式不正确！日志数据必须是数组格式。');
         return;
       }
 
@@ -94,12 +95,13 @@ const SettingsModal: React.FC<Props> = ({
       localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
 
       // 提示并刷新页面
-      alert('存档导入成功！页面即将刷新...');
-      window.location.reload();
+      showSuccess('存档导入成功！页面即将刷新...', undefined, () => {
+        window.location.reload();
+      });
     } catch (error) {
       console.error('导入存档失败:', error);
-      alert(
-        `导入存档失败！\n错误信息: ${error instanceof Error ? error.message : '未知错误'}\n请检查文件格式是否正确。`
+      showError(
+        `导入存档失败！错误信息: ${error instanceof Error ? error.message : '未知错误'}，请检查文件格式是否正确。`
       );
     }
 
@@ -113,7 +115,7 @@ const SettingsModal: React.FC<Props> = ({
     try {
       const saved = localStorage.getItem(SAVE_KEY);
       if (!saved) {
-        alert('没有找到存档数据！请先开始游戏。');
+        showError('没有找到存档数据！请先开始游戏。');
         return;
       }
 
@@ -122,7 +124,7 @@ const SettingsModal: React.FC<Props> = ({
       try {
         saveData = JSON.parse(saved);
       } catch (error) {
-        alert('存档数据损坏，无法导出！');
+        showError('存档数据损坏，无法导出！');
         return;
       }
 
@@ -141,11 +143,12 @@ const SettingsModal: React.FC<Props> = ({
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
 
-      alert('存档导出成功！');
+      // 显示成功提示
+      showSuccess('存档导出成功！');
     } catch (error) {
       console.error('导出存档失败:', error);
-      alert(
-        `导出存档失败！\n错误信息: ${error instanceof Error ? error.message : '未知错误'}`
+      showError(
+        `导出存档失败！错误信息: ${error instanceof Error ? error.message : '未知错误'}`
       );
     }
   };
