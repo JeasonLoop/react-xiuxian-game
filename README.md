@@ -21,7 +21,7 @@ _踏上修仙之路，体验从炼气到飞升的完整修仙历程_
 
 ### ✨ 核心特色
 
-- 🎲 **AI驱动事件系统** - 使用 Spark AI 生成丰富的随机事件，每次历练都是全新体验
+- 🎲 **AI驱动事件系统** - 使用 AI 生成丰富的随机事件，每次历练都是全新体验
 - 🏔️ **完整修仙体系** - 从炼气期到飞升，7大境界，每个境界10层，共70层修炼之路
 - 🎒 **丰富装备系统** - 武器、护甲、首饰、戒指、法宝等多样装备，支持强化升级
 - 🐉 **灵宠养成** - 收集、培养、进化灵宠，与灵宠并肩作战
@@ -67,24 +67,25 @@ npm install
 
 **⚠️ 重要**: 项目不再包含硬编码的 API Key，必须配置环境变量。
 
-**默认配置**: 项目默认使用 **SiliconFlow** 作为 AI 接口，只需配置 API Key 即可。
+**默认配置**: 项目默认使用 **GLM (智谱AI)** 作为 AI 接口，只需配置 API Key 即可。
 
 在项目根目录创建 `.env.local` 文件：
 
 ```bash
 # .env.local
-# 最小配置：只需设置 API Key，其他使用默认值（SiliconFlow）
+# 最小配置：只需设置 API Key，其他使用默认值（GLM/智谱AI）
 VITE_AI_KEY=your-api-key-here
 
 # 可选配置（如果不设置，将使用默认值）
-# VITE_AI_PROVIDER=siliconflow  # 默认: siliconflow
-# VITE_AI_MODEL=Qwen/Qwen2.5-72B-Instruct  # 默认模型
+# VITE_AI_PROVIDER=glm  # 默认: glm (智谱AI)
+# VITE_AI_MODEL=glm-4.5  # 默认模型
 ```
 
 > 💡 **获取 API Key**:
 >
-> - 访问 [SiliconFlow](https://siliconflow.cn) 注册账号并创建 API Key
-> - 如需使用其他 AI 服务，设置 `VITE_AI_PROVIDER` 环境变量
+> - 访问 [智谱AI开放平台](https://open.bigmodel.cn) 注册账号并创建 API Key
+> - 如需使用其他 AI 服务（SiliconFlow、OpenAI 等），设置 `VITE_AI_PROVIDER` 环境变量
+> - 支持的提供商：`glm`（默认）、`siliconflow`、`openai`、`custom`
 >
 > ⚠️ **安全提示**: `.env.local` 文件已添加到 `.gitignore`，不会被提交到 Git。不要将 API Key 提交到代码仓库。
 
@@ -225,7 +226,7 @@ npm run dev
 - **开发语言**: TypeScript 5.8.2
 - **构建工具**: Vite 6.2.0
 - **UI图标**: Lucide React
-- **AI服务**: Google Gemini API
+- **AI服务**: 支持多种 AI 服务（默认 GLM/智谱AI，支持 SiliconFlow、OpenAI 等）
 - **状态管理**: React Hooks (useState, useEffect)
 - **数据持久化**: localStorage
 
@@ -335,7 +336,7 @@ pnpm preview      # 或 npm run preview
 ## 🙏 致谢
 
 - 感谢所有修仙小说作者提供的灵感
-- 感谢 讯飞星火 API 提供的 AI 能力
+- 感谢 GLM (智谱AI)、SiliconFlow、OpenAI 等 AI 服务提供商
 
 ---
 

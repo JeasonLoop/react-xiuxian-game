@@ -964,8 +964,11 @@ function App() {
                   });
                 }
 
+                const hasItems = result.items && result.items.length > 0;
+                const itemsText = hasItems ? `获得物品：${result.items.map((item) => item.name).join('，')}` : '';
+
                 const rewardText = result.victory
-                  ? `战斗胜利！获得 ${result.expChange} 修为，${result.spiritChange} 灵石。${result.items && result.items.length > 0 ? `获得 ${result.items.length} 件物品。` : ''}`
+                  ? `战斗胜利！获得 ${result.expChange} 修为，${result.spiritChange} 灵石。${itemsText}`
                   : `战斗失败，损失 ${result.hpLoss} 点气血。`;
 
                 addLog(rewardText, result.victory ? 'gain' : 'danger');
