@@ -206,6 +206,116 @@ Environment="HTTPS_PROXY=http://proxy.example.com:8080"
 Environment="NO_PROXY=localhost,127.0.0.1"
 ```
 
+## 镜像打包与迁移
+
+如果需要在没有网络连接的环境中部署，或者需要备份/传输镜像，可以将Docker镜像打包成tar文件。
+
+### 导出镜像为 tar 包
+
+**方式一：使用 docker save（推荐）**
+
+```bash
+# 1. 先构建镜像
+docker build \
+  --build-arg VITE_AI_KEY="your_api_key" \
+  --build-arg VITE_AI_PROVIDER="glm" \
+  -t react-xiuxian-game:latest .
+
+# 2. 导出为 tar 包
+docker save -o react-xiuxian-game.tar react-xiuxian-game:latest
+
+# 或者使用压缩格式（推荐，可以大幅减小文件大小）
+docker save react-xiuxian-game:latest | gzip > react-xiuxian-game.tar.gz
+```
+
+**方式二：使用 Docker Compose 构建后导出**
+
+```bash
+# 1. 使用 Docker Compose 构建（会自动读取 .env 文件）
+docker-compose build
+
+# 2. 导出镜像
+docker save -o react-xiuxian-game.tar react-xiuxian-game:latest
+
+# 或压缩导出
+docker save react-xiuxian-game:latest | gzip > react-xiuxian-game.tar.gz
+```
+
+### 导入 tar 包
+
+在目标机器上导入镜像：
+
+```bash
+# 导入未压缩的 tar 包
+docker load -i react-xiuxian-game.tar
+
+# 导入压缩的 tar.gz 包
+gunzip -c react-xiuxian-game.tar.gz | docker load
+
+# 或者使用一条命令
+docker load < react-xiuxian-game.tar.gz
+```
+
+### 验证导入的镜像
+
+```bash
+# 查看镜像列表
+docker images | grep react-xiuxian-game
+
+# 运行导入的镜像
+docker run -d -p 3000:80 --name react-xiuxian-game react-xiuxian-game:latest
+```
+
+### 完整的打包流程示例
+
+```bash
+# 步骤1：设置环境变量（创建 .env 文件或直接设置）
+export VITE_AI_KEY="your_api_key"
+export VITE_AI_PROVIDER="glm"
+
+# 步骤2：构建镜像
+docker-compose build
+# 或使用 Docker 命令
+# docker build --build-arg VITE_AI_KEY="$VITE_AI_KEY" -t react-xiuxian-game:latest .
+
+# 步骤3：导出为压缩包
+docker save react-xiuxian-game:latest | gzip > react-xiuxian-game.tar.gz
+
+# 步骤4：查看文件大小
+ls -lh react-xiuxian-game.tar.gz
+
+# 步骤5：传输文件到目标机器（示例）
+# scp react-xiuxian-game.tar.gz user@target-server:/path/to/destination/
+```
+
+### 在目标机器上部署
+
+```bash
+# 步骤1：导入镜像
+docker load < react-xiuxian-game.tar.gz
+
+# 步骤2：运行容器
+docker run -d -p 3000:80 --name react-xiuxian-game react-xiuxian-game:latest
+
+# 或使用 Docker Compose（需要同时传输 docker-compose.yml）
+docker-compose up -d
+```
+
+### 文件大小优化建议
+
+- **使用 gzip 压缩**：通常可以减少 50-70% 的文件大小
+- **多阶段构建**：当前 Dockerfile 已使用多阶段构建，最终镜像只包含必要文件
+- **清理不需要的层**：确保构建过程中没有遗留临时文件
+
+```bash
+# 比较压缩前后的大小
+docker save react-xiuxian-game:latest -o react-xiuxian-game.tar
+ls -lh react-xiuxian-game.tar
+
+docker save react-xiuxian-game:latest | gzip > react-xiuxian-game.tar.gz
+ls -lh react-xiuxian-game.tar.gz
+```
+
 ## 故障排查
 
 ### 查看容器日志
