@@ -81,6 +81,85 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
     }
   }, [isOpen, player, adventureType, riskLevel, realmMinRealm, battleState]);
 
+  // 如果是敌方先手，自动驱动敌人行动，避免界面没有操作栏
+  useEffect(() => {
+    if (
+      !battleState ||
+      battleState.waitingForPlayerAction ||
+      battleState.enemyActionsRemaining <= 0
+    ) {
+      return;
+    }
+
+    // 避免多次触发：仅在切到敌人回合且未在处理中时执行
+    if (isProcessing) return;
+
+    setIsProcessing(true);
+    const timer = setTimeout(() => {
+      try {
+        let newState = executeEnemyTurn(battleState);
+
+        // 如果敌人行动后轮到玩家但因 0 行动次数直接结束，需要立刻再跑敌人回合，直到玩家可行动或战斗结束
+        let safety = 0;
+        while (
+          !newState.waitingForPlayerAction &&
+          newState.enemyActionsRemaining <= 0 &&
+          !checkBattleEnd(newState) &&
+          safety < 5
+        ) {
+          newState = executeEnemyTurn(newState);
+          safety += 1;
+        }
+
+        // 战斗结束立即结算并回调
+        if (checkBattleEnd(newState)) {
+          const victory = newState.enemy.hp <= 0;
+          const hpLoss = player.hp - newState.player.hp;
+          const rewards = calculateBattleRewards(
+            newState,
+            player,
+            adventureType,
+            riskLevel
+          );
+          const finalPetSkillCooldowns: Record<string, number> = {};
+          if (newState.petSkillCooldowns) {
+            Object.keys(newState.petSkillCooldowns).forEach((skillId) => {
+              if (newState.petSkillCooldowns![skillId] > 0) {
+                finalPetSkillCooldowns[skillId] =
+                  newState.petSkillCooldowns![skillId];
+              }
+            });
+          }
+          onClose(
+            {
+              victory,
+              hpLoss,
+              expChange: rewards.expChange,
+              spiritChange: rewards.spiritChange,
+              items: rewards.items,
+              petSkillCooldowns:
+                Object.keys(finalPetSkillCooldowns).length > 0
+                  ? finalPetSkillCooldowns
+                  : undefined,
+            },
+            newState.playerInventory
+          );
+          return;
+        }
+
+        setBattleState(newState);
+        setIsProcessing(false);
+      } catch (error) {
+        console.error('敌人先手回合错误:', error);
+        setErrorMessage('敌人行动出错');
+        setIsProcessing(false);
+        setTimeout(() => setErrorMessage(null), 3000);
+      }
+    }, 150);
+
+    return () => clearTimeout(timer);
+  }, [battleState, isProcessing, player, adventureType, riskLevel, onClose]);
+
   // 处理玩家行动
   const handlePlayerAction = async (action: PlayerAction) => {
     if (!battleState || isProcessing || !battleState.waitingForPlayerAction) {
