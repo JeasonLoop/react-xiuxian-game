@@ -23,6 +23,7 @@ const LogItem = React.memo<{ log: LogEntry }>(({ log }) => {
   );
 
   const logClassName = useMemo(() => {
+    console.log(log.type);
     const baseClass =
       'p-2 md:p-3 rounded border-l-2 font-serif text-xs md:text-sm lg:text-base leading-relaxed animate-fade-in';
     switch (log.type) {
@@ -160,22 +161,24 @@ const LogPanel: React.FC<Props> = ({ logs, className }) => {
     <div
       className={`flex-1 bg-ink-900 relative min-h-[200px] md:min-h-[300px] ${className || ''}`}
     >
+      {/* 顶部遮罩 */}
+      <div className="absolute top-0 left-0 w-full h-8 md:h-12 bg-gradient-to-b from-ink-900 to-transparent pointer-events-none z-10" />
+
       {/* 滚动容器 */}
       <div
         ref={containerRef}
         className="h-full overflow-y-auto scrollbar-hide relative"
       >
-        <div className="absolute top-0 left-0 w-full h-8 md:h-12 bg-gradient-to-b from-ink-900 to-transparent pointer-events-none z-10" />
-
         <div className="p-3 md:p-6 space-y-2 md:space-y-4 pb-4">
           {displayedLogs.map((log) => (
             <LogItem key={log.id} log={log} />
           ))}
           <div ref={endRef} />
         </div>
-
-        <div className="absolute bottom-0 left-0 w-full h-8 md:h-12 bg-gradient-to-t from-ink-900 to-transparent pointer-events-none z-10" />
       </div>
+
+      {/* 底部遮罩 */}
+      <div className="absolute bottom-0 left-0 w-full h-8 md:h-12 bg-gradient-to-t from-ink-900 to-transparent pointer-events-none z-10" />
 
       {/* 滚动到底部按钮 - 固定在日志窗口右下角，不随内容滚动 */}
       {showScrollButton && (
