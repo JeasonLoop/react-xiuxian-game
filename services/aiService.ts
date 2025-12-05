@@ -465,7 +465,7 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
         {
           role: 'system',
           content:
-            '你是一名严谨的修仙游戏GM，需要严格按照用户要求返回结构化数据。\n\n重要规则：\n1. 只返回JSON格式，不要有任何额外的文字说明、解释或描述\n2. 不要使用代码块标记（如```json```），直接返回纯JSON\n3. 所有数字值必须是纯数字格式，例如 "spirit": 8 而不是 "spirit": +8\n4. 不要添加任何注释或说明文字\n5. 确保JSON格式完全正确，可以被直接解析',
+            '你是一名严谨的修仙游戏GM，需要严格按照用户要求返回结构化数据。\n\n重要规则：\n1. 只返回JSON格式，不要有任何额外的文字说明、解释或描述\n2. 不要使用代码块标记（如```json```），直接返回纯JSON\n3. 所有数字值必须是纯数字格式，例如 "spirit": 8 而不是 "spirit": +8\n4. 不要添加任何注释或说明文字\n5. 确保JSON格式完全正确，可以被直接解析\n6. 禁止输出 null/undefined 或空字符串字段；缺失字段请直接省略\n7. 禁止重复使用相同的模板或开头句式（如“你在”），连续结果必须改写\n8. eventColor 必须匹配事件性质：danger=有损失，gain=正收益，special=罕见大机缘/秘境/传承，normal=轻描淡写或无明显收益\n9. 所有 effect 数值必须落在稀有度对应区间，否则重写\n10. hpChange 必须与描述伤害/治疗匹配，且绝对值不超过玩家最大气血的50%（向下取整）\n11. 同一输出中 equipmentSlot 不得冲突（戒指/首饰自动分配除外）\n12. attributeReduction 仅能出现在极度危险事件，且必须伴随稀有及以上奖励补偿',
         },
         {
           role: 'user',
@@ -473,6 +473,7 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
 
 【输出要求】
 只返回JSON格式，不要有任何额外的文字、说明、解释或描述。不要使用代码块标记，直接返回纯JSON。
+不要输出 null/undefined/空字符串字段，缺失字段直接省略。
 
 【JSON字段定义】
 {
@@ -565,6 +566,11 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
 8. 传承等级变化（inheritanceLevelChange）只能为1-4之间的整数，且应该极其罕见（只有大机缘事件才可能出现）
 9. 触发随机秘境（triggerSecretRealm）应该非常罕见，只有特殊事件才可能触发
 10. 灵宠机缘（petOpportunity）需要玩家已有灵宠时才应该出现，且应该合理（如提升等级、获得经验等）
+11. 秘境名称或描述存在时，故事中至少出现2个与其直接相关的名词/现象；缺失时使用通用秘境风格
+12. items/itemsObtained 中的装备槽位不得重复（戒指/首饰可重复自动分配）；多件物品时至少包含1件稀有或以上
+13. 物品名称在描述与 item(s) 中必须一致，战斗掉落的材料需体现在 items 中
+14. 避免固定句式：不要让超过30%的事件以相同短语开头（如“你在”“你正”）；需要改写
+15. hpChange 范围需符合描述且限制在 [-maxHp*0.5, maxHp*0.5]（向下取整）
 
 【物品生成多样化规则】
 - 尽量生成不同名称、不同类型的物品，避免重复
