@@ -33,6 +33,13 @@ export function usePetHandlers({
     if (pet) addLog(`你激活了灵宠【${pet.name}】！`, 'gain');
   };
 
+  const handleDeactivatePet = () => {
+    if (!player) return;
+    const activePet = player.pets.find((p) => p.id === player.activePetId);
+    setPlayer((prev) => ({ ...prev, activePetId: null }));
+    if (activePet) addLog(`你取消了灵宠【${activePet.name}】的激活状态。`, 'normal');
+  };
+
   const handleFeedPet = (
     petId: string,
     feedType: 'hp' | 'item' | 'exp',
@@ -457,10 +464,107 @@ export function usePetHandlers({
     });
   };
 
+  const handleReleasePet = (petId: string) => {
+    if (!player) return;
+
+    const pet = player.pets.find((p) => p.id === petId);
+    if (!pet) {
+      addLog('找不到该灵宠！', 'danger');
+      return;
+    }
+
+    // 如果放生的是当前激活的灵宠，需要取消激活
+    const isActivePet = player.activePetId === petId;
+
+    setPlayer((prev) => {
+      if (!prev) return prev;
+
+      // 移除灵宠
+      const newPets = prev.pets.filter((p) => p.id !== petId);
+
+      // 如果放生的是激活的灵宠，取消激活
+      const newActivePetId = isActivePet ? null : prev.activePetId;
+
+      // 根据灵宠等级和稀有度给予补偿（灵石）
+      const baseCompensation = 100;
+      const levelMultiplier = 1 + pet.level * 0.1; // 每级增加10%
+      const rarityMultiplier = {
+        '普通': 1,
+        '稀有': 2,
+        '传说': 5,
+        '仙品': 10,
+      }[pet.rarity] || 1;
+      const compensation = Math.floor(baseCompensation * levelMultiplier * rarityMultiplier);
+
+      addLog(
+        `你放生了灵宠【${pet.name}】，获得了 ${compensation} 灵石作为补偿。`,
+        isActivePet ? 'normal' : 'gain'
+      );
+
+      return {
+        ...prev,
+        pets: newPets,
+        activePetId: newActivePetId,
+        spiritStones: prev.spiritStones + compensation,
+      };
+    });
+  };
+
+  const handleBatchReleasePets = (petIds: string[]) => {
+    if (!player || petIds.length === 0) return;
+
+    setPlayer((prev) => {
+      if (!prev) return prev;
+
+      let totalCompensation = 0;
+      const releasedPetNames: string[] = [];
+      const wasActivePet = petIds.includes(prev.activePetId || '');
+
+      // 计算所有放生灵宠的补偿
+      petIds.forEach((petId) => {
+        const pet = prev.pets.find((p) => p.id === petId);
+        if (pet) {
+          const baseCompensation = 100;
+          const levelMultiplier = 1 + pet.level * 0.1;
+          const rarityMultiplier = {
+            '普通': 1,
+            '稀有': 2,
+            '传说': 5,
+            '仙品': 10,
+          }[pet.rarity] || 1;
+          const compensation = Math.floor(baseCompensation * levelMultiplier * rarityMultiplier);
+          totalCompensation += compensation;
+          releasedPetNames.push(pet.name);
+        }
+      });
+
+      // 移除灵宠
+      const newPets = prev.pets.filter((p) => !petIds.includes(p.id));
+
+      // 如果放生了激活的灵宠，取消激活
+      const newActivePetId = wasActivePet ? null : prev.activePetId;
+
+      addLog(
+        `你批量放生了 ${petIds.length} 只灵宠（${releasedPetNames.join('、')}），获得了 ${totalCompensation} 灵石作为补偿。`,
+        'gain'
+      );
+
+      return {
+        ...prev,
+        pets: newPets,
+        activePetId: newActivePetId,
+        spiritStones: prev.spiritStones + totalCompensation,
+      };
+    });
+  };
+
   return {
     handleActivatePet,
+    handleDeactivatePet,
     handleFeedPet,
     handleBatchFeedItems,
     handleEvolvePet,
+    handleReleasePet,
+    handleBatchReleasePets,
   };
 }

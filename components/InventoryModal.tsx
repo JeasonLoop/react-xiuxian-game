@@ -700,7 +700,7 @@ const InventoryModal: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm touch-manipulation"
+      className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-[60] p-0 md:p-4 backdrop-blur-sm touch-manipulation"
       onClick={onClose}
     >
       <div

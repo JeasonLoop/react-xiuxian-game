@@ -478,9 +478,12 @@ function App() {
   };
   const handleUpdateSettings = settingsHandlers.handleUpdateSettings;
   const handleActivatePet = petHandlers.handleActivatePet;
+  const handleDeactivatePet = petHandlers.handleDeactivatePet;
   const handleFeedPet = petHandlers.handleFeedPet;
   const handleBatchFeedItems = petHandlers.handleBatchFeedItems;
   const handleEvolvePet = petHandlers.handleEvolvePet;
+  const handleReleasePet = petHandlers.handleReleasePet;
+  const handleBatchReleasePets = petHandlers.handleBatchReleasePets;
   const handleDraw = lotteryHandlers.handleDraw;
   const handleJoinSect = sectHandlers.handleJoinSect;
   const handleLeaveSect = sectHandlers.handleLeaveSect;
@@ -911,9 +914,12 @@ function App() {
             }));
           },
           handleActivatePet,
+          handleDeactivatePet,
           handleFeedPet,
           handleBatchFeedItems,
           handleEvolvePet,
+          handleReleasePet,
+          handleBatchReleasePets,
           handleDraw,
           handleUpdateSettings,
           handleBuyItem,

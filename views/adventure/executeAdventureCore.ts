@@ -56,6 +56,89 @@ interface ExecuteAdventureCoreProps {
   skipBattle?: boolean; // 是否跳过战斗（自动模式下）
 }
 
+/**
+ * 为装备添加属性（如果装备没有属性，根据品阶自动生成）
+ * @param itemType 物品类型
+ * @param effect 当前效果
+ * @param rarity 稀有度
+ * @returns 更新后的效果对象
+ */
+function ensureEquipmentAttributes(
+  itemType: ItemType,
+  effect: AdventureResult['itemObtained']['effect'] | undefined,
+  rarity: ItemRarity
+): AdventureResult['itemObtained']['effect'] | undefined {
+  // 只处理装备类型
+  const equipmentTypes = [
+    ItemType.Artifact,
+    ItemType.Weapon,
+    ItemType.Armor,
+    ItemType.Accessory,
+    ItemType.Ring,
+  ];
+
+  if (!equipmentTypes.includes(itemType)) {
+    return effect;
+  }
+
+  // 移除exp加成（装备不应该提供修为加成）
+  let processedEffect = effect;
+  if (processedEffect?.exp) {
+    const { exp, ...restEffect } = processedEffect;
+    processedEffect = restEffect;
+  }
+
+  // 检查是否已有任何属性
+  const hasAnyAttribute =
+    processedEffect?.attack ||
+    processedEffect?.defense ||
+    processedEffect?.hp ||
+    processedEffect?.spirit ||
+    processedEffect?.physique ||
+    processedEffect?.speed;
+
+  // 如果没有属性，根据品阶生成属性
+  if (!hasAnyAttribute) {
+    const rarityMultiplier = RARITY_MULTIPLIERS[rarity];
+
+    // 根据稀有度生成基础属性值
+    const baseValue =
+      rarity === '普通'
+        ? 10
+        : rarity === '稀有'
+          ? 30
+          : rarity === '传说'
+            ? 80
+            : 200;
+
+    // 随机生成1-3种属性
+    const attributeTypes = [
+      'attack',
+      'defense',
+      'hp',
+      'spirit',
+      'physique',
+      'speed',
+    ];
+    const numAttributes = Math.floor(Math.random() * 3) + 1; // 1-3种属性
+    const selectedAttributes = attributeTypes
+      .sort(() => Math.random() - 0.5)
+      .slice(0, numAttributes);
+
+    const newEffect: any = {};
+    selectedAttributes.forEach((attr) => {
+      const value = Math.floor(
+        baseValue * rarityMultiplier * (0.8 + Math.random() * 0.4)
+      );
+      newEffect[attr] = value;
+    });
+
+    return newEffect;
+  }
+
+  return processedEffect;
+}
+
 export async function executeAdventureCore({
   result,
   battleContext,
@@ -223,76 +306,14 @@ export async function executeAdventureCore({
           );
         }
 
-        // 装备类物品应该使用 effect 而不是 permanentEffect
-        // 如果装备只有 permanentEffect 而没有 effect，将其转换为 effect
-        if (isEquippable && !finalEffect && finalPermanentEffect) {
-          // 将 permanentEffect 转换为 effect（除了 maxHp，因为装备不提供 maxHp）
-          finalEffect = {
-            attack: finalPermanentEffect.attack,
-            defense: finalPermanentEffect.defense,
-            spirit: finalPermanentEffect.spirit,
-            physique: finalPermanentEffect.physique,
-            speed: finalPermanentEffect.speed,
-            hp: 0, // maxHp 转换为 hp（装备时增加当前气血上限）
-          };
-          // 如果有 maxHp，也加到 hp 中
-          if (finalPermanentEffect.maxHp) {
-            finalEffect.hp = (finalEffect.hp || 0) + finalPermanentEffect.maxHp;
-          }
-          // 清空 permanentEffect（装备不应该有 permanentEffect）
-          finalPermanentEffect = undefined;
-          console.log(
-            `[装备效果修正] "${itemName}": 将 permanentEffect 转换为 effect`
-          );
-        }
-
-        // 确保法宝有属性加成，且不能有exp加成
-        if (itemType === ItemType.Artifact) {
-          if (finalEffect.exp) {
-            const { exp, ...restEffect } = finalEffect;
-            finalEffect = restEffect;
-          }
-
-          const hasAnyAttribute =
-            finalEffect.attack ||
-            finalEffect.defense ||
-            finalEffect.hp ||
-            finalEffect.spirit ||
-            finalEffect.physique ||
-            finalEffect.speed;
-
-          if (!hasAnyAttribute) {
-            const rarity = (itemData.rarity as ItemRarity) || '普通';
-            const rarityMultiplier = RARITY_MULTIPLIERS[rarity];
-            const baseValue =
-              rarity === '普通'
-                ? 10
-                : rarity === '稀有'
-                  ? 30
-                  : rarity === '传说'
-                    ? 80
-                    : 200;
-            const attributeTypes = [
-              'attack',
-              'defense',
-              'hp',
-              'spirit',
-              'physique',
-              'speed',
-            ];
-            const numAttributes = Math.floor(Math.random() * 3) + 1;
-            const selectedAttributes = attributeTypes
-              .sort(() => Math.random() - 0.5)
-              .slice(0, numAttributes);
-
-            finalEffect = {};
-            selectedAttributes.forEach((attr) => {
-              const value = Math.floor(
-                baseValue * rarityMultiplier * (0.8 + Math.random() * 0.4)
-              );
-              (finalEffect as any)[attr] = value;
-            });
-          }
+        // 确保所有装备类型都有属性加成（如果没有属性，根据品阶自动生成）
+        if (isEquippable) {
+          const rarity = (itemData.rarity as ItemRarity) || '普通';
+          finalEffect = ensureEquipmentAttributes(
+            itemType,
+            finalEffect,
+            rarity
+          ) as typeof finalEffect;
         }
 
         const isEquipment = isEquippable && equipmentSlot;
@@ -461,59 +482,14 @@ export async function executeAdventureCore({
         );
       }
 
-      // 确保法宝有属性加成，且不能有exp加成
-      if (itemType === ItemType.Artifact) {
-        // 移除exp加成（法宝不应该提供修为加成）
-        if (finalEffect.exp) {
-          const { exp, ...restEffect } = finalEffect;
-          finalEffect = restEffect;
-        }
-
-        // 如果法宝没有任何属性加成，自动生成属性
-        const hasAnyAttribute =
-          finalEffect.attack ||
-          finalEffect.defense ||
-          finalEffect.hp ||
-          finalEffect.spirit ||
-          finalEffect.physique ||
-          finalEffect.speed;
-
-        if (!hasAnyAttribute) {
-          const rarity = (result.itemObtained.rarity as ItemRarity) || '普通';
-          const rarityMultiplier = RARITY_MULTIPLIERS[rarity];
-
-          // 根据稀有度生成基础属性值
-          const baseValue =
-            rarity === '普通'
-              ? 10
-              : rarity === '稀有'
-                ? 30
-                : rarity === '传说'
-                  ? 80
-                  : 200;
-
-          // 随机生成1-3种属性
-          const attributeTypes = [
-            'attack',
-            'defense',
-            'hp',
-            'spirit',
-            'physique',
-            'speed',
-          ];
-          const numAttributes = Math.floor(Math.random() * 3) + 1; // 1-3种属性
-          const selectedAttributes = attributeTypes
-            .sort(() => Math.random() - 0.5)
-            .slice(0, numAttributes);
-
-          finalEffect = {};
-          selectedAttributes.forEach((attr) => {
-            const value = Math.floor(
-              baseValue * rarityMultiplier * (0.8 + Math.random() * 0.4)
-            );
-            (finalEffect as any)[attr] = value;
-          });
-        }
+      // 确保所有装备类型都有属性加成（如果没有属性，根据品阶自动生成）
+      if (isEquippable) {
+        const rarity = (result.itemObtained.rarity as ItemRarity) || '普通';
+        finalEffect = ensureEquipmentAttributes(
+          itemType,
+          finalEffect,
+          rarity
+        ) as typeof finalEffect;
       }
 
       // 处理丹方：需要添加 recipeData

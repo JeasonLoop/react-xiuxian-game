@@ -7,6 +7,7 @@ import {
   Filter,
   Trash,
   RefreshCw,
+  Box,
 } from 'lucide-react';
 import {
   Shop,
@@ -29,6 +30,7 @@ interface Props {
   onBuyItem: (shopItem: ShopItem, quantity?: number) => void;
   onSellItem: (item: Item, quantity?: number) => void;
   onRefreshShop?: (newItems: ShopItem[]) => void;
+  onOpenInventory?: () => void;
 }
 
 type ItemTypeFilter = 'all' | ItemType;
@@ -41,6 +43,7 @@ const ShopModal: React.FC<Props> = ({
   onBuyItem,
   onSellItem,
   onRefreshShop,
+  onOpenInventory,
 }) => {
   const [activeTab, setActiveTab] = useState<'buy' | 'sell'>('buy');
   const [buyQuantities, setBuyQuantities] = useState<Record<string, number>>(
@@ -330,6 +333,16 @@ const ShopModal: React.FC<Props> = ({
             <p className="text-sm text-stone-400 mt-1">{shop.description}</p>
           </div>
           <div className="flex items-center gap-2">
+            {onOpenInventory && (
+              <button
+                onClick={onOpenInventory}
+                className="flex items-center gap-1 px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded border border-stone-600 transition-colors text-sm"
+                title="查看背包"
+              >
+                <Box size={16} />
+                <span className="hidden md:inline">背包</span>
+              </button>
+            )}
             {onRefreshShop && (
               <button
                 onClick={() => {
