@@ -87,13 +87,6 @@ const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
             </button>
           )}
         </div>
-
-        {/* 底部装饰文字 */}
-        <div className="absolute bottom-4 sm:bottom-6 md:bottom-8 lg:bottom-12 left-0 right-0 text-center animate-fade-in px-4" style={{ animationDelay: '0.6s' }}>
-          <p className="text-stone-500 text-[10px] sm:text-xs md:text-sm">
-            探索无尽的修仙世界
-          </p>
-        </div>
       </div>
     </div>
   );

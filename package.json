@@ -1,7 +1,7 @@
 {
   "name": "cloud-spirit-cultivation",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,7 +12,16 @@
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
-    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\""
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "docker:build": "docker-compose build",
+    "docker:build-no-cache": "docker-compose build --no-cache",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:pack": "docker save react-xiuxian-game:latest | gzip > react-xiuxian-game.tar.gz",
+    "docker:pack-uncompressed": "docker save -o react-xiuxian-game.tar react-xiuxian-game:latest",
+    "docker:build-and-pack": "npm run docker:build && npm run docker:pack",
+    "docker:build-and-up": "docker-compose up -d --build"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",

@@ -366,6 +366,15 @@ const SettingsModal: React.FC<Props> = ({
               <h3 className="font-bold">关于</h3>
             </div>
             <div className="space-y-3">
+              <div className="bg-stone-900/50 border border-stone-700 rounded px-4 py-3">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm text-stone-400">游戏版本</span>
+                  <span className="text-sm font-mono text-mystic-gold">v0.1.0</span>
+                </div>
+                <div className="text-xs text-stone-500">
+                  最后更新: 2024-12-05
+                </div>
+              </div>
               <a
                 href="https://github.com/JeasonLoop/react-xiuxian-game"
                 target="_blank"
@@ -374,6 +383,16 @@ const SettingsModal: React.FC<Props> = ({
               >
                 <Github size={16} />
                 <span>GitHub 仓库</span>
+                <span className="ml-auto text-xs text-stone-400">↗</span>
+              </a>
+              <a
+                href="https://github.com/JeasonLoop/react-xiuxian-game/blob/main/CHANGELOG.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 w-full bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded px-4 py-2 transition-colors"
+              >
+                <Save size={16} />
+                <span>查看更新日志</span>
                 <span className="ml-auto text-xs text-stone-400">↗</span>
               </a>
               <p className="text-xs text-stone-500">

@@ -487,7 +487,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
 
             {/* 技能列表 */}
             {showSkills && (
-              <div className="mt-3 p-3 bg-ink-800 rounded border border-stone-700">
+              <div className="mt-3 p-3 bg-ink-800 rounded border border-stone-700 max-h-[300px] overflow-y-auto">
                 <div className="text-xs text-stone-400 mb-2">可用技能</div>
                 <div className="space-y-2">
                   {availableSkills.length === 0 ? (
@@ -560,7 +560,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
 
             {/* 丹药列表 */}
             {showPotions && (
-              <div className="mt-3 p-3 bg-ink-800 rounded border border-stone-700">
+              <div className="mt-3 p-3 bg-ink-800 rounded border border-stone-700 max-h-[300px] overflow-y-auto">
                 <div className="text-xs text-stone-400 mb-2">可用丹药</div>
                 <div className="space-y-2">
                   {availablePotions.length === 0 ? (

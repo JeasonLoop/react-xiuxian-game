@@ -9,6 +9,7 @@ lerna-debug.log*
 
 node_modules
 *.tar
+*.tar.gz
 dist
 dist-ssr
 *.local

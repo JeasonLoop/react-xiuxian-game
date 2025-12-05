@@ -1,12 +1,65 @@
 # Docker 部署指南
 
+## 📋 快速命令参考
+
+### 使用 npm 脚本（推荐）
+
+使用 npm 脚本可以更方便地管理 Docker 容器和镜像：
+
+| 命令 | 说明 |
+|------|------|
+| `npm run docker:build` | 构建 Docker 镜像 |
+| `npm run docker:build-no-cache` | 无缓存构建（强制重新构建） |
+| `npm run docker:up` | 启动容器（后台运行） |
+| `npm run docker:down` | 停止并删除容器 |
+| `npm run docker:logs` | 查看容器日志（实时） |
+| `npm run docker:pack` | 导出镜像为压缩包（.tar.gz） |
+| `npm run docker:pack-uncompressed` | 导出未压缩镜像（.tar） |
+| `npm run docker:build-and-pack` | **一键构建并打包** ⭐ |
+| `npm run docker:build-and-up` | **一键构建并启动** ⭐ |
+
+### 使用 Makefile（可选）
+
+如果你习惯使用 `make` 命令，项目也提供了 Makefile：
+
+| 命令 | 说明 |
+|------|------|
+| `make help` | 显示帮助信息 |
+| `make build` | 构建 Docker 镜像 |
+| `make up` | 启动容器（后台运行） |
+| `make down` | 停止并删除容器 |
+| `make logs` | 查看容器日志（实时） |
+| `make pack` | 导出镜像为压缩包（.tar.gz） |
+| `make build-and-pack` | **一键构建并打包** ⭐ |
+| `make build-and-up` | **一键构建并启动** ⭐ |
+| `make clean` | 清理生成的镜像包文件 |
+
+> 💡 **提示**: 推荐使用标有 ⭐ 的命令，它们可以一步完成常用操作。
+
+---
+
 ## 快速开始
 
 ### 方式一：使用 Docker Compose（推荐）
 
+#### 使用 npm 脚本（最简单）
+
+```bash
+# 一键构建并启动
+npm run docker:build-and-up
+
+# 查看日志
+npm run docker:logs
+
+# 停止容器
+npm run docker:down
+```
+
+#### 使用 Docker Compose 命令
+
 ```bash
 # 构建并启动容器
-docker-compose up -d
+docker-compose up -d --build
 
 # 查看日志
 docker-compose logs -f
@@ -212,7 +265,28 @@ Environment="NO_PROXY=localhost,127.0.0.1"
 
 ### 导出镜像为 tar 包
 
-**方式一：使用 docker save（推荐）**
+**方式一：使用 npm 脚本（最简单）**
+
+```bash
+# 1. 一键构建并打包（推荐）
+npm run docker:build-and-pack
+
+# 这个命令会：
+# - 构建 Docker 镜像
+# - 导出为压缩的 .tar.gz 文件
+
+# 或者分步执行：
+# 先构建
+npm run docker:build
+
+# 再打包（压缩版本）
+npm run docker:pack
+
+# 或打包未压缩版本
+npm run docker:pack-uncompressed
+```
+
+**方式二：使用 Docker 命令**
 
 ```bash
 # 1. 先构建镜像
@@ -228,7 +302,7 @@ docker save -o react-xiuxian-game.tar react-xiuxian-game:latest
 docker save react-xiuxian-game:latest | gzip > react-xiuxian-game.tar.gz
 ```
 
-**方式二：使用 Docker Compose 构建后导出**
+**方式三：使用 Docker Compose 构建后导出**
 
 ```bash
 # 1. 使用 Docker Compose 构建（会自动读取 .env 文件）
@@ -267,6 +341,27 @@ docker run -d -p 3000:80 --name react-xiuxian-game react-xiuxian-game:latest
 ```
 
 ### 完整的打包流程示例
+
+**使用 npm 脚本（推荐）：**
+
+```bash
+# 步骤1：创建 .env 文件并配置环境变量
+cat > .env << EOF
+VITE_AI_KEY=your_api_key
+VITE_AI_PROVIDER=glm
+EOF
+
+# 步骤2：一键构建并打包
+npm run docker:build-and-pack
+
+# 步骤3：查看文件大小
+ls -lh react-xiuxian-game.tar.gz
+
+# 步骤4：传输文件到目标机器（示例）
+# scp react-xiuxian-game.tar.gz user@target-server:/path/to/destination/
+```
+
+**使用 Docker 命令：**
 
 ```bash
 # 步骤1：设置环境变量（创建 .env 文件或直接设置）
@@ -342,4 +437,12 @@ docker build --no-cache -t react-xiuxian-game:latest .
 ```bash
 docker info | grep -A 10 "Registry Mirrors"
 ```
+
+---
+
+## 📚 相关文档
+
+- [Docker 使用示例](DOCKER_EXAMPLES.md) - 包含常见场景的完整示例
+- [README](README.md) - 项目主文档
+- [更新日志](CHANGELOG.md) - 版本更新历史
 
