@@ -580,10 +580,15 @@ export async function executeAdventureCore({
       }
     }
 
-    // 处理抽奖券奖励
-    if (result.lotteryTicketsChange && result.lotteryTicketsChange > 0) {
-      newLotteryTickets += result.lotteryTicketsChange;
-      addLog(`🎫 获得 ${result.lotteryTicketsChange} 张抽奖券！`, 'gain');
+    // 处理抽奖券奖励 - 本地概率判定（5%概率，1-10张）
+    // 不再使用AI返回的lotteryTicketsChange，改为本地概率判定
+    // 每次历练有5%的概率获得抽奖券（1%-10%的中值，可调整）
+    const lotteryTicketChancePercent = 5; // 可以调整为1-10之间的任何值
+    if (Math.random() * 100 < lotteryTicketChancePercent) {
+      // 随机获得1-10张抽奖券
+      const ticketAmount = Math.floor(Math.random() * 10) + 1;
+      newLotteryTickets += ticketAmount;
+      addLog(`🎫 运气不错，捡到了 ${ticketAmount} 张抽奖券！`, 'gain');
     }
 
     // 处理传承奖励（极小概率获得传承，可直接突破1-4个境界）

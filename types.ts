@@ -8,11 +8,14 @@ export enum RealmType {
   ImmortalAscension = '渡劫飞升',
 }
 
+export type ArtGrade = '天' | '地' | '玄' | '黄'; // 功法品级：天、地、玄、黄
+
 export interface CultivationArt {
   id: string;
   name: string;
   type: 'mental' | 'body'; // Mental (心法) for Exp rate, Body (体术) for permanent stats
   description: string;
+  grade: ArtGrade; // 功法品级
   realmRequirement: RealmType;
   cost: number;
   sectId?: string | null; // 所属宗门ID，null表示通用功法
