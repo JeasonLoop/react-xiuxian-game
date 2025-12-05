@@ -91,11 +91,36 @@ docker rm react-xiuxian-game
 
 ## 构建参数
 
-如果需要自定义构建参数，可以在构建时传递：
+### 自动版本号
+
+Docker构建脚本会自动从 `package.json` 读取版本号并注入到镜像中：
+
+- **自动读取**: 使用 `npm run docker:build` 或 `make build` 时，会自动读取 `package.json` 中的版本号
+- **版本号显示**: 版本号会显示在游戏设置界面中
+- **镜像标签**: 版本号也会作为Docker镜像的LABEL标签
 
 ```bash
+# 使用npm脚本（自动读取版本号）
+npm run docker:build
+
+# 使用Makefile（自动读取版本号）
+make build
+```
+
+### 手动指定版本号
+
+如果需要手动指定版本号，可以通过环境变量设置：
+
+```bash
+# 方式一：使用环境变量
+VITE_APP_VERSION=0.1.1 docker-compose build
+
+# 方式二：在.env文件中设置
+# VITE_APP_VERSION=0.1.1
+
+# 方式三：使用docker build命令
 docker build \
-  --build-arg NODE_ENV=production \
+  --build-arg VITE_APP_VERSION=0.1.1 \
   -t react-xiuxian-game:latest .
 ```
 
@@ -149,6 +174,7 @@ docker run -d -p 3000:80 --name react-xiuxian-game react-xiuxian-game:latest
 
 | 变量名 | 说明 | 必填 | 默认值 |
 |--------|------|------|--------|
+| `VITE_APP_VERSION` | 应用版本号（自动从package.json读取） | 否 | `0.1.0` |
 | `VITE_AI_KEY` | AI API 密钥 | 是 | - |
 | `VITE_AI_PROVIDER` | AI 服务提供商 (glm/openai/anthropic) | 否 | glm |
 | `VITE_AI_API_URL` | 自定义 API 地址 | 否 | - |

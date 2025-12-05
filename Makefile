@@ -18,10 +18,11 @@ help:
 	@echo ""
 	@echo "💡 提示: 确保已创建 .env 文件并配置环境变量"
 
-# 构建镜像
+# 构建镜像（自动读取版本号）
 build:
 	@echo "🔨 正在构建 Docker 镜像..."
-	docker-compose build
+	@VERSION=$$(node -p "require('./package.json').version") && \
+	 VITE_APP_VERSION=$$VERSION docker-compose build
 
 # 启动容器
 up:
@@ -51,10 +52,11 @@ pack:
 build-and-pack: build pack
 	@echo "🎉 构建并打包完成！"
 
-# 一键构建并启动
+# 一键构建并启动（自动读取版本号）
 build-and-up:
 	@echo "🔨 正在构建并启动..."
-	docker-compose up -d --build
+	@VERSION=$$(node -p "require('./package.json').version") && \
+	 VITE_APP_VERSION=$$VERSION docker-compose up -d --build
 	@echo "✅ 完成！访问: http://localhost:3000"
 
 # 清理生成的文件

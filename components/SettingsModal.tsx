@@ -369,7 +369,9 @@ const SettingsModal: React.FC<Props> = ({
               <div className="bg-stone-900/50 border border-stone-700 rounded px-4 py-3">
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-sm text-stone-400">游戏版本</span>
-                  <span className="text-sm font-mono text-mystic-gold">v0.1.0</span>
+                  <span className="text-sm font-mono text-mystic-gold">
+                    v{import.meta.env.VITE_APP_VERSION || '0.1.0'}
+                  </span>
                 </div>
                 <div className="text-xs text-stone-500">
                   最后更新: 2024-12-05
