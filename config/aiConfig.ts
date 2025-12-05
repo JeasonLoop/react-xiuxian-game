@@ -2,7 +2,7 @@
  * AI 服务配置
  * 支持多种 AI 服务提供商，通过环境变量轻松切换
  *
- * 默认使用 SiliconFlow 作为 AI 接口
+ * 默认使用 GLM（智谱）作为 AI 接口
  * 如需切换，设置环境变量 VITE_AI_PROVIDER
  */
 
@@ -111,7 +111,8 @@ export function validateAIConfig(config: AIConfig): {
   valid: boolean;
   error?: string;
 } {
-  if (!config.apiKey) {
+  // 只有在未启用代理且缺少前端密钥时才视为无效
+  if (!config.apiKey && !config.useProxy) {
     return {
       valid: false,
       error:

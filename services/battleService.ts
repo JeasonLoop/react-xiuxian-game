@@ -1217,8 +1217,8 @@ export const shouldTriggerBattle = (
   const realmBonus = REALM_ORDER.indexOf(player.realm) * 0.02; // 境界加成（从0.015提高到0.02）
   const speedBonus = (player.speed || 0) * 0.0005; // 速度加成（从0.0004提高到0.0005）
   const luckMitigation = (player.luck || 0) * 0.00015; // 幸运减成（从0.0002降低到0.00015，减少影响）
-  const chance = Math.min(0.9, base + realmBonus + speedBonus - luckMitigation); // 最大概率从75%提高到90%
-  return Math.random() < Math.max(0.2, chance); // 最小概率从10%提高到20%，返回是否触发战斗
+  const chance = Math.min(0.75, base + realmBonus + speedBonus - luckMitigation); // 保持上限适中
+  return Math.random() < Math.max(0.1, chance); // 确保不会过低也不过高
 };
 
 export const resolveBattleEncounter = async (player: PlayerStats, adventureType: AdventureType, riskLevel?: '低' | '中' | '高' | '极度危险', realmMinRealm?: RealmType, realmName?: string, realmDescription?: string): Promise<BattleResolution> => {
