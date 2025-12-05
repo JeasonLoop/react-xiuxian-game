@@ -612,7 +612,42 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
     const cleanedJson = cleanJsonString(resultText);
 
     try {
-      return JSON.parse(cleanedJson) as AdventureResult;
+      const parsed = JSON.parse(cleanedJson) as AdventureResult;
+
+      // 验证并确保所有必需字段都有有效的数字值
+      // 如果字段缺失、为null、undefined或NaN，则使用默认值
+      const ensureNumber = (value: unknown, defaultValue: number): number => {
+        if (typeof value === 'number' && !isNaN(value) && isFinite(value)) {
+          return value;
+        }
+        if (typeof value === 'string') {
+          const parsed = Number(value);
+          if (!isNaN(parsed) && isFinite(parsed)) {
+            return parsed;
+          }
+        }
+        return defaultValue;
+      };
+
+      // 确保必需字段存在且为有效数字
+      const validatedResult: AdventureResult = {
+        story: parsed.story || '你在荒野中游荡了一番，可惜大道渺茫，此次一无所获。',
+        hpChange: ensureNumber(parsed.hpChange, 0),
+        expChange: ensureNumber(parsed.expChange, 0),
+        spiritStonesChange: ensureNumber(parsed.spiritStonesChange, 0),
+        eventColor: parsed.eventColor || 'normal',
+        // 保留可选字段
+        ...(parsed.lotteryTicketsChange !== undefined && { lotteryTicketsChange: ensureNumber(parsed.lotteryTicketsChange, 0) }),
+        ...(parsed.inheritanceLevelChange !== undefined && { inheritanceLevelChange: ensureNumber(parsed.inheritanceLevelChange, 0) }),
+        ...(parsed.attributeReduction && { attributeReduction: parsed.attributeReduction }),
+        ...(parsed.triggerSecretRealm !== undefined && { triggerSecretRealm: parsed.triggerSecretRealm }),
+        ...(parsed.itemObtained && { itemObtained: parsed.itemObtained }),
+        ...(parsed.itemsObtained && { itemsObtained: parsed.itemsObtained }),
+        ...(parsed.petObtained && { petObtained: parsed.petObtained }),
+        ...(parsed.petOpportunity && { petOpportunity: parsed.petOpportunity }),
+      };
+
+      return validatedResult;
     } catch (parseError) {
       console.error('JSON解析失败，原始内容:', resultText);
       console.error('清理后的内容:', cleanedJson);

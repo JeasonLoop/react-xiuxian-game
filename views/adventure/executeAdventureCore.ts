@@ -73,14 +73,17 @@ export async function executeAdventureCore({
   riskLevel?: '低' | '中' | '高' | '极度危险';
 }) {
   // Handle Visuals
-  if (result.hpChange < 0) {
-    triggerVisual('damage', String(result.hpChange), 'text-red-500');
+  // 确保hpChange是有效数字
+  const safeHpChange = typeof result.hpChange === 'number' && !isNaN(result.hpChange) ? result.hpChange : 0;
+
+  if (safeHpChange < 0) {
+    triggerVisual('damage', String(safeHpChange), 'text-red-500');
     if (document.body) {
       document.body.classList.add('animate-shake');
       setTimeout(() => document.body.classList.remove('animate-shake'), 500);
     }
-  } else if (result.hpChange > 0) {
-    triggerVisual('heal', `+${result.hpChange}`, 'text-emerald-400');
+  } else if (safeHpChange > 0) {
+    triggerVisual('heal', `+${safeHpChange}`, 'text-emerald-400');
   }
 
   if (result.eventColor === 'danger' || adventureType === 'secret_realm') {
@@ -992,14 +995,19 @@ export async function executeAdventureCore({
       }
     }
 
+    // 确保数值有效，防止NaN
+    const safeHpChange = typeof result.hpChange === 'number' && !isNaN(result.hpChange) ? result.hpChange : 0;
+    const safeExpChange = typeof result.expChange === 'number' && !isNaN(result.expChange) ? result.expChange : 0;
+    const safeSpiritStonesChange = typeof result.spiritStonesChange === 'number' && !isNaN(result.spiritStonesChange) ? result.spiritStonesChange : 0;
+
     // 允许hp变为0或负数，用于触发死亡检测
-    const finalHp = newHp + result.hpChange;
+    const finalHp = newHp + safeHpChange;
 
     return {
       ...prev,
       hp: Math.min(newMaxHp, finalHp), // 移除 Math.max(0, ...)，允许负数
-      exp: Math.max(0, prev.exp + result.expChange), // 修为不能为负
-      spiritStones: Math.max(0, prev.spiritStones + result.spiritStonesChange), // 灵石不能为负
+      exp: Math.max(0, prev.exp + safeExpChange), // 修为不能为负
+      spiritStones: Math.max(0, prev.spiritStones + safeSpiritStonesChange), // 灵石不能为负
       inventory: newInv,
       cultivationArts: newArts,
       talentId: newTalentId || prev.talentId,
@@ -1217,8 +1225,8 @@ export async function executeAdventureCore({
           // 如果确实发生了属性降低，确保有补偿（检查是否有物品或大量奖励）
           const hasCompensation =
             secretRealmResult.itemObtained ||
-            secretRealmResult.expChange > 100 * realmMultiplier ||
-            secretRealmResult.spiritStonesChange > 200 * realmMultiplier;
+            (typeof secretRealmResult.expChange === 'number' && !isNaN(secretRealmResult.expChange) && secretRealmResult.expChange > 100 * realmMultiplier) ||
+            (typeof secretRealmResult.spiritStonesChange === 'number' && !isNaN(secretRealmResult.spiritStonesChange) && secretRealmResult.spiritStonesChange > 200 * realmMultiplier);
 
           if (!hasCompensation && totalReduction > 0) {
             // 如果没有补偿，自动增加一些奖励作为补偿
@@ -1227,16 +1235,21 @@ export async function executeAdventureCore({
           }
         }
 
+        // 确保数值有效，防止NaN
+        const safeSecretHpChange = typeof secretRealmResult.hpChange === 'number' && !isNaN(secretRealmResult.hpChange) ? secretRealmResult.hpChange : 0;
+        const safeSecretExpChange = typeof secretRealmResult.expChange === 'number' && !isNaN(secretRealmResult.expChange) ? secretRealmResult.expChange : 0;
+        const safeSecretSpiritStonesChange = typeof secretRealmResult.spiritStonesChange === 'number' && !isNaN(secretRealmResult.spiritStonesChange) ? secretRealmResult.spiritStonesChange : 0;
+
         return {
           ...prev,
           hp: Math.max(
             0,
-            Math.min(newMaxHp, newHp + secretRealmResult.hpChange)
+            Math.min(newMaxHp, newHp + safeSecretHpChange)
           ),
-          exp: Math.max(0, newExp + secretRealmResult.expChange),
+          exp: Math.max(0, newExp + safeSecretExpChange),
           spiritStones: Math.max(
             0,
-            newStones + secretRealmResult.spiritStonesChange
+            newStones + safeSecretSpiritStonesChange
           ),
           inventory: newInv,
           attack: newAttack,
