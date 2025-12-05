@@ -20,7 +20,7 @@
     "docker:logs": "docker-compose logs -f",
     "docker:pack": "docker save react-xiuxian-game:latest | gzip > react-xiuxian-game.tar.gz",
     "docker:pack-uncompressed": "docker save -o react-xiuxian-game.tar react-xiuxian-game:latest",
-    "docker:build-and-pack": "npm run docker:build && npm run docker:pack",
+    "docker:build-and-pack": "npm run docker:build && npm run docker:pack-uncompressed",
     "docker:build-and-up": "docker-compose up -d --build"
   },
   "dependencies": {
