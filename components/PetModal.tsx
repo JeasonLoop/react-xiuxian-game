@@ -9,16 +9,20 @@ import {
   Package,
   Sparkles,
   Layers,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { PlayerStats, Pet, Item, ItemType } from '../types';
 import { PET_TEMPLATES, RARITY_MULTIPLIERS, REALM_ORDER } from '../constants';
 import BatchFeedModal from './BatchFeedModal';
+import BatchReleaseModal from './BatchReleaseModal';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
   player: PlayerStats;
   onActivatePet: (petId: string) => void;
+  onDeactivatePet?: () => void;
   onFeedPet: (
     petId: string,
     feedType: 'hp' | 'item' | 'exp',
@@ -26,6 +30,8 @@ interface Props {
   ) => void;
   onBatchFeedItems?: (petId: string, itemIds: string[]) => void;
   onEvolvePet: (petId: string) => void;
+  onReleasePet?: (petId: string) => void;
+  onBatchReleasePets?: (petIds: string[]) => void;
 }
 
 const PetModal: React.FC<Props> = ({
@@ -33,9 +39,12 @@ const PetModal: React.FC<Props> = ({
   onClose,
   player,
   onActivatePet,
+  onDeactivatePet,
   onFeedPet,
   onBatchFeedItems,
   onEvolvePet,
+  onReleasePet,
+  onBatchReleasePets,
 }) => {
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [feedType, setFeedType] = useState<'hp' | 'item' | 'exp' | null>(null);
@@ -43,6 +52,8 @@ const PetModal: React.FC<Props> = ({
   const [isBatchFeedOpen, setIsBatchFeedOpen] = useState(false);
   const [batchFeedPetId, setBatchFeedPetId] = useState<string | null>(null);
   const [expandedPetIds, setExpandedPetIds] = useState<Set<string>>(new Set());
+  const [isBatchReleaseOpen, setIsBatchReleaseOpen] = useState(false);
+  const [releaseConfirmPetId, setReleaseConfirmPetId] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
@@ -132,9 +143,23 @@ const PetModal: React.FC<Props> = ({
                     <span className="text-xs text-stone-500">
                       ({activePet.species})
                     </span>
-                    <span className="ml-auto text-xs bg-yellow-600 text-black px-2 py-1 rounded">
-                      已激活
-                    </span>
+                    <div className="ml-auto flex items-center gap-2">
+                      <span className="text-xs bg-yellow-600 text-black px-2 py-1 rounded">
+                        已激活
+                      </span>
+                      {onDeactivatePet && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeactivatePet();
+                          }}
+                          className="text-xs px-2 py-1 bg-stone-700 hover:bg-stone-600 rounded text-stone-300"
+                          title="取消激活"
+                        >
+                          取消
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -310,7 +335,7 @@ const PetModal: React.FC<Props> = ({
                   </div>
                 );
               })()}
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => handleFeedClick(activePet.id)}
                   className="flex-1 px-4 py-2 bg-green-900 hover:bg-green-800 rounded border border-green-700 text-sm"
@@ -337,15 +362,35 @@ const PetModal: React.FC<Props> = ({
                     进化
                   </button>
                 )}
+                {onReleasePet && (
+                  <button
+                    onClick={() => setReleaseConfirmPetId(activePet.id)}
+                    className="px-4 py-2 bg-red-900 hover:bg-red-800 rounded border border-red-700 text-sm"
+                    title="放生"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
               </div>
             </div>
           )}
 
           {/* 所有灵宠列表 */}
           <div>
-            <h3 className="text-lg font-bold mb-3">
-              我的灵宠 ({player.pets.length})
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold">
+                我的灵宠 ({player.pets.length})
+              </h3>
+              {onBatchReleasePets && player.pets.length > 0 && (
+                <button
+                  onClick={() => setIsBatchReleaseOpen(true)}
+                  className="px-3 py-1.5 bg-red-900 hover:bg-red-800 rounded border border-red-700 text-sm flex items-center gap-2"
+                >
+                  <Trash2 size={16} />
+                  批量放生
+                </button>
+              )}
+            </div>
             {player.pets.length === 0 ? (
               <div className="bg-stone-900 rounded p-4 border border-stone-700 text-center text-stone-500">
                 还没有灵宠，快去抽奖或探索获得吧！
@@ -376,9 +421,20 @@ const PetModal: React.FC<Props> = ({
                             </span>
                           </div>
                           {pet.id === player.activePetId ? (
-                            <span className="text-xs bg-yellow-600 text-black px-2 py-1 rounded">
-                              激活中
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs bg-yellow-600 text-black px-2 py-1 rounded">
+                                激活中
+                              </span>
+                              {onDeactivatePet && (
+                                <button
+                                  onClick={() => onDeactivatePet()}
+                                  className="text-xs px-2 py-1 bg-stone-700 hover:bg-stone-600 rounded text-stone-300"
+                                  title="取消激活"
+                                >
+                                  取消
+                                </button>
+                              )}
+                            </div>
                           ) : (
                             <button
                               onClick={() => onActivatePet(pet.id)}
@@ -552,7 +608,7 @@ const PetModal: React.FC<Props> = ({
                         })()}
                       </div>
                     )}
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <button
                         onClick={() => handleFeedClick(pet.id)}
                         className="flex-1 px-3 py-1.5 bg-green-900 hover:bg-green-800 rounded border border-green-700 text-xs"
@@ -577,6 +633,15 @@ const PetModal: React.FC<Props> = ({
                           className="flex-1 px-3 py-1.5 bg-purple-900 hover:bg-purple-800 rounded border border-purple-700 text-xs"
                         >
                           进化
+                        </button>
+                      )}
+                      {onReleasePet && (
+                        <button
+                          onClick={() => setReleaseConfirmPetId(pet.id)}
+                          className="px-3 py-1.5 bg-red-900 hover:bg-red-800 rounded border border-red-700 text-xs"
+                          title="放生"
+                        >
+                          <Trash2 size={14} />
                         </button>
                       )}
                     </div>
@@ -724,6 +789,99 @@ const PetModal: React.FC<Props> = ({
             onFeedItems={onBatchFeedItems}
           />
         )}
+
+        {/* 批量放生弹窗 */}
+        {onBatchReleasePets && (
+          <BatchReleaseModal
+            isOpen={isBatchReleaseOpen}
+            onClose={() => setIsBatchReleaseOpen(false)}
+            player={player}
+            onReleasePets={onBatchReleasePets}
+          />
+        )}
+
+        {/* 单个放生确认弹窗 */}
+        {onReleasePet && releaseConfirmPetId && (() => {
+          const pet = player.pets.find((p) => p.id === releaseConfirmPetId);
+          if (!pet) return null;
+          const isActive = pet.id === player.activePetId;
+          const compensation = Math.floor(
+            100 * (1 + pet.level * 0.1) * ({
+              '普通': 1,
+              '稀有': 2,
+              '传说': 5,
+              '仙品': 10,
+            }[pet.rarity] || 1)
+          );
+
+          return (
+            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
+              <div
+                className="bg-stone-800 w-full max-w-md rounded-lg border border-stone-600 shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="p-4 border-b border-stone-600 bg-ink-800 rounded-t flex justify-between items-center">
+                  <h3 className="text-lg font-serif text-red-400 flex items-center gap-2">
+                    <AlertTriangle size={20} />
+                    确认放生
+                  </h3>
+                  <button
+                    onClick={() => setReleaseConfirmPetId(null)}
+                    className="text-stone-400 hover:text-white"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                <div className="p-6 space-y-4">
+                  <div className="bg-red-900/20 border border-red-700 rounded p-4">
+                    <p className="text-stone-300 mb-2">
+                      你确定要放生灵宠 <span className="text-red-400 font-bold">【{pet.name}】</span> 吗？
+                    </p>
+                    {isActive && (
+                      <p className="text-yellow-400 text-sm mb-2">
+                        ⚠️ 注意：这是当前激活的灵宠，放生后将自动取消激活。
+                      </p>
+                    )}
+                    <div className="bg-stone-900 rounded p-3 mt-3">
+                      <div className="text-sm text-stone-400 mb-1">灵宠信息：</div>
+                      <div className="text-sm text-stone-300 space-y-1">
+                        <div>等级: {pet.level}</div>
+                        <div>稀有度: {pet.rarity}</div>
+                        <div>种类: {pet.species}</div>
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-stone-700 flex justify-between items-center">
+                        <span className="text-stone-300">补偿：</span>
+                        <span className="text-yellow-400 text-lg font-bold">
+                          {compensation} 灵石
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-stone-400 text-sm mt-3">
+                      此操作不可撤销，请谨慎确认。
+                    </p>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setReleaseConfirmPetId(null)}
+                      className="flex-1 px-4 py-2 bg-stone-700 hover:bg-stone-600 rounded border border-stone-600"
+                    >
+                      取消
+                    </button>
+                    <button
+                      onClick={() => {
+                        onReleasePet(releaseConfirmPetId);
+                        setReleaseConfirmPetId(null);
+                      }}
+                      className="flex-1 px-4 py-2 bg-red-900 hover:bg-red-800 rounded border border-red-700 text-white font-bold"
+                    >
+                      确认放生
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
