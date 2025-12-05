@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Item, Shop, ShopItem, ShopType, EquipmentSlot, AdventureType, RealmType, ItemType } from './types';
+import {
+  Item,
+  Shop,
+  ShopItem,
+  ShopType,
+  EquipmentSlot,
+  AdventureType,
+  RealmType,
+  ItemType,
+} from './types';
 import WelcomeScreen from './components/WelcomeScreen';
 import StartScreen from './components/StartScreen';
 import DeathModal from './components/DeathModal';
@@ -945,6 +954,13 @@ function App() {
               return { ...prev, ...updates };
             });
           }}
+          onTriggerDeath={() => {
+            // 触发死亡：将hp设置为0，死亡检测useEffect会自动处理
+            setPlayer((prev) => {
+              if (!prev) return prev;
+              return { ...prev, hp: 0 };
+            });
+          }}
         />
       )}
 
@@ -1078,7 +1094,10 @@ function App() {
                 if (!prev) return prev;
                 const newHp = Math.max(0, prev.hp - result.hpLoss);
                 const newExp = Math.max(0, prev.exp + result.expChange);
-                const newSpiritStones = Math.max(0, prev.spiritStones + result.spiritChange);
+                const newSpiritStones = Math.max(
+                  0,
+                  prev.spiritStones + result.spiritChange
+                );
 
                 // 更新灵宠技能冷却（如果有）
                 let newPets = [...prev.pets];
@@ -1086,15 +1105,18 @@ function App() {
                   newPets = newPets.map((pet) => {
                     if (pet.id === prev.activePetId) {
                       const updatedCooldowns = { ...pet.skillCooldowns };
-                      Object.keys(result.petSkillCooldowns).forEach((skillId) => {
-                        const newCooldown = result.petSkillCooldowns![skillId];
-                        if (newCooldown > 0) {
-                          updatedCooldowns[skillId] = Math.max(
-                            updatedCooldowns[skillId] || 0,
-                            newCooldown
-                          );
+                      Object.keys(result.petSkillCooldowns).forEach(
+                        (skillId) => {
+                          const newCooldown =
+                            result.petSkillCooldowns![skillId];
+                          if (newCooldown > 0) {
+                            updatedCooldowns[skillId] = Math.max(
+                              updatedCooldowns[skillId] || 0,
+                              newCooldown
+                            );
+                          }
                         }
-                      });
+                      );
                       const finalCooldowns: Record<string, number> = {};
                       Object.keys(updatedCooldowns).forEach((skillId) => {
                         if (updatedCooldowns[skillId] > 0) {
@@ -1103,7 +1125,10 @@ function App() {
                       });
                       return {
                         ...pet,
-                        skillCooldowns: Object.keys(finalCooldowns).length > 0 ? finalCooldowns : undefined,
+                        skillCooldowns:
+                          Object.keys(finalCooldowns).length > 0
+                            ? finalCooldowns
+                            : undefined,
                       };
                     }
                     return pet;
@@ -1119,10 +1144,10 @@ function App() {
                 // 处理物品奖励
                 let newInventory = updatedInventory || prev.inventory;
                 if (result.victory && result.items && result.items.length > 0) {
-
                   result.items.forEach((itemData: any) => {
                     const itemName = itemData.name;
-                    const itemTypeFromData = (itemData.type as ItemType) || ItemType.Material;
+                    const itemTypeFromData =
+                      (itemData.type as ItemType) || ItemType.Material;
                     const normalized = normalizeItemEffect(
                       itemName,
                       itemData.effect,
@@ -1141,7 +1166,9 @@ function App() {
 
                     // 装备类物品可以重复获得，但每个装备单独占一格
                     const isEquipment = isEquippable && equipmentSlot;
-                    const existingIdx = newInventory.findIndex((i: Item) => i.name === itemName);
+                    const existingIdx = newInventory.findIndex(
+                      (i: Item) => i.name === itemName
+                    );
 
                     if (existingIdx >= 0 && !isEquipment) {
                       // 非装备类物品可以叠加
@@ -1171,7 +1198,9 @@ function App() {
                 }
 
                 const hasItems = result.items && result.items.length > 0;
-                const itemsText = hasItems ? `获得物品：${result.items.map((item) => item.name).join('，')}` : '';
+                const itemsText = hasItems
+                  ? `获得物品：${result.items.map((item) => item.name).join('，')}`
+                  : '';
 
                 const rewardText = result.victory
                   ? `战斗胜利！获得 ${result.expChange} 修为，${result.spiritChange} 灵石。${itemsText}`
