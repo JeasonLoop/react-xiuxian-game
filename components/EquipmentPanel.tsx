@@ -57,6 +57,12 @@ const EquipmentPanel: React.FC<Props> = ({ equippedItems, inventory, player, onU
           const isNatal = item ? item.id === player.natalArtifactId : false;
           const stats = item ? getItemStats(item, isNatal) : null;
           const rarity = item?.rarity || '普通';
+          const showLevel =
+            item && typeof item.level === 'number' && Number.isFinite(item.level) && item.level > 0;
+          const reviveChances =
+            item && typeof item.reviveChances === 'number' && Number.isFinite(item.reviveChances)
+              ? item.reviveChances
+              : undefined;
 
           return (
             <div
@@ -72,14 +78,19 @@ const EquipmentPanel: React.FC<Props> = ({ equippedItems, inventory, player, onU
                   <div className="flex-1">
                     <div className="font-bold text-sm mb-1 text-stone-200">
                       {item.name}
-                      {item.level && item.level > 0 && (
+                      {showLevel && (
                         <span className="text-xs text-stone-500 ml-1">+{item.level}</span>
                       )}
                     </div>
                     <div className="text-xs text-stone-400 mb-2">{rarity}</div>
-                    {item.reviveChances && item.reviveChances > 0 && (
+                    {reviveChances !== undefined && reviveChances > 0 && (
                       <div className="text-xs text-yellow-400 mb-1 font-bold">
-                        💫 保命 {item.reviveChances}次
+                        💫 保命 {reviveChances}次
+                      </div>
+                    )}
+                    {reviveChances !== undefined && reviveChances <= 0 && (
+                      <div className="text-[11px] text-stone-500 mb-1">
+                        💫 保命已耗尽
                       </div>
                     )}
                     {stats && (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Shield,
   Sword,
@@ -66,20 +66,66 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   const [showPotions, setShowPotions] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // 使用 ref 来创建一个更可靠的锁，防止在状态更新期间重复点击（同步检查）
+  const isActionLockedRef = useRef(false);
+  // 使用状态来触发重新渲染，确保按钮禁用状态正确更新
 
   // 初始化战斗
   useEffect(() => {
     if (isOpen && !battleState) {
+      isActionLockedRef.current = false;
+      setIsProcessing(true); // 初始化时设置为处理中
       initializeTurnBasedBattle(
         player,
         adventureType,
         riskLevel,
         realmMinRealm as any
-      ).then((state) => {
-        setBattleState(state);
-      });
+      )
+        .then((state) => {
+          setBattleState(state);
+          setIsProcessing(false); // 初始化完成后重置
+          isActionLockedRef.current = false;
+        })
+        .catch((error) => {
+          console.error('战斗初始化失败:', error);
+          setErrorMessage('战斗初始化失败');
+          setIsProcessing(false);
+          isActionLockedRef.current = false;
+          setTimeout(() => setErrorMessage(null), 3000);
+        });
+    } else if (!isOpen) {
+      // 关闭时重置所有状态
+      setBattleState(null);
+      setIsProcessing(false);
+      isActionLockedRef.current = false;
+      setShowSkills(false);
+      setShowPotions(false);
+      setErrorMessage(null);
     }
   }, [isOpen, player, adventureType, riskLevel, realmMinRealm, battleState]);
+
+  // 监控状态，确保操作栏能正确显示
+  useEffect(() => {
+    if (!battleState) return;
+
+    // 如果应该是玩家回合但 isProcessing 被卡住，自动重置
+    if (
+      battleState.waitingForPlayerAction &&
+      battleState.playerActionsRemaining > 0 &&
+      isProcessing
+    ) {
+      // 检查是否真的在处理中（通过检查是否有正在进行的异步操作）
+      // 如果超过2秒还在处理中，可能是卡住了，自动重置
+      const timeout = setTimeout(() => {
+        if (isProcessing && battleState?.waitingForPlayerAction) {
+          console.warn('检测到 isProcessing 可能卡住，自动重置');
+          setIsProcessing(false);
+        }
+      }, 2000);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [battleState, isProcessing]);
 
   // 如果是敌方先手，自动驱动敌人行动，避免界面没有操作栏
   useEffect(() => {
@@ -88,6 +134,10 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
       battleState.waitingForPlayerAction ||
       battleState.enemyActionsRemaining <= 0
     ) {
+      // 如果应该是玩家回合但没有操作栏，确保 isProcessing 被重置
+      if (battleState?.waitingForPlayerAction && isProcessing) {
+        setIsProcessing(false);
+      }
       return;
     }
 
@@ -130,6 +180,8 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
               }
             });
           }
+          setIsProcessing(false);
+          isActionLockedRef.current = false; // 释放锁
           onClose(
             {
               victory,
@@ -149,23 +201,43 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
 
         setBattleState(newState);
         setIsProcessing(false);
+        isActionLockedRef.current = false; // 释放锁，敌人回合结束后允许玩家操作
       } catch (error) {
         console.error('敌人先手回合错误:', error);
         setErrorMessage('敌人行动出错');
         setIsProcessing(false);
+        isActionLockedRef.current = false; // 释放锁
         setTimeout(() => setErrorMessage(null), 3000);
       }
     }, 150);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      // 如果组件卸载或依赖变化，确保重置处理状态
+      setIsProcessing(false);
+      isActionLockedRef.current = false; // 释放锁
+    };
   }, [battleState, isProcessing, player, adventureType, riskLevel, onClose]);
 
   // 处理玩家行动
   const handlePlayerAction = async (action: PlayerAction) => {
-    if (!battleState || isProcessing || !battleState.waitingForPlayerAction) {
+    // 使用 ref 锁进行第一层检查（同步，立即生效）
+    if (isActionLockedRef.current) {
       return;
     }
 
+    // 严格检查：必须满足所有条件才能操作
+    if (
+      !battleState ||
+      isProcessing ||
+      !battleState.waitingForPlayerAction ||
+      battleState.playerActionsRemaining <= 0
+    ) {
+      return;
+    }
+
+    // 立即设置锁，防止重复点击（同时更新 ref 和 state）
+    isActionLockedRef.current = true;
     setIsProcessing(true);
     setShowSkills(false);
     setShowPotions(false);
@@ -194,6 +266,8 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
             }
           });
         }
+        setIsProcessing(false);
+        isActionLockedRef.current = false;
         onClose(
           {
             victory,
@@ -209,12 +283,17 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
       }
 
       // 如果玩家还有剩余行动次数，继续玩家回合
+      // 但需要等待状态更新完成，防止快速连续点击
       if (
         newState.waitingForPlayerAction &&
         newState.playerActionsRemaining > 0
       ) {
         setBattleState(newState);
-        setIsProcessing(false);
+        // 添加短暂延迟，确保状态更新完成后再允许下一次操作
+        setTimeout(() => {
+          setIsProcessing(false);
+          isActionLockedRef.current = false;
+        }, 500); // 增加到500ms延迟，确保状态更新完成
         return; // 继续等待玩家行动
       }
 
@@ -233,6 +312,8 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
               adventureType,
               riskLevel
             );
+            setIsProcessing(false);
+            isActionLockedRef.current = false; // 释放锁
             onClose(
               {
                 victory,
@@ -248,9 +329,13 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
 
           setBattleState(newState);
           setIsProcessing(false);
+          isActionLockedRef.current = false; // 释放锁，敌人回合结束后允许玩家操作
         } catch (error) {
           console.error('敌人回合错误:', error);
           setIsProcessing(false);
+          isActionLockedRef.current = false; // 释放锁
+          setErrorMessage('敌人回合出错');
+          setTimeout(() => setErrorMessage(null), 3000);
         }
       }, 1000);
     } catch (error) {
@@ -259,6 +344,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
       const errorMsg = error instanceof Error ? error.message : '战斗行动失败';
       setErrorMessage(errorMsg);
       setIsProcessing(false);
+      isActionLockedRef.current = false; // 释放锁
       // 3秒后清除错误提示
       setTimeout(() => setErrorMessage(null), 3000);
     }
@@ -524,40 +610,65 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
         </div>
 
         {/* 行动选择区域 */}
-        {battleState.waitingForPlayerAction && !isProcessing && (
+        {battleState.waitingForPlayerAction && battleState.playerActionsRemaining > 0 && !isProcessing && (
           <div className="border-t border-stone-700 px-6 py-4 bg-ink-900/90">
             <div className="flex flex-wrap gap-2 mb-3">
               <button
                 onClick={() => handlePlayerAction({ type: 'attack' })}
-                className="flex items-center gap-2 px-4 py-2 rounded border border-amber-500 text-amber-300 hover:bg-amber-500/10"
+                disabled={isProcessing || battleState.playerActionsRemaining <= 0}
+                className={`flex items-center gap-2 px-4 py-2 rounded border ${
+                  isProcessing || battleState.playerActionsRemaining <= 0
+                    ? 'border-stone-700 text-stone-600 cursor-not-allowed opacity-50'
+                    : 'border-amber-500 text-amber-300 hover:bg-amber-500/10'
+                }`}
               >
                 <Sword size={16} />
                 普通攻击
               </button>
               <button
                 onClick={() => setShowSkills(!showSkills)}
-                className="flex items-center gap-2 px-4 py-2 rounded border border-blue-500 text-blue-300 hover:bg-blue-500/10"
+                disabled={isProcessing}
+                className={`flex items-center gap-2 px-4 py-2 rounded border ${
+                  isProcessing
+                    ? 'border-stone-700 text-stone-600 cursor-not-allowed opacity-50'
+                    : 'border-blue-500 text-blue-300 hover:bg-blue-500/10'
+                }`}
               >
                 <Zap size={16} />
                 技能 ({availableSkills.length})
               </button>
               <button
                 onClick={() => setShowPotions(!showPotions)}
-                className="flex items-center gap-2 px-4 py-2 rounded border border-purple-500 text-purple-300 hover:bg-purple-500/10"
+                disabled={isProcessing}
+                className={`flex items-center gap-2 px-4 py-2 rounded border ${
+                  isProcessing
+                    ? 'border-stone-700 text-stone-600 cursor-not-allowed opacity-50'
+                    : 'border-purple-500 text-purple-300 hover:bg-purple-500/10'
+                }`}
               >
                 <Option size={16} />
                 丹药 ({availablePotions.length})
               </button>
               <button
                 onClick={() => handlePlayerAction({ type: 'defend' })}
-                className="flex items-center gap-2 px-4 py-2 rounded border border-cyan-500 text-cyan-300 hover:bg-cyan-500/10"
+                disabled={isProcessing || battleState.playerActionsRemaining <= 0}
+                className={`flex items-center gap-2 px-4 py-2 rounded border ${
+                  isProcessing || battleState.playerActionsRemaining <= 0
+                    ? 'border-stone-700 text-stone-600 cursor-not-allowed opacity-50'
+                    : 'border-cyan-500 text-cyan-300 hover:bg-cyan-500/10'
+                }`}
               >
                 <Shield size={16} />
                 防御
               </button>
               <button
                 onClick={() => handlePlayerAction({ type: 'flee' })}
-                className="flex items-center gap-2 px-4 py-2 rounded border border-stone-500 text-stone-300 hover:bg-stone-500/10"
+                disabled={isProcessing || battleState.playerActionsRemaining <= 0}
+                className={`flex items-center gap-2 px-4 py-2 rounded border ${
+                  isProcessing || battleState.playerActionsRemaining <= 0
+                    ? 'border-stone-700 text-stone-600 cursor-not-allowed opacity-50'
+                    : 'border-stone-500 text-stone-300 hover:bg-stone-500/10'
+                }`}
               >
                 <ArrowRight size={16} />
                 逃跑
@@ -581,7 +692,12 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                             skillId: skill.id,
                           })
                         }
-                        className="w-full text-left p-2 rounded border border-blue-700/50 bg-blue-900/20 hover:bg-blue-900/40 text-sm"
+                        disabled={isProcessing || battleState.playerActionsRemaining <= 0}
+                        className={`w-full text-left p-2 rounded border text-sm ${
+                          isProcessing || battleState.playerActionsRemaining <= 0
+                            ? 'border-stone-700 bg-stone-900/40 text-stone-600 cursor-not-allowed opacity-50'
+                            : 'border-blue-700/50 bg-blue-900/20 hover:bg-blue-900/40'
+                        }`}
                       >
                         <div className="flex justify-between items-center">
                           <span className="text-blue-300 font-semibold">
@@ -659,7 +775,12 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                               itemId: item.id,
                             })
                           }
-                          className="w-full text-left p-2 rounded border border-purple-700/50 bg-purple-900/20 hover:bg-purple-900/40 text-sm"
+                          disabled={isProcessing || battleState.playerActionsRemaining <= 0}
+                          className={`w-full text-left p-2 rounded border text-sm ${
+                            isProcessing || battleState.playerActionsRemaining <= 0
+                              ? 'border-stone-700 bg-stone-900/40 text-stone-600 cursor-not-allowed opacity-50'
+                              : 'border-purple-700/50 bg-purple-900/20 hover:bg-purple-900/40'
+                          }`}
                         >
                           <div className="flex justify-between items-center">
                             <span className="text-purple-300 font-semibold">

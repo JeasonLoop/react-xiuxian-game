@@ -16,6 +16,7 @@ import {
   PET_TEMPLATES,
   RARITY_MULTIPLIERS,
   DISCOVERABLE_RECIPES,
+  PET_EVOLUTION_MATERIALS,
   getRandomPetName,
 } from '../../constants';
 import { BattleReplay } from '../../services/battleService';
@@ -827,6 +828,33 @@ export async function executeAdventureCore({
       }
     }
 
+    // 概率掉落灵宠进阶材料（本地概率判定）
+    const petMaterialChance = adventureType === 'secret_realm' ? 0.08 : 0.05;
+    if (Math.random() < petMaterialChance) {
+      const material =
+        PET_EVOLUTION_MATERIALS[
+          Math.floor(Math.random() * PET_EVOLUTION_MATERIALS.length)
+        ];
+      const existingIdx = newInv.findIndex((i) => i.name === material.name);
+      if (existingIdx >= 0) {
+        newInv[existingIdx] = {
+          ...newInv[existingIdx],
+          quantity: newInv[existingIdx].quantity + 1,
+        };
+      } else {
+        newInv.push({
+          id: uid(),
+          name: material.name,
+          type: ItemType.Material,
+          description: material.description,
+          quantity: 1,
+          rarity: material.rarity as ItemRarity,
+          level: 0,
+        });
+      }
+      addLog(`🎁 你获得了灵宠进阶材料【${material.name}】！`, 'gain');
+    }
+
     // 极小概率获得天赋（1%概率，秘境中2%，大机缘中5%）
     const talentChance =
       adventureType === 'lucky' ? 0.05 : realmName ? 0.02 : 0.01;
@@ -1071,6 +1099,33 @@ export async function executeAdventureCore({
             };
             newInv.push(newItem);
           }
+        }
+
+        // 秘境内本地概率掉落灵宠进阶材料
+        const secretRealmPetMaterialChance = 0.08;
+        if (Math.random() < secretRealmPetMaterialChance) {
+          const material =
+            PET_EVOLUTION_MATERIALS[
+              Math.floor(Math.random() * PET_EVOLUTION_MATERIALS.length)
+            ];
+          const existingIdx = newInv.findIndex((i) => i.name === material.name);
+          if (existingIdx >= 0) {
+            newInv[existingIdx] = {
+              ...newInv[existingIdx],
+              quantity: newInv[existingIdx].quantity + 1,
+            };
+          } else {
+            newInv.push({
+              id: uid(),
+              name: material.name,
+              type: ItemType.Material,
+              description: material.description,
+              quantity: 1,
+              rarity: material.rarity as ItemRarity,
+              level: 0,
+            });
+          }
+          addLog(`🎁 你在秘境中获得了灵宠进阶材料【${material.name}】！`, 'gain');
         }
 
         // 处理属性降低（平衡机制：限制降低数值，确保有补偿）
