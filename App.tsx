@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Item, Shop, ShopItem, ShopType, EquipmentSlot } from './types';
+import { Item, Shop, ShopItem, ShopType, EquipmentSlot, AdventureType, RealmType, ItemType } from './types';
 import WelcomeScreen from './components/WelcomeScreen';
 import StartScreen from './components/StartScreen';
 import DeathModal from './components/DeathModal';
@@ -7,7 +7,11 @@ import DebugModal from './components/DebugModal';
 import { BattleReplay } from './services/battleService';
 import { useGameState } from './hooks/useGameState';
 import { useGameEffects } from './hooks/useGameEffects';
-import { SAVE_KEY } from './utils/gameUtils';
+import { SAVE_KEY, uid } from './utils/gameUtils';
+import { normalizeItemEffect, inferItemTypeAndSlot } from './utils/itemUtils';
+import { setGlobalAlertSetter } from './utils/toastUtils';
+import AlertModal from './components/AlertModal';
+import { AlertType } from './components/AlertModal';
 
 // 导入模块化的 handlers
 import {
@@ -89,13 +93,38 @@ function App() {
   const [battleReplay, setBattleReplay] = useState<BattleReplay | null>(null);
   const [isBattleModalOpen, setIsBattleModalOpen] = useState(false);
   const [revealedBattleRounds, setRevealedBattleRounds] = useState(0);
+  // 回合制战斗状态
+  const [isTurnBasedBattleOpen, setIsTurnBasedBattleOpen] = useState(false);
+  const [turnBasedBattleParams, setTurnBasedBattleParams] = useState<{
+    adventureType: AdventureType;
+    riskLevel?: '低' | '中' | '高' | '极度危险';
+    realmMinRealm?: RealmType;
+  } | null>(null);
 
   const [loading, setLoading] = useState(false); // 加载状态
   const [cooldown, setCooldown] = useState(0); // 冷却时间
   const [itemActionLog, setItemActionLog] = useState<{
     text: string;
     type: string;
-  } | null>(null); // 物品操作轻提示
+  } | null>(null); // 物品操作轻提示（保留用于其他功能）
+
+  // Alert 弹窗状态
+  const [alertState, setAlertState] = useState<{
+    isOpen: boolean;
+    type: AlertType;
+    title?: string;
+    message: string;
+    onConfirm?: () => void;
+    showCancel?: boolean;
+  } | null>(null);
+
+  // 初始化全局 alert
+  useEffect(() => {
+    setGlobalAlertSetter((alert) => {
+      setAlertState(alert);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [autoMeditate, setAutoMeditate] = useState(false); // 自动打坐
   const [autoAdventure, setAutoAdventure] = useState(false); // 自动历练
   const [autoAdventurePausedByShop, setAutoAdventurePausedByShop] =
@@ -186,6 +215,7 @@ function App() {
     player,
     setPlayer,
     addLog,
+    setItemActionLog,
   });
 
   const lotteryHandlers = useLotteryHandlers({
@@ -236,7 +266,12 @@ function App() {
         battleHandlers.openBattleModal(replay);
       }
     },
+    onOpenTurnBasedBattle: (params) => {
+      setTurnBasedBattleParams(params);
+      setIsTurnBasedBattleOpen(true);
+    },
     skipBattle: autoAdventure, // 自动历练模式下跳过战斗
+    useTurnBasedBattle: true, // 使用新的回合制战斗系统
   });
 
   // 从 handlers 中提取函数
@@ -245,7 +280,11 @@ function App() {
 
   // 检测死亡
   useEffect(() => {
-    if (!player || isDead) return;
+    if (!player) return;
+    if (isDead) {
+      localStorage.removeItem(SAVE_KEY);
+      return;
+    }
 
     if (player.hp <= 0) {
       // 检查是否有保命装备
@@ -551,15 +590,22 @@ function App() {
   const handleSellItem = shopHandlers.handleSellItem;
 
   const handleRefreshShop = (newItems: ShopItem[]) => {
-    if (!currentShop) return;
+    if (!currentShop || !player) return;
+    if (player.spiritStones < 100) {
+      addLog('灵石不足，无法刷新商店。', 'danger');
+      return;
+    }
     setCurrentShop({
       ...currentShop,
       items: newItems,
     });
-    setPlayer((prev) => ({
-      ...prev,
-      spiritStones: prev.spiritStones - 100, // 扣除刷新费用
-    }));
+    setPlayer((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        spiritStones: prev.spiritStones - 100, // 扣除刷新费用
+      };
+    });
     addLog('商店物品已刷新！', 'special');
   };
   const handleUpdateSettings = settingsHandlers.handleUpdateSettings;
@@ -637,12 +683,6 @@ function App() {
       autoMeditate
     )
       return;
-    // if (player.hp < player.maxHp * 0.2) {
-    //   // 如果血量过低，停止自动历练
-    //   setAutoAdventure(false);
-    //   addLog('你身受重伤，自动历练已停止。请先打坐疗伤。', 'danger');
-    //   return;
-    // }
 
     // 生死有命！富贵在天！！！
     const timer = setTimeout(() => {
@@ -746,9 +786,17 @@ function App() {
     return (
       <WelcomeScreen
         hasSave={hasSave}
-        onStart={() => setShowWelcome(false)}
+        onStart={() => {
+          // 新游戏：清除存档并重置状态
+          localStorage.removeItem(SAVE_KEY);
+          setHasSave(false);
+          setGameStarted(false);
+          setPlayer(null);
+          setLogs([]);
+          setShowWelcome(false);
+        }}
         onContinue={() => {
-          // 继续游戏：跳过欢迎界面和取名界面，直接进入游戏
+          // 继续游戏：跳过欢迎界面和取名界面，直接进入游戏（自动加载存档）
           setShowWelcome(false);
         }}
       />
@@ -900,6 +948,20 @@ function App() {
         />
       )}
 
+      {/* Alert 提示弹窗 */}
+      {alertState && (
+        <AlertModal
+          isOpen={alertState.isOpen}
+          onClose={() => setAlertState(null)}
+          type={alertState.type}
+          title={alertState.title}
+          message={alertState.message}
+          onConfirm={alertState.onConfirm}
+          showCancel={alertState.showCancel}
+          onCancel={alertState.onCancel}
+        />
+      )}
+
       <ModalsContainer
         player={player}
         settings={settings}
@@ -918,12 +980,14 @@ function App() {
           isSettingsOpen,
           isShopOpen,
           isBattleModalOpen: isBattleModalOpen && !isDead, // 死亡时不显示战斗弹窗
+          isTurnBasedBattleOpen: isTurnBasedBattleOpen && !isDead,
         }}
         modalState={{
           currentShop,
           itemToUpgrade,
           battleReplay,
           revealedBattleRounds,
+          turnBasedBattleParams,
         }}
         handlers={{
           setIsInventoryOpen: (open: boolean) => setIsInventoryOpen(open),
@@ -997,6 +1061,136 @@ function App() {
           handleBuyItem,
           handleSellItem,
           handleRefreshShop,
+          setIsTurnBasedBattleOpen: (open: boolean) => {
+            setIsTurnBasedBattleOpen(open);
+            if (!open) {
+              setTurnBasedBattleParams(null);
+            }
+          },
+          handleTurnBasedBattleClose: (result, updatedInventory?) => {
+            setIsTurnBasedBattleOpen(false);
+            setTurnBasedBattleParams(null);
+            setLoading(false); // 战斗结束后清除loading状态
+
+            if (result) {
+              // 更新玩家状态
+              setPlayer((prev) => {
+                if (!prev) return prev;
+                const newHp = Math.max(0, prev.hp - result.hpLoss);
+                const newExp = Math.max(0, prev.exp + result.expChange);
+                const newSpiritStones = Math.max(0, prev.spiritStones + result.spiritChange);
+
+                // 更新灵宠技能冷却（如果有）
+                let newPets = [...prev.pets];
+                if (result.petSkillCooldowns && prev.activePetId) {
+                  newPets = newPets.map((pet) => {
+                    if (pet.id === prev.activePetId) {
+                      const updatedCooldowns = { ...pet.skillCooldowns };
+                      Object.keys(result.petSkillCooldowns).forEach((skillId) => {
+                        const newCooldown = result.petSkillCooldowns![skillId];
+                        if (newCooldown > 0) {
+                          updatedCooldowns[skillId] = Math.max(
+                            updatedCooldowns[skillId] || 0,
+                            newCooldown
+                          );
+                        }
+                      });
+                      const finalCooldowns: Record<string, number> = {};
+                      Object.keys(updatedCooldowns).forEach((skillId) => {
+                        if (updatedCooldowns[skillId] > 0) {
+                          finalCooldowns[skillId] = updatedCooldowns[skillId];
+                        }
+                      });
+                      return {
+                        ...pet,
+                        skillCooldowns: Object.keys(finalCooldowns).length > 0 ? finalCooldowns : undefined,
+                      };
+                    }
+                    return pet;
+                  });
+                }
+
+                // 更新战斗统计
+                const newStatistics = { ...prev.statistics };
+                if (result.victory) {
+                  newStatistics.killCount += 1;
+                }
+
+                // 处理物品奖励
+                let newInventory = updatedInventory || prev.inventory;
+                if (result.victory && result.items && result.items.length > 0) {
+
+                  result.items.forEach((itemData: any) => {
+                    const itemName = itemData.name;
+                    const itemTypeFromData = (itemData.type as ItemType) || ItemType.Material;
+                    const normalized = normalizeItemEffect(
+                      itemName,
+                      itemData.effect,
+                      itemData.permanentEffect
+                    );
+                    const inferred = inferItemTypeAndSlot(
+                      itemName,
+                      itemTypeFromData,
+                      itemData.description || '',
+                      itemData.isEquippable
+                    );
+                    const itemType = inferred.type;
+                    const equipmentSlot = inferred.equipmentSlot;
+                    const isEquippable = inferred.isEquippable;
+                    const rarity = itemData.rarity || '普通';
+
+                    // 装备类物品可以重复获得，但每个装备单独占一格
+                    const isEquipment = isEquippable && equipmentSlot;
+                    const existingIdx = newInventory.findIndex((i: Item) => i.name === itemName);
+
+                    if (existingIdx >= 0 && !isEquipment) {
+                      // 非装备类物品可以叠加
+                      newInventory[existingIdx] = {
+                        ...newInventory[existingIdx],
+                        quantity: newInventory[existingIdx].quantity + 1,
+                      };
+                    } else {
+                      // 装备类物品或新物品，每个装备单独占一格
+                      const newItem: Item = {
+                        id: uid(),
+                        name: itemName,
+                        type: itemType,
+                        description: itemData.description || '',
+                        quantity: 1,
+                        rarity: rarity,
+                        level: 0,
+                        isEquippable: isEquippable,
+                        equipmentSlot: equipmentSlot,
+                        effect: normalized.effect,
+                        permanentEffect: normalized.permanentEffect,
+                      };
+                      newInventory.push(newItem);
+                      addLog(`获得 ${itemName}！`, 'gain');
+                    }
+                  });
+                }
+
+                const hasItems = result.items && result.items.length > 0;
+                const itemsText = hasItems ? `获得物品：${result.items.map((item) => item.name).join('，')}` : '';
+
+                const rewardText = result.victory
+                  ? `战斗胜利！获得 ${result.expChange} 修为，${result.spiritChange} 灵石。${itemsText}`
+                  : `战斗失败，损失 ${result.hpLoss} 点气血。`;
+
+                addLog(rewardText, result.victory ? 'gain' : 'danger');
+
+                return {
+                  ...prev,
+                  hp: newHp,
+                  exp: newExp,
+                  spiritStones: newSpiritStones,
+                  statistics: newStatistics,
+                  inventory: newInventory,
+                  pets: newPets,
+                };
+              });
+            }
+          },
         }}
       />
     </>

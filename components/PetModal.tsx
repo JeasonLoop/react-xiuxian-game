@@ -42,6 +42,7 @@ const PetModal: React.FC<Props> = ({
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [isBatchFeedOpen, setIsBatchFeedOpen] = useState(false);
   const [batchFeedPetId, setBatchFeedPetId] = useState<string | null>(null);
+  const [expandedPetIds, setExpandedPetIds] = useState<Set<string>>(new Set());
 
   if (!isOpen) return null;
 
@@ -61,6 +62,12 @@ const PetModal: React.FC<Props> = ({
   };
 
   const activePet = player.pets.find((p) => p.id === player.activePetId);
+
+  // 获取灵宠图片
+  const getPetImage = (pet: Pet) => {
+    const template = PET_TEMPLATES.find((t) => t.species === pet.species);
+    return template?.image || '🐾';
+  };
 
   // 可喂养的物品（所有未装备的物品）
   const equippedItemIds = new Set(Object.values(player.equippedItems).filter(Boolean));
@@ -115,16 +122,21 @@ const PetModal: React.FC<Props> = ({
           {/* 当前激活的灵宠 */}
           {activePet && (
             <div className="bg-stone-900 rounded p-4 border-2 border-yellow-600">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="font-bold text-yellow-400">
-                  {activePet.name}
-                </span>
-                <span className="text-xs text-stone-500">
-                  ({activePet.species})
-                </span>
-                <span className="ml-auto text-xs bg-yellow-600 text-black px-2 py-1 rounded">
-                  已激活
-                </span>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="text-4xl">{getPetImage(activePet)}</div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-yellow-400">
+                      {activePet.name}
+                    </span>
+                    <span className="text-xs text-stone-500">
+                      ({activePet.species})
+                    </span>
+                    <span className="ml-auto text-xs bg-yellow-600 text-black px-2 py-1 rounded">
+                      已激活
+                    </span>
+                  </div>
+                </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
                 <div className="flex items-center gap-2">
@@ -175,7 +187,129 @@ const PetModal: React.FC<Props> = ({
                     style={{ width: `${activePet.affection}%` }}
                   />
                 </div>
+                <div className="text-xs text-stone-400 mt-1">
+                  亲密度影响：治疗技能效果 +{Math.floor(activePet.affection / 2)}%，普通攻击 +{Math.floor(activePet.affection * 0.5)}点
+                </div>
               </div>
+              {/* 进化阶段显示 */}
+              <div className="mb-3">
+                <div className="text-sm mb-1">
+                  <span>进化阶段: </span>
+                  <span className="font-bold">
+                    {activePet.evolutionStage === 0 ? '幼年期' : activePet.evolutionStage === 1 ? '成熟期' : '完全体'}
+                  </span>
+                </div>
+              </div>
+              {/* 技能列表 */}
+              {activePet.skills && activePet.skills.length > 0 && (
+                <div className="mb-3">
+                  <div className="text-sm font-bold mb-2">技能列表</div>
+                  <div className="space-y-2">
+                    {activePet.skills.map((skill) => {
+                      const cooldown = activePet.skillCooldowns?.[skill.id] || 0;
+                      const getSkillTypeColor = (type: string) => {
+                        switch (type) {
+                          case 'attack': return 'text-red-400';
+                          case 'defense': return 'text-blue-400';
+                          case 'support': return 'text-green-400';
+                          case 'passive': return 'text-purple-400';
+                          default: return 'text-stone-400';
+                        }
+                      };
+                      const getSkillTypeName = (type: string) => {
+                        switch (type) {
+                          case 'attack': return '攻击';
+                          case 'defense': return '防御';
+                          case 'support': return '辅助';
+                          case 'passive': return '被动';
+                          default: return type;
+                        }
+                      };
+                      return (
+                        <div key={skill.id} className="bg-stone-800 rounded p-2 border border-stone-700">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="font-bold text-sm">{skill.name}</span>
+                            <span className={`text-xs ${getSkillTypeColor(skill.type)}`}>
+                              {getSkillTypeName(skill.type)}
+                            </span>
+                          </div>
+                          <div className="text-xs text-stone-400 mb-1">{skill.description}</div>
+                          <div className="text-xs text-stone-500">
+                            {skill.effect.damage && `伤害: ${skill.effect.damage}`}
+                            {skill.effect.heal && `治疗: ${skill.effect.heal}`}
+                            {skill.effect.buff && (
+                              <>
+                                {skill.effect.buff.attack && `攻击+${skill.effect.buff.attack} `}
+                                {skill.effect.buff.defense && `防御+${skill.effect.buff.defense} `}
+                                {skill.effect.buff.hp && `气血+${skill.effect.buff.hp}`}
+                              </>
+                            )}
+                            {skill.cooldown && (
+                              <span className="ml-2">
+                                {cooldown > 0 ? (
+                                  <span className="text-yellow-400">冷却: {cooldown}回合</span>
+                                ) : (
+                                  <span className="text-green-400">冷却: {skill.cooldown}回合</span>
+                                )}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {/* 进化条件显示 */}
+              {activePet.evolutionStage < 2 && (() => {
+                const template = PET_TEMPLATES.find((t) => t.species === activePet.species);
+                if (!template?.evolutionRequirements) return null;
+                const nextStage = activePet.evolutionStage + 1;
+                const requirements = nextStage === 1
+                  ? (template.evolutionRequirements.stage1 || template.evolutionRequirements)
+                  : (template.evolutionRequirements.stage2 || template.evolutionRequirements);
+                const hasLevel = activePet.level >= (requirements.level || 0);
+                const missingItems: string[] = [];
+                if (requirements.items) {
+                  requirements.items.forEach((req) => {
+                    const item = player.inventory.find((i) => i.name === req.name);
+                    if (!item || item.quantity < req.quantity) {
+                      missingItems.push(`${req.name} x${req.quantity}`);
+                    }
+                  });
+                }
+                const canEvolve = hasLevel && missingItems.length === 0;
+                return (
+                  <div className="mb-3 p-2 bg-stone-800 rounded border border-stone-700">
+                    <div className="text-sm font-bold mb-2">
+                      进化到{nextStage === 1 ? '成熟期' : '完全体'}条件：
+                    </div>
+                    <div className="text-xs space-y-1">
+                      <div className={hasLevel ? 'text-green-400' : 'text-red-400'}>
+                        ✓ 等级: {activePet.level} / {requirements.level || 0} {hasLevel ? '✓' : '✗'}
+                      </div>
+                      {requirements.items && requirements.items.length > 0 && (
+                        <div>
+                          <div className="mb-1">材料需求:</div>
+                          {requirements.items.map((req, idx) => {
+                            const item = player.inventory.find((i) => i.name === req.name);
+                            const hasItem = item && item.quantity >= req.quantity;
+                            return (
+                              <div key={idx} className={hasItem ? 'text-green-400' : 'text-red-400'}>
+                                {hasItem ? '✓' : '✗'} {req.name} x{req.quantity}
+                                {item && ` (拥有: ${item.quantity})`}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      {canEvolve && (
+                        <div className="text-green-400 font-bold mt-2">✓ 可以进化！</div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
               <div className="flex gap-2">
                 <button
                   onClick={() => handleFeedClick(activePet.id)}
@@ -227,29 +361,34 @@ const PetModal: React.FC<Props> = ({
                         : 'border-stone-700'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <div>
-                        <span
-                          className={`font-bold ${getRarityColor(pet.rarity)}`}
-                        >
-                          {pet.name}
-                        </span>
-                        <span className="text-xs text-stone-500 ml-2">
-                          Lv.{pet.level}
-                        </span>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="text-3xl">{getPetImage(pet)}</div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span
+                              className={`font-bold ${getRarityColor(pet.rarity)}`}
+                            >
+                              {pet.name}
+                            </span>
+                            <span className="text-xs text-stone-500 ml-2">
+                              Lv.{pet.level}
+                            </span>
+                          </div>
+                          {pet.id === player.activePetId ? (
+                            <span className="text-xs bg-yellow-600 text-black px-2 py-1 rounded">
+                              激活中
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => onActivatePet(pet.id)}
+                              className="text-xs px-2 py-1 bg-stone-700 hover:bg-stone-600 rounded"
+                            >
+                              激活
+                            </button>
+                          )}
+                        </div>
                       </div>
-                      {pet.id === player.activePetId ? (
-                        <span className="text-xs bg-yellow-600 text-black px-2 py-1 rounded">
-                          激活中
-                        </span>
-                      ) : (
-                        <button
-                          onClick={() => onActivatePet(pet.id)}
-                          className="text-xs px-2 py-1 bg-stone-700 hover:bg-stone-600 rounded"
-                        >
-                          激活
-                        </button>
-                      )}
                     </div>
                     <div className="text-sm text-stone-400 mb-2">
                       {pet.species}
@@ -269,6 +408,150 @@ const PetModal: React.FC<Props> = ({
                         style={{ width: `${(pet.exp / pet.maxExp) * 100}%` }}
                       />
                     </div>
+                    {/* 进化阶段 */}
+                    <div className="text-xs text-stone-400 mb-1">
+                      阶段: {pet.evolutionStage === 0 ? '幼年期' : pet.evolutionStage === 1 ? '成熟期' : '完全体'}
+                    </div>
+                    {/* 技能数量提示 */}
+                    {pet.skills && pet.skills.length > 0 && (
+                      <div className="text-xs text-stone-400 mb-1">
+                        技能: {pet.skills.length}个
+                      </div>
+                    )}
+                    {/* 展开/收起按钮 */}
+                    <button
+                      onClick={() => {
+                        setExpandedPetIds((prev) => {
+                          const newSet = new Set(prev);
+                          if (newSet.has(pet.id)) {
+                            newSet.delete(pet.id);
+                          } else {
+                            newSet.add(pet.id);
+                          }
+                          return newSet;
+                        });
+                      }}
+                      className="w-full mb-2 px-2 py-1 text-xs bg-stone-800 hover:bg-stone-700 rounded border border-stone-600"
+                    >
+                      {expandedPetIds.has(pet.id) ? '收起详情' : '展开详情'}
+                    </button>
+                    {/* 展开后的详细信息 */}
+                    {expandedPetIds.has(pet.id) && (
+                      <div className="mb-2 space-y-2 border-t border-stone-700 pt-2">
+                        {/* 亲密度 */}
+                        <div>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span>亲密度</span>
+                            <span>{pet.affection} / 100</span>
+                          </div>
+                          <div className="w-full bg-stone-700 rounded-full h-1.5">
+                            <div
+                              className="bg-pink-500 h-1.5 rounded-full"
+                              style={{ width: `${pet.affection}%` }}
+                            />
+                          </div>
+                          <div className="text-xs text-stone-400 mt-1">
+                            影响：治疗+{Math.floor(pet.affection / 2)}%，攻击+{Math.floor(pet.affection * 0.5)}点
+                          </div>
+                        </div>
+                        {/* 技能列表 */}
+                        {pet.skills && pet.skills.length > 0 && (
+                          <div>
+                            <div className="text-xs font-bold mb-1">技能列表</div>
+                            <div className="space-y-1">
+                              {pet.skills.map((skill) => {
+                                const cooldown = pet.skillCooldowns?.[skill.id] || 0;
+                                const getSkillTypeColor = (type: string) => {
+                                  switch (type) {
+                                    case 'attack': return 'text-red-400';
+                                    case 'defense': return 'text-blue-400';
+                                    case 'support': return 'text-green-400';
+                                    case 'passive': return 'text-purple-400';
+                                    default: return 'text-stone-400';
+                                  }
+                                };
+                                const getSkillTypeName = (type: string) => {
+                                  switch (type) {
+                                    case 'attack': return '攻击';
+                                    case 'defense': return '防御';
+                                    case 'support': return '辅助';
+                                    case 'passive': return '被动';
+                                    default: return type;
+                                  }
+                                };
+                                return (
+                                  <div key={skill.id} className="bg-stone-800 rounded p-1.5 border border-stone-700">
+                                    <div className="flex items-center justify-between mb-0.5">
+                                      <span className="font-bold text-xs">{skill.name}</span>
+                                      <span className={`text-xs ${getSkillTypeColor(skill.type)}`}>
+                                        {getSkillTypeName(skill.type)}
+                                      </span>
+                                    </div>
+                                    <div className="text-xs text-stone-400 mb-0.5">{skill.description}</div>
+                                    <div className="text-xs text-stone-500">
+                                      {skill.effect.damage && `伤害: ${skill.effect.damage} `}
+                                      {skill.effect.heal && `治疗: ${skill.effect.heal} `}
+                                      {skill.effect.buff && (
+                                        <>
+                                          {skill.effect.buff.attack && `攻击+${skill.effect.buff.attack} `}
+                                          {skill.effect.buff.defense && `防御+${skill.effect.buff.defense} `}
+                                          {skill.effect.buff.hp && `气血+${skill.effect.buff.hp}`}
+                                        </>
+                                      )}
+                                      {skill.cooldown && (
+                                        <span className="ml-1">
+                                          {cooldown > 0 ? (
+                                            <span className="text-yellow-400">冷却: {cooldown}回合</span>
+                                          ) : (
+                                            <span className="text-green-400">冷却: {skill.cooldown}回合</span>
+                                          )}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        {/* 进化条件 */}
+                        {pet.evolutionStage < 2 && (() => {
+                          const template = PET_TEMPLATES.find((t) => t.species === pet.species);
+                          if (!template?.evolutionRequirements) return null;
+                          const nextStage = pet.evolutionStage + 1;
+                          const requirements = nextStage === 1
+                            ? (template.evolutionRequirements.stage1 || template.evolutionRequirements)
+                            : (template.evolutionRequirements.stage2 || template.evolutionRequirements);
+                          const hasLevel = pet.level >= (requirements.level || 0);
+                          return (
+                            <div className="p-1.5 bg-stone-800 rounded border border-stone-700">
+                              <div className="text-xs font-bold mb-1">
+                                进化到{nextStage === 1 ? '成熟期' : '完全体'}：
+                              </div>
+                              <div className="text-xs space-y-0.5">
+                                <div className={hasLevel ? 'text-green-400' : 'text-red-400'}>
+                                  {hasLevel ? '✓' : '✗'} 等级: {pet.level} / {requirements.level || 0}
+                                </div>
+                                {requirements.items && requirements.items.length > 0 && (
+                                  <div>
+                                    {requirements.items.map((req, idx) => {
+                                      const item = player.inventory.find((i) => i.name === req.name);
+                                      const hasItem = item && item.quantity >= req.quantity;
+                                      return (
+                                        <div key={idx} className={hasItem ? 'text-green-400' : 'text-red-400'}>
+                                          {hasItem ? '✓' : '✗'} {req.name} x{req.quantity}
+                                          {item && ` (${item.quantity})`}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleFeedClick(pet.id)}
@@ -286,6 +569,14 @@ const PetModal: React.FC<Props> = ({
                           title="批量喂养"
                         >
                           <Layers size={14} />
+                        </button>
+                      )}
+                      {pet.evolutionStage < 2 && (
+                        <button
+                          onClick={() => onEvolvePet(pet.id)}
+                          className="flex-1 px-3 py-1.5 bg-purple-900 hover:bg-purple-800 rounded border border-purple-700 text-xs"
+                        >
+                          进化
                         </button>
                       )}
                     </div>

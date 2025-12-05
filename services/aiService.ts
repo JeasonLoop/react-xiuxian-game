@@ -153,10 +153,14 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
   try {
     let typeInstructions = '';
 
-    // 根据境界调整事件类型和奖励
+    // 根据境界调整事件类型和奖励（指数增长，高境界奖励大幅提升）
     const realmIndex = REALM_ORDER.indexOf(player.realm);
-    const realmMultiplier =
-      1 + realmIndex * 0.3 + (player.realmLevel - 1) * 0.1;
+    // 境界倍数：指数增长 [1, 2, 4, 8, 16, 32, 64]
+    const realmBaseMultipliers = [1, 2, 4, 8, 16, 32, 64];
+    const realmBaseMultiplier = realmBaseMultipliers[realmIndex] || 1;
+    // 境界等级加成：每级增加30%
+    const levelMultiplier = 1 + (player.realmLevel - 1) * 0.3;
+    const realmMultiplier = realmBaseMultiplier * levelMultiplier;
 
     switch (adventureType) {
       case 'lucky':
@@ -301,8 +305,7 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
           9. 发现灵泉（获得灵气）
           10. 拯救灵兽（获得灵宠）
           11. 【灵宠机缘】灵宠在历练中获得机缘（提升等级、进化、提升属性、获得经验）
-          12. 运气好,捡到若干抽奖券(获得抽奖券)
-          13. 极小概率获得传承(获得传承,可以直接突破1-4个境界)
+          12. 极小概率获得传承(获得传承,可以直接突破1-4个境界)
           14. 【危险】遭遇邪修或魔修（可能受伤、被抢走灵石、修为降低）
           15. 【危险】触发陷阱（可能受伤、属性降低、修为降低）
           16. 【特殊】触发随机秘境（进入秘境后触发新的随机事件，风险和收益都更高）
@@ -312,8 +315,8 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
           大部分时间是普通事件，小概率出现危险或惊喜。
           物品稀有度：${Math.max(0, 60 - realmIndex * 10)}%普通，${Math.min(30 + realmIndex * 5, 50)}%稀有，${Math.min(realmIndex * 3, 20)}%传说。
           修为奖励：${Math.floor(10 * realmMultiplier)}-${Math.floor(100 * realmMultiplier)}，灵石奖励：${Math.floor(5 * realmMultiplier)}-${Math.floor(50 * realmMultiplier)}。
-          抽奖券奖励：${Math.floor(1 * realmMultiplier)}-${Math.floor(10 * realmMultiplier)}。
           传承奖励：${Math.floor(1 * realmMultiplier)}-${Math.floor(4 * realmMultiplier)}。
+          注意：抽奖券奖励已改为本地概率判定，AI不需要返回lotteryTicketsChange字段。
 
           【场景描述多样化要求（非常重要）】
           每次历练的场景描述必须不同，避免单调重复。描述应该生动详细，包含环境、动作、事件细节。
@@ -462,7 +465,7 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
         {
           role: 'system',
           content:
-            '你是一名严谨的修仙游戏GM，需要严格按照用户要求返回结构化数据。\n\n重要规则：\n1. 只返回JSON格式，不要有任何额外的文字说明、解释或描述\n2. 不要使用代码块标记（如```json```），直接返回纯JSON\n3. 所有数字值必须是纯数字格式，例如 "spirit": 8 而不是 "spirit": +8\n4. 不要添加任何注释或说明文字\n5. 确保JSON格式完全正确，可以被直接解析',
+            '你是一名严谨的修仙游戏GM，需要严格按照用户要求返回结构化数据。\n\n重要规则：\n1. 只返回JSON格式，不要有任何额外的文字说明、解释或描述\n2. 不要使用代码块标记（如```json```），直接返回纯JSON\n3. 所有数字值必须是纯数字格式，例如 "spirit": 8 而不是 "spirit": +8\n4. 不要添加任何注释或说明文字\n5. 确保JSON格式完全正确，可以被直接解析\n6. 禁止输出 null/undefined 或空字符串字段；缺失字段请直接省略\n7. 禁止重复使用相同的模板或开头句式（如“你在”），连续结果必须改写\n8. eventColor 必须匹配事件性质：danger=有损失，gain=正收益，special=罕见大机缘/秘境/传承，normal=轻描淡写或无明显收益\n9. 所有 effect 数值必须落在稀有度对应区间，否则重写\n10. hpChange 必须与描述伤害/治疗匹配，且绝对值不超过玩家最大气血的50%（向下取整）\n11. 同一输出中 equipmentSlot 不得冲突（戒指/首饰自动分配除外）\n12. attributeReduction 仅能出现在极度危险事件，且必须伴随稀有及以上奖励补偿',
         },
         {
           role: 'user',
@@ -470,6 +473,7 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
 
 【输出要求】
 只返回JSON格式，不要有任何额外的文字、说明、解释或描述。不要使用代码块标记，直接返回纯JSON。
+不要输出 null/undefined/空字符串字段，缺失字段直接省略。
 
 【JSON字段定义】
 {
@@ -562,6 +566,11 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
 8. 传承等级变化（inheritanceLevelChange）只能为1-4之间的整数，且应该极其罕见（只有大机缘事件才可能出现）
 9. 触发随机秘境（triggerSecretRealm）应该非常罕见，只有特殊事件才可能触发
 10. 灵宠机缘（petOpportunity）需要玩家已有灵宠时才应该出现，且应该合理（如提升等级、获得经验等）
+11. 秘境名称或描述存在时，故事中至少出现2个与其直接相关的名词/现象；缺失时使用通用秘境风格
+12. items/itemsObtained 中的装备槽位不得重复（戒指/首饰可重复自动分配）；多件物品时至少包含1件稀有或以上
+13. 物品名称在描述与 item(s) 中必须一致，战斗掉落的材料需体现在 items 中
+14. 避免固定句式：不要让超过30%的事件以相同短语开头（如“你在”“你正”）；需要改写
+15. hpChange 范围需符合描述且限制在 [-maxHp*0.5, maxHp*0.5]（向下取整）
 
 【物品生成多样化规则】
 - 尽量生成不同名称、不同类型的物品，避免重复

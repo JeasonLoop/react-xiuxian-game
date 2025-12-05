@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayerStats, Shop, GameSettings, Item, ShopItem } from '../../types';
+import { PlayerStats, Shop, GameSettings, Item, ShopItem, RealmType } from '../../types';
 import InventoryModal from '../../components/InventoryModal';
 import CultivationModal from '../../components/CultivationModal';
 import AlchemyModal from '../../components/AlchemyModal';
@@ -7,6 +7,7 @@ import ArtifactUpgradeModal from '../../components/ArtifactUpgradeModal';
 import SectModal from '../../components/SectModal';
 import SecretRealmModal from '../../components/SecretRealmModal';
 import BattleModal from '../../components/BattleModal';
+import TurnBasedBattleModal from '../../components/TurnBasedBattleModal';
 import CharacterModal from '../../components/CharacterModal';
 import AchievementModal from '../../components/AchievementModal';
 import PetModal from '../../components/PetModal';
@@ -45,12 +46,18 @@ interface ModalsContainerProps {
     isSettingsOpen: boolean;
     isShopOpen: boolean;
     isBattleModalOpen: boolean;
+    isTurnBasedBattleOpen?: boolean;
   };
   modalState: {
     currentShop: Shop | null;
     itemToUpgrade: Item | null;
     battleReplay: BattleReplay | null;
     revealedBattleRounds: number;
+    turnBasedBattleParams?: {
+      adventureType: 'normal' | 'lucky' | 'secret_realm';
+      riskLevel?: '低' | '中' | '高' | '极度危险';
+      realmMinRealm?: RealmType;
+    } | null;
   };
   handlers: {
     // Modal toggles
@@ -128,8 +135,27 @@ interface ModalsContainerProps {
     handleUpdateSettings: (newSettings: Partial<GameSettings>) => void;
     // Shop
     handleBuyItem: (shopItem: any, quantity?: number) => void;
-    handleSellItem: (item: Item) => void;
+    handleSellItem: (item: Item, quantity?: number) => void;
     handleRefreshShop?: (newItems: ShopItem[]) => void;
+    // Turn-based battle
+    setIsTurnBasedBattleOpen?: (open: boolean) => void;
+    handleTurnBasedBattleClose?: (result?: {
+      victory: boolean;
+      hpLoss: number;
+      expChange: number;
+      spiritChange: number;
+      items?: Array<{
+        name: string;
+        type: string;
+        description: string;
+        rarity?: string;
+        isEquippable?: boolean;
+        equipmentSlot?: string;
+        effect?: any;
+        permanentEffect?: any;
+      }>;
+      petSkillCooldowns?: Record<string, number>; // 灵宠技能冷却状态
+    }, updatedInventory?: Item[]) => void;
   };
 }
 
@@ -150,6 +176,24 @@ export default function ModalsContainer({
         onSkip={handlers.handleSkipBattleLogs}
         onClose={handlers.handleCloseBattleModal}
       />
+
+      {modalState.turnBasedBattleParams && (
+        <TurnBasedBattleModal
+          isOpen={modals.isTurnBasedBattleOpen || false}
+          player={player}
+          adventureType={modalState.turnBasedBattleParams.adventureType}
+          riskLevel={modalState.turnBasedBattleParams.riskLevel}
+          realmMinRealm={modalState.turnBasedBattleParams.realmMinRealm}
+          onClose={(result, updatedInventory) => {
+            if (handlers.setIsTurnBasedBattleOpen) {
+              handlers.setIsTurnBasedBattleOpen(false);
+            }
+            if (handlers.handleTurnBasedBattleClose) {
+              handlers.handleTurnBasedBattleClose(result, updatedInventory);
+            }
+          }}
+        />
+      )}
 
       <InventoryModal
         isOpen={modals.isInventoryOpen}

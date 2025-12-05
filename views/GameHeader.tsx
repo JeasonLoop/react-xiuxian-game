@@ -55,6 +55,7 @@ function GameHeader({
 }: GameHeaderProps) {
   const [clickCount, setClickCount] = useState(0);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const appVersion = import.meta.env.VITE_APP_VERSION || '0.1.1';
 
   const newAchievements = useMemo(
     () =>
@@ -110,13 +111,23 @@ function GameHeader({
 
   return (
     <header className="bg-paper-800 p-2 md:p-4 border-b border-stone-700 flex justify-between items-center shadow-lg z-10">
-      <h1
-        onClick={handleTitleClick}
-        className="text-base md:text-xl font-serif text-mystic-gold tracking-widest cursor-pointer select-none hover:opacity-80 transition-opacity"
-        title={clickCount > 0 ? `点击 ${5 - clickCount} 次进入调试模式` : undefined}
-      >
-        云灵修仙
-      </h1>
+      <div className="flex items-center gap-3">
+        <h1
+          onClick={handleTitleClick}
+          className="text-base md:text-xl font-serif text-mystic-gold tracking-widest cursor-pointer select-none hover:opacity-80 transition-opacity"
+          title={
+            clickCount > 0 ? `点击 ${5 - clickCount} 次进入调试模式` : undefined
+          }
+        >
+          云灵修仙
+        </h1>
+        <span
+          className="text-xs md:text-sm text-stone-400 font-mono px-2 py-1 bg-stone-800 rounded border border-stone-700"
+          title="当前版本"
+        >
+          v{appVersion}
+        </span>
+      </div>
       {/* Mobile Menu Button */}
       <button
         onClick={onOpenMenu}

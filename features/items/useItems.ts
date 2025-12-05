@@ -1,6 +1,6 @@
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { PlayerStats, Item } from '../../types';
-import { PET_TEMPLATES } from '../../constants';
+import { PET_TEMPLATES, getRandomPetName } from '../../constants';
 import { uid } from '../../utils/gameUtils';
 
 interface UseItemsParams {
@@ -56,7 +56,7 @@ export function useItems({ player, setPlayer, addLog }: UseItemsParams) {
               availablePets[Math.floor(Math.random() * availablePets.length)];
             const newPet = {
               id: uid(),
-              name: randomTemplate.name,
+              name: getRandomPetName(randomTemplate),
               species: randomTemplate.species,
               level: 1,
               exp: 0,
@@ -66,6 +66,7 @@ export function useItems({ player, setPlayer, addLog }: UseItemsParams) {
               skills: [...randomTemplate.skills],
               evolutionStage: 0,
               affection: 50,
+              skillCooldowns: {}, // 初始化技能冷却
             };
             newPets.push(newPet);
             effectLogs.push(`✨ 孵化出了灵宠【${newPet.name}】！`);

@@ -1,5 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { X, ShoppingBag, Coins, Package, Filter, Trash, RefreshCw } from 'lucide-react';
+import {
+  X,
+  ShoppingBag,
+  Coins,
+  Package,
+  Filter,
+  Trash,
+  RefreshCw,
+} from 'lucide-react';
 import {
   Shop,
   ShopItem,
@@ -11,6 +19,7 @@ import {
 } from '../types';
 import { REALM_ORDER, RARITY_MULTIPLIERS } from '../constants';
 import { generateShopItems } from '../services/shopService';
+import { showError } from '../utils/toastUtils';
 
 interface Props {
   isOpen: boolean;
@@ -18,7 +27,7 @@ interface Props {
   shop: Shop;
   player: PlayerStats;
   onBuyItem: (shopItem: ShopItem, quantity?: number) => void;
-  onSellItem: (item: Item) => void;
+  onSellItem: (item: Item, quantity?: number) => void;
   onRefreshShop?: (newItems: ShopItem[]) => void;
 }
 
@@ -296,7 +305,8 @@ const ShopModal: React.FC<Props> = ({
       )
     ) {
       itemsToSell.forEach((item) => {
-        onSellItem(item);
+        // 出售该物品的全部数量
+        onSellItem(item, item.quantity);
       });
       setSelectedItems(new Set());
     }
@@ -308,7 +318,7 @@ const ShopModal: React.FC<Props> = ({
       onClick={onClose}
     >
       <div
-        className="bg-paper-800 w-full h-[80vh] md:h-auto md:max-w-4xl md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-600 shadow-2xl flex flex-col md:max-h-[90vh]"
+        className="bg-paper-800 w-full h-[80vh] md:h-auto md:max-w-4xl md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-600 shadow-2xl flex flex-col md:max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-3 md:p-4 border-b border-stone-600 flex justify-between items-center bg-ink-800 md:rounded-t">
@@ -325,11 +335,19 @@ const ShopModal: React.FC<Props> = ({
                 onClick={() => {
                   const refreshCost = 100; // 刷新费用
                   if (player.spiritStones < refreshCost) {
-                    alert('灵石不足！刷新需要100灵石。');
+                    showError('灵石不足！刷新需要100灵石。');
                     return;
                   }
-                  if (window.confirm(`确定要花费 ${refreshCost} 灵石刷新商店物品吗？`)) {
-                    const newItems = generateShopItems(shop.type, player.realm, true);
+                  if (
+                    window.confirm(
+                      `确定要花费 ${refreshCost} 灵石刷新商店物品吗？`
+                    )
+                  ) {
+                    const newItems = generateShopItems(
+                      shop.type,
+                      player.realm,
+                      true
+                    );
                     onRefreshShop(newItems);
                   }
                 }}

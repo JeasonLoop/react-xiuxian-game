@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Talent, DifficultyMode } from '../types';
 import { TALENTS } from '../constants';
+<<<<<<< HEAD
 import {
   Sparkles,
   Sword,
@@ -10,6 +11,10 @@ import {
   User,
   AlertTriangle,
 } from 'lucide-react';
+=======
+import { Sparkles, Sword, Shield, Heart, Zap, User } from 'lucide-react';
+import { showError } from '../utils/toastUtils';
+>>>>>>> 28b680b52b4f10f7ebc72923e36e2fc5792ad8ad
 
 interface Props {
   onStart: (
@@ -38,7 +43,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
 
   const handleStart = () => {
     if (!playerName.trim()) {
-      alert('请输入修仙者名称！');
+      showError('请输入修仙者名称！');
       return;
     }
     onStart(playerName.trim(), finalTalentId, difficulty);

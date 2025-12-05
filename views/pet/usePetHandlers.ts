@@ -6,6 +6,7 @@ interface UsePetHandlersProps {
   player: PlayerStats;
   setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
   addLog: (message: string, type?: string) => void;
+  setItemActionLog?: (log: { text: string; type: string } | null) => void;
 }
 
 /**
@@ -23,6 +24,7 @@ export function usePetHandlers({
   player,
   setPlayer,
   addLog,
+  setItemActionLog,
 }: UsePetHandlersProps) {
   const handleActivatePet = (petId: string) => {
     if (!player) return;
@@ -89,13 +91,24 @@ export function usePetHandlers({
       if (!prev) return prev;
 
       // 先计算经验值（需要物品信息，在扣除之前计算）
-      let baseExp = 10; // 基础经验值
+      // 大幅增加基础经验值
+      let baseExp = 200; // 基础经验值从100提升到200
 
       // 根据玩家境界计算基础经验值（境界越高，基础经验值越高）
       const realmIndex = REALM_ORDER.indexOf(prev.realm);
-      const realmMultiplier = 1 + realmIndex * 0.5; // 每个境界增加50%基础经验
-      const levelMultiplier = 1 + prev.realmLevel * 0.1; // 每层增加10%
+      const realmMultiplier = 1 + realmIndex * 2.5; // 每个境界增加250%基础经验（从80%提升）
+      const levelMultiplier = 1 + prev.realmLevel * 0.5; // 每层增加50%（从15%提升）
       baseExp = Math.floor(baseExp * realmMultiplier * levelMultiplier);
+
+      // 根据喂养类型调整经验倍率
+      let feedTypeMultiplier = 1;
+      if (feedType === 'hp') {
+        feedTypeMultiplier = 1.2; // 气血喂养给1.2倍经验
+      } else if (feedType === 'exp') {
+        feedTypeMultiplier = 1.5; // 修为喂养给1.5倍经验
+      } else if (feedType === 'item') {
+        feedTypeMultiplier = 3; // 物品喂养基础倍率从1.0提升到3
+      }
 
       // 根据物品品质计算经验倍率
       let rarityMultiplier = 1;
@@ -104,12 +117,16 @@ export function usePetHandlers({
         if (item) {
           const rarity = item.rarity || '普通';
           rarityMultiplier = RARITY_MULTIPLIERS[rarity] || 1;
+          // 材料类物品额外加成
+          if (item.type === '材料') {
+            rarityMultiplier *= 2.0; // 材料类物品额外加成从50%提升到100%
+          }
         }
       }
 
-      // 计算最终经验值（基础经验 * 品质倍率，有随机波动 ±20%）
-      let expGain = Math.floor(baseExp * rarityMultiplier);
-      const randomVariation = 0.8 + Math.random() * 0.4; // 0.8 到 1.2
+      // 计算最终经验值（基础经验 * 喂养类型倍率 * 品质倍率，有随机波动 ±15%）
+      let expGain = Math.floor(baseExp * feedTypeMultiplier * rarityMultiplier);
+      const randomVariation = 0.85 + Math.random() * 0.3; // 0.85 到 1.15
       expGain = Math.floor(expGain * randomVariation);
 
       // 确保不超过升级所需经验
@@ -202,63 +219,242 @@ export function usePetHandlers({
   };
 
   const handleEvolvePet = (petId: string) => {
-    if (!player) return;
-    const pet = player.pets.find((p) => p.id === petId);
-    if (!pet || pet.evolutionStage >= 2) return;
-
-    const template = PET_TEMPLATES.find((t) => t.species === pet.species);
-    if (!template || !template.evolutionRequirements) return;
-
-    if (pet.level < template.evolutionRequirements.level) {
-      addLog(
-        `灵宠等级不足，需要 ${template.evolutionRequirements.level} 级才能进化`,
-        'danger'
-      );
+    if (!player) {
+      addLog('无法进化：玩家数据不存在！', 'danger');
       return;
     }
 
+    const pet = player.pets.find((p) => p.id === petId);
+    if (!pet) {
+      addLog('无法进化：找不到该灵宠！', 'danger');
+      return;
+    }
+
+    if (pet.evolutionStage >= 2) {
+      addLog('灵宠已达到完全体，无法继续进化！', 'danger');
+      return;
+    }
+
+    const template = PET_TEMPLATES.find((t) => t.species === pet.species);
+    if (!template) {
+      addLog(`无法进化：找不到【${pet.species}】的模板数据！`, 'danger');
+      return;
+    }
+
+    if (!template.evolutionRequirements) {
+      addLog('该灵宠无法进化！', 'danger');
+      return;
+    }
+
+    // 确定当前进化阶段的需求
+    const nextStage = pet.evolutionStage + 1; // 0->1 或 1->2
+    const requirements = nextStage === 1
+      ? (template.evolutionRequirements.stage1 || template.evolutionRequirements)
+      : (template.evolutionRequirements.stage2 || template.evolutionRequirements);
+
+    // 检查等级要求
+    if (pet.level < (requirements.level || 0)) {
+      const message = `灵宠等级不足，需要 ${requirements.level} 级才能进化到${nextStage === 1 ? '成熟期' : '完全体'}`;
+      addLog(message, 'danger');
+      if (setItemActionLog) {
+          setItemActionLog({ text: message, type: 'danger' });
+          setTimeout(() => setItemActionLog(null), 3000);
+        }
+      return;
+    }
+
+    // 检查材料要求
+    if (requirements.items && requirements.items.length > 0) {
+      const missingItems: string[] = [];
+      requirements.items.forEach((req) => {
+        const item = player.inventory.find((i) => i.name === req.name);
+        if (!item || item.quantity < req.quantity) {
+          missingItems.push(`${req.name} x${req.quantity}`);
+        }
+      });
+
+      if (missingItems.length > 0) {
+        const message = `进化材料不足，需要：${missingItems.join('、')}`;
+        addLog(message, 'normal');
+        // 显示右上角轻提示
+        if (setItemActionLog) {
+          setItemActionLog({ text: message, type: 'normal' });
+          setTimeout(() => setItemActionLog(null), 3000);
+        }
+        return;
+      }
+    }
+
     setPlayer((prev) => {
+      if (!prev) return prev;
+
+      // 扣除材料
+      let newInventory = [...prev.inventory];
+      if (requirements.items && requirements.items.length > 0) {
+        requirements.items.forEach((req) => {
+          newInventory = newInventory
+            .map((item) => {
+              if (item.name === req.name) {
+                return { ...item, quantity: item.quantity - req.quantity };
+              }
+              return item;
+            })
+            .filter((item) => item.quantity > 0);
+        });
+      }
+
+      // 更新灵宠
       const newPets = prev.pets.map((p) => {
         if (p.id === petId) {
+          const newStage = p.evolutionStage + 1;
+          // 根据阶段提升属性（大幅提升以匹配境界）
+          const statMultiplier = newStage === 1 ? 3.0 : 3.0; // 成熟期3倍，完全体再3倍（总共9倍）
+          const speedMultiplier = newStage === 1 ? 1.5 : 1.5; // 速度提升1.5倍
+
+          // 更新名称（如果有进化名称）
+          let newName = p.name;
+          if (template.evolutionNames) {
+            if (newStage === 1 && template.evolutionNames.stage1) {
+              newName = template.evolutionNames.stage1;
+            } else if (newStage === 2 && template.evolutionNames.stage2) {
+              newName = template.evolutionNames.stage2;
+            }
+          }
+
+          const stageName = newStage === 1 ? '成熟期' : '完全体';
+          addLog(
+            `【${p.name}】进化到${stageName}！${newName !== p.name ? `更名为【${newName}】！` : ''}实力大幅提升！`,
+            'special'
+          );
+
           return {
             ...p,
-            evolutionStage: p.evolutionStage + 1,
+            name: newName,
+            evolutionStage: newStage,
             stats: {
-              attack: Math.floor(p.stats.attack * 1.5),
-              defense: Math.floor(p.stats.defense * 1.5),
-              hp: Math.floor(p.stats.hp * 1.5),
-              speed: Math.floor(p.stats.speed * 1.2),
+              attack: Math.floor(p.stats.attack * statMultiplier),
+              defense: Math.floor(p.stats.defense * statMultiplier),
+              hp: Math.floor(p.stats.hp * statMultiplier),
+              speed: Math.floor(p.stats.speed * speedMultiplier),
             },
           };
         }
         return p;
       });
 
-      addLog(`【${pet.name}】进化了！实力大幅提升！`, 'special');
-      return { ...prev, pets: newPets };
+      return { ...prev, inventory: newInventory, pets: newPets };
     });
   };
 
-  const handleBatchFeedItems = async (petId: string, itemIds: string[]) => {
+  const handleBatchFeedItems = (petId: string, itemIds: string[]) => {
     if (!player || itemIds.length === 0) return;
 
     const pet = player.pets.find((p) => p.id === petId);
     if (!pet) return;
 
-    // 批量喂养：逐个喂养物品（使用延迟以避免状态更新冲突）
-    for (const itemId of itemIds) {
-      const item = player.inventory.find((i) => i.id === itemId);
-      if (item && item.quantity > 0) {
-        handleFeedPet(petId, 'item', itemId);
-        // 添加小延迟以确保状态更新完成
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        // 更新 player 引用以便下次循环使用最新状态
-        // 注意：由于 React 的状态更新是异步的，这里可能不能完全同步
-        // 但延迟可以帮助避免冲突
-      }
-    }
+    // 批量喂养：直接处理所有物品，不使用延迟动画
+    setPlayer((prev) => {
+      if (!prev) return prev;
 
-    addLog(`批量喂养完成，共使用了 ${itemIds.length} 件物品喂养【${pet.name}】。`, 'gain');
+      let totalExpGain = 0;
+      let totalAffectionGain = 0;
+      let newInventory = [...prev.inventory];
+      const usedItemIds = new Set<string>();
+
+      // 计算所有物品的总经验值
+      itemIds.forEach((itemId) => {
+        const item = prev.inventory.find((i) => i.id === itemId);
+        if (item && item.quantity > 0 && !usedItemIds.has(itemId)) {
+          usedItemIds.add(itemId);
+
+          // 计算这个物品提供的经验（复用喂养逻辑）
+          let baseExp = 200; // 基础经验值从100提升到200
+          const realmIndex = REALM_ORDER.indexOf(prev.realm);
+          const realmMultiplier = 1 + realmIndex * 1.2; // 每个境界增加120%基础经验
+          const levelMultiplier = 1 + prev.realmLevel * 0.2; // 每层增加20%
+          baseExp = Math.floor(baseExp * realmMultiplier * levelMultiplier);
+
+          // 物品喂养倍率
+          const feedTypeMultiplier = 1.3; // 物品喂养基础倍率从1.0提升到1.3
+
+          const rarity = item.rarity || '普通';
+          let rarityMultiplier = RARITY_MULTIPLIERS[rarity] || 1;
+          if (item.type === '材料') {
+            rarityMultiplier *= 2.0; // 材料类物品额外加成从50%提升到100%
+          }
+
+          // 应用物品喂养倍率
+          baseExp = Math.floor(baseExp * feedTypeMultiplier);
+
+          const expGain = Math.floor(baseExp * rarityMultiplier * (0.85 + Math.random() * 0.3));
+          totalExpGain += expGain;
+
+          // 扣除物品
+          newInventory = newInventory
+            .map((invItem) => {
+              if (invItem.id === itemId) {
+                return { ...invItem, quantity: invItem.quantity - 1 };
+              }
+              return invItem;
+            })
+            .filter((invItem) => invItem.quantity > 0);
+        }
+      });
+
+      // 增加亲密度（每个物品2-5点）
+      totalAffectionGain = Math.floor((2 + Math.random() * 4) * usedItemIds.size);
+
+      // 更新灵宠
+      const newPets = prev.pets.map((p) => {
+        if (p.id === petId) {
+          let petNewExp = p.exp + totalExpGain;
+          let petNewLevel = p.level;
+          let petNewMaxExp = p.maxExp;
+          let leveledUp = false;
+
+          // 处理升级
+          while (petNewExp >= petNewMaxExp && petNewLevel < 100) {
+            petNewExp -= petNewMaxExp;
+            petNewLevel += 1;
+            petNewMaxExp = Math.floor(petNewMaxExp * 1.5);
+            leveledUp = true;
+            addLog(`【${p.name}】升级了！现在是 ${petNewLevel} 级`, 'gain');
+          }
+
+          const newStats = leveledUp
+            ? {
+                attack: Math.floor(p.stats.attack * 1.1),
+                defense: Math.floor(p.stats.defense * 1.1),
+                hp: Math.floor(p.stats.hp * 1.1),
+                speed: Math.floor(p.stats.speed * 1.05),
+              }
+            : p.stats;
+
+          const newAffection = Math.min(100, p.affection + totalAffectionGain);
+
+          return {
+            ...p,
+            level: petNewLevel,
+            exp: petNewExp,
+            maxExp: petNewMaxExp,
+            stats: newStats,
+            affection: newAffection,
+          };
+        }
+        return p;
+      });
+
+      addLog(
+        `批量喂养完成，【${pet.name}】获得了 ${totalExpGain} 点经验，亲密度提升了 ${totalAffectionGain} 点。`,
+        'gain'
+      );
+
+      return {
+        ...prev,
+        inventory: newInventory,
+        pets: newPets,
+      };
+    });
   };
 
   return {

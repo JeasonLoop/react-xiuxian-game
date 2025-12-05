@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { PlayerStats, Item, Pet, ItemType, EquipmentSlot } from '../../types';
 import { LOTTERY_PRIZES, PET_TEMPLATES } from '../../constants';
 import { uid } from '../../utils/gameUtils';
@@ -27,11 +27,18 @@ export function useLotteryHandlers({
   addLog,
   setLotteryRewards,
 }: UseLotteryHandlersProps) {
+  const isDrawingRef = useRef(false); // 防止重复调用
+
   const handleDraw = (count: 1 | 10) => {
+    if (isDrawingRef.current) {
+      return; // 如果正在抽奖，忽略重复调用
+    }
     if (!player || player.lotteryTickets < count) {
       addLog('抽奖券不足！', 'danger');
       return;
     }
+
+    isDrawingRef.current = true;
 
     const results: typeof LOTTERY_PRIZES = [];
     let guaranteedRare = count === 10 && (player.lotteryCount + 1) % 10 === 0;
@@ -65,9 +72,64 @@ export function useLotteryHandlers({
       }
     }
 
-    // 收集所有获得的奖励用于弹窗显示
-    const rewards: Array<{ type: string; name: string; quantity?: number }> =
-      [];
+    // 先统计所有获得的奖励用于弹窗显示（在setPlayer之前，避免回调被调用多次导致重复）
+    const rewardMap = new Map<string, { type: string; name: string; quantity: number }>();
+
+    // 先遍历一次results，统计奖励（不修改背包状态）
+    for (const prize of results) {
+      if (prize.type === 'spiritStones') {
+        const amount = prize.value.spiritStones || 0;
+        const key = 'spiritStones';
+        const existing = rewardMap.get(key);
+        if (existing) {
+          existing.quantity += amount;
+        } else {
+          rewardMap.set(key, { type: 'spiritStones', name: '灵石', quantity: amount });
+        }
+      } else if (prize.type === 'exp') {
+        const amount = prize.value.exp || 0;
+        const key = 'exp';
+        const existing = rewardMap.get(key);
+        if (existing) {
+          existing.quantity += amount;
+        } else {
+          rewardMap.set(key, { type: 'exp', name: '修为', quantity: amount });
+        }
+      } else if (prize.type === 'item' && prize.value.item) {
+        const item = prize.value.item;
+        const key = `item:${item.name}`;
+        const existing = rewardMap.get(key);
+        if (existing) {
+          existing.quantity += 1;
+        } else {
+          rewardMap.set(key, { type: 'item', name: item.name, quantity: 1 });
+        }
+      } else if (prize.type === 'pet' && prize.value.petId) {
+        const template = PET_TEMPLATES.find((t) => t.id === prize.value.petId);
+        if (template) {
+          // 相同名称的灵宠合并显示
+          const key = `pet:${template.name}`;
+          const existing = rewardMap.get(key);
+          if (existing) {
+            existing.quantity += 1;
+          } else {
+            rewardMap.set(key, { type: 'pet', name: template.name, quantity: 1 });
+          }
+        }
+      } else if (prize.type === 'ticket') {
+        const amount = prize.value.tickets || 0;
+        const key = 'ticket';
+        const existing = rewardMap.get(key);
+        if (existing) {
+          existing.quantity += amount;
+        } else {
+          rewardMap.set(key, { type: 'ticket', name: '抽奖券', quantity: amount });
+        }
+      }
+    }
+
+    // 转换为数组
+    const rewards = Array.from(rewardMap.values());
 
     setPlayer((prev) => {
       let newInv = [...prev.inventory];
@@ -80,16 +142,10 @@ export function useLotteryHandlers({
         if (prize.type === 'spiritStones') {
           const amount = prize.value.spiritStones || 0;
           newStones += amount;
-          rewards.push({
-            type: 'spiritStones',
-            name: '灵石',
-            quantity: amount,
-          });
           addLog(`获得 ${amount} 灵石`, 'gain');
         } else if (prize.type === 'exp') {
           const amount = prize.value.exp || 0;
           newExp += amount;
-          rewards.push({ type: 'exp', name: '修为', quantity: amount });
           addLog(`获得 ${amount} 修为`, 'gain');
         } else if (prize.type === 'item' && prize.value.item) {
           const item = prize.value.item;
@@ -123,7 +179,6 @@ export function useLotteryHandlers({
               quantity: 1, // 装备quantity始终为1
             } as Item);
           }
-          rewards.push({ type: 'item', name: item.name, quantity: 1 });
           addLog(`获得 ${item.name}！`, 'gain');
         } else if (prize.type === 'pet' && prize.value.petId) {
           const template = PET_TEMPLATES.find(
@@ -144,13 +199,11 @@ export function useLotteryHandlers({
               affection: 50,
             };
             newPets.push(newPet);
-            rewards.push({ type: 'pet', name: template.name, quantity: 1 });
             addLog(`获得灵宠【${template.name}】！`, 'special');
           }
         } else if (prize.type === 'ticket') {
           const amount = prize.value.tickets || 0;
           newTickets += amount;
-          rewards.push({ type: 'ticket', name: '抽奖券', quantity: amount });
           addLog(`获得 ${amount} 张抽奖券`, 'gain');
         }
       }
@@ -166,10 +219,18 @@ export function useLotteryHandlers({
       };
     });
 
-    // 显示抽奖结果弹窗（在setPlayer外部调用）
+    // 显示抽奖结果弹窗
+    setLotteryRewards([]);
     if (rewards.length > 0) {
-      setLotteryRewards(rewards);
-      setTimeout(() => setLotteryRewards([]), 3000);
+      setTimeout(() => {
+        setLotteryRewards([...rewards]); // 使用展开运算符创建新数组
+        setTimeout(() => {
+          setLotteryRewards([]);
+          isDrawingRef.current = false; // 重置抽奖状态
+        }, 3000);
+      }, 0);
+    } else {
+      isDrawingRef.current = false; // 如果没有奖励，立即重置状态
     }
   };
 

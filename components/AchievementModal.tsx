@@ -48,7 +48,10 @@ const AchievementModal: React.FC<Props> = ({ isOpen, onClose, player }) => {
 
   const getRequirementText = (achievement: Achievement) => {
     const typeText = getRequirementTypeText(achievement.requirement.type);
-    if (achievement.requirement.type === 'realm' && achievement.requirement.target) {
+    if (
+      achievement.requirement.type === 'realm' &&
+      achievement.requirement.target
+    ) {
       return `达到${achievement.requirement.target}`;
     }
     return `${typeText} ${achievement.requirement.value}${getRequirementUnit(achievement.requirement.type)}`;
@@ -84,10 +87,10 @@ const AchievementModal: React.FC<Props> = ({ isOpen, onClose, player }) => {
       onClick={onClose}
     >
       <div
-        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[80vh] md:h-auto md:max-w-3xl md:max-h-[90vh] overflow-y-auto"
+        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[80vh] md:h-auto md:max-w-3xl md:max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="z-50 sticky top-0 bg-stone-800 border-b border-stone-700 p-3 md:p-4 flex justify-between items-center">
+        <div className="z-50 bg-stone-800 border-b border-stone-700 p-3 md:p-4 flex justify-between items-center shrink-0">
           <h2 className="text-lg md:text-xl font-serif text-mystic-gold flex items-center gap-2">
             <Trophy className="text-yellow-400 w-5 h-5 md:w-6 md:h-6" />
             成就系统
@@ -100,7 +103,7 @@ const AchievementModal: React.FC<Props> = ({ isOpen, onClose, player }) => {
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto flex-1 min-h-0">
           <div className="mb-4 text-center">
             <p className="text-stone-400">
               已完成: {completedAchievements.length} / {ACHIEVEMENTS.length}
