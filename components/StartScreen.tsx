@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Talent, DifficultyMode } from '../types';
 import { TALENTS } from '../constants';
-<<<<<<< HEAD
 import {
   Sparkles,
   Sword,
@@ -9,12 +8,9 @@ import {
   Heart,
   Zap,
   User,
-  AlertTriangle,
+  TriangleAlert,
 } from 'lucide-react';
-=======
-import { Sparkles, Sword, Shield, Heart, Zap, User } from 'lucide-react';
 import { showError } from '../utils/toastUtils';
->>>>>>> 28b680b52b4f10f7ebc72923e36e2fc5792ad8ad
 
 interface Props {
   onStart: (
@@ -182,7 +178,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
           {/* 难度选择 */}
           <div>
             <label className="block text-stone-300 mb-2 font-semibold flex items-center gap-2 text-sm md:text-base">
-              <AlertTriangle size={18} className="md:w-5 md:h-5" />
+              <TriangleAlert size={18} className="md:w-5 md:h-5" />
               游戏难度
             </label>
             <div className="space-y-2">
