@@ -23,13 +23,18 @@ console.log(`📦 检测到版本号: v${version}`);
 const args = process.argv.slice(2);
 const command = args[0] || 'build';
 
-// 设置环境变量并执行docker-compose命令
+// 设置环境变量并执行docker/docker-compose命令
 process.env.VITE_APP_VERSION = version;
 
 const dockerCommands = {
   build: 'docker-compose build',
   'build-no-cache': 'docker-compose build --no-cache',
   'build-and-up': 'docker-compose up -d --build',
+  // 直接使用 docker build 打包，带版本标签
+  'build-image': `docker build -t react-xiuxian-game:${version} --build-arg VITE_APP_VERSION=${version} .`,
+  // 导出镜像（压缩与不压缩）
+  pack: `docker save react-xiuxian-game:${version} | gzip > react-xiuxian-game-${version}.tar.gz`,
+  'pack-uncompressed': `docker save -o react-xiuxian-game-${version}.tar react-xiuxian-game:${version}`,
 };
 
 const dockerCommand = dockerCommands[command] || dockerCommands.build;
