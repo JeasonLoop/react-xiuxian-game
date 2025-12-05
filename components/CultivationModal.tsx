@@ -25,14 +25,29 @@ const CultivationModal: React.FC<Props> = ({
 
   // 过滤功法 - 必须在条件返回之前调用
   const filteredArts = useMemo(() => {
+    const learnedSet = new Set(player.cultivationArts);
+
     return CULTIVATION_ARTS.filter((art) => {
       // 兼容性处理：如果功法没有 grade 字段，默认显示
       const artGrade = art.grade || '黄';
       if (gradeFilter !== 'all' && artGrade !== gradeFilter) return false;
       if (typeFilter !== 'all' && art.type !== typeFilter) return false;
       return true;
-    });
-  }, [gradeFilter, typeFilter]);
+    })
+      .map((art, idx) => ({ art, idx }))
+      .sort((a, b) => {
+        const aActive = player.activeArtId === a.art.id;
+        const bActive = player.activeArtId === b.art.id;
+        if (aActive !== bActive) return aActive ? -1 : 1; // 已激活在最前
+
+        const aLearned = learnedSet.has(a.art.id);
+        const bLearned = learnedSet.has(b.art.id);
+        if (aLearned !== bLearned) return aLearned ? -1 : 1; // 已学习排在已获得前
+
+        return a.idx - b.idx; // 保持原有次序
+      })
+      .map((item) => item.art);
+  }, [gradeFilter, typeFilter, player.cultivationArts]);
 
   // 必须在所有 hooks 之后才能有条件返回
   if (!isOpen) return null;

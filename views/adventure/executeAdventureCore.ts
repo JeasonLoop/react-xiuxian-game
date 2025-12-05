@@ -792,12 +792,22 @@ export async function executeAdventureCore({
     // 极小概率获得功法（3%概率，秘境中5%）
     const artChance = realmName ? 0.05 : 0.03;
     if (Math.random() < artChance && adventureType !== 'lucky') {
-      const availableArts = CULTIVATION_ARTS.filter(
-        (art) =>
-          !newArts.includes(art.id) &&
-          REALM_ORDER.indexOf(art.realmRequirement) <=
-            REALM_ORDER.indexOf(prev.realm)
-      );
+      const availableArts = CULTIVATION_ARTS.filter((art) => {
+        // 已经拥有的排除
+        if (newArts.includes(art.id)) return false;
+        // 境界要求
+        if (
+          REALM_ORDER.indexOf(art.realmRequirement) >
+          REALM_ORDER.indexOf(prev.realm)
+        ) {
+          return false;
+        }
+        // 宗门专属功法：需要同宗门
+        if (art.sectId !== null && art.sectId !== undefined) {
+          return art.sectId === prev.sectId;
+        }
+        return true;
+      });
       if (availableArts.length > 0) {
         const randomArt =
           availableArts[Math.floor(Math.random() * availableArts.length)];

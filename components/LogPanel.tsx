@@ -23,7 +23,6 @@ const LogItem = React.memo<{ log: LogEntry }>(({ log }) => {
   );
 
   const logClassName = useMemo(() => {
-    console.log(log.type);
     const baseClass =
       'p-2 md:p-3 rounded border-l-2 font-serif text-xs md:text-sm lg:text-base leading-relaxed animate-fade-in';
     switch (log.type) {
