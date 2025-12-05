@@ -458,6 +458,9 @@ export interface LotteryPrize {
   };
 }
 
+// 难度模式
+export type DifficultyMode = 'easy' | 'normal' | 'hard';
+
 // 设置系统
 export interface GameSettings {
   soundEnabled: boolean;
@@ -467,6 +470,7 @@ export interface GameSettings {
   autoSave: boolean;
   animationSpeed: 'slow' | 'normal' | 'fast';
   language: 'zh' | 'en';
+  difficulty: DifficultyMode; // 游戏难度模式
 }
 
 // 商店系统

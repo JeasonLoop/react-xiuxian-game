@@ -1,15 +1,28 @@
 import React, { useState, useMemo } from 'react';
-import { Talent } from '../types';
+import { Talent, DifficultyMode } from '../types';
 import { TALENTS } from '../constants';
-import { Sparkles, Sword, Shield, Heart, Zap, User } from 'lucide-react';
+import {
+  Sparkles,
+  Sword,
+  Shield,
+  Heart,
+  Zap,
+  User,
+  AlertTriangle,
+} from 'lucide-react';
 
 interface Props {
-  onStart: (playerName: string, talentId: string) => void;
+  onStart: (
+    playerName: string,
+    talentId: string,
+    difficulty: DifficultyMode
+  ) => void;
 }
 
 const StartScreen: React.FC<Props> = ({ onStart }) => {
   const [playerName, setPlayerName] = useState('');
   const [selectedTalentId, setSelectedTalentId] = useState<string | null>(null);
+  const [difficulty, setDifficulty] = useState<DifficultyMode>('normal');
 
   // 只在组件首次加载时随机生成一个天赋（使用useMemo确保只执行一次）
   const initialRandomTalentId = useMemo(() => {
@@ -28,7 +41,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
       alert('请输入修仙者名称！');
       return;
     }
-    onStart(playerName.trim(), finalTalentId);
+    onStart(playerName.trim(), finalTalentId, difficulty);
   };
 
   const getRarityColor = (rarity: string) => {
@@ -158,6 +171,79 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
             </div>
             <p className="text-[10px] md:text-xs text-stone-500 mt-2">
               * 天赋在游戏开始时随机生成，之后不可修改
+            </p>
+          </div>
+
+          {/* 难度选择 */}
+          <div>
+            <label className="block text-stone-300 mb-2 font-semibold flex items-center gap-2 text-sm md:text-base">
+              <AlertTriangle size={18} className="md:w-5 md:h-5" />
+              游戏难度
+            </label>
+            <div className="space-y-2">
+              <label className="flex items-center gap-3 p-3 bg-stone-800/50 rounded border-2 border-stone-700 cursor-pointer hover:border-mystic-jade/50 transition-colors">
+                <input
+                  type="radio"
+                  name="difficulty"
+                  value="easy"
+                  checked={difficulty === 'easy'}
+                  onChange={(e) =>
+                    setDifficulty(e.target.value as DifficultyMode)
+                  }
+                  className="w-4 h-4 text-mystic-jade"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-green-400">简单模式</span>
+                  </div>
+                  <p className="text-xs text-stone-400 mt-1">
+                    死亡无惩罚，适合新手体验
+                  </p>
+                </div>
+              </label>
+              <label className="flex items-center gap-3 p-3 bg-stone-800/50 rounded border-2 border-stone-700 cursor-pointer hover:border-mystic-jade/50 transition-colors">
+                <input
+                  type="radio"
+                  name="difficulty"
+                  value="normal"
+                  checked={difficulty === 'normal'}
+                  onChange={(e) =>
+                    setDifficulty(e.target.value as DifficultyMode)
+                  }
+                  className="w-4 h-4 text-mystic-jade"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-yellow-400">普通模式</span>
+                  </div>
+                  <p className="text-xs text-stone-400 mt-1">
+                    死亡掉落部分属性(10-20%)和装备(1-3件)
+                  </p>
+                </div>
+              </label>
+              <label className="flex items-center gap-3 p-3 bg-stone-800/50 rounded border-2 border-stone-700 cursor-pointer hover:border-mystic-jade/50 transition-colors">
+                <input
+                  type="radio"
+                  name="difficulty"
+                  value="hard"
+                  checked={difficulty === 'hard'}
+                  onChange={(e) =>
+                    setDifficulty(e.target.value as DifficultyMode)
+                  }
+                  className="w-4 h-4 text-mystic-jade"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-red-400">困难模式</span>
+                  </div>
+                  <p className="text-xs text-stone-400 mt-1">
+                    死亡清除存档，适合挑战自我
+                  </p>
+                </div>
+              </label>
+            </div>
+            <p className="text-[10px] md:text-xs text-stone-500 mt-2">
+              * 难度模式在游戏开始后可在设置中查看，但建议在开始前选择
             </p>
           </div>
 

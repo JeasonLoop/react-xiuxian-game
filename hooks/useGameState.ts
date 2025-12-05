@@ -32,6 +32,7 @@ export function useGameState() {
       autoSave: true,
       animationSpeed: 'normal',
       language: 'zh',
+      difficulty: 'normal', // 默认普通模式
     };
   });
 
@@ -120,7 +121,11 @@ export function useGameState() {
 
   // 开始新游戏
   const handleStartGame = useCallback(
-    (playerName: string, talentId: string) => {
+    (
+      playerName: string,
+      talentId: string,
+      difficulty: GameSettings['difficulty']
+    ) => {
       const newPlayer = createInitialPlayer(playerName, talentId);
       const initialTalent = TALENTS.find((t) => t.id === talentId);
       const initialLogs: LogEntry[] = [
@@ -137,13 +142,22 @@ export function useGameState() {
           timestamp: Date.now(),
         },
       ];
+      // 更新难度设置
+      setSettings((prev) => ({ ...prev, difficulty }));
+      const newSettings = { ...settings, difficulty };
       setPlayer(newPlayer);
       setLogs(initialLogs);
       setGameStarted(true);
       setHasSave(true);
       saveGame(newPlayer, initialLogs);
+      // 保存设置
+      try {
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(newSettings));
+      } catch (error) {
+        console.error('保存设置失败:', error);
+      }
     },
-    [saveGame]
+    [saveGame, settings]
   );
 
   // 自动保存 - 使用防抖机制，避免频繁保存导致卡顿

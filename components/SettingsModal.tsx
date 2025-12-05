@@ -286,6 +286,31 @@ const SettingsModal: React.FC<Props> = ({
                   <option value="fast">快</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm text-stone-400 mb-2">
+                  游戏难度（仅查看）
+                </label>
+                <div className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200">
+                  {settings.difficulty === 'easy' && (
+                    <span className="text-green-400 font-semibold">
+                      简单模式 - 死亡无惩罚
+                    </span>
+                  )}
+                  {settings.difficulty === 'normal' && (
+                    <span className="text-yellow-400 font-semibold">
+                      普通模式 - 死亡掉落部分属性和装备
+                    </span>
+                  )}
+                  {settings.difficulty === 'hard' && (
+                    <span className="text-red-400 font-semibold">
+                      困难模式 - 死亡清除存档
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-stone-500 mt-1">
+                  难度模式在游戏开始时选择，无法更改
+                </p>
+              </div>
             </div>
           </div>
 

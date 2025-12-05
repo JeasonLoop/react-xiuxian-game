@@ -310,30 +310,162 @@ function App() {
         return; // 不触发死亡
       }
 
-      // 没有保命装备，正常死亡
-      setIsDead(true);
-      setDeathBattleData(lastBattleReplay);
-      localStorage.removeItem(SAVE_KEY);
+      // 没有保命装备，根据难度模式处理死亡
+      const difficulty = settings.difficulty || 'normal';
 
-      // 关闭战斗弹窗（如果打开的话）
-      setIsBattleModalOpen(false);
+      if (difficulty === 'hard') {
+        // 困难模式：清除存档
+        setIsDead(true);
+        setDeathBattleData(lastBattleReplay);
+        localStorage.removeItem(SAVE_KEY);
 
-      // 生成死亡原因
-      let reason = '';
-      if (lastBattleReplay && !lastBattleReplay.victory) {
-        reason = `在与${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}的战斗中，你力竭而亡。`;
-      } else if (lastBattleReplay) {
-        reason = `虽然战胜了${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}，但你伤势过重，最终不治身亡。`;
+        // 关闭战斗弹窗（如果打开的话）
+        setIsBattleModalOpen(false);
+
+        // 生成死亡原因
+        let reason = '';
+        if (lastBattleReplay && !lastBattleReplay.victory) {
+          reason = `在与${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}的战斗中，你力竭而亡。`;
+        } else if (lastBattleReplay) {
+          reason = `虽然战胜了${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}，但你伤势过重，最终不治身亡。`;
+        } else {
+          reason = '你在历练途中遭遇不测，伤势过重，最终不治身亡。';
+        }
+        setDeathReason(reason);
+
+        // 停止自动功能
+        setAutoMeditate(false);
+        setAutoAdventure(false);
+      } else if (difficulty === 'normal') {
+        // 普通模式：掉落部分属性和装备
+        setPlayer((prev) => {
+          if (!prev) return prev;
+
+          // 随机掉落属性 10-20%
+          const attributeDropPercent = 0.1 + Math.random() * 0.1; // 10-20%
+          const attackDrop = Math.floor(prev.attack * attributeDropPercent);
+          const defenseDrop = Math.floor(prev.defense * attributeDropPercent);
+          const spiritDrop = Math.floor(prev.spirit * attributeDropPercent);
+          const physiqueDrop = Math.floor(prev.physique * attributeDropPercent);
+          const speedDrop = Math.floor(prev.speed * attributeDropPercent);
+          const maxHpDrop = Math.floor(prev.maxHp * attributeDropPercent);
+
+          // 随机掉落装备 1-3件
+          const equippedItemIds = Object.values(prev.equippedItems).filter(
+            Boolean
+          ) as string[];
+          const dropCount = Math.min(
+            1 + Math.floor(Math.random() * 3),
+            equippedItemIds.length
+          );
+          const itemsToDrop = equippedItemIds
+            .sort(() => Math.random() - 0.5)
+            .slice(0, dropCount);
+
+          // 移除掉落的装备
+          const newEquippedItems = { ...prev.equippedItems };
+          itemsToDrop.forEach((itemId) => {
+            const slot = Object.entries(prev.equippedItems).find(
+              ([_, id]) => id === itemId
+            )?.[0] as EquipmentSlot | undefined;
+            if (slot) {
+              delete newEquippedItems[slot];
+            }
+          });
+
+          // 从背包中移除掉落的装备
+          const newInventory = prev.inventory.filter(
+            (item) => !itemsToDrop.includes(item.id)
+          );
+
+          // 记录掉落信息
+          const dropMessages: string[] = [];
+          if (attackDrop > 0) dropMessages.push(`攻击力 -${attackDrop}`);
+          if (defenseDrop > 0) dropMessages.push(`防御力 -${defenseDrop}`);
+          if (spiritDrop > 0) dropMessages.push(`神识 -${spiritDrop}`);
+          if (physiqueDrop > 0) dropMessages.push(`体魄 -${physiqueDrop}`);
+          if (speedDrop > 0) dropMessages.push(`速度 -${speedDrop}`);
+          if (maxHpDrop > 0) dropMessages.push(`气血上限 -${maxHpDrop}`);
+
+          if (itemsToDrop.length > 0) {
+            const droppedItemNames = itemsToDrop
+              .map((id) => prev.inventory.find((i) => i.id === id)?.name)
+              .filter(Boolean)
+              .join('、');
+            dropMessages.push(`装备掉落：${droppedItemNames}`);
+          }
+
+          if (dropMessages.length > 0) {
+            addLog(`💀 死亡惩罚：${dropMessages.join('，')}`, 'danger');
+          }
+
+          // 恢复10%最大气血
+          const reviveHp = Math.max(
+            1,
+            Math.floor((prev.maxHp - maxHpDrop) * 0.1)
+          );
+
+          return {
+            ...prev,
+            attack: Math.max(0, prev.attack - attackDrop),
+            defense: Math.max(0, prev.defense - defenseDrop),
+            spirit: Math.max(0, prev.spirit - spiritDrop),
+            physique: Math.max(0, prev.physique - physiqueDrop),
+            speed: Math.max(0, prev.speed - speedDrop),
+            maxHp: Math.max(1, prev.maxHp - maxHpDrop),
+            hp: reviveHp,
+            inventory: newInventory,
+            equippedItems: newEquippedItems,
+          };
+        });
+
+        // 生成死亡原因
+        let reason = '';
+        if (lastBattleReplay && !lastBattleReplay.victory) {
+          reason = `在与${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}的战斗中，你力竭而亡。但你的灵魂尚未完全消散，在付出代价后得以重生。`;
+        } else if (lastBattleReplay) {
+          reason = `虽然战胜了${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}，但你伤势过重，最终不治身亡。但你的灵魂尚未完全消散，在付出代价后得以重生。`;
+        } else {
+          reason =
+            '你在历练途中遭遇不测，伤势过重，最终不治身亡。但你的灵魂尚未完全消散，在付出代价后得以重生。';
+        }
+        setDeathReason(reason);
+        setIsDead(true);
+        setDeathBattleData(lastBattleReplay);
+        setIsBattleModalOpen(false);
+        setAutoMeditate(false);
+        setAutoAdventure(false);
       } else {
-        reason = '你在历练途中遭遇不测，伤势过重，最终不治身亡。';
-      }
-      setDeathReason(reason);
+        // 简单模式：无惩罚，直接复活
+        setPlayer((prev) => {
+          if (!prev) return prev;
+          // 恢复10%最大气血
+          const reviveHp = Math.max(1, Math.floor(prev.maxHp * 0.1));
+          return {
+            ...prev,
+            hp: reviveHp,
+          };
+        });
 
-      // 停止自动功能
-      setAutoMeditate(false);
-      setAutoAdventure(false);
+        // 生成死亡原因
+        let reason = '';
+        if (lastBattleReplay && !lastBattleReplay.victory) {
+          reason = `在与${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}的战斗中，你力竭而亡。但天道的仁慈让你得以重生，继续你的修仙之路。`;
+        } else if (lastBattleReplay) {
+          reason = `虽然战胜了${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}，但你伤势过重，最终不治身亡。但天道的仁慈让你得以重生，继续你的修仙之路。`;
+        } else {
+          reason =
+            '你在历练途中遭遇不测，伤势过重，最终不治身亡。但天道的仁慈让你得以重生，继续你的修仙之路。';
+        }
+        setDeathReason(reason);
+        setIsDead(true);
+        setDeathBattleData(lastBattleReplay);
+        setIsBattleModalOpen(false);
+        setAutoMeditate(false);
+        setAutoAdventure(false);
+      }
     }
-  }, [player?.hp, isDead, lastBattleReplay, addLog]);
+  }, [player?.hp, isDead, lastBattleReplay, addLog, settings.difficulty]);
 
   // 涅槃重生功能
   const handleRebirth = () => {
@@ -648,7 +780,17 @@ function App() {
           player={player}
           battleData={deathBattleData}
           deathReason={deathReason}
+          difficulty={settings.difficulty || 'normal'}
           onRebirth={handleRebirth}
+          onContinue={
+            settings.difficulty !== 'hard'
+              ? () => {
+                  setIsDead(false);
+                  setDeathBattleData(null);
+                  setDeathReason('');
+                }
+              : undefined
+          }
         />
       )}
 

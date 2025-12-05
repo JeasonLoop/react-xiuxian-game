@@ -838,12 +838,13 @@ const generateLoot = (
       const rarity = selected.rarity;
 
       // 只有武器和法宝类型的传说/仙品装备可能有保命机会
-      if ((rarity === '传说' || rarity === '仙品') &&
-          (itemType === '武器' || itemType === '法宝')) {
+      if (
+        (rarity === '传说' || rarity === '仙品') &&
+        (itemType === '武器' || itemType === '法宝')
+      ) {
         // 传说装备3%概率有保命，仙品装备6%概率有保命
-        const hasRevive = rarity === '传说'
-          ? Math.random() < 0.03
-          : Math.random() < 0.06;
+        const hasRevive =
+          rarity === '传说' ? Math.random() < 0.03 : Math.random() < 0.06;
 
         if (hasRevive) {
           // 随机1-3次保命机会
@@ -851,17 +852,18 @@ const generateLoot = (
         }
       }
 
-      const item: AdventureResult['itemObtained'] & { reviveChances?: number } = {
-        name: selected.name,
-        type: itemType,
-        description: `${selected.name}，从敌人身上搜刮获得。`,
-        rarity: selected.rarity,
-        isEquippable: selected.slot !== undefined,
-        equipmentSlot: selected.slot as string | undefined,
-        effect: selected.effect,
-        permanentEffect: selected.permanentEffect,
-        reviveChances: reviveChances,
-      };
+      const item: AdventureResult['itemObtained'] & { reviveChances?: number } =
+        {
+          name: selected.name,
+          type: itemType,
+          description: `${selected.name}，从敌人身上搜刮获得。`,
+          rarity: selected.rarity,
+          isEquippable: selected.slot !== undefined,
+          equipmentSlot: selected.slot as string | undefined,
+          effect: selected.effect,
+          permanentEffect: selected.permanentEffect,
+          reviveChances: reviveChances,
+        };
       lootItems.push(item);
     }
   }
@@ -908,7 +910,12 @@ export interface BattleResolution {
 
 const clampMin = (value: number, min: number) => (value < min ? min : value);
 
-const createEnemy = async (player: PlayerStats, adventureType: AdventureType, riskLevel?: '低' | '中' | '高' | '极度危险', realmMinRealm?: RealmType): Promise<{
+const createEnemy = async (
+  player: PlayerStats,
+  adventureType: AdventureType,
+  riskLevel?: '低' | '中' | '高' | '极度危险',
+  realmMinRealm?: RealmType
+): Promise<{
   name: string;
   title: string;
   realm: RealmType;
@@ -928,7 +935,10 @@ const createEnemy = async (player: PlayerStats, adventureType: AdventureType, ri
     const realmMinIndex = REALM_ORDER.indexOf(realmMinRealm);
     // 敌人境界基于秘境最低境界，而不是玩家境界
     const realmOffset = 1; // 秘境中敌人比秘境要求高1个境界
-    targetRealmIndex = clampMin(Math.min(REALM_ORDER.length - 1, realmMinIndex + realmOffset), 0);
+    targetRealmIndex = clampMin(
+      Math.min(REALM_ORDER.length - 1, realmMinIndex + realmOffset),
+      0
+    );
 
     // 如果玩家境界高于秘境要求，降低敌人强度（境界压制）
     if (currentRealmIndex > realmMinIndex) {
@@ -938,8 +948,12 @@ const createEnemy = async (player: PlayerStats, adventureType: AdventureType, ri
     }
   } else {
     // 普通历练和机缘历练，按原逻辑
-    const realmOffset = adventureType === 'secret_realm' ? 1 : adventureType === 'lucky' ? -1 : 0;
-    targetRealmIndex = clampMin(Math.min(REALM_ORDER.length - 1, currentRealmIndex + realmOffset), 0);
+    const realmOffset =
+      adventureType === 'secret_realm' ? 1 : adventureType === 'lucky' ? -1 : 0;
+    targetRealmIndex = clampMin(
+      Math.min(REALM_ORDER.length - 1, currentRealmIndex + realmOffset),
+      0
+    );
   }
 
   const realm = REALM_ORDER[targetRealmIndex];
@@ -1034,9 +1048,12 @@ const createEnemy = async (player: PlayerStats, adventureType: AdventureType, ri
     }
   }
 
-  const variance = () => strengthVariance.min + Math.random() * (strengthVariance.max - strengthVariance.min);
+  const variance = () =>
+    strengthVariance.min +
+    Math.random() * (strengthVariance.max - strengthVariance.min);
   // 应用境界压制倍率到最终难度
-  const finalDifficulty = baseDifficulty * strengthMultiplier * realmLevelReduction;
+  const finalDifficulty =
+    baseDifficulty * strengthMultiplier * realmLevelReduction;
 
   // 15%概率使用AI生成敌人名字，失败则使用预设列表
   let name = pickOne(ENEMY_NAMES);
@@ -1067,11 +1084,19 @@ const createEnemy = async (player: PlayerStats, adventureType: AdventureType, ri
     if (currentRealmIndex > realmMinIndex) {
       // 使用秘境境界的属性作为基准（模拟秘境中敌人的合理强度）
       // 使用秘境最低境界的属性，但会根据风险等级调整
-      basePlayerAttack = player.attack * (0.4 + (realmMinIndex / REALM_ORDER.length) * 0.3); // 40%-70%
-      basePlayerDefense = player.defense * (0.4 + (realmMinIndex / REALM_ORDER.length) * 0.3);
-      basePlayerMaxHp = player.maxHp * (0.3 + (realmMinIndex / REALM_ORDER.length) * 0.3); // 30%-60%
-      basePlayerSpeed = (player.speed || 10) * (0.5 + (realmMinIndex / REALM_ORDER.length) * 0.3);
-      basePlayerRealmLevel = Math.max(1, player.realmLevel - (currentRealmIndex - realmMinIndex));
+      basePlayerAttack =
+        player.attack * (0.4 + (realmMinIndex / REALM_ORDER.length) * 0.3); // 40%-70%
+      basePlayerDefense =
+        player.defense * (0.4 + (realmMinIndex / REALM_ORDER.length) * 0.3);
+      basePlayerMaxHp =
+        player.maxHp * (0.3 + (realmMinIndex / REALM_ORDER.length) * 0.3); // 30%-60%
+      basePlayerSpeed =
+        (player.speed || 10) *
+        (0.5 + (realmMinIndex / REALM_ORDER.length) * 0.3);
+      basePlayerRealmLevel = Math.max(
+        1,
+        player.realmLevel - (currentRealmIndex - realmMinIndex)
+      );
     } else {
       // 玩家境界等于或低于秘境要求，使用玩家属性
       basePlayerAttack = player.attack;
@@ -1098,10 +1123,23 @@ const createEnemy = async (player: PlayerStats, adventureType: AdventureType, ri
     title,
     realm,
     attack: Math.max(8, Math.round(baseAttack * variance() * finalDifficulty)),
-    defense: Math.max(6, Math.round(baseDefense * variance() * finalDifficulty)),
-    maxHp: Math.max(40, Math.round(basePlayerMaxHp * (0.5 + Math.random() * 0.4) * finalDifficulty)),
-    speed: Math.max(6, Math.round(basePlayerSpeed * (0.7 + Math.random() * 0.3) * strengthMultiplier)),
-    strengthMultiplier // 保存强度倍数用于生成奖励
+    defense: Math.max(
+      6,
+      Math.round(baseDefense * variance() * finalDifficulty)
+    ),
+    maxHp: Math.max(
+      40,
+      Math.round(
+        basePlayerMaxHp * (0.5 + Math.random() * 0.4) * finalDifficulty
+      )
+    ),
+    speed: Math.max(
+      6,
+      Math.round(
+        basePlayerSpeed * (0.7 + Math.random() * 0.3) * strengthMultiplier
+      )
+    ),
+    strengthMultiplier, // 保存强度倍数用于生成奖励
   };
 };
 
@@ -1128,8 +1166,20 @@ export const shouldTriggerBattle = (
   return Math.random() < Math.max(0.05, chance);
 };
 
-export const resolveBattleEncounter = async (player: PlayerStats, adventureType: AdventureType, riskLevel?: '低' | '中' | '高' | '极度危险', realmMinRealm?: RealmType, realmName?: string, realmDescription?: string): Promise<BattleResolution> => {
-  const enemy = await createEnemy(player, adventureType, riskLevel, realmMinRealm);
+export const resolveBattleEncounter = async (
+  player: PlayerStats,
+  adventureType: AdventureType,
+  riskLevel?: '低' | '中' | '高' | '极度危险',
+  realmMinRealm?: RealmType,
+  realmName?: string,
+  realmDescription?: string
+): Promise<BattleResolution> => {
+  const enemy = await createEnemy(
+    player,
+    adventureType,
+    riskLevel,
+    realmMinRealm
+  );
   const difficulty = getBattleDifficulty(adventureType, riskLevel);
   let playerHp = player.hp;
   let enemyHp = enemy.maxHp;
@@ -1227,7 +1277,13 @@ export const resolveBattleEncounter = async (player: PlayerStats, adventureType:
   }
 
   // 生成更丰富的战斗描述（如果有秘境信息，会结合秘境特点）
-  const generateBattleSummary = (victory: boolean, enemy: { name: string; title: string }, hpLoss: number, hasLoot: boolean, realmName?: string): string => {
+  const generateBattleSummary = (
+    victory: boolean,
+    enemy: { name: string; title: string },
+    hpLoss: number,
+    hasLoot: boolean,
+    realmName?: string
+  ): string => {
     // 如果有秘境名称，生成与秘境相关的描述
     if (realmName && adventureType === 'secret_realm') {
       const realmContext = `在${realmName}中，`;
@@ -1245,26 +1301,34 @@ export const resolveBattleEncounter = async (player: PlayerStats, adventureType:
     }
 
     // 默认描述（非秘境）
-    const battleScenarios = victory ? [
-      `经过一番激烈的战斗，你最终将${enemy.title}${enemy.name}斩于剑下。虽然耗费了 ${hpLoss} 点气血，但你成功获得了胜利。${hasLoot ? '你仔细搜刮了敌人的遗物，发现了一些有用的物品。' : ''}`,
-      `你与${enemy.title}${enemy.name}展开了殊死搏斗，剑光与妖气交织。最终，你凭借精湛的剑法将其击败，但也消耗了 ${hpLoss} 点气血。${hasLoot ? '你从敌人身上搜刮到了一些战利品。' : ''}`,
-      `面对${enemy.title}${enemy.name}的疯狂攻击，你沉着应对，运转功法防御。经过一番苦战，你终于找到破绽，将其一击必杀。虽然损失了 ${hpLoss} 点气血，但胜利的喜悦让你忘记了疼痛。${hasLoot ? '你检查了敌人的遗物，收获颇丰。' : ''}`,
-      `你与${enemy.title}${enemy.name}的战斗异常激烈，双方都拼尽全力。最终，你凭借更强的实力将其斩杀，但也被其临死反击，损失了 ${hpLoss} 点气血。${hasLoot ? '战斗结束后，你搜刮了战利品。' : ''}`,
-      `你祭出法宝，与${enemy.title}${enemy.name}展开对决。战斗持续了数个回合，法宝的光芒与妖气不断碰撞。最终，你技高一筹，成功将其击杀，但气血也损耗了 ${hpLoss} 点。${hasLoot ? '你在敌人身上找到了一些有价值的物品。' : ''}`,
-      `你施展神通，与${enemy.title}${enemy.name}展开激战。双方你来我往，招式层出不穷。最终，你抓住机会，一剑将其斩杀。虽然耗费了 ${hpLoss} 点气血，但你的实力也在这场战斗中得到了提升。${hasLoot ? '你仔细搜刮了敌人的遗物。' : ''}`,
-    ] : [
-      `你与${enemy.title}${enemy.name}展开了激烈的战斗，但对方的实力远超你的想象。你拼尽全力抵抗，却依然不敌，只得重伤撤离，损失了 ${hpLoss} 点气血。`,
-      `面对强大的${enemy.title}${enemy.name}，你奋力迎战。然而，对方的攻击太过猛烈，你渐渐落入下风。最终，你不得不放弃战斗，带着伤势逃离，损失了 ${hpLoss} 点气血。`,
-      `你与${enemy.title}${enemy.name}的战斗异常艰难。对方的速度和力量都远超你的预期，你虽然拼尽全力，却依然无法战胜。为了保全性命，你只能重伤撤离，损失了 ${hpLoss} 点气血。`,
-      `你祭出法宝与${enemy.title}${enemy.name}交战，但对方的防御力极强，你的攻击无法造成有效伤害。眼看局势不妙，你只得放弃战斗，带着伤势撤离，损失了 ${hpLoss} 点气血。`,
-      `你施展神通与${enemy.title}${enemy.name}对决，但对方的实力深不可测。经过一番苦战，你意识到无法取胜，只得选择撤退，损失了 ${hpLoss} 点气血。`,
-    ];
+    const battleScenarios = victory
+      ? [
+          `经过一番激烈的战斗，你最终将${enemy.title}${enemy.name}斩于剑下。虽然耗费了 ${hpLoss} 点气血，但你成功获得了胜利。${hasLoot ? '你仔细搜刮了敌人的遗物，发现了一些有用的物品。' : ''}`,
+          `你与${enemy.title}${enemy.name}展开了殊死搏斗，剑光与妖气交织。最终，你凭借精湛的剑法将其击败，但也消耗了 ${hpLoss} 点气血。${hasLoot ? '你从敌人身上搜刮到了一些战利品。' : ''}`,
+          `面对${enemy.title}${enemy.name}的疯狂攻击，你沉着应对，运转功法防御。经过一番苦战，你终于找到破绽，将其一击必杀。虽然损失了 ${hpLoss} 点气血，但胜利的喜悦让你忘记了疼痛。${hasLoot ? '你检查了敌人的遗物，收获颇丰。' : ''}`,
+          `你与${enemy.title}${enemy.name}的战斗异常激烈，双方都拼尽全力。最终，你凭借更强的实力将其斩杀，但也被其临死反击，损失了 ${hpLoss} 点气血。${hasLoot ? '战斗结束后，你搜刮了战利品。' : ''}`,
+          `你祭出法宝，与${enemy.title}${enemy.name}展开对决。战斗持续了数个回合，法宝的光芒与妖气不断碰撞。最终，你技高一筹，成功将其击杀，但气血也损耗了 ${hpLoss} 点。${hasLoot ? '你在敌人身上找到了一些有价值的物品。' : ''}`,
+          `你施展神通，与${enemy.title}${enemy.name}展开激战。双方你来我往，招式层出不穷。最终，你抓住机会，一剑将其斩杀。虽然耗费了 ${hpLoss} 点气血，但你的实力也在这场战斗中得到了提升。${hasLoot ? '你仔细搜刮了敌人的遗物。' : ''}`,
+        ]
+      : [
+          `你与${enemy.title}${enemy.name}展开了激烈的战斗，但对方的实力远超你的想象。你拼尽全力抵抗，却依然不敌，只得重伤撤离，损失了 ${hpLoss} 点气血。`,
+          `面对强大的${enemy.title}${enemy.name}，你奋力迎战。然而，对方的攻击太过猛烈，你渐渐落入下风。最终，你不得不放弃战斗，带着伤势逃离，损失了 ${hpLoss} 点气血。`,
+          `你与${enemy.title}${enemy.name}的战斗异常艰难。对方的速度和力量都远超你的预期，你虽然拼尽全力，却依然无法战胜。为了保全性命，你只能重伤撤离，损失了 ${hpLoss} 点气血。`,
+          `你祭出法宝与${enemy.title}${enemy.name}交战，但对方的防御力极强，你的攻击无法造成有效伤害。眼看局势不妙，你只得放弃战斗，带着伤势撤离，损失了 ${hpLoss} 点气血。`,
+          `你施展神通与${enemy.title}${enemy.name}对决，但对方的实力深不可测。经过一番苦战，你意识到无法取胜，只得选择撤退，损失了 ${hpLoss} 点气血。`,
+        ];
 
     // 随机选择一个场景描述
     return battleScenarios[Math.floor(Math.random() * battleScenarios.length)];
   };
 
-  const summary = generateBattleSummary(victory, enemy, hpLoss, lootItems.length > 0, realmName);
+  const summary = generateBattleSummary(
+    victory,
+    enemy,
+    hpLoss,
+    lootItems.length > 0,
+    realmName
+  );
 
   const adventureResult: AdventureResult = {
     story: summary,

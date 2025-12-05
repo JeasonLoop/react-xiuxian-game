@@ -287,12 +287,13 @@ export async function executeAdventureCore({
           let reviveChances: number | undefined = undefined;
 
           // 只有武器和法宝类型的传说/仙品装备可能有保命机会
-          if ((rarity === '传说' || rarity === '仙品') &&
-              (itemType === ItemType.Weapon || itemType === ItemType.Artifact)) {
+          if (
+            (rarity === '传说' || rarity === '仙品') &&
+            (itemType === ItemType.Weapon || itemType === ItemType.Artifact)
+          ) {
             // 传说装备30%概率有保命，仙品装备60%概率有保命
-            const hasRevive = rarity === '传说'
-              ? Math.random() < 0.3
-              : Math.random() < 0.6;
+            const hasRevive =
+              rarity === '传说' ? Math.random() < 0.3 : Math.random() < 0.6;
 
             if (hasRevive) {
               // 随机1-3次保命机会
@@ -512,13 +513,14 @@ export async function executeAdventureCore({
         // 检查是否从itemObtained中已经有保命机会（从battleService生成）
         if ((result.itemObtained as any).reviveChances !== undefined) {
           reviveChances = (result.itemObtained as any).reviveChances;
-        } else if ((rarity === '传说' || rarity === '仙品') &&
-                   (itemType === ItemType.Weapon || itemType === ItemType.Artifact)) {
+        } else if (
+          (rarity === '传说' || rarity === '仙品') &&
+          (itemType === ItemType.Weapon || itemType === ItemType.Artifact)
+        ) {
           // 只有武器和法宝类型的传说/仙品装备可能有保命机会
           // 传说装备30%概率有保命，仙品装备60%概率有保命
-          const hasRevive = rarity === '传说'
-            ? Math.random() < 0.3
-            : Math.random() < 0.6;
+          const hasRevive =
+            rarity === '传说' ? Math.random() < 0.3 : Math.random() < 0.6;
 
           if (hasRevive) {
             // 随机1-3次保命机会
