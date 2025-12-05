@@ -551,12 +551,6 @@ function App() {
       autoMeditate
     )
       return;
-    // if (player.hp < player.maxHp * 0.2) {
-    //   // 如果血量过低，停止自动历练
-    //   setAutoAdventure(false);
-    //   addLog('你身受重伤，自动历练已停止。请先打坐疗伤。', 'danger');
-    //   return;
-    // }
 
     // 生死有命！富贵在天！！！
     const timer = setTimeout(() => {
