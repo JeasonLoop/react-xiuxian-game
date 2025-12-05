@@ -24,7 +24,18 @@ export function useCultivationHandlers({
   addLog,
 }: UseCultivationHandlersProps) {
   const handleLearnArt = (art: CultivationArt) => {
-    if (!player || player.spiritStones < art.cost) {
+    if (!player) {
+      addLog('玩家数据不存在！', 'danger');
+      return;
+    }
+
+    // 检查是否已经学习过
+    if (player.cultivationArts.includes(art.id)) {
+      addLog(`你已经学习过功法【${art.name}】了！`, 'danger');
+      return;
+    }
+
+    if (player.spiritStones < art.cost) {
       addLog('灵石不足！', 'danger');
       return;
     }
@@ -65,6 +76,12 @@ export function useCultivationHandlers({
     }
 
     setPlayer((prev) => {
+      // 再次检查，防止重复学习（双重保险）
+      if (prev.cultivationArts.includes(art.id)) {
+        addLog(`你已经学习过功法【${art.name}】了！`, 'danger');
+        return prev;
+      }
+
       const newStones = prev.spiritStones - art.cost;
 
       const newAttack = prev.attack + (art.effects.attack || 0);
@@ -72,7 +89,10 @@ export function useCultivationHandlers({
       const newMaxHp = prev.maxHp + (art.effects.hp || 0);
       const newHp = prev.hp + (art.effects.hp || 0);
 
-      const newArts = [...prev.cultivationArts, art.id];
+      // 确保不会重复添加
+      const newArts = prev.cultivationArts.includes(art.id)
+        ? prev.cultivationArts
+        : [...prev.cultivationArts, art.id];
 
       let newActiveId = prev.activeArtId;
       if (!newActiveId && art.type === 'mental') {
