@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Talent } from '../types';
 import { TALENTS } from '../constants';
-import { Sparkles, Sword, Shield, Heart, Zap, User } from 'lucide-react';
-import { showError } from '../utils/toastUtils';
+import { Sparkles, Sword, Shield, Heart, Zap, User, Upload } from 'lucide-react';
+import { showError, showSuccess } from '../utils/toastUtils';
+import { SAVE_KEY } from '../utils/gameUtils';
 
 interface Props {
   onStart: (playerName: string, talentId: string) => void;
@@ -11,6 +12,7 @@ interface Props {
 const StartScreen: React.FC<Props> = ({ onStart }) => {
   const [playerName, setPlayerName] = useState('');
   const [selectedTalentId, setSelectedTalentId] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 只在组件首次加载时随机生成一个天赋（使用useMemo确保只执行一次）
   const initialRandomTalentId = useMemo(() => {
@@ -30,6 +32,88 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
       return;
     }
     onStart(playerName.trim(), finalTalentId);
+  };
+
+  const handleImportSave = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // 支持 .json 和 .txt 文件
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.json') && !fileName.endsWith('.txt')) {
+      showError('请选择 .json 或 .txt 格式的存档文件！');
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      let saveData;
+
+      // 尝试解析JSON
+      try {
+        saveData = JSON.parse(text);
+      } catch (parseError) {
+        showError('存档文件格式错误！请确保文件内容是有效的JSON格式。');
+        console.error('JSON解析错误:', parseError);
+        return;
+      }
+
+      // 验证存档数据结构
+      if (!saveData || typeof saveData !== 'object') {
+        showError('存档文件格式不正确！文件内容必须是有效的JSON对象。');
+        return;
+      }
+
+      if (!saveData.player || typeof saveData.player !== 'object') {
+        showError('存档文件格式不正确！缺少必要的玩家数据。');
+        return;
+      }
+
+      if (!Array.isArray(saveData.logs)) {
+        showError('存档文件格式不正确！日志数据必须是数组格式。');
+        return;
+      }
+
+      // 显示存档信息预览
+      const playerName = saveData.player.name || '未知';
+      const realm = saveData.player.realm || '未知';
+      const timestamp = saveData.timestamp
+        ? new Date(saveData.timestamp).toLocaleString('zh-CN')
+        : '未知';
+
+      // 确认导入
+      if (
+        !window.confirm(
+          `确定要导入此存档吗？\n\n玩家名称: ${playerName}\n境界: ${realm}\n保存时间: ${timestamp}\n\n当前存档将被替换，页面将自动刷新。`
+        )
+      ) {
+        return;
+      }
+
+      // 保存到localStorage
+      localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+
+      // 提示并刷新页面
+      showSuccess('存档导入成功！页面即将刷新...', undefined, () => {
+        window.location.reload();
+      });
+    } catch (error) {
+      console.error('导入存档失败:', error);
+      showError(
+        `导入存档失败！错误信息: ${error instanceof Error ? error.message : '未知错误'}，请检查文件格式是否正确。`
+      );
+    }
+
+    // 清空文件输入，以便可以重复选择同一文件
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
   };
 
   const getRarityColor = (rarity: string) => {
@@ -162,6 +246,15 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
             </p>
           </div>
 
+          {/* 隐藏的文件输入 */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,.txt"
+            onChange={handleImportSave}
+            className="hidden"
+          />
+
           {/* 开始按钮 */}
           <button
             onClick={handleStart}
@@ -170,6 +263,15 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
           >
             <Sparkles size={20} className="md:w-6 md:h-6" />
             开始修仙之旅
+          </button>
+
+          {/* 导入存档按钮 */}
+          <button
+            onClick={handleImportClick}
+            className="w-full py-2.5 md:py-3 bg-gradient-to-r from-stone-500 to-stone-600 active:from-stone-600 active:to-stone-500 text-stone-200 font-bold text-sm md:text-base rounded-lg transition-all duration-300 shadow-lg active:shadow-xl flex items-center justify-center gap-2 min-h-[48px] md:min-h-0 touch-manipulation border border-stone-500"
+          >
+            <Upload size={18} className="md:w-5 md:h-5" />
+            导入存档
           </button>
         </div>
       </div>

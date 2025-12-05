@@ -1,6 +1,8 @@
-import React from 'react';
-import { Sparkles, Play } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Sparkles, Play, Upload } from 'lucide-react';
 import logo from '../assets/images/logo.png';
+import { SAVE_KEY } from '../utils/gameUtils';
+import { showError, showSuccess } from '../utils/toastUtils';
 
 interface Props {
   hasSave: boolean;
@@ -9,6 +11,90 @@ interface Props {
 }
 
 const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportSave = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // 支持 .json 和 .txt 文件
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.json') && !fileName.endsWith('.txt')) {
+      showError('请选择 .json 或 .txt 格式的存档文件！');
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      let saveData;
+
+      // 尝试解析JSON
+      try {
+        saveData = JSON.parse(text);
+      } catch (parseError) {
+        showError('存档文件格式错误！请确保文件内容是有效的JSON格式。');
+        console.error('JSON解析错误:', parseError);
+        return;
+      }
+
+      // 验证存档数据结构
+      if (!saveData || typeof saveData !== 'object') {
+        showError('存档文件格式不正确！文件内容必须是有效的JSON对象。');
+        return;
+      }
+
+      if (!saveData.player || typeof saveData.player !== 'object') {
+        showError('存档文件格式不正确！缺少必要的玩家数据。');
+        return;
+      }
+
+      if (!Array.isArray(saveData.logs)) {
+        showError('存档文件格式不正确！日志数据必须是数组格式。');
+        return;
+      }
+
+      // 显示存档信息预览
+      const playerName = saveData.player.name || '未知';
+      const realm = saveData.player.realm || '未知';
+      const timestamp = saveData.timestamp
+        ? new Date(saveData.timestamp).toLocaleString('zh-CN')
+        : '未知';
+
+      // 确认导入
+      if (
+        !window.confirm(
+          `确定要导入此存档吗？\n\n玩家名称: ${playerName}\n境界: ${realm}\n保存时间: ${timestamp}\n\n当前存档将被替换，页面将自动刷新。`
+        )
+      ) {
+        return;
+      }
+
+      // 保存到localStorage
+      localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+
+      // 提示并刷新页面
+      showSuccess('存档导入成功！页面即将刷新...', undefined, () => {
+        window.location.reload();
+      });
+    } catch (error) {
+      console.error('导入存档失败:', error);
+      showError(
+        `导入存档失败！错误信息: ${error instanceof Error ? error.message : '未知错误'}，请检查文件格式是否正确。`
+      );
+    }
+
+    // 清空文件输入，以便可以重复选择同一文件
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 flex items-center justify-center z-50 overflow-hidden touch-manipulation">
       {/* 背景装饰 */}
@@ -58,6 +144,15 @@ const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
           className="animate-fade-in flex flex-col gap-2 sm:gap-3 md:gap-4 w-full max-w-xs sm:max-w-sm md:max-w-md px-4 sm:px-0"
           style={{ animationDelay: '0.4s' }}
         >
+          {/* 隐藏的文件输入 */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,.txt"
+            onChange={handleImportSave}
+            className="hidden"
+          />
+
           {hasSave ? (
             // 有存档：显示继续游戏和新游戏按钮
             <>
@@ -89,22 +184,50 @@ const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
                 />
                 <span className="relative z-10 whitespace-nowrap">新游戏</span>
               </button>
+              <button
+                onClick={handleImportClick}
+                className="group relative px-4 sm:px-6 md:px-8 lg:px-12 py-2.5 sm:py-3 md:py-4 lg:py-5 bg-gradient-to-r from-stone-500 to-stone-600 text-stone-200 font-bold text-xs sm:text-sm md:text-base lg:text-lg rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 flex items-center justify-center gap-2 sm:gap-3 min-h-[45px] sm:min-h-[50px] md:min-h-[55px] lg:min-h-[60px] touch-manipulation overflow-hidden border border-stone-500"
+              >
+                {/* 按钮光效 */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+
+                <Upload
+                  size={18}
+                  className="sm:w-5 sm:h-5 md:w-6 md:h-6 relative z-10 flex-shrink-0"
+                />
+                <span className="relative z-10 whitespace-nowrap">导入存档</span>
+              </button>
             </>
           ) : (
-            // 没有存档：显示开始游戏按钮
-            <button
-              onClick={onStart}
-              className="group relative px-4 sm:px-6 md:px-8 lg:px-12 py-3 sm:py-3.5 md:py-4 lg:py-5 bg-gradient-to-r from-mystic-gold to-yellow-600 text-stone-900 font-bold text-sm sm:text-base md:text-lg lg:text-xl rounded-lg transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 active:scale-95 flex items-center justify-center gap-2 sm:gap-3 min-h-[50px] sm:min-h-[55px] md:min-h-[60px] lg:min-h-[70px] touch-manipulation overflow-hidden"
-            >
-              {/* 按钮光效 */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+            // 没有存档：显示开始游戏和导入存档按钮
+            <>
+              <button
+                onClick={onStart}
+                className="group relative px-4 sm:px-6 md:px-8 lg:px-12 py-3 sm:py-3.5 md:py-4 lg:py-5 bg-gradient-to-r from-mystic-gold to-yellow-600 text-stone-900 font-bold text-sm sm:text-base md:text-lg lg:text-xl rounded-lg transition-all duration-300 shadow-lg hover:shadow-2xl hover:scale-105 active:scale-95 flex items-center justify-center gap-2 sm:gap-3 min-h-[50px] sm:min-h-[55px] md:min-h-[60px] lg:min-h-[70px] touch-manipulation overflow-hidden"
+              >
+                {/* 按钮光效 */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
 
-              <Sparkles
-                size={20}
-                className="sm:w-6 sm:h-6 md:w-7 md:h-7 relative z-10 flex-shrink-0"
-              />
-              <span className="relative z-10 whitespace-nowrap">开始游戏</span>
-            </button>
+                <Sparkles
+                  size={20}
+                  className="sm:w-6 sm:h-6 md:w-7 md:h-7 relative z-10 flex-shrink-0"
+                />
+                <span className="relative z-10 whitespace-nowrap">开始游戏</span>
+              </button>
+              <button
+                onClick={handleImportClick}
+                className="group relative px-4 sm:px-6 md:px-8 lg:px-12 py-2.5 sm:py-3 md:py-4 lg:py-5 bg-gradient-to-r from-stone-500 to-stone-600 text-stone-200 font-bold text-xs sm:text-sm md:text-base lg:text-lg rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 flex items-center justify-center gap-2 sm:gap-3 min-h-[45px] sm:min-h-[50px] md:min-h-[55px] lg:min-h-[60px] touch-manipulation overflow-hidden border border-stone-500"
+              >
+                {/* 按钮光效 */}
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+
+                <Upload
+                  size={18}
+                  className="sm:w-5 sm:h-5 md:w-6 md:h-6 relative z-10 flex-shrink-0"
+                />
+                <span className="relative z-10 whitespace-nowrap">导入存档</span>
+              </button>
+            </>
           )}
         </div>
       </div>
