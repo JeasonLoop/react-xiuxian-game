@@ -67,45 +67,48 @@ const EquipmentPanel: React.FC<Props> = ({ equippedItems, inventory, player, onU
           return (
             <div
               key={slot}
-              className={`relative border-2 rounded-lg p-3 min-h-[100px] flex flex-col ${
+              className={`relative border-2 rounded-lg p-2.5 h-[150px] flex flex-col ${
                 item ? getRarityColor(rarity) : 'border-stone-700 bg-stone-800/50'
               }`}
             >
-              <div className="text-xs text-stone-400 mb-2">{label}</div>
+              <div className="text-[10px] text-stone-400 mb-1.5 shrink-0">{label}</div>
 
               {item ? (
                 <>
-                  <div className="flex-1">
-                    <div className="font-bold text-sm mb-1 text-stone-200">
+                  <div className="flex-1 min-h-0 flex flex-col">
+                    <div className="font-bold text-xs mb-0.5 text-stone-200 line-clamp-1">
                       {item.name}
                       {showLevel && (
-                        <span className="text-xs text-stone-500 ml-1">+{item.level}</span>
+                        <span className="text-[10px] text-stone-500 ml-1">+{item.level}</span>
                       )}
                     </div>
-                    <div className="text-xs text-stone-400 mb-2">{rarity}</div>
+                    <div className="text-[10px] text-stone-400 mb-0.5 shrink-0">{rarity}</div>
                     {reviveChances !== undefined && reviveChances > 0 && (
-                      <div className="text-xs text-yellow-400 mb-1 font-bold">
-                        💫 保命 {reviveChances}次
+                      <div className="text-[10px] text-yellow-400 mb-0.5 font-bold shrink-0">
+                        💫 {reviveChances}次
                       </div>
                     )}
                     {reviveChances !== undefined && reviveChances <= 0 && (
-                      <div className="text-[11px] text-stone-500 mb-1">
-                        💫 保命已耗尽
+                      <div className="text-[9px] text-stone-500 mb-0.5 shrink-0">
+                        💫 已耗尽
                       </div>
                     )}
                     {stats && (
-                      <div className="text-xs space-y-0.5">
-                        {stats.attack > 0 && <div className="text-red-400">攻 +{stats.attack}</div>}
-                        {stats.defense > 0 && <div className="text-blue-400">防 +{stats.defense}</div>}
-                        {stats.hp > 0 && <div className="text-green-400">血 +{stats.hp}</div>}
+                      <div className="text-[10px] leading-tight space-y-0.5 flex-1 min-h-0 overflow-y-auto">
+                        {stats.attack > 0 && <div className="text-red-400">攻+{stats.attack}</div>}
+                        {stats.defense > 0 && <div className="text-blue-400">防+{stats.defense}</div>}
+                        {stats.hp > 0 && <div className="text-green-400">血+{stats.hp}</div>}
+                        {stats.spirit > 0 && <div className="text-purple-400">识+{stats.spirit}</div>}
+                        {stats.physique > 0 && <div className="text-yellow-400">体+{stats.physique}</div>}
+                        {stats.speed > 0 && <div className="text-cyan-400">速+{stats.speed}</div>}
                       </div>
                     )}
                   </div>
                   <button
                     onClick={() => onUnequip(slot)}
-                    className="mt-2 w-full px-2 py-1 bg-stone-700 hover:bg-stone-600 text-stone-200 text-xs rounded transition-colors flex items-center justify-center gap-1"
+                    className="mt-1.5 w-full px-1.5 py-0.5 bg-stone-700 hover:bg-stone-600 text-stone-200 text-[10px] rounded transition-colors flex items-center justify-center gap-1 shrink-0"
                   >
-                    <X size={12} />
+                    <X size={10} />
                     卸下
                   </button>
                 </>
