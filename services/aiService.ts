@@ -305,8 +305,7 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
           9. 发现灵泉（获得灵气）
           10. 拯救灵兽（获得灵宠）
           11. 【灵宠机缘】灵宠在历练中获得机缘（提升等级、进化、提升属性、获得经验）
-          12. 运气好,捡到若干抽奖券(获得抽奖券)
-          13. 极小概率获得传承(获得传承,可以直接突破1-4个境界)
+          12. 极小概率获得传承(获得传承,可以直接突破1-4个境界)
           14. 【危险】遭遇邪修或魔修（可能受伤、被抢走灵石、修为降低）
           15. 【危险】触发陷阱（可能受伤、属性降低、修为降低）
           16. 【特殊】触发随机秘境（进入秘境后触发新的随机事件，风险和收益都更高）
@@ -316,8 +315,8 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
           大部分时间是普通事件，小概率出现危险或惊喜。
           物品稀有度：${Math.max(0, 60 - realmIndex * 10)}%普通，${Math.min(30 + realmIndex * 5, 50)}%稀有，${Math.min(realmIndex * 3, 20)}%传说。
           修为奖励：${Math.floor(10 * realmMultiplier)}-${Math.floor(100 * realmMultiplier)}，灵石奖励：${Math.floor(5 * realmMultiplier)}-${Math.floor(50 * realmMultiplier)}。
-          抽奖券奖励：${Math.floor(1 * realmMultiplier)}-${Math.floor(10 * realmMultiplier)}。
           传承奖励：${Math.floor(1 * realmMultiplier)}-${Math.floor(4 * realmMultiplier)}。
+          注意：抽奖券奖励已改为本地概率判定，AI不需要返回lotteryTicketsChange字段。
 
           【场景描述多样化要求（非常重要）】
           每次历练的场景描述必须不同，避免单调重复。描述应该生动详细，包含环境、动作、事件细节。

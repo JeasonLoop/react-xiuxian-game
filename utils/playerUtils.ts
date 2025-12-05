@@ -46,7 +46,7 @@ export const createInitialPlayer = (
     achievements: [],
     pets: [],
     activePetId: null,
-    lotteryTickets: 3,
+    lotteryTickets: 10, // 开局十连抽
     lotteryCount: 0,
     inheritanceLevel: 0,
     dailyTaskCount: {

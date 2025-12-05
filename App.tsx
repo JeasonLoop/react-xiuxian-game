@@ -280,7 +280,11 @@ function App() {
 
   // 检测死亡
   useEffect(() => {
-    if (!player || isDead) return;
+    if (!player) return;
+    if (isDead) {
+      localStorage.removeItem(SAVE_KEY);
+      return;
+    }
 
     if (player.hp <= 0) {
       // 检查是否有保命装备
