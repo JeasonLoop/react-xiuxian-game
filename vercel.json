@@ -1,7 +1,10 @@
 {
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
   "rewrites": [
     {
-      "source": "/api/v1/chat/completions",
+      "source": "/api/v4/chat/completions",
       "destination": "/api/proxy"
     }
   ]

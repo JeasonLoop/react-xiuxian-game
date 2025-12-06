@@ -116,7 +116,7 @@ export function useShopHandlers({
     });
   };
 
-  const handleSellItem = (item: Item) => {
+  const handleSellItem = (item: Item, quantity?: number) => {
     if (!currentShop) return;
 
     setPlayer((prev) => {
@@ -131,19 +131,33 @@ export function useShopHandlers({
       const shopItem = currentShop.items.find((si) => si.name === item.name);
       const sellPrice = shopItem?.sellPrice || calculateItemSellPrice(item);
 
+      // 确定要出售的数量（默认为1，但不超过物品的实际数量）
+      const sellQuantity = quantity !== undefined
+        ? Math.min(quantity, item.quantity)
+        : 1;
+
+      if (sellQuantity <= 0) return prev;
+
+      const totalPrice = sellPrice * sellQuantity;
+
       const newInv = prev.inventory
         .map((i) => {
           if (i.id === item.id) {
-            return { ...i, quantity: i.quantity - 1 };
+            return { ...i, quantity: i.quantity - sellQuantity };
           }
           return i;
         })
         .filter((i) => i.quantity > 0);
 
-      addLog(`你出售了 ${item.name}，获得 ${sellPrice} 灵石。`, 'gain');
+      if (sellQuantity === 1) {
+        addLog(`你出售了 ${item.name}，获得 ${sellPrice} 灵石。`, 'gain');
+      } else {
+        addLog(`你出售了 ${item.name} x${sellQuantity}，获得 ${totalPrice} 灵石。`, 'gain');
+      }
+
       return {
         ...prev,
-        spiritStones: prev.spiritStones + sellPrice,
+        spiritStones: prev.spiritStones + totalPrice,
         inventory: newInv,
       };
     });

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
   BookOpen,
   Backpack,
@@ -8,6 +8,7 @@ import {
   Gift,
   Settings,
   Menu,
+  Bug,
 } from 'lucide-react';
 import { PlayerStats } from '../types';
 
@@ -35,6 +36,8 @@ interface GameHeaderProps {
   onOpenPet: () => void;
   onOpenLottery: () => void;
   onOpenSettings: () => void;
+  onOpenDebug?: () => void;
+  isDebugModeEnabled?: boolean;
 }
 
 function GameHeader({
@@ -47,7 +50,13 @@ function GameHeader({
   onOpenPet,
   onOpenLottery,
   onOpenSettings,
+  onOpenDebug,
+  isDebugModeEnabled = false,
 }: GameHeaderProps) {
+  const [clickCount, setClickCount] = useState(0);
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const appVersion = import.meta.env.VITE_APP_VERSION || '0.1.1';
+
   const newAchievements = useMemo(
     () =>
       player.achievements.filter((a) => !player.viewedAchievements.includes(a)),
@@ -66,11 +75,59 @@ function GameHeader({
     [player.lotteryTickets]
   );
 
+  // 处理游戏名称点击
+  const handleTitleClick = () => {
+    // 清除之前的超时
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current);
+    }
+
+    const newCount = clickCount + 1;
+    setClickCount(newCount);
+
+    // 如果达到5次，启用调试模式
+    if (newCount >= 5) {
+      const DEBUG_MODE_KEY = 'xiuxian-debug-mode';
+      localStorage.setItem(DEBUG_MODE_KEY, 'true');
+      setClickCount(0);
+      // 触发页面刷新以应用调试模式
+      window.location.reload();
+    } else {
+      // 设置超时，2秒内没有继续点击则重置计数
+      clickTimeoutRef.current = setTimeout(() => {
+        setClickCount(0);
+      }, 2000);
+    }
+  };
+
+  // 清理超时
+  useEffect(() => {
+    return () => {
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <header className="bg-paper-800 p-2 md:p-4 border-b border-stone-700 flex justify-between items-center shadow-lg z-10">
-      <h1 className="text-base md:text-xl font-serif text-mystic-gold tracking-widest">
-        云灵修仙
-      </h1>
+      <div className="flex items-center gap-3">
+        <h1
+          onClick={handleTitleClick}
+          className="text-base md:text-xl font-serif text-mystic-gold tracking-widest cursor-pointer select-none hover:opacity-80 transition-opacity"
+          title={
+            clickCount > 0 ? `点击 ${5 - clickCount} 次进入调试模式` : undefined
+          }
+        >
+          云灵修仙
+        </h1>
+        <span
+          className="text-xs md:text-sm text-stone-400 font-mono px-2 py-1 bg-stone-800 rounded border border-stone-700"
+          title="当前版本"
+        >
+          v{appVersion}
+        </span>
+      </div>
       {/* Mobile Menu Button */}
       <button
         onClick={onOpenMenu}
@@ -144,6 +201,16 @@ function GameHeader({
           <Settings size={18} />
           <span>设置</span>
         </button>
+        {isDebugModeEnabled && onOpenDebug && (
+          <button
+            onClick={onOpenDebug}
+            className="flex items-center gap-2 px-3 py-2 bg-red-800 hover:bg-red-700 rounded border border-red-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
+            title="调试模式"
+          >
+            <Bug size={18} />
+            <span>调试</span>
+          </button>
+        )}
       </div>
     </header>
   );

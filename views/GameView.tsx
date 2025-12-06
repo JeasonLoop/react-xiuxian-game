@@ -79,12 +79,14 @@ interface GameViewProps {
     onOpenLottery: () => void;
     onOpenSettings: () => void;
     onOpenStats: () => void;
+    onOpenDebug?: () => void;
     onUpdateViewedAchievements: () => void;
     autoMeditate: boolean;
     autoAdventure: boolean;
     onToggleAutoMeditate: () => void;
     onToggleAutoAdventure: () => void;
   };
+  isDebugModeEnabled?: boolean;
 }
 
 function GameView({
@@ -100,6 +102,7 @@ function GameView({
   isMobileStatsOpen,
   modals,
   handlers,
+  isDebugModeEnabled = false,
 }: GameViewProps) {
   // 缓存成就数量计算
   const achievementCount = useMemo(
@@ -136,6 +139,8 @@ function GameView({
           onOpenPet={handlers.onOpenPet}
           onOpenLottery={handlers.onOpenLottery}
           onOpenSettings={handlers.onOpenSettings}
+          onOpenDebug={handlers.onOpenDebug}
+          isDebugModeEnabled={isDebugModeEnabled}
         />
 
         <LogPanel logs={logs} className="pb-[23rem] md:pb-0" />
@@ -186,6 +191,8 @@ function GameView({
         onOpenPet={handlers.onOpenPet}
         onOpenLottery={handlers.onOpenLottery}
         onOpenSettings={handlers.onOpenSettings}
+        onOpenDebug={handlers.onOpenDebug}
+        isDebugModeEnabled={isDebugModeEnabled}
         achievementCount={achievementCount}
         petCount={petCount}
         lotteryTickets={lotteryTickets}

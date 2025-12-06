@@ -37,7 +37,13 @@ interface UseAdventureHandlersProps {
   cooldown: number;
   onOpenShop: (shopType: ShopType) => void;
   onOpenBattleModal: (replay: BattleReplay) => void;
+  onOpenTurnBasedBattle?: (params: {
+    adventureType: AdventureType;
+    riskLevel?: '低' | '中' | '高' | '极度危险';
+    realmMinRealm?: RealmType;
+  }) => void; // 打开回合制战斗
   skipBattle?: boolean; // 是否跳过战斗（自动模式下）
+  useTurnBasedBattle?: boolean; // 是否使用回合制战斗系统
 }
 
 export function useAdventureHandlers({
@@ -51,7 +57,9 @@ export function useAdventureHandlers({
   cooldown,
   onOpenShop,
   onOpenBattleModal,
+  onOpenTurnBasedBattle,
   skipBattle = false,
+  useTurnBasedBattle = true, // 默认使用新的回合制战斗系统
 }: UseAdventureHandlersProps) {
   const executeAdventure = async (
     adventureType: AdventureType,
@@ -75,8 +83,22 @@ export function useAdventureHandlers({
       let result;
       let battleContext: BattleReplay | null = null;
 
+      let battleResolution: Awaited<ReturnType<typeof resolveBattleEncounter>> | undefined;
+
       if (shouldTriggerBattle(player, adventureType)) {
-        const battleResolution = await resolveBattleEncounter(
+        // 如果使用回合制战斗系统，打开回合制战斗界面
+        if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
+          onOpenTurnBasedBattle({
+            adventureType,
+            riskLevel,
+            realmMinRealm,
+          });
+          setLoading(false);
+          return; // 回合制战斗会在战斗结束后通过回调更新玩家状态
+        }
+
+        // 否则使用旧的自动战斗系统
+        battleResolution = await resolveBattleEncounter(
           player,
           adventureType,
           riskLevel,
@@ -91,6 +113,7 @@ export function useAdventureHandlers({
       await executeAdventureCore({
         result,
         battleContext,
+        petSkillCooldowns: battleResolution?.petSkillCooldowns,
         player,
         setPlayer,
         addLog,

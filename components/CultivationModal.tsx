@@ -1,5 +1,5 @@
-import React from 'react';
-import { CultivationArt, RealmType, PlayerStats } from '../types';
+import React, { useState, useMemo, useRef } from 'react';
+import { CultivationArt, RealmType, PlayerStats, ArtGrade } from '../types';
 import { CULTIVATION_ARTS, REALM_ORDER } from '../constants';
 import { X, BookOpen, Check, Lock, Zap } from 'lucide-react';
 
@@ -18,9 +18,67 @@ const CultivationModal: React.FC<Props> = ({
   onLearnArt,
   onActivateArt,
 }) => {
-  if (!isOpen) return null;
+  const [gradeFilter, setGradeFilter] = useState<ArtGrade | 'all'>('all');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'mental' | 'body'>('all');
+  const [learningArtId, setLearningArtId] = useState<string | null>(null); // 防止重复点击
+  const learningArtIdRef = useRef<string | null>(null); // 同步检查用
 
   const getRealmIndex = (r: RealmType) => REALM_ORDER.indexOf(r);
+
+  // 处理学习功法的点击，确保传递正确的 art 对象
+  const handleLearnClick = (art: CultivationArt, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // 防止重复点击（双重检查）
+    if (learningArtIdRef.current === art.id || learningArtId === art.id) {
+      return;
+    }
+
+    // 检查是否已经学习过
+    if (player.cultivationArts.includes(art.id)) {
+      return;
+    }
+
+    learningArtIdRef.current = art.id;
+    setLearningArtId(art.id);
+    onLearnArt(art);
+
+    // 500ms 后重置，允许再次点击（如果需要）
+    setTimeout(() => {
+      learningArtIdRef.current = null;
+      setLearningArtId(null);
+    }, 500);
+  };
+
+  // 过滤功法 - 必须在条件返回之前调用
+  const filteredArts = useMemo(() => {
+    const learnedSet = new Set(player.cultivationArts);
+
+    return CULTIVATION_ARTS.filter((art) => {
+      // 兼容性处理：如果功法没有 grade 字段，默认显示
+      const artGrade = art.grade || '黄';
+      if (gradeFilter !== 'all' && artGrade !== gradeFilter) return false;
+      if (typeFilter !== 'all' && art.type !== typeFilter) return false;
+      return true;
+    })
+      .map((art, idx) => ({ art, idx }))
+      .sort((a, b) => {
+        const aActive = player.activeArtId === a.art.id;
+        const bActive = player.activeArtId === b.art.id;
+        if (aActive !== bActive) return aActive ? -1 : 1; // 已激活在最前
+
+        const aLearned = learnedSet.has(a.art.id);
+        const bLearned = learnedSet.has(b.art.id);
+        if (aLearned !== bLearned) return aLearned ? -1 : 1; // 已学习排在已获得前
+
+        return a.idx - b.idx; // 保持原有次序
+      })
+      .map((item) => item.art);
+  }, [gradeFilter, typeFilter, player.cultivationArts, player.activeArtId]);
+
+  // 必须在所有 hooks 之后才能有条件返回
+  if (!isOpen) return null;
 
   return (
     <div
@@ -49,16 +107,70 @@ const CultivationModal: React.FC<Props> = ({
             <p>体术：辅修功法，习得后永久提升身体属性。</p>
           </div>
 
+          {/* 筛选器 */}
+          <div className="mb-4 space-y-2">
+            <div className="flex flex-wrap gap-2">
+              <span className="text-xs text-stone-400 self-center">品级筛选：</span>
+              {(['all', '天', '地', '玄', '黄'] as const).map((grade) => (
+                <button
+                  key={grade}
+                  onClick={() => setGradeFilter(grade === 'all' ? 'all' : grade)}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    gradeFilter === grade
+                      ? grade === '天'
+                        ? 'bg-yellow-700 text-yellow-200'
+                        : grade === '地'
+                        ? 'bg-purple-700 text-purple-200'
+                        : grade === '玄'
+                        ? 'bg-blue-700 text-blue-200'
+                        : grade === '黄'
+                        ? 'bg-stone-700 text-stone-200'
+                        : 'bg-mystic-jade text-white'
+                      : 'bg-stone-700 text-stone-400 hover:bg-stone-600'
+                  }`}
+                >
+                  {grade === 'all' ? '全部' : `${grade}品`}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <span className="text-xs text-stone-400 self-center">类型筛选：</span>
+              {(['all', 'mental', 'body'] as const).map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setTypeFilter(type)}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    typeFilter === type
+                      ? type === 'mental'
+                        ? 'bg-blue-700 text-blue-200'
+                        : type === 'body'
+                        ? 'bg-red-700 text-red-200'
+                        : 'bg-mystic-jade text-white'
+                      : 'bg-stone-700 text-stone-400 hover:bg-stone-600'
+                  }`}
+                >
+                  {type === 'all' ? '全部' : type === 'mental' ? '心法' : '体术'}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-3 md:gap-4">
-            {CULTIVATION_ARTS.map((art) => {
-              const isLearned = player.cultivationArts.includes(art.id);
-              const isActive = player.activeArtId === art.id;
-              const canLearn =
-                !isLearned &&
-                player.spiritStones >= art.cost &&
-                getRealmIndex(player.realm) >=
-                  getRealmIndex(art.realmRequirement);
-              const locked = !isLearned && !canLearn;
+            {filteredArts.length === 0 ? (
+              <div className="text-center text-stone-400 py-8">
+                没有符合条件的功法
+              </div>
+            ) : (
+              filteredArts.map((art) => {
+                if (!art) return null; // 安全处理
+                const isLearned = player.cultivationArts.includes(art.id);
+                const isActive = player.activeArtId === art.id;
+                const canLearn =
+                  !isLearned &&
+                  player.spiritStones >= art.cost &&
+                  getRealmIndex(player.realm) >=
+                    getRealmIndex(art.realmRequirement);
+                const locked = !isLearned && !canLearn;
 
               return (
                 <div
@@ -76,6 +188,19 @@ const CultivationModal: React.FC<Props> = ({
                       >
                         {art.name}
                       </h4>
+                      <span
+                        className={`text-[10px] md:text-xs px-1.5 py-0.5 rounded border font-bold ${
+                          (art.grade || '黄') === '天'
+                            ? 'border-yellow-500 text-yellow-300 bg-yellow-900/30'
+                            : (art.grade || '黄') === '地'
+                            ? 'border-purple-500 text-purple-300 bg-purple-900/30'
+                            : (art.grade || '黄') === '玄'
+                            ? 'border-blue-500 text-blue-300 bg-blue-900/30'
+                            : 'border-stone-500 text-stone-300 bg-stone-800/30'
+                        }`}
+                      >
+                        {art.grade || '黄'}品
+                      </span>
                       <span
                         className={`text-[10px] md:text-xs px-1.5 py-0.5 rounded border ${art.type === 'mental' ? 'border-blue-800 text-blue-300 bg-blue-900/20' : 'border-red-800 text-red-300 bg-red-900/20'}`}
                       >
@@ -170,12 +295,12 @@ const CultivationModal: React.FC<Props> = ({
                       )
                     ) : (
                       <button
-                        onClick={() => onLearnArt(art)}
-                        disabled={locked}
+                        onClick={(e) => handleLearnClick(art, e)}
+                        disabled={locked || learningArtId === art.id}
                         className={`
                           px-4 py-2 rounded text-xs md:text-sm font-serif transition-all flex items-center gap-1 min-h-[44px] md:min-h-0 touch-manipulation
                           ${
-                            locked
+                            locked || learningArtId === art.id
                               ? 'bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700'
                               : 'bg-mystic-jade/20 text-mystic-jade border border-mystic-jade active:bg-mystic-jade/30'
                           }
@@ -188,7 +313,8 @@ const CultivationModal: React.FC<Props> = ({
                   </div>
                 </div>
               );
-            })}
+              })
+            )}
           </div>
         </div>
       </div>

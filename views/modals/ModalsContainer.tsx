@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayerStats, Shop, GameSettings, Item } from '../../types';
+import { PlayerStats, Shop, GameSettings, Item, ShopItem, RealmType } from '../../types';
 import InventoryModal from '../../components/InventoryModal';
 import CultivationModal from '../../components/CultivationModal';
 import AlchemyModal from '../../components/AlchemyModal';
@@ -7,6 +7,7 @@ import ArtifactUpgradeModal from '../../components/ArtifactUpgradeModal';
 import SectModal from '../../components/SectModal';
 import SecretRealmModal from '../../components/SecretRealmModal';
 import BattleModal from '../../components/BattleModal';
+import TurnBasedBattleModal from '../../components/TurnBasedBattleModal';
 import CharacterModal from '../../components/CharacterModal';
 import AchievementModal from '../../components/AchievementModal';
 import PetModal from '../../components/PetModal';
@@ -45,12 +46,18 @@ interface ModalsContainerProps {
     isSettingsOpen: boolean;
     isShopOpen: boolean;
     isBattleModalOpen: boolean;
+    isTurnBasedBattleOpen?: boolean;
   };
   modalState: {
     currentShop: Shop | null;
     itemToUpgrade: Item | null;
     battleReplay: BattleReplay | null;
     revealedBattleRounds: number;
+    turnBasedBattleParams?: {
+      adventureType: 'normal' | 'lucky' | 'secret_realm';
+      riskLevel?: '低' | '中' | '高' | '极度危险';
+      realmMinRealm?: RealmType;
+    } | null;
   };
   handlers: {
     // Modal toggles
@@ -83,6 +90,7 @@ interface ModalsContainerProps {
     handleOpenUpgrade: (item: Item) => void;
     handleDiscardItem: (item: Item) => void;
     handleBatchDiscard: (itemIds: string[]) => void;
+    handleBatchUse?: (itemIds: string[]) => void;
     handleRefineNatalArtifact: (item: Item) => void;
     handleUnrefineNatalArtifact: () => void;
     handleUpgradeItem: (item: Item, costStones: number, costMats: number, upgradeStones?: number) => Promise<'success' | 'failure' | 'error'>;
@@ -94,7 +102,8 @@ interface ModalsContainerProps {
     // Sect
     handleJoinSect: (sectId: string, sectName?: string) => void;
     handleLeaveSect: () => void;
-    handleSectTask: (task: RandomSectTask) => void;
+    handleSafeLeaveSect: () => void;
+    handleSectTask: (task: RandomSectTask, encounterResult?: any) => void;
     handleSectPromote: () => void;
     handleSectBuy: (
       itemTemplate: Partial<Item>,
@@ -106,24 +115,50 @@ interface ModalsContainerProps {
     // Character
     handleSelectTalent: (talentId: string) => void;
     handleSelectTitle: (titleId: string) => void;
-    handleAllocateAttribute: (type: 'attack' | 'defense' | 'hp') => void;
+    handleAllocateAttribute: (
+      type: 'attack' | 'defense' | 'hp' | 'spirit' | 'physique' | 'speed'
+    ) => void;
     handleUseInheritance: () => void;
     handleUpdateViewedAchievements: () => void;
     // Pet
     handleActivatePet: (petId: string) => void;
+    handleDeactivatePet?: () => void;
     handleFeedPet: (
       petId: string,
       feedType: 'hp' | 'item' | 'exp',
       itemId?: string
     ) => void;
+    handleBatchFeedItems?: (petId: string, itemIds: string[]) => void;
     handleEvolvePet: (petId: string) => void;
+    handleReleasePet?: (petId: string) => void;
+    handleBatchReleasePets?: (petIds: string[]) => void;
     // Lottery
     handleDraw: (count: 1 | 10) => void;
     // Settings
     handleUpdateSettings: (newSettings: Partial<GameSettings>) => void;
     // Shop
     handleBuyItem: (shopItem: any, quantity?: number) => void;
-    handleSellItem: (item: Item) => void;
+    handleSellItem: (item: Item, quantity?: number) => void;
+    handleRefreshShop?: (newItems: ShopItem[]) => void;
+    // Turn-based battle
+    setIsTurnBasedBattleOpen?: (open: boolean) => void;
+    handleTurnBasedBattleClose?: (result?: {
+      victory: boolean;
+      hpLoss: number;
+      expChange: number;
+      spiritChange: number;
+      items?: Array<{
+        name: string;
+        type: string;
+        description: string;
+        rarity?: string;
+        isEquippable?: boolean;
+        equipmentSlot?: string;
+        effect?: any;
+        permanentEffect?: any;
+      }>;
+      petSkillCooldowns?: Record<string, number>; // 灵宠技能冷却状态
+    }, updatedInventory?: Item[]) => void;
   };
 }
 
@@ -145,6 +180,24 @@ export default function ModalsContainer({
         onClose={handlers.handleCloseBattleModal}
       />
 
+      {modalState.turnBasedBattleParams && (
+        <TurnBasedBattleModal
+          isOpen={modals.isTurnBasedBattleOpen || false}
+          player={player}
+          adventureType={modalState.turnBasedBattleParams.adventureType}
+          riskLevel={modalState.turnBasedBattleParams.riskLevel}
+          realmMinRealm={modalState.turnBasedBattleParams.realmMinRealm}
+          onClose={(result, updatedInventory) => {
+            if (handlers.setIsTurnBasedBattleOpen) {
+              handlers.setIsTurnBasedBattleOpen(false);
+            }
+            if (handlers.handleTurnBasedBattleClose) {
+              handlers.handleTurnBasedBattleClose(result, updatedInventory);
+            }
+          }}
+        />
+      )}
+
       <InventoryModal
         isOpen={modals.isInventoryOpen}
         onClose={() => handlers.setIsInventoryOpen(false)}
@@ -157,6 +210,7 @@ export default function ModalsContainer({
         onUpgradeItem={handlers.handleOpenUpgrade}
         onDiscardItem={handlers.handleDiscardItem}
         onBatchDiscard={handlers.handleBatchDiscard}
+        onBatchUse={handlers.handleBatchUse}
         onRefineNatalArtifact={handlers.handleRefineNatalArtifact}
         onUnrefineNatalArtifact={handlers.handleUnrefineNatalArtifact}
       />
@@ -194,6 +248,7 @@ export default function ModalsContainer({
         player={player}
         onJoinSect={handlers.handleJoinSect}
         onLeaveSect={handlers.handleLeaveSect}
+        onSafeLeaveSect={handlers.handleSafeLeaveSect}
         onTask={handlers.handleSectTask}
         onPromote={handlers.handleSectPromote}
         onBuy={handlers.handleSectBuy}
@@ -227,8 +282,12 @@ export default function ModalsContainer({
         onClose={() => handlers.setIsPetOpen(false)}
         player={player}
         onActivatePet={handlers.handleActivatePet}
+        onDeactivatePet={handlers.handleDeactivatePet}
         onFeedPet={handlers.handleFeedPet}
+        onBatchFeedItems={handlers.handleBatchFeedItems}
         onEvolvePet={handlers.handleEvolvePet}
+        onReleasePet={handlers.handleReleasePet}
+        onBatchReleasePets={handlers.handleBatchReleasePets}
       />
 
       <LotteryModal
@@ -256,6 +315,8 @@ export default function ModalsContainer({
           player={player}
           onBuyItem={handlers.handleBuyItem}
           onSellItem={handlers.handleSellItem}
+          onRefreshShop={handlers.handleRefreshShop}
+          onOpenInventory={() => handlers.setIsInventoryOpen(true)}
         />
       )}
     </>

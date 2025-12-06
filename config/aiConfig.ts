@@ -2,11 +2,11 @@
  * AI 服务配置
  * 支持多种 AI 服务提供商，通过环境变量轻松切换
  *
- * 默认使用 SiliconFlow 作为 AI 接口
+ * 默认使用 GLM（智谱）作为 AI 接口
  * 如需切换，设置环境变量 VITE_AI_PROVIDER
  */
 
-export type AIProvider = 'siliconflow' | 'openai' | 'custom';
+export type AIProvider = 'siliconflow' | 'openai' | 'glm' | 'custom';
 
 export interface AIConfig {
   provider: AIProvider;
@@ -36,6 +36,11 @@ const AI_PROVIDERS: Record<
     defaultModel: 'gpt-3.5-turbo',
     proxyPath: '/api/v1/chat/completions',
   },
+  glm: {
+    defaultUrl: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
+    defaultModel: 'glm-4.5',
+    proxyPath: '/api/paas/v4/chat/completions',
+  },
   custom: {
     defaultUrl: '',
     defaultModel: '',
@@ -51,14 +56,14 @@ export function getAIConfig(): AIConfig {
 
   // 从环境变量获取配置
   const provider = (import.meta.env.VITE_AI_PROVIDER ||
-    'siliconflow') as AIProvider;
+    'glm') as AIProvider;
   const apiKey = import.meta.env.VITE_AI_KEY || '';
   const customApiUrl = import.meta.env.VITE_AI_API_URL;
   const customModel = import.meta.env.VITE_AI_MODEL;
   const proxyPreference = import.meta.env.VITE_AI_USE_PROXY;
 
   // 获取预设配置
-  const providerConfig = AI_PROVIDERS[provider] || AI_PROVIDERS.siliconflow;
+  const providerConfig = AI_PROVIDERS[provider] || AI_PROVIDERS.glm;
 
   // 构建配置
   const apiUrl = providerConfig.defaultUrl;
@@ -106,7 +111,8 @@ export function validateAIConfig(config: AIConfig): {
   valid: boolean;
   error?: string;
 } {
-  if (!config.apiKey) {
+  // 只有在未启用代理且缺少前端密钥时才视为无效
+  if (!config.apiKey && !config.useProxy) {
     return {
       valid: false,
       error:

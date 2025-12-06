@@ -1,5 +1,5 @@
-import { PlayerStats, RealmType } from '../types';
-import { REALM_DATA, INITIAL_ITEMS, TALENTS } from '../constants';
+import { PlayerStats, RealmType, SectRank } from '../types';
+import { REALM_DATA, INITIAL_ITEMS, TALENTS, CULTIVATION_ARTS } from '../constants';
 
 // 创建初始玩家数据
 export const createInitialPlayer = (
@@ -31,12 +31,14 @@ export const createInitialPlayer = (
     speed: realmData.baseSpeed + talentSpeed,
     spiritStones: 50,
     inventory: [...INITIAL_ITEMS],
-    cultivationArts: [],
-    activeArtId: null,
+    cultivationArts: ['art-basic-breath'], // 初始只有吐纳诀
+    activeArtId: 'art-basic-breath', // 默认激活吐纳诀
     equippedItems: {},
     sectId: null,
-    sectRank: '外门' as any,
+    sectRank: SectRank.Outer,
     sectContribution: 0,
+    betrayedSects: [], // 背叛过的宗门列表
+    sectHuntEndTime: null, // 宗门追杀结束时间
     talentId: talentId,
     titleId: null,
     attributePoints: 0,
@@ -44,7 +46,7 @@ export const createInitialPlayer = (
     achievements: [],
     pets: [],
     activePetId: null,
-    lotteryTickets: 3,
+    lotteryTickets: 10, // 开局十连抽
     lotteryCount: 0,
     inheritanceLevel: 0,
     dailyTaskCount: {

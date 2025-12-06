@@ -8,6 +8,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
+*.tar
+*.tar.gz
 dist
 dist-ssr
 *.local
@@ -16,6 +18,8 @@ dist-ssr
 .env
 .env.local
 .env.*.local
+# 注意：.env.example, .env.test, .env.production 是示例文件，可以提交到 Git
+# 但包含真实 API Key 的文件（如 .env.test.local, .env.production.local）不会被提交
 
 # Editor directories and files
 .vscode/*

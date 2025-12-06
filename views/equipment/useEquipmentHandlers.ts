@@ -426,12 +426,20 @@ export function useEquipmentHandlers({
         (i) => i.name === UPGRADE_STONE_NAME
       );
 
+      // 检查灵石和材料
       if (
         prev.spiritStones < costStones ||
         !matsItem ||
-        matsItem.quantity < costMats ||
-        !upgradeStoneItem ||
-        upgradeStoneItem.quantity < upgradeStones
+        matsItem.quantity < costMats
+      ) {
+        resolve('error');
+        return prev;
+      }
+
+      // 只有当使用强化石时才检查强化石
+      if (
+        upgradeStones > 0 &&
+        (!upgradeStoneItem || upgradeStoneItem.quantity < upgradeStones)
       ) {
         resolve('error');
         return prev;

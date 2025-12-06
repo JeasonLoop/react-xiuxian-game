@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { PlayerStats, SectRank, RealmType, Item } from '../types';
+import { PlayerStats, SectRank, RealmType, Item, AdventureResult } from '../types';
 import { SECTS, SECT_RANK_REQUIREMENTS, REALM_ORDER } from '../constants';
 import { generateRandomSects, generateRandomSectTasks, generateSectShopItems, RandomSectTask } from '../services/randomService';
 import { X, Users, Award, ShoppingBag, Shield, Scroll, ArrowUp, RefreshCw } from 'lucide-react';
+import SectTaskModal from './SectTaskModal';
 
 interface Props {
   isOpen: boolean;
@@ -10,7 +11,8 @@ interface Props {
   player: PlayerStats;
   onJoinSect: (sectId: string, sectName?: string) => void;
   onLeaveSect: () => void;
-  onTask: (task: RandomSectTask) => void;
+  onSafeLeaveSect: () => void;
+  onTask: (task: RandomSectTask, encounterResult?: AdventureResult) => void;
   onPromote: () => void;
   onBuy: (item: Partial<Item>, cost: number, quantity?: number) => void;
 }
@@ -21,6 +23,7 @@ const SectModal: React.FC<Props> = ({
   player,
   onJoinSect,
   onLeaveSect,
+  onSafeLeaveSect,
   onTask,
   onPromote,
   onBuy,
@@ -28,13 +31,16 @@ const SectModal: React.FC<Props> = ({
   const [activeTab, setActiveTab] = useState<'hall' | 'mission' | 'shop'>(
     'hall'
   );
+  const [selectedTask, setSelectedTask] = useState<RandomSectTask | null>(null);
   const [buyQuantities, setBuyQuantities] = useState<Record<number, number>>(
     {}
   );
   const [refreshKey, setRefreshKey] = useState(0);
 
   // 藏宝阁刷新相关状态
-  const [sectShopItems, setSectShopItems] = useState<Array<{ name: string; cost: number; item: Omit<Item, 'id'> }>>(() => generateSectShopItems());
+  const [sectShopItems, setSectShopItems] = useState<Array<{ name: string; cost: number; item: Omit<Item, 'id'> }>>(() => generateSectShopItems(1));
+  const [sectShopItemsFloor2, setSectShopItemsFloor2] = useState<Array<{ name: string; cost: number; item: Omit<Item, 'id'> }>>(() => generateSectShopItems(2));
+  const [shopFloor, setShopFloor] = useState<1 | 2>(1);
   const [shopRefreshTime, setShopRefreshTime] = useState<number>(() => Date.now() + 5 * 60 * 1000); // 5分钟后可刷新
   const [shopRefreshCooldown, setShopRefreshCooldown] = useState<number>(() => {
     // 初始化时计算剩余倒计时
@@ -52,8 +58,8 @@ const SectModal: React.FC<Props> = ({
   // 生成随机任务列表（已加入宗门时）
   const randomTasks = useMemo(() => {
     if (!player.sectId) return [];
-    return generateRandomSectTasks(player.sectRank, 3);
-  }, [player.sectId, player.sectRank, refreshKey]);
+    return generateRandomSectTasks(player.sectRank, player.realm, 3);
+  }, [player.sectId, player.sectRank, player.realm, refreshKey]);
 
   const handleRefresh = () => {
     setRefreshKey((prev) => prev + 1);
@@ -63,13 +69,16 @@ const SectModal: React.FC<Props> = ({
   const handleShopRefresh = React.useCallback(() => {
     const now = Date.now();
     if (now >= shopRefreshTime) {
-      setSectShopItems(generateSectShopItems());
+      setSectShopItems(generateSectShopItems(1));
+      if (player.sectContribution >= 5000) {
+        setSectShopItemsFloor2(generateSectShopItems(2));
+      }
       const newRefreshTime = now + 5 * 60 * 1000; // 设置下次刷新时间
       setShopRefreshTime(newRefreshTime);
       setShopRefreshCooldown(5 * 60); // 重置倒计时
       setBuyQuantities({}); // 清空购买数量
     }
-  }, [shopRefreshTime]);
+  }, [shopRefreshTime, player.sectContribution]);
 
   // 藏宝阁倒计时更新
   React.useEffect(() => {
@@ -344,14 +353,35 @@ const SectModal: React.FC<Props> = ({
                   退出宗门
                 </h4>
                 <p className="text-sm text-stone-500 mb-4">
-                  退出宗门将清空所有贡献值，且短期内不可再次加入。
+                  退出宗门将清空所有贡献值。可以选择安全退出（支付代价）或直接背叛（会被追杀）。
                 </p>
-                <button
-                  onClick={onLeaveSect}
-                  className="px-4 py-2 border border-red-900 text-red-400 hover:bg-red-900/20 rounded text-sm transition-colors"
-                >
-                  叛出宗门
-                </button>
+                {currentSect && currentSect.exitCost && (
+                  <div className="mb-4 p-3 bg-ink-900 rounded border border-stone-600">
+                    <p className="text-xs text-stone-400 mb-2">安全退出代价：</p>
+                    <div className="text-xs text-stone-300 space-y-1">
+                      {currentSect.exitCost.spiritStones && (
+                        <div>灵石: {currentSect.exitCost.spiritStones}</div>
+                      )}
+                      {currentSect.exitCost.items && currentSect.exitCost.items.map((item, idx) => (
+                        <div key={idx}>{item.name} x{item.quantity}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={onSafeLeaveSect}
+                    className="flex-1 px-4 py-2 border border-yellow-900 text-yellow-400 hover:bg-yellow-900/20 rounded text-sm transition-colors"
+                  >
+                    安全退出
+                  </button>
+                  <button
+                    onClick={onLeaveSect}
+                    className="flex-1 px-4 py-2 border border-red-900 text-red-400 hover:bg-red-900/20 rounded text-sm transition-colors"
+                  >
+                    叛出宗门
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -373,6 +403,14 @@ const SectModal: React.FC<Props> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {randomTasks.map((task) => {
                   const canComplete = (() => {
+                    // 检查境界要求
+                    if (task.minRealm) {
+                      const realmIndex = REALM_ORDER.indexOf(player.realm);
+                      const minRealmIndex = REALM_ORDER.indexOf(task.minRealm);
+                      if (realmIndex < minRealmIndex) {
+                        return false;
+                      }
+                    }
                     if (
                       task.cost?.spiritStones &&
                       player.spiritStones < task.cost.spiritStones
@@ -428,17 +466,68 @@ const SectModal: React.FC<Props> = ({
                     long: '较长',
                   }[task.timeCost];
 
+                  // 任务品质颜色配置
+                  const qualityColors = {
+                    普通: 'text-stone-400 border-stone-600 bg-stone-900/20',
+                    稀有: 'text-blue-400 border-blue-600 bg-blue-900/20',
+                    传说: 'text-purple-400 border-purple-600 bg-purple-900/20',
+                    仙品: 'text-yellow-400 border-yellow-600 bg-yellow-900/20',
+                  };
+
+                  // 难度颜色配置
+                  const difficultyColors = {
+                    简单: 'text-green-400',
+                    普通: 'text-blue-400',
+                    困难: 'text-orange-400',
+                    极难: 'text-red-400',
+                  };
+
+                  // 检查境界要求
+                  const meetsRealmRequirement = task.minRealm
+                    ? REALM_ORDER.indexOf(player.realm) >= REALM_ORDER.indexOf(task.minRealm)
+                    : true;
+
                   return (
                     <div
                       key={task.id}
-                      className="bg-ink-800 p-4 rounded border border-stone-700 flex flex-col"
+                      className={`bg-ink-800 p-4 rounded border flex flex-col ${
+                        task.quality === '仙品'
+                          ? 'border-yellow-600/50 shadow-lg shadow-yellow-900/20'
+                          : task.quality === '传说'
+                          ? 'border-purple-600/50 shadow-md shadow-purple-900/10'
+                          : 'border-stone-700'
+                      }`}
                     >
-                      <h4 className="font-serif font-bold text-stone-200 mb-1">
-                        {task.name}
-                      </h4>
-                      <p className="text-xs text-stone-500 mb-4 flex-1">
+                      <div className="flex items-start justify-between mb-1">
+                        <h4 className="font-serif font-bold text-stone-200 flex-1">
+                          {task.name}
+                        </h4>
+                        {task.quality && (
+                          <span className={`text-xs px-2 py-0.5 rounded border ${qualityColors[task.quality]}`}>
+                            {task.quality}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-stone-500 mb-3 flex-1">
                         {task.description}
                       </p>
+
+                      {/* 任务标签 */}
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        <span className={`text-xs px-2 py-0.5 rounded border ${difficultyColors[task.difficulty]} bg-stone-900/30 border-stone-600`}>
+                          难度: {task.difficulty}
+                        </span>
+                        {task.minRealm && (
+                          <span className={`text-xs px-2 py-0.5 rounded border ${
+                            meetsRealmRequirement
+                              ? 'text-green-400 border-green-600 bg-green-900/20'
+                              : 'text-red-400 border-red-600 bg-red-900/20'
+                          }`}>
+                            境界: {task.minRealm}
+                            {!meetsRealmRequirement && ' (不足)'}
+                          </span>
+                        )}
+                      </div>
 
                       <div className="space-y-2 mb-4">
                         {task.cost && (
@@ -523,7 +612,7 @@ const SectModal: React.FC<Props> = ({
                       </div>
 
                       <button
-                        onClick={() => onTask(task)}
+                        onClick={() => setSelectedTask(task)}
                         disabled={!canComplete}
                         className={`w-full py-2 rounded text-sm ${
                           !canComplete
@@ -544,7 +633,24 @@ const SectModal: React.FC<Props> = ({
           {activeTab === 'shop' && (
             <div className="space-y-4">
               <div className="flex justify-between items-center mb-4">
-                <h4 className="font-serif text-lg text-stone-200">藏宝阁</h4>
+                <div>
+                  <h4 className="font-serif text-lg text-stone-200">藏宝阁</h4>
+                  <div className="text-xs text-stone-400 mt-1 flex items-center gap-2">
+                    <button
+                      onClick={() => setShopFloor(1)}
+                      className={`px-2 py-1 rounded text-xs ${shopFloor === 1 ? 'bg-stone-700 text-stone-200' : 'bg-stone-800 text-stone-500'}`}
+                    >
+                      一楼
+                    </button>
+                    <button
+                      onClick={() => player.sectContribution >= 5000 && setShopFloor(2)}
+                      disabled={player.sectContribution < 5000}
+                      className={`px-2 py-1 rounded text-xs ${shopFloor === 2 ? 'bg-stone-700 text-stone-200' : 'bg-stone-800 text-stone-500'} ${player.sectContribution < 5000 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                      二楼 {player.sectContribution >= 5000 ? '✓' : '(需5000贡献)'}
+                    </button>
+                  </div>
+                </div>
                 <div className="flex items-center gap-3">
                   {shopRefreshCooldown > 0 ? (
                     <span className="text-xs text-stone-400">
@@ -568,7 +674,7 @@ const SectModal: React.FC<Props> = ({
                   </button>
                 </div>
               </div>
-              {sectShopItems.map((item, idx) => {
+              {(shopFloor === 1 ? sectShopItems : sectShopItemsFloor2).map((item, idx) => {
                 const quantity = buyQuantities[idx] || 1;
                 const totalCost = item.cost * quantity;
                 const canBuy = player.sectContribution >= totalCost;
@@ -662,6 +768,22 @@ const SectModal: React.FC<Props> = ({
           )}
         </div>
       </div>
+
+      {/* 任务执行弹窗 */}
+      {selectedTask && (
+        <SectTaskModal
+          isOpen={true}
+          onClose={() => {
+            setSelectedTask(null);
+          }}
+          task={selectedTask}
+          player={player}
+          onTaskComplete={(task, encounterResult) => {
+            onTask(task, encounterResult);
+            setSelectedTask(null);
+          }}
+        />
+      )}
     </div>
   );
 };
