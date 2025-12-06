@@ -16,6 +16,7 @@ import {
   FlaskConical,
   Scroll,
   Power,
+  Skull,
 } from 'lucide-react';
 import {
   PlayerStats,
@@ -61,6 +62,7 @@ interface Props {
   onClose: () => void;
   player: PlayerStats;
   onUpdatePlayer: (updates: Partial<PlayerStats>) => void;
+  onTriggerDeath?: () => void; // 触发死亡测试
 }
 
 const DebugModal: React.FC<Props> = ({
@@ -68,6 +70,7 @@ const DebugModal: React.FC<Props> = ({
   onClose,
   player,
   onUpdatePlayer,
+  onTriggerDeath,
 }) => {
   const [localPlayer, setLocalPlayer] = useState<PlayerStats>(player);
   const [activeTab, setActiveTab] = useState<
@@ -80,6 +83,7 @@ const DebugModal: React.FC<Props> = ({
     | 'pet'
     | 'item'
     | 'recipe'
+    | 'death'
   >('equipment');
 
   // 当 player 更新时同步 localPlayer
@@ -417,7 +421,7 @@ const DebugModal: React.FC<Props> = ({
 
   // 加入宗门
   const handleJoinSect = (sectId: string) => {
-    const sect = SECTS.find(s => s.id === sectId);
+    const sect = SECTS.find((s) => s.id === sectId);
     setLocalPlayer((prev) => {
       const updated = {
         ...prev,
@@ -442,7 +446,7 @@ const DebugModal: React.FC<Props> = ({
       showError('该成就已完成');
       return; // 已经完成了
     }
-    const achievement = ACHIEVEMENTS.find(a => a.id === achievementId);
+    const achievement = ACHIEVEMENTS.find((a) => a.id === achievementId);
     setLocalPlayer((prev) => {
       const updated = {
         ...prev,
@@ -1073,6 +1077,18 @@ const DebugModal: React.FC<Props> = ({
                   <Scroll size={14} className="inline mr-1" />
                   丹方
                 </button>
+                <button
+                  onClick={() => setActiveTab('death')}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    activeTab === 'death'
+                      ? 'bg-red-700 text-white'
+                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                  }`}
+                  title="死亡测试"
+                >
+                  <Skull size={14} className="inline mr-1" />
+                  死亡测试
+                </button>
               </div>
             </div>
 
@@ -1639,7 +1655,8 @@ const DebugModal: React.FC<Props> = ({
                                 {pet.name}
                               </h5>
                               <p className="text-xs text-stone-400">
-                                {pet.species} | Lv.{pet.level} | 亲密度: {pet.affection}
+                                {pet.species} | Lv.{pet.level} | 亲密度:{' '}
+                                {pet.affection}
                               </p>
                             </div>
                             <button
@@ -1653,7 +1670,8 @@ const DebugModal: React.FC<Props> = ({
                             </button>
                           </div>
                           <div className="text-xs text-stone-300">
-                            攻击: {pet.stats.attack} | 防御: {pet.stats.defense} | 气血: {pet.stats.hp} | 速度: {pet.stats.speed}
+                            攻击: {pet.stats.attack} | 防御: {pet.stats.defense}{' '}
+                            | 气血: {pet.stats.hp} | 速度: {pet.stats.speed}
                           </div>
                         </div>
                       ))}
@@ -1665,10 +1683,14 @@ const DebugModal: React.FC<Props> = ({
                 {editingPet && editingPetId && (
                   <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
                     <div className="bg-stone-800 border border-stone-700 rounded-lg p-4 max-w-md w-full max-h-[90vh] overflow-y-auto">
-                      <h3 className="font-bold text-stone-200 mb-4">编辑灵宠：{editingPet.name}</h3>
+                      <h3 className="font-bold text-stone-200 mb-4">
+                        编辑灵宠：{editingPet.name}
+                      </h3>
                       <div className="space-y-3">
                         <div>
-                          <label className="block text-sm text-stone-400 mb-1">等级</label>
+                          <label className="block text-sm text-stone-400 mb-1">
+                            等级
+                          </label>
                           <input
                             type="number"
                             min="1"
@@ -1676,14 +1698,19 @@ const DebugModal: React.FC<Props> = ({
                             onChange={(e) =>
                               setEditingPet({
                                 ...editingPet,
-                                level: Math.max(1, parseInt(e.target.value) || 1),
+                                level: Math.max(
+                                  1,
+                                  parseInt(e.target.value) || 1
+                                ),
                               })
                             }
                             className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm text-stone-400 mb-1">经验值</label>
+                          <label className="block text-sm text-stone-400 mb-1">
+                            经验值
+                          </label>
                           <input
                             type="number"
                             min="0"
@@ -1698,7 +1725,9 @@ const DebugModal: React.FC<Props> = ({
                           />
                         </div>
                         <div>
-                          <label className="block text-sm text-stone-400 mb-1">最大经验值</label>
+                          <label className="block text-sm text-stone-400 mb-1">
+                            最大经验值
+                          </label>
                           <input
                             type="number"
                             min="1"
@@ -1706,14 +1735,19 @@ const DebugModal: React.FC<Props> = ({
                             onChange={(e) =>
                               setEditingPet({
                                 ...editingPet,
-                                maxExp: Math.max(1, parseInt(e.target.value) || 1),
+                                maxExp: Math.max(
+                                  1,
+                                  parseInt(e.target.value) || 1
+                                ),
                               })
                             }
                             className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm text-stone-400 mb-1">亲密度 (0-100)</label>
+                          <label className="block text-sm text-stone-400 mb-1">
+                            亲密度 (0-100)
+                          </label>
                           <input
                             type="number"
                             min="0"
@@ -1722,14 +1756,19 @@ const DebugModal: React.FC<Props> = ({
                             onChange={(e) =>
                               setEditingPet({
                                 ...editingPet,
-                                affection: Math.max(0, Math.min(100, parseInt(e.target.value) || 0)),
+                                affection: Math.max(
+                                  0,
+                                  Math.min(100, parseInt(e.target.value) || 0)
+                                ),
                               })
                             }
                             className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm text-stone-400 mb-1">进化阶段 (0-2)</label>
+                          <label className="block text-sm text-stone-400 mb-1">
+                            进化阶段 (0-2)
+                          </label>
                           <input
                             type="number"
                             min="0"
@@ -1738,14 +1777,19 @@ const DebugModal: React.FC<Props> = ({
                             onChange={(e) =>
                               setEditingPet({
                                 ...editingPet,
-                                evolutionStage: Math.max(0, Math.min(2, parseInt(e.target.value) || 0)),
+                                evolutionStage: Math.max(
+                                  0,
+                                  Math.min(2, parseInt(e.target.value) || 0)
+                                ),
                               })
                             }
                             className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
                           />
                         </div>
                         <div>
-                          <label className="block text-sm text-stone-400 mb-1">攻击力</label>
+                          <label className="block text-sm text-stone-400 mb-1">
+                            攻击力
+                          </label>
                           <input
                             type="number"
                             min="0"
@@ -1755,7 +1799,10 @@ const DebugModal: React.FC<Props> = ({
                                 ...editingPet,
                                 stats: {
                                   ...editingPet.stats,
-                                  attack: Math.max(0, parseInt(e.target.value) || 0),
+                                  attack: Math.max(
+                                    0,
+                                    parseInt(e.target.value) || 0
+                                  ),
                                 },
                               })
                             }
@@ -1763,7 +1810,9 @@ const DebugModal: React.FC<Props> = ({
                           />
                         </div>
                         <div>
-                          <label className="block text-sm text-stone-400 mb-1">防御力</label>
+                          <label className="block text-sm text-stone-400 mb-1">
+                            防御力
+                          </label>
                           <input
                             type="number"
                             min="0"
@@ -1773,7 +1822,10 @@ const DebugModal: React.FC<Props> = ({
                                 ...editingPet,
                                 stats: {
                                   ...editingPet.stats,
-                                  defense: Math.max(0, parseInt(e.target.value) || 0),
+                                  defense: Math.max(
+                                    0,
+                                    parseInt(e.target.value) || 0
+                                  ),
                                 },
                               })
                             }
@@ -1781,7 +1833,9 @@ const DebugModal: React.FC<Props> = ({
                           />
                         </div>
                         <div>
-                          <label className="block text-sm text-stone-400 mb-1">气血</label>
+                          <label className="block text-sm text-stone-400 mb-1">
+                            气血
+                          </label>
                           <input
                             type="number"
                             min="0"
@@ -1791,7 +1845,10 @@ const DebugModal: React.FC<Props> = ({
                                 ...editingPet,
                                 stats: {
                                   ...editingPet.stats,
-                                  hp: Math.max(0, parseInt(e.target.value) || 0),
+                                  hp: Math.max(
+                                    0,
+                                    parseInt(e.target.value) || 0
+                                  ),
                                 },
                               })
                             }
@@ -1799,7 +1856,9 @@ const DebugModal: React.FC<Props> = ({
                           />
                         </div>
                         <div>
-                          <label className="block text-sm text-stone-400 mb-1">速度</label>
+                          <label className="block text-sm text-stone-400 mb-1">
+                            速度
+                          </label>
                           <input
                             type="number"
                             min="0"
@@ -1809,7 +1868,10 @@ const DebugModal: React.FC<Props> = ({
                                 ...editingPet,
                                 stats: {
                                   ...editingPet.stats,
-                                  speed: Math.max(0, parseInt(e.target.value) || 0),
+                                  speed: Math.max(
+                                    0,
+                                    parseInt(e.target.value) || 0
+                                  ),
                                 },
                               })
                             }
@@ -1872,7 +1934,9 @@ const DebugModal: React.FC<Props> = ({
                           onClick={() => handleAddPet(template)}
                         >
                           <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-bold text-sm">{template.name}</h4>
+                            <h4 className="font-bold text-sm">
+                              {template.name}
+                            </h4>
                             <div className="flex items-center gap-1">
                               {hasPet && (
                                 <span className="text-xs px-2 py-0.5 rounded bg-green-700 text-white">
@@ -2115,6 +2179,164 @@ const DebugModal: React.FC<Props> = ({
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {/* 死亡测试 */}
+            {activeTab === 'death' && (
+              <div>
+                <div className="bg-red-900/30 border border-red-700 rounded p-4 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Skull size={20} className="text-red-400" />
+                    <h3 className="font-bold text-red-400">死亡测试</h3>
+                  </div>
+                  <p className="text-sm text-stone-300 mb-2">
+                    此功能用于测试死亡机制和不同难度模式下的死亡惩罚。
+                  </p>
+                  <p className="text-xs text-stone-400">
+                    当前气血：{localPlayer.hp} / {localPlayer.maxHp}
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {/* 快速设置气血 */}
+                  <div>
+                    <h4 className="font-semibold text-stone-200 mb-2">
+                      快速设置气血
+                    </h4>
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        onClick={() => {
+                          onUpdatePlayer({ hp: 0 });
+                          showInfo('已将气血设置为 0，将触发死亡检测');
+                        }}
+                        className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded transition-colors"
+                      >
+                        设置为 0（立即死亡）
+                      </button>
+                      <button
+                        onClick={() => {
+                          onUpdatePlayer({ hp: 1 });
+                          showInfo('已将气血设置为 1');
+                        }}
+                        className="px-4 py-2 bg-orange-700 hover:bg-orange-600 text-white rounded transition-colors"
+                      >
+                        设置为 1（濒死）
+                      </button>
+                      <button
+                        onClick={() => {
+                          const halfHp = Math.floor(localPlayer.maxHp * 0.5);
+                          onUpdatePlayer({ hp: halfHp });
+                          showInfo(`已将气血设置为 ${halfHp}（50%）`);
+                        }}
+                        className="px-4 py-2 bg-yellow-700 hover:bg-yellow-600 text-white rounded transition-colors"
+                      >
+                        设置为 50%
+                      </button>
+                      <button
+                        onClick={() => {
+                          onUpdatePlayer({ hp: localPlayer.maxHp });
+                          showInfo('已将气血设置为最大值');
+                        }}
+                        className="px-4 py-2 bg-green-700 hover:bg-green-600 text-white rounded transition-colors"
+                      >
+                        恢复满血
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 触发死亡 */}
+                  <div>
+                    <h4 className="font-semibold text-stone-200 mb-2">
+                      触发死亡
+                    </h4>
+                    <div className="bg-stone-800/50 border border-stone-700 rounded p-4">
+                      <p className="text-sm text-stone-300 mb-4">
+                        直接触发死亡机制，测试不同难度模式下的死亡处理：
+                      </p>
+                      <button
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              '确定要触发死亡吗？这将根据当前难度模式执行相应的死亡惩罚。'
+                            )
+                          ) {
+                            // 先将气血设置为0
+                            onUpdatePlayer({ hp: 0 });
+                            // 然后触发死亡回调
+                            if (onTriggerDeath) {
+                              setTimeout(() => {
+                                onTriggerDeath();
+                              }, 100);
+                            } else {
+                              showError('死亡测试回调未配置');
+                            }
+                          }
+                        }}
+                        className="w-full px-4 py-3 bg-gradient-to-r from-red-700 via-red-600 to-red-700 hover:from-red-600 hover:via-red-500 hover:to-red-600 text-white font-bold rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                      >
+                        <Skull size={20} />
+                        触发死亡测试
+                      </button>
+                      <p className="text-xs text-stone-400 mt-2">
+                        *
+                        注意：这将立即触发死亡机制，根据当前难度模式执行相应惩罚
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 当前难度信息 */}
+                  <div>
+                    <h4 className="font-semibold text-stone-200 mb-2">
+                      当前难度模式
+                    </h4>
+                    <div className="bg-stone-800/50 border border-stone-700 rounded p-3">
+                      <p className="text-sm text-stone-300">
+                        <span className="text-stone-400">难度：</span>
+                        <span className="font-semibold ml-2">
+                          {(() => {
+                            try {
+                              const settings = JSON.parse(
+                                localStorage.getItem('xiuxian-game-settings') ||
+                                  '{}'
+                              );
+                              const difficulty =
+                                settings.difficulty || 'normal';
+                              if (difficulty === 'easy') {
+                                return (
+                                  <span className="text-green-400">
+                                    简单模式
+                                  </span>
+                                );
+                              } else if (difficulty === 'normal') {
+                                return (
+                                  <span className="text-yellow-400">
+                                    普通模式
+                                  </span>
+                                );
+                              } else {
+                                return (
+                                  <span className="text-red-400">困难模式</span>
+                                );
+                              }
+                            } catch {
+                              return (
+                                <span className="text-yellow-400">
+                                  普通模式
+                                </span>
+                              );
+                            }
+                          })()}
+                        </span>
+                      </p>
+                      <div className="mt-2 text-xs text-stone-400 space-y-1">
+                        <p>• 简单模式：死亡无惩罚，直接复活</p>
+                        <p>• 普通模式：死亡掉落部分属性(10-20%)和装备(1-3件)</p>
+                        <p>• 困难模式：死亡清除存档</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

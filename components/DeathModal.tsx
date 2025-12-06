@@ -1,20 +1,24 @@
 import React from 'react';
-import { PlayerStats } from '../types';
+import { PlayerStats, DifficultyMode } from '../types';
 import { BattleReplay } from '../services/battleService';
-import { Flame, Sword, Shield, Heart, Skull } from 'lucide-react';
+import { Flame, Sword, Shield, Heart, Skull, RotateCcw } from 'lucide-react';
 
 interface DeathModalProps {
   player: PlayerStats;
   battleData: BattleReplay | null;
   deathReason: string;
+  difficulty: DifficultyMode;
   onRebirth: () => void;
+  onContinue?: () => void; // 继续游戏（普通模式和简单模式）
 }
 
 const DeathModal: React.FC<DeathModalProps> = ({
   player,
   battleData,
   deathReason,
+  difficulty,
   onRebirth,
+  onContinue,
 }) => {
   // 计算战斗统计
   const battleStats = battleData
@@ -218,18 +222,46 @@ const DeathModal: React.FC<DeathModalProps> = ({
           </div>
         </div>
 
-        {/* 涅槃重生按钮 */}
-        <div className="text-center">
-          <button
-            onClick={onRebirth}
-            className="w-full py-2.5 md:py-3 bg-gradient-to-r from-red-600 via-orange-600 to-red-600 hover:from-red-500 hover:via-orange-500 hover:to-red-500 text-white font-bold text-base md:text-lg rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2 md:gap-3 touch-manipulation"
-          >
-            <Flame size={18} className="md:w-6 md:h-6" />
-            涅槃重生
-          </button>
-          <p className="text-stone-400 text-xs md:text-sm mt-2 md:mt-3">
-            点击后将重置所有数据，返回开始页面
-          </p>
+        {/* 操作按钮 */}
+        <div className="text-center space-y-2">
+          {difficulty === 'hard' ? (
+            <>
+              <button
+                onClick={onRebirth}
+                className="w-full py-2.5 md:py-3 bg-gradient-to-r from-red-600 via-orange-600 to-red-600 hover:from-red-500 hover:via-orange-500 hover:to-red-500 text-white font-bold text-base md:text-lg rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2 md:gap-3 touch-manipulation"
+              >
+                <Flame size={18} className="md:w-6 md:h-6" />
+                涅槃重生
+              </button>
+              <p className="text-stone-400 text-xs md:text-sm mt-2 md:mt-3">
+                困难模式下死亡将清除存档，点击后将重置所有数据，返回开始页面
+              </p>
+            </>
+          ) : (
+            <>
+              {onContinue && (
+                <button
+                  onClick={onContinue}
+                  className="w-full py-2.5 md:py-3 bg-gradient-to-r from-green-600 via-emerald-600 to-green-600 hover:from-green-500 hover:via-emerald-500 hover:to-green-500 text-white font-bold text-base md:text-lg rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2 md:gap-3 touch-manipulation"
+                >
+                  <RotateCcw size={18} className="md:w-6 md:h-6" />
+                  继续游戏
+                </button>
+              )}
+              <button
+                onClick={onRebirth}
+                className="w-full py-2 md:py-2.5 bg-stone-700 hover:bg-stone-600 text-stone-200 font-semibold text-sm md:text-base rounded-lg transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 flex items-center justify-center gap-2 touch-manipulation"
+              >
+                <Flame size={16} className="md:w-5 md:h-5" />
+                涅槃重生（重新开始）
+              </button>
+              <p className="text-stone-400 text-xs md:text-sm mt-2">
+                {difficulty === 'easy'
+                  ? '简单模式下死亡无惩罚，你可以继续游戏或选择重新开始'
+                  : '普通模式下死亡会掉落部分属性和装备，你可以继续游戏或选择重新开始'}
+              </p>
+            </>
+          )}
         </div>
       </div>
     </div>
