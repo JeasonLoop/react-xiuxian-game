@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { CultivationArt, RealmType, PlayerStats, ArtGrade } from '../types';
 import { CULTIVATION_ARTS, REALM_ORDER } from '../constants';
 import { X, BookOpen, Check, Lock, Zap } from 'lucide-react';
@@ -20,8 +20,36 @@ const CultivationModal: React.FC<Props> = ({
 }) => {
   const [gradeFilter, setGradeFilter] = useState<ArtGrade | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'mental' | 'body'>('all');
+  const [learningArtId, setLearningArtId] = useState<string | null>(null); // 防止重复点击
+  const learningArtIdRef = useRef<string | null>(null); // 同步检查用
 
   const getRealmIndex = (r: RealmType) => REALM_ORDER.indexOf(r);
+
+  // 处理学习功法的点击，确保传递正确的 art 对象
+  const handleLearnClick = (art: CultivationArt, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // 防止重复点击（双重检查）
+    if (learningArtIdRef.current === art.id || learningArtId === art.id) {
+      return;
+    }
+
+    // 检查是否已经学习过
+    if (player.cultivationArts.includes(art.id)) {
+      return;
+    }
+
+    learningArtIdRef.current = art.id;
+    setLearningArtId(art.id);
+    onLearnArt(art);
+
+    // 500ms 后重置，允许再次点击（如果需要）
+    setTimeout(() => {
+      learningArtIdRef.current = null;
+      setLearningArtId(null);
+    }, 500);
+  };
 
   // 过滤功法 - 必须在条件返回之前调用
   const filteredArts = useMemo(() => {
@@ -47,7 +75,7 @@ const CultivationModal: React.FC<Props> = ({
         return a.idx - b.idx; // 保持原有次序
       })
       .map((item) => item.art);
-  }, [gradeFilter, typeFilter, player.cultivationArts]);
+  }, [gradeFilter, typeFilter, player.cultivationArts, player.activeArtId]);
 
   // 必须在所有 hooks 之后才能有条件返回
   if (!isOpen) return null;
@@ -267,12 +295,12 @@ const CultivationModal: React.FC<Props> = ({
                       )
                     ) : (
                       <button
-                        onClick={() => onLearnArt(art)}
-                        disabled={locked}
+                        onClick={(e) => handleLearnClick(art, e)}
+                        disabled={locked || learningArtId === art.id}
                         className={`
                           px-4 py-2 rounded text-xs md:text-sm font-serif transition-all flex items-center gap-1 min-h-[44px] md:min-h-0 touch-manipulation
                           ${
-                            locked
+                            locked || learningArtId === art.id
                               ? 'bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700'
                               : 'bg-mystic-jade/20 text-mystic-jade border border-mystic-jade active:bg-mystic-jade/30'
                           }

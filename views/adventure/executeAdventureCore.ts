@@ -16,6 +16,7 @@ import {
   PET_TEMPLATES,
   RARITY_MULTIPLIERS,
   DISCOVERABLE_RECIPES,
+  PET_EVOLUTION_MATERIALS,
   getRandomPetName,
 } from '../../constants';
 import { BattleReplay } from '../../services/battleService';
@@ -55,6 +56,89 @@ interface ExecuteAdventureCoreProps {
   skipBattle?: boolean; // 是否跳过战斗（自动模式下）
 }
 
+/**
+ * 为装备添加属性（如果装备没有属性，根据品阶自动生成）
+ * @param itemType 物品类型
+ * @param effect 当前效果
+ * @param rarity 稀有度
+ * @returns 更新后的效果对象
+ */
+function ensureEquipmentAttributes(
+  itemType: ItemType,
+  effect: AdventureResult['itemObtained']['effect'] | undefined,
+  rarity: ItemRarity
+): AdventureResult['itemObtained']['effect'] | undefined {
+  // 只处理装备类型
+  const equipmentTypes = [
+    ItemType.Artifact,
+    ItemType.Weapon,
+    ItemType.Armor,
+    ItemType.Accessory,
+    ItemType.Ring,
+  ];
+
+  if (!equipmentTypes.includes(itemType)) {
+    return effect;
+  }
+
+  // 移除exp加成（装备不应该提供修为加成）
+  let processedEffect = effect;
+  if (processedEffect?.exp) {
+    const { exp, ...restEffect } = processedEffect;
+    processedEffect = restEffect;
+  }
+
+  // 检查是否已有任何属性
+  const hasAnyAttribute =
+    processedEffect?.attack ||
+    processedEffect?.defense ||
+    processedEffect?.hp ||
+    processedEffect?.spirit ||
+    processedEffect?.physique ||
+    processedEffect?.speed;
+
+  // 如果没有属性，根据品阶生成属性
+  if (!hasAnyAttribute) {
+    const rarityMultiplier = RARITY_MULTIPLIERS[rarity];
+
+    // 根据稀有度生成基础属性值
+    const baseValue =
+      rarity === '普通'
+        ? 10
+        : rarity === '稀有'
+          ? 30
+          : rarity === '传说'
+            ? 80
+            : 200;
+
+    // 随机生成1-3种属性
+    const attributeTypes = [
+      'attack',
+      'defense',
+      'hp',
+      'spirit',
+      'physique',
+      'speed',
+    ];
+    const numAttributes = Math.floor(Math.random() * 3) + 1; // 1-3种属性
+    const selectedAttributes = attributeTypes
+      .sort(() => Math.random() - 0.5)
+      .slice(0, numAttributes);
+
+    const newEffect: any = {};
+    selectedAttributes.forEach((attr) => {
+      const value = Math.floor(
+        baseValue * rarityMultiplier * (0.8 + Math.random() * 0.4)
+      );
+      newEffect[attr] = value;
+    });
+
+    return newEffect;
+  }
+
+  return processedEffect;
+}
+
 export async function executeAdventureCore({
   result,
   battleContext,
@@ -72,14 +156,17 @@ export async function executeAdventureCore({
   riskLevel?: '低' | '中' | '高' | '极度危险';
 }) {
   // Handle Visuals
-  if (result.hpChange < 0) {
-    triggerVisual('damage', String(result.hpChange), 'text-red-500');
+  // 确保hpChange是有效数字
+  const safeHpChange = typeof result.hpChange === 'number' && !isNaN(result.hpChange) ? result.hpChange : 0;
+
+  if (safeHpChange < 0) {
+    triggerVisual('damage', String(safeHpChange), 'text-red-500');
     if (document.body) {
       document.body.classList.add('animate-shake');
       setTimeout(() => document.body.classList.remove('animate-shake'), 500);
     }
-  } else if (result.hpChange > 0) {
-    triggerVisual('heal', `+${result.hpChange}`, 'text-emerald-400');
+  } else if (safeHpChange > 0) {
+    triggerVisual('heal', `+${safeHpChange}`, 'text-emerald-400');
   }
 
   if (result.eventColor === 'danger' || adventureType === 'secret_realm') {
@@ -219,76 +306,14 @@ export async function executeAdventureCore({
           );
         }
 
-        // 装备类物品应该使用 effect 而不是 permanentEffect
-        // 如果装备只有 permanentEffect 而没有 effect，将其转换为 effect
-        if (isEquippable && !finalEffect && finalPermanentEffect) {
-          // 将 permanentEffect 转换为 effect（除了 maxHp，因为装备不提供 maxHp）
-          finalEffect = {
-            attack: finalPermanentEffect.attack,
-            defense: finalPermanentEffect.defense,
-            spirit: finalPermanentEffect.spirit,
-            physique: finalPermanentEffect.physique,
-            speed: finalPermanentEffect.speed,
-            hp: 0, // maxHp 转换为 hp（装备时增加当前气血上限）
-          };
-          // 如果有 maxHp，也加到 hp 中
-          if (finalPermanentEffect.maxHp) {
-            finalEffect.hp = (finalEffect.hp || 0) + finalPermanentEffect.maxHp;
-          }
-          // 清空 permanentEffect（装备不应该有 permanentEffect）
-          finalPermanentEffect = undefined;
-          console.log(
-            `[装备效果修正] "${itemName}": 将 permanentEffect 转换为 effect`
-          );
-        }
-
-        // 确保法宝有属性加成，且不能有exp加成
-        if (itemType === ItemType.Artifact) {
-          if (finalEffect.exp) {
-            const { exp, ...restEffect } = finalEffect;
-            finalEffect = restEffect;
-          }
-
-          const hasAnyAttribute =
-            finalEffect.attack ||
-            finalEffect.defense ||
-            finalEffect.hp ||
-            finalEffect.spirit ||
-            finalEffect.physique ||
-            finalEffect.speed;
-
-          if (!hasAnyAttribute) {
-            const rarity = (itemData.rarity as ItemRarity) || '普通';
-            const rarityMultiplier = RARITY_MULTIPLIERS[rarity];
-            const baseValue =
-              rarity === '普通'
-                ? 10
-                : rarity === '稀有'
-                  ? 30
-                  : rarity === '传说'
-                    ? 80
-                    : 200;
-            const attributeTypes = [
-              'attack',
-              'defense',
-              'hp',
-              'spirit',
-              'physique',
-              'speed',
-            ];
-            const numAttributes = Math.floor(Math.random() * 3) + 1;
-            const selectedAttributes = attributeTypes
-              .sort(() => Math.random() - 0.5)
-              .slice(0, numAttributes);
-
-            finalEffect = {};
-            selectedAttributes.forEach((attr) => {
-              const value = Math.floor(
-                baseValue * rarityMultiplier * (0.8 + Math.random() * 0.4)
-              );
-              (finalEffect as any)[attr] = value;
-            });
-          }
+        // 确保所有装备类型都有属性加成（如果没有属性，根据品阶自动生成）
+        if (isEquippable) {
+          const rarity = (itemData.rarity as ItemRarity) || '普通';
+          finalEffect = ensureEquipmentAttributes(
+            itemType,
+            finalEffect,
+            rarity
+          ) as typeof finalEffect;
         }
 
         const isEquipment = isEquippable && equipmentSlot;
@@ -458,59 +483,14 @@ export async function executeAdventureCore({
         );
       }
 
-      // 确保法宝有属性加成，且不能有exp加成
-      if (itemType === ItemType.Artifact) {
-        // 移除exp加成（法宝不应该提供修为加成）
-        if (finalEffect.exp) {
-          const { exp, ...restEffect } = finalEffect;
-          finalEffect = restEffect;
-        }
-
-        // 如果法宝没有任何属性加成，自动生成属性
-        const hasAnyAttribute =
-          finalEffect.attack ||
-          finalEffect.defense ||
-          finalEffect.hp ||
-          finalEffect.spirit ||
-          finalEffect.physique ||
-          finalEffect.speed;
-
-        if (!hasAnyAttribute) {
-          const rarity = (result.itemObtained.rarity as ItemRarity) || '普通';
-          const rarityMultiplier = RARITY_MULTIPLIERS[rarity];
-
-          // 根据稀有度生成基础属性值
-          const baseValue =
-            rarity === '普通'
-              ? 10
-              : rarity === '稀有'
-                ? 30
-                : rarity === '传说'
-                  ? 80
-                  : 200;
-
-          // 随机生成1-3种属性
-          const attributeTypes = [
-            'attack',
-            'defense',
-            'hp',
-            'spirit',
-            'physique',
-            'speed',
-          ];
-          const numAttributes = Math.floor(Math.random() * 3) + 1; // 1-3种属性
-          const selectedAttributes = attributeTypes
-            .sort(() => Math.random() - 0.5)
-            .slice(0, numAttributes);
-
-          finalEffect = {};
-          selectedAttributes.forEach((attr) => {
-            const value = Math.floor(
-              baseValue * rarityMultiplier * (0.8 + Math.random() * 0.4)
-            );
-            (finalEffect as any)[attr] = value;
-          });
-        }
+      // 确保所有装备类型都有属性加成（如果没有属性，根据品阶自动生成）
+      if (isEquippable) {
+        const rarity = (result.itemObtained.rarity as ItemRarity) || '普通';
+        finalEffect = ensureEquipmentAttributes(
+          itemType,
+          finalEffect,
+          rarity
+        ) as typeof finalEffect;
       }
 
       // 处理丹方：需要添加 recipeData
@@ -829,6 +809,33 @@ export async function executeAdventureCore({
       }
     }
 
+    // 概率掉落灵宠进阶材料（本地概率判定）
+    const petMaterialChance = adventureType === 'secret_realm' ? 0.08 : 0.05;
+    if (Math.random() < petMaterialChance) {
+      const material =
+        PET_EVOLUTION_MATERIALS[
+          Math.floor(Math.random() * PET_EVOLUTION_MATERIALS.length)
+        ];
+      const existingIdx = newInv.findIndex((i) => i.name === material.name);
+      if (existingIdx >= 0) {
+        newInv[existingIdx] = {
+          ...newInv[existingIdx],
+          quantity: newInv[existingIdx].quantity + 1,
+        };
+      } else {
+        newInv.push({
+          id: uid(),
+          name: material.name,
+          type: ItemType.Material,
+          description: material.description,
+          quantity: 1,
+          rarity: material.rarity as ItemRarity,
+          level: 0,
+        });
+      }
+      addLog(`🎁 你获得了灵宠进阶材料【${material.name}】！`, 'gain');
+    }
+
     // 极小概率获得天赋（1%概率，秘境中2%，大机缘中5%）
     const talentChance =
       adventureType === 'lucky' ? 0.05 : realmName ? 0.02 : 0.01;
@@ -966,14 +973,19 @@ export async function executeAdventureCore({
       }
     }
 
+    // 确保数值有效，防止NaN
+    const safeHpChange = typeof result.hpChange === 'number' && !isNaN(result.hpChange) ? result.hpChange : 0;
+    const safeExpChange = typeof result.expChange === 'number' && !isNaN(result.expChange) ? result.expChange : 0;
+    const safeSpiritStonesChange = typeof result.spiritStonesChange === 'number' && !isNaN(result.spiritStonesChange) ? result.spiritStonesChange : 0;
+
     // 允许hp变为0或负数，用于触发死亡检测
-    const finalHp = newHp + result.hpChange;
+    const finalHp = newHp + safeHpChange;
 
     return {
       ...prev,
       hp: Math.min(newMaxHp, finalHp), // 移除 Math.max(0, ...)，允许负数
-      exp: Math.max(0, prev.exp + result.expChange), // 修为不能为负
-      spiritStones: Math.max(0, prev.spiritStones + result.spiritStonesChange), // 灵石不能为负
+      exp: Math.max(0, prev.exp + safeExpChange), // 修为不能为负
+      spiritStones: Math.max(0, prev.spiritStones + safeSpiritStonesChange), // 灵石不能为负
       inventory: newInv,
       cultivationArts: newArts,
       talentId: newTalentId || prev.talentId,
@@ -1075,6 +1087,33 @@ export async function executeAdventureCore({
           }
         }
 
+        // 秘境内本地概率掉落灵宠进阶材料
+        const secretRealmPetMaterialChance = 0.08;
+        if (Math.random() < secretRealmPetMaterialChance) {
+          const material =
+            PET_EVOLUTION_MATERIALS[
+              Math.floor(Math.random() * PET_EVOLUTION_MATERIALS.length)
+            ];
+          const existingIdx = newInv.findIndex((i) => i.name === material.name);
+          if (existingIdx >= 0) {
+            newInv[existingIdx] = {
+              ...newInv[existingIdx],
+              quantity: newInv[existingIdx].quantity + 1,
+            };
+          } else {
+            newInv.push({
+              id: uid(),
+              name: material.name,
+              type: ItemType.Material,
+              description: material.description,
+              quantity: 1,
+              rarity: material.rarity as ItemRarity,
+              level: 0,
+            });
+          }
+          addLog(`🎁 你在秘境中获得了灵宠进阶材料【${material.name}】！`, 'gain');
+        }
+
         // 处理属性降低（平衡机制：限制降低数值，确保有补偿）
         if (secretRealmResult.attributeReduction) {
           const reduction = secretRealmResult.attributeReduction;
@@ -1164,8 +1203,8 @@ export async function executeAdventureCore({
           // 如果确实发生了属性降低，确保有补偿（检查是否有物品或大量奖励）
           const hasCompensation =
             secretRealmResult.itemObtained ||
-            secretRealmResult.expChange > 100 * realmMultiplier ||
-            secretRealmResult.spiritStonesChange > 200 * realmMultiplier;
+            (typeof secretRealmResult.expChange === 'number' && !isNaN(secretRealmResult.expChange) && secretRealmResult.expChange > 100 * realmMultiplier) ||
+            (typeof secretRealmResult.spiritStonesChange === 'number' && !isNaN(secretRealmResult.spiritStonesChange) && secretRealmResult.spiritStonesChange > 200 * realmMultiplier);
 
           if (!hasCompensation && totalReduction > 0) {
             // 如果没有补偿，自动增加一些奖励作为补偿
@@ -1174,16 +1213,21 @@ export async function executeAdventureCore({
           }
         }
 
+        // 确保数值有效，防止NaN
+        const safeSecretHpChange = typeof secretRealmResult.hpChange === 'number' && !isNaN(secretRealmResult.hpChange) ? secretRealmResult.hpChange : 0;
+        const safeSecretExpChange = typeof secretRealmResult.expChange === 'number' && !isNaN(secretRealmResult.expChange) ? secretRealmResult.expChange : 0;
+        const safeSecretSpiritStonesChange = typeof secretRealmResult.spiritStonesChange === 'number' && !isNaN(secretRealmResult.spiritStonesChange) ? secretRealmResult.spiritStonesChange : 0;
+
         return {
           ...prev,
           hp: Math.max(
             0,
-            Math.min(newMaxHp, newHp + secretRealmResult.hpChange)
+            Math.min(newMaxHp, newHp + safeSecretHpChange)
           ),
-          exp: Math.max(0, newExp + secretRealmResult.expChange),
+          exp: Math.max(0, newExp + safeSecretExpChange),
           spiritStones: Math.max(
             0,
-            newStones + secretRealmResult.spiritStonesChange
+            newStones + safeSecretSpiritStonesChange
           ),
           inventory: newInv,
           attack: newAttack,

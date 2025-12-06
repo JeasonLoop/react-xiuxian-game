@@ -1228,17 +1228,21 @@ const createEnemy = async (
 };
 
 const calcDamage = (attack: number, defense: number) => {
+  // 确保输入是有效数字，防止NaN
+  const validAttack = Number(attack) || 0;
+  const validDefense = Number(defense) || 0;
+
   // 伤害计算：如果攻击力大于防御力，造成伤害；否则伤害很小或为0
   let baseDamage: number;
 
-  if (attack > defense) {
+  if (validAttack > validDefense) {
     // 攻击力大于防御力：造成有效伤害
     // 伤害 = (攻击力 - 防御力) * 系数 + 基础伤害
-    const damageDiff = attack - defense;
-    baseDamage = damageDiff * 0.6 + attack * 0.3; // 60%差值伤害 + 30%攻击力
+    const damageDiff = validAttack - validDefense;
+    baseDamage = damageDiff * 0.6 + validAttack * 0.3; // 60%差值伤害 + 30%攻击力
   } else {
     // 攻击力小于等于防御力：造成很少的伤害（穿透伤害）
-    const penetration = Math.max(0, attack * 0.1 - defense * 0.05);
+    const penetration = Math.max(0, validAttack * 0.1 - validDefense * 0.05);
     baseDamage = Math.max(1, penetration); // 至少1点伤害
   }
 
@@ -1257,6 +1261,7 @@ export const shouldTriggerBattle = (
   const luckMitigation = (player.luck || 0) * 0.00015; // 幸运减成（从0.0002降低到0.00015，减少影响）
   const chance = Math.min(0.75, base + realmBonus + speedBonus - luckMitigation); // 保持上限适中
   return Math.random() < Math.max(0.1, chance); // 确保不会过低也不过高
+  // return true; // 调试战斗打开
 };
 
 export const resolveBattleEncounter = async (
@@ -1274,8 +1279,11 @@ export const resolveBattleEncounter = async (
     realmMinRealm
   );
   const difficulty = getBattleDifficulty(adventureType, riskLevel);
-  let playerHp = player.hp;
-  let enemyHp = enemy.maxHp;
+  // 确保初始值为有效数字，防止NaN
+  const initialPlayerHp = Number(player.hp) || 0;
+  const initialMaxHp = Number(player.maxHp) || 0;
+  let playerHp = Math.max(0, Math.min(initialPlayerHp, initialMaxHp));
+  let enemyHp = Number(enemy.maxHp) || 0;
   const rounds: BattleRoundLog[] = [];
   let attacker: 'player' | 'enemy' =
     (player.speed || 0) >= enemy.speed ? 'player' : 'enemy';
@@ -1308,9 +1316,9 @@ export const resolveBattleEncounter = async (
     const finalDamage = crit ? Math.round(damage * 1.5) : damage;
 
     if (isPlayerTurn) {
-      enemyHp = Math.max(0, enemyHp - finalDamage);
+      enemyHp = Math.max(0, (Number(enemyHp) || 0) - finalDamage);
     } else {
-      playerHp = Math.max(0, playerHp - finalDamage);
+      playerHp = Math.max(0, (Number(playerHp) || 0) - finalDamage);
     }
 
     rounds.push({
@@ -1368,25 +1376,30 @@ export const resolveBattleEncounter = async (
 
         if (usedSkill.effect.damage) {
           // 技能伤害：基础伤害值 + 灵宠攻击力加成 + 等级加成
-          const baseSkillDamage = usedSkill.effect.damage;
+          const baseSkillDamage = Number(usedSkill.effect.damage) || 0;
           // 根据进化阶段增加攻击力倍率
-          const evolutionMultiplier = 1.0 + activePet.evolutionStage * 0.5;
-          const attackMultiplier = 1.0 + (activePet.level / 50); // 每50级增加100%攻击力
+          const evolutionMultiplier = 1.0 + (Number(activePet.evolutionStage) || 0) * 0.5;
+          const attackMultiplier = 1.0 + ((Number(activePet.level) || 0) / 50); // 每50级增加100%攻击力
           // 攻击力加成从30%提升到100%，并应用进化倍率
-          const attackBonus = Math.floor(activePet.stats.attack * evolutionMultiplier * attackMultiplier * 1.0); // 100%攻击力加成
-          const levelBonus = Math.floor(activePet.level * 5); // 每级+5伤害（从2提升到5）
-          const affectionBonus = Math.floor(activePet.affection * 0.8); // 亲密度对技能伤害也有加成
+          const baseAttack = Number(activePet.stats?.attack) || 0;
+          const attackBonus = Math.floor(baseAttack * evolutionMultiplier * attackMultiplier * 1.0); // 100%攻击力加成
+          const levelBonus = Math.floor((Number(activePet.level) || 0) * 5); // 每级+5伤害（从2提升到5）
+          const affectionBonus = Math.floor((Number(activePet.affection) || 0) * 0.8); // 亲密度对技能伤害也有加成
           const skillDamage = baseSkillDamage + attackBonus + levelBonus + affectionBonus;
           petDamage = calcDamage(skillDamage, enemy.defense);
-          enemyHp = Math.max(0, enemyHp - petDamage);
+          enemyHp = Math.max(0, (Number(enemyHp) || 0) - petDamage);
         }
 
         if (usedSkill.effect.heal) {
           // 治疗玩家
+          const baseHeal = Number(usedSkill.effect.heal) || 0;
+          const petLevel = Number(activePet.level) || 0;
+          const petAffection = Number(activePet.affection) || 0;
           petHeal = Math.floor(
-            usedSkill.effect.heal * (1 + activePet.level * 0.05) * (1 + activePet.affection / 200)
+            baseHeal * (1 + petLevel * 0.05) * (1 + petAffection / 200)
           );
-          playerHp = Math.min(player.maxHp, playerHp + petHeal);
+          const maxHp = Number(player.maxHp) || 0;
+          playerHp = Math.max(0, Math.min(maxHp, (Number(playerHp) || 0) + petHeal));
         }
 
         if (usedSkill.effect.buff) {
@@ -1427,16 +1440,16 @@ export const resolveBattleEncounter = async (
         });
       } else {
         // 普通攻击：基础攻击力 + 攻击力百分比加成 + 等级加成 + 亲密度加成
-        const baseAttack = activePet.stats.attack;
+        const baseAttack = Number(activePet.stats?.attack) || 0;
         // 根据进化阶段增加攻击力倍率（幼年期1.0，成熟期1.5，完全体2.0）
-        const evolutionMultiplier = 1.0 + activePet.evolutionStage * 0.5;
-        const attackMultiplier = 1.0 + (activePet.level / 50); // 每50级增加100%攻击力
-        const levelBonus = Math.floor(activePet.level * 8); // 每级+8攻击（从3提升到8）
-        const affectionBonus = Math.floor(activePet.affection * 1.5); // 亲密度加成（从0.5提升到1.5）
+        const evolutionMultiplier = 1.0 + (Number(activePet.evolutionStage) || 0) * 0.5;
+        const attackMultiplier = 1.0 + ((Number(activePet.level) || 0) / 50); // 每50级增加100%攻击力
+        const levelBonus = Math.floor((Number(activePet.level) || 0) * 8); // 每级+8攻击（从3提升到8）
+        const affectionBonus = Math.floor((Number(activePet.affection) || 0) * 1.5); // 亲密度加成（从0.5提升到1.5）
         // 最终攻击力 = (基础攻击力 * 进化倍率 * 等级倍率) + 等级加成 + 亲密度加成
         const petAttackDamage = Math.floor(baseAttack * evolutionMultiplier * attackMultiplier) + levelBonus + affectionBonus;
         const petDamage = calcDamage(petAttackDamage, enemy.defense);
-        enemyHp = Math.max(0, enemyHp - petDamage);
+        enemyHp = Math.max(0, (Number(enemyHp) || 0) - petDamage);
 
         rounds.push({
           id: randomId(),
@@ -1459,7 +1472,10 @@ export const resolveBattleEncounter = async (
 
   const victory = enemyHp <= 0 && playerHp > 0;
 
-  const hpLoss = Math.max(0, player.hp - playerHp);
+  // 确保hpLoss是有效数字，防止NaN
+  const playerHpBefore = Number(player.hp) || 0;
+  const playerHpAfter = Number(playerHp) || 0;
+  const hpLoss = Math.max(0, Math.floor(playerHpBefore - playerHpAfter));
 
   // 根据风险等级调整奖励倍数
   const getRewardMultiplier = (
@@ -1569,9 +1585,12 @@ export const resolveBattleEncounter = async (
     realmName
   );
 
+  // 确保hpChange是有效数字，防止NaN
+  const hpChange = Math.floor(playerHpAfter - playerHpBefore);
+
   const adventureResult: AdventureResult = {
     story: summary,
-    hpChange: playerHp - player.hp,
+    hpChange,
     expChange,
     spiritStonesChange: spiritChange,
     eventColor: 'danger',
@@ -1596,8 +1615,8 @@ export const resolveBattleEncounter = async (
       rounds,
       victory,
       hpLoss,
-      playerHpBefore: player.hp,
-      playerHpAfter: playerHp,
+      playerHpBefore: playerHpBefore,
+      playerHpAfter: playerHpAfter,
       summary,
       expChange,
       spiritChange,

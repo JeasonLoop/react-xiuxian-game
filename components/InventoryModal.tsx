@@ -153,7 +153,12 @@ const InventoryItem = memo<InventoryItemProps>(
 
     const stats = getItemStats(item);
     const rarity = item.rarity || '普通';
-    const level = item.level || 0;
+    const showLevel =
+      typeof item.level === 'number' && Number.isFinite(item.level) && item.level > 0;
+    const reviveChances =
+      typeof item.reviveChances === 'number' && Number.isFinite(item.reviveChances)
+        ? item.reviveChances
+        : undefined;
 
     const handleEquip = useCallback(() => {
       let targetSlot = item.equipmentSlot!;
@@ -223,9 +228,9 @@ const InventoryItem = memo<InventoryItemProps>(
           <div className="flex justify-between items-start pr-16 mb-1">
             <h4 className={getRarityNameClasses(item.rarity)}>
               {item.name}{' '}
-              {level > 0 && (
+              {showLevel && (
                 <span className="text-stone-500 text-xs font-normal ml-1">
-                  + {level}
+                  + {item.level}
                 </span>
               )}
             </h4>
@@ -254,9 +259,14 @@ const InventoryItem = memo<InventoryItemProps>(
             </div>
           )}
 
-          {item.reviveChances && item.reviveChances > 0 && (
+          {reviveChances !== undefined && reviveChances > 0 && (
             <div className="text-xs text-yellow-400 mb-2 flex items-center gap-1 font-bold">
-              💫 保命机会：{item.reviveChances}次
+              💫 保命机会：{reviveChances}次
+            </div>
+          )}
+          {reviveChances !== undefined && reviveChances <= 0 && (
+            <div className="text-[11px] text-stone-500 mb-2 flex items-center gap-1">
+              💫 保命机会：已耗尽
             </div>
           )}
 
@@ -690,7 +700,7 @@ const InventoryModal: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm touch-manipulation"
+      className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-[60] p-0 md:p-4 backdrop-blur-sm touch-manipulation"
       onClick={onClose}
     >
       <div

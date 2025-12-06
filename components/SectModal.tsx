@@ -58,8 +58,8 @@ const SectModal: React.FC<Props> = ({
   // 生成随机任务列表（已加入宗门时）
   const randomTasks = useMemo(() => {
     if (!player.sectId) return [];
-    return generateRandomSectTasks(player.sectRank, 3);
-  }, [player.sectId, player.sectRank, refreshKey]);
+    return generateRandomSectTasks(player.sectRank, player.realm, 3);
+  }, [player.sectId, player.sectRank, player.realm, refreshKey]);
 
   const handleRefresh = () => {
     setRefreshKey((prev) => prev + 1);
@@ -403,6 +403,14 @@ const SectModal: React.FC<Props> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {randomTasks.map((task) => {
                   const canComplete = (() => {
+                    // 检查境界要求
+                    if (task.minRealm) {
+                      const realmIndex = REALM_ORDER.indexOf(player.realm);
+                      const minRealmIndex = REALM_ORDER.indexOf(task.minRealm);
+                      if (realmIndex < minRealmIndex) {
+                        return false;
+                      }
+                    }
                     if (
                       task.cost?.spiritStones &&
                       player.spiritStones < task.cost.spiritStones
@@ -458,17 +466,68 @@ const SectModal: React.FC<Props> = ({
                     long: '较长',
                   }[task.timeCost];
 
+                  // 任务品质颜色配置
+                  const qualityColors = {
+                    普通: 'text-stone-400 border-stone-600 bg-stone-900/20',
+                    稀有: 'text-blue-400 border-blue-600 bg-blue-900/20',
+                    传说: 'text-purple-400 border-purple-600 bg-purple-900/20',
+                    仙品: 'text-yellow-400 border-yellow-600 bg-yellow-900/20',
+                  };
+
+                  // 难度颜色配置
+                  const difficultyColors = {
+                    简单: 'text-green-400',
+                    普通: 'text-blue-400',
+                    困难: 'text-orange-400',
+                    极难: 'text-red-400',
+                  };
+
+                  // 检查境界要求
+                  const meetsRealmRequirement = task.minRealm
+                    ? REALM_ORDER.indexOf(player.realm) >= REALM_ORDER.indexOf(task.minRealm)
+                    : true;
+
                   return (
                     <div
                       key={task.id}
-                      className="bg-ink-800 p-4 rounded border border-stone-700 flex flex-col"
+                      className={`bg-ink-800 p-4 rounded border flex flex-col ${
+                        task.quality === '仙品'
+                          ? 'border-yellow-600/50 shadow-lg shadow-yellow-900/20'
+                          : task.quality === '传说'
+                          ? 'border-purple-600/50 shadow-md shadow-purple-900/10'
+                          : 'border-stone-700'
+                      }`}
                     >
-                      <h4 className="font-serif font-bold text-stone-200 mb-1">
-                        {task.name}
-                      </h4>
-                      <p className="text-xs text-stone-500 mb-4 flex-1">
+                      <div className="flex items-start justify-between mb-1">
+                        <h4 className="font-serif font-bold text-stone-200 flex-1">
+                          {task.name}
+                        </h4>
+                        {task.quality && (
+                          <span className={`text-xs px-2 py-0.5 rounded border ${qualityColors[task.quality]}`}>
+                            {task.quality}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-stone-500 mb-3 flex-1">
                         {task.description}
                       </p>
+
+                      {/* 任务标签 */}
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        <span className={`text-xs px-2 py-0.5 rounded border ${difficultyColors[task.difficulty]} bg-stone-900/30 border-stone-600`}>
+                          难度: {task.difficulty}
+                        </span>
+                        {task.minRealm && (
+                          <span className={`text-xs px-2 py-0.5 rounded border ${
+                            meetsRealmRequirement
+                              ? 'text-green-400 border-green-600 bg-green-900/20'
+                              : 'text-red-400 border-red-600 bg-red-900/20'
+                          }`}>
+                            境界: {task.minRealm}
+                            {!meetsRealmRequirement && ' (不足)'}
+                          </span>
+                        )}
+                      </div>
 
                       <div className="space-y-2 mb-4">
                         {task.cost && (

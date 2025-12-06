@@ -122,6 +122,7 @@ interface ModalsContainerProps {
     handleUpdateViewedAchievements: () => void;
     // Pet
     handleActivatePet: (petId: string) => void;
+    handleDeactivatePet?: () => void;
     handleFeedPet: (
       petId: string,
       feedType: 'hp' | 'item' | 'exp',
@@ -129,6 +130,8 @@ interface ModalsContainerProps {
     ) => void;
     handleBatchFeedItems?: (petId: string, itemIds: string[]) => void;
     handleEvolvePet: (petId: string) => void;
+    handleReleasePet?: (petId: string) => void;
+    handleBatchReleasePets?: (petIds: string[]) => void;
     // Lottery
     handleDraw: (count: 1 | 10) => void;
     // Settings
@@ -279,9 +282,12 @@ export default function ModalsContainer({
         onClose={() => handlers.setIsPetOpen(false)}
         player={player}
         onActivatePet={handlers.handleActivatePet}
+        onDeactivatePet={handlers.handleDeactivatePet}
         onFeedPet={handlers.handleFeedPet}
         onBatchFeedItems={handlers.handleBatchFeedItems}
         onEvolvePet={handlers.handleEvolvePet}
+        onReleasePet={handlers.handleReleasePet}
+        onBatchReleasePets={handlers.handleBatchReleasePets}
       />
 
       <LotteryModal
@@ -310,6 +316,7 @@ export default function ModalsContainer({
           onBuyItem={handlers.handleBuyItem}
           onSellItem={handlers.handleSellItem}
           onRefreshShop={handlers.handleRefreshShop}
+          onOpenInventory={() => handlers.setIsInventoryOpen(true)}
         />
       )}
     </>
