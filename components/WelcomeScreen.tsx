@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { Sparkles, Play, Upload } from 'lucide-react';
-import logo from '../assets/images/logo.png';
+import logo from '../public/assets/images/logo.png';
 import { SAVE_KEY } from '../utils/gameUtils';
 import { showError, showSuccess } from '../utils/toastUtils';
 
