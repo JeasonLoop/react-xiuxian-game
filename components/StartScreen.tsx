@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { Talent } from '../types';
 import { TALENTS } from '../constants';
-import { Sparkles, Sword, Shield, Heart, Zap, User, Upload } from 'lucide-react';
+import { Sparkles, Sword, Shield, Heart, Zap, User, Upload, TriangleAlert } from 'lucide-react';
 import { showError, showSuccess } from '../utils/toastUtils';
 import { SAVE_KEY } from '../utils/gameUtils';
 
