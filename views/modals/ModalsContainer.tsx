@@ -136,6 +136,7 @@ interface ModalsContainerProps {
     handleDraw: (count: 1 | 10) => void;
     // Settings
     handleUpdateSettings: (newSettings: Partial<GameSettings>) => void;
+    handleRestartGame?: () => void;
     // Shop
     handleBuyItem: (shopItem: any, quantity?: number) => void;
     handleSellItem: (item: Item, quantity?: number) => void;
@@ -302,6 +303,7 @@ export default function ModalsContainer({
         onClose={() => handlers.setIsSettingsOpen(false)}
         settings={settings}
         onUpdateSettings={handlers.handleUpdateSettings}
+        onRestartGame={handlers.handleRestartGame}
       />
 
       {modalState.currentShop && (

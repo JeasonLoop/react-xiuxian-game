@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlayerStats, CultivationArt, RealmType } from '../../types';
-import { SECTS, REALM_ORDER } from '../../constants';
+import { SECTS, REALM_ORDER, calculateSpiritualRootArtBonus } from '../../constants';
 import { showError, showWarning } from '../../utils/toastUtils';
 
 interface UseCultivationHandlersProps {
@@ -116,10 +116,19 @@ export function useCultivationHandlers({
 
       const newStones = prev.spiritStones - art.cost;
 
-      const newAttack = prev.attack + (art.effects.attack || 0);
-      const newDefense = prev.defense + (art.effects.defense || 0);
-      const newMaxHp = prev.maxHp + (art.effects.hp || 0);
-      const newHp = prev.hp + (art.effects.hp || 0);
+      // 计算灵根加成
+      const spiritualRootBonus = calculateSpiritualRootArtBonus(art, prev.spiritualRoots || {
+        metal: 0,
+        wood: 0,
+        water: 0,
+        fire: 0,
+        earth: 0,
+      });
+
+      const newAttack = prev.attack + Math.floor((art.effects.attack || 0) * spiritualRootBonus);
+      const newDefense = prev.defense + Math.floor((art.effects.defense || 0) * spiritualRootBonus);
+      const newMaxHp = prev.maxHp + Math.floor((art.effects.hp || 0) * spiritualRootBonus);
+      const newHp = prev.hp + Math.floor((art.effects.hp || 0) * spiritualRootBonus);
 
       // 确保不会重复添加
       const newArts = prev.cultivationArts.includes(art.id)
@@ -143,7 +152,28 @@ export function useCultivationHandlers({
       };
     });
 
-    addLog(`你成功领悟了功法【${art.name}】！实力大增。`, 'gain');
+    // 显示灵根加成信息
+    const spiritualRootBonus = calculateSpiritualRootArtBonus(art, player.spiritualRoots || {
+      metal: 0,
+      wood: 0,
+      water: 0,
+      fire: 0,
+      earth: 0,
+    });
+
+    if (art.spiritualRoot && spiritualRootBonus > 1.0) {
+      const rootNames: Record<string, string> = {
+        metal: '金',
+        wood: '木',
+        water: '水',
+        fire: '火',
+        earth: '土',
+      };
+      const bonusPercent = Math.floor((spiritualRootBonus - 1.0) * 100);
+      addLog(`你成功领悟了功法【${art.name}】！由于你的${rootNames[art.spiritualRoot]}灵根，功法效果提升了${bonusPercent}%！`, 'gain');
+    } else {
+      addLog(`你成功领悟了功法【${art.name}】！实力大增。`, 'gain');
+    }
   };
 
   const handleActivateArt = (art: CultivationArt) => {

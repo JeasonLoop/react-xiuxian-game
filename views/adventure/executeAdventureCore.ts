@@ -978,6 +978,39 @@ export async function executeAdventureCore({
     const safeExpChange = typeof result.expChange === 'number' && !isNaN(result.expChange) ? result.expChange : 0;
     const safeSpiritStonesChange = typeof result.spiritStonesChange === 'number' && !isNaN(result.spiritStonesChange) ? result.spiritStonesChange : 0;
 
+    // 处理寿命变化
+    const safeLifespanChange = typeof result.lifespanChange === 'number' && !isNaN(result.lifespanChange) ? result.lifespanChange : 0;
+
+    // 基础寿命流逝：每次历练流逝少量寿命（0.1-0.5年，根据风险等级调整）
+    let baseLifespanLoss = 0;
+    if (riskLevel === '低') {
+      baseLifespanLoss = 0.1;
+    } else if (riskLevel === '中') {
+      baseLifespanLoss = 0.2;
+    } else if (riskLevel === '高') {
+      baseLifespanLoss = 0.3;
+    } else if (riskLevel === '极度危险') {
+      baseLifespanLoss = 0.5;
+    } else {
+      baseLifespanLoss = 0.15; // 默认
+    }
+
+    // 特殊事件可能额外流失寿命（已在result.lifespanChange中处理）
+    const totalLifespanChange = safeLifespanChange - baseLifespanLoss;
+    const newLifespan = Math.max(0, (prev.lifespan || prev.maxLifespan || 100) + totalLifespanChange);
+
+    // 处理灵根变化
+    let newSpiritualRoots = { ...prev.spiritualRoots };
+    if (result.spiritualRootsChange) {
+      newSpiritualRoots = {
+        metal: Math.min(100, Math.max(0, (newSpiritualRoots.metal || 0) + (result.spiritualRootsChange.metal || 0))),
+        wood: Math.min(100, Math.max(0, (newSpiritualRoots.wood || 0) + (result.spiritualRootsChange.wood || 0))),
+        water: Math.min(100, Math.max(0, (newSpiritualRoots.water || 0) + (result.spiritualRootsChange.water || 0))),
+        fire: Math.min(100, Math.max(0, (newSpiritualRoots.fire || 0) + (result.spiritualRootsChange.fire || 0))),
+        earth: Math.min(100, Math.max(0, (newSpiritualRoots.earth || 0) + (result.spiritualRootsChange.earth || 0))),
+      };
+    }
+
     // 允许hp变为0或负数，用于触发死亡检测
     const finalHp = newHp + safeHpChange;
 
@@ -1000,10 +1033,42 @@ export async function executeAdventureCore({
       inheritanceLevel: newInheritanceLevel,
       pets: newPets,
       statistics: newStats,
+      lifespan: newLifespan,
+      spiritualRoots: newSpiritualRoots,
     };
   });
 
   addLog(result.story, result.eventColor);
+
+  // 显示寿命变化
+  if (result.lifespanChange !== undefined && result.lifespanChange !== 0) {
+    if (result.lifespanChange > 0) {
+      addLog(`✨ 你的寿命增加了 ${result.lifespanChange.toFixed(1)} 年！`, 'gain');
+    } else {
+      addLog(`⚠️ 你的寿命减少了 ${Math.abs(result.lifespanChange).toFixed(1)} 年！`, 'danger');
+    }
+  }
+
+  // 显示灵根变化
+  if (result.spiritualRootsChange) {
+    const rootNames: Record<string, string> = {
+      metal: '金',
+      wood: '木',
+      water: '水',
+      fire: '火',
+      earth: '土',
+    };
+    Object.entries(result.spiritualRootsChange).forEach(([key, value]) => {
+      if (value && value !== 0) {
+        const rootName = rootNames[key] || key;
+        if (value > 0) {
+          addLog(`✨ 你的${rootName}灵根提升了 ${value} 点！`, 'gain');
+        } else {
+          addLog(`⚠️ 你的${rootName}灵根降低了 ${Math.abs(value)} 点！`, 'danger');
+        }
+      }
+    });
+  }
 
   // 显示获得的物品
   if (result.itemsObtained && result.itemsObtained.length > 0) {

@@ -41,6 +41,7 @@ export const REALM_DATA: Record<
     basePhysique: number; // 体魄
     baseSpeed: number; // 速度
     maxExpBase: number;
+    baseMaxLifespan: number; // 基础最大寿命（年）
   }
 > = {
   [RealmType.QiRefining]: {
@@ -51,6 +52,7 @@ export const REALM_DATA: Record<
     basePhysique: 10,
     baseSpeed: 10,
     maxExpBase: 100,
+    baseMaxLifespan: 100, // 炼气期基础寿命100年
   },
   [RealmType.Foundation]: {
     baseMaxHp: 500,
@@ -60,6 +62,7 @@ export const REALM_DATA: Record<
     basePhysique: 50,
     baseSpeed: 30,
     maxExpBase: 1000,
+    baseMaxLifespan: 200, // 筑基期基础寿命200年
   },
   [RealmType.GoldenCore]: {
     baseMaxHp: 2500,
@@ -69,6 +72,7 @@ export const REALM_DATA: Record<
     basePhysique: 200,
     baseSpeed: 50,
     maxExpBase: 5000,
+    baseMaxLifespan: 500, // 金丹期基础寿命500年
   },
   [RealmType.NascentSoul]: {
     baseMaxHp: 10000,
@@ -78,6 +82,7 @@ export const REALM_DATA: Record<
     basePhysique: 1000,
     baseSpeed: 100,
     maxExpBase: 25000,
+    baseMaxLifespan: 1000, // 元婴期基础寿命1000年
   },
   [RealmType.SpiritSevering]: {
     baseMaxHp: 50000,
@@ -87,6 +92,7 @@ export const REALM_DATA: Record<
     basePhysique: 5000,
     baseSpeed: 200,
     maxExpBase: 100000,
+    baseMaxLifespan: 2000, // 化神期基础寿命2000年
   },
   [RealmType.VoidRefining]: {
     baseMaxHp: 200000,
@@ -96,6 +102,7 @@ export const REALM_DATA: Record<
     basePhysique: 20000,
     baseSpeed: 300,
     maxExpBase: 500000,
+    baseMaxLifespan: 5000, // 炼虚期基础寿命5000年
   },
   [RealmType.ImmortalAscension]: {
     baseMaxHp: 1000000,
@@ -105,6 +112,7 @@ export const REALM_DATA: Record<
     basePhysique: 100000,
     baseSpeed: 500,
     maxExpBase: 9999999,
+    baseMaxLifespan: 10000, // 渡劫飞升基础寿命10000年
   },
 };
 
@@ -155,6 +163,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '将灵气转化为烈火附着于双拳。大幅提升攻击力。',
     realmRequirement: RealmType.Foundation,
     cost: 300,
+    spiritualRoot: 'fire',
     effects: { attack: 30 },
   },
   {
@@ -165,6 +174,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '锻骨如玉，百毒不侵。大幅提升气血与防御。',
     realmRequirement: RealmType.Foundation,
     cost: 500,
+    spiritualRoot: 'earth',
     effects: { defense: 20, hp: 100 },
   },
   {
@@ -175,6 +185,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '至刚至阳的高深心法，修炼速度极快。',
     realmRequirement: RealmType.GoldenCore,
     cost: 2000,
+    spiritualRoot: 'fire',
     effects: { expRate: 0.5, attack: 50 },
   },
   {
@@ -185,6 +196,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '引九天神雷入剑，威力绝伦，若是肉身不够强横恐遭反噬。',
     realmRequirement: RealmType.GoldenCore,
     cost: 3000,
+    spiritualRoot: 'metal',
     effects: { attack: 150 },
   },
   {
@@ -195,6 +207,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '上古木系神功，生生不息，气血悠长。',
     realmRequirement: RealmType.NascentSoul,
     cost: 8000,
+    spiritualRoot: 'wood',
     effects: { expRate: 0.6, hp: 2000 },
   },
   {
@@ -225,6 +238,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '心如止水，明镜高悬。提升修炼速度和防御。',
     realmRequirement: RealmType.Foundation,
     cost: 400,
+    spiritualRoot: 'water',
     effects: { expRate: 0.3, defense: 15 },
   },
   {
@@ -235,6 +249,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '引大地之力护体，防御力极强。',
     realmRequirement: RealmType.Foundation,
     cost: 600,
+    spiritualRoot: 'earth',
     effects: { defense: 40, hp: 150 },
   },
   {
@@ -486,7 +501,195 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '觉醒仙人之力，超越凡俗。',
     realmRequirement: RealmType.VoidRefining,
     cost: 60000,
+    spiritualRoot: 'fire',
     effects: { expRate: 1.5, attack: 8000, defense: 7000, hp: 15000, spirit: 3000 },
+  },
+  // 新增五行功法
+  {
+    id: 'art-golden-sword',
+    name: '金剑诀',
+    type: 'body',
+    grade: '黄',
+    description: '金系剑法，锋芒毕露。',
+    realmRequirement: RealmType.QiRefining,
+    cost: 90,
+    spiritualRoot: 'metal',
+    effects: { attack: 12, defense: 3 },
+  },
+  {
+    id: 'art-wooden-heart',
+    name: '木心诀',
+    type: 'mental',
+    grade: '黄',
+    description: '木系心法，生机勃勃。',
+    realmRequirement: RealmType.QiRefining,
+    cost: 70,
+    spiritualRoot: 'wood',
+    effects: { expRate: 0.15, hp: 25 },
+  },
+  {
+    id: 'art-water-flow',
+    name: '流水诀',
+    type: 'mental',
+    grade: '黄',
+    description: '水系心法，柔中带刚。',
+    realmRequirement: RealmType.QiRefining,
+    cost: 85,
+    spiritualRoot: 'water',
+    effects: { expRate: 0.18, spirit: 4 },
+  },
+  {
+    id: 'art-flame-body',
+    name: '火体功',
+    type: 'body',
+    grade: '黄',
+    description: '火系炼体，刚猛霸道。',
+    realmRequirement: RealmType.QiRefining,
+    cost: 95,
+    spiritualRoot: 'fire',
+    effects: { attack: 10, speed: 5 },
+  },
+  {
+    id: 'art-earth-core',
+    name: '土核功',
+    type: 'body',
+    grade: '黄',
+    description: '土系炼体，厚重沉稳。',
+    realmRequirement: RealmType.QiRefining,
+    cost: 75,
+    spiritualRoot: 'earth',
+    effects: { defense: 10, hp: 35 },
+  },
+  {
+    id: 'art-golden-armor',
+    name: '金甲护体',
+    type: 'body',
+    grade: '玄',
+    description: '金系防御功法，坚不可摧。',
+    realmRequirement: RealmType.Foundation,
+    cost: 650,
+    spiritualRoot: 'metal',
+    effects: { defense: 55, attack: 25 },
+  },
+  {
+    id: 'art-wooden-rebirth',
+    name: '木生诀',
+    type: 'mental',
+    grade: '玄',
+    description: '木系恢复心法，生生不息。',
+    realmRequirement: RealmType.Foundation,
+    cost: 550,
+    spiritualRoot: 'wood',
+    effects: { expRate: 0.35, hp: 180, defense: 10 },
+  },
+  {
+    id: 'art-ice-soul',
+    name: '冰魄诀',
+    type: 'mental',
+    grade: '玄',
+    description: '水系变异心法，冰寒刺骨。',
+    realmRequirement: RealmType.Foundation,
+    cost: 750,
+    spiritualRoot: 'water',
+    effects: { expRate: 0.38, spirit: 30, defense: 25 },
+  },
+  {
+    id: 'art-sun-fire',
+    name: '太阳真火诀',
+    type: 'mental',
+    grade: '地',
+    description: '火系至高心法，如太阳般炽热。',
+    realmRequirement: RealmType.GoldenCore,
+    cost: 3500,
+    spiritualRoot: 'fire',
+    effects: { expRate: 0.58, attack: 90, hp: 400 },
+  },
+  {
+    id: 'art-earth-mountain',
+    name: '山岳功',
+    type: 'body',
+    grade: '地',
+    description: '土系炼体至境，如山岳般厚重。',
+    realmRequirement: RealmType.GoldenCore,
+    cost: 4000,
+    spiritualRoot: 'earth',
+    effects: { defense: 150, hp: 600, attack: 60 },
+  },
+  {
+    id: 'art-golden-dragon',
+    name: '金龙诀',
+    type: 'body',
+    grade: '地',
+    description: '金系至高功法，如金龙般威猛。',
+    realmRequirement: RealmType.GoldenCore,
+    cost: 4200,
+    spiritualRoot: 'metal',
+    effects: { attack: 220, defense: 80, speed: 40 },
+  },
+  {
+    id: 'art-wood-immortal',
+    name: '木仙诀',
+    type: 'mental',
+    grade: '天',
+    description: '木系仙级心法，与天地同寿。',
+    realmRequirement: RealmType.NascentSoul,
+    cost: 11000,
+    spiritualRoot: 'wood',
+    effects: { expRate: 0.7, hp: 3000, defense: 200 },
+  },
+  {
+    id: 'art-ocean-heart',
+    name: '海心诀',
+    type: 'mental',
+    grade: '天',
+    description: '水系仙级心法，如海洋般深邃。',
+    realmRequirement: RealmType.NascentSoul,
+    cost: 13000,
+    spiritualRoot: 'water',
+    effects: { expRate: 0.68, spirit: 1200, defense: 300 },
+  },
+  {
+    id: 'art-phoenix-fire',
+    name: '凤凰真火',
+    type: 'mental',
+    grade: '天',
+    description: '火系仙级心法，如凤凰涅槃。',
+    realmRequirement: RealmType.NascentSoul,
+    cost: 14000,
+    spiritualRoot: 'fire',
+    effects: { expRate: 0.72, attack: 1800, hp: 2800 },
+  },
+  {
+    id: 'art-earth-immortal',
+    name: '土仙体',
+    type: 'body',
+    grade: '天',
+    description: '土系仙级炼体，与大地同源。',
+    realmRequirement: RealmType.SpiritSevering,
+    cost: 28000,
+    spiritualRoot: 'earth',
+    effects: { defense: 6000, hp: 70000, attack: 4000 },
+  },
+  {
+    id: 'art-golden-immortal',
+    name: '金仙剑',
+    type: 'body',
+    grade: '天',
+    description: '金系仙级剑法，斩断一切。',
+    realmRequirement: RealmType.SpiritSevering,
+    cost: 32000,
+    spiritualRoot: 'metal',
+    effects: { attack: 8000, defense: 3000, speed: 2000 },
+  },
+  {
+    id: 'art-five-elements',
+    name: '五行归一',
+    type: 'mental',
+    grade: '天',
+    description: '融合五行之力，达到修炼的极致。',
+    realmRequirement: RealmType.VoidRefining,
+    cost: 70000,
+    effects: { expRate: 1.2, attack: 10000, defense: 8000, hp: 20000, spirit: 5000 },
   },
 ];
 
@@ -636,6 +839,125 @@ export const PILL_RECIPES: Recipe[] = [
       description: '传说中的仙丹，服用后甚至能让凡人立地飞升。',
       rarity: '仙品',
       effect: { exp: 5000, attack: 10, defense: 10 },
+    },
+  },
+  {
+    name: '延寿丹',
+    cost: 300,
+    ingredients: [
+      { name: '千年人参', qty: 2 },
+      { name: '血参', qty: 3 },
+    ],
+    result: {
+      name: '延寿丹',
+      type: ItemType.Pill,
+      description: '增加寿命的珍贵丹药，可延长10年寿命。',
+      rarity: '稀有',
+      effect: { lifespan: 10 },
+    },
+  },
+  {
+    name: '长生丹',
+    cost: 1500,
+    ingredients: [
+      { name: '万年仙草', qty: 1 },
+      { name: '千年灵芝', qty: 2 },
+    ],
+    result: {
+      name: '长生丹',
+      type: ItemType.Pill,
+      description: '增加寿命的极品丹药，可延长50年寿命并增加最大寿命。',
+      rarity: '传说',
+      effect: { lifespan: 50 },
+      permanentEffect: { maxLifespan: 20 },
+    },
+  },
+  {
+    name: '不死仙丹',
+    cost: 8000,
+    ingredients: [
+      { name: '万年灵乳', qty: 2 },
+      { name: '九叶芝草', qty: 2 },
+      { name: '龙鳞果', qty: 3 },
+    ],
+    result: {
+      name: '不死仙丹',
+      type: ItemType.Pill,
+      description: '传说中的不死仙丹，可延长200年寿命并大幅增加最大寿命。',
+      rarity: '仙品',
+      effect: { lifespan: 200 },
+      permanentEffect: { maxLifespan: 100 },
+    },
+  },
+  {
+    name: '洗灵丹',
+    cost: 400,
+    ingredients: [
+      { name: '天灵果', qty: 3 },
+      { name: '紫猴花', qty: 2 },
+    ],
+    result: {
+      name: '洗灵丹',
+      type: ItemType.Pill,
+      description: '洗涤灵根，随机提升一种灵根5点。',
+      rarity: '稀有',
+      permanentEffect: {
+        spiritualRoots: {
+          metal: 0,
+          wood: 0,
+          water: 0,
+          fire: 0,
+          earth: 0,
+        },
+      },
+    },
+  },
+  {
+    name: '五行灵丹',
+    cost: 2500,
+    ingredients: [
+      { name: '千年人参', qty: 3 },
+      { name: '天灵果', qty: 3 },
+      { name: '高阶妖丹', qty: 2 },
+    ],
+    result: {
+      name: '五行灵丹',
+      type: ItemType.Pill,
+      description: '平衡五行，所有灵根各提升3点。',
+      rarity: '传说',
+      permanentEffect: {
+        spiritualRoots: {
+          metal: 3,
+          wood: 3,
+          water: 3,
+          fire: 3,
+          earth: 3,
+        },
+      },
+    },
+  },
+  {
+    name: '天灵根丹',
+    cost: 10000,
+    ingredients: [
+      { name: '万年灵乳', qty: 3 },
+      { name: '九叶芝草', qty: 3 },
+      { name: '万年仙草', qty: 2 },
+    ],
+    result: {
+      name: '天灵根丹',
+      type: ItemType.Pill,
+      description: '传说中的仙丹，所有灵根各提升10点。',
+      rarity: '仙品',
+      permanentEffect: {
+        spiritualRoots: {
+          metal: 10,
+          wood: 10,
+          water: 10,
+          fire: 10,
+          earth: 10,
+        },
+      },
     },
   },
 ];
@@ -5000,4 +5322,105 @@ export const BATTLE_POTIONS: Record<string, BattlePotion> = {
     cooldown: 5,
     itemType: ItemType.Pill,
   },
+};
+
+// ==================== 灵根系统配置 ====================
+
+// 灵根类型
+export type SpiritualRootType = 'metal' | 'wood' | 'water' | 'fire' | 'earth';
+
+// 灵根名称映射
+export const SPIRITUAL_ROOT_NAMES: Record<SpiritualRootType, string> = {
+  metal: '金',
+  wood: '木',
+  water: '水',
+  fire: '火',
+  earth: '土',
+};
+
+// 灵根对修炼速度的影响（每个灵根点增加0.1%的修炼速度）
+export const SPIRITUAL_ROOT_EXP_MULTIPLIER = 0.001; // 每个灵根点增加0.1%修炼速度
+
+// 灵根对突破成功率的影响（每个灵根点增加0.05%的突破成功率）
+export const SPIRITUAL_ROOT_BREAKTHROUGH_BONUS = 0.0005; // 每个灵根点增加0.05%突破成功率
+
+// 灵根对属性的影响（每个灵根点增加对应属性的0.1%）
+export const SPIRITUAL_ROOT_ATTRIBUTE_MULTIPLIER = 0.001; // 每个灵根点增加0.1%属性
+
+// 灵根属性加成映射（不同灵根影响不同属性）
+export const SPIRITUAL_ROOT_ATTRIBUTE_MAP: Record<
+  SpiritualRootType,
+  {
+    attack?: number; // 攻击力加成比例
+    defense?: number; // 防御力加成比例
+    spirit?: number; // 神识加成比例
+    physique?: number; // 体魄加成比例
+    speed?: number; // 速度加成比例
+    maxHp?: number; // 气血上限加成比例（木灵根使用）
+  }
+> = {
+  metal: { attack: 0.002, defense: 0.001 }, // 金灵根：攻击+0.2%/点，防御+0.1%/点
+  wood: { maxHp: 0.002, physique: 0.001 }, // 木灵根：气血+0.2%/点，体魄+0.1%/点（通过maxHp实现）
+  water: { spirit: 0.002, defense: 0.001 }, // 水灵根：神识+0.2%/点，防御+0.1%/点
+  fire: { attack: 0.002, speed: 0.001 }, // 火灵根：攻击+0.2%/点，速度+0.1%/点
+  earth: { defense: 0.002, physique: 0.001 }, // 土灵根：防御+0.2%/点，体魄+0.1%/点
+};
+
+// 计算灵根总等级
+export const calculateTotalSpiritualRootLevel = (spiritualRoots: {
+  metal: number;
+  wood: number;
+  water: number;
+  fire: number;
+  earth: number;
+}): number => {
+  return (
+    spiritualRoots.metal +
+    spiritualRoots.wood +
+    spiritualRoots.water +
+    spiritualRoots.fire +
+    spiritualRoots.earth
+  );
+};
+
+// 计算灵根对修炼速度的加成
+export const calculateSpiritualRootExpBonus = (spiritualRoots: {
+  metal: number;
+  wood: number;
+  water: number;
+  fire: number;
+  earth: number;
+}): number => {
+  const totalLevel = calculateTotalSpiritualRootLevel(spiritualRoots);
+  return 1 + totalLevel * SPIRITUAL_ROOT_EXP_MULTIPLIER;
+};
+
+// 计算灵根对突破成功率的加成
+export const calculateSpiritualRootBreakthroughBonus = (spiritualRoots: {
+  metal: number;
+  wood: number;
+  water: number;
+  fire: number;
+  earth: number;
+}): number => {
+  const totalLevel = calculateTotalSpiritualRootLevel(spiritualRoots);
+  return totalLevel * SPIRITUAL_ROOT_BREAKTHROUGH_BONUS;
+};
+
+// 计算灵根对功法的加成倍数（每个灵根点增加0.5%的效果）
+export const calculateSpiritualRootArtBonus = (
+  art: CultivationArt,
+  spiritualRoots: {
+    metal: number;
+    wood: number;
+    water: number;
+    fire: number;
+    earth: number;
+  }
+): number => {
+  if (!art.spiritualRoot) return 1.0; // 没有对应灵根的功法不加成
+
+  const rootLevel = spiritualRoots[art.spiritualRoot] || 0;
+  // 每个灵根点增加0.5%的效果，最高50%加成（100点灵根）
+  return 1.0 + (rootLevel * 0.005);
 };

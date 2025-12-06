@@ -287,13 +287,58 @@ function App() {
   const handleSkipBattleLogs = battleHandlers.handleSkipBattleLogs;
   const handleCloseBattleModal = battleHandlers.handleCloseBattleModal;
 
-  // 检测死亡
+  // 检测死亡（包括寿命归零）
   useEffect(() => {
-    if (!player) return;
-    if (isDead) {
-      localStorage.removeItem(SAVE_KEY);
+    if (!player || isDead) return; // 如果已经死亡，不再检测
+
+    // 检测寿命归零（老死）
+    if (player.lifespan !== undefined && player.lifespan <= 0) {
+      addLog('⏰ 你的寿命已尽，寿终正寝 还是无缘窥探大道...', 'danger');
+
+      if (settings.difficulty === 'hard') {
+        // 困难模式：死亡惩罚
+        setIsDead(true);
+        setPlayer((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            hp: 0, // 触发死亡
+          };
+        });
+        const reason = '你的寿命已尽，寿终正寝。';
+        setDeathReason(reason);
+        setDeathBattleData(null);
+        localStorage.removeItem(SAVE_KEY);
+        setIsBattleModalOpen(false);
+        setAutoMeditate(false);
+        setAutoAdventure(false);
+      } else {
+        // 简单/普通模式：无惩罚，直接复活
+        setIsDead(true); // 先设置死亡标志，避免重复触发
+        setPlayer((prev) => {
+          if (!prev) return prev;
+          // 恢复10%最大气血
+          const reviveHp = Math.max(1, Math.floor(prev.maxHp * 0.1));
+          // 恢复少量寿命（10年）
+          const reviveLifespan = Math.min(prev.maxLifespan || 100, 10);
+          return {
+            ...prev,
+            hp: reviveHp,
+            lifespan: reviveLifespan,
+          };
+        });
+
+        const reason = '你的寿命已尽，寿终正寝。但天道的仁慈让你得以重生，继续你的修仙之路。';
+        setDeathReason(reason);
+        setDeathBattleData(null);
+        setIsBattleModalOpen(false);
+        setAutoMeditate(false);
+        setAutoAdventure(false);
+      }
       return;
     }
+
+    // 检测气血归零
 
     if (player.hp <= 0) {
       // 检查是否有保命装备
@@ -398,7 +443,7 @@ function App() {
           const speedDrop = Math.floor(prev.speed * attributeDropPercent);
           const maxHpDrop = Math.floor(prev.maxHp * attributeDropPercent);
 
-          // 随机掉落装备 1-3件
+          // 随机掉落装备 1-3件（直接丢弃，不是卸载）
           const equippedItemIds = Object.values(prev.equippedItems).filter(
             Boolean
           ) as string[];
@@ -410,7 +455,7 @@ function App() {
             .sort(() => Math.random() - 0.5)
             .slice(0, dropCount);
 
-          // 移除掉落的装备
+          // 先卸载掉落的装备（从装备栏移除）
           const newEquippedItems = { ...prev.equippedItems };
           itemsToDrop.forEach((itemId) => {
             const slot = Object.entries(prev.equippedItems).find(
@@ -421,7 +466,7 @@ function App() {
             }
           });
 
-          // 从背包中移除掉落的装备
+          // 直接丢弃掉落的装备（从背包中完全移除）
           const newInventory = prev.inventory.filter(
             (item) => !itemsToDrop.includes(item.id)
           );
@@ -513,7 +558,7 @@ function App() {
         setAutoAdventure(false);
       }
     }
-  }, [player?.hp, isDead, lastBattleReplay, addLog, settings.difficulty]);
+  }, [player?.hp, player?.lifespan, isDead, lastBattleReplay, addLog, settings.difficulty, setIsBattleModalOpen, setAutoMeditate, setAutoAdventure]);
 
   // 涅槃重生功能
   const handleRebirth = () => {
@@ -1080,6 +1125,7 @@ function App() {
           handleBatchReleasePets,
           handleDraw,
           handleUpdateSettings,
+          handleRestartGame: handleRebirth,
           handleBuyItem,
           handleSellItem,
           handleRefreshShop,

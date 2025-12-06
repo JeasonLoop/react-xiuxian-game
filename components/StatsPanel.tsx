@@ -9,6 +9,8 @@ import {
   Sword,
   ChevronDown,
   ChevronUp,
+  Clock,
+  Sparkles,
 } from 'lucide-react';
 
 interface Props {
@@ -26,6 +28,14 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
   const hpPercentage = useMemo(
     () => Math.min(100, (player.hp / player.maxHp) * 100),
     [player.hp, player.maxHp]
+  );
+  const lifespanPercentage = useMemo(
+    () => {
+      const maxLifespan = player.maxLifespan || 100;
+      const lifespan = player.lifespan || maxLifespan;
+      return Math.min(100, (lifespan / maxLifespan) * 100);
+    },
+    [player.lifespan, player.maxLifespan]
   );
 
   const activeArt = useMemo(
@@ -118,6 +128,23 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
               <div
                 className="h-full bg-mystic-jade transition-all duration-500 ease-out"
                 style={{ width: `${expPercentage}%` }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <div className="flex justify-between text-xs text-stone-400 mb-1">
+              <span>寿命 (年)</span>
+              <span>
+                {Math.floor(player.lifespan || player.maxLifespan || 100)} / {Math.floor(player.maxLifespan || 100)}
+              </span>
+            </div>
+            <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
+              <div
+                className={`h-full transition-all duration-500 ease-out ${
+                  lifespanPercentage < 20 ? 'bg-red-500' : lifespanPercentage < 50 ? 'bg-orange-500' : 'bg-emerald-500'
+                }`}
+                style={{ width: `${lifespanPercentage}%` }}
               />
             </div>
           </div>
@@ -260,6 +287,49 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
             </div>
           </div>
         )}
+
+        {/* 灵根显示 */}
+        <div className="bg-ink-800 p-2 md:p-3 rounded border border-stone-700">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles
+              size={14}
+              className="md:w-[18px] md:h-[18px] text-purple-400"
+            />
+            <div className="text-[10px] md:text-xs text-stone-500">灵根</div>
+          </div>
+          <div className="grid grid-cols-5 gap-1">
+            {(['metal', 'wood', 'water', 'fire', 'earth'] as const).map((root) => {
+              const rootNames: Record<typeof root, string> = {
+                metal: '金',
+                wood: '木',
+                water: '水',
+                fire: '火',
+                earth: '土',
+              };
+              const rootColors: Record<typeof root, string> = {
+                metal: 'text-yellow-400',
+                wood: 'text-green-400',
+                water: 'text-blue-400',
+                fire: 'text-red-400',
+                earth: 'text-amber-600',
+              };
+              const value = player.spiritualRoots?.[root] || 0;
+              return (
+                <div
+                  key={root}
+                  className="text-center p-1 bg-stone-900 rounded border border-stone-700"
+                >
+                  <div className={`text-[10px] md:text-xs font-bold ${rootColors[root]}`}>
+                    {rootNames[root]}
+                  </div>
+                  <div className="text-stone-200 text-[10px] md:text-xs">
+                    {value}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
 
         <div className="hidden md:block mt-auto pt-6 border-t border-stone-700 text-xs text-stone-500 italic text-center">
           "道可道，非常道。"

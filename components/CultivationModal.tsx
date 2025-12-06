@@ -56,6 +56,8 @@ const CultivationModal: React.FC<Props> = ({
     const learnedSet = new Set(player.cultivationArts);
 
     return CULTIVATION_ARTS.filter((art) => {
+      // 只显示已获得的功法
+      if (!learnedSet.has(art.id)) return false;
       // 兼容性处理：如果功法没有 grade 字段，默认显示
       const artGrade = art.grade || '黄';
       if (gradeFilter !== 'all' && artGrade !== gradeFilter) return false;

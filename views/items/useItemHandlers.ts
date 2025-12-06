@@ -97,6 +97,14 @@ export function useItemHandlers({
         newStats.exp += item.effect.exp;
         effectLogs.push(`增长了 ${item.effect.exp} 点修为。`);
       }
+      if (item.effect?.lifespan) {
+        const newLifespan = Math.min(
+          newStats.maxLifespan || 100,
+          (newStats.lifespan || newStats.maxLifespan || 100) + item.effect.lifespan
+        );
+        newStats.lifespan = newLifespan;
+        effectLogs.push(`寿命增加了 ${item.effect.lifespan} 年。`);
+      }
 
       // 处理永久效果
       if (item.permanentEffect) {
@@ -121,15 +129,76 @@ export function useItemHandlers({
           newStats.speed += item.permanentEffect.speed;
           permLogs.push(`速度永久 +${item.permanentEffect.speed}`);
         }
-        if (item.permanentEffect.maxHp) {
-          newStats.maxHp += item.permanentEffect.maxHp;
-          newStats.hp += item.permanentEffect.maxHp;
-          permLogs.push(`气血上限永久 +${item.permanentEffect.maxHp}`);
+          if (item.permanentEffect.maxHp) {
+            newStats.maxHp += item.permanentEffect.maxHp;
+            newStats.hp += item.permanentEffect.maxHp;
+            permLogs.push(`气血上限永久 +${item.permanentEffect.maxHp}`);
+          }
+          if (item.permanentEffect.maxLifespan) {
+            newStats.maxLifespan = (newStats.maxLifespan || 100) + item.permanentEffect.maxLifespan;
+            newStats.lifespan = Math.min(
+              newStats.maxLifespan,
+              (newStats.lifespan || newStats.maxLifespan || 100) + item.permanentEffect.maxLifespan
+            );
+            permLogs.push(`最大寿命永久 +${item.permanentEffect.maxLifespan} 年`);
+          }
+          if (item.permanentEffect.spiritualRoots) {
+            const rootNames: Record<string, string> = {
+              metal: '金',
+              wood: '木',
+              water: '水',
+              fire: '火',
+              earth: '土',
+            };
+            const rootChanges: string[] = [];
+            if (!newStats.spiritualRoots) {
+              newStats.spiritualRoots = {
+                metal: 0,
+                wood: 0,
+                water: 0,
+                fire: 0,
+                earth: 0,
+              };
+            }
+
+            // 如果所有灵根都是0，随机分配一个
+            if (
+              item.permanentEffect.spiritualRoots.metal === 0 &&
+              item.permanentEffect.spiritualRoots.wood === 0 &&
+              item.permanentEffect.spiritualRoots.water === 0 &&
+              item.permanentEffect.spiritualRoots.fire === 0 &&
+              item.permanentEffect.spiritualRoots.earth === 0
+            ) {
+              // 洗灵丹：随机提升一种灵根5点
+              const rootTypes: Array<keyof typeof rootNames> = ['metal', 'wood', 'water', 'fire', 'earth'];
+              const randomRoot = rootTypes[Math.floor(Math.random() * rootTypes.length)];
+              newStats.spiritualRoots[randomRoot] = Math.min(
+                100,
+                (newStats.spiritualRoots[randomRoot] || 0) + 5
+              );
+              rootChanges.push(`${rootNames[randomRoot]}灵根 +5`);
+            } else {
+              // 其他丹药：按指定值提升
+              Object.entries(item.permanentEffect.spiritualRoots).forEach(([key, value]) => {
+                if (value && value > 0) {
+                  const rootKey = key as keyof typeof newStats.spiritualRoots;
+                  newStats.spiritualRoots[rootKey] = Math.min(
+                    100,
+                    (newStats.spiritualRoots[rootKey] || 0) + value
+                  );
+                  rootChanges.push(`${rootNames[key]}灵根 +${value}`);
+                }
+              });
+            }
+
+            if (rootChanges.length > 0) {
+              permLogs.push(`灵根提升：${rootChanges.join('，')}`);
+            }
+          }
+          if (permLogs.length > 0) {
+            effectLogs.push(`✨ ${permLogs.join('，')}`);
+          }
         }
-        if (permLogs.length > 0) {
-          effectLogs.push(`✨ ${permLogs.join('，')}`);
-        }
-      }
 
       // 处理丹方使用
       if (item.type === ItemType.Recipe && item.recipeData) {
@@ -288,6 +357,14 @@ export function useItemHandlers({
           newStats.exp += itemToUse.effect.exp;
           effectLogs.push(`增长了 ${itemToUse.effect.exp} 点修为。`);
         }
+        if (itemToUse.effect?.lifespan) {
+          const newLifespan = Math.min(
+            newStats.maxLifespan || 100,
+            (newStats.lifespan || newStats.maxLifespan || 100) + itemToUse.effect.lifespan
+          );
+          newStats.lifespan = newLifespan;
+          effectLogs.push(`寿命增加了 ${itemToUse.effect.lifespan} 年。`);
+        }
 
         // 处理永久效果
         if (itemToUse.permanentEffect) {
@@ -316,6 +393,67 @@ export function useItemHandlers({
             newStats.maxHp += itemToUse.permanentEffect.maxHp;
             newStats.hp += itemToUse.permanentEffect.maxHp;
             permLogs.push(`气血上限永久 +${itemToUse.permanentEffect.maxHp}`);
+          }
+          if (itemToUse.permanentEffect.maxLifespan) {
+            newStats.maxLifespan = (newStats.maxLifespan || 100) + itemToUse.permanentEffect.maxLifespan;
+            newStats.lifespan = Math.min(
+              newStats.maxLifespan,
+              (newStats.lifespan || newStats.maxLifespan || 100) + itemToUse.permanentEffect.maxLifespan
+            );
+            permLogs.push(`最大寿命永久 +${itemToUse.permanentEffect.maxLifespan} 年`);
+          }
+          if (itemToUse.permanentEffect.spiritualRoots) {
+            const rootNames: Record<string, string> = {
+              metal: '金',
+              wood: '木',
+              water: '水',
+              fire: '火',
+              earth: '土',
+            };
+            const rootChanges: string[] = [];
+            if (!newStats.spiritualRoots) {
+              newStats.spiritualRoots = {
+                metal: 0,
+                wood: 0,
+                water: 0,
+                fire: 0,
+                earth: 0,
+              };
+            }
+
+            // 如果所有灵根都是0，随机分配一个
+            if (
+              itemToUse.permanentEffect.spiritualRoots.metal === 0 &&
+              itemToUse.permanentEffect.spiritualRoots.wood === 0 &&
+              itemToUse.permanentEffect.spiritualRoots.water === 0 &&
+              itemToUse.permanentEffect.spiritualRoots.fire === 0 &&
+              itemToUse.permanentEffect.spiritualRoots.earth === 0
+            ) {
+              // 洗灵丹：随机提升一种灵根5点
+              const rootTypes: Array<keyof typeof rootNames> = ['metal', 'wood', 'water', 'fire', 'earth'];
+              const randomRoot = rootTypes[Math.floor(Math.random() * rootTypes.length)];
+              newStats.spiritualRoots[randomRoot] = Math.min(
+                100,
+                (newStats.spiritualRoots[randomRoot] || 0) + 5
+              );
+              rootChanges.push(`${rootNames[randomRoot]}灵根 +5`);
+            } else {
+              // 其他丹药：按指定值提升
+              Object.entries(itemToUse.permanentEffect.spiritualRoots).forEach(([key, value]) => {
+                if (value && value > 0) {
+                  const rootKey = key as keyof typeof newStats.spiritualRoots;
+                  newStats.spiritualRoots[rootKey] = Math.min(
+                    100,
+                    (newStats.spiritualRoots[rootKey] || 0) + value
+                  );
+                  rootChanges.push(`${rootNames[key]}灵根 +${value}`);
+                }
+              });
+            }
+
+            if (rootChanges.length > 0) {
+              permLogs.push(`灵根提升：${rootChanges.join('，')}`);
+            }
           }
           if (permLogs.length > 0) {
             effectLogs.push(`✨ ${permLogs.join('，')}`);

@@ -19,6 +19,7 @@ export interface CultivationArt {
   realmRequirement: RealmType;
   cost: number;
   sectId?: string | null; // 所属宗门ID，null表示通用功法
+  spiritualRoot?: 'metal' | 'wood' | 'water' | 'fire' | 'earth'; // 功法对应的灵根属性（可选）
   attributeRequirements?: {
     // 属性要求
     attack?: number;
@@ -93,6 +94,7 @@ export interface Item {
     spirit?: number;
     physique?: number;
     speed?: number;
+    lifespan?: number; // 增加寿命
   };
   permanentEffect?: {
     // 永久提升的属性（使用物品后永久增加）
@@ -102,6 +104,15 @@ export interface Item {
     physique?: number;
     speed?: number;
     maxHp?: number;
+    maxLifespan?: number; // 增加最大寿命
+    spiritualRoots?: {
+      // 提升灵根
+      metal?: number;
+      wood?: number;
+      water?: number;
+      fire?: number;
+      earth?: number;
+    };
   };
 }
 
@@ -223,6 +234,17 @@ export interface PlayerStats {
     breakthroughCount: number; // 突破次数
     secretRealmCount: number; // 进入秘境次数
   };
+  // 寿命系统
+  lifespan: number; // 当前寿命
+  maxLifespan: number; // 最大寿命
+  // 灵根系统
+  spiritualRoots: {
+    metal: number; // 金灵根 (0-100)
+    wood: number; // 木灵根 (0-100)
+    water: number; // 水灵根 (0-100)
+    fire: number; // 火灵根 (0-100)
+    earth: number; // 土灵根 (0-100)
+  };
 }
 
 export interface LogEntry {
@@ -241,6 +263,7 @@ export interface AdventureResult {
   spiritStonesChange: number;
   lotteryTicketsChange?: number; // 抽奖券变化
   inheritanceLevelChange?: number; // 传承等级变化（1-4，表示可以突破的境界数）
+  lifespanChange?: number; // 寿命变化（正数为增加，负数为减少）
   attributeReduction?: {
     // 属性降低（遭遇陷阱、邪修等危险事件时）
     attack?: number;
@@ -249,6 +272,14 @@ export interface AdventureResult {
     physique?: number;
     speed?: number;
     maxHp?: number;
+  };
+  spiritualRootsChange?: {
+    // 灵根变化
+    metal?: number;
+    wood?: number;
+    water?: number;
+    fire?: number;
+    earth?: number;
   };
   triggerSecretRealm?: boolean; // 是否触发随机秘境
   itemObtained?: {
@@ -266,6 +297,7 @@ export interface AdventureResult {
       spirit?: number;
       physique?: number;
       speed?: number;
+      lifespan?: number;
     };
     permanentEffect?: {
       // 永久提升的属性
@@ -275,6 +307,14 @@ export interface AdventureResult {
       physique?: number;
       speed?: number;
       maxHp?: number;
+      maxLifespan?: number;
+      spiritualRoots?: {
+        metal?: number;
+        wood?: number;
+        water?: number;
+        fire?: number;
+        earth?: number;
+      };
     };
   };
   itemsObtained?: Array<{
@@ -338,6 +378,23 @@ export interface Recipe {
       spirit?: number;
       physique?: number;
       speed?: number;
+      lifespan?: number;
+    };
+    permanentEffect?: {
+      attack?: number;
+      defense?: number;
+      spirit?: number;
+      physique?: number;
+      speed?: number;
+      maxHp?: number;
+      maxLifespan?: number;
+      spiritualRoots?: {
+        metal?: number;
+        wood?: number;
+        water?: number;
+        fire?: number;
+        earth?: number;
+      };
     };
   };
 }

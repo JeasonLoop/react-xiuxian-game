@@ -5,6 +5,7 @@ import {
   TALENTS,
   ACHIEVEMENTS,
   REALM_ORDER,
+  calculateSpiritualRootArtBonus,
 } from '../../constants';
 
 interface UseMeditationHandlersProps {
@@ -49,7 +50,18 @@ export function useMeditationHandlers({
     // Apply Active Art Bonus
     const activeArt = CULTIVATION_ARTS.find((a) => a.id === player.activeArtId);
     if (activeArt && activeArt.effects.expRate) {
-      baseGain = Math.floor(baseGain * (1 + activeArt.effects.expRate));
+      // 计算灵根对心法的加成
+      const spiritualRootBonus = calculateSpiritualRootArtBonus(
+        activeArt,
+        player.spiritualRoots || {
+          metal: 0,
+          wood: 0,
+          water: 0,
+          fire: 0,
+          earth: 0,
+        }
+      );
+      baseGain = Math.floor(baseGain * (1 + activeArt.effects.expRate) * spiritualRootBonus);
     }
 
     // Apply Talent Bonus

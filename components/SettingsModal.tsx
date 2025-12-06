@@ -8,6 +8,7 @@ import {
   Upload,
   Download,
   Github,
+  RotateCcw,
 } from 'lucide-react';
 import { GameSettings } from '../types';
 import dayjs from 'dayjs';
@@ -19,6 +20,7 @@ interface Props {
   settings: GameSettings;
   onUpdateSettings: (settings: Partial<GameSettings>) => void;
   onImportSave?: () => void;
+  onRestartGame?: () => void;
 }
 
 const SettingsModal: React.FC<Props> = ({
@@ -27,6 +29,7 @@ const SettingsModal: React.FC<Props> = ({
   settings,
   onUpdateSettings,
   onImportSave,
+  onRestartGame,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const SAVE_KEY = 'xiuxian-game-save';
@@ -363,6 +366,32 @@ const SettingsModal: React.FC<Props> = ({
                   格式的存档文件，导入后将替换当前存档并刷新页面
                 </p>
               </div>
+              {onRestartGame && (
+                <div>
+                  <label className="block text-sm text-stone-400 mb-2">
+                    重新开始游戏
+                  </label>
+                  <button
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          '确定要重新开始游戏吗？\n\n这将清除当前所有进度，包括：\n- 角色数据\n- 装备和物品\n- 境界和修为\n- 所有成就\n\n此操作无法撤销！'
+                        )
+                      ) {
+                        onRestartGame();
+                        onClose();
+                      }
+                    }}
+                    className="w-full bg-red-700 hover:bg-red-600 text-white border border-red-600 rounded px-4 py-2 flex items-center justify-center transition-colors font-semibold"
+                  >
+                    <RotateCcw size={16} className="mr-2" />
+                    重新开始游戏
+                  </button>
+                  <p className="text-xs text-stone-500 mt-2">
+                    清除所有存档数据，返回游戏开始界面。建议先导出存档备份。
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 

@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlayerStats, RealmType } from '../../types';
-import { REALM_DATA, CULTIVATION_ARTS, TALENTS, TITLES } from '../../constants';
+import { REALM_DATA, CULTIVATION_ARTS, TALENTS, TITLES, calculateSpiritualRootArtBonus } from '../../constants';
 import { getItemStats } from '../../utils/itemUtils';
 import { generateBreakthroughFlavorText } from '../../services/aiService';
 
@@ -73,16 +73,26 @@ export function useBreakthroughHandlers({
         let bonusPhysique = 0;
         let bonusSpeed = 0;
 
-        // Art bonuses
+        // Art bonuses (with spiritual root bonus)
         prev.cultivationArts.forEach((artId) => {
           const art = CULTIVATION_ARTS.find((a) => a.id === artId);
           if (art) {
-            bonusAttack += art.effects.attack || 0;
-            bonusDefense += art.effects.defense || 0;
-            bonusHp += art.effects.hp || 0;
-            bonusSpirit += art.effects.spirit || 0;
-            bonusPhysique += art.effects.physique || 0;
-            bonusSpeed += art.effects.speed || 0;
+            const spiritualRootBonus = calculateSpiritualRootArtBonus(
+              art,
+              prev.spiritualRoots || {
+                metal: 0,
+                wood: 0,
+                water: 0,
+                fire: 0,
+                earth: 0,
+              }
+            );
+            bonusAttack += Math.floor((art.effects.attack || 0) * spiritualRootBonus);
+            bonusDefense += Math.floor((art.effects.defense || 0) * spiritualRootBonus);
+            bonusHp += Math.floor((art.effects.hp || 0) * spiritualRootBonus);
+            bonusSpirit += Math.floor((art.effects.spirit || 0) * spiritualRootBonus);
+            bonusPhysique += Math.floor((art.effects.physique || 0) * spiritualRootBonus);
+            bonusSpeed += Math.floor((art.effects.speed || 0) * spiritualRootBonus);
           }
         });
 
@@ -125,6 +135,7 @@ export function useBreakthroughHandlers({
 
         const newBaseMaxHp = Math.floor(stats.baseMaxHp * levelMultiplier);
         const newMaxExp = Math.floor(stats.maxExpBase * levelMultiplier * 1.5);
+        const newBaseMaxLifespan = stats.baseMaxLifespan;
 
         // 计算超出当前境界的经验值，保留到下一个境界
         const excessExp = Math.max(0, prev.exp - prev.maxExp);
@@ -152,6 +163,24 @@ export function useBreakthroughHandlers({
           );
         }
 
+        // 计算寿命增加（境界升级时增加更多）
+        const lifespanIncrease = isRealmUpgrade
+          ? newBaseMaxLifespan - (prev.maxLifespan || newBaseMaxLifespan)
+          : Math.floor((newBaseMaxLifespan - (prev.maxLifespan || newBaseMaxLifespan)) / 9); // 层数升级时增加1/9
+
+        const newMaxLifespan = newBaseMaxLifespan;
+        const newLifespan = Math.min(
+          (prev.lifespan ?? prev.maxLifespan ?? newBaseMaxLifespan) + Math.max(0, lifespanIncrease),
+          newMaxLifespan
+        );
+
+        if (lifespanIncrease > 0) {
+          addLog(
+            `✨ 突破成功！你的寿命增加了 ${lifespanIncrease} 年！当前寿命：${Math.floor(newLifespan)}/${newMaxLifespan} 年`,
+            'gain'
+          );
+        }
+
         return {
           ...prev,
           realm: nextRealm,
@@ -171,6 +200,8 @@ export function useBreakthroughHandlers({
             Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed
           ),
           attributePoints: prev.attributePoints + attributePointsGained,
+          maxLifespan: newMaxLifespan,
+          lifespan: newLifespan,
           statistics: {
             ...playerStats,
             breakthroughCount: playerStats.breakthroughCount + 1,

@@ -81,6 +81,16 @@ export function useGameState() {
               breakthroughCount: 0,
               secretRealmCount: 0,
             },
+            // 兼容旧存档：如果没有寿命和灵根数据，则初始化
+            lifespan: savedData.player.lifespan ?? savedData.player.maxLifespan ?? 100,
+            maxLifespan: savedData.player.maxLifespan ?? 100,
+            spiritualRoots: savedData.player.spiritualRoots || {
+              metal: Math.floor(Math.random() * 16),
+              wood: Math.floor(Math.random() * 16),
+              water: Math.floor(Math.random() * 16),
+              fire: Math.floor(Math.random() * 16),
+              earth: Math.floor(Math.random() * 16),
+            },
           };
           setPlayer(loadedPlayer);
           setLogs(savedData.logs || []);
