@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Talent } from '../types';
+import { DifficultyMode } from '../types';
 import { TALENTS } from '../constants';
 import { Sparkles, Sword, Shield, Heart, Zap, User, Upload, TriangleAlert } from 'lucide-react';
 import { showError, showSuccess } from '../utils/toastUtils';
