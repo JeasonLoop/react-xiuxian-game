@@ -2,6 +2,8 @@ import React from 'react';
 import { EquipmentSlot, Item, PlayerStats } from '../types';
 import { ShieldCheck, X } from 'lucide-react';
 import { getItemStats } from '../utils/itemUtils';
+import { getRarityColor } from '../utils/rarityUtils';
+import { getEquipmentSlotConfig } from '../utils/equipmentUtils';
 
 interface Props {
   equippedItems: Partial<Record<EquipmentSlot, string>>;
@@ -16,32 +18,8 @@ const EquipmentPanel: React.FC<Props> = ({ equippedItems, inventory, player, onU
     return inventory.find(item => item.id === id) || null;
   };
 
-  const getRarityColor = (rarity: string) => {
-    switch (rarity) {
-      case '稀有': return 'border-blue-600 bg-blue-900/20';
-      case '传说': return 'border-purple-600 bg-purple-900/20';
-      case '仙品': return 'border-yellow-600 bg-yellow-900/20';
-      default: return 'border-stone-600 bg-stone-800';
-    }
-  };
-
-  const slotConfig: { slot: EquipmentSlot; label: string; icon?: string }[] = [
-    { slot: EquipmentSlot.Head, label: '头部' },
-    { slot: EquipmentSlot.Shoulder, label: '肩部' },
-    { slot: EquipmentSlot.Chest, label: '胸甲' },
-    { slot: EquipmentSlot.Gloves, label: '手套' },
-    { slot: EquipmentSlot.Legs, label: '裤腿' },
-    { slot: EquipmentSlot.Boots, label: '鞋子' },
-    { slot: EquipmentSlot.Ring1, label: '戒指1' },
-    { slot: EquipmentSlot.Ring2, label: '戒指2' },
-    { slot: EquipmentSlot.Ring3, label: '戒指3' },
-    { slot: EquipmentSlot.Ring4, label: '戒指4' },
-    { slot: EquipmentSlot.Accessory1, label: '首饰1' },
-    { slot: EquipmentSlot.Accessory2, label: '首饰2' },
-    { slot: EquipmentSlot.Artifact1, label: '法宝1' },
-    { slot: EquipmentSlot.Artifact2, label: '法宝2' },
-    { slot: EquipmentSlot.Weapon, label: '武器' },
-  ];
+  // 使用统一的工具函数获取槽位配置
+  const slotConfig = getEquipmentSlotConfig();
 
   return (
     <div className="bg-stone-900 rounded-lg border border-stone-700 p-4">

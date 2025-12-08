@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { DifficultyMode } from '../types';
+import { DifficultyMode, ItemRarity } from '../types';
 import { TALENTS } from '../constants';
 import { Sparkles, Sword, Shield, Heart, Zap, User, Upload, TriangleAlert } from 'lucide-react';
 import { showError, showSuccess } from '../utils/toastUtils';
 import { SAVE_KEY } from '../utils/gameUtils';
+import { getRarityTextColor } from '../utils/rarityUtils';
 
 interface Props {
   onStart: (
@@ -121,16 +122,18 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
     fileInputRef.current?.click();
   };
 
+  // 使用统一的工具函数获取稀有度颜色（带边框，StartScreen 使用不同的边框颜色）
   const getRarityColor = (rarity: string) => {
+    const baseColor = getRarityTextColor(rarity as ItemRarity);
     switch (rarity) {
       case '稀有':
-        return 'text-blue-400 border-blue-500';
+        return `${baseColor} border-blue-500`;
       case '传说':
-        return 'text-purple-400 border-purple-500';
+        return `${baseColor} border-purple-500`;
       case '仙品':
-        return 'text-yellow-400 border-yellow-500';
+        return `${baseColor} border-yellow-500`;
       default:
-        return 'text-stone-300 border-stone-500';
+        return `${baseColor} border-stone-500`;
     }
   };
 

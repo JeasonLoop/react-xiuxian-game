@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { PlayerStats, ItemRarity } from '../types';
 import { CULTIVATION_ARTS } from '../constants';
+import { getRarityTextColor } from '../utils/rarityUtils';
 import {
   Shield,
   Zap,
@@ -52,21 +53,7 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
     [player.natalArtifactId, player.inventory]
   );
 
-  const getRarityColor = useMemo(() => {
-    return (rarity: ItemRarity | undefined) => {
-      switch (rarity) {
-        case '稀有':
-          return 'text-blue-400';
-        case '传说':
-          return 'text-purple-400';
-        case '仙品':
-          return 'text-mystic-gold';
-        case '普通':
-        default:
-          return 'text-stone-200';
-      }
-    };
-  }, []);
+  // 使用统一的工具函数获取稀有度颜色
 
   return (
     <div className="bg-paper-800 border-r-2 border-b-2 md:border-b-0 border-stone-700 p-3 md:p-6 flex flex-col gap-3 md:gap-6 w-full md:w-80 shrink-0 h-auto md:h-full overflow-y-auto">
@@ -177,7 +164,7 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
               本命法宝
             </div>
             <div
-              className={`font-serif font-bold text-xs md:text-sm ${getRarityColor(natalArtifact?.rarity)}`}
+              className={`font-serif font-bold text-xs md:text-sm ${getRarityTextColor(natalArtifact?.rarity)}`}
             >
               {natalArtifact ? natalArtifact.name : '未装备'}
             </div>

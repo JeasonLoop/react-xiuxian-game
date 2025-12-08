@@ -21,6 +21,7 @@ import {
 import { REALM_ORDER, RARITY_MULTIPLIERS } from '../constants';
 import { generateShopItems } from '../services/shopService';
 import { showError } from '../utils/toastUtils';
+import { getRarityTextColor } from '../utils/rarityUtils';
 
 interface Props {
   isOpen: boolean;
@@ -58,16 +59,18 @@ const ShopModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
-  const getRarityColor = (rarity: string) => {
+  // 使用统一的工具函数获取稀有度颜色（ShopModal 需要额外的边框样式）
+  const getRarityColorWithBorder = (rarity: ItemRarity | undefined) => {
+    const baseColor = getRarityTextColor(rarity);
     switch (rarity) {
       case '稀有':
-        return 'text-blue-400 border-blue-600';
+        return `${baseColor} border-blue-600`;
       case '传说':
-        return 'text-purple-400 border-purple-600';
+        return `${baseColor} border-purple-600`;
       case '仙品':
-        return 'text-yellow-400 border-yellow-600';
+        return `${baseColor} border-yellow-600`;
       default:
-        return 'text-gray-400 border-gray-600';
+        return `${baseColor} border-gray-600`;
     }
   };
 
@@ -465,14 +468,14 @@ const ShopModal: React.FC<Props> = ({
                         key={shopItem.id}
                         className={`bg-stone-900 rounded-lg p-4 border-2 ${
                           canBuy
-                            ? getRarityColor(shopItem.rarity).split(' ')[1]
+                            ? getRarityColorWithBorder(shopItem.rarity).split(' ')[1]
                             : 'border-stone-700 opacity-60'
                         }`}
                       >
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <h4
-                              className={`font-bold ${getRarityColor(shopItem.rarity).split(' ')[0]}`}
+                              className={`font-bold ${getRarityColorWithBorder(shopItem.rarity).split(' ')[0]}`}
                             >
                               {shopItem.name}
                             </h4>
@@ -481,7 +484,7 @@ const ShopModal: React.FC<Props> = ({
                             </span>
                           </div>
                           <span
-                            className={`text-xs px-2 py-1 rounded ${getRarityColor(shopItem.rarity).split(' ')[1]} ${getRarityColor(shopItem.rarity).split(' ')[0]}`}
+                            className={`text-xs px-2 py-1 rounded ${getRarityColorWithBorder(shopItem.rarity).split(' ')[1]} ${getRarityColorWithBorder(shopItem.rarity).split(' ')[0]}`}
                           >
                             {shopItem.rarity}
                           </span>
@@ -727,7 +730,7 @@ const ShopModal: React.FC<Props> = ({
                         className={`bg-stone-900 rounded-lg p-4 border-2 cursor-pointer transition-colors ${
                           isSelected
                             ? 'bg-green-900/30 border-green-600'
-                            : getRarityColor(rarity).split(' ')[1]
+                            : getRarityColorWithBorder(rarity).split(' ')[1]
                         }`}
                         onClick={() => handleToggleItem(item.id)}
                       >
@@ -741,7 +744,7 @@ const ShopModal: React.FC<Props> = ({
                           />
                           <div className="flex-1">
                             <h4
-                              className={`font-bold ${getRarityColor(rarity).split(' ')[0]}`}
+                              className={`font-bold ${getRarityColorWithBorder(rarity).split(' ')[0]}`}
                             >
                               {item.name}
                               {item.level && item.level > 0 && (

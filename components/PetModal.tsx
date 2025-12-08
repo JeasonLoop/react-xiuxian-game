@@ -12,10 +12,11 @@ import {
   Trash2,
   AlertTriangle,
 } from 'lucide-react';
-import { PlayerStats, Pet, Item, ItemType } from '../types';
+import { PlayerStats, Pet, ItemRarity } from '../types';
 import { PET_TEMPLATES, RARITY_MULTIPLIERS, REALM_ORDER } from '../constants';
 import BatchFeedModal from './BatchFeedModal';
 import BatchReleaseModal from './BatchReleaseModal';
+import { getRarityTextColor } from '../utils/rarityUtils';
 
 interface Props {
   isOpen: boolean;
@@ -57,19 +58,9 @@ const PetModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
+  // 使用统一的工具函数获取稀有度颜色（PetModal 需要特殊的灰色处理）
   const getRarityColor = (rarity: string) => {
-    switch (rarity) {
-      case '普通':
-        return 'text-gray-400';
-      case '稀有':
-        return 'text-blue-400';
-      case '传说':
-        return 'text-purple-400';
-      case '仙品':
-        return 'text-yellow-400';
-      default:
-        return 'text-gray-400';
-    }
+    return getRarityTextColor(rarity as ItemRarity);
   };
 
   const activePet = player.pets.find((p) => p.id === player.activePetId);

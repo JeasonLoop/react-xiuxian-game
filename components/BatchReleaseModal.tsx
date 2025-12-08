@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { X, Trash2, AlertTriangle, Filter } from 'lucide-react';
 import { PlayerStats, Pet, ItemRarity } from '../types';
+import { getRarityTextColor } from '../utils/rarityUtils';
 
 interface Props {
   isOpen: boolean;
@@ -117,19 +118,12 @@ const BatchReleaseModal: React.FC<Props> = ({
     onClose();
   };
 
+  // 使用统一的工具函数获取稀有度颜色（BatchReleaseModal 需要特殊的灰色处理）
   const getRarityColor = (rarity: string) => {
-    switch (rarity) {
-      case '普通':
-        return 'text-gray-400';
-      case '稀有':
-        return 'text-blue-400';
-      case '传说':
-        return 'text-purple-400';
-      case '仙品':
-        return 'text-yellow-400';
-      default:
-        return 'text-gray-400';
+    if (rarity === '普通') {
+      return 'text-gray-400';
     }
+    return getRarityTextColor(rarity as ItemRarity);
   };
 
   // 计算总补偿

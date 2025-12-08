@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { X, Gift, Sparkles } from 'lucide-react';
-import { PlayerStats, LotteryPrize } from '../types';
+import { PlayerStats, LotteryPrize, ItemRarity } from '../types';
 import { LOTTERY_PRIZES } from '../constants';
 import { showError } from '../utils/toastUtils';
+import { getRarityTextColor } from '../utils/rarityUtils';
 
 interface Props {
   isOpen: boolean;
@@ -37,16 +38,18 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
     }, 1500);
   };
 
+  // 使用统一的工具函数获取稀有度颜色（带边框）
   const getRarityColor = (rarity: string) => {
+    const baseColor = getRarityTextColor(rarity as ItemRarity);
     switch (rarity) {
       case '普通':
-        return 'text-gray-400 border-gray-600';
+        return `${baseColor} border-gray-600`;
       case '稀有':
-        return 'text-blue-400 border-blue-600';
+        return `${baseColor} border-blue-600`;
       case '传说':
-        return 'text-purple-400 border-purple-600';
+        return `${baseColor} border-purple-600`;
       case '仙品':
-        return 'text-yellow-400 border-yellow-600';
+        return `${baseColor} border-yellow-600`;
       default:
         return 'text-gray-400 border-gray-600';
     }

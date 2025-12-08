@@ -28,6 +28,19 @@ import { RARITY_MULTIPLIERS } from '../constants';
 import EquipmentPanel from './EquipmentPanel';
 import BatchDiscardModal from './BatchDiscardModal';
 import BatchUseModal from './BatchUseModal';
+import {
+  getRarityNameClasses,
+  getRarityBorder,
+  getRarityBadge,
+  getRarityOrder,
+} from '../utils/rarityUtils';
+import { getItemStats } from '../utils/itemUtils';
+import {
+  findEmptyEquipmentSlot,
+  isItemEquipped as checkItemEquipped,
+  findItemEquippedSlot,
+  areSlotsInSameGroup,
+} from '../utils/equipmentUtils';
 
 interface Props {
   isOpen: boolean;
@@ -79,79 +92,9 @@ const InventoryItem = memo<InventoryItemProps>(
     onRefineNatalArtifact,
     onUnrefineNatalArtifact,
   }) => {
-    const getRarityNameClasses = (rarity: ItemRarity | undefined) => {
-      const base = 'font-bold transition-colors duration-300 cursor-default ';
-      switch (rarity) {
-        case '稀有':
-          return base + 'text-stone-300 hover:text-blue-400';
-        case '传说':
-          return base + 'text-stone-300 hover:text-purple-400';
-        case '仙品':
-          return (
-            base +
-            'text-stone-300 hover:text-mystic-gold hover:drop-shadow-[0_0_8px_rgba(203,161,53,0.5)]'
-          );
-        default:
-          return base + 'text-stone-300 hover:text-stone-100';
-      }
-    };
-
-    const getRarityBorder = (rarity: ItemRarity | undefined) => {
-      switch (rarity) {
-        case '稀有':
-          return 'border-blue-800';
-        case '传说':
-          return 'border-purple-800';
-        case '仙品':
-          return 'border-mystic-gold';
-        default:
-          return 'border-stone-700';
-      }
-    };
-
-    const getRarityBadge = (rarity: ItemRarity | undefined) => {
-      switch (rarity) {
-        case '稀有':
-          return 'bg-blue-900/40 text-blue-300 border-blue-700';
-        case '传说':
-          return 'bg-purple-900/40 text-purple-300 border-purple-700';
-        case '仙品':
-          return 'bg-yellow-900/40 text-yellow-300 border-yellow-700';
-        default:
-          return 'bg-stone-700 text-stone-400 border-stone-600';
-      }
-    };
-
-    const getItemStats = (item: Item) => {
-      const isNatal = item.id === player.natalArtifactId;
-      const rarity = item.rarity || '普通';
-      const multiplier = RARITY_MULTIPLIERS[rarity] || 1;
-      const natalMultiplier = isNatal ? 1.5 : 1;
-
-      return {
-        attack: item.effect?.attack
-          ? Math.floor(item.effect.attack * multiplier * natalMultiplier)
-          : 0,
-        defense: item.effect?.defense
-          ? Math.floor(item.effect.defense * multiplier * natalMultiplier)
-          : 0,
-        hp: item.effect?.hp
-          ? Math.floor(item.effect.hp * multiplier * natalMultiplier)
-          : 0,
-        exp: item.effect?.exp || 0,
-        spirit: item.effect?.spirit
-          ? Math.floor(item.effect.spirit * multiplier * natalMultiplier)
-          : 0,
-        physique: item.effect?.physique
-          ? Math.floor(item.effect.physique * multiplier * natalMultiplier)
-          : 0,
-        speed: item.effect?.speed
-          ? Math.floor(item.effect.speed * multiplier * natalMultiplier)
-          : 0,
-      };
-    };
-
-    const stats = getItemStats(item);
+    // 使用统一的工具函数计算物品统计
+    const isNatal = item.id === player.natalArtifactId;
+    const stats = getItemStats(item, isNatal);
     const rarity = item.rarity || '普通';
     const showLevel =
       typeof item.level === 'number' && Number.isFinite(item.level) && item.level > 0;
@@ -160,54 +103,11 @@ const InventoryItem = memo<InventoryItemProps>(
         ? item.reviveChances
         : undefined;
 
+    // 使用统一的工具函数查找空槽位
     const handleEquip = useCallback(() => {
-      let targetSlot = item.equipmentSlot!;
-      let hasEmptySlot = true;
-
-      if (item.type === ItemType.Ring) {
-        const ringSlots = [
-          EquipmentSlot.Ring1,
-          EquipmentSlot.Ring2,
-          EquipmentSlot.Ring3,
-          EquipmentSlot.Ring4,
-        ];
-        const emptyRingSlot = ringSlots.find((slot) => !equippedItems[slot]);
-        if (emptyRingSlot) {
-          targetSlot = emptyRingSlot;
-        } else {
-          hasEmptySlot = false;
-        }
-      } else if (item.type === ItemType.Accessory) {
-        const accessorySlots = [
-          EquipmentSlot.Accessory1,
-          EquipmentSlot.Accessory2,
-        ];
-        const emptyAccessorySlot = accessorySlots.find(
-          (slot) => !equippedItems[slot]
-        );
-        if (emptyAccessorySlot) {
-          targetSlot = emptyAccessorySlot;
-        } else {
-          hasEmptySlot = false;
-        }
-      } else if (item.type === ItemType.Artifact) {
-        const artifactSlots = [
-          EquipmentSlot.Artifact1,
-          EquipmentSlot.Artifact2,
-        ];
-        const emptyArtifactSlot = artifactSlots.find(
-          (slot) => !equippedItems[slot]
-        );
-        if (emptyArtifactSlot) {
-          targetSlot = emptyArtifactSlot;
-        } else {
-          hasEmptySlot = false;
-        }
-      }
-
-      if (hasEmptySlot) {
-        onEquipItem(item, targetSlot);
-      } else {
+      if (!item.equipmentSlot) return;
+      const targetSlot = findEmptyEquipmentSlot(item, equippedItems);
+      if (targetSlot) {
         onEquipItem(item, targetSlot);
       }
     }, [item, equippedItems, onEquipItem]);
@@ -289,40 +189,8 @@ const InventoryItem = memo<InventoryItemProps>(
               {isEquipped ? (
                 <button
                   onClick={() => {
-                    // 找到实际装备的槽位
-                    let actualSlot: EquipmentSlot | null = null;
-                    if (item.type === ItemType.Ring) {
-                      const ringSlots = [
-                        EquipmentSlot.Ring1,
-                        EquipmentSlot.Ring2,
-                        EquipmentSlot.Ring3,
-                        EquipmentSlot.Ring4,
-                      ];
-                      actualSlot =
-                        ringSlots.find(
-                          (slot) => equippedItems[slot] === item.id
-                        ) || null;
-                    } else if (item.type === ItemType.Accessory) {
-                      const accessorySlots = [
-                        EquipmentSlot.Accessory1,
-                        EquipmentSlot.Accessory2,
-                      ];
-                      actualSlot =
-                        accessorySlots.find(
-                          (slot) => equippedItems[slot] === item.id
-                        ) || null;
-                    } else if (item.type === ItemType.Artifact) {
-                      const artifactSlots = [
-                        EquipmentSlot.Artifact1,
-                        EquipmentSlot.Artifact2,
-                      ];
-                      actualSlot =
-                        artifactSlots.find(
-                          (slot) => equippedItems[slot] === item.id
-                        ) || null;
-                    } else {
-                      actualSlot = item.equipmentSlot;
-                    }
+                    // 使用统一的工具函数查找实际装备的槽位
+                    const actualSlot = findItemEquippedSlot(item, equippedItems);
                     if (actualSlot) {
                       onUnequipItem(actualSlot);
                     }
@@ -466,16 +334,7 @@ const InventoryModal: React.FC<Props> = ({
 
   // 过滤和排序物品
   const filteredAndSortedInventory = useMemo(() => {
-    // 品级排序权重
-    const getRarityOrder = (rarity: ItemRarity | undefined): number => {
-      const rarityOrder: Record<ItemRarity, number> = {
-        仙品: 4,
-        传说: 3,
-        稀有: 2,
-        普通: 1,
-      };
-      return rarityOrder[rarity || '普通'];
-    };
+    // 使用统一的工具函数获取品级排序权重
 
     // 判断物品分类
     const getItemCategory = (item: Item): ItemCategory => {
@@ -507,47 +366,12 @@ const InventoryModal: React.FC<Props> = ({
       );
     }
 
-    // 如果是装备分类，进一步按部位过滤
+    // 如果是装备分类，进一步按部位过滤（使用统一的工具函数）
     if (selectedCategory === 'equipment' && selectedEquipmentSlot !== 'all') {
       filtered = filtered.filter((item) => {
         if (!item.equipmentSlot) return false;
-        // 对于戒指、首饰、法宝，需要匹配对应的槽位组
-        if (
-          selectedEquipmentSlot === EquipmentSlot.Ring1 ||
-          selectedEquipmentSlot === EquipmentSlot.Ring2 ||
-          selectedEquipmentSlot === EquipmentSlot.Ring3 ||
-          selectedEquipmentSlot === EquipmentSlot.Ring4
-        ) {
-          // 如果选择的是某个戒指槽位，显示所有戒指
-          return (
-            item.equipmentSlot === EquipmentSlot.Ring1 ||
-            item.equipmentSlot === EquipmentSlot.Ring2 ||
-            item.equipmentSlot === EquipmentSlot.Ring3 ||
-            item.equipmentSlot === EquipmentSlot.Ring4
-          );
-        }
-        if (
-          selectedEquipmentSlot === EquipmentSlot.Accessory1 ||
-          selectedEquipmentSlot === EquipmentSlot.Accessory2
-        ) {
-          // 如果选择的是某个首饰槽位，显示所有首饰
-          return (
-            item.equipmentSlot === EquipmentSlot.Accessory1 ||
-            item.equipmentSlot === EquipmentSlot.Accessory2
-          );
-        }
-        if (
-          selectedEquipmentSlot === EquipmentSlot.Artifact1 ||
-          selectedEquipmentSlot === EquipmentSlot.Artifact2
-        ) {
-          // 如果选择的是某个法宝槽位，显示所有法宝
-          return (
-            item.equipmentSlot === EquipmentSlot.Artifact1 ||
-            item.equipmentSlot === EquipmentSlot.Artifact2
-          );
-        }
-        // 其他部位直接匹配
-        return item.equipmentSlot === selectedEquipmentSlot;
+        // 使用工具函数检查槽位是否属于同一组
+        return areSlotsInSameGroup(item.equipmentSlot, selectedEquipmentSlot);
       });
     }
 
@@ -567,7 +391,7 @@ const InventoryModal: React.FC<Props> = ({
     return filtered;
   }, [inventory, selectedCategory, selectedEquipmentSlot, sortByRarity]);
 
-  // 计算所有已装备物品的总属性（必须在条件返回之前）
+  // 计算所有已装备物品的总属性（使用统一的工具函数）
   const calculateTotalEquippedStats = useMemo(() => {
     let totalAttack = 0;
     let totalDefense = 0;
@@ -577,23 +401,9 @@ const InventoryModal: React.FC<Props> = ({
       if (itemId) {
         const item = inventory.find((i) => i.id === itemId);
         if (item) {
-          // 在 useMemo 中直接计算属性，确保使用最新的 player.natalArtifactId
+          // 使用统一的工具函数计算属性
           const isNatal = item.id === player.natalArtifactId;
-          const rarity = item.rarity || '普通';
-          const multiplier = RARITY_MULTIPLIERS[rarity] || 1;
-          const natalMultiplier = isNatal ? 1.5 : 1;
-
-          const stats = {
-            attack: item.effect?.attack
-              ? Math.floor(item.effect.attack * multiplier * natalMultiplier)
-              : 0,
-            defense: item.effect?.defense
-              ? Math.floor(item.effect.defense * multiplier * natalMultiplier)
-              : 0,
-            hp: item.effect?.hp
-              ? Math.floor(item.effect.hp * multiplier * natalMultiplier)
-              : 0,
-          };
+          const stats = getItemStats(item, isNatal);
 
           totalAttack += stats.attack;
           totalDefense += stats.defense;
@@ -605,35 +415,11 @@ const InventoryModal: React.FC<Props> = ({
     return { attack: totalAttack, defense: totalDefense, hp: totalHp };
   }, [equippedItems, inventory, player.natalArtifactId]);
 
-  // 获取物品统计信息（用于比较）- 必须在条件返回之前
-  const getItemStats = useCallback(
+  // 获取物品统计信息（用于比较）- 使用统一的工具函数
+  const getItemStatsForComparison = useCallback(
     (item: Item) => {
       const isNatal = item.id === player.natalArtifactId;
-      const rarity = item.rarity || '普通';
-      const multiplier = RARITY_MULTIPLIERS[rarity] || 1;
-      const natalMultiplier = isNatal ? 1.5 : 1;
-
-      return {
-        attack: item.effect?.attack
-          ? Math.floor(item.effect.attack * multiplier * natalMultiplier)
-          : 0,
-        defense: item.effect?.defense
-          ? Math.floor(item.effect.defense * multiplier * natalMultiplier)
-          : 0,
-        hp: item.effect?.hp
-          ? Math.floor(item.effect.hp * multiplier * natalMultiplier)
-          : 0,
-        exp: item.effect?.exp || 0,
-        spirit: item.effect?.spirit
-          ? Math.floor(item.effect.spirit * multiplier * natalMultiplier)
-          : 0,
-        physique: item.effect?.physique
-          ? Math.floor(item.effect.physique * multiplier * natalMultiplier)
-          : 0,
-        speed: item.effect?.speed
-          ? Math.floor(item.effect.speed * multiplier * natalMultiplier)
-          : 0,
-      };
+      return getItemStats(item, isNatal);
     },
     [player.natalArtifactId]
   );
@@ -653,12 +439,12 @@ const InventoryModal: React.FC<Props> = ({
         (i) => i.id === currentEquippedId
       );
       if (currentEquippedItem) {
-        currentEquippedStats = getItemStats(currentEquippedItem);
+        currentEquippedStats = getItemStatsForComparison(currentEquippedItem);
       }
     }
 
     // 2. Get hovered item stats
-    const hoveredStats = getItemStats(hoveredItem);
+    const hoveredStats = getItemStatsForComparison(hoveredItem);
 
     // 3. Calculate difference
     return {
@@ -668,32 +454,9 @@ const InventoryModal: React.FC<Props> = ({
     };
   };
 
+  // 使用统一的工具函数检查物品是否已装备
   const isItemEquipped = (item: Item): boolean => {
-    if (!item.equipmentSlot) return false;
-
-    // 检查物品是否在任何槽位装备
-    // 对于戒指、首饰、法宝，需要检查所有同类型槽位
-    if (item.type === ItemType.Ring) {
-      const ringSlots = [
-        EquipmentSlot.Ring1,
-        EquipmentSlot.Ring2,
-        EquipmentSlot.Ring3,
-        EquipmentSlot.Ring4,
-      ];
-      return ringSlots.some((slot) => equippedItems[slot] === item.id);
-    } else if (item.type === ItemType.Accessory) {
-      const accessorySlots = [
-        EquipmentSlot.Accessory1,
-        EquipmentSlot.Accessory2,
-      ];
-      return accessorySlots.some((slot) => equippedItems[slot] === item.id);
-    } else if (item.type === ItemType.Artifact) {
-      const artifactSlots = [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2];
-      return artifactSlots.some((slot) => equippedItems[slot] === item.id);
-    } else {
-      // 其他装备类型直接检查对应槽位
-      return equippedItems[item.equipmentSlot] === item.id;
-    }
+    return checkItemEquipped(item, equippedItems);
   };
 
   const comparison = calculateComparison();

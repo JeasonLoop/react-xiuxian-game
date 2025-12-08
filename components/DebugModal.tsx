@@ -52,6 +52,7 @@ import {
   SECT_SHOP_ITEMS,
 } from '../constants';
 import { showSuccess, showError, showInfo } from '../utils/toastUtils';
+import { getRarityTextColor } from '../utils/rarityUtils';
 
 // 生成唯一ID
 const uid = () =>
@@ -336,18 +337,20 @@ const DebugModal: React.FC<Props> = ({
   };
 
   // 获取稀有度颜色
+  // 使用统一的工具函数获取稀有度颜色（带边框）
   const getRarityColor = (rarity: ItemRarity) => {
+    const baseColor = getRarityTextColor(rarity);
     switch (rarity) {
       case '普通':
-        return 'text-stone-400 border-stone-600';
+        return `${baseColor} border-stone-600`;
       case '稀有':
-        return 'text-blue-400 border-blue-600';
+        return `${baseColor} border-blue-600`;
       case '传说':
-        return 'text-purple-400 border-purple-600';
+        return `${baseColor} border-purple-600`;
       case '仙品':
-        return 'text-yellow-400 border-yellow-600';
+        return `${baseColor} border-yellow-600`;
       default:
-        return 'text-stone-400 border-stone-600';
+        return `${baseColor} border-stone-600`;
     }
   };
 

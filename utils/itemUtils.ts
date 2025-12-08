@@ -235,6 +235,7 @@ export const getItemStats = (item: Item, isNatal: boolean = false) => {
     hp: item.effect?.hp
       ? Math.floor(item.effect.hp * multiplier * natalMultiplier)
       : 0,
+    exp: item.effect?.exp || 0, // exp 不受稀有度倍率影响
     spirit: item.effect?.spirit
       ? Math.floor(item.effect.spirit * multiplier * natalMultiplier)
       : 0,

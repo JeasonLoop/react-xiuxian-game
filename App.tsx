@@ -16,8 +16,12 @@ import DebugModal from './components/DebugModal';
 import { BattleReplay } from './services/battleService';
 import { useGameState } from './hooks/useGameState';
 import { useGameEffects } from './hooks/useGameEffects';
-import { SAVE_KEY, uid } from './utils/gameUtils';
-import { normalizeItemEffect, inferItemTypeAndSlot } from './utils/itemUtils';
+import { useAppState } from './hooks/useAppState';
+import { useDeathDetection } from './hooks/useDeathDetection';
+import { useAutoFeatures } from './hooks/useAutoFeatures';
+import { usePassiveRegeneration } from './hooks/usePassiveRegeneration';
+import { useBattleResultHandler } from './hooks/useBattleResultHandler';
+import { SAVE_KEY } from './utils/gameUtils';
 import { setGlobalAlertSetter } from './utils/toastUtils';
 import AlertModal from './components/AlertModal';
 import { AlertType } from './components/AlertModal';
@@ -63,59 +67,93 @@ function App() {
   // 欢迎界面状态 - 总是显示欢迎界面，让用户选择继续或开始
   const [showWelcome, setShowWelcome] = useState(true);
 
+  // 使用自定义hooks管理游戏效果
+  const { visualEffects, createAddLog, triggerVisual } = useGameEffects();
+  const addLog = createAddLog(setLogs);
+
+  // 使用统一的 App 状态管理
+  const appState = useAppState();
+  const {
+    modals,
+    setters,
+    shop,
+    upgrade,
+    notifications,
+    battle,
+    turnBasedBattle,
+    itemActionLog,
+  } = appState;
+
+  // 解构状态以便使用
+  const {
+    isInventoryOpen,
+    isCultivationOpen,
+    isAlchemyOpen,
+    isUpgradeOpen,
+    isSectOpen,
+    isRealmOpen,
+    isCharacterOpen,
+    isAchievementOpen,
+    isPetOpen,
+    isLotteryOpen,
+    isSettingsOpen,
+    isShopOpen,
+    isDebugOpen,
+    isBattleModalOpen,
+    isTurnBasedBattleOpen,
+    isMobileSidebarOpen,
+    isMobileStatsOpen,
+  } = modals;
+
+  const {
+    setIsInventoryOpen,
+    setIsCultivationOpen,
+    setIsAlchemyOpen,
+    setIsUpgradeOpen,
+    setIsSectOpen,
+    setIsRealmOpen,
+    setIsCharacterOpen,
+    setIsAchievementOpen,
+    setIsPetOpen,
+    setIsLotteryOpen,
+    setIsSettingsOpen,
+    setIsShopOpen,
+    setIsDebugOpen,
+    setIsBattleModalOpen,
+    setIsTurnBasedBattleOpen,
+    setIsMobileSidebarOpen,
+    setIsMobileStatsOpen,
+    setIsDebugModeEnabled,
+  } = setters;
+
+  const { isDebugModeEnabled } = modals;
+
   // 检查调试模式是否启用
   useEffect(() => {
     const DEBUG_MODE_KEY = 'xiuxian-debug-mode';
     const debugMode = localStorage.getItem(DEBUG_MODE_KEY) === 'true';
     setIsDebugModeEnabled(debugMode);
-  }, []);
+  }, [setIsDebugModeEnabled]);
 
-  // 使用自定义hooks管理游戏效果
-  const { visualEffects, createAddLog, triggerVisual } = useGameEffects();
-  const addLog = createAddLog(setLogs);
+  const { currentShop, setCurrentShop } = shop;
+  const { itemToUpgrade, setItemToUpgrade } = upgrade;
+  const { purchaseSuccess, setPurchaseSuccess, lotteryRewards, setLotteryRewards } =
+    notifications;
+  const {
+    battleReplay,
+    setBattleReplay,
+    revealedBattleRounds,
+    setRevealedBattleRounds,
+    lastBattleReplay,
+    setLastBattleReplay,
+  } = battle;
+  const { params: turnBasedBattleParams, setParams: setTurnBasedBattleParams } =
+    turnBasedBattle;
+  const { value: itemActionLogValue, setValue: setItemActionLog } = itemActionLog;
 
-  const [isInventoryOpen, setIsInventoryOpen] = useState(false); // 背包是否打开
-  const [isCultivationOpen, setIsCultivationOpen] = useState(false); // 功法是否打开
-  const [isAlchemyOpen, setIsAlchemyOpen] = useState(false); // 炼丹是否打开
-  const [isUpgradeOpen, setIsUpgradeOpen] = useState(false); // 法宝强化是否打开
-  const [isSectOpen, setIsSectOpen] = useState(false); // 宗门是否打开
-  const [isRealmOpen, setIsRealmOpen] = useState(false); // 秘境是否打开
-  const [isCharacterOpen, setIsCharacterOpen] = useState(false); // 角色是否打开
-  const [isAchievementOpen, setIsAchievementOpen] = useState(false); // 成就是否打开
-  const [isPetOpen, setIsPetOpen] = useState(false); // 灵宠是否打开
-  const [isLotteryOpen, setIsLotteryOpen] = useState(false); // 抽奖是否打开
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false); // 设置是否打开
-  const [isShopOpen, setIsShopOpen] = useState(false); // 商店是否打开
-  const [isDebugOpen, setIsDebugOpen] = useState(false); // 调试弹窗是否打开
-  const [isDebugModeEnabled, setIsDebugModeEnabled] = useState(false); // 调试模式是否启用
-  const [currentShop, setCurrentShop] = useState<Shop | null>(null); // 当前商店
-  const [itemToUpgrade, setItemToUpgrade] = useState<Item | null>(null); // 当前升级物品
-  const [purchaseSuccess, setPurchaseSuccess] = useState<{
-    item: string; // 购买物品名称
-    quantity: number; // 购买物品数量
-  } | null>(null); // 购买成功
-  const [lotteryRewards, setLotteryRewards] = useState<
-    Array<{ type: string; name: string; quantity?: number }>
-  >([]);
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
-  const [battleReplay, setBattleReplay] = useState<BattleReplay | null>(null);
-  const [isBattleModalOpen, setIsBattleModalOpen] = useState(false);
-  const [revealedBattleRounds, setRevealedBattleRounds] = useState(0);
-  // 回合制战斗状态
-  const [isTurnBasedBattleOpen, setIsTurnBasedBattleOpen] = useState(false);
-  const [turnBasedBattleParams, setTurnBasedBattleParams] = useState<{
-    adventureType: AdventureType;
-    riskLevel?: '低' | '中' | '高' | '极度危险';
-    realmMinRealm?: RealmType;
-  } | null>(null);
-
-  const [loading, setLoading] = useState(false); // 加载状态
-  const [cooldown, setCooldown] = useState(0); // 冷却时间
-  const [itemActionLog, setItemActionLog] = useState<{
-    text: string;
-    type: string;
-  } | null>(null); // 物品操作轻提示（保留用于其他功能）
+  // 加载和冷却状态
+  const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
 
   // Alert 弹窗状态
   const [alertState, setAlertState] = useState<{
@@ -134,18 +172,13 @@ function App() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const [autoMeditate, setAutoMeditate] = useState(false); // 自动打坐
-  const [autoAdventure, setAutoAdventure] = useState(false); // 自动历练
-  const [autoAdventurePausedByShop, setAutoAdventurePausedByShop] =
-    useState(false); // 自动历练是否因商店暂停
-  const [isDead, setIsDead] = useState(false); // 是否死亡
-  const [deathBattleData, setDeathBattleData] = useState<BattleReplay | null>(
-    null
-  ); // 死亡时的战斗数据
-  const [deathReason, setDeathReason] = useState(''); // 死亡原因
-  const [lastBattleReplay, setLastBattleReplay] = useState<BattleReplay | null>(
-    null
-  ); // 最近的战斗数据
+  // 自动功能和死亡状态
+  const [autoMeditate, setAutoMeditate] = useState(false);
+  const [autoAdventure, setAutoAdventure] = useState(false);
+  const [autoAdventurePausedByShop, setAutoAdventurePausedByShop] = useState(false);
+  const [isDead, setIsDead] = useState(false);
+  const [deathBattleData, setDeathBattleData] = useState<BattleReplay | null>(null);
+  const [deathReason, setDeathReason] = useState('');
 
   // 初始化所有模块化的 handlers
   const battleHandlers = useBattleHandlers({
@@ -156,6 +189,14 @@ function App() {
     revealedBattleRounds,
     setRevealedBattleRounds,
     animationSpeed: settings.animationSpeed,
+  });
+
+  // 使用战斗结果处理 hook
+  const { handleBattleResult } = useBattleResultHandler({
+    player,
+    setPlayer,
+    addLog,
+    setLoading,
   });
 
   const meditationHandlers = useMeditationHandlers({
@@ -287,278 +328,21 @@ function App() {
   const handleSkipBattleLogs = battleHandlers.handleSkipBattleLogs;
   const handleCloseBattleModal = battleHandlers.handleCloseBattleModal;
 
-  // 检测死亡（包括寿命归零）
-  useEffect(() => {
-    if (!player || isDead) return; // 如果已经死亡，不再检测
-
-    // 检测寿命归零（老死）
-    if (player.lifespan !== undefined && player.lifespan <= 0) {
-      addLog('⏰ 你的寿命已尽，寿终正寝 还是无缘窥探大道...', 'danger');
-
-      if (settings.difficulty === 'hard') {
-        // 困难模式：死亡惩罚
-        setIsDead(true);
-        setPlayer((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            hp: 0, // 触发死亡
-          };
-        });
-        const reason = '你的寿命已尽，寿终正寝。';
-        setDeathReason(reason);
-        setDeathBattleData(null);
-        localStorage.removeItem(SAVE_KEY);
-        setIsBattleModalOpen(false);
-        setAutoMeditate(false);
-        setAutoAdventure(false);
-      } else {
-        // 简单/普通模式：无惩罚，直接复活
-        setIsDead(true); // 先设置死亡标志，避免重复触发
-        setPlayer((prev) => {
-          if (!prev) return prev;
-          // 恢复10%最大气血
-          const reviveHp = Math.max(1, Math.floor(prev.maxHp * 0.1));
-          // 恢复少量寿命（10年）
-          const reviveLifespan = Math.min(prev.maxLifespan || 100, 10);
-          return {
-            ...prev,
-            hp: reviveHp,
-            lifespan: reviveLifespan,
-          };
-        });
-
-        const reason = '你的寿命已尽，寿终正寝。但天道的仁慈让你得以重生，继续你的修仙之路。';
-        setDeathReason(reason);
-        setDeathBattleData(null);
-        setIsBattleModalOpen(false);
-        setAutoMeditate(false);
-        setAutoAdventure(false);
-      }
-      return;
-    }
-
-    // 检测气血归零
-
-    if (player.hp <= 0) {
-      // 检查是否有保命装备
-      let reviveItem: Item | null = null;
-      let reviveSlot: EquipmentSlot | null = null;
-
-      // 遍历所有装备槽位，查找有保命机会的装备
-      for (const [slot, itemId] of Object.entries(player.equippedItems)) {
-        if (!itemId) continue;
-        const item = player.inventory.find((i) => i.id === itemId);
-        if (item && item.reviveChances && item.reviveChances > 0) {
-          reviveItem = item;
-          reviveSlot = slot as EquipmentSlot;
-          break;
-        }
-      }
-
-      if (reviveItem && reviveSlot) {
-        // 有保命装备，消耗一次保命机会并复活
-        setPlayer((prev) => {
-          if (!prev) return prev;
-
-          const newInventory = prev.inventory.map((item) => {
-            if (item.id === reviveItem!.id) {
-              const newChances = (item.reviveChances || 0) - 1;
-              addLog(
-                `💫 ${item.name}的保命之力被触发！你留下一口气，从死亡边缘被拉了回来。剩余保命机会：${newChances}次`,
-                'special'
-              );
-              return {
-                ...item,
-                reviveChances: newChances,
-              };
-            }
-            return item;
-          });
-
-          // 如果保命机会用完了，从装备栏移除
-          const updatedItem = newInventory.find((i) => i.id === reviveItem!.id);
-          const newEquippedItems = { ...prev.equippedItems };
-          if (
-            updatedItem &&
-            (!updatedItem.reviveChances || updatedItem.reviveChances <= 0)
-          ) {
-            delete newEquippedItems[reviveSlot!];
-            addLog(
-              `⚠️ ${reviveItem!.name}的保命之力已耗尽，自动卸下。`,
-              'danger'
-            );
-          }
-
-          // 复活：恢复10%最大气血
-          const reviveHp = Math.max(1, Math.floor(prev.maxHp * 0.1));
-
-          return {
-            ...prev,
-            inventory: newInventory,
-            equippedItems: newEquippedItems,
-            hp: reviveHp,
-          };
-        });
-        return; // 不触发死亡
-      }
-
-      // 没有保命装备，根据难度模式处理死亡
-      const difficulty = settings.difficulty || 'normal';
-
-      if (difficulty === 'hard') {
-        // 困难模式：清除存档
-        setIsDead(true);
-        setDeathBattleData(lastBattleReplay);
-        localStorage.removeItem(SAVE_KEY);
-
-        // 关闭战斗弹窗（如果打开的话）
-        setIsBattleModalOpen(false);
-
-        // 生成死亡原因
-        let reason = '';
-        if (lastBattleReplay && !lastBattleReplay.victory) {
-          reason = `在与${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}的战斗中，你力竭而亡。`;
-        } else if (lastBattleReplay) {
-          reason = `虽然战胜了${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}，但你伤势过重，最终不治身亡。`;
-        } else {
-          reason = '你在历练途中遭遇不测，伤势过重，最终不治身亡。';
-        }
-        setDeathReason(reason);
-
-        // 停止自动功能
-        setAutoMeditate(false);
-        setAutoAdventure(false);
-      } else if (difficulty === 'normal') {
-        // 普通模式：掉落部分属性和装备
-        setPlayer((prev) => {
-          if (!prev) return prev;
-
-          // 随机掉落属性 10-20%
-          const attributeDropPercent = 0.1 + Math.random() * 0.1; // 10-20%
-          const attackDrop = Math.floor(prev.attack * attributeDropPercent);
-          const defenseDrop = Math.floor(prev.defense * attributeDropPercent);
-          const spiritDrop = Math.floor(prev.spirit * attributeDropPercent);
-          const physiqueDrop = Math.floor(prev.physique * attributeDropPercent);
-          const speedDrop = Math.floor(prev.speed * attributeDropPercent);
-          const maxHpDrop = Math.floor(prev.maxHp * attributeDropPercent);
-
-          // 随机掉落装备 1-3件（直接丢弃，不是卸载）
-          const equippedItemIds = Object.values(prev.equippedItems).filter(
-            Boolean
-          ) as string[];
-          const dropCount = Math.min(
-            1 + Math.floor(Math.random() * 3),
-            equippedItemIds.length
-          );
-          const itemsToDrop = equippedItemIds
-            .sort(() => Math.random() - 0.5)
-            .slice(0, dropCount);
-
-          // 先卸载掉落的装备（从装备栏移除）
-          const newEquippedItems = { ...prev.equippedItems };
-          itemsToDrop.forEach((itemId) => {
-            const slot = Object.entries(prev.equippedItems).find(
-              ([_, id]) => id === itemId
-            )?.[0] as EquipmentSlot | undefined;
-            if (slot) {
-              delete newEquippedItems[slot];
-            }
-          });
-
-          // 直接丢弃掉落的装备（从背包中完全移除）
-          const newInventory = prev.inventory.filter(
-            (item) => !itemsToDrop.includes(item.id)
-          );
-
-          // 记录掉落信息
-          const dropMessages: string[] = [];
-          if (attackDrop > 0) dropMessages.push(`攻击力 -${attackDrop}`);
-          if (defenseDrop > 0) dropMessages.push(`防御力 -${defenseDrop}`);
-          if (spiritDrop > 0) dropMessages.push(`神识 -${spiritDrop}`);
-          if (physiqueDrop > 0) dropMessages.push(`体魄 -${physiqueDrop}`);
-          if (speedDrop > 0) dropMessages.push(`速度 -${speedDrop}`);
-          if (maxHpDrop > 0) dropMessages.push(`气血上限 -${maxHpDrop}`);
-
-          if (itemsToDrop.length > 0) {
-            const droppedItemNames = itemsToDrop
-              .map((id) => prev.inventory.find((i) => i.id === id)?.name)
-              .filter(Boolean)
-              .join('、');
-            dropMessages.push(`装备掉落：${droppedItemNames}`);
-          }
-
-          if (dropMessages.length > 0) {
-            addLog(`💀 死亡惩罚：${dropMessages.join('，')}`, 'danger');
-          }
-
-          // 恢复10%最大气血
-          const reviveHp = Math.max(
-            1,
-            Math.floor((prev.maxHp - maxHpDrop) * 0.1)
-          );
-
-          return {
-            ...prev,
-            attack: Math.max(0, prev.attack - attackDrop),
-            defense: Math.max(0, prev.defense - defenseDrop),
-            spirit: Math.max(0, prev.spirit - spiritDrop),
-            physique: Math.max(0, prev.physique - physiqueDrop),
-            speed: Math.max(0, prev.speed - speedDrop),
-            maxHp: Math.max(1, prev.maxHp - maxHpDrop),
-            hp: reviveHp,
-            inventory: newInventory,
-            equippedItems: newEquippedItems,
-          };
-        });
-
-        // 生成死亡原因
-        let reason = '';
-        if (lastBattleReplay && !lastBattleReplay.victory) {
-          reason = `在与${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}的战斗中，你力竭而亡。但你的灵魂尚未完全消散，在付出代价后得以重生。`;
-        } else if (lastBattleReplay) {
-          reason = `虽然战胜了${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}，但你伤势过重，最终不治身亡。但你的灵魂尚未完全消散，在付出代价后得以重生。`;
-        } else {
-          reason =
-            '你在历练途中遭遇不测，伤势过重，最终不治身亡。但你的灵魂尚未完全消散，在付出代价后得以重生。';
-        }
-        setDeathReason(reason);
-        setIsDead(true);
-        setDeathBattleData(lastBattleReplay);
-        setIsBattleModalOpen(false);
-        setAutoMeditate(false);
-        setAutoAdventure(false);
-      } else {
-        // 简单模式：无惩罚，直接复活
-        setPlayer((prev) => {
-          if (!prev) return prev;
-          // 恢复10%最大气血
-          const reviveHp = Math.max(1, Math.floor(prev.maxHp * 0.1));
-          return {
-            ...prev,
-            hp: reviveHp,
-          };
-        });
-
-        // 生成死亡原因
-        let reason = '';
-        if (lastBattleReplay && !lastBattleReplay.victory) {
-          reason = `在与${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}的战斗中，你力竭而亡。但天道的仁慈让你得以重生，继续你的修仙之路。`;
-        } else if (lastBattleReplay) {
-          reason = `虽然战胜了${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}，但你伤势过重，最终不治身亡。但天道的仁慈让你得以重生，继续你的修仙之路。`;
-        } else {
-          reason =
-            '你在历练途中遭遇不测，伤势过重，最终不治身亡。但天道的仁慈让你得以重生，继续你的修仙之路。';
-        }
-        setDeathReason(reason);
-        setIsDead(true);
-        setDeathBattleData(lastBattleReplay);
-        setIsBattleModalOpen(false);
-        setAutoMeditate(false);
-        setAutoAdventure(false);
-      }
-    }
-  }, [player?.hp, player?.lifespan, isDead, lastBattleReplay, addLog, settings.difficulty, setIsBattleModalOpen, setAutoMeditate, setAutoAdventure]);
+  // 使用死亡检测 hook
+  useDeathDetection({
+    player,
+    setPlayer,
+    isDead,
+    setIsDead,
+    addLog,
+    settings,
+    lastBattleReplay,
+    setDeathBattleData,
+    setDeathReason,
+    setIsBattleModalOpen,
+    setAutoMeditate,
+    setAutoAdventure,
+  });
 
   // 涅槃重生功能
   const handleRebirth = () => {
@@ -579,17 +363,6 @@ function App() {
 
     // 触发页面刷新或返回开始页面
     // useGameState 的 handleStartGame 会处理新游戏
-  };
-
-  const handleMeditate = () => {
-    if (loading || cooldown > 0 || !player) return;
-    // 如果正在自动历练，则不能手动打坐
-    if (autoAdventure) {
-      addLog('正在历练中，无法打坐。请先停止自动历练。', 'danger');
-      return;
-    }
-    meditationHandlers.handleMeditate();
-    setCooldown(1);
   };
 
   const handleUseInheritance = breakthroughHandlers.handleUseInheritance;
@@ -679,90 +452,11 @@ function App() {
   const handleSectBuy = sectHandlers.handleSectBuy;
   const checkAchievements = achievementHandlers.checkAchievements;
 
-  // Passive Regeneration logic - 优化：使用 useRef 避免依赖变化导致定时器重建
-  useEffect(() => {
-    if (!player) return; // 如果 player 为 null，不执行定时器
-
-    const timer = setInterval(() => {
-      setPlayer((prev) => {
-        if (!prev) return prev; // 防止 prev 为 null
-
-        // 计算基础回血量（不再使用打坐加成，因为打坐时已经直接回血了）
-        const baseRegen = Math.max(1, Math.floor(prev.maxHp * 0.01));
-
-        if (prev.hp < prev.maxHp) {
-          return {
-            ...prev,
-            hp: Math.min(prev.maxHp, prev.hp + baseRegen),
-          };
-        }
-
-        return prev;
-      });
-      setCooldown((c) => (c > 0 ? c - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [player]); // 移除 cooldown 依赖，避免频繁重建定时器
-
-  // 自动打坐逻辑
-  useEffect(() => {
-    // 如果正在自动历练，则不能自动打坐
-    if (!autoMeditate || !player || loading || cooldown > 0 || autoAdventure)
-      return;
-
-    const timer = setTimeout(() => {
-      if (
-        autoMeditate &&
-        !loading &&
-        cooldown === 0 &&
-        player &&
-        !autoAdventure
-      ) {
-        if (loading || cooldown > 0 || !player || autoAdventure) return;
-        meditationHandlers.handleMeditate();
-        setCooldown(1);
-      }
-    }, 100); // 短暂延迟，确保状态更新完成
-
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoMeditate, player, loading, cooldown, autoAdventure]);
-
-  // 自动历练逻辑
-  useEffect(() => {
-    // 如果正在自动打坐，则不能自动历练
-    if (
-      !autoAdventure ||
-      !player ||
-      loading ||
-      cooldown > 0 ||
-      isShopOpen ||
-      autoMeditate
-    )
-      return;
-
-    // 生死有命！富贵在天！！！
-    const timer = setTimeout(() => {
-      if (
-        autoAdventure &&
-        !loading &&
-        cooldown === 0 &&
-        player &&
-        !autoMeditate
-      ) {
-        handleAdventure();
-      }
-    }, 100); // 短暂延迟，确保状态更新完成
-
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoAdventure, player, loading, cooldown, autoMeditate]);
-
   // 从冒险 handlers 中提取函数
   const { handleAdventure: originalHandleAdventure, executeAdventure } =
     adventureHandlers;
 
-  // 包装handleAdventure，添加自动打坐检查
+  // 包装 handleAdventure，添加自动打坐检查
   const handleAdventure = async () => {
     // 如果正在自动打坐，则不能手动历练
     if (autoMeditate) {
@@ -771,6 +465,41 @@ function App() {
     }
     await originalHandleAdventure();
   };
+
+  // 包装 handleMeditate，添加自动打坐检查
+  const handleMeditate = () => {
+    if (loading || cooldown > 0 || !player) return;
+    // 如果正在自动历练，则不能手动打坐
+    if (autoAdventure) {
+      addLog('正在历练中，无法打坐。请先停止自动历练。', 'danger');
+      return;
+    }
+    meditationHandlers.handleMeditate();
+    setCooldown(1);
+  };
+
+  // 使用被动回血和冷却管理 hook
+  usePassiveRegeneration({
+    player,
+    setPlayer,
+    cooldown,
+    setCooldown,
+  });
+
+  // 使用自动功能 hook
+  useAutoFeatures({
+    autoMeditate,
+    autoAdventure,
+    player,
+    loading,
+    cooldown,
+    isShopOpen,
+    autoAdventurePausedByShop,
+    setAutoAdventurePausedByShop,
+    handleMeditate,
+    handleAdventure,
+    setCooldown,
+  });
 
   // 现在可以使用 executeAdventure 初始化 realmHandlers
   const realmHandlers = useRealmHandlers({
@@ -1138,139 +867,7 @@ function App() {
           handleTurnBasedBattleClose: (result, updatedInventory?) => {
             setIsTurnBasedBattleOpen(false);
             setTurnBasedBattleParams(null);
-            setLoading(false); // 战斗结束后清除loading状态
-
-            if (result) {
-              // 更新玩家状态
-              setPlayer((prev) => {
-                if (!prev) return prev;
-                const newHp = Math.max(0, prev.hp - result.hpLoss);
-                const newExp = Math.max(0, prev.exp + result.expChange);
-                const newSpiritStones = Math.max(
-                  0,
-                  prev.spiritStones + result.spiritChange
-                );
-
-                // 更新灵宠技能冷却（如果有）
-                let newPets = [...prev.pets];
-                if (result.petSkillCooldowns && prev.activePetId) {
-                  newPets = newPets.map((pet) => {
-                    if (pet.id === prev.activePetId) {
-                      const updatedCooldowns = { ...pet.skillCooldowns };
-                      Object.keys(result.petSkillCooldowns).forEach(
-                        (skillId) => {
-                          const newCooldown =
-                            result.petSkillCooldowns![skillId];
-                          if (newCooldown > 0) {
-                            updatedCooldowns[skillId] = Math.max(
-                              updatedCooldowns[skillId] || 0,
-                              newCooldown
-                            );
-                          }
-                        }
-                      );
-                      const finalCooldowns: Record<string, number> = {};
-                      Object.keys(updatedCooldowns).forEach((skillId) => {
-                        if (updatedCooldowns[skillId] > 0) {
-                          finalCooldowns[skillId] = updatedCooldowns[skillId];
-                        }
-                      });
-                      return {
-                        ...pet,
-                        skillCooldowns:
-                          Object.keys(finalCooldowns).length > 0
-                            ? finalCooldowns
-                            : undefined,
-                      };
-                    }
-                    return pet;
-                  });
-                }
-
-                // 更新战斗统计
-                const newStatistics = { ...prev.statistics };
-                if (result.victory) {
-                  newStatistics.killCount += 1;
-                }
-
-                // 处理物品奖励
-                let newInventory = updatedInventory || prev.inventory;
-                if (result.victory && result.items && result.items.length > 0) {
-                  result.items.forEach((itemData: any) => {
-                    const itemName = itemData.name;
-                    const itemTypeFromData =
-                      (itemData.type as ItemType) || ItemType.Material;
-                    const normalized = normalizeItemEffect(
-                      itemName,
-                      itemData.effect,
-                      itemData.permanentEffect
-                    );
-                    const inferred = inferItemTypeAndSlot(
-                      itemName,
-                      itemTypeFromData,
-                      itemData.description || '',
-                      itemData.isEquippable
-                    );
-                    const itemType = inferred.type;
-                    const equipmentSlot = inferred.equipmentSlot;
-                    const isEquippable = inferred.isEquippable;
-                    const rarity = itemData.rarity || '普通';
-
-                    // 装备类物品可以重复获得，但每个装备单独占一格
-                    const isEquipment = isEquippable && equipmentSlot;
-                    const existingIdx = newInventory.findIndex(
-                      (i: Item) => i.name === itemName
-                    );
-
-                    if (existingIdx >= 0 && !isEquipment) {
-                      // 非装备类物品可以叠加
-                      newInventory[existingIdx] = {
-                        ...newInventory[existingIdx],
-                        quantity: newInventory[existingIdx].quantity + 1,
-                      };
-                    } else {
-                      // 装备类物品或新物品，每个装备单独占一格
-                      const newItem: Item = {
-                        id: uid(),
-                        name: itemName,
-                        type: itemType,
-                        description: itemData.description || '',
-                        quantity: 1,
-                        rarity: rarity,
-                        level: 0,
-                        isEquippable: isEquippable,
-                        equipmentSlot: equipmentSlot,
-                        effect: normalized.effect,
-                        permanentEffect: normalized.permanentEffect,
-                      };
-                      newInventory.push(newItem);
-                      addLog(`获得 ${itemName}！`, 'gain');
-                    }
-                  });
-                }
-
-                const hasItems = result.items && result.items.length > 0;
-                const itemsText = hasItems
-                  ? `获得物品：${result.items.map((item) => item.name).join('，')}`
-                  : '';
-
-                const rewardText = result.victory
-                  ? `战斗胜利！获得 ${result.expChange} 修为，${result.spiritChange} 灵石。${itemsText}`
-                  : `战斗失败，损失 ${result.hpLoss} 点气血。`;
-
-                addLog(rewardText, result.victory ? 'gain' : 'danger');
-
-                return {
-                  ...prev,
-                  hp: newHp,
-                  exp: newExp,
-                  spiritStones: newSpiritStones,
-                  statistics: newStatistics,
-                  inventory: newInventory,
-                  pets: newPets,
-                };
-              });
-            }
+            handleBattleResult(result, updatedInventory);
           },
         }}
       />

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Star, Award, Info, RotateCcw } from 'lucide-react';
-import { PlayerStats, Talent, Title } from '../types';
+import { PlayerStats, Talent, Title, ItemRarity } from '../types';
 import {
   TALENTS,
   TITLES,
@@ -9,6 +9,7 @@ import {
   CULTIVATION_ARTS,
 } from '../constants';
 import { getItemStats } from '../utils/itemUtils';
+import { getRarityTextColor } from '../utils/rarityUtils';
 
 interface Props {
   isOpen: boolean;
@@ -134,19 +135,9 @@ const CharacterModal: React.FC<Props> = ({
 
   const attributeSources = calculateAttributeSources();
 
+  // 使用统一的工具函数获取稀有度颜色
   const getRarityColor = (rarity: string) => {
-    switch (rarity) {
-      case '普通':
-        return 'text-gray-400';
-      case '稀有':
-        return 'text-blue-400';
-      case '传说':
-        return 'text-purple-400';
-      case '仙品':
-        return 'text-yellow-400';
-      default:
-        return 'text-gray-400';
-    }
+    return getRarityTextColor(rarity as ItemRarity);
   };
 
   return (
