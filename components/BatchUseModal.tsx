@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { X, Zap, Filter } from 'lucide-react';
 import { Item, ItemType, ItemRarity, EquipmentSlot } from '../types';
 import { getRarityTextColor } from '../utils/rarityUtils';
+import { showConfirm } from '../utils/toastUtils';
 
 interface Props {
   isOpen: boolean;
@@ -147,16 +148,16 @@ const BatchUseModal: React.FC<Props> = ({
       .filter(Boolean)
       .join('、');
 
-    if (
-      window.confirm(
-        `确定要使用选中的 ${totalCount} 件物品吗？\n${itemNames}\n\n提示：物品将逐个使用，某些物品的效果可能会叠加。`
-      )
-    ) {
-      onUseItems(itemsToUse);
-      setSelectedItems(new Set());
-      setItemQuantities(new Map());
-      onClose();
-    }
+    showConfirm(
+      `确定要使用选中的 ${totalCount} 件物品吗？\n${itemNames}\n\n提示：物品将逐个使用，某些物品的效果可能会叠加。`,
+      '确认使用',
+      () => {
+        onUseItems(itemsToUse);
+        setSelectedItems(new Set());
+        setItemQuantities(new Map());
+        onClose();
+      }
+    );
   };
 
   if (!isOpen) return null;

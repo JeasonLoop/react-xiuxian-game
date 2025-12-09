@@ -2,6 +2,7 @@ import React from 'react';
 import { PlayerStats, Item, Pet, ItemType } from '../../types';
 import { PET_TEMPLATES, DISCOVERABLE_RECIPES, getRandomPetName } from '../../constants';
 import { uid } from '../../utils/gameUtils';
+import { showConfirm } from '../../utils/toastUtils';
 
 interface UseItemHandlersProps {
   player: PlayerStats;
@@ -262,20 +263,24 @@ export function useItemHandlers({
   };
 
   const handleDiscardItem = (item: Item) => {
-    if (window.confirm(`确定要丢弃 ${item.name} x${item.quantity} 吗？`)) {
-      setPlayer((prev) => {
-        // 检查是否已装备
-        const isEquipped = Object.values(prev.equippedItems).includes(item.id);
-        if (isEquipped) {
-          addLog('无法丢弃已装备的物品！请先卸下。', 'danger');
-          return prev;
-        }
+    showConfirm(
+      `确定要丢弃 ${item.name} x${item.quantity} 吗？`,
+      '确认丢弃',
+      () => {
+        setPlayer((prev) => {
+          // 检查是否已装备
+          const isEquipped = Object.values(prev.equippedItems).includes(item.id);
+          if (isEquipped) {
+            addLog('无法丢弃已装备的物品！请先卸下。', 'danger');
+            return prev;
+          }
 
-        const newInv = prev.inventory.filter((i) => i.id !== item.id);
-        addLog(`你丢弃了 ${item.name} x${item.quantity}。`, 'normal');
-        return { ...prev, inventory: newInv };
-      });
-    }
+          const newInv = prev.inventory.filter((i) => i.id !== item.id);
+          addLog(`你丢弃了 ${item.name} x${item.quantity}。`, 'normal');
+          return { ...prev, inventory: newInv };
+        });
+      }
+    );
   };
 
   const handleBatchUseItems = (itemIds: string[]) => {

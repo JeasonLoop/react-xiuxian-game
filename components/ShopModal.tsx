@@ -20,7 +20,7 @@ import {
 } from '../types';
 import { REALM_ORDER, RARITY_MULTIPLIERS } from '../constants';
 import { generateShopItems } from '../services/shopService';
-import { showError } from '../utils/toastUtils';
+import { showError, showConfirm } from '../utils/toastUtils';
 import { getRarityTextColor } from '../utils/rarityUtils';
 
 interface Props {
@@ -305,17 +305,17 @@ const ShopModal: React.FC<Props> = ({
       totalPrice += sellPrice * item.quantity;
     });
 
-    if (
-      window.confirm(
-        `确定要出售选中的 ${selectedItems.size} 件物品吗？将获得 ${totalPrice} 灵石。`
-      )
-    ) {
-      itemsToSell.forEach((item) => {
-        // 出售该物品的全部数量
-        onSellItem(item, item.quantity);
-      });
-      setSelectedItems(new Set());
-    }
+    showConfirm(
+      `确定要出售选中的 ${selectedItems.size} 件物品吗？将获得 ${totalPrice} 灵石。`,
+      '确认出售',
+      () => {
+        itemsToSell.forEach((item) => {
+          // 出售该物品的全部数量
+          onSellItem(item, item.quantity);
+        });
+        setSelectedItems(new Set());
+      }
+    );
   };
 
   return (
@@ -354,18 +354,18 @@ const ShopModal: React.FC<Props> = ({
                     showError('灵石不足！刷新需要100灵石。');
                     return;
                   }
-                  if (
-                    window.confirm(
-                      `确定要花费 ${refreshCost} 灵石刷新商店物品吗？`
-                    )
-                  ) {
-                    const newItems = generateShopItems(
-                      shop.type,
-                      player.realm,
-                      true
-                    );
-                    onRefreshShop(newItems);
-                  }
+                  showConfirm(
+                    `确定要花费 ${refreshCost} 灵石刷新商店物品吗？`,
+                    '确认刷新',
+                    () => {
+                      const newItems = generateShopItems(
+                        shop.type,
+                        player.realm,
+                        true
+                      );
+                      onRefreshShop(newItems);
+                    }
+                  );
                 }}
                 className="flex items-center gap-1 px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded border border-stone-600 transition-colors text-sm"
                 title="花费100灵石刷新商店物品（小概率出现高级物品）"

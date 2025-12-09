@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { X, Trash2, Filter } from 'lucide-react';
 import { Item, ItemType, ItemRarity, EquipmentSlot } from '../types';
 import { getRarityTextColor } from '../utils/rarityUtils';
+import { showConfirm } from '../utils/toastUtils';
 
 interface Props {
   isOpen: boolean;
@@ -89,15 +90,15 @@ const BatchDiscardModal: React.FC<Props> = ({
 
   const handleDiscard = () => {
     if (selectedItems.size === 0) return;
-    if (
-      window.confirm(
-        `确定要丢弃选中的 ${selectedItems.size} 件物品吗？此操作不可撤销！`
-      )
-    ) {
-      onDiscardItems(Array.from(selectedItems));
-      setSelectedItems(new Set());
-      onClose();
-    }
+    showConfirm(
+      `确定要丢弃选中的 ${selectedItems.size} 件物品吗？此操作不可撤销！`,
+      '确认丢弃',
+      () => {
+        onDiscardItems(Array.from(selectedItems));
+        setSelectedItems(new Set());
+        onClose();
+      }
+    );
   };
 
   if (!isOpen) return null;

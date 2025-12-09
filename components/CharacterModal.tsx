@@ -11,6 +11,7 @@ import {
 } from '../constants';
 import { getItemStats } from '../utils/itemUtils';
 import { getRarityTextColor } from '../utils/rarityUtils';
+import { showConfirm } from '../utils/toastUtils';
 
 interface Props {
   isOpen: boolean;
@@ -215,13 +216,13 @@ const CharacterModal: React.FC<Props> = ({
         ? `+${totalPhysiqueGain}体魄, +${totalHpGain}气血`
         : `+${totalGain}`;
 
-    if (
-      window.confirm(
-        `确定要将所有 ${points} 点属性点一键分配给【${attributeName}】吗？\n\n预计增加: ${gainText}\n\n此操作不可撤销！`
-      )
-    ) {
-      onAllocateAllAttributes(type);
-    }
+    showConfirm(
+      `确定要将所有 ${points} 点属性点一键分配给【${attributeName}】吗？\n\n预计增加: ${gainText}\n\n此操作不可撤销！`,
+      '确认分配',
+      () => {
+        onAllocateAllAttributes(type);
+      }
+    );
   };
 
   return (

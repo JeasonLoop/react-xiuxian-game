@@ -63,21 +63,19 @@ const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
         : '未知';
 
       // 确认导入
-      if (
-        !window.confirm(
-          `确定要导入此存档吗？\n\n玩家名称: ${playerName}\n境界: ${realm}\n保存时间: ${timestamp}\n\n当前存档将被替换，页面将自动刷新。`
-        )
-      ) {
-        return;
-      }
+      showConfirm(
+        `确定要导入此存档吗？\n\n玩家名称: ${playerName}\n境界: ${realm}\n保存时间: ${timestamp}\n\n当前存档将被替换，页面将自动刷新。`,
+        '确认导入',
+        () => {
+          // 保存到localStorage
+          localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
 
-      // 保存到localStorage
-      localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
-
-      // 提示并刷新页面
-      showSuccess('存档导入成功！页面即将刷新...', undefined, () => {
-        window.location.reload();
-      });
+          // 提示并刷新页面
+          showSuccess('存档导入成功！页面即将刷新...', undefined, () => {
+            window.location.reload();
+          });
+        }
+      );
     } catch (error) {
       console.error('导入存档失败:', error);
       showError(

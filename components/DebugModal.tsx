@@ -51,7 +51,7 @@ import {
   LOTTERY_PRIZES,
   SECT_SHOP_ITEMS,
 } from '../constants';
-import { showSuccess, showError, showInfo } from '../utils/toastUtils';
+import { showSuccess, showError, showInfo, showConfirm } from '../utils/toastUtils';
 import { getRarityTextColor } from '../utils/rarityUtils';
 
 // 生成唯一ID
@@ -546,16 +546,16 @@ const DebugModal: React.FC<Props> = ({
 
   // 关闭调试模式
   const handleDisableDebugMode = () => {
-    if (
-      window.confirm(
-        '确定要关闭调试模式吗？关闭后需要重新点击游戏名称5次才能再次启用。'
-      )
-    ) {
-      const DEBUG_MODE_KEY = 'xiuxian-debug-mode';
-      localStorage.removeItem(DEBUG_MODE_KEY);
-      // 刷新页面以应用更改
-      window.location.reload();
-    }
+    showConfirm(
+      '确定要关闭调试模式吗？关闭后需要重新点击游戏名称5次才能再次启用。',
+      '确认关闭',
+      () => {
+        const DEBUG_MODE_KEY = 'xiuxian-debug-mode';
+        localStorage.removeItem(DEBUG_MODE_KEY);
+        // 刷新页面以应用更改
+        window.location.reload();
+      }
+    );
   };
 
   return (
@@ -2260,22 +2260,22 @@ const DebugModal: React.FC<Props> = ({
                       </p>
                       <button
                         onClick={() => {
-                          if (
-                            window.confirm(
-                              '确定要触发死亡吗？这将根据当前难度模式执行相应的死亡惩罚。'
-                            )
-                          ) {
-                            // 先将气血设置为0
-                            onUpdatePlayer({ hp: 0 });
-                            // 然后触发死亡回调
-                            if (onTriggerDeath) {
-                              setTimeout(() => {
-                                onTriggerDeath();
-                              }, 100);
-                            } else {
-                              showError('死亡测试回调未配置');
+                          showConfirm(
+                            '确定要触发死亡吗？这将根据当前难度模式执行相应的死亡惩罚。',
+                            '确认触发',
+                            () => {
+                              // 先将气血设置为0
+                              onUpdatePlayer({ hp: 0 });
+                              // 然后触发死亡回调
+                              if (onTriggerDeath) {
+                                setTimeout(() => {
+                                  onTriggerDeath();
+                                }, 100);
+                              } else {
+                                showError('死亡测试回调未配置');
+                              }
                             }
-                          }
+                          );
                         }}
                         className="w-full px-4 py-3 bg-gradient-to-r from-red-700 via-red-600 to-red-700 hover:from-red-600 hover:via-red-500 hover:to-red-600 text-white font-bold rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                       >

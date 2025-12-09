@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { GameSettings } from '../types';
 import dayjs from 'dayjs';
-import { showError, showSuccess, showInfo } from '../utils/toastUtils';
+import { showError, showSuccess, showInfo, showConfirm } from '../utils/toastUtils';
 
 interface Props {
   isOpen: boolean;
@@ -86,21 +86,19 @@ const SettingsModal: React.FC<Props> = ({
         : '未知';
 
       // 确认导入
-      if (
-        !window.confirm(
-          `确定要导入此存档吗？\n\n玩家名称: ${playerName}\n境界: ${realm}\n保存时间: ${timestamp}\n\n当前存档将被替换，页面将自动刷新。`
-        )
-      ) {
-        return;
-      }
+      showConfirm(
+        `确定要导入此存档吗？\n\n玩家名称: ${playerName}\n境界: ${realm}\n保存时间: ${timestamp}\n\n当前存档将被替换，页面将自动刷新。`,
+        '确认导入',
+        () => {
+          // 保存到localStorage
+          localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
 
-      // 保存到localStorage
-      localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
-
-      // 提示并刷新页面
-      showSuccess('存档导入成功！页面即将刷新...', undefined, () => {
-        window.location.reload();
-      });
+          // 提示并刷新页面
+          showSuccess('存档导入成功！页面即将刷新...', undefined, () => {
+            window.location.reload();
+          });
+        }
+      );
     } catch (error) {
       console.error('导入存档失败:', error);
       showError(
@@ -373,14 +371,11 @@ const SettingsModal: React.FC<Props> = ({
                   </label>
                   <button
                     onClick={() => {
-                      if (
-                        window.confirm(
-                          '确定要重新开始游戏吗？\n\n这将清除当前所有进度，包括：\n- 角色数据\n- 装备和物品\n- 境界和修为\n- 所有成就\n\n此操作无法撤销！'
-                        )
-                      ) {
+                      showInfo('重新开始游戏将清除当前所有进度，包括：\n- 角色数据\n- 装备和物品\n- 境界和修为\n- 所有成就\n\n此操作无法撤销！', '转世重修', () => {
                         onRestartGame();
                         onClose();
-                      }
+                      });
+
                     }}
                     className="w-full bg-red-700 hover:bg-red-600 text-white border border-red-600 rounded px-4 py-2 flex items-center justify-center transition-colors font-semibold"
                   >
