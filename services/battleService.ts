@@ -1168,15 +1168,17 @@ const createEnemy = async (
     if (currentRealmIndex > realmMinIndex) {
       // 使用秘境境界的属性作为基准（模拟秘境中敌人的合理强度）
       // 使用秘境最低境界的属性，但会根据风险等级调整
+      // 确保REALM_ORDER.length不为0，防止除零
+      const realmOrderLength = REALM_ORDER.length || 1;
+      const realmRatio = realmMinIndex / realmOrderLength;
       basePlayerAttack =
-        player.attack * (0.4 + (realmMinIndex / REALM_ORDER.length) * 0.3); // 40%-70%
+        (Number(player.attack) || 0) * (0.4 + realmRatio * 0.3); // 40%-70%
       basePlayerDefense =
-        player.defense * (0.4 + (realmMinIndex / REALM_ORDER.length) * 0.3);
+        (Number(player.defense) || 0) * (0.4 + realmRatio * 0.3);
       basePlayerMaxHp =
-        player.maxHp * (0.3 + (realmMinIndex / REALM_ORDER.length) * 0.3); // 30%-60%
+        (Number(player.maxHp) || 0) * (0.3 + realmRatio * 0.3); // 30%-60%
       basePlayerSpeed =
-        (player.speed || 10) *
-        (0.5 + (realmMinIndex / REALM_ORDER.length) * 0.3);
+        (Number(player.speed) || 10) * (0.5 + realmRatio * 0.3);
       basePlayerRealmLevel = Math.max(
         1,
         player.realmLevel - (currentRealmIndex - realmMinIndex)
@@ -1307,12 +1309,15 @@ export const resolveBattleEncounter = async (
       isPlayerTurn ? player.attack : enemy.attack,
       isPlayerTurn ? enemy.defense : player.defense
     );
-    const critChanceBase =
-      0.08 +
-      ((isPlayerTurn ? player.speed : enemy.speed) /
-        ((player.speed || 1) + enemy.speed + 1)) *
-        0.2;
-    const crit = Math.random() < critChanceBase;
+    // 确保速度值是有效数字，防止NaN
+    const playerSpeed = Number(player.speed) || 0;
+    const enemySpeed = Number(enemy.speed) || 0;
+    const speedSum = playerSpeed + enemySpeed + 1; // 避免除零
+    const critSpeed = isPlayerTurn ? playerSpeed : enemySpeed;
+    const critChanceBase = 0.08 + (critSpeed / speedSum) * 0.2;
+    // 确保暴击率在合理范围内
+    const validCritChance = Math.max(0, Math.min(1, critChanceBase));
+    const crit = Math.random() < validCritChance;
     const finalDamage = crit ? Math.round(damage * 1.5) : damage;
 
     if (isPlayerTurn) {
@@ -1345,8 +1350,10 @@ export const resolveBattleEncounter = async (
       // 决定灵宠行动：根据亲密度和等级动态调整技能释放概率
       // 基础概率30%，亲密度每10点增加2%，等级每10级增加1%，最高70%
       const baseProbability = 0.3;
-      const affectionBonus = (activePet.affection / 100) * 0.2; // 亲密度加成，最高20%
-      const levelBonus = (activePet.level / 100) * 0.1; // 等级加成，最高10%
+      const petAffection = Number(activePet.affection) || 0; // 确保是有效数字
+      const petLevel = Number(activePet.level) || 0; // 确保是有效数字
+      const affectionBonus = (petAffection / 100) * 0.2; // 亲密度加成，最高20%
+      const levelBonus = (petLevel / 100) * 0.1; // 等级加成，最高10%
       const skillProbability = Math.min(0.7, baseProbability + affectionBonus + levelBonus);
       const useSkill = Math.random() < skillProbability;
       let petAction: 'attack' | 'skill' | null = null;
@@ -1764,10 +1771,14 @@ export const initializeTurnBasedBattle = async (
 
   // 计算行动次数（基于速度差）
   const calculateActionCount = (fasterSpeed: number, slowerSpeed: number): number => {
-    if (fasterSpeed <= slowerSpeed) return 1; // 速度不占优，只有1次行动
+    // 确保速度值是有效数字，防止NaN
+    const validFasterSpeed = Number(fasterSpeed) || 0;
+    const validSlowerSpeed = Number(slowerSpeed) || 1; // 避免除零，默认至少为1
 
-    const speedDiff = fasterSpeed - slowerSpeed;
-    const speedRatio = speedDiff / slowerSpeed; // 速度差比例
+    if (validFasterSpeed <= validSlowerSpeed) return 1; // 速度不占优，只有1次行动
+
+    const speedDiff = validFasterSpeed - validSlowerSpeed;
+    const speedRatio = speedDiff / validSlowerSpeed; // 速度差比例
 
     // 基础1次 + 每50%速度优势额外1次行动
     // 例如：速度是敌人的1.5倍 = 2次行动，2倍 = 3次行动，3倍 = 4次行动
@@ -2076,9 +2087,13 @@ export function executeEnemyTurn(battleState: BattleState): BattleState {
     const playerSpeed = newState.player.speed;
     const enemySpeed = newState.enemy.speed;
     const calculateActionCount = (fasterSpeed: number, slowerSpeed: number): number => {
-      if (fasterSpeed <= slowerSpeed) return 1;
-      const speedDiff = fasterSpeed - slowerSpeed;
-      const speedRatio = speedDiff / slowerSpeed;
+      // 确保速度值是有效数字，防止NaN
+      const validFasterSpeed = Number(fasterSpeed) || 0;
+      const validSlowerSpeed = Number(slowerSpeed) || 1; // 避免除零，默认至少为1
+
+      if (validFasterSpeed <= validSlowerSpeed) return 1;
+      const speedDiff = validFasterSpeed - validSlowerSpeed;
+      const speedRatio = speedDiff / validSlowerSpeed;
       const extraActions = Math.floor(speedRatio / 0.5);
       return Math.min(5, Math.max(1, 1 + extraActions));
     };
@@ -2367,9 +2382,11 @@ function executeDefend(
  */
 function executeFlee(battleState: BattleState): BattleAction {
   // 逃跑成功率基于速度差
-  const speedDiff = battleState.player.speed - battleState.enemy.speed;
+  const playerSpeed = Number(battleState.player.speed) || 0;
+  const enemySpeed = Number(battleState.enemy.speed) || 0;
+  const speedDiff = playerSpeed - enemySpeed;
   const fleeChance = 0.3 + Math.min(0.5, speedDiff / 100);
-  const success = Math.random() < fleeChance;
+  const success = Math.random() < Math.max(0, Math.min(1, fleeChance)); // 确保概率在0-1之间
 
   return {
     id: randomId(),
@@ -2468,13 +2485,15 @@ function executePetAction(battleState: BattleState): BattleAction | null {
   const activePet = battleState.activePet;
   const petSkillCooldowns = battleState.petSkillCooldowns || {};
 
-  // 决定灵宠行动：根据亲密度和等级动态调整技能释放概率
-  // 基础概率30%，亲密度每10点增加2%，等级每10级增加1%，最高70%
-  const baseProbability = 0.3;
-  const affectionBonus = (activePet.affection / 100) * 0.2; // 亲密度加成，最高20%
-  const levelBonus = (activePet.level / 100) * 0.1; // 等级加成，最高10%
-  const skillProbability = Math.min(0.7, baseProbability + affectionBonus + levelBonus);
-  const useSkill = Math.random() < skillProbability;
+      // 决定灵宠行动：根据亲密度和等级动态调整技能释放概率
+      // 基础概率30%，亲密度每10点增加2%，等级每10级增加1%，最高70%
+      const baseProbability = 0.3;
+      const petAffection = Number(activePet.affection) || 0; // 确保是有效数字
+      const petLevel = Number(activePet.level) || 0; // 确保是有效数字
+      const affectionBonus = (petAffection / 100) * 0.2; // 亲密度加成，最高20%
+      const levelBonus = (petLevel / 100) * 0.1; // 等级加成，最高10%
+      const skillProbability = Math.min(0.7, baseProbability + affectionBonus + levelBonus);
+      const useSkill = Math.random() < skillProbability;
   let petAction: 'attack' | 'skill' | null = null;
   let usedSkill: PetSkill | null = null;
 
@@ -2502,25 +2521,34 @@ function executePetAction(battleState: BattleState): BattleAction | null {
 
     if (usedSkill.effect.damage) {
       // 技能伤害：基础伤害值 + 灵宠攻击力加成 + 等级加成
-      const baseSkillDamage = usedSkill.effect.damage;
+      const baseSkillDamage = Number(usedSkill.effect.damage) || 0;
       // 根据进化阶段增加攻击力倍率
-      const evolutionMultiplier = 1.0 + activePet.evolutionStage * 0.5;
-      const attackMultiplier = 1.0 + (activePet.level / 50); // 每50级增加100%攻击力
+      const evolutionStage = Number(activePet.evolutionStage) || 0;
+      const petLevel = Number(activePet.level) || 0;
+      const petAffection = Number(activePet.affection) || 0;
+      const petAttack = Number(activePet.stats?.attack) || 0;
+      const evolutionMultiplier = 1.0 + evolutionStage * 0.5;
+      const attackMultiplier = 1.0 + (petLevel / 50); // 每50级增加100%攻击力
       // 攻击力加成从30%提升到100%，并应用进化倍率
-      const attackBonus = Math.floor(activePet.stats.attack * evolutionMultiplier * attackMultiplier * 1.0); // 100%攻击力加成
-      const levelBonus = Math.floor(activePet.level * 5); // 每级+5伤害（从2提升到5）
-      const affectionBonus = Math.floor(activePet.affection * 0.8); // 亲密度对技能伤害也有加成
+      const attackBonus = Math.floor(petAttack * evolutionMultiplier * attackMultiplier * 1.0); // 100%攻击力加成
+      const levelBonus = Math.floor(petLevel * 5); // 每级+5伤害（从2提升到5）
+      const affectionBonus = Math.floor(petAffection * 0.8); // 亲密度对技能伤害也有加成
       const skillDamage = baseSkillDamage + attackBonus + levelBonus + affectionBonus;
       petDamage = calcDamage(skillDamage, battleState.enemy.defense);
-      battleState.enemy.hp = Math.max(0, Math.floor(battleState.enemy.hp - petDamage));
+      battleState.enemy.hp = Math.max(0, Math.floor((Number(battleState.enemy.hp) || 0) - petDamage));
     }
 
     if (usedSkill.effect.heal) {
       // 治疗玩家
+      const baseHeal = Number(usedSkill.effect.heal) || 0;
+      const petLevel = Number(activePet.level) || 0;
+      const petAffection = Number(activePet.affection) || 0;
       petHeal = Math.floor(
-        usedSkill.effect.heal * (1 + activePet.level * 0.05) * (1 + activePet.affection / 200)
+        baseHeal * (1 + petLevel * 0.05) * (1 + petAffection / 200)
       );
-      battleState.player.hp = Math.min(battleState.player.maxHp, Math.floor(battleState.player.hp + petHeal));
+      const maxHp = Number(battleState.player.maxHp) || 0;
+      const currentHp = Number(battleState.player.hp) || 0;
+      battleState.player.hp = Math.min(maxHp, Math.floor(currentHp + petHeal));
     }
 
     if (usedSkill.effect.buff) {
@@ -2613,16 +2641,19 @@ function executePetAction(battleState: BattleState): BattleAction | null {
   } else {
     // 普通攻击：基础攻击力 + 等级加成 + 亲密度加成
     // 普通攻击：基础攻击力 + 攻击力百分比加成 + 等级加成 + 亲密度加成
-    const baseAttack = activePet.stats.attack;
+    const baseAttack = Number(activePet.stats?.attack) || 0;
     // 根据进化阶段增加攻击力倍率（幼年期1.0，成熟期1.5，完全体2.0）
-    const evolutionMultiplier = 1.0 + activePet.evolutionStage * 0.5;
-    const attackMultiplier = 1.0 + (activePet.level / 50); // 每50级增加100%攻击力
-    const levelBonus = Math.floor(activePet.level * 8); // 每级+8攻击（从3提升到8）
-    const affectionBonus = Math.floor(activePet.affection * 1.5); // 亲密度加成（从0.5提升到1.5）
+    const evolutionStage = Number(activePet.evolutionStage) || 0;
+    const petLevel = Number(activePet.level) || 0;
+    const petAffection = Number(activePet.affection) || 0;
+    const evolutionMultiplier = 1.0 + evolutionStage * 0.5;
+    const attackMultiplier = 1.0 + (petLevel / 50); // 每50级增加100%攻击力
+    const levelBonus = Math.floor(petLevel * 8); // 每级+8攻击（从3提升到8）
+    const affectionBonus = Math.floor(petAffection * 1.5); // 亲密度加成（从0.5提升到1.5）
     // 最终攻击力 = (基础攻击力 * 进化倍率 * 等级倍率) + 等级加成 + 亲密度加成
     const petAttackDamage = Math.floor(baseAttack * evolutionMultiplier * attackMultiplier) + levelBonus + affectionBonus;
     const petDamage = calcDamage(petAttackDamage, battleState.enemy.defense);
-    battleState.enemy.hp = Math.max(0, Math.floor(battleState.enemy.hp - petDamage));
+    battleState.enemy.hp = Math.max(0, Math.floor((Number(battleState.enemy.hp) || 0) - petDamage));
 
     return {
       id: randomId(),

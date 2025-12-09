@@ -86,7 +86,9 @@ export function useCharacterHandlers({
       // 根据境界计算属性点加成倍数（指数增长）
       // 基础倍数：2^(境界索引+1)，随境界提高而大幅增加
       const realmIndex = REALM_ORDER.indexOf(prev.realm);
-      const multiplier = Math.pow(2, realmIndex + 1);
+      // 确保realmIndex有效，防止NaN
+      const validRealmIndex = realmIndex >= 0 ? realmIndex : 0;
+      const multiplier = Math.pow(2, validRealmIndex + 1);
 
       // 基础属性增加值
       const baseAttack = 5;
@@ -158,7 +160,9 @@ export function useCharacterHandlers({
 
       // 根据境界计算属性点加成倍数（指数增长）
       const realmIndex = REALM_ORDER.indexOf(prev.realm);
-      const multiplier = Math.pow(2, realmIndex + 1);
+      // 确保realmIndex有效，防止NaN
+      const validRealmIndex = realmIndex >= 0 ? realmIndex : 0;
+      const multiplier = Math.pow(2, validRealmIndex + 1);
 
       // 基础属性增加值
       const baseAttack = 5;

@@ -158,13 +158,15 @@ export function useBreakthroughHandlers({
         // 境界升级：2^(境界索引+1)，层数升级：2^境界索引/9 + 1
         const realms = Object.values(RealmType);
         const currentRealmIndex = realms.indexOf(isRealmUpgrade ? nextRealm : prev.realm);
+        // 确保realmIndex有效，防止NaN
+        const validRealmIndex = currentRealmIndex >= 0 ? currentRealmIndex : 0;
         let attributePointsGained: number;
         if (isRealmUpgrade) {
           // 境界升级：2^(新境界索引+1)
-          attributePointsGained = Math.floor(Math.pow(2, currentRealmIndex + 1));
+          attributePointsGained = Math.floor(Math.pow(2, validRealmIndex + 1));
         } else {
           // 层数升级：2^境界索引/9 + 1（至少1点）
-          attributePointsGained = Math.max(1, Math.floor(Math.pow(2, currentRealmIndex) / 9) + 1);
+          attributePointsGained = Math.max(1, Math.floor(Math.pow(2, validRealmIndex) / 9) + 1);
         }
         if (attributePointsGained > 0) {
           addLog(
@@ -338,8 +340,10 @@ export function useBreakthroughHandlers({
           const isRealmUpgrade = tempLevel >= 9;
           if (isRealmUpgrade) {
             const currentRealmIndex = realms.indexOf(tempRealm);
-            if (currentRealmIndex < realms.length - 1) {
-              const nextRealmIndex = currentRealmIndex + 1;
+            // 确保realmIndex有效，防止NaN
+            const validRealmIndex = currentRealmIndex >= 0 ? currentRealmIndex : 0;
+            if (validRealmIndex < realms.length - 1) {
+              const nextRealmIndex = validRealmIndex + 1;
               // 境界升级：2^(新境界索引+1)
               attributePointsGained += Math.floor(Math.pow(2, nextRealmIndex + 1));
               tempRealm = realms[nextRealmIndex];
@@ -347,8 +351,10 @@ export function useBreakthroughHandlers({
             }
           } else {
             const currentRealmIndex = realms.indexOf(tempRealm);
+            // 确保realmIndex有效，防止NaN
+            const validRealmIndex = currentRealmIndex >= 0 ? currentRealmIndex : 0;
             // 层数升级：2^境界索引/9 + 1（至少1点）
-            attributePointsGained += Math.max(1, Math.floor(Math.pow(2, currentRealmIndex) / 9) + 1);
+            attributePointsGained += Math.max(1, Math.floor(Math.pow(2, validRealmIndex) / 9) + 1);
             tempLevel++;
           }
         }
