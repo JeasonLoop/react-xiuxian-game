@@ -1,6 +1,6 @@
 import React from 'react';
-import { PlayerStats } from '../../types';
-import { TITLES } from '../../constants';
+import { PlayerStats, RealmType } from '../../types';
+import { TITLES, REALM_ORDER } from '../../constants';
 
 interface UseCharacterHandlersProps {
   player: PlayerStats;
@@ -83,32 +83,133 @@ export function useCharacterHandlers({
       let newPhysique = prev.physique;
       let newSpeed = prev.speed;
 
+      // 根据境界计算属性点加成倍数（指数增长）
+      // 基础倍数：2^(境界索引+1)，随境界提高而大幅增加
+      const realmIndex = REALM_ORDER.indexOf(prev.realm);
+      const multiplier = Math.pow(2, realmIndex + 1);
+
+      // 基础属性增加值
+      const baseAttack = 5;
+      const baseDefense = 3;
+      const baseHp = 20;
+      const baseSpirit = 3;
+      const basePhysique = 3;
+      const basePhysiqueHp = 10; // 体魄额外增加的气血
+      const baseSpeed = 2;
+
       if (type === 'attack') {
-        newAttack += 5;
-        addLog('你分配了1点属性点到攻击力 (+5)', 'gain');
+        const gain = Math.floor(baseAttack * multiplier);
+        newAttack += gain;
+        addLog(`你分配了1点属性点到攻击力 (+${gain})`, 'gain');
       } else if (type === 'defense') {
-        newDefense += 3;
-        addLog('你分配了1点属性点到防御力 (+3)', 'gain');
+        const gain = Math.floor(baseDefense * multiplier);
+        newDefense += gain;
+        addLog(`你分配了1点属性点到防御力 (+${gain})`, 'gain');
       } else if (type === 'hp') {
-        newMaxHp += 20;
-        newHp += 20;
-        addLog('你分配了1点属性点到气血 (+20)', 'gain');
+        const gain = Math.floor(baseHp * multiplier);
+        newMaxHp += gain;
+        newHp += gain;
+        addLog(`你分配了1点属性点到气血 (+${gain})`, 'gain');
       } else if (type === 'spirit') {
-        newSpirit += 3;
-        addLog('你分配了1点属性点到神识 (+3)', 'gain');
+        const gain = Math.floor(baseSpirit * multiplier);
+        newSpirit += gain;
+        addLog(`你分配了1点属性点到神识 (+${gain})`, 'gain');
       } else if (type === 'physique') {
-        newPhysique += 3;
-        newMaxHp += 10; // 体魄也增加气血上限
-        newHp += 10;
-        addLog('你分配了1点属性点到体魄 (+3体魄, +10气血)', 'gain');
+        const physiqueGain = Math.floor(basePhysique * multiplier);
+        const hpGain = Math.floor(basePhysiqueHp * multiplier);
+        newPhysique += physiqueGain;
+        newMaxHp += hpGain;
+        newHp += hpGain;
+        addLog(`你分配了1点属性点到体魄 (+${physiqueGain}体魄, +${hpGain}气血)`, 'gain');
       } else if (type === 'speed') {
-        newSpeed += 2;
-        addLog('你分配了1点属性点到速度 (+2)', 'gain');
+        const gain = Math.floor(baseSpeed * multiplier);
+        newSpeed += gain;
+        addLog(`你分配了1点属性点到速度 (+${gain})`, 'gain');
       }
 
       return {
         ...prev,
         attributePoints: points,
+        attack: newAttack,
+        defense: newDefense,
+        maxHp: newMaxHp,
+        hp: newHp,
+        spirit: newSpirit,
+        physique: newPhysique,
+        speed: newSpeed,
+      };
+    });
+  };
+
+  const handleAllocateAllAttributes = (
+    type: 'attack' | 'defense' | 'hp' | 'spirit' | 'physique' | 'speed'
+  ) => {
+    if (!player || player.attributePoints <= 0) return;
+
+    setPlayer((prev) => {
+      const pointsToAllocate = prev.attributePoints;
+      let newAttack = prev.attack;
+      let newDefense = prev.defense;
+      let newMaxHp = prev.maxHp;
+      let newHp = prev.hp;
+      let newSpirit = prev.spirit;
+      let newPhysique = prev.physique;
+      let newSpeed = prev.speed;
+
+      // 根据境界计算属性点加成倍数（指数增长）
+      const realmIndex = REALM_ORDER.indexOf(prev.realm);
+      const multiplier = Math.pow(2, realmIndex + 1);
+
+      // 基础属性增加值
+      const baseAttack = 5;
+      const baseDefense = 3;
+      const baseHp = 20;
+      const baseSpirit = 3;
+      const basePhysique = 3;
+      const basePhysiqueHp = 10; // 体魄额外增加的气血
+      const baseSpeed = 2;
+
+      // 计算总增加值
+      let totalGain = 0;
+      let totalPhysiqueGain = 0;
+      let totalHpGain = 0;
+
+      if (type === 'attack') {
+        totalGain = Math.floor(baseAttack * multiplier * pointsToAllocate);
+        newAttack += totalGain;
+        addLog(`你一键分配了 ${pointsToAllocate} 点属性点到攻击力 (+${totalGain})`, 'gain');
+      } else if (type === 'defense') {
+        totalGain = Math.floor(baseDefense * multiplier * pointsToAllocate);
+        newDefense += totalGain;
+        addLog(`你一键分配了 ${pointsToAllocate} 点属性点到防御力 (+${totalGain})`, 'gain');
+      } else if (type === 'hp') {
+        totalGain = Math.floor(baseHp * multiplier * pointsToAllocate);
+        newMaxHp += totalGain;
+        newHp += totalGain;
+        addLog(`你一键分配了 ${pointsToAllocate} 点属性点到气血 (+${totalGain})`, 'gain');
+      } else if (type === 'spirit') {
+        totalGain = Math.floor(baseSpirit * multiplier * pointsToAllocate);
+        newSpirit += totalGain;
+        addLog(`你一键分配了 ${pointsToAllocate} 点属性点到神识 (+${totalGain})`, 'gain');
+      } else if (type === 'physique') {
+        totalPhysiqueGain = Math.floor(basePhysique * multiplier * pointsToAllocate);
+        totalHpGain = Math.floor(basePhysiqueHp * multiplier * pointsToAllocate);
+        newPhysique += totalPhysiqueGain;
+        newMaxHp += totalHpGain;
+        newHp += totalHpGain;
+        addLog(
+          `你一键分配了 ${pointsToAllocate} 点属性点到体魄 (+${totalPhysiqueGain}体魄, +${totalHpGain}气血)`,
+          'gain'
+        );
+      } else if (type === 'speed') {
+        totalGain = Math.floor(baseSpeed * multiplier * pointsToAllocate);
+        newSpeed += totalGain;
+        addLog(`你一键分配了 ${pointsToAllocate} 点属性点到速度 (+${totalGain})`, 'gain');
+      }
+
+      return {
+        ...prev,
+        attributePoints: 0,
         attack: newAttack,
         defense: newDefense,
         maxHp: newMaxHp,
@@ -140,6 +241,7 @@ export function useCharacterHandlers({
     handleSelectTalent,
     handleSelectTitle,
     handleAllocateAttribute,
+    handleAllocateAllAttributes,
     handleResetAttributes,
   };
 }

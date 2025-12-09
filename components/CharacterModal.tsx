@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import { X, Star, Award, Info, RotateCcw } from 'lucide-react';
-import { PlayerStats, Talent, Title, ItemRarity } from '../types';
+import React, { useState, useMemo } from 'react';
+import { X, Star, Award, Info, RotateCcw, Zap } from 'lucide-react';
+import { PlayerStats, Talent, Title, ItemRarity, RealmType } from '../types';
 import {
   TALENTS,
   TITLES,
   RARITY_MULTIPLIERS,
   ACHIEVEMENTS,
   CULTIVATION_ARTS,
+  REALM_ORDER,
 } from '../constants';
 import { getItemStats } from '../utils/itemUtils';
 import { getRarityTextColor } from '../utils/rarityUtils';
@@ -20,6 +21,9 @@ interface Props {
   onAllocateAttribute: (
     type: 'attack' | 'defense' | 'hp' | 'spirit' | 'physique' | 'speed'
   ) => void;
+  onAllocateAllAttributes?: (
+    type: 'attack' | 'defense' | 'hp' | 'spirit' | 'physique' | 'speed'
+  ) => void;
   onUseInheritance?: () => void;
   onResetAttributes?: () => void;
 }
@@ -31,6 +35,7 @@ const CharacterModal: React.FC<Props> = ({
   onSelectTalent,
   onSelectTitle,
   onAllocateAttribute,
+  onAllocateAllAttributes,
   onUseInheritance,
   onResetAttributes,
 }) => {
@@ -138,6 +143,85 @@ const CharacterModal: React.FC<Props> = ({
   // 使用统一的工具函数获取稀有度颜色
   const getRarityColor = (rarity: string) => {
     return getRarityTextColor(rarity as ItemRarity);
+  };
+
+  // 根据境界计算属性点实际增加值
+  const attributeGains = useMemo(() => {
+    const realmIndex = REALM_ORDER.indexOf(player.realm);
+    const multiplier = Math.pow(2, realmIndex + 1);
+
+    // 基础属性增加值
+    const baseAttack = 5;
+    const baseDefense = 3;
+    const baseHp = 20;
+    const baseSpirit = 3;
+    const basePhysique = 3;
+    const basePhysiqueHp = 10; // 体魄额外增加的气血
+    const baseSpeed = 2;
+
+    return {
+      attack: Math.floor(baseAttack * multiplier),
+      defense: Math.floor(baseDefense * multiplier),
+      hp: Math.floor(baseHp * multiplier),
+      spirit: Math.floor(baseSpirit * multiplier),
+      physique: Math.floor(basePhysique * multiplier),
+      physiqueHp: Math.floor(basePhysiqueHp * multiplier),
+      speed: Math.floor(baseSpeed * multiplier),
+    };
+  }, [player.realm]);
+
+  // 处理一键分配的确认
+  const handleAllocateAllWithConfirm = (
+    type: 'attack' | 'defense' | 'hp' | 'spirit' | 'physique' | 'speed'
+  ) => {
+    if (!onAllocateAllAttributes) return;
+
+    const attributeNames: Record<typeof type, string> = {
+      attack: '攻击',
+      defense: '防御',
+      hp: '气血',
+      spirit: '神识',
+      physique: '体魄',
+      speed: '速度',
+    };
+
+    const attributeName = attributeNames[type];
+    const points = player.attributePoints;
+    const realmIndex = REALM_ORDER.indexOf(player.realm);
+    const multiplier = Math.pow(2, realmIndex + 1);
+
+    // 计算总增加值
+    let totalGain = 0;
+    let totalPhysiqueGain = 0;
+    let totalHpGain = 0;
+
+    if (type === 'attack') {
+      totalGain = Math.floor(5 * multiplier * points);
+    } else if (type === 'defense') {
+      totalGain = Math.floor(3 * multiplier * points);
+    } else if (type === 'hp') {
+      totalGain = Math.floor(20 * multiplier * points);
+    } else if (type === 'spirit') {
+      totalGain = Math.floor(3 * multiplier * points);
+    } else if (type === 'physique') {
+      totalPhysiqueGain = Math.floor(3 * multiplier * points);
+      totalHpGain = Math.floor(10 * multiplier * points);
+    } else if (type === 'speed') {
+      totalGain = Math.floor(2 * multiplier * points);
+    }
+
+    const gainText =
+      type === 'physique'
+        ? `+${totalPhysiqueGain}体魄, +${totalHpGain}气血`
+        : `+${totalGain}`;
+
+    if (
+      window.confirm(
+        `确定要将所有 ${points} 点属性点一键分配给【${attributeName}】吗？\n\n预计增加: ${gainText}\n\n此操作不可撤销！`
+      )
+    ) {
+      onAllocateAllAttributes(type);
+    }
   };
 
   return (
@@ -271,42 +355,108 @@ const CharacterModal: React.FC<Props> = ({
                 可分配属性点: {player.attributePoints}
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                <button
-                  onClick={() => onAllocateAttribute('attack')}
-                  className="px-3 py-2 text-sm bg-red-900 hover:bg-red-800 rounded border border-red-700"
-                >
-                  攻击 +5
-                </button>
-                <button
-                  onClick={() => onAllocateAttribute('defense')}
-                  className="px-3 py-2 text-sm bg-blue-900 hover:bg-blue-800 rounded border border-blue-700"
-                >
-                  防御 +3
-                </button>
-                <button
-                  onClick={() => onAllocateAttribute('hp')}
-                  className="px-3 py-2 text-sm bg-green-900 hover:bg-green-800 rounded border border-green-700"
-                >
-                  气血 +20
-                </button>
-                <button
-                  onClick={() => onAllocateAttribute('spirit')}
-                  className="px-3 py-2 text-sm bg-purple-900 hover:bg-purple-800 rounded border border-purple-700"
-                >
-                  神识 +3
-                </button>
-                <button
-                  onClick={() => onAllocateAttribute('physique')}
-                  className="px-3 py-2 text-sm bg-orange-900 hover:bg-orange-800 rounded border border-orange-700"
-                >
-                  体魄 +3
-                </button>
-                <button
-                  onClick={() => onAllocateAttribute('speed')}
-                  className="px-3 py-2 text-sm bg-yellow-900 hover:bg-yellow-800 rounded border border-yellow-700"
-                >
-                  速度 +2
-                </button>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => onAllocateAttribute('attack')}
+                    className="flex-1 px-3 py-2 text-sm bg-red-900 hover:bg-red-800 rounded border border-red-700"
+                  >
+                    攻击 +{attributeGains.attack}
+                  </button>
+                  {onAllocateAllAttributes && (
+                    <button
+                      onClick={() => handleAllocateAllWithConfirm('attack')}
+                      className="px-2 py-2 text-sm bg-red-800 hover:bg-red-700 rounded border border-red-600 flex items-center justify-center"
+                      title={`一键分配所有 ${player.attributePoints} 点到攻击`}
+                    >
+                      <Zap size={16} />
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => onAllocateAttribute('defense')}
+                    className="flex-1 px-3 py-2 text-sm bg-blue-900 hover:bg-blue-800 rounded border border-blue-700"
+                  >
+                    防御 +{attributeGains.defense}
+                  </button>
+                  {onAllocateAllAttributes && (
+                    <button
+                      onClick={() => handleAllocateAllWithConfirm('defense')}
+                      className="px-2 py-2 text-sm bg-blue-800 hover:bg-blue-700 rounded border border-blue-600 flex items-center justify-center"
+                      title={`一键分配所有 ${player.attributePoints} 点到防御`}
+                    >
+                      <Zap size={16} />
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => onAllocateAttribute('hp')}
+                    className="flex-1 px-3 py-2 text-sm bg-green-900 hover:bg-green-800 rounded border border-green-700"
+                  >
+                    气血 +{attributeGains.hp}
+                  </button>
+                  {onAllocateAllAttributes && (
+                    <button
+                      onClick={() => handleAllocateAllWithConfirm('hp')}
+                      className="px-2 py-2 text-sm bg-green-800 hover:bg-green-700 rounded border border-green-600 flex items-center justify-center"
+                      title={`一键分配所有 ${player.attributePoints} 点到气血`}
+                    >
+                      <Zap size={16} />
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => onAllocateAttribute('spirit')}
+                    className="flex-1 px-3 py-2 text-sm bg-purple-900 hover:bg-purple-800 rounded border border-purple-700"
+                  >
+                    神识 +{attributeGains.spirit}
+                  </button>
+                  {onAllocateAllAttributes && (
+                    <button
+                      onClick={() => handleAllocateAllWithConfirm('spirit')}
+                      className="px-2 py-2 text-sm bg-purple-800 hover:bg-purple-700 rounded border border-purple-600 flex items-center justify-center"
+                      title={`一键分配所有 ${player.attributePoints} 点到神识`}
+                    >
+                      <Zap size={16} />
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => onAllocateAttribute('physique')}
+                    className="flex-1 px-3 py-2 text-sm bg-orange-900 hover:bg-orange-800 rounded border border-orange-700"
+                  >
+                    体魄 +{attributeGains.physique}
+                  </button>
+                  {onAllocateAllAttributes && (
+                    <button
+                      onClick={() => handleAllocateAllWithConfirm('physique')}
+                      className="px-2 py-2 text-sm bg-orange-800 hover:bg-orange-700 rounded border border-orange-600 flex items-center justify-center"
+                      title={`一键分配所有 ${player.attributePoints} 点到体魄`}
+                    >
+                      <Zap size={16} />
+                    </button>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => onAllocateAttribute('speed')}
+                    className="flex-1 px-3 py-2 text-sm bg-yellow-900 hover:bg-yellow-800 rounded border border-yellow-700"
+                  >
+                    速度 +{attributeGains.speed}
+                  </button>
+                  {onAllocateAllAttributes && (
+                    <button
+                      onClick={() => handleAllocateAllWithConfirm('speed')}
+                      className="px-2 py-2 text-sm bg-yellow-800 hover:bg-yellow-700 rounded border border-yellow-600 flex items-center justify-center"
+                      title={`一键分配所有 ${player.attributePoints} 点到速度`}
+                    >
+                      <Zap size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           )}
