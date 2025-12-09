@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { CultivationArt, RealmType, PlayerStats, ArtGrade } from '../types';
 import { CULTIVATION_ARTS, REALM_ORDER } from '../constants';
 import { X, BookOpen, Check, Lock, Zap } from 'lucide-react';
@@ -22,6 +22,8 @@ const CultivationModal: React.FC<Props> = ({
   const [typeFilter, setTypeFilter] = useState<'all' | 'mental' | 'body'>('all');
   const [learningArtId, setLearningArtId] = useState<string | null>(null); // 防止重复点击
   const learningArtIdRef = useRef<string | null>(null); // 同步检查用
+  const [sortedArts, setSortedArts] = useState<CultivationArt[]>([]); // 存储排序后的功法列表
+  const prevIsOpenRef = useRef(false); // 跟踪弹窗是否刚刚打开
 
   const getRealmIndex = (r: RealmType) => REALM_ORDER.indexOf(r);
 
@@ -51,33 +53,60 @@ const CultivationModal: React.FC<Props> = ({
     }, 500);
   };
 
-  // 过滤功法 - 必须在条件返回之前调用
-  const filteredArts = useMemo(() => {
-    const learnedSet = new Set(player.cultivationArts);
+  // 只在弹窗打开时进行排序
+  useEffect(() => {
+    if (isOpen && !prevIsOpenRef.current) {
+      // 弹窗刚刚打开，进行排序
+      const learnedSet = new Set(player.cultivationArts);
+      const sorted = CULTIVATION_ARTS.filter((art) => learnedSet.has(art.id))
+        .map((art, idx) => ({ art, idx }))
+        .sort((a, b) => {
+          const aActive = player.activeArtId === a.art.id;
+          const bActive = player.activeArtId === b.art.id;
+          if (aActive !== bActive) return aActive ? -1 : 1; // 已激活在最前
 
-    return CULTIVATION_ARTS.filter((art) => {
-      // 只显示已获得的功法
-      if (!learnedSet.has(art.id)) return false;
+          const aLearned = learnedSet.has(a.art.id);
+          const bLearned = learnedSet.has(b.art.id);
+          if (aLearned !== bLearned) return aLearned ? -1 : 1; // 已学习排在已获得前
+
+          return a.idx - b.idx; // 保持原有次序
+        })
+        .map((item) => item.art);
+      setSortedArts(sorted);
+    } else if (isOpen && prevIsOpenRef.current) {
+      // 弹窗已经打开，修习功法后只更新列表，不重新排序
+      const learnedSet = new Set(player.cultivationArts);
+      // 使用函数式更新来避免闭包问题
+      setSortedArts((prev) => {
+        // 找出新学习的功法
+        const newArtIds = player.cultivationArts.filter(
+          (id) => !prev.some((art) => art.id === id)
+        );
+        if (newArtIds.length > 0) {
+          // 有新功法，添加到列表末尾（不重新排序）
+          const newArts = newArtIds
+            .map((id) => CULTIVATION_ARTS.find((art) => art.id === id))
+            .filter((art): art is CultivationArt => art !== undefined);
+          return [...prev, ...newArts];
+        }
+        return prev;
+      });
+    }
+    prevIsOpenRef.current = isOpen;
+    // 注意：不依赖 player.activeArtId，激活状态改变时不重新排序
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, player.cultivationArts]);
+
+  // 过滤功法 - 基于已排序的列表进行过滤
+  const filteredArts = useMemo(() => {
+    return sortedArts.filter((art) => {
       // 兼容性处理：如果功法没有 grade 字段，默认显示
       const artGrade = art.grade || '黄';
       if (gradeFilter !== 'all' && artGrade !== gradeFilter) return false;
       if (typeFilter !== 'all' && art.type !== typeFilter) return false;
       return true;
-    })
-      .map((art, idx) => ({ art, idx }))
-      .sort((a, b) => {
-        const aActive = player.activeArtId === a.art.id;
-        const bActive = player.activeArtId === b.art.id;
-        if (aActive !== bActive) return aActive ? -1 : 1; // 已激活在最前
-
-        const aLearned = learnedSet.has(a.art.id);
-        const bLearned = learnedSet.has(b.art.id);
-        if (aLearned !== bLearned) return aLearned ? -1 : 1; // 已学习排在已获得前
-
-        return a.idx - b.idx; // 保持原有次序
-      })
-      .map((item) => item.art);
-  }, [gradeFilter, typeFilter, player.cultivationArts, player.activeArtId]);
+    });
+  }, [gradeFilter, typeFilter, sortedArts]);
 
   // 必须在所有 hooks 之后才能有条件返回
   if (!isOpen) return null;
