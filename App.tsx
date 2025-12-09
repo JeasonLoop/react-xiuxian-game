@@ -411,6 +411,7 @@ function App() {
   const handleSelectTalent = characterHandlers.handleSelectTalent;
   const handleSelectTitle = characterHandlers.handleSelectTitle;
   const handleAllocateAttribute = characterHandlers.handleAllocateAttribute;
+  const handleAllocateAllAttributes = characterHandlers.handleAllocateAllAttributes;
 
   // 提取新的模块化 handlers
   const handleBuyItem = shopHandlers.handleBuyItem;
@@ -838,6 +839,7 @@ function App() {
           handleSelectTalent,
           handleSelectTitle,
           handleAllocateAttribute,
+          handleAllocateAllAttributes,
           handleUseInheritance,
           handleUpdateViewedAchievements: () => {
             setPlayer((prev) => ({

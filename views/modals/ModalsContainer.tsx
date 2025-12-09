@@ -118,6 +118,9 @@ interface ModalsContainerProps {
     handleAllocateAttribute: (
       type: 'attack' | 'defense' | 'hp' | 'spirit' | 'physique' | 'speed'
     ) => void;
+    handleAllocateAllAttributes?: (
+      type: 'attack' | 'defense' | 'hp' | 'spirit' | 'physique' | 'speed'
+    ) => void;
     handleUseInheritance: () => void;
     handleUpdateViewedAchievements: () => void;
     // Pet
@@ -269,6 +272,7 @@ export default function ModalsContainer({
         onSelectTalent={handlers.handleSelectTalent}
         onSelectTitle={handlers.handleSelectTitle}
         onAllocateAttribute={handlers.handleAllocateAttribute}
+        onAllocateAllAttributes={handlers.handleAllocateAllAttributes}
         onUseInheritance={handlers.handleUseInheritance}
       />
 

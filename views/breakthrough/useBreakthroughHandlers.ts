@@ -154,8 +154,18 @@ export function useBreakthroughHandlers({
           secretRealmCount: 0,
         };
 
-        // 突破时给予属性点：境界升级给3点，层数升级给1点
-        const attributePointsGained = isRealmUpgrade ? 3 : 1;
+        // 突破时给予属性点：指数级别增长
+        // 境界升级：2^(境界索引+1)，层数升级：2^境界索引/9 + 1
+        const realms = Object.values(RealmType);
+        const currentRealmIndex = realms.indexOf(isRealmUpgrade ? nextRealm : prev.realm);
+        let attributePointsGained: number;
+        if (isRealmUpgrade) {
+          // 境界升级：2^(新境界索引+1)
+          attributePointsGained = Math.floor(Math.pow(2, currentRealmIndex + 1));
+        } else {
+          // 层数升级：2^境界索引/9 + 1（至少1点）
+          attributePointsGained = Math.max(1, Math.floor(Math.pow(2, currentRealmIndex) / 9) + 1);
+        }
         if (attributePointsGained > 0) {
           addLog(
             `✨ 突破成功！获得 ${attributePointsGained} 点可分配属性点！`,
@@ -319,22 +329,26 @@ export function useBreakthroughHandlers({
         const excessExp = Math.max(0, prev.exp - prev.maxExp);
         const newExp = excessExp;
 
-        // 计算传承突破获得的属性点（每个境界升级给3点，层数升级给1点）
+        // 计算传承突破获得的属性点（指数级别增长）
         let attributePointsGained = 0;
         let tempRealm = prev.realm;
         let tempLevel = prev.realmLevel;
+        const realms = Object.values(RealmType);
         for (let i = 0; i < breakthroughCount; i++) {
           const isRealmUpgrade = tempLevel >= 9;
           if (isRealmUpgrade) {
-            attributePointsGained += 3;
-            const realms = Object.values(RealmType);
-            const currentIndex = realms.indexOf(tempRealm);
-            if (currentIndex < realms.length - 1) {
-              tempRealm = realms[currentIndex + 1];
+            const currentRealmIndex = realms.indexOf(tempRealm);
+            if (currentRealmIndex < realms.length - 1) {
+              const nextRealmIndex = currentRealmIndex + 1;
+              // 境界升级：2^(新境界索引+1)
+              attributePointsGained += Math.floor(Math.pow(2, nextRealmIndex + 1));
+              tempRealm = realms[nextRealmIndex];
               tempLevel = 1;
             }
           } else {
-            attributePointsGained += 1;
+            const currentRealmIndex = realms.indexOf(tempRealm);
+            // 层数升级：2^境界索引/9 + 1（至少1点）
+            attributePointsGained += Math.max(1, Math.floor(Math.pow(2, currentRealmIndex) / 9) + 1);
             tempLevel++;
           }
         }
