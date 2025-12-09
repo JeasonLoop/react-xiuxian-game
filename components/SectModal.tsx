@@ -58,7 +58,7 @@ const SectModal: React.FC<Props> = ({
   // 生成随机任务列表（已加入宗门时）
   const randomTasks = useMemo(() => {
     if (!player.sectId) return [];
-    return generateRandomSectTasks(player.sectRank, player.realm, 3);
+    return generateRandomSectTasks(player.sectRank, player.realm, 12);
   }, [player.sectId, player.sectRank, player.realm, refreshKey]);
 
   const handleRefresh = () => {

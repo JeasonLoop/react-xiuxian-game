@@ -2,6 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { X, Package, Filter, Heart } from 'lucide-react';
 import { Item, ItemType, ItemRarity, PlayerStats } from '../types';
 import { getRarityTextColor } from '../utils/rarityUtils';
+import {  showInfo } from '../utils/toastUtils';
+
 
 interface Props {
   isOpen: boolean;
@@ -124,7 +126,8 @@ const BatchFeedModal: React.FC<Props> = ({
       const newSet = new Set(filteredItems.map((item) => item.id));
       const newQty = new Map<string, number>();
       filteredItems.forEach((item) => {
-        newQty.set(item.id, 1);
+        // 选中时设置为物品的全部数量
+        newQty.set(item.id, item.quantity);
       });
       setSelectedItems(newSet);
       setItemQuantities(newQty);
@@ -146,27 +149,29 @@ const BatchFeedModal: React.FC<Props> = ({
     const totalCount = itemsToFeed.length;
     const totalItems = allFeedableItems.length;
 
-    if (
-      window.confirm(
-        `确定要用所有 ${totalItems} 种物品（共 ${totalCount} 件）喂养【${pet.name}】吗？\n这将消耗所有可喂养的物品！`
-      )
-    ) {
+    showInfo(
+      `确定要用所有 ${totalItems} 种物品（共 ${totalCount} 件）喂养【${pet.name}】吗？\n这将消耗所有可喂养的物品！`
+    , '批量喂养', () => {
       onFeedItems(petId, itemsToFeed);
       setSelectedItems(new Set());
       setItemQuantities(new Map());
       onClose();
-    }
+    })
+
   };
 
   const handleFeed = () => {
     if (selectedItems.size === 0 || !pet) return;
 
-    // 构建喂养列表（考虑数量）
+    // 构建喂养列表（使用物品的全部数量）
     const itemsToFeed: string[] = [];
     selectedItems.forEach((itemId) => {
-      const quantity = itemQuantities.get(itemId) || 1;
-      for (let i = 0; i < quantity; i++) {
-        itemsToFeed.push(itemId);
+      const item = player.inventory.find((i) => i.id === itemId);
+      if (item) {
+        // 使用物品的实际数量，全部喂养
+        for (let i = 0; i < item.quantity; i++) {
+          itemsToFeed.push(itemId);
+        }
       }
     });
 
@@ -174,22 +179,19 @@ const BatchFeedModal: React.FC<Props> = ({
     const itemNames = Array.from(selectedItems)
       .map((id) => {
         const item = player.inventory.find((i) => i.id === id);
-        const qty = itemQuantities.get(id) || 1;
-        return item ? `${item.name} x${qty}` : '';
+        return item ? `${item.name} x${item.quantity}` : '';
       })
       .filter(Boolean)
       .join('、');
 
-    if (
-      window.confirm(
-        `确定要用选中的 ${totalCount} 件物品喂养【${pet.name}】吗？\n${itemNames}`
-      )
-    ) {
-      onFeedItems(petId, itemsToFeed);
-      setSelectedItems(new Set());
-      setItemQuantities(new Map());
-      onClose();
-    }
+    showInfo(
+      `确定要用所有 ${totalCount} 种物品（共 ${totalCount} 件）喂养【${pet.name}】吗？\n\n提示：将使用所有选中物品的全部数量。`
+      , '批量喂养', () => {
+        onFeedItems(petId, itemsToFeed);
+        setSelectedItems(new Set());
+        setItemQuantities(new Map());
+        onClose();
+      })
   };
 
   if (!isOpen || !pet) return null;
@@ -210,7 +212,9 @@ const BatchFeedModal: React.FC<Props> = ({
   };
 
   const totalSelectedQuantity = Array.from(selectedItems).reduce((sum, itemId) => {
-    return sum + (itemQuantities.get(itemId) || 1);
+    const item = player.inventory.find((i) => i.id === itemId);
+    // 使用物品的实际数量（全部喂养）
+    return sum + (item?.quantity || 0);
   }, 0);
 
   return (
@@ -336,7 +340,6 @@ const BatchFeedModal: React.FC<Props> = ({
               filteredItems.map((item) => {
                 const isSelected = selectedItems.has(item.id);
                 const rarity = item.rarity || '普通';
-                const quantity = itemQuantities.get(item.id) || 1;
 
                 return (
                   <div
@@ -391,14 +394,13 @@ const BatchFeedModal: React.FC<Props> = ({
                           type="number"
                           min={1}
                           max={item.quantity}
-                          value={quantity}
-                          onChange={(e) =>
-                            handleQuantityChange(item.id, parseInt(e.target.value) || 1)
-                          }
-                          className="w-20 px-2 py-1 bg-stone-700 border border-stone-600 rounded text-sm text-stone-200"
+                          value={item.quantity}
+                          readOnly
+                          className="w-20 px-2 py-1 bg-stone-800 border border-stone-600 rounded text-sm text-stone-300 cursor-not-allowed"
+                          title="将使用全部数量进行喂养"
                         />
-                        <span className="text-xs text-stone-500">
-                          / {item.quantity}
+                        <span className="text-xs text-green-400 font-semibold">
+                          全部喂养
                         </span>
                       </div>
                     )}

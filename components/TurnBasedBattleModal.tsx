@@ -149,14 +149,21 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
       try {
         let newState = executeEnemyTurn(battleState);
 
-        // 如果敌人行动后轮到玩家但因 0 行动次数直接结束，需要立刻再跑敌人回合，直到玩家可行动或战斗结束
+        // 如果玩家行动次数为0（速度太慢），继续执行敌人回合直到玩家可以行动或战斗结束
+        // executeEnemyTurn 已经处理了这种情况，但为了安全起见，这里再检查一次
         let safety = 0;
         while (
-          !newState.waitingForPlayerAction &&
-          newState.enemyActionsRemaining <= 0 &&
+          newState.waitingForPlayerAction &&
+          newState.playerActionsRemaining <= 0 &&
           !checkBattleEnd(newState) &&
-          safety < 5
+          safety < 10
         ) {
+          // 玩家无法行动，立即切换回敌人回合（executeEnemyTurn 应该已经处理，但以防万一）
+          if (newState.enemyActionsRemaining <= 0) {
+            newState.waitingForPlayerAction = false;
+            newState.turn = 'enemy';
+            newState.enemyActionsRemaining = newState.enemyMaxActions;
+          }
           newState = executeEnemyTurn(newState);
           safety += 1;
         }
@@ -449,8 +456,13 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   if (!isOpen || !battleState) return null;
 
   const { player: playerUnit, enemy: enemyUnit } = battleState;
-  const playerHpPercent = (playerUnit.hp / playerUnit.maxHp) * 100;
-  const enemyHpPercent = (enemyUnit.hp / enemyUnit.maxHp) * 100;
+  // 确保HP值是整数（避免浮点数精度问题）
+  const playerHp = Math.floor(playerUnit.hp);
+  const playerMaxHp = Math.floor(playerUnit.maxHp);
+  const enemyHp = Math.floor(enemyUnit.hp);
+  const enemyMaxHp = Math.floor(enemyUnit.maxHp);
+  const playerHpPercent = (playerHp / playerMaxHp) * 100;
+  const enemyHpPercent = (enemyHp / enemyMaxHp) * 100;
 
   return (
     <div
@@ -517,7 +529,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                 {enemyUnit.name}
               </span>
               <span className="text-xs text-stone-400">
-                HP: {enemyUnit.hp} / {enemyUnit.maxHp}
+                HP: {enemyHp} / {enemyMaxHp}
               </span>
             </div>
             <div className="w-full bg-stone-800 rounded-full h-3 mb-2">
@@ -540,8 +552,8 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                 {playerUnit.name}
               </span>
               <span className="text-xs text-stone-400">
-                HP: {playerUnit.hp} / {playerUnit.maxHp} · MP:{' '}
-                {playerUnit.mana || 0} / {playerUnit.maxMana || 100}
+                HP: {playerHp} / {playerMaxHp} · MP:{' '}
+                {Math.floor(playerUnit.mana || 0)} / {Math.floor(playerUnit.maxMana || 100)}
                 {battleState.waitingForPlayerAction && (
                   <span className="text-emerald-400 ml-2">
                     · 行动: {battleState.playerActionsRemaining}/

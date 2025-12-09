@@ -1399,7 +1399,7 @@ export const resolveBattleEncounter = async (
             baseHeal * (1 + petLevel * 0.05) * (1 + petAffection / 200)
           );
           const maxHp = Number(player.maxHp) || 0;
-          playerHp = Math.max(0, Math.min(maxHp, (Number(playerHp) || 0) + petHeal));
+          playerHp = Math.max(0, Math.min(maxHp, Math.floor((Number(playerHp) || 0) + petHeal)));
         }
 
         if (usedSkill.effect.buff) {
@@ -2085,6 +2085,15 @@ export function executeEnemyTurn(battleState: BattleState): BattleState {
     newState.playerMaxActions = calculateActionCount(playerSpeed, enemySpeed);
     newState.enemyMaxActions = calculateActionCount(enemySpeed, playerSpeed);
     newState.playerActionsRemaining = newState.playerMaxActions;
+
+    // 如果玩家行动次数为0（速度太慢），立即切换回敌人回合
+    if (newState.playerActionsRemaining <= 0) {
+      newState.waitingForPlayerAction = false;
+      newState.turn = 'enemy';
+      newState.enemyActionsRemaining = newState.enemyMaxActions;
+      // 递归执行敌人回合
+      return executeEnemyTurn(newState);
+    }
   }
 
   return newState;
@@ -2121,8 +2130,8 @@ function executeNormalAttack(
     actualDamage = Math.round(actualDamage * 0.5); // 防御状态减伤50%
   }
 
-  // 更新目标血量
-  target.hp = Math.max(0, target.hp - actualDamage);
+  // 更新目标血量（确保是整数）
+  target.hp = Math.max(0, Math.floor(target.hp - actualDamage));
 
   return {
     id: randomId(),
@@ -2226,15 +2235,15 @@ function executeSkill(
       damage = Math.round(damage * 0.5);
     }
 
-    target.hp = Math.max(0, target.hp - damage);
+    target.hp = Math.max(0, Math.floor(target.hp - damage));
   }
 
   // 治疗计算
   if (skill.heal) {
     const base = skill.heal.base;
     const multiplier = skill.heal.multiplier;
-    heal = base + caster.maxHp * multiplier;
-    caster.hp = Math.min(caster.maxHp, caster.hp + heal);
+    heal = Math.floor(base + caster.maxHp * multiplier);
+    caster.hp = Math.min(caster.maxHp, Math.floor(caster.hp + heal));
   }
 
   // 应用技能效果
@@ -2295,8 +2304,8 @@ function executeItem(battleState: BattleState, itemId: string): BattleAction {
   const buffs: Buff[] = [];
 
   if (potionConfig.type === 'heal' && potionConfig.effect.heal) {
-    heal = potionConfig.effect.heal;
-    player.hp = Math.min(player.maxHp, player.hp + heal);
+    heal = Math.floor(potionConfig.effect.heal);
+    player.hp = Math.min(player.maxHp, Math.floor(player.hp + heal));
   }
 
   if (potionConfig.type === 'buff' && potionConfig.effect.buffs) {
@@ -2390,7 +2399,8 @@ function updateBattleStateAfterAction(
     unit.debuffs = unit.debuffs
       .map((debuff) => {
         if (debuff.type === 'poison' || debuff.type === 'burn') {
-          unit.hp = Math.max(0, unit.hp - debuff.value);
+          const debuffValue = Math.floor(debuff.value);
+          unit.hp = Math.max(0, Math.floor(unit.hp - debuffValue));
         }
         return { ...debuff, duration: debuff.duration - 1 };
       })
@@ -2400,7 +2410,8 @@ function updateBattleStateAfterAction(
     unit.buffs = unit.buffs
       .map((buff) => {
         if (buff.type === 'heal' && buff.duration > 0) {
-          unit.hp = Math.min(unit.maxHp, unit.hp + buff.value);
+          const healValue = Math.floor(buff.value);
+          unit.hp = Math.min(unit.maxHp, Math.floor(unit.hp + healValue));
         }
         return { ...buff, duration: buff.duration === -1 ? -1 : buff.duration - 1 };
       })
@@ -2501,7 +2512,7 @@ function executePetAction(battleState: BattleState): BattleAction | null {
       const affectionBonus = Math.floor(activePet.affection * 0.8); // 亲密度对技能伤害也有加成
       const skillDamage = baseSkillDamage + attackBonus + levelBonus + affectionBonus;
       petDamage = calcDamage(skillDamage, battleState.enemy.defense);
-      battleState.enemy.hp = Math.max(0, battleState.enemy.hp - petDamage);
+      battleState.enemy.hp = Math.max(0, Math.floor(battleState.enemy.hp - petDamage));
     }
 
     if (usedSkill.effect.heal) {
@@ -2509,7 +2520,7 @@ function executePetAction(battleState: BattleState): BattleAction | null {
       petHeal = Math.floor(
         usedSkill.effect.heal * (1 + activePet.level * 0.05) * (1 + activePet.affection / 200)
       );
-      battleState.player.hp = Math.min(battleState.player.maxHp, battleState.player.hp + petHeal);
+      battleState.player.hp = Math.min(battleState.player.maxHp, Math.floor(battleState.player.hp + petHeal));
     }
 
     if (usedSkill.effect.buff) {
@@ -2536,8 +2547,9 @@ function executePetAction(battleState: BattleState): BattleAction | null {
         });
       }
       if (petBuff.hp) {
-        battleState.player.maxHp += petBuff.hp;
-        battleState.player.hp += petBuff.hp;
+        const hpBuff = Math.floor(petBuff.hp);
+        battleState.player.maxHp = Math.floor(battleState.player.maxHp + hpBuff);
+        battleState.player.hp = Math.floor(battleState.player.hp + hpBuff);
       }
     }
 
@@ -2610,7 +2622,7 @@ function executePetAction(battleState: BattleState): BattleAction | null {
     // 最终攻击力 = (基础攻击力 * 进化倍率 * 等级倍率) + 等级加成 + 亲密度加成
     const petAttackDamage = Math.floor(baseAttack * evolutionMultiplier * attackMultiplier) + levelBonus + affectionBonus;
     const petDamage = calcDamage(petAttackDamage, battleState.enemy.defense);
-    battleState.enemy.hp = Math.max(0, battleState.enemy.hp - petDamage);
+    battleState.enemy.hp = Math.max(0, Math.floor(battleState.enemy.hp - petDamage));
 
     return {
       id: randomId(),

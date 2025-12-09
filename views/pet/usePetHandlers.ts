@@ -366,14 +366,17 @@ export function usePetHandlers({
       let totalExpGain = 0;
       let totalAffectionGain = 0;
       let newInventory = [...prev.inventory];
-      const usedItemIds = new Set<string>();
+      const itemCounts = new Map<string, number>();
+
+      // 统计每个物品ID出现的次数（即要喂养的数量）
+      itemIds.forEach((itemId) => {
+        itemCounts.set(itemId, (itemCounts.get(itemId) || 0) + 1);
+      });
 
       // 计算所有物品的总经验值
-      itemIds.forEach((itemId) => {
+      itemCounts.forEach((count, itemId) => {
         const item = prev.inventory.find((i) => i.id === itemId);
-        if (item && item.quantity > 0 && !usedItemIds.has(itemId)) {
-          usedItemIds.add(itemId);
-
+        if (item && item.quantity > 0) {
           // 计算这个物品提供的经验（复用喂养逻辑）
           let baseExp = 200; // 基础经验值从100提升到200
           const realmIndex = REALM_ORDER.indexOf(prev.realm);
@@ -393,14 +396,18 @@ export function usePetHandlers({
           // 应用物品喂养倍率
           baseExp = Math.floor(baseExp * feedTypeMultiplier);
 
-          const expGain = Math.floor(baseExp * rarityMultiplier * (0.85 + Math.random() * 0.3));
-          totalExpGain += expGain;
+          // 计算单个物品的经验值
+          const singleExpGain = Math.floor(baseExp * rarityMultiplier * (0.85 + Math.random() * 0.3));
 
-          // 扣除物品
+          // 根据数量累加经验值
+          totalExpGain += singleExpGain * count;
+
+          // 扣除物品（扣除 count 个）
+          const actualCount = Math.min(count, item.quantity); // 确保不超过实际数量
           newInventory = newInventory
             .map((invItem) => {
               if (invItem.id === itemId) {
-                return { ...invItem, quantity: invItem.quantity - 1 };
+                return { ...invItem, quantity: invItem.quantity - actualCount };
               }
               return invItem;
             })
@@ -408,8 +415,8 @@ export function usePetHandlers({
         }
       });
 
-      // 增加亲密度（每个物品2-5点）
-      totalAffectionGain = Math.floor((2 + Math.random() * 4) * usedItemIds.size);
+      // 增加亲密度（每个物品2-5点，按实际喂养的物品数量计算）
+      totalAffectionGain = Math.floor((2 + Math.random() * 4) * itemIds.length);
 
       // 更新灵宠
       const newPets = prev.pets.map((p) => {
