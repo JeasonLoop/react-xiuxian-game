@@ -78,7 +78,7 @@ VITE_AI_KEY=your-api-key-here
 
 # 可选配置（如果不设置，将使用默认值）
 # VITE_AI_PROVIDER=glm  # 默认: glm (智谱AI)
-# VITE_AI_MODEL=glm-4.5  # 默认模型
+# VITE_AI_MODEL=glm-4.5-air  # 默认模型
 ```
 
 > 💡 **获取 API Key**:
