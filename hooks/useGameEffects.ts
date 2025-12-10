@@ -5,7 +5,7 @@ import { uid } from '../utils/gameUtils';
 export function useGameEffects() {
   const [visualEffects, setVisualEffects] = useState<
     {
-      type: 'damage' | 'heal' | 'slash';
+      type: 'damage' | 'heal' | 'slash' | 'alchemy';
       value?: string;
       color?: string;
       id: string;
@@ -52,12 +52,14 @@ export function useGameEffects() {
 
   // Helper to trigger visuals
   const triggerVisual = useCallback(
-    (type: 'damage' | 'heal' | 'slash', value?: string, color?: string) => {
+    (type: 'damage' | 'heal' | 'slash' | 'alchemy', value?: string, color?: string) => {
       const id = uid();
       setVisualEffects((prev) => [...prev, { type, value, color, id }]);
+      // 炼丹动画持续时间更长
+      const duration = type === 'alchemy' ? 2000 : 1000;
       setTimeout(() => {
         setVisualEffects((prev) => prev.filter((v) => v.id !== id));
-      }, 1000);
+      }, duration);
     },
     []
   );

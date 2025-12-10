@@ -238,6 +238,7 @@ function App() {
     player,
     setPlayer,
     addLog,
+    triggerVisual,
   });
 
   const characterHandlers = useCharacterHandlers({
@@ -637,7 +638,7 @@ function App() {
         cooldown={cooldown}
         purchaseSuccess={purchaseSuccess}
         lotteryRewards={lotteryRewards}
-        itemActionLog={itemActionLog}
+        itemActionLog={itemActionLogValue}
         isMobileSidebarOpen={isMobileSidebarOpen}
         isMobileStatsOpen={isMobileStatsOpen}
         modals={{

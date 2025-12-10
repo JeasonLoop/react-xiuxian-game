@@ -241,13 +241,26 @@ export function useItemHandlers({
       }
 
       // 对于非灵兽蛋的物品，显示使用日志
-      if (effectLogs.length > 0 && !isPetEgg && item.type !== ItemType.Recipe) {
-        const logMessage = `你使用了 ${item.name}。 ${effectLogs.join(' ')}`;
-        addLog(logMessage, 'gain');
-        // 显示轻提示
-        if (setItemActionLog) {
-          setItemActionLog({ text: logMessage, type: 'gain' });
-          setTimeout(() => setItemActionLog(null), 3000);
+      if (!isPetEgg && item.type !== ItemType.Recipe) {
+        // 使用丹药时，总是显示提示
+        if (item.type === ItemType.Pill) {
+          const logMessage = effectLogs.length > 0
+            ? `你使用了 ${item.name}。 ${effectLogs.join(' ')}`
+            : `你使用了 ${item.name}。`;
+          addLog(logMessage, 'gain');
+          // 显示轻提示
+          if (setItemActionLog) {
+            setItemActionLog({ text: logMessage, type: 'gain' });
+            setTimeout(() => setItemActionLog(null), 3000);
+          }
+        } else if (effectLogs.length > 0) {
+          // 其他物品有效果时显示提示
+          const logMessage = `你使用了 ${item.name}。 ${effectLogs.join(' ')}`;
+          addLog(logMessage, 'gain');
+          if (setItemActionLog) {
+            setItemActionLog({ text: logMessage, type: 'gain' });
+            setTimeout(() => setItemActionLog(null), 3000);
+          }
         }
       } else if (item.type === ItemType.Recipe && effectLogs.length > 0) {
         // 丹方使用后的提示
@@ -503,6 +516,10 @@ export function useItemHandlers({
         if (effectLogs.length > 0 && !isPetEgg && itemToUse.type !== ItemType.Recipe) {
           const logMessage = `使用了 ${itemToUse.name}。 ${effectLogs.join(' ')}`;
           addLog(logMessage, 'gain');
+          if (setItemActionLog) {
+            setItemActionLog({ text: logMessage, type: 'gain' });
+            setTimeout(() => setItemActionLog(null), 3000);
+          }
         }
       });
 

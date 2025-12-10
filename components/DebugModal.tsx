@@ -97,6 +97,7 @@ const DebugModal: React.FC<Props> = ({
   const [itemFilter, setItemFilter] = useState<ItemType | 'all'>('all');
   const [editingPetId, setEditingPetId] = useState<string | null>(null);
   const [editingPet, setEditingPet] = useState<Pet | null>(null);
+  const [itemQuantities, setItemQuantities] = useState<Record<string, number>>({});
 
   // 过滤装备
   const filteredEquipment = useMemo(() => {
@@ -495,25 +496,47 @@ const DebugModal: React.FC<Props> = ({
   };
 
   // 添加物品
-  const handleAddItem = (itemTemplate: Partial<Item> | Recipe['result']) => {
-    const newItem: Item = {
-      id: uid(),
-      name: itemTemplate.name || '未知物品',
-      type: itemTemplate.type || ItemType.Material,
-      description: itemTemplate.description || '',
-      quantity: 1,
-      rarity: itemTemplate.rarity || '普通',
-      level: (itemTemplate as any).level ?? 0,
-      isEquippable: (itemTemplate as any).isEquippable,
-      equipmentSlot: (itemTemplate as any).equipmentSlot,
-      effect: itemTemplate.effect,
-      permanentEffect: (itemTemplate as any).permanentEffect,
-    };
+  const handleAddItem = (itemTemplate: Partial<Item> | Recipe['result'], quantity: number = 1) => {
+    const isEquipment = (itemTemplate as any).isEquippable && (itemTemplate as any).equipmentSlot;
 
     setLocalPlayer((prev) => {
+      const newInv = [...prev.inventory];
+      const existingIdx = newInv.findIndex((i) => i.name === itemTemplate.name);
+
+      if (existingIdx >= 0 && !isEquipment) {
+        // 非装备类物品可以叠加
+        newInv[existingIdx] = {
+          ...newInv[existingIdx],
+          quantity: newInv[existingIdx].quantity + quantity,
+        };
+        showSuccess(`已添加物品：${itemTemplate.name} x${quantity}（当前数量：${newInv[existingIdx].quantity}）`);
+      } else {
+        // 装备类物品或新物品，每个装备单独占一格
+        const itemsToAdd = isEquipment ? quantity : 1;
+        const addQuantity = isEquipment ? 1 : quantity;
+
+        for (let i = 0; i < itemsToAdd; i++) {
+          const newItem: Item = {
+            id: uid(),
+            name: itemTemplate.name || '未知物品',
+            type: itemTemplate.type || ItemType.Material,
+            description: itemTemplate.description || '',
+            quantity: addQuantity,
+            rarity: itemTemplate.rarity || '普通',
+            level: (itemTemplate as any).level ?? 0,
+            isEquippable: (itemTemplate as any).isEquippable,
+            equipmentSlot: (itemTemplate as any).equipmentSlot,
+            effect: itemTemplate.effect,
+            permanentEffect: (itemTemplate as any).permanentEffect,
+          };
+          newInv.push(newItem);
+        }
+        showSuccess(`已添加物品：${itemTemplate.name} x${quantity}`);
+      }
+
       const updated = {
         ...prev,
-        inventory: [...prev.inventory, newItem],
+        inventory: newInv,
       };
       // 立即更新到实际玩家状态
       onUpdatePlayer({
@@ -521,7 +544,6 @@ const DebugModal: React.FC<Props> = ({
       });
       return updated;
     });
-    showSuccess(`已添加物品：${newItem.name}`);
   };
 
   // 解锁丹方
@@ -2078,15 +2100,34 @@ const DebugModal: React.FC<Props> = ({
                           {item.equipmentSlot || '未知部位'}
                         </div>
                       )}
-                      <button
-                        className="mt-2 w-full bg-red-700 hover:bg-red-600 text-white text-xs py-1 rounded transition-colors"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleAddItem(item);
-                        }}
-                      >
-                        添加到背包
-                      </button>
+                      <div className="mt-2 flex gap-2">
+                        <input
+                          type="number"
+                          min="1"
+                          max="999"
+                          value={itemQuantities[item.name || ''] || 1}
+                          onChange={(e) => {
+                            const value = Math.max(1, Math.min(999, parseInt(e.target.value) || 1));
+                            setItemQuantities((prev) => ({
+                              ...prev,
+                              [item.name || '']: value,
+                            }));
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-16 bg-stone-900 border border-stone-700 rounded px-2 py-1 text-xs text-stone-200 text-center"
+                          placeholder="1"
+                        />
+                        <button
+                          className="flex-1 bg-red-700 hover:bg-red-600 text-white text-xs py-1 rounded transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const quantity = itemQuantities[item.name || ''] || 1;
+                            handleAddItem(item, quantity);
+                          }}
+                        >
+                          添加到背包
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>

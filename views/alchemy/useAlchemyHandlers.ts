@@ -8,11 +8,13 @@ import {
   ItemRarity,
 } from '../../types';
 import { uid } from '../../utils/gameUtils';
+import { showSuccess } from '../../utils/toastUtils';
 
 interface UseAlchemyHandlersProps {
   player: PlayerStats;
   setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
   addLog: (message: string, type?: string) => void;
+  triggerVisual?: (type: 'damage' | 'heal' | 'slash' | 'alchemy', value?: string, color?: string) => void;
 }
 
 /**
@@ -26,6 +28,7 @@ interface UseAlchemyHandlersProps {
 export function useAlchemyHandlers({
   setPlayer,
   addLog,
+  triggerVisual,
 }: UseAlchemyHandlersProps) {
   const handleCraft = (recipe: Recipe) => {
     setPlayer((prev) => {
@@ -117,6 +120,12 @@ export function useAlchemyHandlers({
       }
 
       addLog(`丹炉火起，药香四溢。你炼制出了 ${recipe.result.name}。`, 'gain');
+      // 显示全局成功提示
+      showSuccess(`炼制成功！获得 ${recipe.result.name}`);
+      // 触发炼丹动画
+      if (triggerVisual) {
+        triggerVisual('alchemy', `✨ ${recipe.result.name}`, 'text-mystic-gold');
+      }
 
       return {
         ...prev,
