@@ -5,6 +5,7 @@ import {
   ItemType,
   EquipmentSlot,
   ItemRarity,
+  RealmType,
 } from '../../types';
 import { getItemStats } from '../../utils/itemUtils';
 import {
@@ -13,6 +14,7 @@ import {
   UPGRADE_STONE_SUCCESS_BONUS,
   getUpgradeMultiplier,
   RARITY_MULTIPLIERS,
+  REALM_ORDER,
 } from '../../constants';
 
 interface UseEquipmentHandlersProps {
@@ -265,6 +267,14 @@ export function useEquipmentHandlers({
 
     if (item.isNatal) {
       addLog('该法宝已经是本命法宝！', 'normal');
+      return;
+    }
+
+    // 检查境界要求：必须达到金丹期才能祭炼本命法宝
+    const realmIndex = REALM_ORDER.indexOf(player.realm);
+    const goldenCoreIndex = REALM_ORDER.indexOf(RealmType.GoldenCore);
+    if (realmIndex < goldenCoreIndex) {
+      addLog('祭炼本命法宝需要达到金丹期境界！', 'danger');
       return;
     }
 

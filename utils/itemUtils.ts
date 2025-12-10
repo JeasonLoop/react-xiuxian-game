@@ -1,5 +1,5 @@
-import { Item, ItemType, ItemRarity, EquipmentSlot } from '../types';
-import { RARITY_MULTIPLIERS } from '../constants';
+import { Item, ItemType, ItemRarity, EquipmentSlot, RealmType } from '../types';
+import { RARITY_MULTIPLIERS, REALM_ORDER, REALM_DATA } from '../constants';
 
 // 已知物品的效果映射表（确保描述和实际效果一致）
 export const KNOWN_ITEM_EFFECTS: Record<
@@ -218,32 +218,133 @@ export const inferItemTypeAndSlot = (
   };
 };
 
-// Helper to calculate item stats based on rarity
+/**
+ * 根据境界获取装备数值的基础倍数
+ * 用于平衡不同境界的装备数值，确保装备与玩家境界匹配
+ */
+export const getRealmEquipmentMultiplier = (realm: RealmType, realmLevel: number): number => {
+  const realmIndex = REALM_ORDER.indexOf(realm);
+  // 基础倍数：根据境界指数增长 [1, 2, 4, 8, 16, 32, 64]
+  const realmBaseMultipliers = [1, 2, 4, 8, 16, 32, 64];
+  const realmBaseMultiplier = realmBaseMultipliers[realmIndex] || 1;
+  // 境界等级加成：每级增加10%（更温和的增长）
+  const levelMultiplier = 1 + (realmLevel - 1) * 0.1;
+  return realmBaseMultiplier * levelMultiplier;
+};
+
+/**
+ * 根据境界调整装备数值
+ * 确保装备数值与玩家当前境界匹配，避免数值过高或过低
+ *
+ * AI生成的装备数值范围（普通10-30，稀有30-80，传说80-200，仙品200-500）
+ * 已经考虑了稀有度，这里根据境界进行缩放，使装备数值与境界匹配
+ */
+export const adjustEquipmentStatsByRealm = (
+  effect: Item['effect'],
+  realm: RealmType,
+  realmLevel: number,
+  rarity: ItemRarity = '普通'
+): Item['effect'] | undefined => {
+  if (!effect) return effect;
+
+  const realmIndex = REALM_ORDER.indexOf(realm);
+  // 获取当前境界的基础属性值作为参考
+  const realmData = REALM_DATA[realm];
+  const baseAttack = realmData.baseAttack;
+  const baseDefense = realmData.baseDefense;
+  const baseMaxHp = realmData.baseMaxHp;
+  const baseSpirit = realmData.baseSpirit;
+  const basePhysique = realmData.basePhysique;
+  const baseSpeed = realmData.baseSpeed;
+
+  // 根据稀有度确定装备数值占境界基础属性的百分比
+  // 普通：5-8%，稀有：8-12%，传说：12-18%，仙品：18-25%
+  const rarityPercentages: Record<ItemRarity, { min: number; max: number }> = {
+    普通: { min: 0.05, max: 0.08 },
+    稀有: { min: 0.08, max: 0.12 },
+    传说: { min: 0.12, max: 0.18 },
+    仙品: { min: 0.18, max: 0.25 },
+  };
+
+  const percentage = rarityPercentages[rarity] || rarityPercentages['普通'];
+  // 使用中值作为基准
+  const targetPercentage = (percentage.min + percentage.max) / 2;
+
+  // 境界等级加成：每级增加5%
+  const levelMultiplier = 1 + (realmLevel - 1) * 0.05;
+
+  const adjusted: Item['effect'] = {};
+
+  if (effect.attack) {
+    // 根据境界基础攻击力计算目标数值
+    const targetValue = Math.floor(baseAttack * targetPercentage * levelMultiplier);
+    // 如果AI生成的数值过高，进行缩放；如果合理，保持原值
+    const maxValue = Math.floor(baseAttack * percentage.max * levelMultiplier);
+    adjusted.attack = Math.min(Math.max(effect.attack, targetValue * 0.8), maxValue);
+  }
+  if (effect.defense) {
+    const targetValue = Math.floor(baseDefense * targetPercentage * levelMultiplier);
+    const maxValue = Math.floor(baseDefense * percentage.max * levelMultiplier);
+    adjusted.defense = Math.min(Math.max(effect.defense, targetValue * 0.8), maxValue);
+  }
+  if (effect.hp) {
+    const targetValue = Math.floor(baseMaxHp * targetPercentage * levelMultiplier);
+    const maxValue = Math.floor(baseMaxHp * percentage.max * levelMultiplier);
+    adjusted.hp = Math.min(Math.max(effect.hp, targetValue * 0.8), maxValue);
+  }
+  if (effect.spirit) {
+    const targetValue = Math.floor(baseSpirit * targetPercentage * levelMultiplier);
+    const maxValue = Math.floor(baseSpirit * percentage.max * levelMultiplier);
+    adjusted.spirit = Math.min(Math.max(effect.spirit, targetValue * 0.8), maxValue);
+  }
+  if (effect.physique) {
+    const targetValue = Math.floor(basePhysique * targetPercentage * levelMultiplier);
+    const maxValue = Math.floor(basePhysique * percentage.max * levelMultiplier);
+    adjusted.physique = Math.min(Math.max(effect.physique, targetValue * 0.8), maxValue);
+  }
+  if (effect.speed) {
+    const targetValue = Math.floor(baseSpeed * targetPercentage * levelMultiplier);
+    const maxValue = Math.floor(baseSpeed * percentage.max * levelMultiplier);
+    adjusted.speed = Math.min(Math.max(effect.speed, targetValue * 0.8), maxValue);
+  }
+  if (effect.exp !== undefined) {
+    adjusted.exp = effect.exp; // exp不受境界调整影响
+  }
+  if (effect.lifespan !== undefined) {
+    adjusted.lifespan = effect.lifespan; // 寿命不受境界调整影响
+  }
+
+  return adjusted;
+};
+
+/**
+ * Helper to calculate item stats
+ * 注意：AI生成的装备数值已经考虑了稀有度，这里不再应用RARITY_MULTIPLIERS
+ * 只应用本命法宝的额外加成
+ */
 export const getItemStats = (item: Item, isNatal: boolean = false) => {
-  const rarity = item.rarity || '普通';
-  const multiplier = RARITY_MULTIPLIERS[rarity] || 1;
   // 本命法宝额外50%加成
   const natalMultiplier = isNatal ? 1.5 : 1;
 
   return {
     attack: item.effect?.attack
-      ? Math.floor(item.effect.attack * multiplier * natalMultiplier)
+      ? Math.floor(item.effect.attack * natalMultiplier)
       : 0,
     defense: item.effect?.defense
-      ? Math.floor(item.effect.defense * multiplier * natalMultiplier)
+      ? Math.floor(item.effect.defense * natalMultiplier)
       : 0,
     hp: item.effect?.hp
-      ? Math.floor(item.effect.hp * multiplier * natalMultiplier)
+      ? Math.floor(item.effect.hp * natalMultiplier)
       : 0,
-    exp: item.effect?.exp || 0, // exp 不受稀有度倍率影响
+    exp: item.effect?.exp || 0, // exp 不受倍率影响
     spirit: item.effect?.spirit
-      ? Math.floor(item.effect.spirit * multiplier * natalMultiplier)
+      ? Math.floor(item.effect.spirit * natalMultiplier)
       : 0,
     physique: item.effect?.physique
-      ? Math.floor(item.effect.physique * multiplier * natalMultiplier)
+      ? Math.floor(item.effect.physique * natalMultiplier)
       : 0,
     speed: item.effect?.speed
-      ? Math.floor(item.effect.speed * multiplier * natalMultiplier)
+      ? Math.floor(item.effect.speed * natalMultiplier)
       : 0,
   };
 };

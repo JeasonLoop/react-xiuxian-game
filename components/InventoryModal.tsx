@@ -8,15 +8,14 @@ import React, {
 import {
   Item,
   ItemType,
-  ItemRarity,
   PlayerStats,
   EquipmentSlot,
+  RealmType,
 } from '../types';
 import {
   X,
   Package,
   ShieldCheck,
-  ArrowRight,
   Hammer,
   Trash2,
   Sparkles,
@@ -24,7 +23,7 @@ import {
   Trash,
   Zap,
 } from 'lucide-react';
-import { RARITY_MULTIPLIERS } from '../constants';
+import {  REALM_ORDER } from '../constants';
 import EquipmentPanel from './EquipmentPanel';
 import BatchDiscardModal from './BatchDiscardModal';
 import BatchUseModal from './BatchUseModal';
@@ -207,25 +206,42 @@ const InventoryItem = memo<InventoryItemProps>(
                   装备
                 </button>
               )}
-              {item.type === ItemType.Artifact && onRefineNatalArtifact && (
-                <button
-                  onClick={() => {
-                    if (item.isNatal && onUnrefineNatalArtifact) {
-                      onUnrefineNatalArtifact();
-                    } else if (!item.isNatal) {
-                      onRefineNatalArtifact(item);
+              {item.type === ItemType.Artifact && onRefineNatalArtifact && (() => {
+                // 检查境界要求：必须达到金丹期才能祭炼本命法宝
+                const realmIndex = REALM_ORDER.indexOf(player.realm);
+                const goldenCoreIndex = REALM_ORDER.indexOf(RealmType.GoldenCore);
+                const canRefine = realmIndex >= goldenCoreIndex;
+                const isDisabled = !item.isNatal && !canRefine;
+
+                return (
+                  <button
+                    onClick={() => {
+                      if (item.isNatal && onUnrefineNatalArtifact) {
+                        onUnrefineNatalArtifact();
+                      } else if (!item.isNatal && canRefine) {
+                        onRefineNatalArtifact(item);
+                      }
+                    }}
+                    disabled={isDisabled}
+                    className={`px-3 text-xs py-2 rounded transition-colors border ${
+                      item.isNatal
+                        ? 'bg-mystic-gold/20 hover:bg-mystic-gold/30 text-mystic-gold border-mystic-gold/50'
+                        : isDisabled
+                        ? 'bg-stone-800/50 text-stone-500 border-stone-700/50 cursor-not-allowed opacity-50'
+                        : 'bg-purple-900/20 hover:bg-purple-900/30 text-purple-300 border-purple-700/50'
+                    }`}
+                    title={
+                      item.isNatal
+                        ? '解除本命祭炼'
+                        : isDisabled
+                        ? '祭炼本命法宝需要达到金丹期境界'
+                        : '祭炼为本命法宝'
                     }
-                  }}
-                  className={`px-3 text-xs py-2 rounded transition-colors border ${
-                    item.isNatal
-                      ? 'bg-mystic-gold/20 hover:bg-mystic-gold/30 text-mystic-gold border-mystic-gold/50'
-                      : 'bg-purple-900/20 hover:bg-purple-900/30 text-purple-300 border-purple-700/50'
-                  }`}
-                  title={item.isNatal ? '解除本命祭炼' : '祭炼为本命法宝'}
-                >
-                  <Sparkles size={14} />
-                </button>
-              )}
+                  >
+                    <Sparkles size={14} />
+                  </button>
+                );
+              })()}
               <button
                 onClick={() => onUpgradeItem(item)}
                 className="px-3 bg-stone-700 hover:bg-stone-600 text-stone-300 text-xs py-2 rounded transition-colors border border-stone-500"
