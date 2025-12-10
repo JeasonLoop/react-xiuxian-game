@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   X,
-  Save,
   RotateCcw,
   Plus,
   Minus,
@@ -51,6 +50,7 @@ import {
   LOTTERY_PRIZES,
   SECT_SHOP_ITEMS,
 } from '../constants';
+import { LOOT_ITEMS } from '../services/battleService';
 import { showSuccess, showError, showInfo, showConfirm } from '../utils/toastUtils';
 import { getRarityTextColor } from '../utils/rarityUtils';
 
@@ -192,6 +192,35 @@ const DebugModal: React.FC<Props> = ({
       }
     });
 
+    // 从LOOT_ITEMS中提取草药
+    LOOT_ITEMS.herbs.forEach((herb) => {
+      if (!itemNames.has(herb.name)) {
+        itemNames.add(herb.name);
+        items.push({
+          name: herb.name,
+          type: herb.type,
+          description: `稀有草药：${herb.name}`,
+          rarity: herb.rarity,
+          effect: herb.effect,
+          permanentEffect: (herb as any).permanentEffect,
+        });
+      }
+    });
+
+    // 从LOOT_ITEMS中提取材料
+    LOOT_ITEMS.materials.forEach((material) => {
+      if (!itemNames.has(material.name)) {
+        itemNames.add(material.name);
+        items.push({
+          name: material.name,
+          type: material.type,
+          description: `炼器材料：${material.name}`,
+          rarity: material.rarity,
+          permanentEffect: (material as any).permanentEffect,
+        });
+      }
+    });
+
     return items;
   }, []);
 
@@ -203,15 +232,7 @@ const DebugModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
-  const handleSave = () => {
-    // 确保hp不超过maxHp
-    const finalHp = Math.min(localPlayer.hp, localPlayer.maxHp);
-    onUpdatePlayer({
-      ...localPlayer,
-      hp: finalHp,
-    });
-    onClose();
-  };
+  // 移除 handleSave，因为所有修改现在都直接生效
 
   const handleReset = () => {
     setLocalPlayer(player);
@@ -221,7 +242,12 @@ const DebugModal: React.FC<Props> = ({
     field: K,
     value: PlayerStats[K]
   ) => {
-    setLocalPlayer((prev) => ({ ...prev, [field]: value }));
+    setLocalPlayer((prev) => {
+      const updated = { ...prev, [field]: value };
+      // 直接更新到实际玩家状态
+      onUpdatePlayer({ [field]: value });
+      return updated;
+    });
   };
 
   const adjustNumber = (
@@ -232,32 +258,51 @@ const DebugModal: React.FC<Props> = ({
     setLocalPlayer((prev) => {
       const current = prev[field] as number;
       const newValue = Math.max(min, current + delta);
-      return { ...prev, [field]: newValue };
+      const updated = { ...prev, [field]: newValue };
+      // 直接更新到实际玩家状态
+      onUpdatePlayer({ [field]: newValue });
+      return updated;
     });
   };
 
   const handleRealmChange = (newRealm: RealmType) => {
     const realmData = REALM_DATA[newRealm];
-    setLocalPlayer((prev) => ({
-      ...prev,
-      realm: newRealm,
-      // 如果境界降低，调整相关属性
-      maxHp: Math.max(prev.maxHp, realmData.baseMaxHp),
-      hp: Math.min(prev.hp, Math.max(prev.maxHp, realmData.baseMaxHp)),
-      attack: Math.max(prev.attack, realmData.baseAttack),
-      defense: Math.max(prev.defense, realmData.baseDefense),
-      spirit: Math.max(prev.spirit, realmData.baseSpirit),
-      physique: Math.max(prev.physique, realmData.basePhysique),
-      speed: Math.max(prev.speed, realmData.baseSpeed),
-    }));
+    setLocalPlayer((prev) => {
+      const updated = {
+        ...prev,
+        realm: newRealm,
+        // 如果境界降低，调整相关属性
+        maxHp: Math.max(prev.maxHp, realmData.baseMaxHp),
+        hp: Math.min(prev.hp, Math.max(prev.maxHp, realmData.baseMaxHp)),
+        attack: Math.max(prev.attack, realmData.baseAttack),
+        defense: Math.max(prev.defense, realmData.baseDefense),
+        spirit: Math.max(prev.spirit, realmData.baseSpirit),
+        physique: Math.max(prev.physique, realmData.basePhysique),
+        speed: Math.max(prev.speed, realmData.baseSpeed),
+      };
+      // 直接更新到实际玩家状态
+      onUpdatePlayer({
+        realm: updated.realm,
+        maxHp: updated.maxHp,
+        hp: updated.hp,
+        attack: updated.attack,
+        defense: updated.defense,
+        spirit: updated.spirit,
+        physique: updated.physique,
+        speed: updated.speed,
+      });
+      return updated;
+    });
   };
 
   const handleRealmLevelChange = (newLevel: number) => {
     const clampedLevel = Math.max(1, Math.min(9, newLevel));
-    setLocalPlayer((prev) => ({
-      ...prev,
-      realmLevel: clampedLevel,
-    }));
+    setLocalPlayer((prev) => {
+      const updated = { ...prev, realmLevel: clampedLevel };
+      // 直接更新到实际玩家状态
+      onUpdatePlayer({ realmLevel: clampedLevel });
+      return updated;
+    });
   };
 
   // 添加装备到背包
@@ -2404,13 +2449,6 @@ const DebugModal: React.FC<Props> = ({
             >
               <RotateCcw size={16} />
               重置
-            </button>
-            <button
-              onClick={handleSave}
-              className="flex items-center gap-2 px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded border border-red-600 transition-colors"
-            >
-              <Save size={16} />
-              保存修改
             </button>
           </div>
         </div>
