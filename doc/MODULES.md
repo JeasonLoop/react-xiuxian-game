@@ -9,26 +9,33 @@ react-xiuxian-game/
 ├── components/              # UI 组件层（纯展示组件）
 │   ├── AchievementModal.tsx    # 成就系统弹窗
 │   ├── AlchemyModal.tsx        # 炼丹系统弹窗
+│   ├── AlertModal.tsx          # 提示弹窗
 │   ├── ArtifactUpgradeModal.tsx # 法宝强化弹窗
-│   ├── BattleModal.tsx         # 战斗系统弹窗
+│   ├── BatchDiscardModal.tsx   # 批量丢弃弹窗
+│   ├── BatchFeedModal.tsx      # 批量喂养弹窗
+│   ├── BatchReleaseModal.tsx   # 批量释放弹窗
+│   ├── BatchUseModal.tsx        # 批量使用弹窗
+│   ├── BattleModal.tsx          # 战斗系统弹窗
 │   ├── CharacterModal.tsx       # 角色信息弹窗
 │   ├── CombatVisuals.tsx       # 战斗视觉效果组件
-│   ├── CultivationModal.tsx     # 修炼系统弹窗
+│   ├── CultivationModal.tsx    # 修炼系统弹窗
+│   ├── DeathModal.tsx           # 死亡弹窗
+│   ├── DebugModal.tsx           # 调试弹窗
 │   ├── EquipmentPanel.tsx      # 装备面板组件
-│   ├── InventoryModal.tsx       # 背包系统弹窗
-│   ├── LogPanel.tsx            # 游戏日志面板
-│   ├── LotteryModal.tsx        # 抽奖系统弹窗
-│   ├── MobileSidebar.tsx       # 移动端侧边栏
-│   ├── PetModal.tsx            # 灵宠系统弹窗
-│   ├── SecretRealmModal.tsx    # 秘境探索弹窗
-│   ├── SectModal.tsx           # 宗门系统弹窗
-│   ├── SettingsModal.tsx       # 游戏设置弹窗
-│   ├── ShopModal.tsx           # 商店系统弹窗
-│   ├── StartScreen.tsx         # 游戏开始界面
-│   ├── WelcomeScreen.tsx       # 欢迎界面
-│   ├── DeathModal.tsx          # 死亡弹窗
-│   ├── BatchDiscardModal.tsx   # 批量丢弃弹窗
-│   └── StatsPanel.tsx          # 属性显示面板
+│   ├── InventoryModal.tsx      # 背包系统弹窗
+│   ├── LogPanel.tsx             # 游戏日志面板
+│   ├── LotteryModal.tsx         # 抽奖系统弹窗
+│   ├── MobileSidebar.tsx        # 移动端侧边栏
+│   ├── PetModal.tsx             # 灵宠系统弹窗
+│   ├── SecretRealmModal.tsx     # 秘境探索弹窗
+│   ├── SectModal.tsx            # 宗门系统弹窗
+│   ├── SectTaskModal.tsx        # 宗门任务弹窗
+│   ├── SettingsModal.tsx        # 游戏设置弹窗
+│   ├── ShopModal.tsx            # 商店系统弹窗
+│   ├── StartScreen.tsx          # 游戏开始界面
+│   ├── StatsPanel.tsx            # 属性显示面板
+│   ├── TurnBasedBattleModal.tsx  # 回合制战斗弹窗
+│   └── WelcomeScreen.tsx        # 欢迎界面
 │
 ├── views/                  # 视图层（业务逻辑 + UI 组合）
 │   ├── GameView.tsx           # 主游戏视图
@@ -86,30 +93,22 @@ react-xiuxian-game/
 │       ├── index.ts
 │       └── useAchievementHandlers.ts
 │
-├── features/               # 功能模块（可复用的 Hooks）
-│   ├── battle/                 # 战斗相关
-│   │   └── useBattleModal.ts
-│   ├── game/                   # 游戏通用功能
-│   │   └── useGameCooldown.ts
-│   ├── items/                  # 物品管理
-│   │   └── useItems.ts
-│   ├── meditation/              # 打坐功能
-│   │   └── useMeditation.ts
-│   ├── modal/                   # 模态框状态管理
-│   │   └── useModalState.ts
-│   ├── shop/                    # 商店功能
-│   │   └── useShop.ts
-│   ├── index.ts                 # 统一导出
-│   └── README.md                # 功能模块说明
-│
 ├── hooks/                  # 通用 Hooks
-│   ├── useGameState.ts      # 游戏状态管理
-│   └── useGameEffects.ts   # 游戏副作用处理
+│   ├── useAppState.ts          # 应用状态管理（弹窗、商店等）
+│   ├── useAutoFeatures.ts      # 自动功能（自动打坐、自动历练）
+│   ├── useBattleResultHandler.ts # 战斗结果处理
+│   ├── useDeathDetection.ts    # 死亡检测
+│   ├── useGameEffects.ts       # 游戏副作用处理
+│   ├── useGameState.ts         # 游戏状态管理
+│   └── usePassiveRegeneration.ts # 被动回血
 │
 ├── utils/                  # 工具函数
+│   ├── equipmentUtils.ts   # 装备工具函数
 │   ├── gameUtils.ts        # 游戏工具函数
 │   ├── itemUtils.ts        # 物品工具函数
-│   └── playerUtils.ts      # 玩家工具函数
+│   ├── playerUtils.ts      # 玩家工具函数
+│   ├── rarityUtils.ts      # 稀有度工具函数
+│   └── toastUtils.ts       # 提示工具函数
 │
 ├── services/               # 业务逻辑服务层
 │   ├── aiService.ts        # AI 事件生成服务
@@ -210,6 +209,56 @@ react-xiuxian-game/
 - 成就检查
 - 其他副作用处理
 
+#### useAppState.ts
+
+**职责**: 管理应用级别的状态
+
+**核心功能**:
+
+- 弹窗状态管理（所有模态框的显示/隐藏）
+- 商店状态管理
+- 战斗状态管理
+- 通知状态管理
+
+#### useAutoFeatures.ts
+
+**职责**: 自动功能管理
+
+**核心功能**:
+
+- 自动打坐功能
+- 自动历练功能
+- 自动功能的状态管理
+
+#### useDeathDetection.ts
+
+**职责**: 死亡检测和处理
+
+**核心功能**:
+
+- 检测玩家是否死亡
+- 处理死亡逻辑
+- 显示死亡弹窗
+
+#### useBattleResultHandler.ts
+
+**职责**: 战斗结果处理
+
+**核心功能**:
+
+- 处理战斗结果
+- 更新玩家状态
+- 添加战斗日志
+
+#### usePassiveRegeneration.ts
+
+**职责**: 被动回血和冷却管理
+
+**核心功能**:
+
+- 自动回血
+- 冷却时间管理
+
 ### 3. views/ - 视图层
 
 **职责**: 组合 UI 组件，处理用户交互，调用业务逻辑
@@ -259,31 +308,12 @@ export function useXxxHandlers({
     // 调用 services 或 utils
     // 更新状态
   }, [dependencies]);
-  
+
   return { handleAction, ... };
 }
 ```
 
-### 4. features/ - 功能模块
-
-**职责**: 提供可复用的功能 Hooks
-
-**特点**:
-
-- 功能导向的组织方式
-- 跨模块共享的功能
-- 独立的功能模块
-
-**主要模块**:
-
-- `battle/useBattleModal.ts` - 战斗弹窗状态管理
-- `game/useGameCooldown.ts` - 游戏冷却时间管理
-- `modal/useModalState.ts` - 模态框状态管理
-- `items/useItems.ts` - 物品管理功能
-- `meditation/useMeditation.ts` - 打坐功能
-- `shop/useShop.ts` - 商店功能
-
-### 5. utils/ - 工具函数
+### 4. utils/ - 工具函数
 
 **职责**: 提供通用的工具函数
 
@@ -307,7 +337,24 @@ export function useXxxHandlers({
 - 属性计算
 - 玩家数据验证
 
-### 6. config/ - 配置文件
+#### equipmentUtils.ts
+
+- 装备相关工具函数
+- 装备属性计算
+- 装备槽位管理
+
+#### rarityUtils.ts
+
+- 稀有度相关工具函数
+- 稀有度颜色映射
+- 稀有度倍率计算
+
+#### toastUtils.ts
+
+- 提示工具函数
+- 全局提示管理
+
+### 5. config/ - 配置文件
 
 **职责**: 管理应用配置
 
@@ -316,17 +363,20 @@ export function useXxxHandlers({
 #### aiConfig.ts
 
 - AI 服务配置
-- 支持多种 AI 提供商（SiliconFlow、OpenAI 等）
+- 支持多种 AI 提供商（GLM、SiliconFlow、OpenAI 等）
+- 默认使用 GLM（智谱）作为 AI 提供商
 - 环境变量管理
 - 配置验证
+- 支持代理模式和直连模式
 
 **特点**:
 
 - 灵活的配置系统
 - 支持多提供商切换
 - 环境变量配置
+- 自动选择代理或直连模式
 
-### 7. types.ts - 类型定义
+### 6. types.ts - 类型定义
 
 **职责**: 定义所有 TypeScript 类型和接口
 
@@ -415,7 +465,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
 - `SHOPS` - 商店数据
 - `SECRET_REALMS` - 秘境数据
 
-### 9. services/ - 服务层
+### 8. services/ - 服务层
 
 #### aiService.ts - AI 事件生成
 
@@ -443,10 +493,12 @@ generateEnemyName(
 
 **特点**:
 
-- 使用 SiliconFlow API
+- 支持多种 AI 提供商（GLM、SiliconFlow、OpenAI 等）
+- 默认使用 GLM（智谱）作为 AI 提供商
 - 支持多种事件类型（普通、机缘、秘境）
 - 自动清理和解析 JSON 响应
 - 错误处理和降级方案
+- 支持代理模式和直连模式
 
 #### battleService.ts - 战斗系统
 
@@ -478,7 +530,7 @@ resolveBattleEncounter(
 
 **职责**: 生成随机宗门任务等随机事件
 
-### 10. components/ - UI 组件层
+### 9. components/ - UI 组件层
 
 #### 弹窗组件 (Modal Components)
 
@@ -544,6 +596,34 @@ interface ModalProps {
     - 音效设置
     - 动画速度
     - 自动保存
+    - 难度模式
+
+11. **TurnBasedBattleModal** - 回合制战斗
+    - 回合制战斗界面
+    - 技能选择
+    - 物品使用
+    - 战斗回放
+
+12. **DebugModal** - 调试弹窗
+    - 调试模式
+    - 修改玩家属性
+    - 触发死亡
+
+13. **AlertModal** - 提示弹窗
+    - 通用提示弹窗
+    - 确认/取消操作
+
+14. **BatchFeedModal** - 批量喂养弹窗
+    - 批量喂养灵宠
+
+15. **BatchReleaseModal** - 批量释放弹窗
+    - 批量释放灵宠
+
+16. **BatchUseModal** - 批量使用弹窗
+    - 批量使用物品
+
+17. **SectTaskModal** - 宗门任务弹窗
+    - 宗门任务详情
 
 #### 面板组件 (Panel Components)
 
@@ -588,7 +668,7 @@ App.tsx (协调器)
   └── components/* (UI 组件)
 
 views/*/useXxxHandlers.ts
-  ├── features/* (可复用功能 Hooks)
+  ├── hooks/* (可复用功能 Hooks)
   ├── services/* (业务逻辑服务)
   ├── utils/* (工具函数)
   ├── types.ts (类型定义)
@@ -605,7 +685,7 @@ services/
   └── randomService.ts
       └── types.ts
 
-features/*
+hooks/*
   ├── services/* (业务逻辑服务)
   ├── utils/* (工具函数)
   └── types.ts
@@ -630,7 +710,7 @@ components/*
 - **UI 展示** → `components/` (纯展示组件)
 - **视图组合** → `views/` (组合组件 + Handlers)
 - **业务逻辑** → `services/`, `utils/` (服务层和工具函数)
-- **功能复用** → `features/` (可复用的功能 Hooks)
+- **功能复用** → `hooks/` (可复用的功能 Hooks)
 - **状态管理** → `hooks/` (状态管理 Hooks)
 - **数据定义** → `types.ts`, `constants.ts`
 - **配置管理** → `config/`
@@ -690,7 +770,7 @@ components/*
      const handleAction = useCallback(() => {
        // 业务逻辑
      }, [dependencies]);
-     
+
      return { handleAction };
    }
    ```
@@ -701,13 +781,15 @@ components/*
    export { useNewFeatureHandlers } from './useNewFeatureHandlers';
    ```
 
-7. **在 GameView 中使用** (`views/GameView.tsx`)
+7. **在 App.tsx 中使用** (`App.tsx`)
 
    ```typescript
-   import { useNewFeatureHandlers } from './newFeature';
-   
-   const { handleAction } = useNewFeatureHandlers({ ... });
+   import { useNewFeatureHandlers } from './views/newFeature';
+
+   const newFeatureHandlers = useNewFeatureHandlers({ ... });
    ```
+
+8. **在 GameView 或 ModalsContainer 中使用**
 
 ### 添加新境界
 

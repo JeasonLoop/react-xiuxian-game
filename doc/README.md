@@ -42,8 +42,8 @@
 - **前端框架**: React 19.2.0
 - **开发语言**: TypeScript 5.8.2
 - **构建工具**: Vite 6.2.0
-- **UI 图标**: Lucide React
-- **AI 服务**: SiliconFlow API (Qwen2.5-72B-Instruct)
+- **UI 图标**: Lucide React 0.554.0
+- **AI 服务**: 多提供商支持（GLM/SiliconFlow/OpenAI，默认 GLM）
 - **状态管理**: React Hooks
 - **数据持久化**: localStorage
 

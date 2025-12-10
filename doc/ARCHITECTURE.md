@@ -29,8 +29,10 @@
                           │ API Request
                           ▼
 ┌─────────────────────────────────────────────────────────┐
-│              SiliconFlow AI API                          │
-│  - Qwen2.5-72B-Instruct 模型                            │
+│              AI API (多提供商支持)                        │
+│  - GLM (智谱) - 默认提供商                                │
+│  - SiliconFlow - Qwen2.5-72B-Instruct 模型              │
+│  - OpenAI - GPT 系列模型                                 │
 │  - 生成游戏事件和剧情                                   │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -50,7 +52,7 @@
 
 | 服务             | 用途           |
 | ---------------- | -------------- |
-| SiliconFlow API  | AI 事件生成    |
+| AI API (多提供商) | AI 事件生成（GLM/SiliconFlow/OpenAI） |
 | Vercel Functions | API 代理和部署 |
 | localStorage     | 数据持久化     |
 
@@ -61,26 +63,33 @@ react-xiuxian-game/
 ├── components/              # UI 组件层（纯展示组件）
 │   ├── AchievementModal.tsx    # 成就弹窗
 │   ├── AlchemyModal.tsx        # 炼丹弹窗
+│   ├── AlertModal.tsx          # 提示弹窗
+│   ├── ArtifactUpgradeModal.tsx # 法宝强化弹窗
+│   ├── BatchDiscardModal.tsx   # 批量丢弃弹窗
+│   ├── BatchFeedModal.tsx      # 批量喂养弹窗
+│   ├── BatchReleaseModal.tsx   # 批量释放弹窗
+│   ├── BatchUseModal.tsx       # 批量使用弹窗
 │   ├── BattleModal.tsx         # 战斗弹窗
 │   ├── CharacterModal.tsx      # 角色信息弹窗
+│   ├── CombatVisuals.tsx      # 战斗视觉效果
 │   ├── CultivationModal.tsx    # 修炼弹窗
-│   ├── InventoryModal.tsx      # 背包弹窗
-│   ├── LotteryModal.tsx        # 抽奖弹窗
-│   ├── PetModal.tsx            # 灵宠弹窗
-│   ├── SectModal.tsx           # 宗门弹窗
-│   ├── ShopModal.tsx           # 商店弹窗
-│   ├── SettingsModal.tsx       # 设置弹窗
-│   ├── SecretRealmModal.tsx    # 秘境弹窗
-│   ├── ArtifactUpgradeModal.tsx # 法宝强化弹窗
-│   ├── StartScreen.tsx         # 开始界面
-│   ├── WelcomeScreen.tsx       # 欢迎界面
 │   ├── DeathModal.tsx          # 死亡弹窗
-│   ├── BatchDiscardModal.tsx   # 批量丢弃弹窗
-│   ├── StatsPanel.tsx          # 属性面板
-│   ├── LogPanel.tsx            # 日志面板
+│   ├── DebugModal.tsx          # 调试弹窗
 │   ├── EquipmentPanel.tsx      # 装备面板
-│   ├── CombatVisuals.tsx       # 战斗视觉效果
-│   └── MobileSidebar.tsx       # 移动端侧边栏
+│   ├── InventoryModal.tsx      # 背包弹窗
+│   ├── LogPanel.tsx            # 日志面板
+│   ├── LotteryModal.tsx        # 抽奖弹窗
+│   ├── MobileSidebar.tsx       # 移动端侧边栏
+│   ├── PetModal.tsx            # 灵宠弹窗
+│   ├── SecretRealmModal.tsx    # 秘境弹窗
+│   ├── SectModal.tsx           # 宗门弹窗
+│   ├── SectTaskModal.tsx       # 宗门任务弹窗
+│   ├── SettingsModal.tsx       # 设置弹窗
+│   ├── ShopModal.tsx           # 商店弹窗
+│   ├── StartScreen.tsx         # 开始界面
+│   ├── StatsPanel.tsx          # 属性面板
+│   ├── TurnBasedBattleModal.tsx # 回合制战斗弹窗
+│   └── WelcomeScreen.tsx       # 欢迎界面
 │
 ├── views/                  # 视图层（业务逻辑 + UI）
 │   ├── GameView.tsx           # 主游戏视图
@@ -108,22 +117,22 @@ react-xiuxian-game/
 │   ├── sect/                   # 宗门模块
 │   └── achievement/            # 成就模块
 │
-├── features/               # 功能模块（可复用的 Hooks）
-│   ├── battle/                 # 战斗相关 Hooks
-│   ├── game/                   # 游戏通用功能（冷却、加载等）
-│   ├── items/                  # 物品管理 Hooks
-│   ├── meditation/              # 打坐功能 Hooks
-│   ├── modal/                   # 模态框状态管理
-│   └── shop/                    # 商店功能 Hooks
-│
 ├── hooks/                  # 通用 Hooks
-│   ├── useGameState.ts      # 游戏状态管理
-│   └── useGameEffects.ts   # 游戏副作用处理
+│   ├── useAppState.ts          # 应用状态管理（弹窗、商店等）
+│   ├── useAutoFeatures.ts      # 自动功能（自动打坐、自动历练）
+│   ├── useBattleResultHandler.ts # 战斗结果处理
+│   ├── useDeathDetection.ts    # 死亡检测
+│   ├── useGameEffects.ts       # 游戏副作用处理
+│   ├── useGameState.ts         # 游戏状态管理
+│   └── usePassiveRegeneration.ts # 被动回血
 │
 ├── utils/                  # 工具函数
+│   ├── equipmentUtils.ts   # 装备工具函数
 │   ├── gameUtils.ts        # 游戏工具函数
 │   ├── itemUtils.ts        # 物品工具函数
-│   └── playerUtils.ts      # 玩家工具函数
+│   ├── playerUtils.ts      # 玩家工具函数
+│   ├── rarityUtils.ts      # 稀有度工具函数
+│   └── toastUtils.ts       # 提示工具函数
 │
 ├── services/               # 业务逻辑服务层
 │   ├── aiService.ts        # AI 事件生成服务
@@ -209,34 +218,12 @@ export function useShopHandlers({ player, setPlayer, addLog }) {
   const handleBuyItem = useCallback((item: Item) => {
     // 业务逻辑
   }, [player]);
-  
+
   return { handleBuyItem, handleSellItem };
 }
 ```
 
-### 3. 功能层 (Feature Layer)
-
-**位置**: `features/`
-
-**职责**:
-
-- 提供可复用的功能 Hooks
-- 封装特定功能的业务逻辑
-- 跨模块共享的功能
-
-**特点**:
-
-- 功能导向的组织方式
-- 可复用的 Hooks
-- 独立的功能模块
-
-**示例模块**:
-
-- `features/battle/useBattleModal.ts` - 战斗弹窗状态管理
-- `features/game/useGameCooldown.ts` - 游戏冷却时间管理
-- `features/modal/useModalState.ts` - 模态框状态管理
-
-### 4. 业务逻辑层 (Business Logic Layer)
+### 3. 业务逻辑层 (Business Logic Layer)
 
 **位置**: `services/`, `utils/`
 
@@ -293,6 +280,11 @@ export function useShopHandlers({ player, setPlayer, addLog }) {
 
 - `useGameState` - 游戏状态管理（玩家、日志、设置等）
 - `useGameEffects` - 游戏副作用处理（自动保存、成就检查等）
+- `useAppState` - 应用状态管理（弹窗、商店、战斗等）
+- `useAutoFeatures` - 自动功能（自动打坐、自动历练）
+- `useDeathDetection` - 死亡检测和处理
+- `useBattleResultHandler` - 战斗结果处理
+- `usePassiveRegeneration` - 被动回血和冷却管理
 
 ### 6. 配置层 (Configuration Layer)
 
@@ -306,9 +298,11 @@ export function useShopHandlers({ player, setPlayer, addLog }) {
 
 **特点**:
 
-- 支持多种 AI 提供商（SiliconFlow、OpenAI 等）
+- 支持多种 AI 提供商（GLM、SiliconFlow、OpenAI 等）
+- 默认使用 GLM（智谱）作为 AI 提供商
 - 环境变量配置
 - 灵活的配置系统
+- 支持代理模式和直连模式
 
 **数据流**:
 
@@ -370,13 +364,13 @@ views/adventure/useAdventureHandlers.ts: handleAdventure()
 services/aiService.ts: generateAdventureEvent()
     │
     ▼
-config/aiConfig.ts: 获取 AI 配置
+config/aiConfig.ts: 获取 AI 配置（GLM/SiliconFlow/OpenAI）
     │
     ▼
-fetch() → Vercel Function (/api/proxy)
+fetch() → Vercel Function (/api/proxy) 或直接调用 API
     │
     ▼
-SiliconFlow API (或其他提供商)
+AI API (GLM/SiliconFlow/OpenAI 等)
     │
     ▼
 返回 JSON 数据
@@ -607,7 +601,7 @@ React 自动转义用户输入，防止 XSS 攻击。
 
 1. **添加新组件**: 在 `components/` 目录创建（纯 UI 组件）
 2. **添加新视图**: 在 `views/` 目录创建模块（包含 Handlers）
-3. **添加新功能 Hook**: 在 `features/` 目录创建（可复用功能）
+3. **添加新 Hook**: 在 `hooks/` 目录创建（可复用功能）
 4. **添加新服务**: 在 `services/` 目录创建（业务逻辑）
 5. **添加新工具函数**: 在 `utils/` 目录创建
 6. **添加新类型**: 在 `types.ts` 中定义

@@ -4,18 +4,27 @@
 
 ## 📡 AI 服务 API
 
-### SiliconFlow API
+### 多提供商支持
 
-项目使用 SiliconFlow 提供的 AI 服务来生成游戏事件和剧情。
+项目支持多种 AI 服务提供商来生成游戏事件和剧情，默认使用 GLM（智谱）作为 AI 提供商。
+
+#### 支持的提供商
+
+- **GLM (智谱)** - 默认提供商
+- **SiliconFlow** - Qwen2.5-72B-Instruct 模型
+- **OpenAI** - GPT 系列模型
+- **Custom** - 自定义 API
 
 #### 配置信息
 
 ```typescript
-// services/aiService.ts
-const DEFAULT_API_URL = 'https://api.siliconflow.cn/v1/chat/completions';
-const DEFAULT_MODEL = 'Qwen/Qwen2.5-72B-Instruct';
+// config/aiConfig.ts
+// 默认配置
+const DEFAULT_PROVIDER = 'glm';
+const DEFAULT_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
+const DEFAULT_MODEL = 'glm-4.5-air';
 
-// API Key 必须从环境变量获取，不再硬编码
+// API Key 必须从环境变量获取
 const API_KEY = import.meta.env.VITE_AI_KEY;
 ```
 
@@ -27,16 +36,20 @@ const API_KEY = import.meta.env.VITE_AI_KEY;
 
 ```bash
 # .env.local
+# AI 提供商选择: 'glm' | 'siliconflow' | 'openai' | 'custom'
+VITE_AI_PROVIDER=glm
 VITE_AI_KEY=your-api-key-here
-VITE_AI_MODEL=Qwen/Qwen2.5-72B-Instruct
-VITE_AI_API_URL=https://api.siliconflow.cn/v1/chat/completions
+VITE_AI_MODEL=glm-4.5-air
+VITE_AI_API_URL=https://open.bigmodel.cn/api/paas/v4/chat/completions
+# 是否使用代理（开发环境默认 true，生产环境默认 false）
+VITE_AI_USE_PROXY=true
 ```
 
 **获取 API Key**:
 
-- 访问 [SiliconFlow](https://siliconflow.cn) 注册账号
-- 创建 API Key
-- 将 API Key 配置到 `.env.local` 文件中
+- **GLM (智谱)**: 访问 [智谱AI](https://open.bigmodel.cn) 注册账号并创建 API Key
+- **SiliconFlow**: 访问 [SiliconFlow](https://siliconflow.cn) 注册账号并创建 API Key
+- **OpenAI**: 访问 [OpenAI](https://platform.openai.com) 注册账号并创建 API Key
 
 ### API 函数
 
@@ -106,6 +119,7 @@ console.log(result.story); // "你在荒野中发现了一株灵草..."
 - API 调用失败时返回默认事件
 - JSON 解析失败时抛出错误
 - 自动清理 JSON 格式问题
+- 支持多提供商自动切换（如果配置了多个）
 
 #### 2. generateBreakthroughFlavorText
 
@@ -172,6 +186,7 @@ const enemy = await generateEnemyName(RealmType.QiRefining, 'normal');
 
 - AI 生成失败时使用预设列表
 - 15% 概率使用 AI 生成，85% 使用预设
+- 支持多提供商，如果主提供商失败可尝试其他提供商
 
 ### API 请求格式
 
@@ -311,13 +326,18 @@ interface BattleReplay {
 server: {
   proxy: {
     '/api': {
-      target: 'https://spark-api-open.xf-yun.com',
+      target: getProxyTarget(), // 根据 VITE_AI_PROVIDER 自动选择目标
       changeOrigin: true,
       rewrite: path => path.replace(/^\/api/, '')
     }
   }
 }
 ```
+
+代理目标会根据 `VITE_AI_PROVIDER` 自动选择：
+- `glm`: `https://open.bigmodel.cn`
+- `siliconflow`: `https://api.siliconflow.cn`
+- `openai`: `https://api.openai.com`
 
 ### 生产环境
 
@@ -365,6 +385,7 @@ export default async function handler(req, res) {
 - ✅ 前端请求**不包含** Authorization 头（API Key 完全隐藏）
 - ✅ API Key 从服务器端环境变量 `VITE_AI_KEY` 读取
 - ✅ 代理服务器自动添加 Authorization 头，前端无法看到 API Key
+- ✅ 支持多提供商，代理会根据 `VITE_AI_PROVIDER` 自动选择目标 API
 
 ### Vercel 配置
 
@@ -390,6 +411,7 @@ export default async function handler(req, res) {
 - ✅ 已移除硬编码的 API Key
 - ✅ `.env.local` 文件已加入 `.gitignore`
 - ✅ **使用代理模式时，API Key 不会暴露给前端**
+- ✅ 支持多提供商切换，通过 `VITE_AI_PROVIDER` 环境变量配置
 
 **安全机制说明**:
 
@@ -421,12 +443,20 @@ export default async function handler(req, res) {
 
 1. **本地开发**：创建 `.env.local` 文件（不会被提交到 Git）
    ```bash
+   VITE_AI_PROVIDER=glm  # 选择提供商: 'glm' | 'siliconflow' | 'openai' | 'custom'
    VITE_AI_KEY=your-api-key-here
+   VITE_AI_MODEL=glm-4.5-air  # 可选，使用默认模型时可省略
+   VITE_AI_API_URL=https://open.bigmodel.cn/api/paas/v4/chat/completions  # 可选，使用默认URL时可省略
    VITE_AI_USE_PROXY=true  # 推荐：使用代理模式
    ```
 
 2. **生产环境**：在部署平台配置环境变量
-   - Vercel: 项目设置 → Environment Variables → 添加 `VITE_AI_KEY`
+   - Vercel: 项目设置 → Environment Variables → 添加以下变量：
+     - `VITE_AI_PROVIDER` (可选，默认 'glm')
+     - `VITE_AI_KEY` (必需)
+     - `VITE_AI_MODEL` (可选)
+     - `VITE_AI_API_URL` (可选)
+     - `VITE_AI_USE_PROXY` (可选，推荐 'true')
    - 其他平台: 根据平台文档配置环境变量
 
 3. **安全提示**:
@@ -481,9 +511,11 @@ try {
 
 ### 成本估算
 
-- SiliconFlow API 按 token 计费
+- **GLM (智谱)**: 按 token 计费，价格相对较低
+- **SiliconFlow**: 按 token 计费
+- **OpenAI**: 按 token 计费，价格相对较高
 - 每次历练事件约消耗 500-1000 tokens
-- 建议监控 API 使用量
+- 建议监控 API 使用量，根据预算选择合适的提供商
 
 ## 🔧 调试技巧
 
@@ -521,8 +553,9 @@ const testAPI = async () => {
 
 ## 🔗 外部资源
 
+- [GLM (智谱) 文档](https://open.bigmodel.cn)
 - [SiliconFlow 文档](https://siliconflow.cn)
-- [OpenAI API 格式](https://platform.openai.com/docs/api-reference) (兼容格式)
+- [OpenAI API 文档](https://platform.openai.com/docs/api-reference)
 - [Vercel Functions](https://vercel.com/docs/functions)
 
 ---
