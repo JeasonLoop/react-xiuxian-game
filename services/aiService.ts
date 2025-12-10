@@ -4,7 +4,7 @@ import {
   AdventureType,
   RealmType,
 } from '../types';
-import { REALM_ORDER } from '../constants';
+import { REALM_ORDER, REALM_DATA } from '../constants';
 import {
   getAIConfig,
   validateAIConfig,
@@ -283,8 +283,43 @@ ${realmKeywords}
         break;
     }
 
+    // 获取境界基础属性，用于装备数值平衡
+    const realmData = REALM_DATA[player.realm];
+    const realmLevelMultiplier = 1 + (player.realmLevel - 1) * 0.05;
+    const baseAttack = Math.floor(realmData.baseAttack * realmLevelMultiplier);
+    const baseDefense = Math.floor(realmData.baseDefense * realmLevelMultiplier);
+    const baseHp = Math.floor(realmData.baseMaxHp * realmLevelMultiplier);
+    const baseSpirit = Math.floor(realmData.baseSpirit * realmLevelMultiplier);
+    const basePhysique = Math.floor(realmData.basePhysique * realmLevelMultiplier);
+    const baseSpeed = Math.floor(realmData.baseSpeed * realmLevelMultiplier);
+
+    // 计算各稀有度的装备数值范围（基于境界基础属性的百分比）
+    const getEquipmentValueRange = (rarity: string) => {
+      const ranges: Record<string, { min: number; max: number }> = {
+        普通: { min: 0.05, max: 0.08 },
+        稀有: { min: 0.08, max: 0.12 },
+        传说: { min: 0.12, max: 0.18 },
+        仙品: { min: 0.18, max: 0.25 },
+      };
+      const range = ranges[rarity] || ranges['普通'];
+      return {
+        attack: `${Math.floor(baseAttack * range.min)}-${Math.floor(baseAttack * range.max)}`,
+        defense: `${Math.floor(baseDefense * range.min)}-${Math.floor(baseDefense * range.max)}`,
+        hp: `${Math.floor(baseHp * range.min)}-${Math.floor(baseHp * range.max)}`,
+        spirit: `${Math.floor(baseSpirit * range.min)}-${Math.floor(baseSpirit * range.max)}`,
+        physique: `${Math.floor(basePhysique * range.min)}-${Math.floor(basePhysique * range.max)}`,
+        speed: `${Math.floor(baseSpeed * range.min)}-${Math.floor(baseSpeed * range.max)}`,
+      };
+    };
+
+    const commonRange = getEquipmentValueRange('普通');
+    const rareRange = getEquipmentValueRange('稀有');
+    const legendaryRange = getEquipmentValueRange('传说');
+    const immortalRange = getEquipmentValueRange('仙品');
+
     // 精简的prompt，移除大量重复示例
     const prompt = `玩家状态：${player.name}，${player.realm}第${player.realmLevel}层，气血${player.hp}/${player.maxHp}，攻击${player.attack}，防御${player.defense}，神识${player.spirit}，体魄${player.physique}，速度${player.speed}。
+境界基础属性（用于装备数值参考）：攻击${baseAttack}，防御${baseDefense}，气血${baseHp}，神识${baseSpirit}，体魄${basePhysique}，速度${baseSpeed}。
 
 ${typeInstructions}
 
@@ -308,7 +343,12 @@ ${typeInstructions}
 - 装备类型判断：剑/刀/枪→武器；头盔/冠→头部；道袍/甲→胸甲；戒指/戒→戒指；项链/玉佩→首饰；鼎/钟/镜→法宝
 - 装备用effect，消耗品用permanentEffect
 - 法宝不能有exp加成
-- 稀有度属性范围：普通10-30，稀有30-80，传说80-200，仙品200-500
+- 装备数值必须严格根据玩家境界平衡（参考prompt中的境界基础属性）：
+  * 普通装备：攻击${commonRange.attack}，防御${commonRange.defense}，气血${commonRange.hp}，神识${commonRange.spirit}，体魄${commonRange.physique}，速度${commonRange.speed}
+  * 稀有装备：攻击${rareRange.attack}，防御${rareRange.defense}，气血${rareRange.hp}，神识${rareRange.spirit}，体魄${rareRange.physique}，速度${rareRange.speed}
+  * 传说装备：攻击${legendaryRange.attack}，防御${legendaryRange.defense}，气血${legendaryRange.hp}，神识${legendaryRange.spirit}，体魄${legendaryRange.physique}，速度${legendaryRange.speed}
+  * 仙品装备：攻击${immortalRange.attack}，防御${immortalRange.defense}，气血${immortalRange.hp}，神识${immortalRange.spirit}，体魄${immortalRange.physique}，速度${immortalRange.speed}
+- 装备数值必须在对应稀有度的范围内，不要超出范围
 - 护甲部位均衡：头部/肩部/胸甲/手套/裤腿/鞋子各15-20%概率`;
 
     // 精简的user message，移除大量重复示例

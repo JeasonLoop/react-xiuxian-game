@@ -8,6 +8,7 @@ import {
   ItemRarity,
   EquipmentSlot,
   Pet,
+  RealmType,
 } from '../../types';
 import {
   REALM_ORDER,
@@ -18,6 +19,7 @@ import {
   DISCOVERABLE_RECIPES,
   PET_EVOLUTION_MATERIALS,
   getRandomPetName,
+  REALM_DATA,
 } from '../../constants';
 import { BattleReplay } from '../../services/battleService';
 import { generateAdventureEvent } from '../../services/aiService';
@@ -25,6 +27,7 @@ import { uid } from '../../utils/gameUtils';
 import {
   normalizeItemEffect,
   inferItemTypeAndSlot,
+  adjustEquipmentStatsByRealm,
 } from '../../utils/itemUtils';
 
 /**
@@ -61,12 +64,16 @@ interface ExecuteAdventureCoreProps {
  * @param itemType 物品类型
  * @param effect 当前效果
  * @param rarity 稀有度
+ * @param realm 玩家境界（用于平衡数值）
+ * @param realmLevel 玩家境界等级（用于平衡数值）
  * @returns 更新后的效果对象
  */
 function ensureEquipmentAttributes(
   itemType: ItemType,
   effect: AdventureResult['itemObtained']['effect'] | undefined,
-  rarity: ItemRarity
+  rarity: ItemRarity,
+  realm?: RealmType,
+  realmLevel?: number
 ): AdventureResult['itemObtained']['effect'] | undefined {
   // 只处理装备类型
   const equipmentTypes = [
@@ -97,19 +104,28 @@ function ensureEquipmentAttributes(
     processedEffect?.physique ||
     processedEffect?.speed;
 
-  // 如果没有属性，根据品阶生成属性
+  // 如果没有属性，根据品阶和境界生成属性
   if (!hasAnyAttribute) {
-    const rarityMultiplier = RARITY_MULTIPLIERS[rarity];
+    // 获取境界基础属性作为参考
+    let realmData = realm ? REALM_DATA[realm] : null;
+    if (!realmData) {
+      // 如果没有提供境界，使用炼气期作为默认
+      realmData = REALM_DATA[RealmType.QiRefining];
+    }
 
-    // 根据稀有度生成基础属性值
-    const baseValue =
-      rarity === '普通'
-        ? 10
-        : rarity === '稀有'
-          ? 30
-          : rarity === '传说'
-            ? 80
-            : 200;
+    const level = realmLevel || 1;
+    const levelMultiplier = 1 + (level - 1) * 0.05;
+
+    // 根据稀有度确定装备数值占境界基础属性的百分比
+    const rarityPercentages: Record<ItemRarity, { min: number; max: number }> = {
+      普通: { min: 0.05, max: 0.08 },
+      稀有: { min: 0.08, max: 0.12 },
+      传说: { min: 0.12, max: 0.18 },
+      仙品: { min: 0.18, max: 0.25 },
+    };
+
+    const percentage = rarityPercentages[rarity] || rarityPercentages['普通'];
+    const targetPercentage = percentage.min + (percentage.max - percentage.min) * Math.random();
 
     // 随机生成1-3种属性
     const attributeTypes = [
@@ -127,10 +143,30 @@ function ensureEquipmentAttributes(
 
     const newEffect: any = {};
     selectedAttributes.forEach((attr) => {
-      const value = Math.floor(
-        baseValue * rarityMultiplier * (0.8 + Math.random() * 0.4)
-      );
-      newEffect[attr] = value;
+      let baseValue = 0;
+      switch (attr) {
+        case 'attack':
+          baseValue = realmData.baseAttack;
+          break;
+        case 'defense':
+          baseValue = realmData.baseDefense;
+          break;
+        case 'hp':
+          baseValue = realmData.baseMaxHp;
+          break;
+        case 'spirit':
+          baseValue = realmData.baseSpirit;
+          break;
+        case 'physique':
+          baseValue = realmData.basePhysique;
+          break;
+        case 'speed':
+          baseValue = realmData.baseSpeed;
+          break;
+      }
+      // 根据境界基础属性和稀有度百分比生成数值
+      const value = Math.floor(baseValue * targetPercentage * levelMultiplier);
+      newEffect[attr] = Math.max(1, value); // 确保至少为1
     });
 
     return newEffect;
@@ -312,8 +348,20 @@ export async function executeAdventureCore({
           finalEffect = ensureEquipmentAttributes(
             itemType,
             finalEffect,
-            rarity
+            rarity,
+            player.realm,
+            player.realmLevel
           ) as typeof finalEffect;
+
+          // 应用境界调整，确保装备数值与玩家境界匹配
+          if (finalEffect) {
+            finalEffect = adjustEquipmentStatsByRealm(
+              finalEffect,
+              player.realm,
+              player.realmLevel,
+              rarity
+            ) as typeof finalEffect;
+          }
         }
 
         const isEquipment = isEquippable && equipmentSlot;
@@ -489,8 +537,20 @@ export async function executeAdventureCore({
         finalEffect = ensureEquipmentAttributes(
           itemType,
           finalEffect,
-          rarity
+          rarity,
+          player.realm,
+          player.realmLevel
         ) as typeof finalEffect;
+
+        // 应用境界调整，确保装备数值与玩家境界匹配
+        if (finalEffect) {
+          finalEffect = adjustEquipmentStatsByRealm(
+            finalEffect,
+            player.realm,
+            player.realmLevel,
+            rarity
+          ) as typeof finalEffect;
+        }
       }
 
       // 处理丹方：需要添加 recipeData
