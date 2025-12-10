@@ -14,7 +14,7 @@ VITE_AI_PROVIDER=glm
 VITE_AI_KEY=your-api-key-here
 
 # 可选：自定义模型
-VITE_AI_MODEL=glm-4.5
+VITE_AI_MODEL=glm-4.5-air
 
 # 可选：自定义 API URL（如果设置则覆盖提供商默认 URL）
 # VITE_AI_API_URL=https://api.siliconflow.cn/v1/chat/completions
@@ -72,7 +72,7 @@ pnpm dev
 ```bash
 VITE_AI_PROVIDER=glm
 VITE_AI_KEY=your-glm-api-key
-VITE_AI_MODEL=glm-4.5
+VITE_AI_MODEL=glm-4.5-air
 ```
 
 **获取 API Key**: https://open.bigmodel.cn
@@ -80,7 +80,7 @@ VITE_AI_MODEL=glm-4.5
 **特点**:
 
 - 国内访问速度快
-- 支持 GLM-4.5 等高质量模型
+- 支持 glm-4.5-air 等高质量模型
 - API 兼容 OpenAI 格式
 - 适合中文场景
 

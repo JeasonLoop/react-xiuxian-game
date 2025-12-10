@@ -18,8 +18,8 @@
 # 设置 API Key（必需）
 VITE_AI_KEY=your-api-key-here
 
-# 可选：自定义模型（默认: glm-4.5）
-# VITE_AI_MODEL=glm-4.5
+# 可选：自定义模型（默认: glm-4.5-air）
+# VITE_AI_MODEL=glm-4.5-air
 ```
 
 **最小配置**: 只需设置 `VITE_AI_KEY`，其他配置使用默认值（GLM）。
@@ -31,14 +31,14 @@ VITE_AI_KEY=your-api-key-here
 ```bash
 VITE_AI_PROVIDER=glm
 VITE_AI_KEY=your-glm-api-key
-VITE_AI_MODEL=glm-4.5
+VITE_AI_MODEL=glm-4.5-air
 ```
 
 **获取 API Key**: https://open.bigmodel.cn
 
 **特点**:
 - 国内访问速度快
-- 支持 GLM-4.5 等高质量模型
+- 支持 glm-4.5-air 等高质量模型
 - API 兼容 OpenAI 格式
 
 #### SiliconFlow

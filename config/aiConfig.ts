@@ -38,7 +38,7 @@ const AI_PROVIDERS: Record<
   },
   glm: {
     defaultUrl: 'https://open.bigmodel.cn/api/paas/v4/chat/completions',
-    defaultModel: 'glm-4.5',
+    defaultModel: 'glm-4.5-air',
     proxyPath: '/api/paas/v4/chat/completions',
   },
   custom: {
