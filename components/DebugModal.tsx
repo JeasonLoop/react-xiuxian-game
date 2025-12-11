@@ -221,6 +221,20 @@ const DebugModal: React.FC<Props> = ({
       }
     });
 
+    // 从可发现配方中生成丹方物品
+    DISCOVERABLE_RECIPES.forEach((recipe) => {
+      const recipeItemName = `${recipe.name}丹方`;
+      if (!itemNames.has(recipeItemName)) {
+        itemNames.add(recipeItemName);
+        items.push({
+          name: recipeItemName,
+          type: ItemType.Recipe,
+          description: `记载了【${recipe.name}】炼制方法的古老丹方。使用后可学会炼制此丹药。`,
+          rarity: recipe.result.rarity,
+        });
+      }
+    });
+
     return items;
   }, []);
 
@@ -543,24 +557,39 @@ const DebugModal: React.FC<Props> = ({
   // 添加物品
   const handleAddItem = (itemTemplate: Partial<Item> | Recipe['result'], quantity: number = 1) => {
     const isEquipment = (itemTemplate as any).isEquippable && (itemTemplate as any).equipmentSlot;
+    const isRecipe = itemTemplate.type === ItemType.Recipe;
 
     setLocalPlayer((prev) => {
       const newInv = [...prev.inventory];
       const existingIdx = newInv.findIndex((i) => i.name === itemTemplate.name);
 
-      if (existingIdx >= 0 && !isEquipment) {
-        // 非装备类物品可以叠加
+      if (existingIdx >= 0 && !isEquipment && !isRecipe) {
+        // 非装备类、非丹方类物品可以叠加
         newInv[existingIdx] = {
           ...newInv[existingIdx],
           quantity: newInv[existingIdx].quantity + quantity,
         };
         showSuccess(`已添加物品：${itemTemplate.name} x${quantity}（当前数量：${newInv[existingIdx].quantity}）`);
       } else {
-        // 装备类物品或新物品，每个装备单独占一格
+        // 装备类物品、丹方或新物品，每个单独占一格
         const itemsToAdd = isEquipment ? quantity : 1;
         const addQuantity = isEquipment ? 1 : quantity;
 
         for (let i = 0; i < itemsToAdd; i++) {
+          // 处理丹方：需要添加 recipeData
+          let recipeData: Recipe | undefined = undefined;
+          if (isRecipe) {
+            // 从物品名称中推断配方名称（例如："天元丹丹方" -> "天元丹"）
+            const recipeName = (itemTemplate.name || '').replace(/丹方$/, '');
+            // 在 DISCOVERABLE_RECIPES 中查找对应的配方
+            const matchedRecipe = DISCOVERABLE_RECIPES.find(
+              (recipe) => recipe.name === recipeName
+            );
+            if (matchedRecipe) {
+              recipeData = matchedRecipe;
+            }
+          }
+
           const newItem: Item = {
             id: uid(),
             name: itemTemplate.name || '未知物品',
@@ -573,6 +602,7 @@ const DebugModal: React.FC<Props> = ({
             equipmentSlot: (itemTemplate as any).equipmentSlot,
             effect: itemTemplate.effect,
             permanentEffect: (itemTemplate as any).permanentEffect,
+            recipeData: recipeData,
           };
           newInv.push(newItem);
         }
