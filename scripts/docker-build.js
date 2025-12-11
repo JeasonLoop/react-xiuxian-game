@@ -31,10 +31,11 @@ const dockerCommands = {
   'build-no-cache': 'docker-compose build --no-cache',
   'build-and-up': 'docker-compose up -d --build',
   // 直接使用 docker build 打包，带版本标签
-  'build-image': `docker-compose up -d --build && docker build -t react-xiuxian-game --build-arg VITE_APP_VERSION=${version} .`,
+  'build-image': `docker build -t crpi-pjhw4u9gqgvnjbm3.cn-shanghai.personal.cr.aliyuncs.com/loop-git-repo/react-xiuxian-game:${version} .`,
   // 导出镜像（压缩与不压缩）
   pack: `docker save react-xiuxian-game:${version} | gzip > react-xiuxian-game-${version}.tar.gz`,
-  'pack-uncompressed': `docker save -o react-xiuxian-game-${version}.tar react-xiuxian-game:${version}`,
+  'pack-uncompressed': `docker save -o react-xiuxian-game.tar react-xiuxian-game:${version}`,
+  'push-image': `docker push crpi-pjhw4u9gqgvnjbm3.cn-shanghai.personal.cr.aliyuncs.com/loop-git-repo/react-xiuxian-game:${version}`,
 };
 
 const dockerCommand = dockerCommands[command] || dockerCommands.build;

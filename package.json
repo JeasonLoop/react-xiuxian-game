@@ -1,7 +1,7 @@
 {
   "name": "cloud-spirit-cultivation",
   "private": true,
-  "version": "0.1.4",
+  "version": "0.1.5",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -22,7 +22,8 @@
     "docker:pack": "node scripts/docker-build.js pack",
     "docker:pack-uncompressed": "node scripts/docker-build.js pack-uncompressed",
     "docker:build-and-pack": "npm run docker:build-image && npm run docker:pack-uncompressed",
-    "docker:build-and-up": "node scripts/docker-build.js build-and-up"
+    "docker:build-and-up": "node scripts/docker-build.js build-and-up",
+    "docker:push-image": "node scripts/docker-build.js push-image"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
