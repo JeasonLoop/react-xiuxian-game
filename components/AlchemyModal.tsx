@@ -7,7 +7,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   player: PlayerStats;
-  onCraft: (recipe: Recipe) => void;
+  onCraft: (recipe: Recipe) => Promise<void>;
 }
 
 const AlchemyModal: React.FC<Props> = ({
@@ -124,7 +124,11 @@ const AlchemyModal: React.FC<Props> = ({
                 </div>
 
                 <button
-                  onClick={() => onCraft(recipe)}
+                  onClick={async () => {
+                    if (canAfford && hasIngredients) {
+                      await onCraft(recipe);
+                    }
+                  }}
                   disabled={!canAfford || !hasIngredients}
                   className={`
                     w-full py-2 rounded font-serif font-bold text-sm flex items-center justify-center gap-2 transition-colors

@@ -174,10 +174,11 @@ const InventoryItem = memo<InventoryItemProps>(
               {stats.attack > 0 && <span>攻 +{stats.attack}</span>}
               {stats.defense > 0 && <span>防 +{stats.defense}</span>}
               {stats.hp > 0 && <span>血 +{stats.hp}</span>}
-              {stats.exp > 0 && <span>修 +{stats.exp}</span>}
+              {item.effect.exp && item.effect.exp > 0 && <span>修 +{item.effect.exp}</span>}
               {stats.spirit > 0 && <span>神识 +{stats.spirit}</span>}
               {stats.physique > 0 && <span>体魄 +{stats.physique}</span>}
               {stats.speed > 0 && <span>速度 +{stats.speed}</span>}
+              {item.effect.lifespan && item.effect.lifespan > 0 && <span>寿 +{item.effect.lifespan}</span>}
             </div>
           )}
         </div>

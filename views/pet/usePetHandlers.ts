@@ -117,16 +117,25 @@ export function usePetHandlers({
         feedTypeMultiplier = 3; // 物品喂养基础倍率从1.0提升到3
       }
 
-      // 根据物品品质计算经验倍率
+      // 根据物品品级（稀有度）计算经验倍率
+      // 按照品级分类：普通、稀有、传说、仙品
       let rarityMultiplier = 1;
       if (feedType === 'item' && itemId) {
         const item = prev.inventory.find(i => i.id === itemId);
         if (item) {
           const rarity = item.rarity || '普通';
-          rarityMultiplier = RARITY_MULTIPLIERS[rarity] || 1;
-          // 材料类物品额外加成
+          // 根据品级设置基础经验倍率（更明显的差异）
+          const rarityBaseMultipliers: Record<ItemRarity, number> = {
+            普通: 1.0,
+            稀有: 2.5,  // 稀有是普通的2.5倍
+            传说: 5.0,  // 传说是普通的5倍
+            仙品: 10.0, // 仙品是普通的10倍
+          };
+          rarityMultiplier = rarityBaseMultipliers[rarity] || 1.0;
+
+          // 材料类物品额外加成（材料更适合喂养）
           if (item.type === '材料') {
-            rarityMultiplier *= 2.0; // 材料类物品额外加成从50%提升到100%
+            rarityMultiplier *= 1.5; // 材料类物品额外50%加成
           }
         }
       }
@@ -178,7 +187,7 @@ export function usePetHandlers({
           while (petNewExp >= petNewMaxExp && petNewLevel < 100) {
             petNewExp -= petNewMaxExp;
             petNewLevel += 1;
-            petNewMaxExp = Math.floor(petNewMaxExp * 1.5);
+            petNewMaxExp = Math.floor(petNewMaxExp * 1.3); // 降低经验增长倍数，从1.5降到1.3
             leveledUp = true;
             addLog(`【${p.name}】升级了！现在是 ${petNewLevel} 级`, 'gain');
           }
@@ -265,7 +274,7 @@ export function usePetHandlers({
       addLog(message, 'danger');
       if (setItemActionLog) {
           setItemActionLog({ text: message, type: 'danger' });
-          setTimeout(() => setItemActionLog(null), 3000);
+          // 延迟清除由 App.tsx 中的 useDelayedState 自动处理
         }
       return;
     }
@@ -286,7 +295,7 @@ export function usePetHandlers({
         // 显示右上角轻提示
         if (setItemActionLog) {
           setItemActionLog({ text: message, type: 'normal' });
-          setTimeout(() => setItemActionLog(null), 3000);
+          // 延迟清除由 App.tsx 中的 useDelayedState 自动处理
         }
         return;
       }
@@ -388,9 +397,18 @@ export function usePetHandlers({
           const feedTypeMultiplier = 1.3; // 物品喂养基础倍率从1.0提升到1.3
 
           const rarity = item.rarity || '普通';
-          let rarityMultiplier = RARITY_MULTIPLIERS[rarity] || 1;
+          // 根据品级设置基础经验倍率（更明显的差异）
+          const rarityBaseMultipliers: Record<ItemRarity, number> = {
+            普通: 1.0,
+            稀有: 2.5,  // 稀有是普通的2.5倍
+            传说: 5.0,  // 传说是普通的5倍
+            仙品: 10.0, // 仙品是普通的10倍
+          };
+          let rarityMultiplier = rarityBaseMultipliers[rarity] || 1.0;
+
+          // 材料类物品额外加成（材料更适合喂养）
           if (item.type === '材料') {
-            rarityMultiplier *= 2.0; // 材料类物品额外加成从50%提升到100%
+            rarityMultiplier *= 1.5; // 材料类物品额外50%加成
           }
 
           // 应用物品喂养倍率
@@ -430,7 +448,7 @@ export function usePetHandlers({
           while (petNewExp >= petNewMaxExp && petNewLevel < 100) {
             petNewExp -= petNewMaxExp;
             petNewLevel += 1;
-            petNewMaxExp = Math.floor(petNewMaxExp * 1.5);
+            petNewMaxExp = Math.floor(petNewMaxExp * 1.3); // 降低经验增长倍数，从1.5降到1.3
             leveledUp = true;
             addLog(`【${p.name}】升级了！现在是 ${petNewLevel} 级`, 'gain');
           }

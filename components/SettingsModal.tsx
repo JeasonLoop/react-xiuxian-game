@@ -281,7 +281,9 @@ const SettingsModal: React.FC<Props> = ({
                 <select
                   value={settings.animationSpeed}
                   onChange={(e) =>
-                    onUpdateSettings({ animationSpeed: e.target.value as any })
+                    onUpdateSettings({
+                      animationSpeed: e.target.value as GameSettings['animationSpeed']
+                    })
                   }
                   className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
                 >
@@ -399,7 +401,9 @@ const SettingsModal: React.FC<Props> = ({
             <select
               value={settings.language}
               onChange={(e) =>
-                onUpdateSettings({ language: e.target.value as any })
+                onUpdateSettings({
+                  language: e.target.value as GameSettings['language']
+                })
               }
               className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
             >

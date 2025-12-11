@@ -1,10 +1,14 @@
 import { Item, ItemType, ItemRarity, EquipmentSlot, RealmType } from '../types';
 import { RARITY_MULTIPLIERS, REALM_ORDER, REALM_DATA } from '../constants';
 
+// 定义物品效果类型（与 Item 接口中的类型保持一致）
+type ItemEffect = NonNullable<Item['effect']>;
+type ItemPermanentEffect = NonNullable<Item['permanentEffect']>;
+
 // 已知物品的效果映射表（确保描述和实际效果一致）
 export const KNOWN_ITEM_EFFECTS: Record<
   string,
-  { effect?: any; permanentEffect?: any }
+  { effect?: ItemEffect; permanentEffect?: ItemPermanentEffect }
 > = {
   止血草: { effect: { hp: 20 } },
   聚灵草: { effect: {} },
@@ -31,21 +35,116 @@ export const KNOWN_ITEM_EFFECTS: Record<
   },
 };
 
+/**
+ * 根据稀有度调整丹药效果
+ * 确保不同稀有度的丹药效果差异明显
+ */
+export const adjustPillEffectByRarity = (
+  effect: ItemEffect | undefined,
+  permanentEffect: ItemPermanentEffect | undefined,
+  rarity: ItemRarity
+): { effect?: ItemEffect; permanentEffect?: ItemPermanentEffect } => {
+  const multiplier = RARITY_MULTIPLIERS[rarity] || 1;
+
+  // 如果稀有度是普通，直接返回
+  if (rarity === '普通' || multiplier === 1) {
+    return { effect, permanentEffect };
+  }
+
+  const adjustedEffect: ItemEffect = {};
+  const adjustedPermanentEffect: ItemPermanentEffect = {};
+
+  // 调整临时效果（effect）
+  if (effect) {
+    if (effect.exp !== undefined) {
+      adjustedEffect.exp = Math.floor(effect.exp * multiplier);
+    }
+    if (effect.hp !== undefined) {
+      adjustedEffect.hp = Math.floor(effect.hp * multiplier);
+    }
+    if (effect.attack !== undefined) {
+      adjustedEffect.attack = Math.floor(effect.attack * multiplier);
+    }
+    if (effect.defense !== undefined) {
+      adjustedEffect.defense = Math.floor(effect.defense * multiplier);
+    }
+    if (effect.spirit !== undefined) {
+      adjustedEffect.spirit = Math.floor(effect.spirit * multiplier);
+    }
+    if (effect.physique !== undefined) {
+      adjustedEffect.physique = Math.floor(effect.physique * multiplier);
+    }
+    if (effect.speed !== undefined) {
+      adjustedEffect.speed = Math.floor(effect.speed * multiplier);
+    }
+    if (effect.lifespan !== undefined) {
+      adjustedEffect.lifespan = Math.floor(effect.lifespan * multiplier);
+    }
+  }
+
+  // 调整永久效果（permanentEffect）
+  if (permanentEffect) {
+    if (permanentEffect.attack !== undefined) {
+      adjustedPermanentEffect.attack = Math.floor(permanentEffect.attack * multiplier);
+    }
+    if (permanentEffect.defense !== undefined) {
+      adjustedPermanentEffect.defense = Math.floor(permanentEffect.defense * multiplier);
+    }
+    if (permanentEffect.spirit !== undefined) {
+      adjustedPermanentEffect.spirit = Math.floor(permanentEffect.spirit * multiplier);
+    }
+    if (permanentEffect.physique !== undefined) {
+      adjustedPermanentEffect.physique = Math.floor(permanentEffect.physique * multiplier);
+    }
+    if (permanentEffect.speed !== undefined) {
+      adjustedPermanentEffect.speed = Math.floor(permanentEffect.speed * multiplier);
+    }
+    if (permanentEffect.maxHp !== undefined) {
+      adjustedPermanentEffect.maxHp = Math.floor(permanentEffect.maxHp * multiplier);
+    }
+    if (permanentEffect.maxLifespan !== undefined) {
+      adjustedPermanentEffect.maxLifespan = Math.floor(permanentEffect.maxLifespan * multiplier);
+    }
+    if (permanentEffect.spiritualRoots) {
+      adjustedPermanentEffect.spiritualRoots = {};
+      Object.entries(permanentEffect.spiritualRoots).forEach(([key, value]) => {
+        if (value !== undefined) {
+          adjustedPermanentEffect.spiritualRoots![key as keyof typeof permanentEffect.spiritualRoots] =
+            Math.floor(value * multiplier);
+        }
+      });
+    }
+  }
+
+  return {
+    effect: Object.keys(adjustedEffect).length > 0 ? adjustedEffect : effect,
+    permanentEffect: Object.keys(adjustedPermanentEffect).length > 0 ? adjustedPermanentEffect : permanentEffect,
+  };
+};
+
 // 规范化物品效果，确保已知物品的效果与描述一致
 export const normalizeItemEffect = (
   itemName: string,
-  aiEffect?: any,
-  aiPermanentEffect?: any
+  aiEffect?: ItemEffect,
+  aiPermanentEffect?: ItemPermanentEffect,
+  itemType?: ItemType,
+  rarity?: ItemRarity
 ) => {
   const knownItem = KNOWN_ITEM_EFFECTS[itemName];
   if (knownItem) {
-    // 如果物品在已知列表中，使用预定义的效果
+    // 如果物品在已知列表中，使用预定义的效果（已知物品已经平衡过，不需要再调整）
     return {
       effect: knownItem.effect || aiEffect || {},
       permanentEffect: knownItem.permanentEffect || aiPermanentEffect || {},
     };
   }
-  // 否则使用AI生成的效果
+
+  // 对于AI生成的丹药，根据稀有度调整效果
+  if (itemType === ItemType.Pill && rarity && rarity !== '普通') {
+    return adjustPillEffectByRarity(aiEffect, aiPermanentEffect, rarity);
+  }
+
+  // 否则使用AI生成的效果（其他类型物品）
   return {
     effect: aiEffect || {},
     permanentEffect: aiPermanentEffect || {},
@@ -359,6 +458,8 @@ export const generateAttributePreview = (effect: Item['effect']): string => {
   if (effect.spirit) attrs.push(`神识+${effect.spirit}`);
   if (effect.physique) attrs.push(`体魄+${effect.physique}`);
   if (effect.speed) attrs.push(`速度+${effect.speed}`);
+  if(effect.exp) attrs.push(`修为+${effect.exp}`);
+  if(effect.lifespan) attrs.push(`寿命+${effect.lifespan}`);
   return attrs.length > 0 ? ` [${attrs.join(' ')}]` : '';
 };
 

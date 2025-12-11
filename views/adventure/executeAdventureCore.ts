@@ -141,7 +141,7 @@ function ensureEquipmentAttributes(
       .sort(() => Math.random() - 0.5)
       .slice(0, numAttributes);
 
-    const newEffect: any = {};
+    const newEffect: NonNullable<AdventureResult['itemObtained']>['effect'] = {};
     selectedAttributes.forEach((attr) => {
       let baseValue = 0;
       switch (attr) {
@@ -166,7 +166,20 @@ function ensureEquipmentAttributes(
       }
       // 根据境界基础属性和稀有度百分比生成数值
       const value = Math.floor(baseValue * targetPercentage * levelMultiplier);
-      newEffect[attr] = Math.max(1, value); // 确保至少为1
+      // 类型安全地设置属性
+      if (attr === 'attack') {
+        newEffect.attack = Math.max(1, value);
+      } else if (attr === 'defense') {
+        newEffect.defense = Math.max(1, value);
+      } else if (attr === 'hp') {
+        newEffect.hp = Math.max(1, value);
+      } else if (attr === 'spirit') {
+        newEffect.spirit = Math.max(1, value);
+      } else if (attr === 'physique') {
+        newEffect.physique = Math.max(1, value);
+      } else if (attr === 'speed') {
+        newEffect.speed = Math.max(1, value);
+      }
     });
 
     return newEffect;
@@ -311,10 +324,13 @@ export async function executeAdventureCore({
         equipmentSlot = inferred.equipmentSlot || equipmentSlot;
 
         // 规范化物品效果（确保已知物品的效果与描述一致）
+        // 对于丹药，根据稀有度调整效果，确保仙品丹药效果明显强于稀有
         const normalized = normalizeItemEffect(
           itemName,
           itemData.effect,
-          itemData.permanentEffect
+          itemData.permanentEffect,
+          itemType,
+          itemData.rarity as ItemRarity
         );
         let finalEffect = normalized.effect;
         let finalPermanentEffect = normalized.permanentEffect;
@@ -500,10 +516,13 @@ export async function executeAdventureCore({
       }
 
       // 规范化物品效果（确保已知物品的效果与描述一致）
+      // 对于丹药，根据稀有度调整效果，确保仙品丹药效果明显强于稀有
       const normalized = normalizeItemEffect(
         itemName,
         result.itemObtained.effect,
-        result.itemObtained.permanentEffect
+        result.itemObtained.permanentEffect,
+        itemType,
+        result.itemObtained.rarity as ItemRarity
       );
       let finalEffect = normalized.effect;
       let finalPermanentEffect = normalized.permanentEffect;
@@ -668,7 +687,7 @@ export async function executeAdventureCore({
             species: petTemplate.species,
             level: 1,
             exp: 0,
-            maxExp: 100,
+            maxExp: 60, // 降低初始经验值，从100降到60
             rarity: petTemplate.rarity,
             stats: { ...petTemplate.baseStats },
             skills: [...petTemplate.skills],
@@ -1185,21 +1204,26 @@ export async function executeAdventureCore({
           const existingIdx = newInv.findIndex((i) => i.name === itemName);
           if (existingIdx < 0) {
             // 规范化物品效果（确保已知物品的效果与描述一致）
+            // 对于丹药，根据稀有度调整效果，确保仙品丹药效果明显强于稀有
+            const itemTypeForRealm =
+              (secretRealmResult.itemObtained.type as ItemType) ||
+              ItemType.Material;
+            const rarityForRealm =
+              (secretRealmResult.itemObtained.rarity as ItemRarity) || '普通';
             const normalized = normalizeItemEffect(
               itemName,
               secretRealmResult.itemObtained.effect,
-              secretRealmResult.itemObtained.permanentEffect
+              secretRealmResult.itemObtained.permanentEffect,
+              itemTypeForRealm,
+              rarityForRealm
             );
             const newItem: Item = {
               id: uid(),
               name: itemName,
-              type:
-                (secretRealmResult.itemObtained.type as ItemType) ||
-                ItemType.Material,
+              type: itemTypeForRealm,
               description: secretRealmResult.itemObtained.description,
               quantity: 1,
-              rarity:
-                (secretRealmResult.itemObtained.rarity as ItemRarity) || '普通',
+              rarity: rarityForRealm,
               level: 0,
               isEquippable: secretRealmResult.itemObtained.isEquippable,
               equipmentSlot: secretRealmResult.itemObtained.equipmentSlot as
