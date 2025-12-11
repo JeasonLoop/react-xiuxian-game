@@ -423,7 +423,7 @@ const SettingsModal: React.FC<Props> = ({
                 <div className="flex justify-between items-center mb-1">
                   <span className="text-sm text-stone-400">游戏版本</span>
                   <span className="text-sm font-mono text-mystic-gold">
-                    v{import.meta.env.VITE_APP_VERSION || '0.1.1'}
+                    v{import.meta.env.VITE_APP_VERSION || '0.1.6'}
                   </span>
                 </div>
                 <div className="text-xs text-stone-500">
