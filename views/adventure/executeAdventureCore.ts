@@ -387,7 +387,19 @@ export async function executeAdventureCore({
         let recipeData = undefined;
         if (itemType === ItemType.Recipe) {
           // 从 itemData 中获取 recipeName（如果存在）
-          const recipeName = (itemData as any).recipeName;
+          let recipeName = (itemData as any).recipeName;
+          if (!recipeName) {
+            // 如果 recipeName 不存在，尝试从物品名称中推断
+            // 例如："天元丹丹方" -> "天元丹"
+            const nameWithoutSuffix = itemName.replace(/丹方$/, '');
+            // 在 DISCOVERABLE_RECIPES 中查找匹配的配方
+            const matchedRecipe = DISCOVERABLE_RECIPES.find(
+              (recipe) => recipe.name === nameWithoutSuffix
+            );
+            if (matchedRecipe) {
+              recipeName = matchedRecipe.name;
+            }
+          }
           if (recipeName) {
             // 从 DISCOVERABLE_RECIPES 中查找对应的配方
             const recipe = DISCOVERABLE_RECIPES.find(
@@ -576,7 +588,19 @@ export async function executeAdventureCore({
       let recipeData = undefined;
       if (itemType === ItemType.Recipe) {
         // 从 result.itemObtained 中获取 recipeName（如果存在）
-        const recipeName = (result.itemObtained as any).recipeName;
+        let recipeName = (result.itemObtained as any).recipeName;
+        if (!recipeName) {
+          // 如果 recipeName 不存在，尝试从物品名称中推断
+          // 例如："天元丹丹方" -> "天元丹"
+          const nameWithoutSuffix = itemName.replace(/丹方$/, '');
+          // 在 DISCOVERABLE_RECIPES 中查找匹配的配方
+          const matchedRecipe = DISCOVERABLE_RECIPES.find(
+            (recipe) => recipe.name === nameWithoutSuffix
+          );
+          if (matchedRecipe) {
+            recipeName = matchedRecipe.name;
+          }
+        }
         if (recipeName) {
           // 从 DISCOVERABLE_RECIPES 中查找对应的配方
           const recipe = DISCOVERABLE_RECIPES.find(

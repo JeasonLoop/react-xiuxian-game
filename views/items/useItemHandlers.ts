@@ -209,41 +209,73 @@ export function useItemHandlers({
         }
 
       // 处理丹方使用
-      if (item.type === ItemType.Recipe && item.recipeData) {
-        const recipeName = item.recipeData.name;
-        // 确保 unlockedRecipes 存在（兼容旧存档）
-        if (!newStats.unlockedRecipes) {
-          newStats.unlockedRecipes = [];
+      if (item.type === ItemType.Recipe) {
+        let recipeName: string | undefined = undefined;
+
+        // 优先使用 recipeData 中的配方名称
+        if (item.recipeData) {
+          recipeName = item.recipeData.name;
+        } else {
+          // 如果 recipeData 不存在，尝试从物品名称中推断
+          // 例如："天元丹丹方" -> "天元丹"
+          const nameWithoutSuffix = item.name.replace(/丹方$/, '');
+          // 在 DISCOVERABLE_RECIPES 中查找匹配的配方
+          const matchedRecipe = DISCOVERABLE_RECIPES.find(
+            (recipe) => recipe.name === nameWithoutSuffix
+          );
+          if (matchedRecipe) {
+            recipeName = matchedRecipe.name;
+          } else {
+            // 如果还是找不到，尝试直接使用去掉"丹方"后缀的名称
+            recipeName = nameWithoutSuffix;
+          }
         }
-        // 检查是否已经解锁
-        if (newStats.unlockedRecipes.includes(recipeName)) {
-          addLog(`你已经学会了【${recipeName}】的炼制方法。`, 'normal');
-          // 即使已解锁，也要消耗丹方物品
-          return { ...newStats, inventory: newInv, pets: newPets };
+
+        if (recipeName) {
+          // 确保 unlockedRecipes 存在（兼容旧存档）
+          if (!newStats.unlockedRecipes) {
+            newStats.unlockedRecipes = [];
+          }
+          // 检查是否已经解锁
+          if (newStats.unlockedRecipes.includes(recipeName)) {
+            addLog(`你已经学会了【${recipeName}】的炼制方法。`, 'normal');
+            // 即使已解锁，也要消耗丹方物品
+            return { ...newStats, inventory: newInv, pets: newPets };
+          }
+          // 验证配方是否存在于 DISCOVERABLE_RECIPES 中
+          const recipeExists = DISCOVERABLE_RECIPES.some(
+            (recipe) => recipe.name === recipeName
+          );
+          if (!recipeExists) {
+            addLog(`【${recipeName}】的配方不存在，无法学习。`, 'danger');
+            return { ...newStats, inventory: newInv, pets: newPets };
+          }
+          // 解锁丹方
+          newStats.unlockedRecipes = [...newStats.unlockedRecipes, recipeName];
+          // 更新统计
+          const stats = newStats.statistics || {
+            killCount: 0,
+            meditateCount: 0,
+            adventureCount: 0,
+            equipCount: 0,
+            petCount: 0,
+            recipeCount: 0,
+            artCount: 0,
+            breakthroughCount: 0,
+            secretRealmCount: 0,
+          };
+          newStats.statistics = {
+            ...stats,
+            recipeCount: newStats.unlockedRecipes.length,
+          };
+          effectLogs.push(`✨ 学会了【${recipeName}】的炼制方法！`);
+          addLog(
+            `你研读了【${item.name}】，学会了【${recipeName}】的炼制方法！现在可以在炼丹面板中炼制这种丹药了。`,
+            'special'
+          );
+        } else {
+          addLog(`无法从【${item.name}】中识别出配方名称。`, 'danger');
         }
-        // 解锁丹方
-        newStats.unlockedRecipes = [...newStats.unlockedRecipes, recipeName];
-        // 更新统计
-        const stats = newStats.statistics || {
-          killCount: 0,
-          meditateCount: 0,
-          adventureCount: 0,
-          equipCount: 0,
-          petCount: 0,
-          recipeCount: 0,
-          artCount: 0,
-          breakthroughCount: 0,
-          secretRealmCount: 0,
-        };
-        newStats.statistics = {
-          ...stats,
-          recipeCount: newStats.unlockedRecipes.length,
-        };
-        effectLogs.push(`✨ 学会了【${recipeName}】的炼制方法！`);
-        addLog(
-          `你研读了【${item.name}】，学会了【${recipeName}】的炼制方法！现在可以在炼丹面板中炼制这种丹药了。`,
-          'special'
-        );
         // 丹方使用后会被消耗（已在上面处理了数量减少）
       }
 
@@ -493,29 +525,55 @@ export function useItemHandlers({
         }
 
         // 处理丹方使用
-        if (itemToUse.type === ItemType.Recipe && itemToUse.recipeData) {
-          const recipeName = itemToUse.recipeData.name;
-          if (!newStats.unlockedRecipes) {
-            newStats.unlockedRecipes = [];
+        if (itemToUse.type === ItemType.Recipe) {
+          let recipeName: string | undefined = undefined;
+
+          // 优先使用 recipeData 中的配方名称
+          if (itemToUse.recipeData) {
+            recipeName = itemToUse.recipeData.name;
+          } else {
+            // 如果 recipeData 不存在，尝试从物品名称中推断
+            // 例如："天元丹丹方" -> "天元丹"
+            const nameWithoutSuffix = itemToUse.name.replace(/丹方$/, '');
+            // 在 DISCOVERABLE_RECIPES 中查找匹配的配方
+            const matchedRecipe = DISCOVERABLE_RECIPES.find(
+              (recipe) => recipe.name === nameWithoutSuffix
+            );
+            if (matchedRecipe) {
+              recipeName = matchedRecipe.name;
+            } else {
+              // 如果还是找不到，尝试直接使用去掉"丹方"后缀的名称
+              recipeName = nameWithoutSuffix;
+            }
           }
-          if (!newStats.unlockedRecipes.includes(recipeName)) {
-            newStats.unlockedRecipes = [...newStats.unlockedRecipes, recipeName];
-            const stats = newStats.statistics || {
-              killCount: 0,
-              meditateCount: 0,
-              adventureCount: 0,
-              equipCount: 0,
-              petCount: 0,
-              recipeCount: 0,
-              artCount: 0,
-              breakthroughCount: 0,
-              secretRealmCount: 0,
-            };
-            newStats.statistics = {
-              ...stats,
-              recipeCount: newStats.unlockedRecipes.length,
-            };
-            effectLogs.push(`✨ 学会了【${recipeName}】的炼制方法！`);
+
+          if (recipeName) {
+            if (!newStats.unlockedRecipes) {
+              newStats.unlockedRecipes = [];
+            }
+            // 验证配方是否存在于 DISCOVERABLE_RECIPES 中
+            const recipeExists = DISCOVERABLE_RECIPES.some(
+              (recipe) => recipe.name === recipeName
+            );
+            if (recipeExists && !newStats.unlockedRecipes.includes(recipeName)) {
+              newStats.unlockedRecipes = [...newStats.unlockedRecipes, recipeName];
+              const stats = newStats.statistics || {
+                killCount: 0,
+                meditateCount: 0,
+                adventureCount: 0,
+                equipCount: 0,
+                petCount: 0,
+                recipeCount: 0,
+                artCount: 0,
+                breakthroughCount: 0,
+                secretRealmCount: 0,
+              };
+              newStats.statistics = {
+                ...stats,
+                recipeCount: newStats.unlockedRecipes.length,
+              };
+              effectLogs.push(`✨ 学会了【${recipeName}】的炼制方法！`);
+            }
           }
         }
 
