@@ -108,6 +108,14 @@ export function useEquipmentHandlers({
       let newSpeed = prev.speed;
       const newEquippedItems = { ...prev.equippedItems };
 
+      // 检查当前槽位的装备
+      const currentEquippedId = prev.equippedItems[slot];
+
+      // 如果物品已经在同一槽位装备，不需要做任何操作
+      if (currentEquippedId === item.id) {
+        return prev;
+      }
+
       // 0. 如果该物品已经在其他槽位装备，先卸下旧槽位的装备
       let oldSlot: EquipmentSlot | null = null;
       for (const [equippedSlot, equippedItemId] of Object.entries(
@@ -131,8 +139,8 @@ export function useEquipmentHandlers({
       }
 
       // 1. Remove stats from currently equipped item in this slot if any
-      const currentEquippedId = prev.equippedItems[slot];
-      if (currentEquippedId && currentEquippedId !== item.id) {
+      // 只有当当前槽位有不同物品，且不是从其他槽位移过来的情况，才需要减去旧装备属性
+      if (currentEquippedId && currentEquippedId !== item.id && !oldSlot) {
         const currentEquipped = prev.inventory.find(
           (i) => i.id === currentEquippedId
         );
@@ -149,6 +157,8 @@ export function useEquipmentHandlers({
       }
 
       // 2. Add stats from new item
+      // 如果物品是从其他槽位移过来的，已经减去了旧槽位的属性，现在只需要在新槽位加上属性
+      // 如果槽位原本是空的或有其他物品，需要加上新物品的属性
       const isNatal = item.id === prev.natalArtifactId;
       const newStats = getItemStats(item, isNatal);
       newAttack += newStats.attack;
