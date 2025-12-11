@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   web:
-    image: "react-xiuxian-game:${VITE_APP_VERSION:-0.1.1}"
+    image: "react-xiuxian-game:${VITE_APP_VERSION:-0.1.6}"
     build:
       context: .
       dockerfile: Dockerfile
@@ -13,7 +13,7 @@ services:
         VITE_AI_API_URL: ${VITE_AI_API_URL}
         VITE_AI_PROVIDER: ${VITE_AI_PROVIDER:-glm}
         VITE_AI_USE_PROXY: ${VITE_AI_USE_PROXY}
-        VITE_APP_VERSION: ${VITE_APP_VERSION:-0.1.1}
+        VITE_APP_VERSION: ${VITE_APP_VERSION:-0.1.6}
     container_name: react-xiuxian-game
     ports:
       - "3000:80"
