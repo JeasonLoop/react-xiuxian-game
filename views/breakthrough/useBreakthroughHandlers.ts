@@ -65,6 +65,16 @@ export function useBreakthroughHandlers({
         const stats = REALM_DATA[nextRealm];
         const levelMultiplier = 1 + nextLevel * 0.1;
 
+        // 计算旧境界的基础属性（用于计算分配的属性点）
+        const oldStats = REALM_DATA[prev.realm];
+        const oldLevelMultiplier = 1 + prev.realmLevel * 0.1;
+        const oldBaseAttack = Math.floor(oldStats.baseAttack * oldLevelMultiplier);
+        const oldBaseDefense = Math.floor(oldStats.baseDefense * oldLevelMultiplier);
+        const oldBaseHp = Math.floor(oldStats.baseMaxHp * oldLevelMultiplier);
+        const oldBaseSpirit = Math.floor(oldStats.baseSpirit * oldLevelMultiplier);
+        const oldBasePhysique = Math.floor(oldStats.basePhysique * oldLevelMultiplier);
+        const oldBaseSpeed = Math.floor(oldStats.baseSpeed * oldLevelMultiplier);
+
         // Calculate all bonuses
         let bonusAttack = 0;
         let bonusDefense = 0;
@@ -133,6 +143,16 @@ export function useBreakthroughHandlers({
           bonusSpeed += title.effects.speed || 0;
         }
 
+        // 计算用户通过属性点分配的额外属性
+        // 当前属性 = 基础属性（旧境界） + 加成 + 分配的属性点
+        // 分配的属性点 = 当前属性 - 基础属性（旧境界） - 加成
+        const allocatedAttack = Math.max(0, prev.attack - oldBaseAttack - bonusAttack);
+        const allocatedDefense = Math.max(0, prev.defense - oldBaseDefense - bonusDefense);
+        const allocatedHp = Math.max(0, prev.maxHp - oldBaseHp - bonusHp);
+        const allocatedSpirit = Math.max(0, prev.spirit - oldBaseSpirit - bonusSpirit);
+        const allocatedPhysique = Math.max(0, prev.physique - oldBasePhysique - bonusPhysique);
+        const allocatedSpeed = Math.max(0, prev.speed - oldBaseSpeed - bonusSpeed);
+
         const newBaseMaxHp = Math.floor(stats.baseMaxHp * levelMultiplier);
         const newMaxExp = Math.floor(stats.maxExpBase * levelMultiplier * 1.5);
         const newBaseMaxLifespan = stats.baseMaxLifespan;
@@ -199,17 +219,16 @@ export function useBreakthroughHandlers({
           realmLevel: nextLevel,
           exp: newExp, // 保留超出部分
           maxExp: newMaxExp,
-          maxHp: newBaseMaxHp + bonusHp,
-          hp: newBaseMaxHp + bonusHp, // Full heal
-          attack: Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack,
-          defense:
-            Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense,
-          spirit: Math.floor(stats.baseSpirit * levelMultiplier) + bonusSpirit,
-          physique:
-            Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique,
+          // 新属性 = 基础属性（新境界） + 加成 + 分配的属性点
+          maxHp: newBaseMaxHp + bonusHp + allocatedHp,
+          hp: newBaseMaxHp + bonusHp + allocatedHp, // Full heal
+          attack: Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack + allocatedAttack,
+          defense: Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense + allocatedDefense,
+          spirit: Math.floor(stats.baseSpirit * levelMultiplier) + bonusSpirit + allocatedSpirit,
+          physique: Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique + allocatedPhysique,
           speed: Math.max(
             0,
-            Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed
+            Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed + allocatedSpeed
           ),
           attributePoints: prev.attributePoints + attributePointsGained,
           maxLifespan: newMaxLifespan,
@@ -270,6 +289,16 @@ export function useBreakthroughHandlers({
         const stats = REALM_DATA[currentRealm];
         const levelMultiplier = 1 + currentLevel * 0.1;
 
+        // 计算旧境界的基础属性（用于计算分配的属性点）
+        const oldStats = REALM_DATA[prev.realm];
+        const oldLevelMultiplier = 1 + prev.realmLevel * 0.1;
+        const oldBaseAttack = Math.floor(oldStats.baseAttack * oldLevelMultiplier);
+        const oldBaseDefense = Math.floor(oldStats.baseDefense * oldLevelMultiplier);
+        const oldBaseHp = Math.floor(oldStats.baseMaxHp * oldLevelMultiplier);
+        const oldBaseSpirit = Math.floor(oldStats.baseSpirit * oldLevelMultiplier);
+        const oldBasePhysique = Math.floor(oldStats.basePhysique * oldLevelMultiplier);
+        const oldBaseSpeed = Math.floor(oldStats.baseSpeed * oldLevelMultiplier);
+
         // Calculate all bonuses (similar to handleBreakthrough)
         let bonusAttack = 0;
         let bonusDefense = 0;
@@ -281,12 +310,22 @@ export function useBreakthroughHandlers({
         prev.cultivationArts.forEach((artId) => {
           const art = CULTIVATION_ARTS.find((a) => a.id === artId);
           if (art) {
-            bonusAttack += art.effects.attack || 0;
-            bonusDefense += art.effects.defense || 0;
-            bonusHp += art.effects.hp || 0;
-            bonusSpirit += art.effects.spirit || 0;
-            bonusPhysique += art.effects.physique || 0;
-            bonusSpeed += art.effects.speed || 0;
+            const spiritualRootBonus = calculateSpiritualRootArtBonus(
+              art,
+              prev.spiritualRoots || {
+                metal: 0,
+                wood: 0,
+                water: 0,
+                fire: 0,
+                earth: 0,
+              }
+            );
+            bonusAttack += Math.floor((art.effects.attack || 0) * spiritualRootBonus);
+            bonusDefense += Math.floor((art.effects.defense || 0) * spiritualRootBonus);
+            bonusHp += Math.floor((art.effects.hp || 0) * spiritualRootBonus);
+            bonusSpirit += Math.floor((art.effects.spirit || 0) * spiritualRootBonus);
+            bonusPhysique += Math.floor((art.effects.physique || 0) * spiritualRootBonus);
+            bonusSpeed += Math.floor((art.effects.speed || 0) * spiritualRootBonus);
           }
         });
 
@@ -323,6 +362,14 @@ export function useBreakthroughHandlers({
           bonusPhysique += title.effects.physique || 0;
           bonusSpeed += title.effects.speed || 0;
         }
+
+        // 计算用户通过属性点分配的额外属性
+        const allocatedAttack = Math.max(0, prev.attack - oldBaseAttack - bonusAttack);
+        const allocatedDefense = Math.max(0, prev.defense - oldBaseDefense - bonusDefense);
+        const allocatedHp = Math.max(0, prev.maxHp - oldBaseHp - bonusHp);
+        const allocatedSpirit = Math.max(0, prev.spirit - oldBaseSpirit - bonusSpirit);
+        const allocatedPhysique = Math.max(0, prev.physique - oldBasePhysique - bonusPhysique);
+        const allocatedSpeed = Math.max(0, prev.speed - oldBaseSpeed - bonusSpeed);
 
         const newBaseMaxHp = Math.floor(stats.baseMaxHp * levelMultiplier);
         const newMaxExp = Math.floor(stats.maxExpBase * levelMultiplier * 1.5);
@@ -370,17 +417,16 @@ export function useBreakthroughHandlers({
           realmLevel: currentLevel,
           exp: newExp, // 保留超出部分
           maxExp: newMaxExp,
-          maxHp: newBaseMaxHp + bonusHp,
-          hp: newBaseMaxHp + bonusHp,
-          attack: Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack,
-          defense:
-            Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense,
-          spirit: Math.floor(stats.baseSpirit * levelMultiplier) + bonusSpirit,
-          physique:
-            Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique,
+          // 新属性 = 基础属性（新境界） + 加成 + 分配的属性点
+          maxHp: newBaseMaxHp + bonusHp + allocatedHp,
+          hp: newBaseMaxHp + bonusHp + allocatedHp,
+          attack: Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack + allocatedAttack,
+          defense: Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense + allocatedDefense,
+          spirit: Math.floor(stats.baseSpirit * levelMultiplier) + bonusSpirit + allocatedSpirit,
+          physique: Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique + allocatedPhysique,
           speed: Math.max(
             0,
-            Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed
+            Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed + allocatedSpeed
           ),
           attributePoints: prev.attributePoints + attributePointsGained,
           inheritanceLevel: remainingInheritance,

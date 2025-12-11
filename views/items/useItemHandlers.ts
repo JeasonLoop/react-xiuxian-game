@@ -70,7 +70,7 @@ export function useItemHandlers({
             species: randomTemplate.species,
             level: 1,
             exp: 0,
-            maxExp: 100,
+            maxExp: 60, // 降低初始经验值，从100降到60
             rarity: randomTemplate.rarity,
             stats: { ...randomTemplate.baseStats },
             skills: [...randomTemplate.skills],
@@ -99,12 +99,19 @@ export function useItemHandlers({
         effectLogs.push(`增长了 ${item.effect.exp} 点修为。`);
       }
       if (item.effect?.lifespan) {
-        const newLifespan = Math.min(
-          newStats.maxLifespan || 100,
-          (newStats.lifespan || newStats.maxLifespan || 100) + item.effect.lifespan
-        );
-        newStats.lifespan = newLifespan;
-        effectLogs.push(`寿命增加了 ${item.effect.lifespan} 年。`);
+        const currentLifespan = newStats.lifespan || newStats.maxLifespan || 100;
+        const maxLifespan = newStats.maxLifespan || 100;
+        const lifespanIncrease = item.effect.lifespan;
+        const newLifespan = currentLifespan + lifespanIncrease;
+
+        // 如果增加后的寿命超过最大寿命，同时增加最大寿命
+        if (newLifespan > maxLifespan) {
+          newStats.maxLifespan = newLifespan;
+          newStats.lifespan = newLifespan;
+        } else {
+          newStats.lifespan = newLifespan;
+        }
+        effectLogs.push(`寿命增加了 ${lifespanIncrease} 年。`);
       }
 
       // 处理永久效果
@@ -251,7 +258,7 @@ export function useItemHandlers({
           // 显示轻提示
           if (setItemActionLog) {
             setItemActionLog({ text: logMessage, type: 'gain' });
-            setTimeout(() => setItemActionLog(null), 3000);
+            // 延迟清除由 App.tsx 中的 useDelayedState 自动处理
           }
         } else if (effectLogs.length > 0) {
           // 其他物品有效果时显示提示
@@ -259,7 +266,7 @@ export function useItemHandlers({
           addLog(logMessage, 'gain');
           if (setItemActionLog) {
             setItemActionLog({ text: logMessage, type: 'gain' });
-            setTimeout(() => setItemActionLog(null), 3000);
+            // 延迟清除由 App.tsx 中的 useDelayedState 自动处理
           }
         }
       } else if (item.type === ItemType.Recipe && effectLogs.length > 0) {
@@ -267,7 +274,7 @@ export function useItemHandlers({
         const logMessage = effectLogs[0];
         if (setItemActionLog) {
           setItemActionLog({ text: logMessage, type: 'special' });
-          setTimeout(() => setItemActionLog(null), 3000);
+          // 延迟清除由 App.tsx 中的 useDelayedState 自动处理
         }
       }
 
@@ -376,12 +383,19 @@ export function useItemHandlers({
           effectLogs.push(`增长了 ${itemToUse.effect.exp} 点修为。`);
         }
         if (itemToUse.effect?.lifespan) {
-          const newLifespan = Math.min(
-            newStats.maxLifespan || 100,
-            (newStats.lifespan || newStats.maxLifespan || 100) + itemToUse.effect.lifespan
-          );
-          newStats.lifespan = newLifespan;
-          effectLogs.push(`寿命增加了 ${itemToUse.effect.lifespan} 年。`);
+          const currentLifespan = newStats.lifespan || newStats.maxLifespan || 100;
+          const maxLifespan = newStats.maxLifespan || 100;
+          const lifespanIncrease = itemToUse.effect.lifespan;
+          const newLifespan = currentLifespan + lifespanIncrease;
+
+          // 如果增加后的寿命超过最大寿命，同时增加最大寿命
+          if (newLifespan > maxLifespan) {
+            newStats.maxLifespan = newLifespan;
+            newStats.lifespan = newLifespan;
+          } else {
+            newStats.lifespan = newLifespan;
+          }
+          effectLogs.push(`寿命增加了 ${lifespanIncrease} 年。`);
         }
 
         // 处理永久效果
@@ -518,7 +532,7 @@ export function useItemHandlers({
           addLog(logMessage, 'gain');
           if (setItemActionLog) {
             setItemActionLog({ text: logMessage, type: 'gain' });
-            setTimeout(() => setItemActionLog(null), 3000);
+            // 延迟清除由 App.tsx 中的 useDelayedState 自动处理
           }
         }
       });

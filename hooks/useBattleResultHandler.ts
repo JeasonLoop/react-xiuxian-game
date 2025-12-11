@@ -2,8 +2,8 @@
  * 战斗结果处理 Hook
  * 处理回合制战斗结果，更新玩家状态、处理物品奖励等
  */
-
-import { Item, ItemType, PlayerStats } from '../types';
+import React from 'react';
+import { Item, ItemType, PlayerStats, ItemRarity} from '../types';
 import { uid } from '../utils/gameUtils';
 import { normalizeItemEffect, inferItemTypeAndSlot } from '../utils/itemUtils';
 
@@ -110,11 +110,6 @@ export function useBattleResultHandler({
             const itemName = itemData.name;
             const itemTypeFromData =
               (itemData.type as ItemType) || ItemType.Material;
-            const normalized = normalizeItemEffect(
-              itemName,
-              itemData.effect,
-              itemData.permanentEffect
-            );
             const inferred = inferItemTypeAndSlot(
               itemName,
               itemTypeFromData,
@@ -124,7 +119,17 @@ export function useBattleResultHandler({
             const itemType = inferred.type;
             const equipmentSlot = inferred.equipmentSlot;
             const isEquippable = inferred.isEquippable;
-            const rarity = itemData.rarity || '普通';
+            const rarity = (itemData.rarity as ItemRarity) || '普通';
+
+            // 规范化物品效果（确保已知物品的效果与描述一致）
+            // 对于丹药，根据稀有度调整效果，确保仙品丹药效果明显强于稀有
+            const normalized = normalizeItemEffect(
+              itemName,
+              itemData.effect,
+              itemData.permanentEffect,
+              itemType,
+              rarity
+            );
 
             // 装备类物品可以重复获得，但每个装备单独占一格
             const isEquipment = isEquippable && equipmentSlot;

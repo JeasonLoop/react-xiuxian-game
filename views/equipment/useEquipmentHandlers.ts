@@ -176,14 +176,14 @@ export function useEquipmentHandlers({
         addLog(logMessage, 'normal');
         if (setItemActionLog) {
           setItemActionLog({ text: logMessage, type: 'normal' });
-          setTimeout(() => setItemActionLog(null), 3000);
+          // 延迟清除由 App.tsx 中的 useDelayedState 自动处理
         }
       } else {
         const logMessage = `你装备了 ${item.name} 到${slot}，实力有所提升。`;
         addLog(logMessage, 'normal');
         if (setItemActionLog) {
           setItemActionLog({ text: logMessage, type: 'normal' });
-          setTimeout(() => setItemActionLog(null), 3000);
+          // 延迟清除由 App.tsx 中的 useDelayedState 自动处理
         }
       }
 

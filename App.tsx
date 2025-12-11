@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Item,
   Shop,
@@ -25,6 +25,7 @@ import { SAVE_KEY } from './utils/gameUtils';
 import { setGlobalAlertSetter } from './utils/toastUtils';
 import AlertModal from './components/AlertModal';
 import { AlertType } from './components/AlertModal';
+import { useDelayedState } from './hooks/useDelayedState';
 
 // 导入模块化的 handlers
 import {
@@ -149,7 +150,30 @@ function App() {
   } = battle;
   const { params: turnBasedBattleParams, setParams: setTurnBasedBattleParams } =
     turnBasedBattle;
-  const { value: itemActionLogValue, setValue: setItemActionLog } = itemActionLog;
+  const { value: itemActionLogValue, setValue: setItemActionLogRaw } = itemActionLog;
+
+  // 使用 useDelayedState 管理 itemActionLog，自动清理 setTimeout
+  const [delayedItemActionLog, setDelayedItemActionLog] = useDelayedState<{
+    text: string;
+    type: string;
+  }>(3000);
+
+  // 同步 delayedItemActionLog 到 itemActionLog
+  useEffect(() => {
+    setItemActionLogRaw(delayedItemActionLog);
+  }, [delayedItemActionLog, setItemActionLogRaw]);
+
+  // 包装 setItemActionLog，使用延迟状态管理
+  const setItemActionLog = useCallback(
+    (log: { text: string; type: string } | null) => {
+      if (log) {
+        setDelayedItemActionLog(log);
+      } else {
+        setItemActionLogRaw(null);
+      }
+    },
+    [setDelayedItemActionLog, setItemActionLogRaw]
+  );
 
   // 加载和冷却状态
   const [loading, setLoading] = useState(false);

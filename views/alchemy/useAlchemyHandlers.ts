@@ -30,7 +30,15 @@ export function useAlchemyHandlers({
   addLog,
   triggerVisual,
 }: UseAlchemyHandlersProps) {
-  const handleCraft = (recipe: Recipe) => {
+  const handleCraft = async (recipe: Recipe) => {
+    // 先触发炼丹开始动画
+    if (triggerVisual) {
+      triggerVisual('alchemy', '🔥 炼丹中...', 'text-mystic-gold');
+    }
+
+    // 延迟一下，让用户看到炼丹过程
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
     setPlayer((prev) => {
       if (prev.spiritStones < recipe.cost) return prev;
 
@@ -122,9 +130,12 @@ export function useAlchemyHandlers({
       addLog(`丹炉火起，药香四溢。你炼制出了 ${recipe.result.name}。`, 'gain');
       // 显示全局成功提示
       showSuccess(`炼制成功！获得 ${recipe.result.name}`);
-      // 触发炼丹动画
+      // 触发炼丹成功动画（更明显的效果）
       if (triggerVisual) {
-        triggerVisual('alchemy', `✨ ${recipe.result.name}`, 'text-mystic-gold');
+        // 延迟触发成功动画，让用户看到完整的炼丹过程
+        setTimeout(() => {
+          triggerVisual('alchemy', `✨ ${recipe.result.name}`, 'text-mystic-gold');
+        }, 200);
       }
 
       return {

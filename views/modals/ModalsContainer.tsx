@@ -98,7 +98,7 @@ interface ModalsContainerProps {
     handleLearnArt: (art: CultivationArt) => void;
     handleActivateArt: (art: CultivationArt) => void;
     // Alchemy
-    handleCraft: (recipe: Recipe) => void;
+    handleCraft: (recipe: Recipe) => Promise<void>;
     // Sect
     handleJoinSect: (sectId: string, sectName?: string) => void;
     handleLeaveSect: () => void;
