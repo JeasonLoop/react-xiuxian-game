@@ -92,7 +92,7 @@ const AlertModal: React.FC<AlertModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/80 flex items-center justify-center z-[80] p-4 backdrop-blur-sm"
+      className="z-99999 fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div

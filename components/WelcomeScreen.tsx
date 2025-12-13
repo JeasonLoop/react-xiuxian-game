@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { Sparkles, Play, Upload } from 'lucide-react';
 import logo from '../public/assets/images/logo.png';
 import { SAVE_KEY } from '../utils/gameUtils';
-import { showError, showSuccess } from '../utils/toastUtils';
+import { showError, showSuccess, showConfirm } from '../utils/toastUtils';
 
 interface Props {
   hasSave: boolean;
@@ -62,18 +62,25 @@ const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
         ? new Date(saveData.timestamp).toLocaleString('zh-CN')
         : '未知';
 
+      onContinue();
       // 确认导入
       showConfirm(
         `确定要导入此存档吗？\n\n玩家名称: ${playerName}\n境界: ${realm}\n保存时间: ${timestamp}\n\n当前存档将被替换，页面将自动刷新。`,
         '确认导入',
         () => {
-          // 保存到localStorage
-          localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+          try {
+            // 保存到localStorage
+            localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
 
-          // 提示并刷新页面
-          showSuccess('存档导入成功！页面即将刷新...', undefined, () => {
-            window.location.reload();
-          });
+            // 直接刷新页面，不需要再次确认
+            // 延迟一小段时间让用户看到操作完成
+            setTimeout(() => {
+              window.location.reload();
+            }, 100);
+          } catch (error) {
+            console.error('保存存档失败:', error);
+            showError('保存存档失败，请重试！');
+          }
         }
       );
     } catch (error) {
