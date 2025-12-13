@@ -157,7 +157,7 @@ const requestModel = async (messages: ChatMessage[], temperature = 0.7, maxToken
     const content = parseMessageContent(data?.choices?.[0]?.message?.content);
 
     if (!content) {
-      throw new Error('Spark API returned empty content');
+      throw new Error('大道渺茫，仙缘难觅，请重新尝试。');
     }
 
     return content;

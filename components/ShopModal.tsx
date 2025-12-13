@@ -36,6 +36,12 @@ interface Props {
 
 type ItemTypeFilter = 'all' | ItemType;
 
+// 格式化数值显示（四舍五入为整数，避免浮点数精度问题）
+const formatNumber = (value: number | undefined): string => {
+  if (value === undefined || value === null) return '0';
+  return Math.round(value).toString();
+};
+
 const ShopModal: React.FC<Props> = ({
   isOpen,
   onClose,
@@ -495,16 +501,25 @@ const ShopModal: React.FC<Props> = ({
                         {shopItem.effect && (
                           <div className="text-xs text-stone-400 mb-3 space-y-1">
                             {shopItem.effect.attack && (
-                              <div>攻击 +{shopItem.effect.attack}</div>
+                              <div>攻击 +{formatNumber(shopItem.effect.attack)}</div>
                             )}
                             {shopItem.effect.defense && (
-                              <div>防御 +{shopItem.effect.defense}</div>
+                              <div>防御 +{formatNumber(shopItem.effect.defense)}</div>
                             )}
                             {shopItem.effect.hp && (
-                              <div>气血 +{shopItem.effect.hp}</div>
+                              <div>气血 +{formatNumber(shopItem.effect.hp)}</div>
                             )}
                             {shopItem.effect.exp && (
-                              <div>修为 +{shopItem.effect.exp}</div>
+                              <div>修为 +{formatNumber(shopItem.effect.exp)}</div>
+                            )}
+                            {shopItem.effect.spirit && (
+                              <div>神识 +{formatNumber(shopItem.effect.spirit)}</div>
+                            )}
+                            {shopItem.effect.physique && (
+                              <div>体魄 +{formatNumber(shopItem.effect.physique)}</div>
+                            )}
+                            {shopItem.effect.speed && (
+                              <div>速度 +{formatNumber(shopItem.effect.speed)}</div>
                             )}
                           </div>
                         )}
@@ -516,11 +531,11 @@ const ShopModal: React.FC<Props> = ({
                         <div className="flex items-center justify-between mt-3">
                           <div className="flex items-center gap-1 text-mystic-gold">
                             <Coins size={16} />
-                            <span className="font-bold">{shopItem.price}</span>
+                            <span className="font-bold">{formatNumber(shopItem.price)}</span>
                             {buyQuantities[shopItem.id] > 1 && (
                               <span className="text-xs text-stone-400 ml-1">
                                 x{buyQuantities[shopItem.id]} ={' '}
-                                {shopItem.price * buyQuantities[shopItem.id]}
+                                {formatNumber(shopItem.price * buyQuantities[shopItem.id])}
                               </span>
                             )}
                           </div>
@@ -767,26 +782,35 @@ const ShopModal: React.FC<Props> = ({
                         {item.effect && (
                           <div className="text-xs text-stone-400 mb-3 space-y-1">
                             {item.effect.attack && (
-                              <div>攻击 +{item.effect.attack}</div>
+                              <div>攻击 +{formatNumber(item.effect.attack)}</div>
                             )}
                             {item.effect.defense && (
-                              <div>防御 +{item.effect.defense}</div>
+                              <div>防御 +{formatNumber(item.effect.defense)}</div>
                             )}
                             {item.effect.hp && (
-                              <div>气血 +{item.effect.hp}</div>
+                              <div>气血 +{formatNumber(item.effect.hp)}</div>
                             )}
                             {item.effect.exp && (
-                              <div>修为 +{item.effect.exp}</div>
+                              <div>修为 +{formatNumber(item.effect.exp)}</div>
+                            )}
+                            {item.effect.spirit && (
+                              <div>神识 +{formatNumber(item.effect.spirit)}</div>
+                            )}
+                            {item.effect.physique && (
+                              <div>体魄 +{formatNumber(item.effect.physique)}</div>
+                            )}
+                            {item.effect.speed && (
+                              <div>速度 +{formatNumber(item.effect.speed)}</div>
                             )}
                           </div>
                         )}
                         <div className="flex items-center justify-between mt-3">
                           <div className="flex items-center gap-1 text-green-400">
                             <Coins size={16} />
-                            <span className="font-bold">{sellPrice}</span>
+                            <span className="font-bold">{formatNumber(sellPrice)}</span>
                             {item.quantity > 1 && (
                               <span className="text-xs text-stone-500">
-                                (总计: {sellPrice * item.quantity})
+                                (总计: {formatNumber(sellPrice * item.quantity)})
                               </span>
                             )}
                           </div>
