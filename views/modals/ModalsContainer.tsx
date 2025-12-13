@@ -32,6 +32,7 @@ interface ModalsContainerProps {
   player: PlayerStats;
   settings: GameSettings;
   setItemActionLog?: (log: { text: string; type: string } | null) => void;
+  autoAdventure?: boolean; // 是否在自动历练模式下
   modals: {
     isInventoryOpen: boolean;
     isCultivationOpen: boolean;
@@ -170,6 +171,7 @@ export default function ModalsContainer({
   player,
   settings,
   setItemActionLog,
+  autoAdventure = false,
   modals,
   modalState,
   handlers,
@@ -191,6 +193,7 @@ export default function ModalsContainer({
           adventureType={modalState.turnBasedBattleParams.adventureType}
           riskLevel={modalState.turnBasedBattleParams.riskLevel}
           realmMinRealm={modalState.turnBasedBattleParams.realmMinRealm}
+          autoAdventure={autoAdventure}
           onClose={(result, updatedInventory) => {
             if (handlers.setIsTurnBasedBattleOpen) {
               handlers.setIsTurnBasedBattleOpen(false);

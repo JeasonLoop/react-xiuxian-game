@@ -31,6 +31,7 @@ interface TurnBasedBattleModalProps {
   adventureType: 'normal' | 'lucky' | 'secret_realm';
   riskLevel?: '低' | '中' | '高' | '极度危险';
   realmMinRealm?: RealmType;
+  autoAdventure?: boolean; // 是否在自动历练模式下
   onClose: (
     result?: {
       victory: boolean;
@@ -59,6 +60,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   adventureType,
   riskLevel,
   realmMinRealm,
+  autoAdventure = false,
   onClose,
 }) => {
   const [battleState, setBattleState] = useState<BattleState | null>(null);
@@ -548,6 +550,10 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
     <div
       className="fixed inset-0 bg-black/80 flex items-center justify-center z-[80] p-4"
       onClick={(e) => {
+        // 自动历练模式下不允许点击外部关闭，只能通过逃跑或快进结束战斗
+        if (autoAdventure) {
+          return;
+        }
         if (
           e.target === e.currentTarget &&
           !battleState.waitingForPlayerAction
@@ -589,13 +595,6 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
               title="跳过战斗"
             >
               <FastForward size={18} />
-            </button>
-            <button
-              onClick={() => onClose()}
-              className="p-2 rounded border border-stone-600 text-stone-200 hover:bg-stone-700/40"
-              title="关闭战斗"
-            >
-              <X size={18} />
             </button>
           </div>
         </div>

@@ -561,7 +561,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     effects: { defense: 10, hp: 35 },
   },
   {
-    id: 'art-golden-armor',
+    id: 'art-golden-protection',
     name: '金甲护体',
     type: 'body',
     grade: '玄',
@@ -583,7 +583,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     effects: { expRate: 0.35, hp: 180, defense: 10 },
   },
   {
-    id: 'art-ice-soul',
+    id: 'art-ice-spirit',
     name: '冰魄诀',
     type: 'mental',
     grade: '玄',

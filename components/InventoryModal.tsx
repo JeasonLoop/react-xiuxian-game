@@ -169,16 +169,47 @@ const InventoryItem = memo<InventoryItemProps>(
             </div>
           )}
 
-          {item.effect && (
-            <div className="text-xs text-stone-400 mb-2 grid grid-cols-2 gap-1">
-              {stats.attack > 0 && <span>攻 +{stats.attack}</span>}
-              {stats.defense > 0 && <span>防 +{stats.defense}</span>}
-              {stats.hp > 0 && <span>血 +{stats.hp}</span>}
-              {item.effect.exp && item.effect.exp > 0 && <span>修 +{item.effect.exp}</span>}
-              {stats.spirit > 0 && <span>神识 +{stats.spirit}</span>}
-              {stats.physique > 0 && <span>体魄 +{stats.physique}</span>}
-              {stats.speed > 0 && <span>速度 +{stats.speed}</span>}
-              {item.effect.lifespan && item.effect.lifespan > 0 && <span>寿 +{item.effect.lifespan}</span>}
+          {(item.effect || item.permanentEffect) && (
+            <div className="text-xs mb-2 space-y-1">
+              {/* 临时效果 */}
+              {item.effect && (
+                <div className="text-stone-400 grid grid-cols-2 gap-1">
+                  {stats.attack > 0 && <span>攻 +{stats.attack}</span>}
+                  {stats.defense > 0 && <span>防 +{stats.defense}</span>}
+                  {stats.hp > 0 && <span>血 +{stats.hp}</span>}
+                  {item.effect.exp && item.effect.exp > 0 && <span>修 +{item.effect.exp}</span>}
+                  {stats.spirit > 0 && <span>神识 +{stats.spirit}</span>}
+                  {stats.physique > 0 && <span>体魄 +{stats.physique}</span>}
+                  {stats.speed > 0 && <span>速度 +{stats.speed}</span>}
+                  {item.effect.lifespan && item.effect.lifespan > 0 && <span>寿 +{item.effect.lifespan}</span>}
+                </div>
+              )}
+              {/* 永久效果 */}
+              {item.permanentEffect && (
+                <div className="text-emerald-400 grid grid-cols-2 gap-1">
+                  {item.permanentEffect.attack && item.permanentEffect.attack > 0 && (
+                    <span>✨ 攻永久 +{item.permanentEffect.attack}</span>
+                  )}
+                  {item.permanentEffect.defense && item.permanentEffect.defense > 0 && (
+                    <span>✨ 防永久 +{item.permanentEffect.defense}</span>
+                  )}
+                  {item.permanentEffect.maxHp && item.permanentEffect.maxHp > 0 && (
+                    <span>✨ 气血上限永久 +{item.permanentEffect.maxHp}</span>
+                  )}
+                  {item.permanentEffect.spirit && item.permanentEffect.spirit > 0 && (
+                    <span>✨ 神识永久 +{item.permanentEffect.spirit}</span>
+                  )}
+                  {item.permanentEffect.physique && item.permanentEffect.physique > 0 && (
+                    <span>✨ 体魄永久 +{item.permanentEffect.physique}</span>
+                  )}
+                  {item.permanentEffect.speed && item.permanentEffect.speed > 0 && (
+                    <span>✨ 速度永久 +{item.permanentEffect.speed}</span>
+                  )}
+                  {item.permanentEffect.maxLifespan && item.permanentEffect.maxLifespan > 0 && (
+                    <span>✨ 寿命上限永久 +{item.permanentEffect.maxLifespan}</span>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

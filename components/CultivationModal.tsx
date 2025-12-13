@@ -20,6 +20,7 @@ const CultivationModal: React.FC<Props> = ({
 }) => {
   const [gradeFilter, setGradeFilter] = useState<ArtGrade | 'all'>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'mental' | 'body'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'learned' | 'obtained' | 'unobtained'>('all');
   const [learningArtId, setLearningArtId] = useState<string | null>(null); // 防止重复点击
   const learningArtIdRef = useRef<string | null>(null); // 同步检查用
   const [sortedArts, setSortedArts] = useState<CultivationArt[]>([]); // 存储排序后的功法列表
@@ -58,7 +59,15 @@ const CultivationModal: React.FC<Props> = ({
     if (isOpen && !prevIsOpenRef.current) {
       // 弹窗刚刚打开，进行排序
       const learnedSet = new Set(player.cultivationArts);
-      const sorted = CULTIVATION_ARTS.filter((art) => learnedSet.has(art.id))
+      // 使用 Map 去重，确保每个 id 只出现一次
+      const artMap = new Map<string, CultivationArt>();
+      CULTIVATION_ARTS.forEach((art) => {
+        if (!artMap.has(art.id)) {
+          artMap.set(art.id, art);
+        }
+      });
+      const uniqueArts = Array.from(artMap.values());
+      const sorted = uniqueArts
         .map((art, idx) => ({ art, idx }))
         .sort((a, b) => {
           const aActive = player.activeArtId === a.art.id;
@@ -67,7 +76,15 @@ const CultivationModal: React.FC<Props> = ({
 
           const aLearned = learnedSet.has(a.art.id);
           const bLearned = learnedSet.has(b.art.id);
-          if (aLearned !== bLearned) return aLearned ? -1 : 1; // 已学习排在已获得前
+          if (aLearned !== bLearned) return aLearned ? -1 : 1; // 已学习排在未学习前
+
+          // 已学习的按品级排序（天>地>玄>黄），未学习的按原有次序
+          if (aLearned && bLearned) {
+            const gradeOrder = { '天': 4, '地': 3, '玄': 2, '黄': 1 };
+            const aGrade = gradeOrder[a.art.grade] || 0;
+            const bGrade = gradeOrder[b.art.grade] || 0;
+            if (aGrade !== bGrade) return bGrade - aGrade; // 高品级在前
+          }
 
           return a.idx - b.idx; // 保持原有次序
         })
@@ -99,14 +116,24 @@ const CultivationModal: React.FC<Props> = ({
 
   // 过滤功法 - 基于已排序的列表进行过滤
   const filteredArts = useMemo(() => {
+    const learnedSet = new Set(player.cultivationArts);
     return sortedArts.filter((art) => {
       // 兼容性处理：如果功法没有 grade 字段，默认显示
       const artGrade = art.grade || '黄';
       if (gradeFilter !== 'all' && artGrade !== gradeFilter) return false;
       if (typeFilter !== 'all' && art.type !== typeFilter) return false;
+
+      // 状态筛选：已学习、已获得、未获得
+      if (statusFilter !== 'all') {
+        const isLearned = learnedSet.has(art.id);
+        if (statusFilter === 'learned' && !isLearned) return false; // 已学习：已学习的功法
+        if (statusFilter === 'obtained' && !isLearned) return false; // 已获得：已学习的功法（已获得=已学习）
+        if (statusFilter === 'unobtained' && isLearned) return false; // 未获得：未学习的功法
+      }
+
       return true;
     });
-  }, [gradeFilter, typeFilter, sortedArts]);
+  }, [gradeFilter, typeFilter, statusFilter, sortedArts, player.cultivationArts]);
 
   // 必须在所有 hooks 之后才能有条件返回
   if (!isOpen) return null;
@@ -181,6 +208,28 @@ const CultivationModal: React.FC<Props> = ({
                   }`}
                 >
                   {type === 'all' ? '全部' : type === 'mental' ? '心法' : '体术'}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <span className="text-xs text-stone-400 self-center">状态筛选：</span>
+              {(['all', 'learned', 'obtained', 'unobtained'] as const).map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setStatusFilter(status)}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    statusFilter === status
+                      ? status === 'learned'
+                        ? 'bg-green-700 text-green-200'
+                        : status === 'obtained'
+                        ? 'bg-yellow-700 text-yellow-200'
+                        : status === 'unobtained'
+                        ? 'bg-gray-700 text-gray-200'
+                        : 'bg-mystic-jade text-white'
+                      : 'bg-stone-700 text-stone-400 hover:bg-stone-600'
+                  }`}
+                >
+                  {status === 'all' ? '全部' : status === 'learned' ? '已学习' : status === 'obtained' ? '已获得' : '未获得'}
                 </button>
               ))}
             </div>

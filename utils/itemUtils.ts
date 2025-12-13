@@ -202,8 +202,38 @@ export const inferItemTypeAndSlot = (
     };
   }
 
-  // 手套（优先检查，避免被其他规则误判）
-  if (combined.match(/手套|护手|手甲|拳套|法手|仙手|龙爪套|手/)) {
+  // 戒指（优先检查，避免被其他规则误判）
+  if (combined.match(/戒指|指环|戒/)) {
+    // 随机分配一个戒指槽位
+    const ringSlots = [
+      EquipmentSlot.Ring1,
+      EquipmentSlot.Ring2,
+      EquipmentSlot.Ring3,
+      EquipmentSlot.Ring4,
+    ];
+    return {
+      type: ItemType.Ring,
+      isEquippable: true,
+      equipmentSlot: ringSlots[Math.floor(Math.random() * ringSlots.length)],
+    };
+  }
+
+  // 首饰（项链、玉佩、手镯等，优先检查，避免被手套规则误判）
+  if (combined.match(/项链|玉佩|手镯|手链|吊坠|护符|符|佩|饰/)) {
+    const accessorySlots = [EquipmentSlot.Accessory1, EquipmentSlot.Accessory2];
+    return {
+      type: ItemType.Accessory,
+      isEquippable: true,
+      equipmentSlot:
+        accessorySlots[Math.floor(Math.random() * accessorySlots.length)],
+    };
+  }
+
+  // 手套（排除手镯、手链等首饰关键词）
+  if (
+    combined.match(/手套|护手|手甲|拳套|法手|仙手|龙爪套/) &&
+    !combined.match(/手镯|手链/) // 排除首饰关键词
+  ) {
     return {
       type: ItemType.Armor,
       isEquippable: true,
@@ -274,33 +304,6 @@ export const inferItemTypeAndSlot = (
       type: ItemType.Armor,
       isEquippable: true,
       equipmentSlot: EquipmentSlot.Chest,
-    };
-  }
-
-  // 戒指
-  if (combined.match(/戒指|指环|戒/)) {
-    // 随机分配一个戒指槽位
-    const ringSlots = [
-      EquipmentSlot.Ring1,
-      EquipmentSlot.Ring2,
-      EquipmentSlot.Ring3,
-      EquipmentSlot.Ring4,
-    ];
-    return {
-      type: ItemType.Ring,
-      isEquippable: true,
-      equipmentSlot: ringSlots[Math.floor(Math.random() * ringSlots.length)],
-    };
-  }
-
-  // 首饰（项链、玉佩、手镯等）
-  if (combined.match(/项链|玉佩|手镯|手链|吊坠|护符|符|佩|饰/)) {
-    const accessorySlots = [EquipmentSlot.Accessory1, EquipmentSlot.Accessory2];
-    return {
-      type: ItemType.Accessory,
-      isEquippable: true,
-      equipmentSlot:
-        accessorySlots[Math.floor(Math.random() * accessorySlots.length)],
     };
   }
 

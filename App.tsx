@@ -336,16 +336,18 @@ function App() {
     onOpenBattleModal: (replay: BattleReplay) => {
       // 保存最近的战斗数据，用于死亡统计
       setLastBattleReplay(replay);
-      // 只有在非自动模式下才打开战斗弹窗
-      if (!autoAdventure) {
-        battleHandlers.openBattleModal(replay);
-      }
+      // 打开战斗弹窗（自动模式下也会打开）
+      battleHandlers.openBattleModal(replay);
     },
     onOpenTurnBasedBattle: (params) => {
+      // 如果正在自动历练，暂停自动历练
+      if (autoAdventure) {
+        setAutoAdventure(false);
+      }
       setTurnBasedBattleParams(params);
       setIsTurnBasedBattleOpen(true);
     },
-    skipBattle: autoAdventure, // 自动历练模式下跳过战斗
+    skipBattle: false, // 不再跳过战斗，自动模式下也会弹出战斗弹窗
     useTurnBasedBattle: true, // 使用新的回合制战斗系统
   });
 
@@ -781,11 +783,12 @@ function App() {
         />
       )}
 
-      <ModalsContainer
-        player={player}
-        settings={settings}
-        setItemActionLog={setItemActionLog}
-        modals={{
+        <ModalsContainer
+          player={player}
+          settings={settings}
+          setItemActionLog={setItemActionLog}
+          autoAdventure={autoAdventure}
+          modals={{
           isInventoryOpen,
           isCultivationOpen,
           isAlchemyOpen,

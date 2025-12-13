@@ -150,7 +150,7 @@ const requestModel = async (messages: ChatMessage[], temperature = 0.7, maxToken
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Spark API error (${response.status}): ${errorText}`);
+      throw new Error(`天道出现了裂痕，冒险失败: (${response.status}): ${errorText}`);
     }
 
     const data = await response.json();
@@ -272,6 +272,7 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
 ${realmKeywords}
 注意：主要是战斗伤害（hpChange可为负），不降低永久属性。
 物品命名：根据秘境特点和风险等级，创造与秘境相关的独特物品名称（如：${realmName ? `${realmName}中可产出与秘境主题相关的物品` : '秘境相关的独特物品'}），名称需体现秘境的神秘性和特殊性，避免使用常见物品名称。
+【关键】如果返回itemsObtained数组，数组中的每个物品名称必须完全不同，不能有任何重复，特别是装备类物品，每个装备必须有独特的名称（如：星辰盘、天机镜、混沌印等，不能重复）。
 物品稀有度：${rewardRange.rarity}（至少"稀有"）。
 奖励：修为${Math.floor(rewardRange.expMin * realmMultiplier)}-${Math.floor(rewardRange.expMax * realmMultiplier)}，灵石${Math.floor(rewardRange.stonesMin * realmMultiplier)}-${Math.floor(rewardRange.stonesMax * realmMultiplier)}。`;
         break;
@@ -356,6 +357,7 @@ ${typeInstructions}
 
 物品命名规则（重要）：
 - 物品名称必须高度多样化，避免重复使用相同的名称组合
+- 【关键】如果返回itemsObtained数组，数组中的每个物品名称必须完全不同，不能有任何重复，特别是装备类物品
 - 命名风格建议：
   * 草药：结合生长环境/颜色/功效命名（如：寒潭碧莲、赤炎草、凝血参、月华花、雷鸣藤、毒瘴菇）
   * 丹药：结合功效/材料/境界命名（如：聚气丹、回元丹、破障丹、凝神丹、筑基丹、淬体丹）
@@ -395,7 +397,8 @@ ${typeInstructions}
 - 物品名称必须高度多样化，每次使用不同的名称组合，避免重复模板化名称
 - 物品名称需与story描述一致，根据事件场景选择合适的名称风格
 - 装备槽位不重复
-- hpChange需匹配story描述的事件性质`;
+- hpChange需匹配story描述的事件性质
+- 【关键】如果使用itemsObtained数组，数组中的每个物品名称必须完全不同，不能有重复名称，特别是装备类物品，每个装备必须有独特的名称`;
 
     const resultText = await requestModel(
       [
@@ -453,7 +456,7 @@ ${typeInstructions}
       throw new Error(`JSON解析失败: ${parseError}`);
     }
   } catch (error) {
-    console.error('Spark Adventure Error:', error);
+    console.error('天道出现了裂痕，冒险失败:', error);
     // Fallback in case of API error
     return {
       story: '你在荒野中游荡了一番，可惜大道渺茫，此次一无所获。',
