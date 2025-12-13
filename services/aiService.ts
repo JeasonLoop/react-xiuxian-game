@@ -205,6 +205,7 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
       case 'lucky':
         typeInstructions = `【大机缘事件】极其罕见的正面事件，eventColor="special"。
 境界匹配：低境界（炼气/筑基）→古洞府/稀有功法/高人指点；中境界（金丹/元婴）→上古遗迹/传说法宝/顿悟；高境界（化神+）→仙府/仙品至宝/无上大道。
+物品命名：必须使用独特、高雅的名称，体现大机缘的珍贵性（如：九天玄剑、太虚仙丹、混沌钟、真仙玲珑塔等），避免使用普通物品名称。
 物品稀有度：低境界"稀有/传说"，高境界"传说/仙品"。
 奖励范围：修为${Math.floor(100 * realmMultiplier)}-${Math.floor(1000 * realmMultiplier)}，灵石${Math.floor(50 * realmMultiplier)}-${Math.floor(500 * realmMultiplier)}。`;
         break;
@@ -270,6 +271,7 @@ export const generateAdventureEvent = async (player: PlayerStats, adventureType:
 描述要求：环境+探索过程+事件细节，每次不同。
 ${realmKeywords}
 注意：主要是战斗伤害（hpChange可为负），不降低永久属性。
+物品命名：根据秘境特点和风险等级，创造与秘境相关的独特物品名称（如：${realmName ? `${realmName}中可产出与秘境主题相关的物品` : '秘境相关的独特物品'}），名称需体现秘境的神秘性和特殊性，避免使用常见物品名称。
 物品稀有度：${rewardRange.rarity}（至少"稀有"）。
 奖励：修为${Math.floor(rewardRange.expMin * realmMultiplier)}-${Math.floor(rewardRange.expMax * realmMultiplier)}，灵石${Math.floor(rewardRange.stonesMin * realmMultiplier)}-${Math.floor(rewardRange.stonesMax * realmMultiplier)}。`;
         break;
@@ -278,6 +280,7 @@ ${realmKeywords}
 事件类型：妖兽战斗/发现灵草/遇到修士/小型洞府/顿悟/危险/灵石矿脉/救助/灵泉/灵宠/灵宠机缘/传承(极罕见)/邪修魔修(15-20%危险)/陷阱(15-20%危险)/随机秘境(5%)。
 场景描述：必须包含环境(10-30字)+动作(10-20字)+事件细节(20-50字)+感受(可选)，每次不同，避免重复开头。
 物品类型多样化：草药/丹药/材料/武器/护甲(头部/肩部/胸甲/手套/裤腿/鞋子各15-20%)/首饰/戒指/法宝。
+物品命名：每次必须使用不同的物品名称，根据事件场景创造新的名称组合，避免模板化重复（如：不要总是"青钢剑"、"回血丹"等常见名称，要创造"赤焰刀"、"凝元丹"、"寒霜枪"等多样化名称）。
 物品稀有度：${Math.max(0, 60 - realmIndex * 10)}%普通，${Math.min(30 + realmIndex * 5, 50)}%稀有，${Math.min(realmIndex * 3, 20)}%传说。
 奖励：修为${Math.floor(10 * realmMultiplier)}-${Math.floor(100 * realmMultiplier)}，灵石${Math.floor(5 * realmMultiplier)}-${Math.floor(50 * realmMultiplier)}，传承${Math.floor(1 * realmMultiplier)}-${Math.floor(4 * realmMultiplier)}（极罕见）。`;
         break;
@@ -349,7 +352,24 @@ ${typeInstructions}
   * 传说装备：攻击${legendaryRange.attack}，防御${legendaryRange.defense}，气血${legendaryRange.hp}，神识${legendaryRange.spirit}，体魄${legendaryRange.physique}，速度${legendaryRange.speed}
   * 仙品装备：攻击${immortalRange.attack}，防御${immortalRange.defense}，气血${immortalRange.hp}，神识${immortalRange.spirit}，体魄${immortalRange.physique}，速度${immortalRange.speed}
 - 装备数值必须在对应稀有度的范围内，不要超出范围
-- 护甲部位均衡：头部/肩部/胸甲/手套/裤腿/鞋子各15-20%概率`;
+- 护甲部位均衡：头部/肩部/胸甲/手套/裤腿/鞋子各15-20%概率
+
+物品命名规则（重要）：
+- 物品名称必须高度多样化，避免重复使用相同的名称组合
+- 命名风格建议：
+  * 草药：结合生长环境/颜色/功效命名（如：寒潭碧莲、赤炎草、凝血参、月华花、雷鸣藤、毒瘴菇）
+  * 丹药：结合功效/材料/境界命名（如：聚气丹、回元丹、破障丹、凝神丹、筑基丹、淬体丹）
+  * 材料：结合来源/特性/用途命名（如：玄铁矿、龙鳞、凤羽、星辰石、天外陨铁、千年寒冰）
+  * 武器：结合材质/特性/风格命名（如：青锋剑、血煞刀、雷霆枪、玄冰扇、烈阳弓、幽魂钩）
+  * 护甲：结合材质/特性/部位命名（如：流云道袍、玄铁重甲、龙鳞护心镜、疾风靴、金刚护腕）
+  * 首饰：结合材质/功效/风格命名（如：清心玉佩、聚灵项链、护魂手镯、辟邪符、凝神戒）
+  * 法宝：结合功效/形态/特性命名（如：镇魂钟、炼妖鼎、照妖镜、遁天梭、聚宝盆、诛仙剑）
+- 稀有度命名区分：
+  * 普通：使用基础词汇（如：精铁剑、回血丹、灵草）
+  * 稀有：加入修饰词（如：寒冰灵剑、上品回血丹、百年灵草）
+  * 传说：使用高级词汇（如：九幽寒冰剑、极品回天丹、千年血参）
+  * 仙品：使用仙侠风格词汇（如：太虚仙剑、九转回天丹、万载仙草）
+- 每次生成物品时，必须创造新的名称组合，避免使用模板化名称`;
 
     // 精简的user message，移除大量重复示例
     const userMessage = `${prompt}
@@ -370,7 +390,12 @@ ${typeInstructions}
   "attributeReduction": {属性降低对象，可选，仅极度危险}
 }
 
-重要：story需多样化场景描述，避免30%以上相同开头；物品名称与描述一致；装备槽位不重复；hpChange匹配描述。`;
+重要：
+- story需多样化场景描述，避免30%以上相同开头
+- 物品名称必须高度多样化，每次使用不同的名称组合，避免重复模板化名称
+- 物品名称需与story描述一致，根据事件场景选择合适的名称风格
+- 装备槽位不重复
+- hpChange需匹配story描述的事件性质`;
 
     const resultText = await requestModel(
       [

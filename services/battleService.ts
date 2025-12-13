@@ -1262,14 +1262,23 @@ const createEnemy = async (
 
   if (Math.random() < 0.15) {
     try {
-      const aiGenerated = await generateEnemyName(realm, adventureType);
+      // 添加超时处理，防止AI调用卡住战斗初始化
+      const timeoutPromise = new Promise<{ name: string; title: string }>((_, reject) => {
+        setTimeout(() => reject(new Error('AI生成敌人名称超时')), 3000); // 3秒超时
+      });
+
+      const aiGenerated = await Promise.race([
+        generateEnemyName(realm, adventureType),
+        timeoutPromise
+      ]);
+
       if (aiGenerated.name && aiGenerated.title) {
         name = aiGenerated.name;
         title = aiGenerated.title;
       }
     } catch (e) {
-      // AI生成失败，使用预设列表
-      console.log('AI生成敌人名字失败，使用预设列表');
+      // AI生成失败或超时，使用预设列表
+      console.log('AI生成敌人名字失败或超时，使用预设列表:', e);
     }
   }
 

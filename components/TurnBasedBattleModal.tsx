@@ -72,12 +72,33 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
 
   // 初始化战斗 - 使用 ref 防止重复初始化
   const isInitializedRef = useRef(false);
+  // 用于跟踪初始化是否已超时
+  const initTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasInitTimedOutRef = useRef(false);
 
   useEffect(() => {
     if (isOpen && !battleState && !isInitializedRef.current) {
       isInitializedRef.current = true;
       isActionLockedRef.current = false;
       setIsProcessing(true); // 初始化时设置为处理中
+
+      // 重置超时标志
+      hasInitTimedOutRef.current = false;
+
+      // 添加初始化超时保护（10秒），防止AI调用导致永久卡住
+      initTimeoutRef.current = setTimeout(() => {
+        if (isInitializedRef.current) {
+          hasInitTimedOutRef.current = true;
+          console.error('战斗初始化超时（10秒）');
+          setErrorMessage('战斗初始化超时，请重试');
+          setIsProcessing(false);
+          isActionLockedRef.current = false;
+          isInitializedRef.current = false; // 允许重试
+          initTimeoutRef.current = null;
+          setTimeout(() => setErrorMessage(null), 3000);
+        }
+      }, 10000);
+
       initializeTurnBasedBattle(
         player,
         adventureType,
@@ -85,11 +106,35 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
         realmMinRealm as any
       )
         .then((state) => {
+          if (hasInitTimedOutRef.current || !isInitializedRef.current) {
+            // 如果已超时，忽略结果
+            if (initTimeoutRef.current) {
+              clearTimeout(initTimeoutRef.current);
+              initTimeoutRef.current = null;
+            }
+            return;
+          }
+          if (initTimeoutRef.current) {
+            clearTimeout(initTimeoutRef.current);
+            initTimeoutRef.current = null;
+          }
           setBattleState(state);
           setIsProcessing(false); // 初始化完成后重置
           isActionLockedRef.current = false;
         })
         .catch((error) => {
+          if (hasInitTimedOutRef.current || !isInitializedRef.current) {
+            // 如果已超时，忽略错误
+            if (initTimeoutRef.current) {
+              clearTimeout(initTimeoutRef.current);
+              initTimeoutRef.current = null;
+            }
+            return;
+          }
+          if (initTimeoutRef.current) {
+            clearTimeout(initTimeoutRef.current);
+            initTimeoutRef.current = null;
+          }
           console.error('战斗初始化失败:', error);
           setErrorMessage('战斗初始化失败');
           setIsProcessing(false);
@@ -99,7 +144,13 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
         });
     } else if (!isOpen && battleState) {
       // 关闭时重置所有状态
+      if (initTimeoutRef.current) {
+        clearTimeout(initTimeoutRef.current);
+        initTimeoutRef.current = null;
+      }
+      hasInitTimedOutRef.current = false;
       isInitializedRef.current = false;
+      isProcessingEnemyTurnRef.current = false;
       setBattleState(null);
       setIsProcessing(false);
       isActionLockedRef.current = false;
@@ -143,6 +194,9 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
     onCloseRef.current = onClose;
   }, [onClose]);
 
+  // 使用 ref 跟踪是否正在处理敌人回合，避免重复触发
+  const isProcessingEnemyTurnRef = useRef(false);
+
   useEffect(() => {
     if (
       !battleState ||
@@ -153,13 +207,19 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
       if (battleState?.waitingForPlayerAction && isProcessing) {
         setIsProcessing(false);
       }
+      isProcessingEnemyTurnRef.current = false;
       return;
     }
 
-    // 避免多次触发：仅在切到敌人回合且未在处理中时执行
-    if (isProcessing) return;
+    // 避免多次触发：使用 ref 检查是否正在处理
+    if (isProcessingEnemyTurnRef.current || isProcessing) {
+      return;
+    }
 
+    isProcessingEnemyTurnRef.current = true;
     setIsProcessing(true);
+
+    // 使用更短的延迟，让界面更新更快
     const timer = setTimeout(() => {
       try {
         let newState = executeEnemyTurn(battleState);
@@ -202,6 +262,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
               }
             });
           }
+          isProcessingEnemyTurnRef.current = false;
           setIsProcessing(false);
           isActionLockedRef.current = false; // 释放锁
           onCloseRef.current(
@@ -221,24 +282,29 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
           return;
         }
 
+        // 直接设置状态，然后在下一个事件循环中重置处理标志
         setBattleState(newState);
-        setIsProcessing(false);
-        isActionLockedRef.current = false; // 释放锁，敌人回合结束后允许玩家操作
+
+        // 使用 setTimeout 确保状态更新完成后再重置处理标志
+        setTimeout(() => {
+          isProcessingEnemyTurnRef.current = false;
+          setIsProcessing(false);
+          isActionLockedRef.current = false; // 释放锁，敌人回合结束后允许玩家操作
+        }, 50);
       } catch (error) {
         console.error('敌人先手回合错误:', error);
+        isProcessingEnemyTurnRef.current = false;
         setErrorMessage('敌人行动出错');
         setIsProcessing(false);
         isActionLockedRef.current = false; // 释放锁
         setTimeout(() => setErrorMessage(null), 3000);
       }
-    }, 150);
+    }, 100); // 减少延迟时间
 
     return () => {
       clearTimeout(timer);
-      // 注意：不在这里重置 isProcessing，因为可能会中断正在进行的战斗逻辑
-      // 状态重置应该在战斗流程自然结束时进行
     };
-  }, [battleState, isProcessing, player, adventureType, riskLevel]);
+  }, [battleState?.waitingForPlayerAction, battleState?.enemyActionsRemaining, battleState?.id]);
 
   // 处理玩家行动
   const handlePlayerAction = async (action: PlayerAction) => {
