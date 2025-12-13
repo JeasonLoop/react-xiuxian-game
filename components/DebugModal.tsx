@@ -256,12 +256,10 @@ const DebugModal: React.FC<Props> = ({
     field: K,
     value: PlayerStats[K]
   ) => {
-    setLocalPlayer((prev) => {
-      const updated = { ...prev, [field]: value };
-      // 直接更新到实际玩家状态
-      onUpdatePlayer({ [field]: value });
-      return updated;
-    });
+    const updated = { ...localPlayer, [field]: value };
+    setLocalPlayer(updated);
+    // 在状态更新回调外调用，避免在渲染期间更新父组件
+    onUpdatePlayer({ [field]: value });
   };
 
   const adjustNumber = (
@@ -269,54 +267,48 @@ const DebugModal: React.FC<Props> = ({
     delta: number,
     min: number = 0
   ) => {
-    setLocalPlayer((prev) => {
-      const current = prev[field] as number;
-      const newValue = Math.max(min, current + delta);
-      const updated = { ...prev, [field]: newValue };
-      // 直接更新到实际玩家状态
-      onUpdatePlayer({ [field]: newValue });
-      return updated;
-    });
+    const current = localPlayer[field] as number;
+    const newValue = Math.max(min, current + delta);
+    const updated = { ...localPlayer, [field]: newValue };
+    setLocalPlayer(updated);
+    // 在状态更新回调外调用，避免在渲染期间更新父组件
+    onUpdatePlayer({ [field]: newValue });
   };
 
   const handleRealmChange = (newRealm: RealmType) => {
     const realmData = REALM_DATA[newRealm];
-    setLocalPlayer((prev) => {
-      const updated = {
-        ...prev,
-        realm: newRealm,
-        // 如果境界降低，调整相关属性
-        maxHp: Math.max(prev.maxHp, realmData.baseMaxHp),
-        hp: Math.min(prev.hp, Math.max(prev.maxHp, realmData.baseMaxHp)),
-        attack: Math.max(prev.attack, realmData.baseAttack),
-        defense: Math.max(prev.defense, realmData.baseDefense),
-        spirit: Math.max(prev.spirit, realmData.baseSpirit),
-        physique: Math.max(prev.physique, realmData.basePhysique),
-        speed: Math.max(prev.speed, realmData.baseSpeed),
-      };
-      // 直接更新到实际玩家状态
-      onUpdatePlayer({
-        realm: updated.realm,
-        maxHp: updated.maxHp,
-        hp: updated.hp,
-        attack: updated.attack,
-        defense: updated.defense,
-        spirit: updated.spirit,
-        physique: updated.physique,
-        speed: updated.speed,
-      });
-      return updated;
+    const updated = {
+      ...localPlayer,
+      realm: newRealm,
+      // 如果境界降低，调整相关属性
+      maxHp: Math.max(localPlayer.maxHp, realmData.baseMaxHp),
+      hp: Math.min(localPlayer.hp, Math.max(localPlayer.maxHp, realmData.baseMaxHp)),
+      attack: Math.max(localPlayer.attack, realmData.baseAttack),
+      defense: Math.max(localPlayer.defense, realmData.baseDefense),
+      spirit: Math.max(localPlayer.spirit, realmData.baseSpirit),
+      physique: Math.max(localPlayer.physique, realmData.basePhysique),
+      speed: Math.max(localPlayer.speed, realmData.baseSpeed),
+    };
+    setLocalPlayer(updated);
+    // 在状态更新回调外调用，避免在渲染期间更新父组件
+    onUpdatePlayer({
+      realm: updated.realm,
+      maxHp: updated.maxHp,
+      hp: updated.hp,
+      attack: updated.attack,
+      defense: updated.defense,
+      spirit: updated.spirit,
+      physique: updated.physique,
+      speed: updated.speed,
     });
   };
 
   const handleRealmLevelChange = (newLevel: number) => {
     const clampedLevel = Math.max(1, Math.min(9, newLevel));
-    setLocalPlayer((prev) => {
-      const updated = { ...prev, realmLevel: clampedLevel };
-      // 直接更新到实际玩家状态
-      onUpdatePlayer({ realmLevel: clampedLevel });
-      return updated;
-    });
+    const updated = { ...localPlayer, realmLevel: clampedLevel };
+    setLocalPlayer(updated);
+    // 在状态更新回调外调用，避免在渲染期间更新父组件
+    onUpdatePlayer({ realmLevel: clampedLevel });
   };
 
   // 添加装备到背包
@@ -334,16 +326,14 @@ const DebugModal: React.FC<Props> = ({
       effect: template.effect,
     };
 
-    setLocalPlayer((prev) => {
-      const updated = {
-        ...prev,
-        inventory: [...prev.inventory, newItem],
-      };
-      // 立即更新到实际玩家状态
-      onUpdatePlayer({
-        inventory: updated.inventory,
-      });
-      return updated;
+    const updated = {
+      ...localPlayer,
+      inventory: [...localPlayer.inventory, newItem],
+    };
+    setLocalPlayer(updated);
+    // 在状态更新回调外调用，避免在渲染期间更新父组件
+    onUpdatePlayer({
+      inventory: updated.inventory,
     });
     showSuccess(`已添加装备：${template.name}`);
   };
@@ -468,16 +458,14 @@ const DebugModal: React.FC<Props> = ({
       showError('该功法已学习');
       return; // 已经学习过了
     }
-    setLocalPlayer((prev) => {
-      const updated = {
-        ...prev,
-        cultivationArts: [...prev.cultivationArts, art.id],
-      };
-      // 立即更新到实际玩家状态
-      onUpdatePlayer({
-        cultivationArts: updated.cultivationArts,
-      });
-      return updated;
+    const updated = {
+      ...localPlayer,
+      cultivationArts: [...localPlayer.cultivationArts, art.id],
+    };
+    setLocalPlayer(updated);
+    // 在状态更新回调外调用，避免在渲染期间更新父组件
+    onUpdatePlayer({
+      cultivationArts: updated.cultivationArts,
     });
     showSuccess(`已学习功法：${art.name}`);
   };
@@ -510,16 +498,14 @@ const DebugModal: React.FC<Props> = ({
       return; // 已经完成了
     }
     const achievement = ACHIEVEMENTS.find((a) => a.id === achievementId);
-    setLocalPlayer((prev) => {
-      const updated = {
-        ...prev,
-        achievements: [...prev.achievements, achievementId],
-      };
-      // 立即更新到实际玩家状态
-      onUpdatePlayer({
-        achievements: updated.achievements,
-      });
-      return updated;
+    const updated = {
+      ...localPlayer,
+      achievements: [...localPlayer.achievements, achievementId],
+    };
+    setLocalPlayer(updated);
+    // 在状态更新回调外调用，避免在渲染期间更新父组件
+    onUpdatePlayer({
+      achievements: updated.achievements,
     });
     showSuccess(`已完成成就：${achievement?.name || achievementId}`);
   };
@@ -540,16 +526,14 @@ const DebugModal: React.FC<Props> = ({
       affection: 50,
     };
 
-    setLocalPlayer((prev) => {
-      const updated = {
-        ...prev,
-        pets: [...prev.pets, newPet],
-      };
-      // 立即更新到实际玩家状态
-      onUpdatePlayer({
-        pets: updated.pets,
-      });
-      return updated;
+    const updated = {
+      ...localPlayer,
+      pets: [...localPlayer.pets, newPet],
+    };
+    setLocalPlayer(updated);
+    // 在状态更新回调外调用，避免在渲染期间更新父组件
+    onUpdatePlayer({
+      pets: updated.pets,
     });
     showSuccess(`已添加灵宠：${template.name}`);
   };
@@ -610,14 +594,14 @@ const DebugModal: React.FC<Props> = ({
       }
 
       const updated = {
-        ...prev,
+        ...localPlayer,
         inventory: newInv,
       };
-      // 立即更新到实际玩家状态
+      setLocalPlayer(updated);
+      // 在状态更新回调外调用，避免在渲染期间更新父组件
       onUpdatePlayer({
         inventory: updated.inventory,
       });
-      return updated;
     });
   };
 
@@ -627,16 +611,14 @@ const DebugModal: React.FC<Props> = ({
       showError('该丹方已解锁');
       return; // 已经解锁了
     }
-    setLocalPlayer((prev) => {
-      const updated = {
-        ...prev,
-        unlockedRecipes: [...prev.unlockedRecipes, recipeName],
-      };
-      // 立即更新到实际玩家状态
-      onUpdatePlayer({
-        unlockedRecipes: updated.unlockedRecipes,
-      });
-      return updated;
+    const updated = {
+      ...localPlayer,
+      unlockedRecipes: [...localPlayer.unlockedRecipes, recipeName],
+    };
+    setLocalPlayer(updated);
+    // 在状态更新回调外调用，避免在渲染期间更新父组件
+    onUpdatePlayer({
+      unlockedRecipes: updated.unlockedRecipes,
     });
     showSuccess(`已解锁丹方：${recipeName}`);
   };
@@ -827,6 +809,8 @@ const DebugModal: React.FC<Props> = ({
                 { key: 'physique', label: '体魄' },
                 { key: 'speed', label: '速度' },
                 { key: 'luck', label: '幸运值' },
+                { key: 'lifespan', label: '寿命', maxKey: 'maxLifespan' },
+                { key: 'maxLifespan', label: '最大寿命' },
               ].map(({ key, label, maxKey }) => {
                 const value = localPlayer[key as keyof PlayerStats] as number;
                 const maxValue = maxKey
@@ -840,9 +824,12 @@ const DebugModal: React.FC<Props> = ({
                     </label>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() =>
-                          adjustNumber(key as keyof PlayerStats, -100)
-                        }
+                        onClick={() => {
+                          const newValue = maxValue !== undefined
+                            ? Math.max(0, Math.min(maxValue, value - 100))
+                            : Math.max(0, value - 100);
+                          updateField(key as keyof PlayerStats, newValue);
+                        }}
                         className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
                       >
                         -100
@@ -863,9 +850,12 @@ const DebugModal: React.FC<Props> = ({
                         className="flex-1 bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
                       />
                       <button
-                        onClick={() =>
-                          adjustNumber(key as keyof PlayerStats, 100)
-                        }
+                        onClick={() => {
+                          const newValue = maxValue !== undefined
+                            ? Math.max(0, Math.min(maxValue, value + 100))
+                            : Math.max(0, value + 100);
+                          updateField(key as keyof PlayerStats, newValue);
+                        }}
                         className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
                       >
                         +100
@@ -1986,10 +1976,12 @@ const DebugModal: React.FC<Props> = ({
                             const updatedPets = localPlayer.pets.map((p) =>
                               p.id === editingPetId ? editingPet : p
                             );
-                            setLocalPlayer((prev) => ({
-                              ...prev,
+                            const updated = {
+                              ...localPlayer,
                               pets: updatedPets,
-                            }));
+                            };
+                            setLocalPlayer(updated);
+                            // 在状态更新回调外调用，避免在渲染期间更新父组件
                             onUpdatePlayer({
                               pets: updatedPets,
                             });
