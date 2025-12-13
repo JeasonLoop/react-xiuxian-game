@@ -113,14 +113,14 @@ make build
 
 ```bash
 # 方式一：使用环境变量
-VITE_APP_VERSION=0.1.8 docker-compose build
+VITE_APP_VERSION=0.1.9 docker-compose build
 
 # 方式二：在.env文件中设置
-# VITE_APP_VERSION=0.1.8
+# VITE_APP_VERSION=0.1.9
 
 # 方式三：使用docker build命令
 docker build \
-  --build-arg VITE_APP_VERSION=0.1.8 \
+  --build-arg VITE_APP_VERSION=0.1.9 \
   -t react-xiuxian-game:latest .
 ```
 
