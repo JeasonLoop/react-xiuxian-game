@@ -296,7 +296,7 @@ const SectModal: React.FC<Props> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-6 overflow-y-auto bg-paper-800">
+        <div className="flex-1 p-6 overflow-y-auto bg-paper-800 max-h-[68vh]">
           {/* Main Hall */}
           {activeTab === 'hall' && (
             <div className="space-y-6">
@@ -402,8 +402,8 @@ const SectModal: React.FC<Props> = ({
 
           {/* Mission Hall */}
           {activeTab === 'mission' && (
-            <div>
-              <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-col h-full">
+              <div className="flex justify-between items-center mb-4 flex-shrink-0">
                 <h4 className="font-serif text-lg text-stone-200">任务列表</h4>
                 <button
                   onClick={handleRefresh}
@@ -414,7 +414,7 @@ const SectModal: React.FC<Props> = ({
                   <span>刷新</span>
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto flex-1 min-h-0">
                 {randomTasks.map((task) => {
                   const canComplete = (() => {
                     // 检查境界要求
