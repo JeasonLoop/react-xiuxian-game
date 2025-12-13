@@ -229,8 +229,47 @@ export const inferItemTypeAndSlot = (
     };
   }
 
-  // 胸甲装备（放在最后，作为默认护甲类型）
-  if (combined.match(/道袍|法衣|胸甲|护胸|铠甲|战甲|法袍|长袍|外衣|甲|袍|衣/)) {
+  // 草药类（应该在护甲检查之前，避免误判）
+  if (
+    combined.match(
+      /草药|药草|灵草|仙草|草|花|果|叶|根|茎|枝|胆草|解毒|疗伤|恢复|治疗|回血|回蓝|回灵|回气/
+    ) &&
+    !combined.match(/草甲|草衣|草帽|草鞋/) // 排除名称中包含"草"的装备（如草甲）
+  ) {
+    return {
+      type: ItemType.Herb,
+      isEquippable: false,
+    };
+  }
+
+  // 丹药类
+  if (combined.match(/丹药|丹|丸|散|液|膏|剂|药|灵丹|仙丹/)) {
+    return {
+      type: ItemType.Pill,
+      isEquippable: false,
+    };
+  }
+
+  // 材料类
+  if (
+    combined.match(
+      /材料|矿物|矿石|晶石|灵石|铁|铜|银|金|木|石|骨|皮|角|鳞|羽|毛|丝|线|布|纸/
+    )
+  ) {
+    return {
+      type: ItemType.Material,
+      isEquippable: false,
+    };
+  }
+
+  // 胸甲装备（放在最后，作为默认护甲类型，但要避免误判）
+  // 更精确的匹配，避免匹配到"胆草"中的"草"、"护甲"等
+  if (
+    combined.match(
+      /道袍|法衣|胸甲|护胸|铠甲|战甲|法袍|长袍|外衣|护甲|重甲|轻甲|板甲|锁甲|软甲|硬甲|袍|衣/
+    ) &&
+    !combined.match(/胆草|草药|药草|灵草|仙草/) // 排除草药相关词汇
+  ) {
     return {
       type: ItemType.Armor,
       isEquippable: true,

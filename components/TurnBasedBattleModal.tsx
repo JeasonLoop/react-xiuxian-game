@@ -70,9 +70,12 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   const isActionLockedRef = useRef(false);
   // 使用状态来触发重新渲染，确保按钮禁用状态正确更新
 
-  // 初始化战斗
+  // 初始化战斗 - 使用 ref 防止重复初始化
+  const isInitializedRef = useRef(false);
+
   useEffect(() => {
-    if (isOpen && !battleState) {
+    if (isOpen && !battleState && !isInitializedRef.current) {
+      isInitializedRef.current = true;
       isActionLockedRef.current = false;
       setIsProcessing(true); // 初始化时设置为处理中
       initializeTurnBasedBattle(
@@ -91,10 +94,12 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
           setErrorMessage('战斗初始化失败');
           setIsProcessing(false);
           isActionLockedRef.current = false;
+          isInitializedRef.current = false; // 初始化失败，允许重试
           setTimeout(() => setErrorMessage(null), 3000);
         });
-    } else if (!isOpen) {
+    } else if (!isOpen && battleState) {
       // 关闭时重置所有状态
+      isInitializedRef.current = false;
       setBattleState(null);
       setIsProcessing(false);
       isActionLockedRef.current = false;
@@ -102,9 +107,9 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
       setShowPotions(false);
       setErrorMessage(null);
     }
-  }, [isOpen, player, adventureType, riskLevel, realmMinRealm, battleState]);
+  }, [isOpen, player, adventureType, riskLevel, realmMinRealm]);
 
-  // 监控状态，确保操作栏能正确显示
+  // 监控状态，确保操作栏能正确显示（防止 isProcessing 卡住）
   useEffect(() => {
     if (!battleState) return;
 
@@ -117,17 +122,27 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
       // 检查是否真的在处理中（通过检查是否有正在进行的异步操作）
       // 如果超过2秒还在处理中，可能是卡住了，自动重置
       const timeout = setTimeout(() => {
-        if (isProcessing && battleState?.waitingForPlayerAction) {
-          console.warn('检测到 isProcessing 可能卡住，自动重置');
-          setIsProcessing(false);
-        }
+        setIsProcessing((prev) => {
+          // 只有在仍然是处理中且仍然是玩家回合时才重置
+          if (prev && battleState?.waitingForPlayerAction) {
+            console.warn('检测到 isProcessing 可能卡住，自动重置');
+            return false;
+          }
+          return prev;
+        });
       }, 2000);
 
       return () => clearTimeout(timeout);
     }
-  }, [battleState, isProcessing]);
+  }, [battleState?.waitingForPlayerAction, battleState?.playerActionsRemaining, isProcessing]);
 
   // 如果是敌方先手，自动驱动敌人行动，避免界面没有操作栏
+  // 使用 useRef 存储最新的 onClose，避免依赖项变化导致频繁触发
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
   useEffect(() => {
     if (
       !battleState ||
@@ -189,7 +204,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
           }
           setIsProcessing(false);
           isActionLockedRef.current = false; // 释放锁
-          onClose(
+          onCloseRef.current(
             {
               victory,
               hpLoss,
@@ -220,11 +235,10 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
 
     return () => {
       clearTimeout(timer);
-      // 如果组件卸载或依赖变化，确保重置处理状态
-      setIsProcessing(false);
-      isActionLockedRef.current = false; // 释放锁
+      // 注意：不在这里重置 isProcessing，因为可能会中断正在进行的战斗逻辑
+      // 状态重置应该在战斗流程自然结束时进行
     };
-  }, [battleState, isProcessing, player, adventureType, riskLevel, onClose]);
+  }, [battleState, isProcessing, player, adventureType, riskLevel]);
 
   // 处理玩家行动
   const handlePlayerAction = async (action: PlayerAction) => {
@@ -451,7 +465,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
       );
       return potionConfig && item.quantity > 0;
     });
-  }, [battleState, player.inventory]);
+  }, [battleState?.playerInventory, player.inventory]);
 
   if (!isOpen || !battleState) return null;
 

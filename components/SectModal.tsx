@@ -52,7 +52,21 @@ const SectModal: React.FC<Props> = ({
   // 生成随机宗门列表（未加入宗门时）
   const availableSects = useMemo(() => {
     if (player.sectId) return SECTS;
-    return generateRandomSects(player.realm, 6);
+    // 生成更多宗门以确保能选出6个唯一的
+    const allSects = generateRandomSects(player.realm, 12);
+    const uniqueSects: typeof SECTS = [];
+    const seenNames = new Set<string>();
+
+    // 去重：按宗门名称去重，保留第一次出现的
+    for (const sect of allSects) {
+      if (!seenNames.has(sect.name)) {
+        seenNames.add(sect.name);
+        uniqueSects.push(sect);
+        if (uniqueSects.length >= 6) break;
+      }
+    }
+
+    return uniqueSects.slice(0, 6); // 确保最多返回6个
   }, [player.realm, player.sectId, refreshKey]);
 
   // 生成随机任务列表（已加入宗门时）
