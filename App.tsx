@@ -200,6 +200,7 @@ function App() {
   const [autoMeditate, setAutoMeditate] = useState(false);
   const [autoAdventure, setAutoAdventure] = useState(false);
   const [autoAdventurePausedByShop, setAutoAdventurePausedByShop] = useState(false);
+  const [autoAdventurePausedByBattle, setAutoAdventurePausedByBattle] = useState(false);
   const [isDead, setIsDead] = useState(false);
   const [deathBattleData, setDeathBattleData] = useState<BattleReplay | null>(null);
   const [deathReason, setDeathReason] = useState('');
@@ -340,9 +341,10 @@ function App() {
       battleHandlers.openBattleModal(replay);
     },
     onOpenTurnBasedBattle: (params) => {
-      // 如果正在自动历练，暂停自动历练
+      // 如果正在自动历练，暂停自动历练但保存状态
       if (autoAdventure) {
         setAutoAdventure(false);
+        setAutoAdventurePausedByBattle(true);
       }
       setTurnBasedBattleParams(params);
       setIsTurnBasedBattleOpen(true);
@@ -370,6 +372,18 @@ function App() {
     setAutoMeditate,
     setAutoAdventure,
   });
+
+  // 战斗结束后，如果玩家还活着且之前是自动历练模式，继续自动历练
+  useEffect(() => {
+    if (autoAdventurePausedByBattle && player && player.hp > 0 && !isDead && !loading) {
+      // 延迟一小段时间后恢复自动历练，确保状态更新完成
+      const timer = setTimeout(() => {
+        setAutoAdventure(true);
+        setAutoAdventurePausedByBattle(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [autoAdventurePausedByBattle, player?.hp, isDead, loading]);
 
   // 涅槃重生功能
   const handleRebirth = () => {
@@ -898,6 +912,18 @@ function App() {
             setIsTurnBasedBattleOpen(false);
             setTurnBasedBattleParams(null);
             handleBattleResult(result, updatedInventory);
+
+            // 如果玩家死亡，清除自动历练暂停状态（死亡检测会处理）
+            if (result && player) {
+              const playerHpAfter = Math.max(0, player.hp - (result.hpLoss || 0));
+              if (playerHpAfter <= 0) {
+                setAutoAdventurePausedByBattle(false);
+              }
+            } else if (!result) {
+              // 如果没有战斗结果，也清除暂停状态
+              setAutoAdventurePausedByBattle(false);
+            }
+            // 如果玩家还活着，useEffect 会自动恢复自动历练
           },
         }}
       />
