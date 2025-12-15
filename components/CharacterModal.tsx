@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { X, Star, Award, Info, RotateCcw, Zap } from 'lucide-react';
-import { PlayerStats, Talent, Title, ItemRarity, RealmType } from '../types';
+import { X, Star, Award, Info, Zap } from 'lucide-react';
+import { PlayerStats,  ItemRarity } from '../types';
 import {
   TALENTS,
   TITLES,

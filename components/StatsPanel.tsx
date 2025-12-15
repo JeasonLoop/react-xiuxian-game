@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { PlayerStats, ItemRarity } from '../types';
+import { PlayerStats } from '../types';
 import { CULTIVATION_ARTS } from '../constants';
 import { getRarityTextColor } from '../utils/rarityUtils';
 import {

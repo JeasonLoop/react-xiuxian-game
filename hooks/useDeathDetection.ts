@@ -2,9 +2,10 @@
  * 死亡检测 Hook
  * 处理玩家死亡检测、保命装备、死亡惩罚等逻辑
  */
-
+import React from 'react';
 import { useEffect } from 'react';
-import { PlayerStats, Item, EquipmentSlot, BattleReplay, GameSettings } from '../types';
+import { PlayerStats, Item, EquipmentSlot, GameSettings } from '../types';
+import { BattleReplay } from '../services/battleService';
 import { SAVE_KEY } from '../utils/gameUtils';
 
 interface UseDeathDetectionParams {

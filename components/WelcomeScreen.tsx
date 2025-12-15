@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { Sparkles, Play, Upload } from 'lucide-react';
 import logo from '../public/assets/images/logo.png';
 import { SAVE_KEY } from '../utils/gameUtils';
-import { showError, showSuccess, showConfirm } from '../utils/toastUtils';
+import { showError, showConfirm } from '../utils/toastUtils';
 
 interface Props {
   hasSave: boolean;

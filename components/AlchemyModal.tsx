@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Item, PlayerStats, Recipe } from '../types';
+import { PlayerStats, Recipe } from '../types';
 import { PILL_RECIPES, DISCOVERABLE_RECIPES } from '../constants';
 import { X, Sparkles, FlaskConical, CircleOff } from 'lucide-react';
 

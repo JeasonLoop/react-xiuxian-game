@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { PlayerStats, RealmType, SecretRealm } from '../types';
-import { SECRET_REALMS, REALM_ORDER } from '../constants';
+import { REALM_ORDER } from '../constants';
 import { generateRandomRealms } from '../services/randomService';
-import { X, Mountain, Skull, Gem, Ticket, RefreshCw } from 'lucide-react';
+import { X, Mountain, Gem, Ticket, RefreshCw } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;

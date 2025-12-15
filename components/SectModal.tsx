@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { PlayerStats, SectRank, RealmType, Item, AdventureResult } from '../types';
 import { SECTS, SECT_RANK_REQUIREMENTS, REALM_ORDER } from '../constants';
 import { generateRandomSects, generateRandomSectTasks, generateSectShopItems, RandomSectTask } from '../services/randomService';
-import { X, Users, Award, ShoppingBag, Shield, Scroll, ArrowUp, RefreshCw } from 'lucide-react';
+import { X, Users, ShoppingBag, Shield, Scroll, ArrowUp, RefreshCw } from 'lucide-react';
 import SectTaskModal from './SectTaskModal';
 
 interface Props {

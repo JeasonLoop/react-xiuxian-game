@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { X, Trash2, AlertTriangle, Filter } from 'lucide-react';
-import { PlayerStats, Pet, ItemRarity } from '../types';
+import { PlayerStats, ItemRarity } from '../types';
 import { getRarityTextColor } from '../utils/rarityUtils';
 
 interface Props {
@@ -127,7 +127,7 @@ const BatchReleaseModal: React.FC<Props> = ({
   };
 
   // 计算总补偿
-  const totalCompensation = Array.from(selectedPets).reduce((total, petId) => {
+  const totalCompensation = Array.from(selectedPets).reduce((total: number, petId) => {
     const pet = player.pets.find((p) => p.id === petId);
     if (!pet) return total;
     const baseCompensation = 100;

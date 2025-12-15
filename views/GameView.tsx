@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { PlayerStats, LogEntry, GameSettings } from '../types';
+import { PlayerStats, LogEntry } from '../types';
 import StatsPanel from '../components/StatsPanel';
 import LogPanel from '../components/LogPanel';
 import CombatVisuals from '../components/CombatVisuals';

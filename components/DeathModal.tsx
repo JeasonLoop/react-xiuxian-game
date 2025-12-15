@@ -1,7 +1,7 @@
 import React from 'react';
 import { PlayerStats, DifficultyMode } from '../types';
 import { BattleReplay } from '../services/battleService';
-import { Flame, Sword, Shield, Heart, Skull, RotateCcw } from 'lucide-react';
+import { Flame, Sword, Heart, Skull, RotateCcw } from 'lucide-react';
 
 interface DeathModalProps {
   player: PlayerStats;

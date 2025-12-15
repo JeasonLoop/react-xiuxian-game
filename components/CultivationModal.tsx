@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { CultivationArt, RealmType, PlayerStats, ArtGrade } from '../types';
 import { CULTIVATION_ARTS, REALM_ORDER } from '../constants';
-import { X, BookOpen, Check, Lock, Zap } from 'lucide-react';
+import { X, BookOpen, Check, Lock } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;

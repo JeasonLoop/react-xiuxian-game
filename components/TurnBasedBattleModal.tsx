@@ -10,7 +10,6 @@ import {
 } from 'lucide-react';
 import {
   BattleState,
-  BattleSkill,
   PlayerAction,
   Item,
   PlayerStats,
