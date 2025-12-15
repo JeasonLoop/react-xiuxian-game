@@ -4,20 +4,29 @@
 
 ## 📖 文档导航
 
-### 🚀 快速开始
+### 🚀 入门文档
 
-- **[快速开始指南](./QUICK_START.md)** - 安装、配置和运行项目
-- **[游戏玩法说明](./GAMEPLAY.md)** - 详细的游戏机制和玩法介绍
+- **[开发指南](./DEVELOPMENT.md)** - 从快速开始到深入开发的完整指南
+  - 快速开始（安装、配置、运行）
+  - 开发环境搭建
+  - 调试技巧
+  - 构建和部署
+  - 代码规范
 
 ### 🏗️ 技术文档
 
 - **[架构设计](./ARCHITECTURE.md)** - 项目架构、技术栈和设计模式
-- **[模块解析](./MODULES.md)** - 目录结构、模块说明和代码组织
-- **[API 文档](./API.md)** - AI 服务、战斗系统等核心 API
+- **[模块解析](./MODULES.md)** - 详细的目录结构、模块说明和代码组织
+- **[API 文档](./API.md)** - AI 服务、战斗系统等核心 API 和配置说明
 
-### 👨‍💻 开发指南
+### 🎮 游戏文档
 
-- **[开发指南](./DEVELOPMENT.md)** - 开发环境搭建、调试、构建和部署
+- **[游戏玩法说明](./GAMEPLAY.md)** - 详细的游戏机制和玩法介绍
+- **[存档格式说明](./SAVE_FORMAT.md)** - 存档 JSON 格式详细说明
+
+### 👨‍💻 项目文档
+
+- **[改进计划](./IMPROVEMENTS.md)** - 战斗系统重构、灵宠系统改进等计划
 - **[贡献指南](./CONTRIBUTING.md)** - 如何参与项目贡献
 
 ## 📋 文档概览
@@ -52,33 +61,33 @@
 ```
 doc/
 ├── README.md              # 文档索引（本文件）
-├── QUICK_START.md         # 快速开始指南
+├── DEVELOPMENT.md         # 开发指南（快速开始 + 开发实践）
 ├── ARCHITECTURE.md        # 架构设计文档
 ├── MODULES.md             # 模块和目录解析
-├── API.md                 # API 和服务文档
-├── DEVELOPMENT.md         # 开发指南
+├── API.md                 # API 和配置文档
 ├── GAMEPLAY.md            # 游戏玩法说明
-├── CONTRIBUTING.md        # 贡献指南
 ├── SAVE_FORMAT.md         # 存档格式说明
-└── AI_CONFIG.md           # AI 配置说明
+├── IMPROVEMENTS.md        # 改进计划
+└── CONTRIBUTING.md        # 贡献指南
 ```
 
 ## 🔍 快速查找
 
 ### 按主题查找
 
-- **想开始开发？** → [快速开始指南](./QUICK_START.md)
+- **想开始开发？** → [开发指南](./DEVELOPMENT.md)
 - **想了解架构？** → [架构设计文档](./ARCHITECTURE.md)
 - **想了解游戏机制？** → [游戏玩法说明](./GAMEPLAY.md)
+- **想配置 AI 服务？** → [API 文档](./API.md)
 - **想贡献代码？** → [贡献指南](./CONTRIBUTING.md)
-- **想了解 API？** → [API 文档](./API.md)
+- **想了解改进计划？** → [改进计划](./IMPROVEMENTS.md)
 
 ### 按角色查找
 
-- **新开发者** → 先阅读 [快速开始指南](./QUICK_START.md)，然后查看 [架构设计](./ARCHITECTURE.md)
+- **新开发者** → 先阅读 [开发指南](./DEVELOPMENT.md)，然后查看 [架构设计](./ARCHITECTURE.md)
 - **游戏玩家** → 查看 [游戏玩法说明](./GAMEPLAY.md)
 - **贡献者** → 阅读 [贡献指南](./CONTRIBUTING.md) 和 [开发指南](./DEVELOPMENT.md)
-- **维护者** → 查看所有文档，特别是 [架构设计](./ARCHITECTURE.md) 和 [模块解析](./MODULES.md)
+- **维护者** → 查看所有文档，特别是 [架构设计](./ARCHITECTURE.md)、[模块解析](./MODULES.md) 和 [改进计划](./IMPROVEMENTS.md)
 
 ## 📝 文档更新
 
