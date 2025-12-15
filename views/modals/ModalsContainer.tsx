@@ -13,6 +13,7 @@ import AchievementModal from '../../components/AchievementModal';
 import PetModal from '../../components/PetModal';
 import LotteryModal from '../../components/LotteryModal';
 import SettingsModal from '../../components/SettingsModal';
+import DailyQuestModal from '../../components/DailyQuestModal';
 import ShopModal from '../../components/ShopModal';
 import { BattleReplay } from '../../services/battleService';
 import { CultivationArt, Recipe } from '../../types';
@@ -45,6 +46,7 @@ interface ModalsContainerProps {
     isPetOpen: boolean;
     isLotteryOpen: boolean;
     isSettingsOpen: boolean;
+    isDailyQuestOpen: boolean;
     isShopOpen: boolean;
     isBattleModalOpen: boolean;
     isTurnBasedBattleOpen?: boolean;
@@ -73,6 +75,7 @@ interface ModalsContainerProps {
     setIsPetOpen: (open: boolean) => void;
     setIsLotteryOpen: (open: boolean) => void;
     setIsSettingsOpen: (open: boolean) => void;
+    setIsDailyQuestOpen: (open: boolean) => void;
     setIsShopOpen: (open: boolean) => void;
     setIsBattleModalOpen: (open: boolean) => void;
     setItemToUpgrade: (item: Item | null) => void;
@@ -141,6 +144,8 @@ interface ModalsContainerProps {
     // Settings
     handleUpdateSettings: (newSettings: Partial<GameSettings>) => void;
     handleRestartGame?: () => void;
+    // Daily Quest
+    handleClaimQuestReward?: (questId: string) => void;
     // Shop
     handleBuyItem: (shopItem: any, quantity?: number) => void;
     handleSellItem: (item: Item, quantity?: number) => void;
@@ -311,6 +316,13 @@ export default function ModalsContainer({
         settings={settings}
         onUpdateSettings={handlers.handleUpdateSettings}
         onRestartGame={handlers.handleRestartGame}
+      />
+
+      <DailyQuestModal
+        isOpen={modals.isDailyQuestOpen}
+        onClose={() => handlers.setIsDailyQuestOpen(false)}
+        player={player}
+        onClaimReward={handlers.handleClaimQuestReward || (() => {})}
       />
 
       {modalState.currentShop && (

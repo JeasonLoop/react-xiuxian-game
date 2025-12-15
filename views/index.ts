@@ -31,3 +31,4 @@ export { useSectHandlers } from './sect';
 export { usePetHandlers } from './pet';
 export { useLotteryHandlers } from './lottery';
 export { useAchievementHandlers } from './achievement';
+export { useDailyQuestHandlers } from './dailyQuest';

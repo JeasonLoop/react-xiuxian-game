@@ -34,6 +34,7 @@ interface UseBattleResultHandlerParams {
   setPlayer: React.Dispatch<React.SetStateAction<PlayerStats | null>>;
   addLog: (message: string, type?: string) => void;
   setLoading: (loading: boolean) => void;
+  updateQuestProgress?: (type: string, amount?: number) => void; // 更新任务进度回调
 }
 
 /**
@@ -44,6 +45,7 @@ export function useBattleResultHandler({
   setPlayer,
   addLog,
   setLoading,
+  updateQuestProgress,
 }: UseBattleResultHandlerParams) {
   const handleBattleResult = (
     result: BattleResultData | null,
@@ -101,6 +103,10 @@ export function useBattleResultHandler({
         const newStatistics = { ...prev.statistics };
         if (result.victory) {
           newStatistics.killCount += 1;
+          // 更新击杀任务进度
+          if (updateQuestProgress) {
+            updateQuestProgress('kill', 1);
+          }
         }
 
         // 处理物品奖励
@@ -143,6 +149,10 @@ export function useBattleResultHandler({
                 ...newInventory[existingIdx],
                 quantity: newInventory[existingIdx].quantity + 1,
               };
+              // 更新收集任务进度（可能是新类型的物品）
+              if (updateQuestProgress) {
+                updateQuestProgress('collect', 1);
+              }
             } else {
               // 装备类物品或新物品，每个装备单独占一格
               const newItem: Item = {
@@ -160,6 +170,10 @@ export function useBattleResultHandler({
               };
               newInventory.push(newItem);
               addLog(`获得 ${itemName}！`, 'gain');
+              // 更新收集任务进度（新物品）
+              if (updateQuestProgress) {
+                updateQuestProgress('collect', 1);
+              }
             }
           });
         }

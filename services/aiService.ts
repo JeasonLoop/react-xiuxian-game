@@ -101,7 +101,43 @@ const parseMessageContent = (content: unknown): string => {
 const requestCache = new Map<string, { timestamp: number; promise: Promise<string> }>();
 const CACHE_DURATION = 1000; // 1秒内的重复请求使用缓存
 
-const requestModel = async (messages: ChatMessage[], temperature = 0.7, maxTokens?: number) => {
+// 请求队列，确保同一时间只有一个AI请求在进行
+interface QueuedRequest {
+  messages: ChatMessage[];
+  temperature: number;
+  maxTokens?: number;
+  resolve: (value: string) => void;
+  reject: (error: Error) => void;
+}
+
+let requestQueue: QueuedRequest[] = [];
+let isProcessing = false;
+
+// 处理请求队列
+const processQueue = async () => {
+  if (isProcessing || requestQueue.length === 0) {
+    return;
+  }
+
+  isProcessing = true;
+
+  while (requestQueue.length > 0) {
+    const request = requestQueue.shift();
+    if (!request) break;
+
+    try {
+      const result = await executeRequest(request.messages, request.temperature, request.maxTokens);
+      request.resolve(result);
+    } catch (error) {
+      request.reject(error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  isProcessing = false;
+};
+
+// 执行实际的AI请求
+const executeRequest = async (messages: ChatMessage[], temperature = 0.7, maxTokens?: number): Promise<string> => {
   // 如果使用代理，API Key 在服务器端处理，前端不需要发送
   // 如果不使用代理，需要检查 API Key 是否存在
   if (!USE_PROXY && !API_KEY) {
@@ -113,7 +149,7 @@ const requestModel = async (messages: ChatMessage[], temperature = 0.7, maxToken
   const cached = requestCache.get(cacheKey);
   const now = Date.now();
 
-  // 如果缓存存在且未过期，返回缓存的promise
+  // 如果缓存存在且未过期，返回缓存的promise（双重检查，防止队列中的重复请求）
   if (cached && now - cached.timestamp < CACHE_DURATION) {
     return cached.promise;
   }
@@ -176,6 +212,39 @@ const requestModel = async (messages: ChatMessage[], temperature = 0.7, maxToken
   }
 
   return requestPromise;
+};
+
+// 请求模型（带队列）
+const requestModel = async (messages: ChatMessage[], temperature = 0.7, maxTokens?: number): Promise<string> => {
+  // 如果使用代理，API Key 在服务器端处理，前端不需要发送
+  // 如果不使用代理，需要检查 API Key 是否存在
+  if (!USE_PROXY && !API_KEY) {
+    throw new Error('AI API key is missing');
+  }
+
+  // 生成请求缓存键（基于消息内容）
+  const cacheKey = JSON.stringify(messages);
+  const cached = requestCache.get(cacheKey);
+  const now = Date.now();
+
+  // 如果缓存存在且未过期，直接返回缓存的promise（不加入队列）
+  if (cached && now - cached.timestamp < CACHE_DURATION) {
+    return cached.promise;
+  }
+
+  // 将请求加入队列
+  return new Promise<string>((resolve, reject) => {
+    requestQueue.push({
+      messages,
+      temperature,
+      maxTokens,
+      resolve,
+      reject,
+    });
+
+    // 触发队列处理
+    processQueue();
+  });
 };
 
 export const generateAdventureEvent = async (player: PlayerStats, adventureType: AdventureType = 'normal', riskLevel?: '低' | '中' | '高' | '极度危险', realmName?: string, realmDescription?: string): Promise<AdventureResult> => {
@@ -405,8 +474,7 @@ ${typeInstructions}
         { role: 'system', content: systemMessage },
         { role: 'user', content: userMessage },
       ],
-      0.7, // 降低temperature从0.95到0.7，加快响应速度
-      2000 // 限制最大token数，加快响应
+      0.95, // 降低temperature从0.95到0.7，加快响应速度
     );
 
     // 清理JSON字符串中的无效格式

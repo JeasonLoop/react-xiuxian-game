@@ -245,6 +245,12 @@ export interface PlayerStats {
     fire: number; // 火灵根 (0-100)
     earth: number; // 土灵根 (0-100)
   };
+  // 日常任务系统
+  dailyQuests: DailyQuest[]; // 当前日常任务列表
+  dailyQuestProgress: Record<string, number>; // 任务ID -> 完成进度
+  dailyQuestCompleted: string[]; // 今日已完成的任务ID
+  lastDailyQuestResetDate: string; // 上次重置日常任务的日期（YYYY-MM-DD格式）
+  gameDays: number; // 游戏内天数（从开始游戏起计算）
 }
 
 export interface LogEntry {
@@ -763,4 +769,37 @@ export interface BattlePotion {
   };
   cooldown?: number; // 使用后冷却（防止无限使用）
   itemType: ItemType; // 物品类型
+}
+
+// 日常任务类型
+export type DailyQuestType =
+  | 'meditate' // 打坐
+  | 'adventure' // 历练
+  | 'breakthrough' // 突破
+  | 'alchemy' // 炼丹
+  | 'equip' // 装备
+  | 'pet' // 灵宠
+  | 'sect' // 宗门
+  | 'realm' // 秘境
+  | 'kill' // 击败敌人（AI生成）
+  | 'collect' // 收集物品（AI生成）
+  | 'learn' // 学习功法（AI生成）
+  | 'other'; // 其他创意任务（AI生成）
+
+// 日常任务
+export interface DailyQuest {
+  id: string;
+  type: DailyQuestType;
+  name: string;
+  description: string;
+  target: number; // 目标数量
+  progress: number; // 当前进度
+  reward: {
+    exp?: number; // 修为奖励
+    spiritStones?: number; // 灵石奖励
+    lotteryTickets?: number; // 抽奖券奖励
+    items?: Array<{ name: string; quantity: number }>; // 物品奖励
+  };
+  rarity: ItemRarity; // 任务稀有度（影响奖励）
+  completed: boolean; // 是否已完成
 }
