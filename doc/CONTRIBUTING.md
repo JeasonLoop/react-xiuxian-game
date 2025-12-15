@@ -256,7 +256,7 @@ npx tsc --noEmit
 
 ### 问题
 
-- 查看 [Issues](https://github.com/your-repo/issues)
+- 查看 [Issues](https://github.com/JeasonLoop/react-xiuxian-game/issues)
 - 查看 [文档](../doc/)
 - 创建新 Issue 提问
 
