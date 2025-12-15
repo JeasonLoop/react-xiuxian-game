@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useCallback } from 'react';
 import { LogEntry } from '../types';
 import { uid } from '../utils/gameUtils';

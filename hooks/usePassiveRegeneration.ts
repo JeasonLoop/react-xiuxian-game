@@ -3,6 +3,7 @@
  * 处理玩家被动回血和冷却时间递减
  */
 
+import React from 'react';
 import { useEffect } from 'react';
 import { PlayerStats } from '../types';
 
@@ -10,7 +11,7 @@ interface UsePassiveRegenerationParams {
   player: PlayerStats | null;
   setPlayer: React.Dispatch<React.SetStateAction<PlayerStats | null>>;
   cooldown: number;
-  setCooldown: (cooldown: number) => void;
+  setCooldown: React.Dispatch<React.SetStateAction<number>>;
 }
 
 /**
@@ -19,7 +20,6 @@ interface UsePassiveRegenerationParams {
 export function usePassiveRegeneration({
   player,
   setPlayer,
-  cooldown,
   setCooldown,
 }: UsePassiveRegenerationParams) {
   useEffect(() => {
@@ -41,7 +41,7 @@ export function usePassiveRegeneration({
 
         return prev;
       });
-      setCooldown((c) => (c > 0 ? c - 1 : 0));
+      setCooldown((c: number) => (c > 0 ? c - 1 : 0));
     }, 1000);
     return () => clearInterval(timer);
   }, [player, setPlayer, setCooldown]);

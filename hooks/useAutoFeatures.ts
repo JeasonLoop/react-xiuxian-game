@@ -30,8 +30,6 @@ export function useAutoFeatures({
   loading,
   cooldown,
   isShopOpen,
-  autoAdventurePausedByShop,
-  setAutoAdventurePausedByShop,
   handleMeditate,
   handleAdventure,
   setCooldown,

@@ -14,7 +14,6 @@ import {
   ShopItem,
   Item,
   PlayerStats,
-  RealmType,
   ItemRarity,
   ItemType,
 } from '../types';

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { X, Package, Filter, Heart } from 'lucide-react';
+import { X, Filter, Heart } from 'lucide-react';
 import { Item, ItemType, ItemRarity, PlayerStats } from '../types';
 import { getRarityTextColor } from '../utils/rarityUtils';
 import {  showInfo } from '../utils/toastUtils';
