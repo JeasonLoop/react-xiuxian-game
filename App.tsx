@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Item,
   Shop,
@@ -45,6 +45,7 @@ import {
   useSectHandlers, // 宗门
   useAchievementHandlers, // 成就
   useAdventureHandlers, // 历练
+  useDailyQuestHandlers, // 日常任务
   GameView, // 游戏视图
   ModalsContainer, // 弹窗容器
 } from './views';
@@ -98,6 +99,7 @@ function App() {
     isPetOpen,
     isLotteryOpen,
     isSettingsOpen,
+    isDailyQuestOpen,
     isShopOpen,
     isDebugOpen,
     isBattleModalOpen,
@@ -118,6 +120,7 @@ function App() {
     setIsPetOpen,
     setIsLotteryOpen,
     setIsSettingsOpen,
+    setIsDailyQuestOpen,
     setIsShopOpen,
     setIsDebugOpen,
     setIsBattleModalOpen,
@@ -222,6 +225,9 @@ function App() {
     setPlayer,
     addLog,
     setLoading,
+    updateQuestProgress: (type: string, amount: number = 1) => {
+      dailyQuestHandlers.updateQuestProgress(type as any, amount);
+    },
   });
 
   const meditationHandlers = useMeditationHandlers({
@@ -310,6 +316,13 @@ function App() {
   });
 
   const achievementHandlers = useAchievementHandlers({
+    player,
+    setPlayer,
+    addLog,
+  });
+
+  // 日常任务相关逻辑
+  const dailyQuestHandlers = useDailyQuestHandlers({
     player,
     setPlayer,
     addLog,
@@ -444,10 +457,18 @@ function App() {
   const handleUnrefineNatalArtifact =
     equipmentHandlers.handleUnrefineNatalArtifact;
 
-  const handleLearnArt = cultivationHandlers.handleLearnArt;
+  // 包装 handleLearnArt，添加任务进度更新
+  const handleLearnArt = (art: any) => {
+    cultivationHandlers.handleLearnArt(art);
+    dailyQuestHandlers.updateQuestProgress('learn', 1);
+  };
   const handleActivateArt = cultivationHandlers.handleActivateArt;
 
-  const handleCraft = alchemyHandlers.handleCraft;
+  // 包装 handleCraft，添加任务进度更新
+  const handleCraft = async (recipe: any) => {
+    await alchemyHandlers.handleCraft(recipe);
+    dailyQuestHandlers.updateQuestProgress('alchemy', 1);
+  };
 
   const handleSelectTalent = characterHandlers.handleSelectTalent;
   const handleSelectTitle = characterHandlers.handleSelectTitle;
@@ -506,6 +527,8 @@ function App() {
       return;
     }
     await originalHandleAdventure();
+    // 更新日常任务进度
+    dailyQuestHandlers.updateQuestProgress('adventure', 1);
   };
 
   // 包装 handleMeditate，添加自动打坐检查
@@ -517,6 +540,7 @@ function App() {
       return;
     }
     meditationHandlers.handleMeditate();
+    dailyQuestHandlers.updateQuestProgress('meditate', 1);
     setCooldown(1);
   };
 
@@ -561,10 +585,46 @@ function App() {
   // Reactive Level Up Check
   useEffect(() => {
     if (player && player.exp >= player.maxExp) {
+      const prevRealm = player.realm;
+      const prevRealmLevel = player.realmLevel;
       breakthroughHandlers.handleBreakthrough();
+      // 检查是否真的突破了（境界或等级变化）
+      // 注意：由于handleBreakthrough是异步的，这里可能无法立即检测到变化
+      // 更好的方法是在breakthroughHandlers内部添加任务进度更新
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player?.exp, player?.maxExp]);
+
+  // 初始化日常任务（只在游戏开始时执行一次，或日期变化时执行）
+  useEffect(() => {
+    if (player && gameStarted && dailyQuestHandlers) {
+      // 确保 player 对象已经完整初始化
+      try {
+        dailyQuestHandlers.initializeDailyQuests();
+      } catch (error) {
+        console.error('初始化日常任务失败:', error);
+      }
+    }
+    // 只依赖 gameStarted，避免 player 对象变化时重复执行
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameStarted]);
+
+  // 监听突破成功，更新任务进度
+  const prevRealmRef = useRef<{ realm: string; level: number } | null>(null);
+  useEffect(() => {
+    if (player && prevRealmRef.current) {
+      const prevRealm = prevRealmRef.current.realm;
+      const prevLevel = prevRealmRef.current.level;
+      if (player.realm !== prevRealm || player.realmLevel !== prevLevel) {
+        // 境界或等级变化，说明突破成功
+        dailyQuestHandlers.updateQuestProgress('breakthrough', 1);
+      }
+    }
+    if (player) {
+      prevRealmRef.current = { realm: player.realm, level: player.realmLevel };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player?.realm, player?.realmLevel]);
 
   // 保留 handleOpenUpgrade 和 handleUpgradeItem，因为它们需要状态管理
   const handleOpenUpgrade = (item: Item) => {
@@ -724,6 +784,7 @@ function App() {
           },
           onOpenPet: () => setIsPetOpen(true),
           onOpenLottery: () => setIsLotteryOpen(true),
+          onOpenDailyQuest: () => setIsDailyQuestOpen(true),
           onOpenSettings: () => setIsSettingsOpen(true),
           onOpenDebug: () => setIsDebugOpen(true),
           onOpenStats: () => setIsMobileStatsOpen(true),
@@ -814,6 +875,7 @@ function App() {
           isPetOpen,
           isLotteryOpen,
           isSettingsOpen,
+          isDailyQuestOpen,
           isShopOpen,
           isBattleModalOpen: isBattleModalOpen && !isDead, // 死亡时不显示战斗弹窗
           isTurnBasedBattleOpen: isTurnBasedBattleOpen && !isDead,
@@ -840,6 +902,7 @@ function App() {
           setIsPetOpen: (open: boolean) => setIsPetOpen(open),
           setIsLotteryOpen: (open: boolean) => setIsLotteryOpen(open),
           setIsSettingsOpen: (open: boolean) => setIsSettingsOpen(open),
+          setIsDailyQuestOpen: (open: boolean) => setIsDailyQuestOpen(open),
           setIsShopOpen: (open: boolean) => {
             setIsShopOpen(open);
             if (!open) {
@@ -899,6 +962,7 @@ function App() {
           handleDraw,
           handleUpdateSettings,
           handleRestartGame: handleRebirth,
+          handleClaimQuestReward: dailyQuestHandlers.claimQuestReward,
           handleBuyItem,
           handleSellItem,
           handleRefreshShop,

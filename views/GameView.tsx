@@ -77,6 +77,7 @@ interface GameViewProps {
     onOpenAchievement: () => void;
     onOpenPet: () => void;
     onOpenLottery: () => void;
+    onOpenDailyQuest?: () => void;
     onOpenSettings: () => void;
     onOpenStats: () => void;
     onOpenDebug?: () => void;
@@ -138,6 +139,7 @@ function GameView({
           onOpenAchievement={handlers.onOpenAchievement}
           onOpenPet={handlers.onOpenPet}
           onOpenLottery={handlers.onOpenLottery}
+          onOpenDailyQuest={handlers.onOpenDailyQuest}
           onOpenSettings={handlers.onOpenSettings}
           onOpenDebug={handlers.onOpenDebug}
           isDebugModeEnabled={isDebugModeEnabled}

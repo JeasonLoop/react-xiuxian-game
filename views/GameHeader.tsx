@@ -9,6 +9,7 @@ import {
   Settings,
   Menu,
   Bug,
+  Calendar,
 } from 'lucide-react';
 import { PlayerStats } from '../types';
 
@@ -36,6 +37,7 @@ interface GameHeaderProps {
   onOpenPet: () => void;
   onOpenLottery: () => void;
   onOpenSettings: () => void;
+  onOpenDailyQuest?: () => void;
   onOpenDebug?: () => void;
   isDebugModeEnabled?: boolean;
 }
@@ -50,6 +52,7 @@ function GameHeader({
   onOpenPet,
   onOpenLottery,
   onOpenSettings,
+  onOpenDailyQuest,
   onOpenDebug,
   isDebugModeEnabled = false,
 }: GameHeaderProps) {
@@ -73,6 +76,11 @@ function GameHeader({
   const lotteryTickets = useMemo(
     () => player.lotteryTickets,
     [player.lotteryTickets]
+  );
+
+  const dailyQuestCompletedCount = useMemo(
+    () => (player.dailyQuests || []).filter((q) => q.completed).length,
+    [player.dailyQuests]
   );
 
   // 处理游戏名称点击
@@ -194,6 +202,20 @@ function GameHeader({
             </span>
           )}
         </button>
+        {onOpenDailyQuest && (
+          <button
+            onClick={onOpenDailyQuest}
+            className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm relative min-w-[44px] min-h-[44px] justify-center"
+          >
+            <Calendar size={18} />
+            <span>日常</span>
+            {dailyQuestCompletedCount > 0 && (player.dailyQuests || []).length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {dailyQuestCompletedCount}/{(player.dailyQuests || []).length}
+              </span>
+            )}
+          </button>
+        )}
         <button
           onClick={onOpenSettings}
           className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"

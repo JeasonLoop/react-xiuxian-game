@@ -150,5 +150,11 @@ export const createInitialPlayer = (
     lifespan: initialLifespan,
     maxLifespan: initialMaxLifespan,
     spiritualRoots: initialSpiritualRoots,
+    // 日常任务系统
+    dailyQuests: [],
+    dailyQuestProgress: {},
+    dailyQuestCompleted: [],
+    lastDailyQuestResetDate: new Date().toISOString().split('T')[0],
+    gameDays: 1, // 游戏内天数，从第1天开始
   };
 };

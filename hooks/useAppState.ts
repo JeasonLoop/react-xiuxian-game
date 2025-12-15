@@ -25,6 +25,7 @@ export interface AppModalState {
   isPetOpen: boolean;
   isLotteryOpen: boolean;
   isSettingsOpen: boolean;
+  isDailyQuestOpen: boolean;
   isShopOpen: boolean;
   isDebugOpen: boolean;
   isBattleModalOpen: boolean;
@@ -46,6 +47,7 @@ export interface AppModalSetters {
   setIsPetOpen: (open: boolean) => void;
   setIsLotteryOpen: (open: boolean) => void;
   setIsSettingsOpen: (open: boolean) => void;
+  setIsDailyQuestOpen: (open: boolean) => void;
   setIsShopOpen: (open: boolean) => void;
   setIsDebugOpen: (open: boolean) => void;
   setIsBattleModalOpen: (open: boolean) => void;
@@ -114,6 +116,7 @@ export function useAppState(): AppState {
   const [isPetOpen, setIsPetOpen] = useState(false);
   const [isLotteryOpen, setIsLotteryOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isDailyQuestOpen, setIsDailyQuestOpen] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
   const [isBattleModalOpen, setIsBattleModalOpen] = useState(false);
@@ -168,6 +171,7 @@ export function useAppState(): AppState {
       isPetOpen,
       isLotteryOpen,
       isSettingsOpen,
+      isDailyQuestOpen,
       isShopOpen,
       isDebugOpen,
       isBattleModalOpen,
@@ -188,6 +192,7 @@ export function useAppState(): AppState {
       setIsPetOpen,
       setIsLotteryOpen,
       setIsSettingsOpen,
+      setIsDailyQuestOpen,
       setIsShopOpen,
       setIsDebugOpen,
       setIsBattleModalOpen,
