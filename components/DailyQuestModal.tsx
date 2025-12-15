@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, Circle, Sparkles, Calendar } from 'lucide-react';
-import { PlayerStats, DailyQuest } from '../types';
+import { X, CheckCircle2, Circle, Sparkles, Calendar, Filter, ArrowUpDown, Download } from 'lucide-react';
+import { PlayerStats, DailyQuest, ItemRarity } from '../types';
 import { getRarityTextColor } from '../utils/rarityUtils';
 
 interface Props {
@@ -16,12 +16,56 @@ const DailyQuestModal: React.FC<Props> = ({
   player,
   onClaimReward,
 }) => {
+  const [filterRarity, setFilterRarity] = useState<ItemRarity | 'all'>('all');
+  const [sortBy, setSortBy] = useState<'default' | 'progress' | 'rarity' | 'reward'>('default');
+  const [showCompleted, setShowCompleted] = useState<boolean>(true);
+
   if (!isOpen) return null;
 
   const dailyQuests = player.dailyQuests || [];
   const completedCount = dailyQuests.filter((q) => q.completed).length;
   const totalCount = dailyQuests.length;
   const completionRate = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+
+  // 筛选任务
+  const filteredQuests = dailyQuests.filter((quest) => {
+    if (filterRarity !== 'all' && quest.rarity !== filterRarity) return false;
+    if (!showCompleted && quest.completed) return false;
+    return true;
+  });
+
+  // 排序任务
+  const sortedQuests = [...filteredQuests].sort((a, b) => {
+    switch (sortBy) {
+      case 'progress':
+        // 按进度排序（未完成的在前，已完成按进度降序）
+        if (a.completed !== b.completed) return a.completed ? 1 : -1;
+        return b.progress - a.progress;
+      case 'rarity':
+        // 按稀有度排序
+        const rarityOrder: Record<ItemRarity, number> = { '普通': 1, '稀有': 2, '传说': 3, '仙品': 4 };
+        return rarityOrder[b.rarity] - rarityOrder[a.rarity];
+      case 'reward':
+        // 按奖励价值排序
+        const rewardA = (a.reward.exp || 0) + (a.reward.spiritStones || 0) * 0.1 + (a.reward.lotteryTickets || 0) * 10;
+        const rewardB = (b.reward.exp || 0) + (b.reward.spiritStones || 0) * 0.1 + (b.reward.lotteryTickets || 0) * 10;
+        return rewardB - rewardA;
+      default:
+        return 0;
+    }
+  });
+
+  // 获取可一键领取的任务
+  const claimableQuests = sortedQuests.filter(
+    (q) => q.completed && !player.dailyQuestCompleted?.includes(q.id)
+  );
+
+  // 一键领取所有已完成任务
+  const handleClaimAll = () => {
+    claimableQuests.forEach((quest) => {
+      onClaimReward(quest.id);
+    });
+  };
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
@@ -49,9 +93,20 @@ const DailyQuestModal: React.FC<Props> = ({
         <div className="p-4 bg-ink-800 border-b border-stone-700 flex-shrink-0">
           <div className="flex items-center justify-between mb-2">
             <span className="text-stone-300 text-sm">今日进度</span>
-            <span className="text-mystic-gold font-bold">
-              {completedCount} / {totalCount}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-mystic-gold font-bold">
+                {completedCount} / {totalCount}
+              </span>
+              {claimableQuests.length > 0 && (
+                <button
+                  onClick={handleClaimAll}
+                  className="px-3 py-1.5 bg-mystic-jade hover:bg-mystic-jade/80 text-stone-900 font-bold rounded text-sm transition-colors flex items-center gap-1.5"
+                >
+                  <Download size={14} />
+                  一键领取 ({claimableQuests.length})
+                </button>
+              )}
+            </div>
           </div>
           <div className="h-3 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
             <div
@@ -61,15 +116,57 @@ const DailyQuestModal: React.FC<Props> = ({
           </div>
         </div>
 
+        {/* Filter and Sort Controls */}
+        <div className="p-4 bg-ink-800 border-b border-stone-700 flex-shrink-0 flex flex-wrap gap-3 items-center">
+          <div className="flex items-center gap-2">
+            <Filter size={16} className="text-stone-400" />
+            <span className="text-stone-300 text-sm">筛选:</span>
+            <select
+              value={filterRarity}
+              onChange={(e) => setFilterRarity(e.target.value as ItemRarity | 'all')}
+              className="px-2 py-1 bg-stone-900 border border-stone-700 rounded text-stone-200 text-sm"
+            >
+              <option value="all">全部稀有度</option>
+              <option value="普通">普通</option>
+              <option value="稀有">稀有</option>
+              <option value="传说">传说</option>
+              <option value="仙品">仙品</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <ArrowUpDown size={16} className="text-stone-400" />
+            <span className="text-stone-300 text-sm">排序:</span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+              className="px-2 py-1 bg-stone-900 border border-stone-700 rounded text-stone-200 text-sm"
+            >
+              <option value="default">默认</option>
+              <option value="progress">进度</option>
+              <option value="rarity">稀有度</option>
+              <option value="reward">奖励价值</option>
+            </select>
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showCompleted}
+              onChange={(e) => setShowCompleted(e.target.checked)}
+              className="w-4 h-4 rounded border-stone-600 bg-stone-800 text-mystic-jade focus:ring-mystic-jade"
+            />
+            <span className="text-stone-300 text-sm">显示已完成</span>
+          </label>
+        </div>
+
         {/* Quest List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {dailyQuests.length === 0 ? (
+          {sortedQuests.length === 0 ? (
             <div className="text-center text-stone-400 py-8">
               <Sparkles className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p>暂无日常任务</p>
+              <p>暂无符合条件的日常任务</p>
             </div>
           ) : (
-            dailyQuests.map((quest) => (
+            sortedQuests.map((quest) => (
               <QuestItem
                 key={quest.id}
                 quest={quest}

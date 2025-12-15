@@ -451,9 +451,17 @@ function App() {
     });
   };
 
-  const handleEquipItem = equipmentHandlers.handleEquipItem;
+  // 包装 handleEquipItem，添加任务进度更新
+  const handleEquipItem = (item: Item, slot: EquipmentSlot) => {
+    equipmentHandlers.handleEquipItem(item, slot);
+    dailyQuestHandlers.updateQuestProgress('equip', 1);
+  };
   const handleUnequipItem = equipmentHandlers.handleUnequipItem;
-  const handleRefineNatalArtifact = equipmentHandlers.handleRefineNatalArtifact;
+  // 包装 handleRefineNatalArtifact，添加任务进度更新
+  const handleRefineNatalArtifact = (item: Item) => {
+    equipmentHandlers.handleRefineNatalArtifact(item);
+    dailyQuestHandlers.updateQuestProgress('equip', 1);
+  };
   const handleUnrefineNatalArtifact =
     equipmentHandlers.handleUnrefineNatalArtifact;
 
@@ -501,16 +509,32 @@ function App() {
   const handleUpdateSettings = settingsHandlers.handleUpdateSettings;
   const handleActivatePet = petHandlers.handleActivatePet;
   const handleDeactivatePet = petHandlers.handleDeactivatePet;
-  const handleFeedPet = petHandlers.handleFeedPet;
+  // 包装 handleFeedPet，添加任务进度更新
+  const handleFeedPet = (
+    petId: string,
+    feedType: 'hp' | 'item' | 'exp',
+    itemId?: string
+  ) => {
+    petHandlers.handleFeedPet(petId, feedType, itemId);
+    dailyQuestHandlers.updateQuestProgress('pet', 1);
+  };
   const handleBatchFeedItems = petHandlers.handleBatchFeedItems;
-  const handleEvolvePet = petHandlers.handleEvolvePet;
+  // 包装 handleEvolvePet，添加任务进度更新
+  const handleEvolvePet = (petId: string) => {
+    petHandlers.handleEvolvePet(petId);
+    dailyQuestHandlers.updateQuestProgress('pet', 1);
+  };
   const handleReleasePet = petHandlers.handleReleasePet;
   const handleBatchReleasePets = petHandlers.handleBatchReleasePets;
   const handleDraw = lotteryHandlers.handleDraw;
   const handleJoinSect = sectHandlers.handleJoinSect;
   const handleLeaveSect = sectHandlers.handleLeaveSect;
   const handleSafeLeaveSect = sectHandlers.handleSafeLeaveSect;
-  const handleSectTask = sectHandlers.handleSectTask;
+  // 包装 handleSectTask，添加任务进度更新
+  const handleSectTask = (task: any, encounterResult?: any) => {
+    sectHandlers.handleSectTask(task, encounterResult);
+    dailyQuestHandlers.updateQuestProgress('sect', 1);
+  };
   const handleSectPromote = sectHandlers.handleSectPromote;
   const handleSectBuy = sectHandlers.handleSectBuy;
   const checkAchievements = achievementHandlers.checkAchievements;
@@ -579,7 +603,11 @@ function App() {
     setIsRealmOpen,
     executeAdventure,
   });
-  const handleEnterRealm = realmHandlers.handleEnterRealm;
+  // 包装 handleEnterRealm，添加任务进度更新
+  const handleEnterRealm = async (realm: any) => {
+    await realmHandlers.handleEnterRealm(realm);
+    dailyQuestHandlers.updateQuestProgress('realm', 1);
+  };
   // 冒险行为由 useAdventureHandlers 提供的 handleAdventure 实现
 
   // Reactive Level Up Check
