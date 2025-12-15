@@ -183,6 +183,7 @@ export interface PlayerStats {
   spiritStones: number;
   inventory: Item[];
   cultivationArts: string[]; // IDs of learned arts
+  unlockedArts: string[]; // IDs of unlocked arts (obtained through adventures, can be learned)
   activeArtId: string | null; // ID of the currently active Mental Art
   equippedItems: Partial<Record<EquipmentSlot, string>>; // 装备栏位 -> 物品ID的映射
   sectId: string | null;

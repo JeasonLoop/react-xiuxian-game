@@ -38,6 +38,14 @@ export function useCultivationHandlers({
       return;
     }
 
+    // 检查是否已解锁（只有通过历练解锁的功法才能学习）
+    const unlockedArts = player.unlockedArts || [];
+    if (!unlockedArts.includes(art.id)) {
+      showWarning(`你尚未解锁功法【${art.name}】！需要通过历练获得。`, '未解锁');
+      addLog(`你尚未解锁功法【${art.name}】！需要通过历练获得。`, 'danger');
+      return;
+    }
+
     if (player.spiritStones < art.cost) {
       showError(`灵石不足！\n需要 ${art.cost} 灵石，你当前只有 ${player.spiritStones} 灵石。`, '灵石不足');
       addLog('灵石不足！', 'danger');

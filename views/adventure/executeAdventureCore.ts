@@ -15,7 +15,6 @@ import {
   TALENTS,
   CULTIVATION_ARTS,
   PET_TEMPLATES,
-  RARITY_MULTIPLIERS,
   DISCOVERABLE_RECIPES,
   PET_EVOLUTION_MATERIALS,
   getRandomPetName,
@@ -228,6 +227,7 @@ export async function executeAdventureCore({
 
     let newInv = [...prev.inventory];
     let newArts = [...prev.cultivationArts];
+    let newUnlockedArts = [...(prev.unlockedArts || [])]; // 已解锁的功法列表
     let newTalentId = prev.talentId;
     let newAttack = prev.attack;
     let newDefense = prev.defense;
@@ -1042,9 +1042,10 @@ export async function executeAdventureCore({
       }
     }
 
-    // 极小概率获得功法（3%概率，秘境中5%）
-    const artChance = realmName ? 0.05 : 0.03;
-    if (Math.random() < artChance && adventureType !== 'lucky') {
+    // 极小概率获得功法（1%概率，秘境中2%，大机缘中3%）
+    // 每次历练最多解锁一个功法（逻辑保证：只选择一个随机功法并添加一次）
+    const artChance = adventureType === 'lucky' ? 0.03 : realmName ? 0.02 : 0.01;
+    if (Math.random() < artChance) {
       const availableArts = CULTIVATION_ARTS.filter((art) => {
         // 已经拥有的排除
         if (newArts.includes(art.id)) return false;
@@ -1064,8 +1065,13 @@ export async function executeAdventureCore({
       if (availableArts.length > 0) {
         const randomArt =
           availableArts[Math.floor(Math.random() * availableArts.length)];
-        // 确保功法没有被重复添加
+        // 双重检查确保功法没有被重复添加（防御性编程）
         if (!newArts.includes(randomArt.id)) {
+          // 先解锁功法（添加到unlockedArts）
+          if (!newUnlockedArts.includes(randomArt.id)) {
+            newUnlockedArts.push(randomArt.id);
+          }
+          // 然后直接学习（添加到cultivationArts）
           newArts.push(randomArt.id);
           newStats.artCount += 1;
           newAttack += randomArt.effects.attack || 0;
@@ -1294,6 +1300,7 @@ export async function executeAdventureCore({
       spiritStones: Math.max(0, prev.spiritStones + safeSpiritStonesChange), // 灵石不能为负
       inventory: newInv,
       cultivationArts: newArts,
+      unlockedArts: newUnlockedArts,
       talentId: newTalentId || prev.talentId,
       attack: newAttack,
       defense: newDefense,
@@ -1384,14 +1391,182 @@ export async function executeAdventureCore({
         let newSpirit = prev.spirit;
         let newPhysique = prev.physique;
         let newSpeed = prev.speed;
+        let newArts = [...prev.cultivationArts];
+        let newUnlockedArts = [...(prev.unlockedArts || [])]; // 已解锁的功法列表
+        let newPets = [...prev.pets];
+        let newLotteryTickets = prev.lotteryTickets;
+        let newInheritanceLevel = prev.inheritanceLevel;
+        let newLifespan = prev.lifespan || prev.maxLifespan || 100;
+        let newSpiritualRoots = { ...prev.spiritualRoots };
+        const stats = prev.statistics || {
+          killCount: 0,
+          meditateCount: 0,
+          adventureCount: 0,
+          equipCount: 0,
+          petCount: 0,
+          recipeCount: 0,
+          artCount: 0,
+          breakthroughCount: 0,
+          secretRealmCount: 0,
+        };
+        let newStats = { ...stats };
 
-        // 处理秘境中的物品
-        if (secretRealmResult.itemObtained) {
+        // 处理秘境中的多个物品（优先处理itemsObtained）
+        if (secretRealmResult.itemsObtained && secretRealmResult.itemsObtained.length > 0) {
+          const currentBatchNames = new Set<string>();
+          secretRealmResult.itemsObtained.forEach((itemData) => {
+            let itemName = itemData.name;
+            const isEquippableCheck = itemData.isEquippable;
+            const equipmentSlotCheck = itemData.equipmentSlot;
+            const isEquipmentCheck = isEquippableCheck && equipmentSlotCheck;
+
+            if (isEquipmentCheck && currentBatchNames.has(itemName)) {
+              const baseName = itemName;
+              const suffixes = ['·改', '·变', '·异', '·新', '·复', '·二', '·三'];
+              let variantName = baseName;
+              let attempts = 0;
+              while (currentBatchNames.has(variantName) && attempts < suffixes.length) {
+                variantName = baseName + suffixes[attempts];
+                attempts++;
+              }
+              if (attempts >= suffixes.length) {
+                addLog(`⚠️ 本次获得的物品中有重复的装备【${itemName}】，跳过重复装备。`, 'normal');
+                return;
+              }
+              itemName = variantName;
+            }
+            currentBatchNames.add(itemName);
+
+            let itemType = (itemData.type as ItemType) || ItemType.Material;
+            let isEquippable = itemData.isEquippable;
+            let equipmentSlot = itemData.equipmentSlot as EquipmentSlot | undefined;
+            const itemDescription = itemData.description || '';
+
+            if (!itemType || itemType === ItemType.Material || (isEquippable && !equipmentSlot)) {
+              const inferred = inferItemTypeAndSlot(
+                itemName,
+                itemType,
+                itemDescription,
+                isEquippable
+              );
+              if (inferred.type !== itemType) {
+                itemType = inferred.type;
+                isEquippable = inferred.isEquippable;
+                equipmentSlot = inferred.equipmentSlot || equipmentSlot;
+              } else if (isEquippable && !equipmentSlot && inferred.equipmentSlot) {
+                equipmentSlot = inferred.equipmentSlot;
+              }
+            }
+
+            const normalized = normalizeItemEffect(
+              itemName,
+              itemData.effect,
+              itemData.permanentEffect,
+              itemType,
+              itemData.rarity as ItemRarity
+            );
+            let finalEffect = normalized.effect;
+            let finalPermanentEffect = normalized.permanentEffect;
+
+            if (isEquippable && !finalEffect && finalPermanentEffect) {
+              finalEffect = {
+                attack: finalPermanentEffect.attack,
+                defense: finalPermanentEffect.defense,
+                spirit: finalPermanentEffect.spirit,
+                physique: finalPermanentEffect.physique,
+                speed: finalPermanentEffect.speed,
+                hp: 0,
+              };
+              if (finalPermanentEffect.maxHp) {
+                finalEffect.hp = (finalEffect.hp || 0) + finalPermanentEffect.maxHp;
+              }
+              finalPermanentEffect = undefined;
+            }
+
+            if (isEquippable) {
+              const rarity = (itemData.rarity as ItemRarity) || '普通';
+              finalEffect = ensureEquipmentAttributes(
+                itemType,
+                finalEffect,
+                rarity,
+                prev.realm,
+                prev.realmLevel
+              ) as typeof finalEffect;
+              if (finalEffect) {
+                finalEffect = adjustEquipmentStatsByRealm(
+                  finalEffect,
+                  prev.realm,
+                  prev.realmLevel,
+                  rarity
+                ) as typeof finalEffect;
+              }
+            }
+
+            const isEquipment = isEquippable && equipmentSlot;
+            const existingIdx = newInv.findIndex((i) => i.name === itemName);
+
+            if (isEquipment && (existingIdx >= 0 || currentBatchNames.has(itemName))) {
+              const baseName = itemName;
+              const suffixes = ['·改', '·变', '·异', '·新', '·复', '·二', '·三'];
+              let variantName = baseName;
+              let attempts = 0;
+              while (attempts < suffixes.length) {
+                variantName = baseName + suffixes[attempts];
+                if (newInv.findIndex((i) => i.name === variantName) < 0 && !currentBatchNames.has(variantName)) {
+                  break;
+                }
+                attempts++;
+              }
+              if (attempts >= suffixes.length) {
+                addLog(`⚠️ 已存在同名装备【${itemName}】，跳过重复装备。`, 'normal');
+                return;
+              }
+              itemName = variantName;
+              currentBatchNames.add(itemName);
+            }
+
+            const finalExistingIdx = newInv.findIndex((i) => i.name === itemName);
+            if (finalExistingIdx >= 0 && !isEquipment && itemType !== ItemType.Recipe) {
+              newInv[finalExistingIdx] = {
+                ...newInv[finalExistingIdx],
+                quantity: newInv[finalExistingIdx].quantity + 1,
+              };
+            } else {
+              const rarity = (itemData.rarity as ItemRarity) || '普通';
+              let reviveChances: number | undefined = undefined;
+              if (
+                (rarity === '传说' || rarity === '仙品') &&
+                (itemType === ItemType.Weapon || itemType === ItemType.Artifact)
+              ) {
+                const hasRevive =
+                  rarity === '传说' ? Math.random() < 0.3 : Math.random() < 0.6;
+                if (hasRevive) {
+                  reviveChances = Math.floor(Math.random() * 3) + 1;
+                }
+              }
+
+              const newItem: Item = {
+                id: uid(),
+                name: itemName,
+                type: itemType,
+                description: itemData.description,
+                quantity: 1,
+                rarity: rarity,
+                level: 0,
+                isEquippable: isEquippable,
+                equipmentSlot: equipmentSlot,
+                effect: finalEffect,
+                permanentEffect: finalPermanentEffect,
+                reviveChances: reviveChances,
+              };
+              newInv.push(newItem);
+            }
+          });
+        } else if (secretRealmResult.itemObtained) {
+          // 处理单个物品（兼容旧代码）
           const itemName = secretRealmResult.itemObtained.name;
           const existingIdx = newInv.findIndex((i) => i.name === itemName);
           if (existingIdx < 0) {
-            // 规范化物品效果（确保已知物品的效果与描述一致）
-            // 对于丹药，根据稀有度调整效果，确保仙品丹药效果明显强于稀有
             const itemTypeForRealm =
               (secretRealmResult.itemObtained.type as ItemType) ||
               ItemType.Material;
@@ -1420,6 +1595,242 @@ export async function executeAdventureCore({
               permanentEffect: normalized.permanentEffect,
             };
             newInv.push(newItem);
+          }
+        }
+
+        // 处理获得的灵宠
+        if (secretRealmResult.petObtained) {
+          const petTemplate = PET_TEMPLATES.find(
+            (t) => t.id === secretRealmResult.petObtained
+          );
+          if (petTemplate) {
+            const hasSameSpecies = newPets.some(
+              (p) => p.species === petTemplate.species
+            );
+            if (!hasSameSpecies) {
+              const newPet: Pet = {
+                id: uid(),
+                name: getRandomPetName(petTemplate),
+                species: petTemplate.species,
+                level: 1,
+                exp: 0,
+                maxExp: 60,
+                rarity: petTemplate.rarity,
+                stats: { ...petTemplate.baseStats },
+                skills: [...petTemplate.skills],
+                evolutionStage: 0,
+                affection: 50,
+              };
+              newPets.push(newPet);
+              newStats.petCount += 1;
+              addLog(`✨ 你拯救了灵兽，获得了灵宠【${newPet.name}】！`, 'special');
+            } else {
+              addLog(
+                `你遇到了灵兽，但它似乎已经有了同类伙伴，便离开了。`,
+                'normal'
+              );
+            }
+          }
+        }
+
+        // 处理灵宠机缘
+        if (secretRealmResult.petOpportunity && newPets.length > 0) {
+          let targetPet: Pet | null = null;
+          if (secretRealmResult.petOpportunity.petId) {
+            targetPet =
+              newPets.find((p) => p.id === secretRealmResult.petOpportunity.petId) || null;
+          }
+          if (!targetPet && prev.activePetId) {
+            targetPet = newPets.find((p) => p.id === prev.activePetId) || null;
+          }
+          if (!targetPet) {
+            const randomPet = newPets[Math.floor(Math.random() * newPets.length)];
+            targetPet = randomPet;
+          }
+
+          if (targetPet) {
+            const petIndex = newPets.findIndex((p) => p.id === targetPet!.id);
+            const updatedPet = { ...targetPet };
+
+            switch (secretRealmResult.petOpportunity.type) {
+              case 'evolution':
+                if (updatedPet.evolutionStage < 2) {
+                  updatedPet.evolutionStage += 1;
+                  updatedPet.stats = {
+                    attack: Math.floor(updatedPet.stats.attack * 3.0),
+                    defense: Math.floor(updatedPet.stats.defense * 3.0),
+                    hp: Math.floor(updatedPet.stats.hp * 3.0),
+                    speed: Math.floor(updatedPet.stats.speed * 1.5),
+                  };
+                  newPets[petIndex] = updatedPet;
+                  addLog(
+                    `✨ 【${targetPet.name}】在秘境中获得机缘，成功进化了！实力大幅提升！`,
+                    'special'
+                  );
+                }
+                break;
+              case 'level':
+                if (secretRealmResult.petOpportunity.levelGain && secretRealmResult.petOpportunity.levelGain > 0) {
+                  const levelGain = Math.min(secretRealmResult.petOpportunity.levelGain, 5);
+                  updatedPet.level += levelGain;
+                  for (let i = 0; i < levelGain; i++) {
+                    updatedPet.stats = {
+                      attack: Math.floor(updatedPet.stats.attack * 1.1),
+                      defense: Math.floor(updatedPet.stats.defense * 1.1),
+                      hp: Math.floor(updatedPet.stats.hp * 1.1),
+                      speed: Math.floor(updatedPet.stats.speed * 1.05),
+                    };
+                  }
+                  newPets[petIndex] = updatedPet;
+                  addLog(
+                    `✨ 【${targetPet.name}】在秘境中获得机缘，直接提升了 ${levelGain} 级！`,
+                    'special'
+                  );
+                }
+                break;
+              case 'stats':
+                if (secretRealmResult.petOpportunity.statsBoost) {
+                  const boost = secretRealmResult.petOpportunity.statsBoost;
+                  updatedPet.stats = {
+                    attack: updatedPet.stats.attack + (boost.attack || 0),
+                    defense: updatedPet.stats.defense + (boost.defense || 0),
+                    hp: updatedPet.stats.hp + (boost.hp || 0),
+                    speed: updatedPet.stats.speed + (boost.speed || 0),
+                  };
+                  newPets[petIndex] = updatedPet;
+                  const statsText = [
+                    boost.attack ? `攻击+${boost.attack}` : '',
+                    boost.defense ? `防御+${boost.defense}` : '',
+                    boost.hp ? `气血+${boost.hp}` : '',
+                    boost.speed ? `速度+${boost.speed}` : '',
+                  ]
+                    .filter(Boolean)
+                    .join('、');
+                  addLog(
+                    `✨ 【${targetPet.name}】在秘境中获得机缘，属性提升了：${statsText}！`,
+                    'special'
+                  );
+                }
+                break;
+              case 'exp':
+                if (secretRealmResult.petOpportunity.expGain && secretRealmResult.petOpportunity.expGain > 0) {
+                  let petNewExp = updatedPet.exp + secretRealmResult.petOpportunity.expGain;
+                  let petNewLevel = updatedPet.level;
+                  let petNewMaxExp = updatedPet.maxExp;
+                  let leveledUp = false;
+                  let levelGainCount = 0;
+
+                  while (petNewExp >= petNewMaxExp && petNewLevel < 100) {
+                    petNewExp -= petNewMaxExp;
+                    petNewLevel += 1;
+                    levelGainCount += 1;
+                    petNewMaxExp = Math.floor(petNewMaxExp * 1.5);
+                    leveledUp = true;
+                  }
+
+                  if (leveledUp) {
+                    for (let i = 0; i < levelGainCount; i++) {
+                      updatedPet.stats = {
+                        attack: Math.floor(updatedPet.stats.attack * 1.1),
+                        defense: Math.floor(updatedPet.stats.defense * 1.1),
+                        hp: Math.floor(updatedPet.stats.hp * 1.1),
+                        speed: Math.floor(updatedPet.stats.speed * 1.05),
+                      };
+                    }
+                  }
+
+                  updatedPet.exp = petNewExp;
+                  updatedPet.level = petNewLevel;
+                  updatedPet.maxExp = petNewMaxExp;
+                  newPets[petIndex] = updatedPet;
+                  if (leveledUp) {
+                    addLog(
+                      `✨ 【${targetPet.name}】在秘境中获得了 ${secretRealmResult.petOpportunity.expGain} 点经验，并提升了 ${levelGainCount} 级！`,
+                      'special'
+                    );
+                  } else {
+                    addLog(
+                      `✨ 【${targetPet.name}】在秘境中获得了 ${secretRealmResult.petOpportunity.expGain} 点经验！`,
+                      'special'
+                    );
+                  }
+                }
+                break;
+            }
+          }
+        }
+
+        // 处理抽奖券奖励
+        if (secretRealmResult.lotteryTicketsChange && secretRealmResult.lotteryTicketsChange > 0) {
+          newLotteryTickets += secretRealmResult.lotteryTicketsChange;
+          addLog(`🎫 你在秘境中获得了 ${secretRealmResult.lotteryTicketsChange} 张抽奖券！`, 'gain');
+        }
+
+        // 处理传承奖励
+        if (secretRealmResult.inheritanceLevelChange && secretRealmResult.inheritanceLevelChange > 0) {
+          const validChange = Math.max(1, Math.min(4, secretRealmResult.inheritanceLevelChange));
+          const newTotal = Math.min(4, newInheritanceLevel + validChange);
+          const actualChange = newTotal - newInheritanceLevel;
+          if (actualChange > 0) {
+            newInheritanceLevel = newTotal;
+            addLog(
+              `🌟 你在秘境中获得了上古传承！可以直接突破 ${actualChange} 个境界！`,
+              'special'
+            );
+          }
+        }
+
+        // 处理寿命变化
+        if (secretRealmResult.lifespanChange !== undefined && secretRealmResult.lifespanChange !== 0) {
+          newLifespan = Math.max(0, newLifespan + secretRealmResult.lifespanChange);
+        }
+
+        // 处理灵根变化
+        if (secretRealmResult.spiritualRootsChange) {
+          newSpiritualRoots = {
+            metal: Math.min(100, Math.max(0, (newSpiritualRoots.metal || 0) + (secretRealmResult.spiritualRootsChange.metal || 0))),
+            wood: Math.min(100, Math.max(0, (newSpiritualRoots.wood || 0) + (secretRealmResult.spiritualRootsChange.wood || 0))),
+            water: Math.min(100, Math.max(0, (newSpiritualRoots.water || 0) + (secretRealmResult.spiritualRootsChange.water || 0))),
+            fire: Math.min(100, Math.max(0, (newSpiritualRoots.fire || 0) + (secretRealmResult.spiritualRootsChange.fire || 0))),
+            earth: Math.min(100, Math.max(0, (newSpiritualRoots.earth || 0) + (secretRealmResult.spiritualRootsChange.earth || 0))),
+          };
+        }
+
+        // 极小概率获得功法（秘境中2%概率）
+        const artChance = 0.02;
+        if (Math.random() < artChance) {
+          const availableArts = CULTIVATION_ARTS.filter((art) => {
+            if (newArts.includes(art.id)) return false;
+            if (
+              REALM_ORDER.indexOf(art.realmRequirement) >
+              REALM_ORDER.indexOf(prev.realm)
+            ) {
+              return false;
+            }
+            if (art.sectId !== null && art.sectId !== undefined) {
+              return art.sectId === prev.sectId;
+            }
+            return true;
+          });
+          if (availableArts.length > 0) {
+            const randomArt =
+              availableArts[Math.floor(Math.random() * availableArts.length)];
+            if (!newArts.includes(randomArt.id)) {
+              if (!newUnlockedArts.includes(randomArt.id)) {
+                newUnlockedArts.push(randomArt.id);
+              }
+              newArts.push(randomArt.id);
+              newStats.artCount += 1;
+              newAttack += randomArt.effects.attack || 0;
+              newDefense += randomArt.effects.defense || 0;
+              newMaxHp += randomArt.effects.hp || 0;
+              newHp += randomArt.effects.hp || 0;
+              triggerVisual('special', `🎉 领悟功法【${randomArt.name}】`, 'special');
+              addLog(
+                `🎉 你在秘境中领悟了功法【${randomArt.name}】！可在功法阁查看。`,
+                'special'
+              );
+            }
           }
         }
 
@@ -1566,17 +1977,64 @@ export async function executeAdventureCore({
             newStones + safeSecretSpiritStonesChange
           ),
           inventory: newInv,
+          cultivationArts: newArts,
+          unlockedArts: newUnlockedArts,
+          talentId: prev.talentId, // 保持天赋ID不变
           attack: newAttack,
           defense: newDefense,
           maxHp: newMaxHp,
           spirit: newSpirit,
           physique: newPhysique,
           speed: newSpeed,
+          luck: prev.luck, // 保持幸运值不变（秘境中不修改）
+          lotteryTickets: newLotteryTickets,
+          inheritanceLevel: newInheritanceLevel,
+          pets: newPets,
+          statistics: newStats,
+          lifespan: newLifespan,
+          spiritualRoots: newSpiritualRoots,
         };
       });
       addLog(secretRealmResult.story, secretRealmResult.eventColor);
-      if (secretRealmResult.itemObtained) {
+
+      // 显示获得的物品
+      if (secretRealmResult.itemsObtained && secretRealmResult.itemsObtained.length > 0) {
+        secretRealmResult.itemsObtained.forEach((item) => {
+          const rarityText = item.rarity ? `【${item.rarity}】` : '';
+          addLog(`获得物品: ${rarityText}${item.name}`, 'gain');
+        });
+      } else if (secretRealmResult.itemObtained) {
         addLog(`获得物品: ${secretRealmResult.itemObtained.name}`, 'gain');
+      }
+
+      // 显示寿命变化
+      if (secretRealmResult.lifespanChange !== undefined && secretRealmResult.lifespanChange !== 0) {
+        if (secretRealmResult.lifespanChange > 0) {
+          addLog(`✨ 你的寿命增加了 ${secretRealmResult.lifespanChange.toFixed(1)} 年！`, 'gain');
+        } else {
+          addLog(`⚠️ 你的寿命减少了 ${Math.abs(secretRealmResult.lifespanChange).toFixed(1)} 年！`, 'danger');
+        }
+      }
+
+      // 显示灵根变化
+      if (secretRealmResult.spiritualRootsChange) {
+        const rootNames: Record<string, string> = {
+          metal: '金',
+          wood: '木',
+          water: '水',
+          fire: '火',
+          earth: '土',
+        };
+        Object.entries(secretRealmResult.spiritualRootsChange).forEach(([key, value]) => {
+          if (value && value !== 0) {
+            const rootName = rootNames[key] || key;
+            if (value > 0) {
+              addLog(`✨ 你的${rootName}灵根提升了 ${value} 点！`, 'gain');
+            } else {
+              addLog(`⚠️ 你的${rootName}灵根降低了 ${Math.abs(value)} 点！`, 'danger');
+            }
+          }
+        });
       }
     }, 1000);
   }

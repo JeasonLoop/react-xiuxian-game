@@ -107,6 +107,7 @@ export const createInitialPlayer = (
     spiritStones: 50,
     inventory: [...INITIAL_ITEMS],
     cultivationArts: ['art-basic-breath'], // 初始只有吐纳诀
+    unlockedArts: ['art-basic-breath'], // 初始已解锁吐纳诀
     activeArtId: 'art-basic-breath', // 默认激活吐纳诀
     equippedItems: {},
     sectId: null,

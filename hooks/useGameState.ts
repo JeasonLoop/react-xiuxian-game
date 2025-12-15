@@ -66,6 +66,7 @@ export function useGameState() {
             viewedAchievements: savedData.player.viewedAchievements || [],
             natalArtifactId: savedData.player.natalArtifactId || null,
             unlockedRecipes: savedData.player.unlockedRecipes || [], // 兼容旧存档，确保 unlockedRecipes 存在
+            unlockedArts: savedData.player.unlockedArts || savedData.player.cultivationArts || [], // 兼容旧存档：如果没有unlockedArts，使用cultivationArts作为已解锁的功法
             meditationHpRegenMultiplier:
               savedData.player.meditationHpRegenMultiplier ?? 1.0, // 兼容旧存档
             meditationBoostEndTime:

@@ -59,10 +59,14 @@ const CultivationModal: React.FC<Props> = ({
     if (isOpen && !prevIsOpenRef.current) {
       // 弹窗刚刚打开，进行排序
       const learnedSet = new Set(player.cultivationArts);
+      const unlockedArts = player.unlockedArts || [];
+      const unlockedSet = new Set(unlockedArts);
       // 使用 Map 去重，确保每个 id 只出现一次
       const artMap = new Map<string, CultivationArt>();
+      // 只显示已解锁的功法（包括已学习和未学习的）
       CULTIVATION_ARTS.forEach((art) => {
-        if (!artMap.has(art.id)) {
+        // 只包含已解锁的功法
+        if (unlockedSet.has(art.id) && !artMap.has(art.id)) {
           artMap.set(art.id, art);
         }
       });
@@ -91,16 +95,18 @@ const CultivationModal: React.FC<Props> = ({
         .map((item) => item.art);
       setSortedArts(sorted);
     } else if (isOpen && prevIsOpenRef.current) {
-      // 弹窗已经打开，修习功法后只更新列表，不重新排序
+      // 弹窗已经打开，检查是否有新解锁或新学习的功法
       const learnedSet = new Set(player.cultivationArts);
+      const unlockedArts = player.unlockedArts || [];
+      const unlockedSet = new Set(unlockedArts);
       // 使用函数式更新来避免闭包问题
       setSortedArts((prev) => {
-        // 找出新学习的功法
-        const newArtIds = player.cultivationArts.filter(
-          (id) => !prev.some((art) => art.id === id)
-        );
+        // 找出新解锁或新学习的功法（包括已解锁但未学习的，以及新学习的）
+        const prevArtIds = new Set(prev.map((art) => art.id));
+        // 检查所有已解锁的功法（包括已学习和未学习的）
+        const newArtIds = unlockedArts.filter((id) => !prevArtIds.has(id));
         if (newArtIds.length > 0) {
-          // 有新功法，添加到列表末尾（不重新排序）
+          // 有新解锁的功法，添加到列表末尾（不重新排序）
           const newArts = newArtIds
             .map((id) => CULTIVATION_ARTS.find((art) => art.id === id))
             .filter((art): art is CultivationArt => art !== undefined);
@@ -112,7 +118,7 @@ const CultivationModal: React.FC<Props> = ({
     prevIsOpenRef.current = isOpen;
     // 注意：不依赖 player.activeArtId，激活状态改变时不重新排序
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, player.cultivationArts]);
+  }, [isOpen, player.cultivationArts, player.unlockedArts]);
 
   // 过滤功法 - 基于已排序的列表进行过滤
   const filteredArts = useMemo(() => {
@@ -123,12 +129,14 @@ const CultivationModal: React.FC<Props> = ({
       if (gradeFilter !== 'all' && artGrade !== gradeFilter) return false;
       if (typeFilter !== 'all' && art.type !== typeFilter) return false;
 
-      // 状态筛选：已学习、已获得、未获得
+      // 状态筛选：已学习、已获得（已解锁但未学习）、未获得（未解锁）
       if (statusFilter !== 'all') {
         const isLearned = learnedSet.has(art.id);
+        const unlockedArts = player.unlockedArts || [];
+        const isUnlocked = unlockedArts.includes(art.id);
         if (statusFilter === 'learned' && !isLearned) return false; // 已学习：已学习的功法
-        if (statusFilter === 'obtained' && !isLearned) return false; // 已获得：已学习的功法（已获得=已学习）
-        if (statusFilter === 'unobtained' && isLearned) return false; // 未获得：未学习的功法
+        if (statusFilter === 'obtained' && (!isUnlocked || isLearned)) return false; // 已获得：已解锁但未学习的功法
+        if (statusFilter === 'unobtained' && isUnlocked) return false; // 未获得：未解锁的功法
       }
 
       return true;
@@ -245,8 +253,11 @@ const CultivationModal: React.FC<Props> = ({
                 if (!art) return null; // 安全处理
                 const isLearned = player.cultivationArts.includes(art.id);
                 const isActive = player.activeArtId === art.id;
+                const unlockedArts = player.unlockedArts || [];
+                const isUnlocked = unlockedArts.includes(art.id);
                 const canLearn =
                   !isLearned &&
+                  isUnlocked && // 必须已解锁
                   player.spiritStones >= art.cost &&
                   getRealmIndex(player.realm) >=
                     getRealmIndex(art.realmRequirement);
@@ -385,9 +396,10 @@ const CultivationModal: React.FC<Props> = ({
                               : 'bg-mystic-jade/20 text-mystic-jade border border-mystic-jade active:bg-mystic-jade/30'
                           }
                         `}
+                        title={!isUnlocked ? '需要通过历练解锁此功法' : undefined}
                       >
                         {locked ? <Lock size={14} /> : <BookOpen size={14} />}
-                        {art.cost === 0 ? '免费领悟' : '修习'}
+                        {!isUnlocked ? '未解锁' : art.cost === 0 ? '免费领悟' : '修习'}
                       </button>
                     )}
                   </div>

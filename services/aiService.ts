@@ -474,7 +474,8 @@ ${typeInstructions}
         { role: 'system', content: systemMessage },
         { role: 'user', content: userMessage },
       ],
-      0.95, // 降低temperature从0.95到0.7，加快响应速度
+      0.8, // 降低temperature加快响应速度并提高一致性
+      4000, // 限制输出token数，JSON格式通常不会超过此长度，加快响应
     );
 
     // 清理JSON字符串中的无效格式
@@ -685,7 +686,8 @@ export const generateEnemyName = async (
         },
         { role: 'user', content: prompt },
       ],
-      0.9
+      0.7, // 降低temperature加快响应速度
+      200, // 限制输出token数，简短JSON输出足够
     );
 
     const cleaned = stripCodeFence(content);
