@@ -300,7 +300,7 @@ export async function executeAdventureCore({
     }
 
     // 处理获得的多个物品（搜刮奖励等）
-    if (result.itemsObtained && result.itemsObtained.length > 0) {
+    if (result.itemsObtained && Array.isArray(result.itemsObtained) && result.itemsObtained.length > 0) {
       // 用于跟踪本次获得的物品名称，避免数组内部重复
       const currentBatchNames = new Set<string>();
 
@@ -1337,7 +1337,15 @@ export async function executeAdventureCore({
   });
 
   // 处理声望事件（需要玩家选择，通过回调处理）
-  if (result.reputationEvent && onReputationEvent) {
+  if (
+    result.reputationEvent &&
+    onReputationEvent &&
+    result.reputationEvent.title &&
+    result.reputationEvent.description &&
+    result.reputationEvent.choices &&
+    Array.isArray(result.reputationEvent.choices) &&
+    result.reputationEvent.choices.length > 0
+  ) {
     addLog(`📜 你遇到了一个需要做出选择的事件：${result.reputationEvent.title}`, 'special');
     onReputationEvent(result.reputationEvent);
   }
@@ -1375,7 +1383,7 @@ export async function executeAdventureCore({
   }
 
   // 显示获得的物品
-  if (result.itemsObtained && result.itemsObtained.length > 0) {
+  if (result.itemsObtained && Array.isArray(result.itemsObtained) && result.itemsObtained.length > 0) {
     result.itemsObtained.forEach((item) => {
       const rarityText = item.rarity ? `【${item.rarity}】` : '';
       addLog(`获得物品: ${rarityText}${item.name}`, 'gain');
@@ -1436,7 +1444,7 @@ export async function executeAdventureCore({
         let newStats = { ...stats };
 
         // 处理秘境中的多个物品（优先处理itemsObtained）
-        if (secretRealmResult.itemsObtained && secretRealmResult.itemsObtained.length > 0) {
+        if (secretRealmResult.itemsObtained && Array.isArray(secretRealmResult.itemsObtained) && secretRealmResult.itemsObtained.length > 0) {
           const currentBatchNames = new Set<string>();
           secretRealmResult.itemsObtained.forEach((itemData) => {
             let itemName = itemData.name;
@@ -2036,7 +2044,7 @@ export async function executeAdventureCore({
       addLog(secretRealmResult.story, secretRealmResult.eventColor);
 
       // 显示获得的物品
-      if (secretRealmResult.itemsObtained && secretRealmResult.itemsObtained.length > 0) {
+      if (secretRealmResult.itemsObtained && Array.isArray(secretRealmResult.itemsObtained) && secretRealmResult.itemsObtained.length > 0) {
         secretRealmResult.itemsObtained.forEach((item) => {
           const rarityText = item.rarity ? `【${item.rarity}】` : '';
           addLog(`获得物品: ${rarityText}${item.name}`, 'gain');

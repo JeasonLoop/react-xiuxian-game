@@ -62,7 +62,9 @@ function GameHeader({
 
   const newAchievements = useMemo(
     () =>
-      player.achievements.filter((a) => !player.viewedAchievements.includes(a)),
+      Array.isArray(player.achievements) && Array.isArray(player.viewedAchievements)
+        ? player.achievements.filter((a) => !player.viewedAchievements.includes(a))
+        : [],
     [player.achievements, player.viewedAchievements]
   );
 
@@ -71,7 +73,7 @@ function GameHeader({
     [newAchievements.length]
   );
 
-  const petsCount = useMemo(() => player.pets.length, [player.pets.length]);
+  const petsCount = useMemo(() => Array.isArray(player.pets) ? player.pets.length : 0, [player.pets]);
 
   const lotteryTickets = useMemo(
     () => player.lotteryTickets,

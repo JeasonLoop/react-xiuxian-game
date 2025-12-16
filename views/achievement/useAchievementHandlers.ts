@@ -72,7 +72,9 @@ export function useAchievementHandlers({
           completed = stats.killCount >= achievement.requirement.value;
         } else if (achievement.requirement.type === 'collect') {
           // 收集成就：检查背包中不同物品的数量
-          const uniqueItems = new Set(prev.inventory.map((item) => item.name));
+          const uniqueItems = Array.isArray(prev.inventory)
+            ? new Set(prev.inventory.map((item) => item.name))
+            : new Set();
           completed = uniqueItems.size >= achievement.requirement.value;
         } else if (achievement.requirement.type === 'meditate') {
           // 打坐成就
@@ -85,13 +87,13 @@ export function useAchievementHandlers({
           completed = stats.equipCount >= achievement.requirement.value;
         } else if (achievement.requirement.type === 'pet') {
           // 灵宠成就
-          completed = prev.pets.length >= achievement.requirement.value;
+          completed = Array.isArray(prev.pets) && prev.pets.length >= achievement.requirement.value;
         } else if (achievement.requirement.type === 'recipe') {
           // 丹方成就
-          completed = prev.unlockedRecipes.length >= achievement.requirement.value;
+          completed = Array.isArray(prev.unlockedRecipes) && prev.unlockedRecipes.length >= achievement.requirement.value;
         } else if (achievement.requirement.type === 'art') {
           // 功法成就
-          completed = prev.cultivationArts.length >= achievement.requirement.value;
+          completed = Array.isArray(prev.cultivationArts) && prev.cultivationArts.length >= achievement.requirement.value;
         } else if (achievement.requirement.type === 'breakthrough') {
           // 突破成就
           completed = stats.breakthroughCount >= achievement.requirement.value;

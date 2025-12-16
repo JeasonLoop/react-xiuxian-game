@@ -71,6 +71,12 @@ export function useShopHandlers({
 
   const handleBuyItem = (shopItem: ShopItem, quantity: number = 1) => {
     setPlayer((prev) => {
+      // 检查声望要求（声望商店）
+      if (currentShop?.reputationRequired && (prev.reputation || 0) < currentShop.reputationRequired) {
+        addLog(`声望不足！需要 ${currentShop.reputationRequired} 声望值才能购买。`, 'danger');
+        return prev;
+      }
+
       const totalPrice = shopItem.price * quantity;
       if (prev.spiritStones < totalPrice) {
         addLog('灵石不足！', 'danger');
