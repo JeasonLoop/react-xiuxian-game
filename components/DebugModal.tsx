@@ -32,6 +32,7 @@ import {
   Recipe,
   SectRank,
   Pet,
+  AdventureResult,
 } from '../types';
 import {
   REALM_DATA,
@@ -49,6 +50,8 @@ import {
   EQUIPMENT_TEMPLATES,
   LOTTERY_PRIZES,
   SECT_SHOP_ITEMS,
+  INHERITANCE_ROUTES,
+  INHERITANCE_SKILLS,
 } from '../constants';
 import { LOOT_ITEMS } from '../services/battleService';
 import { showSuccess, showError, showInfo, showConfirm } from '../utils/toastUtils';
@@ -64,6 +67,7 @@ interface Props {
   player: PlayerStats;
   onUpdatePlayer: (updates: Partial<PlayerStats>) => void;
   onTriggerDeath?: () => void; // 触发死亡测试
+  onTriggerReputationEvent?: (event: AdventureResult['reputationEvent']) => void; // 触发声望事件
 }
 
 const DebugModal: React.FC<Props> = ({
@@ -72,6 +76,7 @@ const DebugModal: React.FC<Props> = ({
   player,
   onUpdatePlayer,
   onTriggerDeath,
+  onTriggerReputationEvent,
 }) => {
   const [localPlayer, setLocalPlayer] = useState<PlayerStats>(player);
   const [activeTab, setActiveTab] = useState<
@@ -85,6 +90,8 @@ const DebugModal: React.FC<Props> = ({
     | 'item'
     | 'recipe'
     | 'death'
+    | 'inheritance'
+    | 'reputation'
   >('equipment');
 
   // 当 player 更新时同步 localPlayer
@@ -94,16 +101,129 @@ const DebugModal: React.FC<Props> = ({
   const [equipmentFilter, setEquipmentFilter] = useState<ItemRarity | 'all'>(
     'all'
   );
+  const [equipmentSearchQuery, setEquipmentSearchQuery] = useState<string>('');
   const [itemFilter, setItemFilter] = useState<ItemType | 'all'>('all');
+  const [itemSearchQuery, setItemSearchQuery] = useState<string>('');
   const [editingPetId, setEditingPetId] = useState<string | null>(null);
   const [editingPet, setEditingPet] = useState<Pet | null>(null);
   const [itemQuantities, setItemQuantities] = useState<Record<string, number>>({});
 
-  // 过滤装备
+  // 合并所有装备（包括LOOT_ITEMS中的套装装备）
+  const allEquipmentTemplates = useMemo(() => {
+    const equipmentFromLoot: Array<{
+      name: string;
+      type: ItemType;
+      rarity: ItemRarity;
+      slot: EquipmentSlot;
+      effect?: any;
+      description?: string;
+    }> = [];
+
+    // 从武器池中提取
+    if (LOOT_ITEMS.weapons) {
+      LOOT_ITEMS.weapons.forEach((weapon) => {
+        equipmentFromLoot.push({
+          name: weapon.name,
+          type: weapon.type,
+          rarity: weapon.rarity,
+          slot: weapon.slot,
+          effect: weapon.effect,
+          description: `${weapon.name}，${weapon.rarity}品质装备`,
+        });
+      });
+    }
+
+    // 从护甲池中提取
+    if (LOOT_ITEMS.armors) {
+      LOOT_ITEMS.armors.forEach((armor) => {
+        equipmentFromLoot.push({
+          name: armor.name,
+          type: armor.type,
+          rarity: armor.rarity,
+          slot: armor.slot,
+          effect: armor.effect,
+          description: `${armor.name}，${armor.rarity}品质装备`,
+        });
+      });
+    }
+
+    // 从首饰池中提取
+    if (LOOT_ITEMS.accessories) {
+      LOOT_ITEMS.accessories.forEach((accessory) => {
+        equipmentFromLoot.push({
+          name: accessory.name,
+          type: accessory.type,
+          rarity: accessory.rarity,
+          slot: accessory.slot,
+          effect: accessory.effect,
+          description: `${accessory.name}，${accessory.rarity}品质装备`,
+        });
+      });
+    }
+
+    // 从戒指池中提取
+    if (LOOT_ITEMS.rings) {
+      LOOT_ITEMS.rings.forEach((ring) => {
+        equipmentFromLoot.push({
+          name: ring.name,
+          type: ring.type,
+          rarity: ring.rarity,
+          slot: ring.slot,
+          effect: ring.effect,
+          description: `${ring.name}，${ring.rarity}品质装备`,
+        });
+      });
+    }
+
+    // 从法宝池中提取
+    if (LOOT_ITEMS.artifacts) {
+      LOOT_ITEMS.artifacts.forEach((artifact) => {
+        equipmentFromLoot.push({
+          name: artifact.name,
+          type: artifact.type,
+          rarity: artifact.rarity,
+          slot: artifact.slot,
+          effect: artifact.effect,
+          description: `${artifact.name}，${artifact.rarity}品质装备`,
+        });
+      });
+    }
+
+    // 合并并去重（按名称去重，保留第一个）
+    const allEquipment = [...EQUIPMENT_TEMPLATES, ...equipmentFromLoot];
+    const equipmentMap = new Map<string, typeof allEquipment[0]>();
+    allEquipment.forEach((eq) => {
+      if (!equipmentMap.has(eq.name)) {
+        equipmentMap.set(eq.name, eq);
+      }
+    });
+
+    return Array.from(equipmentMap.values());
+  }, []);
+
+  // 过滤装备（按稀有度和搜索关键词）
   const filteredEquipment = useMemo(() => {
-    if (equipmentFilter === 'all') return EQUIPMENT_TEMPLATES;
-    return EQUIPMENT_TEMPLATES.filter((eq) => eq.rarity === equipmentFilter);
-  }, [equipmentFilter]);
+    let equipment = allEquipmentTemplates;
+
+    // 先按稀有度过滤
+    if (equipmentFilter !== 'all') {
+      equipment = equipment.filter((eq) => eq.rarity === equipmentFilter);
+    }
+
+    // 再按搜索关键词过滤
+    if (equipmentSearchQuery.trim()) {
+      const query = equipmentSearchQuery.trim().toLowerCase();
+      equipment = equipment.filter((eq) => {
+        const nameMatch = eq.name.toLowerCase().includes(query);
+        const descMatch = (eq.description || '').toLowerCase().includes(query);
+        const slotMatch = eq.slot.toLowerCase().includes(query);
+        const rarityMatch = eq.rarity.toLowerCase().includes(query);
+        return nameMatch || descMatch || slotMatch || rarityMatch;
+      });
+    }
+
+    return equipment;
+  }, [equipmentFilter, equipmentSearchQuery, allEquipmentTemplates]);
 
   // 合并所有物品列表
   const allItems = useMemo(() => {
@@ -238,11 +358,29 @@ const DebugModal: React.FC<Props> = ({
     return items;
   }, []);
 
-  // 过滤物品
+  // 过滤物品（按类型和搜索关键词）
   const filteredItems = useMemo(() => {
-    if (itemFilter === 'all') return allItems;
-    return allItems.filter((item) => item.type === itemFilter);
-  }, [allItems, itemFilter]);
+    let items = allItems;
+
+    // 先按类型过滤
+    if (itemFilter !== 'all') {
+      items = items.filter((item) => item.type === itemFilter);
+    }
+
+    // 再按搜索关键词过滤
+    if (itemSearchQuery.trim()) {
+      const query = itemSearchQuery.trim().toLowerCase();
+      items = items.filter((item) => {
+        const nameMatch = item.name.toLowerCase().includes(query);
+        const descMatch = item.description.toLowerCase().includes(query);
+        const typeMatch = item.type.toLowerCase().includes(query);
+        const rarityMatch = item.rarity?.toLowerCase().includes(query);
+        return nameMatch || descMatch || typeMatch || rarityMatch;
+      });
+    }
+
+    return items;
+  }, [allItems, itemFilter, itemSearchQuery]);
 
   if (!isOpen) return null;
 
@@ -451,6 +589,24 @@ const DebugModal: React.FC<Props> = ({
     });
     showSuccess(`已选择称号：${title.name}`);
   };
+
+  // 解锁称号
+  const handleUnlockTitle = (title: Title) => {
+    if ((localPlayer.unlockedTitles || []).includes(title.id)) {
+      showInfo('该称号已解锁');
+      return;
+    }
+    const updated = {
+      ...localPlayer,
+      unlockedTitles: [...(localPlayer.unlockedTitles || []), title.id],
+    };
+    setLocalPlayer(updated);
+    onUpdatePlayer({
+      unlockedTitles: updated.unlockedTitles,
+    });
+    showSuccess(`已解锁称号：${title.name}`);
+  };
+
 
   // 学习功法
   const handleLearnCultivationArt = (art: CultivationArt) => {
@@ -1179,12 +1335,35 @@ const DebugModal: React.FC<Props> = ({
                   <Skull size={14} className="inline mr-1" />
                   死亡测试
                 </button>
+                <button
+                  onClick={() => setActiveTab('reputation')}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    activeTab === 'reputation'
+                      ? 'bg-red-700 text-white'
+                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                  }`}
+                  title="声望事件"
+                >
+                  <Award size={14} className="inline mr-1" />
+                  声望事件
+                </button>
               </div>
             </div>
 
             {/* 装备选择 */}
             {activeTab === 'equipment' && (
               <div>
+                {/* 搜索框 */}
+                <div className="mb-3">
+                  <input
+                    type="text"
+                    value={equipmentSearchQuery}
+                    onChange={(e) => setEquipmentSearchQuery(e.target.value)}
+                    placeholder="搜索装备名称、描述、部位或稀有度..."
+                    className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-sm text-stone-200 placeholder-stone-500 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600"
+                  />
+                </div>
+
                 {/* 稀有度筛选 */}
                 <div className="flex gap-2 mb-3 flex-wrap">
                   {(['all', '普通', '稀有', '传说', '仙品'] as const).map(
@@ -1203,6 +1382,13 @@ const DebugModal: React.FC<Props> = ({
                     )
                   )}
                 </div>
+
+                {/* 显示搜索结果数量 */}
+                {equipmentSearchQuery.trim() && (
+                  <div className="text-sm text-stone-400 mb-3">
+                    找到 {filteredEquipment.length} 个匹配的装备
+                  </div>
+                )}
 
                 {/* 装备卡片列表 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
@@ -1408,22 +1594,37 @@ const DebugModal: React.FC<Props> = ({
                               .join(', ')}
                           </div>
                         )}
-                        <button
-                          className={`mt-2 w-full text-xs py-1 rounded transition-colors ${
-                            isSelected
-                              ? 'bg-stone-700 text-stone-400 cursor-not-allowed'
-                              : 'bg-red-700 hover:bg-red-600 text-white'
-                          }`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!isSelected) {
-                              handleSelectTitle(title);
-                            }
-                          }}
-                          disabled={isSelected}
-                        >
-                          {isSelected ? '已选择' : '选择称号'}
-                        </button>
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            className={`flex-1 text-xs py-1 rounded transition-colors ${
+                              isSelected
+                                ? 'bg-stone-700 text-stone-400 cursor-not-allowed'
+                                : 'bg-red-700 hover:bg-red-600 text-white'
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (!isSelected) {
+                                handleSelectTitle(title);
+                              }
+                            }}
+                            disabled={isSelected}
+                          >
+                            {isSelected ? '已选择' : '选择称号'}
+                          </button>
+                          <button
+                            className={`flex-1 text-xs py-1 rounded transition-colors ${
+                              (localPlayer.unlockedTitles || []).includes(title.id)
+                                ? 'bg-green-700 hover:bg-green-600 text-white'
+                                : 'bg-blue-700 hover:bg-blue-600 text-white'
+                            }`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUnlockTitle(title);
+                            }}
+                          >
+                            {(localPlayer.unlockedTitles || []).includes(title.id) ? '已解锁' : '解锁称号'}
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
@@ -2074,6 +2275,17 @@ const DebugModal: React.FC<Props> = ({
             {/* 物品选择 */}
             {activeTab === 'item' && (
               <div>
+                {/* 搜索框 */}
+                <div className="mb-3">
+                  <input
+                    type="text"
+                    value={itemSearchQuery}
+                    onChange={(e) => setItemSearchQuery(e.target.value)}
+                    placeholder="搜索物品名称、描述、类型或稀有度..."
+                    className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-sm text-stone-200 placeholder-stone-500 focus:outline-none focus:border-red-600 focus:ring-1 focus:ring-red-600"
+                  />
+                </div>
+
                 {/* 物品类型筛选 */}
                 <div className="flex gap-2 mb-3 flex-wrap">
                   {(['all', ...Object.values(ItemType)] as const).map(
@@ -2092,6 +2304,13 @@ const DebugModal: React.FC<Props> = ({
                     )
                   )}
                 </div>
+
+                {/* 显示搜索结果数量 */}
+                {itemSearchQuery.trim() && (
+                  <div className="text-sm text-stone-400 mb-3">
+                    找到 {filteredItems.length} 个匹配的物品
+                  </div>
+                )}
 
                 {/* 物品卡片列表 */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
@@ -2294,6 +2513,251 @@ const DebugModal: React.FC<Props> = ({
               </div>
             )}
 
+
+            {/* 传承系统 */}
+            {activeTab === 'inheritance' && (
+              <div>
+                <div className="text-sm text-stone-400 mb-3">
+                  传承系统：可以设置传承路线、等级、经验和技能
+                </div>
+
+                {/* 传承路线选择 */}
+                <div className="mb-4">
+                  <h3 className="font-bold text-stone-200 mb-2">传承路线</h3>
+                  <div className="text-sm text-stone-400 mb-2">
+                    当前路线：
+                    <span className="text-stone-200 ml-2">
+                      {localPlayer.inheritanceRoute
+                        ? INHERITANCE_ROUTES.find(r => r.id === localPlayer.inheritanceRoute)?.name || '未知'
+                        : '未选择'}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {INHERITANCE_ROUTES.map((route) => {
+                      const isSelected = localPlayer.inheritanceRoute === route.id;
+                      return (
+                        <div
+                          key={route.id}
+                          className={`border-2 rounded-lg p-3 ${
+                            isSelected
+                              ? 'border-red-500 bg-red-900/20'
+                              : 'border-stone-600 bg-stone-800/50'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <h4 className="font-bold text-sm">{route.name}</h4>
+                            {isSelected && (
+                              <span className="text-xs px-2 py-0.5 rounded bg-red-700 text-white">
+                                已选择
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-stone-400 mb-2">
+                            {route.description}
+                          </p>
+                          <button
+                            className={`w-full text-xs py-1 rounded transition-colors ${
+                              isSelected
+                                ? 'bg-stone-700 text-stone-400 cursor-not-allowed'
+                                : 'bg-red-700 hover:bg-red-600 text-white'
+                            }`}
+                            onClick={() => {
+                              if (!isSelected) {
+                                const updated = {
+                                  ...localPlayer,
+                                  inheritanceRoute: route.id,
+                                  inheritanceLevel: localPlayer.inheritanceLevel || 0,
+                                  inheritanceExp: localPlayer.inheritanceExp || 0,
+                                  inheritanceSkills: localPlayer.inheritanceSkills || [],
+                                };
+                                setLocalPlayer(updated);
+                                onUpdatePlayer({
+                                  inheritanceRoute: route.id,
+                                  inheritanceLevel: updated.inheritanceLevel,
+                                  inheritanceExp: updated.inheritanceExp,
+                                  inheritanceSkills: updated.inheritanceSkills,
+                                });
+                                showSuccess(`已选择传承路线：${route.name}`);
+                              }
+                            }}
+                            disabled={isSelected}
+                          >
+                            {isSelected ? '已选择' : '选择路线'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 传承等级和经验 */}
+                {localPlayer.inheritanceRoute && (
+                  <div className="mb-4">
+                    <h3 className="font-bold text-stone-200 mb-2">传承等级和经验</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm text-stone-400">传承等级 (0-4)</label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <button
+                            onClick={() => adjustNumber('inheritanceLevel', -1, 0)}
+                            className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
+                          >
+                            -1
+                          </button>
+                          <input
+                            type="number"
+                            min="0"
+                            max="4"
+                            className="flex-1 bg-stone-800 border border-stone-700 rounded px-2 py-1 text-stone-200 text-sm"
+                            value={localPlayer.inheritanceLevel || 0}
+                            onChange={(e) =>
+                              updateField(
+                                'inheritanceLevel',
+                                Math.max(0, Math.min(4, parseInt(e.target.value) || 0))
+                              )
+                            }
+                          />
+                          <button
+                            onClick={() => adjustNumber('inheritanceLevel', 1, 0)}
+                            className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
+                          >
+                            +1
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-sm text-stone-400">传承经验</label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <button
+                            onClick={() => adjustNumber('inheritanceExp', -1000, 0)}
+                            className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
+                          >
+                            -1K
+                          </button>
+                          <input
+                            type="number"
+                            min="0"
+                            className="flex-1 bg-stone-800 border border-stone-700 rounded px-2 py-1 text-stone-200 text-sm"
+                            value={localPlayer.inheritanceExp || 0}
+                            onChange={(e) =>
+                              updateField('inheritanceExp', Math.max(0, parseInt(e.target.value) || 0))
+                            }
+                          />
+                          <button
+                            onClick={() => adjustNumber('inheritanceExp', 1000, 0)}
+                            className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
+                          >
+                            +1K
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 传承技能 */}
+                {localPlayer.inheritanceRoute && (
+                  <div>
+                    <h3 className="font-bold text-stone-200 mb-2">传承技能</h3>
+                    <div className="text-sm text-stone-400 mb-2">
+                      已学技能：{(localPlayer.inheritanceSkills || []).length} 个
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+                      {INHERITANCE_SKILLS.filter(skill =>
+                        skill.route === localPlayer.inheritanceRoute
+                      ).map((skill) => {
+                        const isLearned = (localPlayer.inheritanceSkills || []).includes(skill.id);
+                        const canLearn = (localPlayer.inheritanceLevel || 0) >= skill.unlockLevel;
+                        return (
+                          <div
+                            key={skill.id}
+                            className={`border-2 rounded-lg p-3 ${
+                              isLearned
+                                ? 'border-green-500 bg-green-900/20'
+                                : canLearn
+                                  ? 'border-stone-600 bg-stone-800/50'
+                                  : 'border-stone-700 bg-stone-900/50 opacity-50'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <h4 className="font-bold text-sm">{skill.name}</h4>
+                              <div className="flex items-center gap-1">
+                                {isLearned && (
+                                  <span className="text-xs px-2 py-0.5 rounded bg-green-700 text-white">
+                                    已学习
+                                  </span>
+                                )}
+                                <span className="text-xs px-2 py-0.5 rounded bg-stone-700">
+                                  等级{skill.unlockLevel}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-xs text-stone-400 mb-2">
+                              {skill.description}
+                            </p>
+                            {skill.passiveEffect && (
+                              <div className="text-xs text-stone-300 mb-2">
+                                <span className="text-stone-500">效果：</span>
+                                {Object.entries(skill.passiveEffect)
+                                  .filter(([key]) => key !== 'description')
+                                  .map(([key, value]) => {
+                                    const keyMap: Record<string, string> = {
+                                      attack: '攻击',
+                                      defense: '防御',
+                                      hp: '气血',
+                                      spirit: '神识',
+                                      physique: '体魄',
+                                      speed: '速度',
+                                      expRate: '修炼速度',
+                                    };
+                                    if (key === 'expRate' && typeof value === 'number') {
+                                      return `${keyMap[key] || key}+${(value * 100).toFixed(0)}%`;
+                                    }
+                                    return `${keyMap[key] || key}+${value}`;
+                                  })
+                                  .join(', ')}
+                              </div>
+                            )}
+                            <button
+                              className={`w-full text-xs py-1 rounded transition-colors ${
+                                isLearned
+                                  ? 'bg-stone-700 text-stone-400 cursor-not-allowed'
+                                  : canLearn
+                                    ? 'bg-red-700 hover:bg-red-600 text-white'
+                                    : 'bg-stone-700 text-stone-500 cursor-not-allowed'
+                              }`}
+                              onClick={() => {
+                                if (!isLearned && canLearn) {
+                                  const updated = {
+                                    ...localPlayer,
+                                    inheritanceSkills: [...(localPlayer.inheritanceSkills || []), skill.id],
+                                  };
+                                  setLocalPlayer(updated);
+                                  onUpdatePlayer({
+                                    inheritanceSkills: updated.inheritanceSkills,
+                                  });
+                                  showSuccess(`已学习传承技能：${skill.name}`);
+                                }
+                              }}
+                              disabled={isLearned || !canLearn}
+                            >
+                              {isLearned ? '已学习' : canLearn ? '学习技能' : `需要等级${skill.unlockLevel}`}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {!localPlayer.inheritanceRoute && (
+                  <div className="text-sm text-stone-400 text-center py-8">
+                    请先选择传承路线
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* 死亡测试 */}
             {activeTab === 'death' && (
               <div>
@@ -2445,6 +2909,293 @@ const DebugModal: React.FC<Props> = ({
                         <p>• 简单模式：死亡无惩罚，直接复活</p>
                         <p>• 普通模式：死亡掉落部分属性(10-20%)和装备(1-3件)</p>
                         <p>• 困难模式：死亡清除存档</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 声望事件调试 */}
+            {activeTab === 'reputation' && (
+              <div>
+                <div className="bg-yellow-900/30 border border-yellow-700 rounded p-4 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Award size={20} className="text-yellow-400" />
+                    <h3 className="text-lg font-bold text-yellow-400">
+                      声望事件调试
+                    </h3>
+                  </div>
+                  <p className="text-sm text-stone-300 mb-2">
+                    当前声望：<span className="font-semibold text-yellow-400">{localPlayer.reputation || 0}</span>
+                  </p>
+                  <p className="text-xs text-stone-400">
+                    可以触发不同类型的声望事件来测试声望弹窗功能
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  {/* 预设声望事件 */}
+                  <div>
+                    <h4 className="font-semibold text-stone-200 mb-2">
+                      预设声望事件
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {/* 正面事件 - 帮助村民 */}
+                      <button
+                        onClick={() => {
+                          if (onTriggerReputationEvent) {
+                            onTriggerReputationEvent({
+                              title: '助人为乐',
+                              description: '你在历练途中遇到了一群被妖兽围攻的村民。你决定出手相助，帮助他们击退了妖兽。村民们对你感激不尽。',
+                              choices: [
+                                {
+                                  text: '接受村民的感谢，收取一些谢礼',
+                                  reputationChange: 10,
+                                  description: '你接受了村民的谢礼，声望提升了。',
+                                  spiritStonesChange: 50,
+                                },
+                                {
+                                  text: '婉拒谢礼，只求村民平安',
+                                  reputationChange: 20,
+                                  description: '你的善举让村民们更加敬佩，声望大幅提升。',
+                                },
+                                {
+                                  text: '要求村民提供更多信息',
+                                  reputationChange: 5,
+                                  description: '你从村民那里获得了一些有用的信息。',
+                                  expChange: 20,
+                                },
+                              ],
+                            });
+                            showSuccess('已触发声望事件：助人为乐');
+                          } else {
+                            showError('声望事件回调未配置');
+                          }
+                        }}
+                        className="p-4 bg-stone-800/50 border border-stone-700 rounded hover:border-yellow-500 transition-colors text-left"
+                      >
+                        <div className="font-semibold text-stone-200 mb-1">
+                          助人为乐
+                        </div>
+                        <div className="text-xs text-stone-400">
+                          帮助村民击退妖兽，获得声望奖励
+                        </div>
+                      </button>
+
+                      {/* 正面事件 - 宗门任务 */}
+                      <button
+                        onClick={() => {
+                          if (onTriggerReputationEvent) {
+                            onTriggerReputationEvent({
+                              title: '宗门委托',
+                              description: '你收到了宗门的委托任务，需要前往危险区域收集灵草。这是一个提升声望的好机会。',
+                              choices: [
+                                {
+                                  text: '接受任务，立即前往',
+                                  reputationChange: 15,
+                                  description: '你成功完成了任务，获得了宗门的认可。',
+                                  expChange: 30,
+                                  hpChange: -20,
+                                },
+                                {
+                                  text: '谨慎考虑，要求更多报酬',
+                                  reputationChange: 8,
+                                  description: '你获得了额外的报酬，但声望提升较少。',
+                                  spiritStonesChange: 100,
+                                },
+                                {
+                                  text: '拒绝任务',
+                                  reputationChange: -5,
+                                  description: '你拒绝了任务，声望略有下降。',
+                                },
+                              ],
+                            });
+                            showSuccess('已触发声望事件：宗门委托');
+                          } else {
+                            showError('声望事件回调未配置');
+                          }
+                        }}
+                        className="p-4 bg-stone-800/50 border border-stone-700 rounded hover:border-yellow-500 transition-colors text-left"
+                      >
+                        <div className="font-semibold text-stone-200 mb-1">
+                          宗门委托
+                        </div>
+                        <div className="text-xs text-stone-400">
+                          完成宗门任务，提升声望
+                        </div>
+                      </button>
+
+                      {/* 负面事件 - 道德抉择 */}
+                      <button
+                        onClick={() => {
+                          if (onTriggerReputationEvent) {
+                            onTriggerReputationEvent({
+                              title: '道德抉择',
+                              description: '你发现了一个受伤的邪修，他请求你的帮助。帮助他可能会获得一些好处，但也会影响你的声誉。',
+                              choices: [
+                                {
+                                  text: '帮助邪修，获得他的宝物',
+                                  reputationChange: -15,
+                                  description: '你帮助了邪修，虽然获得了宝物，但声望下降了。',
+                                  spiritStonesChange: 200,
+                                  hpChange: -10,
+                                },
+                                {
+                                  text: '拒绝帮助，但也不伤害他',
+                                  reputationChange: 0,
+                                  description: '你保持了中立，没有影响声望。',
+                                },
+                                {
+                                  text: '为民除害，击败邪修',
+                                  reputationChange: 25,
+                                  description: '你为民除害，声望大幅提升！',
+                                  expChange: 50,
+                                  hpChange: -30,
+                                },
+                              ],
+                            });
+                            showSuccess('已触发声望事件：道德抉择');
+                          } else {
+                            showError('声望事件回调未配置');
+                          }
+                        }}
+                        className="p-4 bg-stone-800/50 border border-stone-700 rounded hover:border-yellow-500 transition-colors text-left"
+                      >
+                        <div className="font-semibold text-stone-200 mb-1">
+                          道德抉择
+                        </div>
+                        <div className="text-xs text-stone-400">
+                          面对邪修，做出你的选择
+                        </div>
+                      </button>
+
+                      {/* 复杂事件 - 秘境发现 */}
+                      <button
+                        onClick={() => {
+                          if (onTriggerReputationEvent) {
+                            onTriggerReputationEvent({
+                              title: '秘境发现',
+                              description: '你在历练中发现了一处隐秘的秘境入口。这个发现可能会改变你的命运，但也需要做出重要的选择。',
+                              choices: [
+                                {
+                                  text: '独自探索秘境',
+                                  reputationChange: 5,
+                                  description: '你独自探索了秘境，获得了一些收获。',
+                                  expChange: 100,
+                                  hpChange: -50,
+                                },
+                                {
+                                  text: '将秘境信息告知宗门',
+                                  reputationChange: 30,
+                                  description: '你的贡献让宗门对你刮目相看，声望大幅提升！',
+                                  spiritStonesChange: 150,
+                                },
+                                {
+                                  text: '与好友分享秘境',
+                                  reputationChange: 15,
+                                  description: '你与好友共同探索，获得了友谊和声望。',
+                                  expChange: 60,
+                                  hpChange: -25,
+                                },
+                              ],
+                            });
+                            showSuccess('已触发声望事件：秘境发现');
+                          } else {
+                            showError('声望事件回调未配置');
+                          }
+                        }}
+                        className="p-4 bg-stone-800/50 border border-stone-700 rounded hover:border-yellow-500 transition-colors text-left"
+                      >
+                        <div className="font-semibold text-stone-200 mb-1">
+                          秘境发现
+                        </div>
+                        <div className="text-xs text-stone-400">
+                          发现秘境，做出重要选择
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 自定义声望事件 */}
+                  <div>
+                    <h4 className="font-semibold text-stone-200 mb-2">
+                      快速测试
+                    </h4>
+                    <div className="bg-stone-800/50 border border-stone-700 rounded p-4">
+                      <p className="text-sm text-stone-300 mb-4">
+                        快速测试不同类型的声望变化：
+                      </p>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        <button
+                          onClick={() => {
+                            if (onTriggerReputationEvent) {
+                              onTriggerReputationEvent({
+                                title: '测试：大幅提升声望',
+                                description: '这是一个测试事件，用于测试大幅提升声望的情况。',
+                                choices: [
+                                  {
+                                    text: '选择1：+50声望',
+                                    reputationChange: 50,
+                                    description: '声望大幅提升！',
+                                  },
+                                ],
+                              });
+                              showSuccess('已触发测试事件：大幅提升声望');
+                            } else {
+                              showError('声望事件回调未配置');
+                            }
+                          }}
+                          className="px-3 py-2 bg-green-700 hover:bg-green-600 text-white rounded text-sm"
+                        >
+                          +50声望
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (onTriggerReputationEvent) {
+                              onTriggerReputationEvent({
+                                title: '测试：中等提升声望',
+                                description: '这是一个测试事件，用于测试中等提升声望的情况。',
+                                choices: [
+                                  {
+                                    text: '选择1：+20声望',
+                                    reputationChange: 20,
+                                    description: '声望提升！',
+                                  },
+                                ],
+                              });
+                              showSuccess('已触发测试事件：中等提升声望');
+                            } else {
+                              showError('声望事件回调未配置');
+                            }
+                          }}
+                          className="px-3 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded text-sm"
+                        >
+                          +20声望
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (onTriggerReputationEvent) {
+                              onTriggerReputationEvent({
+                                title: '测试：降低声望',
+                                description: '这是一个测试事件，用于测试降低声望的情况。',
+                                choices: [
+                                  {
+                                    text: '选择1：-20声望',
+                                    reputationChange: -20,
+                                    description: '声望下降了。',
+                                  },
+                                ],
+                              });
+                              showSuccess('已触发测试事件：降低声望');
+                            } else {
+                              showError('声望事件回调未配置');
+                            }
+                          }}
+                          className="px-3 py-2 bg-red-700 hover:bg-red-600 text-white rounded text-sm"
+                        >
+                          -20声望
+                        </button>
                       </div>
                     </div>
                   </div>

@@ -8,6 +8,7 @@ import {
   Recipe,
   Talent,
   Title,
+  TitleSetEffect,
   EncounterEvent,
   ExplorationLocation,
   Achievement,
@@ -20,6 +21,7 @@ import {
   ItemRarity,
   DailyQuestType
 } from './types';
+
 
 
 export const REALM_ORDER = [
@@ -112,7 +114,7 @@ export const REALM_DATA: Record<
     baseSpirit: 50000,
     basePhysique: 100000,
     baseSpeed: 500,
-    maxExpBase: 9999999,
+    maxExpBase: 2500000, // 降低修为需求，从9999999降到2500000（约5倍增长）
     baseMaxLifespan: 10000, // 渡劫飞升基础寿命10000年
   },
 };
@@ -1728,7 +1730,395 @@ export const TITLES: Title[] = [
     name: '飞升仙人',
     description: '渡劫飞升，已是真正的仙人。',
     requirement: '达到渡劫飞升',
+    category: 'cultivation',
+    rarity: '仙品',
     effects: { attack: 1000, defense: 500, hp: 5000, expRate: 0.3 },
+  },
+  // 战斗类称号
+  {
+    id: 'title-warrior',
+    name: '战士',
+    description: '在战斗中展现出色实力。',
+    requirement: '击败10个敌人',
+    category: 'combat',
+    rarity: '普通',
+    setGroup: 'warrior',
+    effects: { attack: 15, defense: 5 },
+  },
+  {
+    id: 'title-slayer',
+    name: '屠戮者',
+    description: '击败大量敌人的战士。',
+    requirement: '击败50个敌人',
+    category: 'combat',
+    rarity: '稀有',
+    setGroup: 'warrior',
+    effects: { attack: 50, defense: 20, hp: 100 },
+  },
+  {
+    id: 'title-champion',
+    name: '战神',
+    description: '战无不胜的绝世强者。',
+    requirement: '击败100个敌人',
+    category: 'combat',
+    rarity: '传说',
+    setGroup: 'warrior',
+    effects: { attack: 150, defense: 75, hp: 500, speed: 20 },
+  },
+  // 探索类称号
+  {
+    id: 'title-explorer',
+    name: '探索者',
+    description: '对未知世界充满好奇。',
+    requirement: '完成20次历练',
+    category: 'exploration',
+    rarity: '普通',
+    setGroup: 'explorer',
+    effects: { spirit: 10, luck: 5 },
+  },
+  {
+    id: 'title-adventurer',
+    name: '冒险家',
+    description: '历经无数冒险的探险者。',
+    requirement: '完成50次历练',
+    category: 'exploration',
+    rarity: '稀有',
+    setGroup: 'explorer',
+    effects: { spirit: 30, luck: 15, expRate: 0.1 },
+  },
+  {
+    id: 'title-traveler',
+    name: '游历者',
+    description: '走遍天下的旅人。',
+    requirement: '完成100次历练',
+    category: 'exploration',
+    rarity: '传说',
+    setGroup: 'explorer',
+    effects: { spirit: 80, luck: 30, expRate: 0.15, speed: 15 },
+  },
+  // 收集类称号
+  {
+    id: 'title-collector',
+    name: '收藏家',
+    description: '喜欢收集各种物品。',
+    requirement: '收集10种物品',
+    category: 'collection',
+    rarity: '普通',
+    setGroup: 'collector',
+    effects: { luck: 10 },
+  },
+  {
+    id: 'title-hoarder',
+    name: '囤积者',
+    description: '拥有大量收藏品。',
+    requirement: '收集30种物品',
+    category: 'collection',
+    rarity: '稀有',
+    setGroup: 'collector',
+    effects: { luck: 25, spirit: 20 },
+  },
+  {
+    id: 'title-treasurer',
+    name: '珍宝收藏家',
+    description: '拥有无数珍稀收藏品。',
+    requirement: '收集50种物品',
+    category: 'collection',
+    rarity: '传说',
+    setGroup: 'collector',
+    effects: { luck: 50, spirit: 50, expRate: 0.1 },
+  },
+  // 特殊类称号
+  {
+    id: 'title-hermit',
+    name: '隐士',
+    description: '长期闭关修炼的隐士。',
+    requirement: '完成100次打坐',
+    category: 'cultivation',
+    rarity: '稀有',
+    effects: { expRate: 0.2, spirit: 40, physique: 30 },
+  },
+  {
+    id: 'title-alchemist',
+    name: '炼丹大师',
+    description: '精通炼丹之术。',
+    requirement: '炼制20次丹药',
+    category: 'special',
+    rarity: '稀有',
+    effects: { spirit: 30, luck: 15 },
+  },
+  {
+    id: 'title-sect-master',
+    name: '宗门之主',
+    description: '担任过宗门长老。',
+    requirement: '达到长老职位',
+    category: 'special',
+    rarity: '传说',
+    effects: { attack: 100, defense: 100, spirit: 50, expRate: 0.15 },
+  },
+];
+
+// 称号套装效果
+export const TITLE_SET_EFFECTS: TitleSetEffect[] = [
+  {
+    setName: '战士套装',
+    titles: ['title-warrior', 'title-slayer', 'title-champion'],
+    description: '佩戴所有战士称号，获得强大的战斗加成',
+    effects: {
+      attack: 100,
+      defense: 50,
+      hp: 300,
+      speed: 10,
+    },
+  },
+  {
+    setName: '探索者套装',
+    titles: ['title-explorer', 'title-adventurer', 'title-traveler'],
+    description: '佩戴所有探索者称号，提升探索收益',
+    effects: {
+      spirit: 50,
+      luck: 40,
+      expRate: 0.2,
+      speed: 15,
+    },
+  },
+  {
+    setName: '收藏家套装',
+    titles: ['title-collector', 'title-hoarder', 'title-treasurer'],
+    description: '佩戴所有收藏家称号，大幅提升幸运值',
+    effects: {
+      luck: 80,
+      spirit: 60,
+      expRate: 0.15,
+    },
+  },
+];
+
+// --- 传承系统 ---
+
+// 传承路线
+export interface InheritanceRoute {
+  id: string;
+  name: string;
+  description: string;
+  rarity: ItemRarity;
+  unlockRequirement?: {
+    realm?: RealmType;
+    achievement?: string;
+    item?: string;
+  };
+  baseEffects: {
+    attack?: number;
+    defense?: number;
+    hp?: number;
+    spirit?: number;
+    physique?: number;
+    speed?: number;
+    expRate?: number;
+  };
+  skills: string[]; // 传承技能ID列表
+}
+
+// 传承技能
+export interface InheritanceSkill {
+  id: string;
+  name: string;
+  description: string;
+  route: string; // 所属传承路线ID
+  unlockLevel: number; // 解锁所需传承等级
+  effects: {
+    attack?: number;
+    defense?: number;
+    hp?: number;
+    spirit?: number;
+    physique?: number;
+    speed?: number;
+    expRate?: number;
+    luck?: number;
+  };
+  passiveEffect?: {
+    type: 'combat' | 'cultivation' | 'exploration' | 'general';
+    description: string;
+    // 可以添加更多被动效果定义
+  };
+}
+
+export const INHERITANCE_ROUTES: InheritanceRoute[] = [
+  {
+    id: 'dragon',
+    name: '真龙传承',
+    description: '真龙血脉传承，威震天地，攻击力极强。',
+    rarity: '仙品',
+    unlockRequirement: {
+      realm: RealmType.NascentSoul,
+    },
+    baseEffects: {
+      attack: 200,
+      defense: 100,
+      hp: 500,
+      physique: 50,
+    },
+    skills: ['dragon-roar', 'dragon-scale', 'dragon-rage'],
+  },
+  {
+    id: 'phoenix',
+    name: '凤凰传承',
+    description: '凤凰血脉传承，涅槃重生，恢复力极强。',
+    rarity: '仙品',
+    unlockRequirement: {
+      realm: RealmType.NascentSoul,
+    },
+    baseEffects: {
+      hp: 800,
+      defense: 150,
+      spirit: 80,
+      expRate: 0.15,
+    },
+    skills: ['phoenix-rebirth', 'phoenix-fire', 'phoenix-blessing'],
+  },
+  {
+    id: 'void',
+    name: '虚空传承',
+    description: '虚空之力传承，神秘莫测，神识极强。',
+    rarity: '仙品',
+    unlockRequirement: {
+      realm: RealmType.VoidRefining,
+    },
+    baseEffects: {
+      spirit: 200,
+      speed: 50,
+      expRate: 0.2,
+    },
+    skills: ['void-step', 'void-mind', 'void-break'],
+  },
+  {
+    id: 'thunder',
+    name: '雷霆传承',
+    description: '雷霆之力传承，速度极快，攻击迅猛。',
+    rarity: '传说',
+    unlockRequirement: {
+      realm: RealmType.GoldenCore,
+    },
+    baseEffects: {
+      attack: 100,
+      speed: 80,
+      spirit: 40,
+    },
+    skills: ['thunder-bolt', 'thunder-speed'],
+  },
+];
+
+export const INHERITANCE_SKILLS: InheritanceSkill[] = [
+  // 真龙传承技能
+  {
+    id: 'dragon-roar',
+    name: '龙吟',
+    description: '真龙之吼，震慑敌人，提升攻击力。',
+    route: 'dragon',
+    unlockLevel: 1,
+    effects: { attack: 100 },
+    passiveEffect: {
+      type: 'combat',
+      description: '战斗时攻击力额外提升10%',
+    },
+  },
+  {
+    id: 'dragon-scale',
+    name: '龙鳞护体',
+    description: '龙鳞般的防御，大幅提升防御力。',
+    route: 'dragon',
+    unlockLevel: 2,
+    effects: { defense: 150, hp: 300 },
+    passiveEffect: {
+      type: 'combat',
+      description: '受到伤害减少15%',
+    },
+  },
+  {
+    id: 'dragon-rage',
+    name: '龙怒',
+    description: '真龙之怒，大幅提升所有属性。',
+    route: 'dragon',
+    unlockLevel: 3,
+    effects: { attack: 200, defense: 100, hp: 500, speed: 30 },
+  },
+  // 凤凰传承技能
+  {
+    id: 'phoenix-rebirth',
+    name: '涅槃重生',
+    description: '凤凰涅槃之力，提升恢复能力和气血。',
+    route: 'phoenix',
+    unlockLevel: 1,
+    effects: { hp: 600, expRate: 0.1 },
+    passiveEffect: {
+      type: 'cultivation',
+      description: '修炼速度提升20%',
+    },
+  },
+  {
+    id: 'phoenix-fire',
+    name: '凤凰真火',
+    description: '凤凰真火之力，提升攻击和神识。',
+    route: 'phoenix',
+    unlockLevel: 2,
+    effects: { attack: 120, spirit: 100 },
+  },
+  {
+    id: 'phoenix-blessing',
+    name: '凤凰祝福',
+    description: '凤凰的祝福，全面提升属性。',
+    route: 'phoenix',
+    unlockLevel: 3,
+    effects: { attack: 150, defense: 120, hp: 800, spirit: 100, expRate: 0.15 },
+  },
+  // 虚空传承技能
+  {
+    id: 'void-step',
+    name: '虚空步',
+    description: '虚空之力，大幅提升速度。',
+    route: 'void',
+    unlockLevel: 1,
+    effects: { speed: 80 },
+    passiveEffect: {
+      type: 'exploration',
+      description: '历练时获得的奖励提升30%',
+    },
+  },
+  {
+    id: 'void-mind',
+    name: '虚空心法',
+    description: '虚空心法，大幅提升神识。',
+    route: 'void',
+    unlockLevel: 2,
+    effects: { spirit: 150, expRate: 0.15 },
+  },
+  {
+    id: 'void-break',
+    name: '破虚',
+    description: '破除虚空，大幅提升所有属性。',
+    route: 'void',
+    unlockLevel: 3,
+    effects: { attack: 150, defense: 100, spirit: 200, speed: 60, expRate: 0.2 },
+  },
+  // 雷霆传承技能
+  {
+    id: 'thunder-bolt',
+    name: '雷霆一击',
+    description: '雷霆之力，大幅提升攻击和速度。',
+    route: 'thunder',
+    unlockLevel: 1,
+    effects: { attack: 80, speed: 60 },
+  },
+  {
+    id: 'thunder-speed',
+    name: '雷霆之速',
+    description: '雷霆般的速度，大幅提升速度属性。',
+    route: 'thunder',
+    unlockLevel: 2,
+    effects: { speed: 100, spirit: 50 },
+    passiveEffect: {
+      type: 'general',
+      description: '移动和行动速度提升25%',
+    },
   },
 ];
 
@@ -3604,7 +3994,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     name: '诛仙剑',
     type: 'item',
     rarity: '仙品',
-    weight: 1,
+    weight: 2, // 从1提升到2，提高仙品掉落概率
     value: {
       item: {
         name: '诛仙剑',
@@ -3739,7 +4129,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     name: '仙灵道袍',
     type: 'item',
     rarity: '仙品',
-    weight: 1,
+    weight: 2, // 从1提升到2，提高仙品掉落概率
     value: {
       item: {
         name: '仙灵道袍',
@@ -3836,7 +4226,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     name: '大道戒指',
     type: 'item',
     rarity: '仙品',
-    weight: 1,
+    weight: 2, // 从1提升到2，提高仙品掉落概率
     value: {
       item: {
         name: '大道戒指',
@@ -3912,7 +4302,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     name: '神道符',
     type: 'item',
     rarity: '仙品',
-    weight: 1,
+    weight: 2, // 从1提升到2，提高仙品掉落概率
     value: {
       item: {
         name: '神道符',
@@ -4926,6 +5316,32 @@ export const SHOPS: Shop[] = [
         minRealm: RealmType.SpiritSevering,
       },
     ],
+  },
+  {
+    id: 'shop-blackmarket',
+    name: '黑市',
+    type: ShopType.BlackMarket,
+    description: '神秘的黑市，售卖各种稀有物品，价格昂贵但品质极高。',
+    items: [], // 物品通过 generateShopItems 动态生成
+    refreshCost: 1000, // 刷新费用
+    refreshCooldown: 5 * 60 * 1000, // 5分钟冷却
+  },
+  {
+    id: 'shop-limitedtime',
+    name: '限时商店',
+    type: ShopType.LimitedTime,
+    description: '每日限时特价商店，商品种类丰富，价格优惠。',
+    items: [], // 物品通过 generateShopItems 动态生成
+    discount: 0.2, // 20%折扣
+    refreshCooldown: 24 * 60 * 60 * 1000, // 24小时刷新
+  },
+  {
+    id: 'shop-reputation',
+    name: '声望商店',
+    type: ShopType.Reputation,
+    description: '需要声望值才能进入的商店，售卖传承相关的珍贵物品。',
+    items: [], // 物品通过 generateShopItems 动态生成
+    reputationRequired: 100, // 需要100声望值
   },
 ];
 

@@ -15,6 +15,7 @@ import LotteryModal from '../../components/LotteryModal';
 import SettingsModal from '../../components/SettingsModal';
 import DailyQuestModal from '../../components/DailyQuestModal';
 import ShopModal from '../../components/ShopModal';
+import ReputationEventModal from '../../components/ReputationEventModal';
 import { BattleReplay } from '../../services/battleService';
 import { CultivationArt, Recipe } from '../../types';
 import { RandomSectTask } from '../../services/randomService';
@@ -50,6 +51,7 @@ interface ModalsContainerProps {
     isShopOpen: boolean;
     isBattleModalOpen: boolean;
     isTurnBasedBattleOpen?: boolean;
+    isReputationEventOpen: boolean;
   };
   modalState: {
     currentShop: Shop | null;
@@ -61,6 +63,7 @@ interface ModalsContainerProps {
       riskLevel?: '低' | '中' | '高' | '极度危险';
       realmMinRealm?: RealmType;
     } | null;
+    reputationEvent: any;
   };
   handlers: {
     // Modal toggles
@@ -126,6 +129,8 @@ interface ModalsContainerProps {
       type: 'attack' | 'defense' | 'hp' | 'spirit' | 'physique' | 'speed'
     ) => void;
     handleUseInheritance: () => void;
+    setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
+    addLog: (message: string, type?: string) => void;
     handleUpdateViewedAchievements: () => void;
     // Pet
     handleActivatePet: (petId: string) => void;
@@ -144,6 +149,7 @@ interface ModalsContainerProps {
     // Settings
     handleUpdateSettings: (newSettings: Partial<GameSettings>) => void;
     handleRestartGame?: () => void;
+    onOpenSaveManager?: () => void;
     // Daily Quest
     handleClaimQuestReward?: (questId: string) => void;
     // Shop
@@ -169,6 +175,9 @@ interface ModalsContainerProps {
       }>;
       petSkillCooldowns?: Record<string, number>; // 灵宠技能冷却状态
     }, updatedInventory?: Item[]) => void;
+    // Reputation event
+    setIsReputationEventOpen: (open: boolean) => void;
+    handleReputationEventChoice: (choiceIndex: number) => void;
   };
 }
 
@@ -277,11 +286,13 @@ export default function ModalsContainer({
         isOpen={modals.isCharacterOpen}
         onClose={() => handlers.setIsCharacterOpen(false)}
         player={player}
+        setPlayer={handlers.setPlayer}
         onSelectTalent={handlers.handleSelectTalent}
         onSelectTitle={handlers.handleSelectTitle}
         onAllocateAttribute={handlers.handleAllocateAttribute}
         onAllocateAllAttributes={handlers.handleAllocateAllAttributes}
         onUseInheritance={handlers.handleUseInheritance}
+        addLog={handlers.addLog}
       />
 
       <AchievementModal
@@ -316,6 +327,7 @@ export default function ModalsContainer({
         settings={settings}
         onUpdateSettings={handlers.handleUpdateSettings}
         onRestartGame={handlers.handleRestartGame}
+        onOpenSaveManager={handlers.onOpenSaveManager}
       />
 
       <DailyQuestModal
@@ -340,6 +352,15 @@ export default function ModalsContainer({
           onOpenInventory={() => handlers.setIsInventoryOpen(true)}
         />
       )}
+
+      <ReputationEventModal
+        isOpen={modals.isReputationEventOpen}
+        onClose={() => {
+          handlers.setIsReputationEventOpen(false);
+        }}
+        event={modalState.reputationEvent}
+        onChoice={handlers.handleReputationEventChoice}
+      />
     </>
   );
 }

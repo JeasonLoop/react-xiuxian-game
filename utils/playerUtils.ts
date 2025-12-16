@@ -116,7 +116,8 @@ export const createInitialPlayer = (
     betrayedSects: [], // 背叛过的宗门列表
     sectHuntEndTime: null, // 宗门追杀结束时间
     talentId: talentId,
-    titleId: null,
+    titleId: 'title-novice', // 初始称号：初入仙途
+    unlockedTitles: ['title-novice'], // 初始已解锁的称号
     attributePoints: 0,
     luck: 10 + talentLuck,
     achievements: [],
@@ -125,6 +126,9 @@ export const createInitialPlayer = (
     lotteryTickets: 10, // 开局十连抽
     lotteryCount: 0,
     inheritanceLevel: 0,
+    inheritanceRoute: null,
+    inheritanceExp: 0,
+    inheritanceSkills: [],
     dailyTaskCount: {
       instant: 0,
       short: 0,
@@ -157,5 +161,6 @@ export const createInitialPlayer = (
     dailyQuestCompleted: [],
     lastDailyQuestResetDate: new Date().toISOString().split('T')[0],
     gameDays: 1, // 游戏内天数，从第1天开始
+    reputation: 0, // 声望值
   };
 };

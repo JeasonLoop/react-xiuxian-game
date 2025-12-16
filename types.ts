@@ -116,6 +116,7 @@ export interface Item {
   };
 }
 
+
 export enum SectRank {
   Outer = '外门弟子',
   Inner = '内门弟子',
@@ -156,6 +157,9 @@ export interface Title {
   name: string;
   description: string;
   requirement: string;
+  category?: 'cultivation' | 'combat' | 'exploration' | 'collection' | 'special'; // 称号分类
+  rarity?: ItemRarity; // 称号稀有度
+  setGroup?: string; // 套装组名（如 "warrior", "scholar" 等），同组称号可触发套装效果
   effects: {
     attack?: number;
     defense?: number;
@@ -164,7 +168,25 @@ export interface Title {
     physique?: number;
     speed?: number;
     expRate?: number;
+    luck?: number;
   };
+}
+
+// 称号套装效果
+export interface TitleSetEffect {
+  setName: string; // 套装名称
+  titles: string[]; // 需要佩戴的称号ID列表
+  effects: {
+    attack?: number;
+    defense?: number;
+    hp?: number;
+    spirit?: number;
+    physique?: number;
+    speed?: number;
+    expRate?: number;
+    luck?: number;
+  };
+  description: string; // 套装效果描述
 }
 
 export interface PlayerStats {
@@ -193,7 +215,8 @@ export interface PlayerStats {
   sectHuntEndTime: number | null; // 宗门追杀结束时间戳（毫秒），null表示未被追杀
   // 角色系统扩展
   talentId: string | null; // 天赋ID（游戏开始时随机生成，之后不可修改）
-  titleId: string | null; // 称号ID
+  titleId: string | null; // 当前装备的称号ID
+  unlockedTitles: string[]; // 已解锁的称号ID列表
   attributePoints: number; // 可分配属性点
   luck: number; // 幸运值
   // 成就系统
@@ -206,6 +229,9 @@ export interface PlayerStats {
   lotteryCount: number; // 累计抽奖次数（用于保底）
   // 传承系统
   inheritanceLevel: number; // 传承等级（0-4，每次传承可突破1-4个境界）
+  inheritanceRoute?: string | null; // 传承路线ID（如 "dragon", "phoenix", "void" 等）
+  inheritanceExp: number; // 传承经验值（用于提升传承等级）
+  inheritanceSkills: string[]; // 已学习的传承技能ID列表
   // 每日任务系统
   dailyTaskCount: {
     instant: number; // 今日已完成瞬时任务次数（限制10次）
@@ -252,6 +278,8 @@ export interface PlayerStats {
   dailyQuestCompleted: string[]; // 今日已完成的任务ID
   lastDailyQuestResetDate: string; // 上次重置日常任务的日期（YYYY-MM-DD格式）
   gameDays: number; // 游戏内天数（从开始游戏起计算）
+  // 声望系统
+  reputation: number; // 声望值（用于解锁声望商店等）
 }
 
 export interface LogEntry {
@@ -271,6 +299,20 @@ export interface AdventureResult {
   lotteryTicketsChange?: number; // 抽奖券变化
   inheritanceLevelChange?: number; // 传承等级变化（1-4，表示可以突破的境界数）
   lifespanChange?: number; // 寿命变化（正数为增加，负数为减少）
+  reputationChange?: number; // 声望变化（正数为增加，负数为减少）
+  reputationEvent?: {
+    // 声望事件（需要玩家选择）
+    title: string; // 事件标题
+    description: string; // 事件描述
+    choices: Array<{
+      text: string; // 选择文本
+      reputationChange: number; // 声望变化
+      description?: string; // 选择后的描述
+      hpChange?: number; // 可能的气血变化
+      expChange?: number; // 可能的修为变化
+      spiritStonesChange?: number; // 可能的灵石变化
+    }>;
+  };
   attributeReduction?: {
     // 属性降低（遭遇陷阱、邪修等危险事件时）
     attack?: number;
@@ -565,6 +607,9 @@ export enum ShopType {
   Village = '村庄',
   City = '城市',
   Sect = '仙门',
+  BlackMarket = '黑市', // 黑市商店
+  LimitedTime = '限时商店', // 限时商店（每日特价）
+  Reputation = '声望商店', // 声望商店
 }
 
 export interface ShopItem {
@@ -596,6 +641,11 @@ export interface Shop {
   type: ShopType;
   description: string;
   items: ShopItem[];
+  refreshCost?: number; // 刷新费用（黑市等特殊商店）
+  refreshCooldown?: number; // 刷新冷却时间（毫秒）
+  lastRefreshTime?: number; // 上次刷新时间戳
+  discount?: number; // 折扣（0-1，限时商店用）
+  reputationRequired?: number; // 所需声望值（声望商店用）
 }
 
 // ==================== 回合制战斗系统类型定义 ====================

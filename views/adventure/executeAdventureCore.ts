@@ -56,6 +56,7 @@ interface ExecuteAdventureCoreProps {
   realmName?: string;
   adventureType: AdventureType;
   skipBattle?: boolean; // 是否跳过战斗（自动模式下）
+  onReputationEvent?: (event: AdventureResult['reputationEvent']) => void; // 声望事件回调
 }
 
 /**
@@ -115,12 +116,12 @@ function ensureEquipmentAttributes(
     const level = realmLevel || 1;
     const levelMultiplier = 1 + (level - 1) * 0.05;
 
-    // 根据稀有度确定装备数值占境界基础属性的百分比
+    // 根据稀有度确定装备数值占境界基础属性的百分比（提高装备属性占比）
     const rarityPercentages: Record<ItemRarity, { min: number; max: number }> = {
-      普通: { min: 0.05, max: 0.08 },
-      稀有: { min: 0.08, max: 0.12 },
-      传说: { min: 0.12, max: 0.18 },
-      仙品: { min: 0.18, max: 0.25 },
+      普通: { min: 0.08, max: 0.12 }, // 从5%-8%提高到8%-12%
+      稀有: { min: 0.15, max: 0.22 }, // 从8%-12%提高到15%-22%
+      传说: { min: 0.25, max: 0.35 }, // 从12%-18%提高到25%-35%
+      仙品: { min: 0.40, max: 0.55 }, // 从18%-25%提高到40%-55%
     };
 
     const percentage = rarityPercentages[rarity] || rarityPercentages['普通'];
@@ -200,6 +201,7 @@ export async function executeAdventureCore({
   adventureType,
   skipBattle = false,
   riskLevel,
+  onReputationEvent,
 }: ExecuteAdventureCoreProps & {
   riskLevel?: '低' | '中' | '高' | '极度危险';
 }) {
@@ -237,6 +239,7 @@ export async function executeAdventureCore({
     let newLotteryTickets = prev.lotteryTickets;
     let newInheritanceLevel = prev.inheritanceLevel;
     let newPets = [...prev.pets];
+    let newReputation = prev.reputation || 0;
     // 更新统计
     const stats = prev.statistics || {
       killCount: 0,
@@ -844,9 +847,23 @@ export async function executeAdventureCore({
       addLog(`🎫 运气不错，捡到了 ${ticketAmount} 张抽奖券！`, 'gain');
     }
 
-    // 处理传承奖励（极小概率获得传承，可直接突破1-4个境界）
-    if (result.inheritanceLevelChange && result.inheritanceLevelChange > 0) {
-      // 限制传承等级变化在1-4之间，且总传承等级不超过4
+    // 处理传承奖励（本地概率判定，明确掉落概率）
+    // 普通历练0.1%，秘境0.5%，大机缘1%
+    const inheritanceChance = adventureType === 'lucky' ? 0.01 : realmName ? 0.005 : 0.001;
+    if (Math.random() < inheritanceChance) {
+      // 随机1-4个境界的传承
+      const validChange = Math.floor(Math.random() * 4) + 1;
+      const newTotal = Math.min(4, newInheritanceLevel + validChange);
+      const actualChange = newTotal - newInheritanceLevel;
+      if (actualChange > 0) {
+        newInheritanceLevel = newTotal;
+        addLog(
+          `🌟 你获得了上古传承！可以直接突破 ${actualChange} 个境界！`,
+          'special'
+        );
+      }
+    } else if (result.inheritanceLevelChange && result.inheritanceLevelChange > 0) {
+      // 如果AI也返回了传承（极罕见情况），也处理
       const validChange = Math.max(
         1,
         Math.min(4, result.inheritanceLevelChange)
@@ -1042,9 +1059,9 @@ export async function executeAdventureCore({
       }
     }
 
-    // 极小概率获得功法（1%概率，秘境中2%，大机缘中3%）
+    // 获得功法概率（普通历练2.5%，秘境中5%，大机缘中8%）
     // 每次历练最多解锁一个功法（逻辑保证：只选择一个随机功法并添加一次）
-    const artChance = adventureType === 'lucky' ? 0.03 : realmName ? 0.02 : 0.01;
+    const artChance = adventureType === 'lucky' ? 0.08 : realmName ? 0.05 : 0.025;
     if (Math.random() < artChance) {
       const availableArts = CULTIVATION_ARTS.filter((art) => {
         // 已经拥有的排除
@@ -1115,9 +1132,9 @@ export async function executeAdventureCore({
       addLog(`🎁 你获得了灵宠进阶材料【${material.name}】！`, 'gain');
     }
 
-    // 极小概率获得天赋（1%概率，秘境中2%，大机缘中5%）
+    // 获得天赋概率（普通历练2%，秘境中3%，大机缘中5%）
     const talentChance =
-      adventureType === 'lucky' ? 0.05 : realmName ? 0.02 : 0.01;
+      adventureType === 'lucky' ? 0.05 : realmName ? 0.03 : 0.02;
     if (Math.random() < talentChance && !newTalentId) {
       const availableTalents = TALENTS.filter(
         (t) => t.id !== 'talent-ordinary' && t.rarity !== '仙品' // 仙品天赋只能通过特殊方式获得
@@ -1315,8 +1332,15 @@ export async function executeAdventureCore({
       statistics: newStats,
       lifespan: newLifespan,
       spiritualRoots: newSpiritualRoots,
+      reputation: newReputation,
     };
   });
+
+  // 处理声望事件（需要玩家选择，通过回调处理）
+  if (result.reputationEvent && onReputationEvent) {
+    addLog(`📜 你遇到了一个需要做出选择的事件：${result.reputationEvent.title}`, 'special');
+    onReputationEvent(result.reputationEvent);
+  }
 
   addLog(result.story, result.eventColor);
 
@@ -1766,8 +1790,22 @@ export async function executeAdventureCore({
           addLog(`🎫 你在秘境中获得了 ${secretRealmResult.lotteryTicketsChange} 张抽奖券！`, 'gain');
         }
 
-        // 处理传承奖励
-        if (secretRealmResult.inheritanceLevelChange && secretRealmResult.inheritanceLevelChange > 0) {
+        // 处理传承奖励（本地概率判定，秘境0.5%）
+        const secretRealmInheritanceChance = 0.005;
+        if (Math.random() < secretRealmInheritanceChance) {
+          // 随机1-4个境界的传承
+          const validChange = Math.floor(Math.random() * 4) + 1;
+          const newTotal = Math.min(4, newInheritanceLevel + validChange);
+          const actualChange = newTotal - newInheritanceLevel;
+          if (actualChange > 0) {
+            newInheritanceLevel = newTotal;
+            addLog(
+              `🌟 你在秘境中获得了上古传承！可以直接突破 ${actualChange} 个境界！`,
+              'special'
+            );
+          }
+        } else if (secretRealmResult.inheritanceLevelChange && secretRealmResult.inheritanceLevelChange > 0) {
+          // 如果AI也返回了传承（极罕见情况），也处理
           const validChange = Math.max(1, Math.min(4, secretRealmResult.inheritanceLevelChange));
           const newTotal = Math.min(4, newInheritanceLevel + validChange);
           const actualChange = newTotal - newInheritanceLevel;
@@ -1796,8 +1834,8 @@ export async function executeAdventureCore({
           };
         }
 
-        // 极小概率获得功法（秘境中2%概率）
-        const artChance = 0.02;
+        // 获得功法概率（秘境中5%概率）
+        const artChance = 0.05;
         if (Math.random() < artChance) {
           const availableArts = CULTIVATION_ARTS.filter((art) => {
             if (newArts.includes(art.id)) return false;

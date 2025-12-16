@@ -842,8 +842,8 @@ const generateLoot = (
     if (adventureType === 'secret_realm') {
       // 秘境：根据风险等级调整稀有度概率
       if (riskLevel === '极度危险') {
-        // 极度危险：更高概率获得顶级物品
-        if (roll < 0.2 + realmRarityBonus) return '仙品';
+        // 极度危险：更高概率获得顶级物品（降低仙品概率以平衡）
+        if (roll < 0.15 + realmRarityBonus) return '仙品'; // 从20%降低到15%
         if (roll < 0.5 + realmRarityBonus * 0.5) return '传说';
         if (roll < 0.85 + realmRarityBonus * 0.3) return '稀有';
         return '普通';
@@ -872,8 +872,8 @@ const generateLoot = (
       if (roll < 0.25 + realmRarityBonus * 0.3) return '稀有';
       return '普通';
     } else {
-      // 普通历练：较低概率（略微提升稀有度概率）
-      if (roll < 0.03 + realmRarityBonus * 0.5) return '传说';
+      // 普通历练：较低概率（提高传说装备概率）
+      if (roll < 0.05 + realmRarityBonus * 0.5) return '传说'; // 从3%提高到5%
       if (roll < 0.2 + realmRarityBonus * 0.3) return '稀有';
       return '普通';
     }
@@ -904,20 +904,20 @@ const generateLoot = (
     }>;
     let itemType: string;
 
-    if (itemTypeRoll < 0.3) {
-      // 30% 草药
+    if (itemTypeRoll < 0.25) {
+      // 25% 草药（从30%降低）
       itemPool = LOOT_ITEMS.herbs as any;
       itemType = '草药';
-    } else if (itemTypeRoll < 0.55) {
+    } else if (itemTypeRoll < 0.5) {
       // 25% 丹药
       itemPool = LOOT_ITEMS.pills as any;
       itemType = '丹药';
-    } else if (itemTypeRoll < 0.7) {
+    } else if (itemTypeRoll < 0.65) {
       // 15% 材料
       itemPool = LOOT_ITEMS.materials as any;
       itemType = '材料';
     } else if (itemTypeRoll < 0.85) {
-      // 15% 装备（武器/护甲/首饰/戒指）
+      // 20% 装备（武器/护甲/首饰/戒指）（从15%提高）
       const equipRoll = Math.random();
       if (equipRoll < 0.3) {
         itemPool = LOOT_ITEMS.weapons as any;
@@ -946,12 +946,12 @@ const generateLoot = (
         itemPool = LOOT_ITEMS.rings as any;
         itemType = '戒指';
       }
-    } else if (itemTypeRoll < 0.95) {
-      // 10% 法宝
+    } else if (itemTypeRoll < 0.92) {
+      // 7% 法宝（从10%略微降低以平衡）
       itemPool = LOOT_ITEMS.artifacts as any;
       itemType = '法宝';
     } else {
-      // 5% 丹方（稀有奖励）
+      // 8% 丹方（稀有奖励）（从5%提高）
       itemType = '丹方';
       itemPool = []; // 丹方不使用常规物品池
     }
@@ -1042,9 +1042,9 @@ const generateLoot = (
         (rarity === '传说' || rarity === '仙品') &&
         (itemType === '武器' || itemType === '法宝')
       ) {
-        // 传说装备3%概率有保命，仙品装备6%概率有保命
+        // 传说装备6%概率有保命（从3%提高），仙品装备12%概率有保命（从6%提高）
         const hasRevive =
-          rarity === '传说' ? Math.random() < 0.03 : Math.random() < 0.06;
+          rarity === '传说' ? Math.random() < 0.06 : Math.random() < 0.12;
 
         if (hasRevive) {
           // 随机1-3次保命机会
@@ -1326,8 +1326,8 @@ const createEnemy = async (
     basePlayerRealmLevel = player.realmLevel;
   }
 
-  // 降低敌人的基础属性，特别是攻击和防御
-  const baseAttack = basePlayerAttack * 0.7 + basePlayerRealmLevel * 3;
+  // 平衡敌人的基础属性，提高攻击力系数使战斗更有挑战性
+  const baseAttack = basePlayerAttack * 0.85 + basePlayerRealmLevel * 3; // 从0.7提升到0.85
   const baseDefense = basePlayerDefense * 0.7 + basePlayerRealmLevel * 2;
 
   return {

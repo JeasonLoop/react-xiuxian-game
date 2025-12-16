@@ -145,9 +145,12 @@ const SHOP_ITEM_TEMPLATES: Record<ShopType, Array<Omit<ShopItem, 'id'>>> = {
       effect: { physique: 15 },
     },
   ],
+  [ShopType.BlackMarket]: [], // 黑市物品从高级物品池中随机生成
+  [ShopType.LimitedTime]: [], // 限时商店物品从所有物品池中随机生成，带折扣
+  [ShopType.Reputation]: [], // 声望商店物品需要声望值解锁
 };
 
-// 高级物品模板（刷新时小概率出现）
+// 高级物品模板（刷新时小概率出现，黑市也会使用）
 const PREMIUM_ITEM_TEMPLATES: Array<Omit<ShopItem, 'id'>> = [
   {
     name: '千年灵芝',
@@ -175,8 +178,8 @@ const PREMIUM_ITEM_TEMPLATES: Array<Omit<ShopItem, 'id'>> = [
     type: ItemType.Weapon,
     description: '村里最好的剑，听老板说刷出来的一般是大富大贵之人，关键时刻可以保命（这玩意被人动过手脚）',
     rarity: '仙品',
-    price: 2500000,
-    sellPrice: 2500000,
+    price: 999999,
+    sellPrice: 999999,
     isEquippable: true,
     equipmentSlot: EquipmentSlot.Weapon,
     effect: { attack: 100000, physique: 100000, spirit: 100000, hp: 100000, speed: 100000 },
@@ -224,6 +227,50 @@ const PREMIUM_ITEM_TEMPLATES: Array<Omit<ShopItem, 'id'>> = [
   },
 ];
 
+// 声望商店物品模板（需要声望值解锁）
+const REPUTATION_SHOP_TEMPLATES: Array<Omit<ShopItem, 'id'>> = [
+  {
+    name: '传承石',
+    type: ItemType.Material,
+    description: '蕴含传承之力的神秘石头，可用于传承修炼。',
+    rarity: '传说',
+    price: 5000,
+    sellPrice: 1500,
+  },
+  {
+    name: '仙品功法残卷',
+    type: ItemType.Material,
+    description: '仙品功法的残卷，极其珍贵。',
+    rarity: '仙品',
+    price: 20000,
+    sellPrice: 6000,
+  },
+  {
+    name: '真龙之血',
+    type: ItemType.Material,
+    description: '真龙血脉的精血，可激活真龙传承。',
+    rarity: '仙品',
+    price: 30000,
+    sellPrice: 9000,
+  },
+  {
+    name: '凤凰羽毛',
+    type: ItemType.Material,
+    description: '凤凰羽毛，可激活凤凰传承。',
+    rarity: '仙品',
+    price: 30000,
+    sellPrice: 9000,
+  },
+  {
+    name: '虚空碎片',
+    type: ItemType.Material,
+    description: '虚空碎片，可激活虚空传承。',
+    rarity: '仙品',
+    price: 30000,
+    sellPrice: 9000,
+  },
+];
+
 /**
  * 生成商店物品
  * @param shopType 商店类型
@@ -236,16 +283,121 @@ export function generateShopItems(
   playerRealm: RealmType,
   includePremium: boolean = false
 ): ShopItem[] {
-  const templates = SHOP_ITEM_TEMPLATES[shopType];
   const playerRealmIndex = REALM_ORDER.indexOf(playerRealm);
+  const items: ShopItem[] = [];
+  const usedNames = new Set<string>();
 
-  // 基础物品数量：村庄3-5个，城市4-6个，仙门5-7个
+  // 黑市商店：只生成高级物品，3-5个，稀有度更高
+  if (shopType === ShopType.BlackMarket) {
+    const itemCount = 3 + Math.floor(Math.random() * 3); // 3-5个
+
+    // 70%概率出现高级物品，30%概率出现传说/仙品物品
+    for (let i = 0; i < itemCount; i++) {
+      let template: Omit<ShopItem, 'id'>;
+
+      if (Math.random() < 0.3) {
+        // 30%概率从高级物品池中选择
+        template = PREMIUM_ITEM_TEMPLATES[
+          Math.floor(Math.random() * PREMIUM_ITEM_TEMPLATES.length)
+        ];
+      } else {
+        // 70%概率从所有商店物品池中选择稀有/传说物品
+        const allTemplates = [
+          ...SHOP_ITEM_TEMPLATES[ShopType.Village],
+          ...SHOP_ITEM_TEMPLATES[ShopType.City],
+          ...SHOP_ITEM_TEMPLATES[ShopType.Sect],
+        ].filter(t => t.rarity === '稀有' || t.rarity === '传说');
+
+        if (allTemplates.length === 0) {
+          template = PREMIUM_ITEM_TEMPLATES[
+            Math.floor(Math.random() * PREMIUM_ITEM_TEMPLATES.length)
+          ];
+        } else {
+          template = allTemplates[Math.floor(Math.random() * allTemplates.length)];
+        }
+      }
+
+      // 检查境界要求
+      if (!template.minRealm ||
+          playerRealmIndex >= REALM_ORDER.indexOf(template.minRealm)) {
+        items.push({
+          ...template,
+          id: `shop-blackmarket-${uid()}`,
+        });
+      }
+    }
+    return items;
+  }
+
+  // 限时商店：从所有物品池中随机选择，数量5-7个
+  if (shopType === ShopType.LimitedTime) {
+    const itemCount = 5 + Math.floor(Math.random() * 3); // 5-7个
+    const allTemplates = [
+      ...SHOP_ITEM_TEMPLATES[ShopType.Village],
+      ...SHOP_ITEM_TEMPLATES[ShopType.City],
+      ...SHOP_ITEM_TEMPLATES[ShopType.Sect],
+      ...PREMIUM_ITEM_TEMPLATES,
+    ];
+
+    for (let i = 0; i < itemCount; i++) {
+      let attempts = 0;
+      let template = allTemplates[Math.floor(Math.random() * allTemplates.length)];
+
+      while (usedNames.has(template.name) && attempts < 20 && usedNames.size < allTemplates.length) {
+        template = allTemplates[Math.floor(Math.random() * allTemplates.length)];
+        attempts++;
+      }
+
+      usedNames.add(template.name);
+
+      // 检查境界要求
+      if (!template.minRealm ||
+          playerRealmIndex >= REALM_ORDER.indexOf(template.minRealm)) {
+        items.push({
+          ...template,
+          id: `shop-limited-${uid()}`,
+        });
+      }
+    }
+    return items;
+  }
+
+  // 声望商店：从声望商店模板中生成
+  if (shopType === ShopType.Reputation) {
+    const itemCount = 4 + Math.floor(Math.random() * 3); // 4-6个
+
+    for (let i = 0; i < itemCount; i++) {
+      let attempts = 0;
+      let template = REPUTATION_SHOP_TEMPLATES[
+        Math.floor(Math.random() * REPUTATION_SHOP_TEMPLATES.length)
+      ];
+
+      while (usedNames.has(template.name) && attempts < 10 && usedNames.size < REPUTATION_SHOP_TEMPLATES.length) {
+        template = REPUTATION_SHOP_TEMPLATES[
+          Math.floor(Math.random() * REPUTATION_SHOP_TEMPLATES.length)
+        ];
+        attempts++;
+      }
+
+      usedNames.add(template.name);
+
+      // 检查境界要求
+      if (!template.minRealm ||
+          playerRealmIndex >= REALM_ORDER.indexOf(template.minRealm)) {
+        items.push({
+          ...template,
+          id: `shop-reputation-${uid()}`,
+        });
+      }
+    }
+    return items;
+  }
+
+  // 普通商店（村庄、城市、仙门）
+  const templates = SHOP_ITEM_TEMPLATES[shopType];
   const baseCount = shopType === ShopType.Village ? 3 : shopType === ShopType.City ? 4 : 5;
   const maxCount = shopType === ShopType.Village ? 5 : shopType === ShopType.City ? 6 : 7;
   const itemCount = baseCount + Math.floor(Math.random() * (maxCount - baseCount + 1));
-
-  const items: ShopItem[] = [];
-  const usedNames = new Set<string>();
 
   // 生成基础物品
   for (let i = 0; i < itemCount; i++) {

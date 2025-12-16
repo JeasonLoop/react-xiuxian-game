@@ -187,6 +187,7 @@ export function useEquipmentHandlers({
         }
       }
 
+
       // 更新统计（只有新装备时才增加计数）
       const playerStats = prev.statistics || {
         killCount: 0,

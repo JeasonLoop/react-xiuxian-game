@@ -137,25 +137,28 @@ export function useAchievementHandlers({
         }
       });
 
+      // 更新已解锁的称号列表
+      let updatedUnlockedTitles = [...(prev.unlockedTitles || [])];
+      if (newTitleId && !updatedUnlockedTitles.includes(newTitleId)) {
+        updatedUnlockedTitles.push(newTitleId);
+      }
+
       if (hasNewAchievement && newTitleId && newTitleId !== prev.titleId) {
-        // 应用新称号效果
+        // 如果自动装备新称号，应用新称号效果
         const title = TITLES.find((t) => t.id === newTitleId);
         if (title) {
-          const oldTitle = prev.titleId
-            ? TITLES.find((t) => t.id === prev.titleId)
-            : null;
-          let titleAttack =
-            prev.attack -
-            (oldTitle?.effects.attack || 0) +
-            (title.effects.attack || 0);
-          let titleDefense =
-            prev.defense -
-            (oldTitle?.effects.defense || 0) +
-            (title.effects.defense || 0);
-          let titleMaxHp =
-            prev.maxHp - (oldTitle?.effects.hp || 0) + (title.effects.hp || 0);
-          let titleHp =
-            prev.hp - (oldTitle?.effects.hp || 0) + (title.effects.hp || 0);
+          // 使用称号工具函数计算效果（包括套装效果）
+          const oldEffects = calculateTitleEffects(prev.titleId, prev.unlockedTitles || []);
+          const newEffects = calculateTitleEffects(newTitleId, updatedUnlockedTitles);
+
+          const attackDiff = newEffects.attack - oldEffects.attack;
+          const defenseDiff = newEffects.defense - oldEffects.defense;
+          const hpDiff = newEffects.hp - oldEffects.hp;
+          const spiritDiff = newEffects.spirit - oldEffects.spirit;
+          const physiqueDiff = newEffects.physique - oldEffects.physique;
+          const speedDiff = newEffects.speed - oldEffects.speed;
+          const expRateDiff = newEffects.expRate - oldEffects.expRate;
+          const luckDiff = newEffects.luck - oldEffects.luck;
 
           checkingAchievementsRef.current = false;
           return {
@@ -165,12 +168,30 @@ export function useAchievementHandlers({
             spiritStones: newStones,
             inventory: newInv,
             titleId: newTitleId,
-            attack: titleAttack,
-            defense: titleDefense,
-            maxHp: titleMaxHp,
-            hp: Math.min(titleHp, titleMaxHp),
+            unlockedTitles: updatedUnlockedTitles,
+            attack: prev.attack + attackDiff,
+            defense: prev.defense + defenseDiff,
+            maxHp: prev.maxHp + hpDiff,
+            hp: Math.min(prev.hp + hpDiff, prev.maxHp + hpDiff),
+            spirit: prev.spirit + spiritDiff,
+            physique: prev.physique + physiqueDiff,
+            speed: prev.speed + speedDiff,
+            luck: prev.luck + luckDiff,
           };
         }
+      }
+
+      // 即使没有自动装备称号，也要更新解锁列表
+      if (hasNewAchievement && newTitleId && !updatedUnlockedTitles.includes(newTitleId)) {
+        checkingAchievementsRef.current = false;
+        return {
+          ...prev,
+          achievements: newAchievements,
+          exp: newExp,
+          spiritStones: newStones,
+          inventory: newInv,
+          unlockedTitles: updatedUnlockedTitles,
+        };
       }
 
       if (hasNewAchievement) {

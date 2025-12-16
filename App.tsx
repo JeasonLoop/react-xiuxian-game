@@ -13,6 +13,9 @@ import WelcomeScreen from './components/WelcomeScreen';
 import StartScreen from './components/StartScreen';
 import DeathModal from './components/DeathModal';
 import DebugModal from './components/DebugModal';
+import SaveManagerModal from './components/SaveManagerModal';
+import SaveCompareModal from './components/SaveCompareModal';
+import { SaveData } from './utils/saveManagerUtils';
 import { BattleReplay } from './services/battleService';
 import { useGameState } from './hooks/useGameState';
 import { useGameEffects } from './hooks/useGameEffects';
@@ -106,6 +109,7 @@ function App() {
     isTurnBasedBattleOpen,
     isMobileSidebarOpen,
     isMobileStatsOpen,
+    isReputationEventOpen,
   } = modals;
 
   const {
@@ -128,6 +132,7 @@ function App() {
     setIsMobileSidebarOpen,
     setIsMobileStatsOpen,
     setIsDebugModeEnabled,
+    setIsReputationEventOpen,
   } = setters;
 
   const { isDebugModeEnabled } = modals;
@@ -143,6 +148,7 @@ function App() {
   const { itemToUpgrade, setItemToUpgrade } = upgrade;
   const { purchaseSuccess, setPurchaseSuccess, lotteryRewards, setLotteryRewards } =
     notifications;
+  const { event: reputationEvent, setEvent: setReputationEvent } = appState.reputationEvent;
   const {
     battleReplay,
     setBattleReplay,
@@ -191,6 +197,12 @@ function App() {
     onConfirm?: () => void;
     showCancel?: boolean;
   } | null>(null);
+
+  // 存档管理器状态
+  const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
+  const [isSaveCompareOpen, setIsSaveCompareOpen] = useState(false);
+  const [compareSave1, setCompareSave1] = useState<SaveData | null>(null);
+  const [compareSave2, setCompareSave2] = useState<SaveData | null>(null);
 
   // 初始化全局 alert
   useEffect(() => {
@@ -353,6 +365,11 @@ function App() {
       // 打开战斗弹窗（自动模式下也会打开）
       battleHandlers.openBattleModal(replay);
     },
+    onReputationEvent: (event) => {
+      // 打开声望事件弹窗
+      setReputationEvent(event);
+      setIsReputationEventOpen(true);
+    },
     onOpenTurnBasedBattle: (params) => {
       // 如果正在自动历练，暂停自动历练但保存状态
       if (autoAdventure) {
@@ -489,8 +506,9 @@ function App() {
 
   const handleRefreshShop = (newItems: ShopItem[]) => {
     if (!currentShop || !player) return;
-    if (player.spiritStones < 100) {
-      addLog('灵石不足，无法刷新商店。', 'danger');
+    const refreshCost = currentShop.refreshCost || 100; // 使用商店的刷新费用，默认100
+    if (player.spiritStones < refreshCost) {
+      addLog(`灵石不足，无法刷新商店。需要${refreshCost}灵石。`, 'danger');
       return;
     }
     setCurrentShop({
@@ -501,11 +519,60 @@ function App() {
       if (!prev) return prev;
       return {
         ...prev,
-        spiritStones: prev.spiritStones - 100, // 扣除刷新费用
+        spiritStones: prev.spiritStones - refreshCost, // 扣除刷新费用
       };
     });
     addLog('商店物品已刷新！', 'special');
   };
+  // 处理声望事件选择
+  const handleReputationEventChoice = (choiceIndex: number) => {
+    if (!reputationEvent || !player) return;
+
+    const choice = reputationEvent.choices[choiceIndex];
+    if (!choice) return;
+
+    setPlayer((prev) => {
+      const newReputation = Math.max(0, (prev.reputation || 0) + choice.reputationChange);
+      let newHp = prev.hp;
+      let newExp = prev.exp;
+      let newSpiritStones = prev.spiritStones;
+
+      // 处理其他变化
+      if (choice.hpChange !== undefined) {
+        newHp = Math.max(0, Math.min(prev.maxHp, prev.hp + choice.hpChange));
+      }
+      if (choice.expChange !== undefined) {
+        newExp = Math.max(0, prev.exp + choice.expChange);
+      }
+      if (choice.spiritStonesChange !== undefined) {
+        newSpiritStones = Math.max(0, prev.spiritStones + choice.spiritStonesChange);
+      }
+
+      // 记录日志
+      if (choice.reputationChange > 0) {
+        addLog(`✨ 你的声望增加了 ${choice.reputationChange} 点！当前声望：${newReputation}`, 'gain');
+      } else if (choice.reputationChange < 0) {
+        addLog(`⚠️ 你的声望减少了 ${Math.abs(choice.reputationChange)} 点！当前声望：${newReputation}`, 'danger');
+      }
+
+      if (choice.description) {
+        addLog(choice.description, choice.reputationChange > 0 ? 'gain' : choice.reputationChange < 0 ? 'danger' : 'normal');
+      }
+
+      return {
+        ...prev,
+        reputation: newReputation,
+        hp: newHp,
+        exp: newExp,
+        spiritStones: newSpiritStones,
+      };
+    });
+
+    // 关闭弹窗并清除事件
+    setIsReputationEventOpen(false);
+    setReputationEvent(null);
+  };
+
   const handleUpdateSettings = settingsHandlers.handleUpdateSettings;
   const handleActivatePet = petHandlers.handleActivatePet;
   const handleDeactivatePet = petHandlers.handleDeactivatePet;
@@ -869,6 +936,11 @@ function App() {
               return { ...prev, hp: 0 };
             });
           }}
+          onTriggerReputationEvent={(event) => {
+            // 设置声望事件并打开弹窗
+            setReputationEvent(event);
+            setIsReputationEventOpen(true);
+          }}
         />
       )}
 
@@ -885,6 +957,39 @@ function App() {
           onCancel={alertState.onCancel}
         />
       )}
+
+        {/* 存档管理器 */}
+        {player && (
+          <SaveManagerModal
+            isOpen={isSaveManagerOpen}
+            onClose={() => setIsSaveManagerOpen(false)}
+            currentPlayer={player}
+            currentLogs={logs}
+            onLoadSave={(loadedPlayer, loadedLogs) => {
+              setPlayer(loadedPlayer);
+              setLogs(loadedLogs);
+            }}
+            onCompareSaves={(save1, save2) => {
+              setCompareSave1(save1);
+              setCompareSave2(save2);
+              setIsSaveCompareOpen(true);
+            }}
+          />
+        )}
+
+        {/* 存档对比 */}
+        {compareSave1 && compareSave2 && (
+          <SaveCompareModal
+            isOpen={isSaveCompareOpen}
+            onClose={() => {
+              setIsSaveCompareOpen(false);
+              setCompareSave1(null);
+              setCompareSave2(null);
+            }}
+            save1={compareSave1}
+            save2={compareSave2}
+          />
+        )}
 
         <ModalsContainer
           player={player}
@@ -907,6 +1012,7 @@ function App() {
           isShopOpen,
           isBattleModalOpen: isBattleModalOpen && !isDead, // 死亡时不显示战斗弹窗
           isTurnBasedBattleOpen: isTurnBasedBattleOpen && !isDead,
+          isReputationEventOpen,
         }}
         modalState={{
           currentShop,
@@ -914,6 +1020,7 @@ function App() {
           battleReplay,
           revealedBattleRounds,
           turnBasedBattleParams,
+          reputationEvent,
         }}
         handlers={{
           setIsInventoryOpen: (open: boolean) => setIsInventoryOpen(open),
@@ -974,6 +1081,8 @@ function App() {
           handleAllocateAttribute,
           handleAllocateAllAttributes,
           handleUseInheritance,
+          setPlayer,
+          addLog,
           handleUpdateViewedAchievements: () => {
             setPlayer((prev) => ({
               ...prev,
@@ -990,10 +1099,13 @@ function App() {
           handleDraw,
           handleUpdateSettings,
           handleRestartGame: handleRebirth,
+          onOpenSaveManager: () => setIsSaveManagerOpen(true),
           handleClaimQuestReward: dailyQuestHandlers.claimQuestReward,
           handleBuyItem,
           handleSellItem,
           handleRefreshShop,
+          handleReputationEventChoice,
+          setIsReputationEventOpen,
           setIsTurnBasedBattleOpen: (open: boolean) => {
             setIsTurnBasedBattleOpen(open);
             if (!open) {

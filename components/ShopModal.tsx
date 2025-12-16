@@ -339,6 +339,14 @@ const ShopModal: React.FC<Props> = ({
               {shop.name}
             </h3>
             <p className="text-sm text-stone-400 mt-1">{shop.description}</p>
+            {shop.reputationRequired && (
+              <p className="text-xs text-yellow-400 mt-1">
+                需要声望值：{shop.reputationRequired}（当前：{player.reputation || 0}）
+                {player.reputation < shop.reputationRequired && (
+                  <span className="text-red-400 ml-2">⚠️ 声望不足</span>
+                )}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {onOpenInventory && (
@@ -354,9 +362,9 @@ const ShopModal: React.FC<Props> = ({
             {onRefreshShop && (
               <button
                 onClick={() => {
-                  const refreshCost = 100; // 刷新费用
+                  const refreshCost = shop.refreshCost || 100; // 使用商店的刷新费用，默认100
                   if (player.spiritStones < refreshCost) {
-                    showError('灵石不足！刷新需要100灵石。');
+                    showError(`灵石不足！刷新需要${refreshCost}灵石。`);
                     return;
                   }
                   showConfirm(
@@ -373,11 +381,11 @@ const ShopModal: React.FC<Props> = ({
                   );
                 }}
                 className="flex items-center gap-1 px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded border border-stone-600 transition-colors text-sm"
-                title="花费100灵石刷新商店物品（小概率出现高级物品）"
+                title={`花费${shop.refreshCost || 100}灵石刷新商店物品（小概率出现高级物品）`}
               >
                 <RefreshCw size={16} />
                 <span className="hidden md:inline">刷新</span>
-                <span className="text-xs text-stone-400">(100)</span>
+                <span className="text-xs text-stone-400">({shop.refreshCost || 100})</span>
               </button>
             )}
             <button

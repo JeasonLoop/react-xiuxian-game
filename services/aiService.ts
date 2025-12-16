@@ -347,12 +347,13 @@ ${realmKeywords}
         break;
       default:
         typeInstructions = `【普通历练】日常历练事件。
-事件类型：妖兽战斗/发现灵草/遇到修士/小型洞府/顿悟/危险/灵石矿脉/救助/灵泉/灵宠/灵宠机缘/传承(极罕见)/邪修魔修(15-20%危险)/陷阱(15-20%危险)/随机秘境(5%)。
+事件类型：妖兽战斗/发现灵草/遇到修士/小型洞府/顿悟/危险/灵石矿脉/救助/灵泉/灵宠/灵宠机缘/传承(极罕见)/邪修魔修(15-20%危险)/陷阱(15-20%危险)/随机秘境(5%)/声望事件(5-10%概率，需要玩家选择)。
 场景描述：必须包含环境(10-30字)+动作(10-20字)+事件细节(20-50字)+感受(可选)，每次不同，避免重复开头。
 物品类型多样化：草药/丹药/材料/武器/护甲(头部/肩部/胸甲/手套/裤腿/鞋子各15-20%)/首饰/戒指/法宝。
 物品命名：每次必须使用不同的物品名称，根据事件场景创造新的名称组合，避免模板化重复（如：不要总是"青钢剑"、"回血丹"等常见名称，要创造"赤焰刀"、"凝元丹"、"寒霜枪"等多样化名称）。
 物品稀有度：${Math.max(0, 60 - realmIndex * 10)}%普通，${Math.min(30 + realmIndex * 5, 50)}%稀有，${Math.min(realmIndex * 3, 20)}%传说。
-奖励：修为${Math.floor(10 * realmMultiplier)}-${Math.floor(100 * realmMultiplier)}，灵石${Math.floor(5 * realmMultiplier)}-${Math.floor(50 * realmMultiplier)}，传承${Math.floor(1 * realmMultiplier)}-${Math.floor(4 * realmMultiplier)}（极罕见）。`;
+奖励：修为${Math.floor(10 * realmMultiplier)}-${Math.floor(100 * realmMultiplier)}，灵石${Math.floor(5 * realmMultiplier)}-${Math.floor(50 * realmMultiplier)}，传承${Math.floor(1 * realmMultiplier)}-${Math.floor(4 * realmMultiplier)}（极罕见）。
+声望事件：5-10%概率触发声望事件（reputationEvent），需要提供2-3个选择，每个选择有不同的声望变化（-30到+50）和可能的其他奖励/惩罚。事件场景包括：救助他人/惩恶扬善/宗门任务/发现秘密/道德抉择等。`;
         break;
     }
 
@@ -410,6 +411,7 @@ ${typeInstructions}
 6. 禁止重复模板，每次改写开头句式
 7. equipmentSlot不冲突（戒指/首饰自动分配除外）
 8. attributeReduction仅极度危险事件，需稀有奖励补偿
+9. 声望事件（reputationEvent）：5-10%概率触发，提供2-3个选择，每个选择包含text（选择文本）、reputationChange（声望变化-30到+50）、description（选择后描述，可选）、hpChange/expChange/spiritStonesChange（可选的其他变化）
 
 物品规则：
 - 类型：草药/丹药/材料/法宝/武器/护甲/首饰/戒指
@@ -458,7 +460,9 @@ ${typeInstructions}
   "triggerSecretRealm": 布尔值（可选，极罕见）,
   "petObtained": "pet-spirit-fox/pet-thunder-tiger/pet-phoenix"（可选）,
   "petOpportunity": {机缘对象，可选},
-  "attributeReduction": {属性降低对象，可选，仅极度危险}
+  "attributeReduction": {属性降低对象，可选，仅极度危险},
+  "reputationChange": 整数（可选，声望直接变化，-50到+50）,
+  "reputationEvent": {声望事件对象，可选，需要玩家选择}
 }
 
 重要：
@@ -507,14 +511,16 @@ ${typeInstructions}
         spiritStonesChange: ensureNumber(parsed.spiritStonesChange, 0),
         eventColor: parsed.eventColor || 'normal',
         // 保留可选字段
-        ...(parsed.lotteryTicketsChange !== undefined && { lotteryTicketsChange: ensureNumber(parsed.lotteryTicketsChange, 0) }),
-        ...(parsed.inheritanceLevelChange !== undefined && { inheritanceLevelChange: ensureNumber(parsed.inheritanceLevelChange, 0) }),
-        ...(parsed.attributeReduction && { attributeReduction: parsed.attributeReduction }),
-        ...(parsed.triggerSecretRealm !== undefined && { triggerSecretRealm: parsed.triggerSecretRealm }),
-        ...(parsed.itemObtained && { itemObtained: parsed.itemObtained }),
-        ...(parsed.itemsObtained && { itemsObtained: parsed.itemsObtained }),
-        ...(parsed.petObtained && { petObtained: parsed.petObtained }),
-        ...(parsed.petOpportunity && { petOpportunity: parsed.petOpportunity }),
+      ...(parsed.lotteryTicketsChange !== undefined && { lotteryTicketsChange: ensureNumber(parsed.lotteryTicketsChange, 0) }),
+      ...(parsed.inheritanceLevelChange !== undefined && { inheritanceLevelChange: ensureNumber(parsed.inheritanceLevelChange, 0) }),
+      ...(parsed.attributeReduction && { attributeReduction: parsed.attributeReduction }),
+      ...(parsed.triggerSecretRealm !== undefined && { triggerSecretRealm: parsed.triggerSecretRealm }),
+      ...(parsed.itemObtained && { itemObtained: parsed.itemObtained }),
+      ...(parsed.itemsObtained && { itemsObtained: parsed.itemsObtained }),
+      ...(parsed.petObtained && { petObtained: parsed.petObtained }),
+      ...(parsed.petOpportunity && { petOpportunity: parsed.petOpportunity }),
+      ...(parsed.reputationChange !== undefined && { reputationChange: ensureNumber(parsed.reputationChange, 0) }),
+      ...(parsed.reputationEvent && { reputationEvent: parsed.reputationEvent }),
       };
 
       return validatedResult;

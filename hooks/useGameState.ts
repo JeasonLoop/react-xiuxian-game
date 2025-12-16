@@ -3,10 +3,24 @@ import { PlayerStats, LogEntry, GameSettings } from '../types';
 import { createInitialPlayer } from '../utils/playerUtils';
 import { SAVE_KEY, SETTINGS_KEY } from '../utils/gameUtils';
 import { TALENTS } from '../constants';
+import {
+  getCurrentSlotId,
+  loadFromSlot,
+  saveToSlot,
+  getAllSlots,
+  setCurrentSlotId,
+} from '../utils/saveManagerUtils';
 
 export function useGameState() {
   const [hasSave, setHasSave] = useState(() => {
     try {
+      // 先检查多存档槽位系统
+      const currentSlotId = getCurrentSlotId();
+      const slotSave = loadFromSlot(currentSlotId);
+      if (slotSave) {
+        return true;
+      }
+      // 兼容旧存档系统
       const saved = localStorage.getItem(SAVE_KEY);
       return saved !== null;
     } catch {
@@ -42,9 +56,24 @@ export function useGameState() {
   useEffect(() => {
     if (hasSave && !player) {
       try {
-        const saved = localStorage.getItem(SAVE_KEY);
-        if (saved) {
-          const savedData = JSON.parse(saved);
+        // 优先从多存档槽位系统加载
+        const currentSlotId = getCurrentSlotId();
+        let savedData = loadFromSlot(currentSlotId);
+
+        // 如果没有，尝试从旧存档系统加载（兼容性）
+        if (!savedData) {
+          const saved = localStorage.getItem(SAVE_KEY);
+          if (saved) {
+            savedData = JSON.parse(saved);
+            // 如果从旧系统加载成功，迁移到槽位1
+            if (savedData) {
+              saveToSlot(1, savedData.player, savedData.logs || []);
+              setCurrentSlotId(1);
+            }
+          }
+        }
+
+        if (savedData) {
           // 确保加载的存档包含新字段
           const loadedPlayer = {
             ...savedData.player,
@@ -92,6 +121,14 @@ export function useGameState() {
               fire: Math.floor(Math.random() * 16),
               earth: Math.floor(Math.random() * 16),
             },
+            // 称号系统扩展
+            unlockedTitles: savedData.player.unlockedTitles || (savedData.player.titleId ? [savedData.player.titleId] : ['title-novice']),
+            // 传承系统扩展
+            inheritanceRoute: savedData.player.inheritanceRoute || null,
+            inheritanceExp: savedData.player.inheritanceExp || 0,
+            inheritanceSkills: savedData.player.inheritanceSkills || [],
+            // 声望系统
+            reputation: savedData.player.reputation || 0,
           };
           setPlayer(loadedPlayer);
           setLogs(savedData.logs || []);
@@ -119,7 +156,14 @@ export function useGameState() {
           logs: logsData,
           timestamp: Date.now(),
         };
+
+        // 保存到当前槽位
+        const currentSlotId = getCurrentSlotId();
+        saveToSlot(currentSlotId, playerData, logsData);
+
+        // 同时保存到旧存档系统（兼容性）
         localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+
         if (settings.autoSave) {
           localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
         }

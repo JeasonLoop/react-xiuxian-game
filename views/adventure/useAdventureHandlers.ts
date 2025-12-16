@@ -1,5 +1,5 @@
 import React from 'react';
-import { PlayerStats, AdventureType, ShopType, RealmType } from '../../types';
+import { PlayerStats, AdventureType, ShopType, RealmType, AdventureResult } from '../../types';
 import { REALM_ORDER } from '../../constants';
 import { generateAdventureEvent } from '../../services/aiService';
 import {
@@ -44,6 +44,7 @@ interface UseAdventureHandlersProps {
   }) => void; // 打开回合制战斗
   skipBattle?: boolean; // 是否跳过战斗（自动模式下）
   useTurnBasedBattle?: boolean; // 是否使用回合制战斗系统
+  onReputationEvent?: (event: AdventureResult['reputationEvent']) => void; // 声望事件回调
 }
 
 export function useAdventureHandlers({
@@ -60,6 +61,7 @@ export function useAdventureHandlers({
   onOpenTurnBasedBattle,
   skipBattle = false,
   useTurnBasedBattle = true, // 默认使用新的回合制战斗系统
+  onReputationEvent,
 }: UseAdventureHandlersProps) {
   const executeAdventure = async (
     adventureType: AdventureType,
@@ -123,6 +125,7 @@ export function useAdventureHandlers({
         adventureType,
         skipBattle,
         riskLevel,
+        onReputationEvent,
       });
     } catch (e) {
       addLog('历练途中突发异变，你神识受损，不得不返回。', 'danger');
@@ -152,7 +155,7 @@ export function useAdventureHandlers({
     // 15% Chance to encounter a shop
     const shopChance = Math.random();
     if (shopChance < 0.15) {
-      const shopTypes = [ShopType.Village, ShopType.City, ShopType.Sect];
+      const shopTypes = [ShopType.Village, ShopType.City, ShopType.Sect, ShopType.LimitedTime, ShopType.BlackMarket, ShopType.Reputation];
       const randomShopType =
         shopTypes[Math.floor(Math.random() * shopTypes.length)];
       onOpenShop(randomShopType);

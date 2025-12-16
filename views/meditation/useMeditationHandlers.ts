@@ -111,6 +111,14 @@ export function useMeditationHandlers({
         );
       }
 
+      // 打坐时获得少量灵石（提供稳定的灵石获取途径）
+      // 基础灵石 = 境界索引 * 2 + 1，随境界增长
+      const realmIndex = REALM_ORDER.indexOf(prev.realm);
+      const baseStones = Math.max(1, realmIndex * 2 + 1);
+      // 随机波动 ±1
+      const stoneGain = baseStones + Math.floor(Math.random() * 3) - 1;
+      const newSpiritStones = prev.spiritStones + Math.max(1, stoneGain);
+
       // 更新统计
       const stats = prev.statistics || {
         killCount: 0,
@@ -124,10 +132,17 @@ export function useMeditationHandlers({
         secretRealmCount: 0,
       };
 
+      // 只在获得灵石时显示提示（避免刷屏）
+      if (stoneGain > 0 && Math.random() < 0.3) {
+        // 30%概率显示提示，避免刷屏
+        addLog(`💰 打坐时获得了 ${Math.max(1, stoneGain)} 灵石`, 'gain');
+      }
+
       return {
         ...prev,
         exp: prev.exp + actualGain,
         hp: newHp,
+        spiritStones: newSpiritStones,
         statistics: {
           ...stats,
           meditateCount: stats.meditateCount + 1,
