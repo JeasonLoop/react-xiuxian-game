@@ -1,0 +1,2 @@
+export { useInheritanceHandlers } from './useInheritanceHandlers';
+

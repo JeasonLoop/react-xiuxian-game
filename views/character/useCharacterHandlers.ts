@@ -1,6 +1,7 @@
 import React from 'react';
 import { PlayerStats, RealmType } from '../../types';
-import { TITLES, REALM_ORDER } from '../../constants';
+import { TITLES, TITLE_SET_EFFECTS, REALM_ORDER } from '../../constants';
+import { calculateTitleEffects } from '../../utils/titleUtils';
 
 interface UseCharacterHandlersProps {
   player: PlayerStats;
@@ -33,30 +34,52 @@ export function useCharacterHandlers({
     const title = TITLES.find((t) => t.id === titleId);
     if (!title) return;
 
-    setPlayer((prev) => {
-      let newAttack = prev.attack;
-      let newDefense = prev.defense;
-      let newMaxHp = prev.maxHp;
-      let newHp = prev.hp;
+    // 检查是否已解锁该称号
+    if (!player.unlockedTitles.includes(titleId)) {
+      addLog(`你尚未解锁称号【${title.name}】！`, 'danger');
+      return;
+    }
 
-      // 移除旧称号效果
-      if (prev.titleId) {
-        const oldTitle = TITLES.find((t) => t.id === prev.titleId);
-        if (oldTitle) {
-          newAttack -= oldTitle.effects.attack || 0;
-          newDefense -= oldTitle.effects.defense || 0;
-          newMaxHp -= oldTitle.effects.hp || 0;
-          newHp -= oldTitle.effects.hp || 0;
+    setPlayer((prev) => {
+      // 计算旧称号效果（包括套装效果）
+      const oldEffects = calculateTitleEffects(prev.titleId, prev.unlockedTitles);
+
+      // 计算新称号效果（包括套装效果）
+      const newEffects = calculateTitleEffects(titleId, prev.unlockedTitles);
+
+      // 应用效果差值
+      const attackDiff = newEffects.attack - oldEffects.attack;
+      const defenseDiff = newEffects.defense - oldEffects.defense;
+      const hpDiff = newEffects.hp - oldEffects.hp;
+      const spiritDiff = newEffects.spirit - oldEffects.spirit;
+      const physiqueDiff = newEffects.physique - oldEffects.physique;
+      const speedDiff = newEffects.speed - oldEffects.speed;
+      const expRateDiff = newEffects.expRate - oldEffects.expRate;
+      const luckDiff = newEffects.luck - oldEffects.luck;
+
+      let newAttack = prev.attack + attackDiff;
+      let newDefense = prev.defense + defenseDiff;
+      let newMaxHp = prev.maxHp + hpDiff;
+      let newHp = prev.hp + hpDiff;
+      let newSpirit = prev.spirit + spiritDiff;
+      let newPhysique = prev.physique + physiqueDiff;
+      let newSpeed = prev.speed + speedDiff;
+      let newLuck = prev.luck + luckDiff;
+
+      let logMessage = `你装备了称号【${title.name}】！`;
+
+      // 检查是否有套装效果
+      if (title.setGroup) {
+        const setEffect = TITLE_SET_EFFECTS.find(se =>
+          se.titles.includes(titleId) &&
+          se.titles.every(tid => prev.unlockedTitles.includes(tid))
+        );
+        if (setEffect) {
+          logMessage += `\n✨ 激活了套装效果【${setEffect.setName}】！`;
         }
       }
 
-      // 应用新称号效果
-      newAttack += title.effects.attack || 0;
-      newDefense += title.effects.defense || 0;
-      newMaxHp += title.effects.hp || 0;
-      newHp += title.effects.hp || 0;
-
-      addLog(`你装备了称号【${title.name}】！`, 'special');
+      addLog(logMessage, 'special');
       return {
         ...prev,
         titleId: titleId,
@@ -64,6 +87,10 @@ export function useCharacterHandlers({
         defense: newDefense,
         maxHp: newMaxHp,
         hp: Math.min(newHp, newMaxHp),
+        spirit: newSpirit,
+        physique: newPhysique,
+        speed: newSpeed,
+        luck: newLuck,
       };
     });
   };
@@ -83,12 +110,12 @@ export function useCharacterHandlers({
       let newPhysique = prev.physique;
       let newSpeed = prev.speed;
 
-      // 根据境界计算属性点加成倍数（指数增长）
-      // 基础倍数：2^(境界索引+1)，随境界提高而大幅增加
+      // 根据境界计算属性点加成倍数（线性增长，更平衡）
+      // 基础倍数：1 + 境界索引 * 2，随境界线性增长
       const realmIndex = REALM_ORDER.indexOf(prev.realm);
       // 确保realmIndex有效，防止NaN
       const validRealmIndex = realmIndex >= 0 ? realmIndex : 0;
-      const multiplier = Math.pow(2, validRealmIndex + 1);
+      const multiplier = 1 + validRealmIndex * 2; // 炼气期1倍，渡劫飞升13倍（之前是128倍）
 
       // 基础属性增加值
       const baseAttack = 5;
@@ -158,11 +185,11 @@ export function useCharacterHandlers({
       let newPhysique = prev.physique;
       let newSpeed = prev.speed;
 
-      // 根据境界计算属性点加成倍数（指数增长）
+      // 根据境界计算属性点加成倍数（线性增长，更平衡）
       const realmIndex = REALM_ORDER.indexOf(prev.realm);
       // 确保realmIndex有效，防止NaN
       const validRealmIndex = realmIndex >= 0 ? realmIndex : 0;
-      const multiplier = Math.pow(2, validRealmIndex + 1);
+      const multiplier = 1 + validRealmIndex * 2; // 炼气期1倍，渡劫飞升13倍（之前是128倍）
 
       // 基础属性增加值
       const baseAttack = 5;

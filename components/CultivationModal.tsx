@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { CultivationArt, RealmType, PlayerStats, ArtGrade } from '../types';
 import { CULTIVATION_ARTS, REALM_ORDER } from '../constants';
-import { X, BookOpen, Check, Lock } from 'lucide-react';
+import { X, BookOpen, Check, Lock, Search } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -25,6 +25,7 @@ const CultivationModal: React.FC<Props> = ({
   const learningArtIdRef = useRef<string | null>(null); // 同步检查用
   const [sortedArts, setSortedArts] = useState<CultivationArt[]>([]); // 存储排序后的功法列表
   const prevIsOpenRef = useRef(false); // 跟踪弹窗是否刚刚打开
+  const [searchQuery, setSearchQuery] = useState(''); // 搜索关键词
 
   const getRealmIndex = (r: RealmType) => REALM_ORDER.indexOf(r);
 
@@ -139,9 +140,17 @@ const CultivationModal: React.FC<Props> = ({
         if (statusFilter === 'unobtained' && isUnlocked) return false; // 未获得：未解锁的功法
       }
 
+      // 搜索过滤（按名称和描述）
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        const nameMatch = art.name.toLowerCase().includes(query);
+        const descMatch = art.description?.toLowerCase().includes(query);
+        if (!nameMatch && !descMatch) return false;
+      }
+
       return true;
     });
-  }, [gradeFilter, typeFilter, statusFilter, sortedArts, player.cultivationArts]);
+  }, [gradeFilter, typeFilter, statusFilter, sortedArts, player.cultivationArts, player.unlockedArts, searchQuery]);
 
   // 必须在所有 hooks 之后才能有条件返回
   if (!isOpen) return null;
@@ -171,6 +180,28 @@ const CultivationModal: React.FC<Props> = ({
           <div className="mb-3 md:mb-4 text-xs md:text-sm text-stone-400 bg-ink-900/50 p-2 md:p-3 rounded border border-stone-700">
             <p>心法：主修功法，激活后提升修炼效率。</p>
             <p>体术：辅修功法，习得后永久提升身体属性。</p>
+          </div>
+
+          {/* 搜索框 */}
+          <div className="mb-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400" size={18} />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="搜索功法名称或描述..."
+                className="w-full pl-10 pr-10 py-2 bg-stone-700 border border-stone-600 rounded text-stone-200 placeholder-stone-500 focus:outline-none focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-stone-400 hover:text-stone-200"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* 筛选器 */}

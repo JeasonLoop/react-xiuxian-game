@@ -490,6 +490,7 @@ export const getItemStats = (item: Item, isNatal: boolean = false) => {
   };
 };
 
+
 // 生成属性预览文本
 export const generateAttributePreview = (effect: Item['effect']): string => {
   if (!effect) return '';

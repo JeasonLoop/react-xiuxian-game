@@ -10,6 +10,7 @@ import {
   ShopItem,
   AdventureType,
   RealmType,
+  AdventureResult,
 } from '../types';
 import { BattleReplay } from '../services/battleService';
 
@@ -33,6 +34,7 @@ export interface AppModalState {
   isMobileSidebarOpen: boolean;
   isMobileStatsOpen: boolean;
   isDebugModeEnabled: boolean;
+  isReputationEventOpen: boolean;
 }
 
 export interface AppModalSetters {
@@ -55,6 +57,7 @@ export interface AppModalSetters {
   setIsMobileSidebarOpen: (open: boolean) => void;
   setIsMobileStatsOpen: (open: boolean) => void;
   setIsDebugModeEnabled: (enabled: boolean) => void;
+  setIsReputationEventOpen: (open: boolean) => void;
 }
 
 export interface AppState {
@@ -98,6 +101,10 @@ export interface AppState {
     value: { text: string; type: string } | null;
     setValue: (value: { text: string; type: string } | null) => void;
   };
+  reputationEvent: {
+    event: AdventureResult['reputationEvent'] | null;
+    setEvent: (event: AdventureResult['reputationEvent'] | null) => void;
+  };
 }
 
 /**
@@ -124,6 +131,7 @@ export function useAppState(): AppState {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
   const [isDebugModeEnabled, setIsDebugModeEnabled] = useState(false);
+  const [isReputationEventOpen, setIsReputationEventOpen] = useState(false);
 
   // 商店状态
   const [currentShop, setCurrentShop] = useState<Shop | null>(null);
@@ -158,6 +166,9 @@ export function useAppState(): AppState {
     type: string;
   } | null>(null);
 
+  // 声望事件
+  const [reputationEvent, setReputationEvent] = useState<AdventureResult['reputationEvent'] | null>(null);
+
   return {
     modals: {
       isInventoryOpen,
@@ -179,6 +190,7 @@ export function useAppState(): AppState {
       isMobileSidebarOpen,
       isMobileStatsOpen,
       isDebugModeEnabled,
+      isReputationEventOpen,
     },
     setters: {
       setIsInventoryOpen,
@@ -200,6 +212,7 @@ export function useAppState(): AppState {
       setIsMobileSidebarOpen,
       setIsMobileStatsOpen,
       setIsDebugModeEnabled,
+      setIsReputationEventOpen,
     },
     shop: {
       currentShop,
@@ -230,6 +243,10 @@ export function useAppState(): AppState {
     itemActionLog: {
       value: itemActionLog,
       setValue: setItemActionLog,
+    },
+    reputationEvent: {
+      event: reputationEvent,
+      setEvent: setReputationEvent,
     },
   };
 }

@@ -21,6 +21,7 @@ const EquipmentPanel: React.FC<Props> = ({ equippedItems, inventory, player, onU
   // 使用统一的工具函数获取槽位配置
   const slotConfig = getEquipmentSlotConfig();
 
+
   return (
     <div className="bg-stone-900 rounded-lg border border-stone-700 p-4">
       <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
@@ -99,6 +100,7 @@ const EquipmentPanel: React.FC<Props> = ({ equippedItems, inventory, player, onU
           );
         })}
       </div>
+
     </div>
   );
 };

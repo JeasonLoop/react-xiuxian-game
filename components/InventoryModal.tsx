@@ -8,6 +8,7 @@ import React, {
 import {
   Item,
   ItemType,
+  ItemRarity,
   PlayerStats,
   EquipmentSlot,
   RealmType,
@@ -22,6 +23,9 @@ import {
   ArrowUpDown,
   Trash,
   Zap,
+  Search,
+  Filter,
+  SlidersHorizontal,
 } from 'lucide-react';
 import {  REALM_ORDER } from '../constants';
 import EquipmentPanel from './EquipmentPanel';
@@ -157,6 +161,7 @@ const InventoryItem = memo<InventoryItemProps>(
               <span className="font-bold">本命法宝（属性+50%）</span>
             </div>
           )}
+
 
           {reviveChances !== undefined && reviveChances > 0 && (
             <div className="text-xs text-yellow-400 mb-2 flex items-center gap-1 font-bold">
@@ -345,6 +350,12 @@ const InventoryModal: React.FC<Props> = ({
   const [mobileActiveTab, setMobileActiveTab] = useState<
     'equipment' | 'inventory'
   >('inventory');
+  // 搜索和高级筛选
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+  const [rarityFilter, setRarityFilter] = useState<ItemRarity | 'all'>('all');
+  const [statFilter, setStatFilter] = useState<'all' | 'attack' | 'defense' | 'hp' | 'spirit' | 'physique' | 'speed'>('all');
+  const [statFilterMin, setStatFilterMin] = useState<number>(0);
 
   // 使用 useTransition 优化分类切换，避免阻塞UI
   const [isPending, startTransition] = useTransition();
@@ -423,6 +434,31 @@ const InventoryModal: React.FC<Props> = ({
       });
     }
 
+    // 搜索过滤（按名称和描述）
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter((item) => {
+        const nameMatch = item.name.toLowerCase().includes(query);
+        const descMatch = item.description?.toLowerCase().includes(query);
+        return nameMatch || descMatch;
+      });
+    }
+
+    // 稀有度过滤
+    if (rarityFilter !== 'all') {
+      filtered = filtered.filter((item) => item.rarity === rarityFilter);
+    }
+
+    // 属性过滤
+    if (statFilter !== 'all' && statFilterMin > 0) {
+      filtered = filtered.filter((item) => {
+        const isNatal = item.id === player.natalArtifactId;
+        const stats = getItemStats(item, isNatal);
+        const statValue = stats[statFilter] || 0;
+        return statValue >= statFilterMin;
+      });
+    }
+
     // 按品级排序（从高到低）
     if (sortByRarity) {
       filtered = [...filtered].sort((a, b) => {
@@ -437,7 +473,7 @@ const InventoryModal: React.FC<Props> = ({
     }
 
     return filtered;
-  }, [inventory, selectedCategory, selectedEquipmentSlot, sortByRarity]);
+  }, [inventory, selectedCategory, selectedEquipmentSlot, sortByRarity, searchQuery, rarityFilter, statFilter, statFilterMin, player.natalArtifactId]);
 
   // 计算所有已装备物品的总属性（使用统一的工具函数）
   const calculateTotalEquippedStats = useMemo(() => {
@@ -615,8 +651,141 @@ const InventoryModal: React.FC<Props> = ({
               mobileActiveTab !== 'inventory' ? 'hidden md:flex' : ''
             }`}
           >
-            {/* 分类标签和排序按钮 */}
-            <div className="mb-4 flex flex-col gap-2">
+            {/* 搜索和筛选 */}
+            <div className="mb-4 flex flex-col gap-3">
+              {/* 搜索框 */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400" size={18} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="搜索物品名称或描述..."
+                  className="w-full pl-10 pr-4 py-2 bg-stone-700 border border-stone-600 rounded text-stone-200 placeholder-stone-500 focus:outline-none focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-stone-400 hover:text-stone-200"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+
+              {/* 筛选工具栏 */}
+              <div className="flex gap-2 items-center flex-wrap">
+                {/* 高级筛选按钮 */}
+                <button
+                  onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
+                  className={`px-3 py-1.5 rounded text-sm border transition-colors flex items-center gap-2 ${
+                    showAdvancedFilter || rarityFilter !== 'all' || statFilter !== 'all'
+                      ? 'bg-purple-900/20 border-purple-600 text-purple-300'
+                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                  }`}
+                >
+                  <SlidersHorizontal size={16} />
+                  高级筛选
+                  {(rarityFilter !== 'all' || statFilter !== 'all') && (
+                    <span className="bg-purple-600 text-white text-xs px-1.5 py-0.5 rounded">
+                      已启用
+                    </span>
+                  )}
+                </button>
+
+                {/* 稀有度快速筛选 */}
+                <div className="flex gap-1">
+                  {(['all', '普通', '稀有', '传说', '仙品'] as const).map((rarity) => (
+                    <button
+                      key={rarity}
+                      onClick={() => setRarityFilter(rarity)}
+                      className={`px-2 py-1 rounded text-xs border transition-colors ${
+                        rarityFilter === rarity
+                          ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                          : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                      }`}
+                    >
+                      {rarity === 'all' ? '全部品质' : rarity}
+                    </button>
+                  ))}
+                </div>
+
+                {/* 排序按钮 */}
+                <button
+                  onClick={() => setSortByRarity(!sortByRarity)}
+                  className={`ml-auto px-3 py-1.5 rounded text-sm border transition-colors flex items-center gap-2 ${
+                    sortByRarity
+                      ? 'bg-blue-900/20 border-blue-600 text-blue-300'
+                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                  }`}
+                >
+                  <ArrowUpDown size={16} />
+                  {sortByRarity ? '按品质排序' : '不排序'}
+                </button>
+              </div>
+
+              {/* 高级筛选面板 */}
+              {showAdvancedFilter && (
+                <div className="bg-stone-800 rounded p-4 border border-stone-600">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Filter size={16} className="text-purple-400" />
+                    <h4 className="text-sm font-bold text-purple-300">高级筛选</h4>
+                  </div>
+                  <div className="flex-col gap-2">
+                    <label className="block text-xs text-stone-400 mb-2">属性筛选</label>
+                    <div className="flex items-center gap-2">
+                      {/* 属性筛选 */}
+                      <div>
+                        <div className="flex gap-2 mb-2">
+                          <select
+                            value={statFilter}
+                            onChange={(e) => {
+                              setStatFilter(e.target.value as typeof statFilter);
+                              if (e.target.value === 'all') setStatFilterMin(0);
+                            }}
+                            className="flex-1 px-2 py-1.5 bg-stone-700 border border-stone-600 rounded text-sm text-stone-200"
+                          >
+                            <option value="all">全部属性</option>
+                            <option value="attack">攻击力</option>
+                            <option value="defense">防御力</option>
+                            <option value="hp">气血</option>
+                            <option value="spirit">神识</option>
+                            <option value="physique">体魄</option>
+                            <option value="speed">速度</option>
+                          </select>
+                        </div>
+                        {statFilter !== 'all' && (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={0}
+                              value={statFilterMin}
+                              onChange={(e) => setStatFilterMin(Math.max(0, parseInt(e.target.value) || 0))}
+                              placeholder="最小值"
+                              className="w-full px-2 py-1.5 bg-stone-700 border border-stone-600 rounded text-sm text-stone-200"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 清除筛选按钮 */}
+                      <div className="flex items-start" style={{ marginTop: '-10px' }}>
+                        <button
+                          onClick={() => {
+                            setRarityFilter('all');
+                            setStatFilter('all');
+                            setStatFilterMin(0);
+                          }}
+                          className="w-full px-3 py-2 bg-red-900/20 hover:bg-red-900/30 border border-red-700 text-red-300 rounded text-sm transition-colors"
+                        >
+                          清除所有筛选
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* 分类标签 */}
               <div className="flex gap-2 flex-wrap">
                 <button
@@ -877,7 +1046,8 @@ const InventoryModal: React.FC<Props> = ({
         </div>
 
         {/* Stat Comparison Footer */}
-        <div className="p-3 border-t border-stone-600 bg-ink-900 rounded-b text-sm font-serif min-h-[3rem] flex items-center justify-center">
+        <div className="p-3 border-t border-stone-600 bg-ink-900 rounded-b text-sm font-serif">
+          <div className="flex items-center justify-center gap-4 mb-2 min-h-[3rem]">
           {comparison ? (
             <div className="flex items-center gap-4">
               <span className="text-stone-400">装备预览:</span>
@@ -936,6 +1106,9 @@ const InventoryModal: React.FC<Props> = ({
                 )}
             </div>
           )}
+          </div>
+
+
         </div>
       </div>
 

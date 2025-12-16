@@ -3,6 +3,7 @@ import { PlayerStats, ShopType, ShopItem, Item, Shop } from '../../types';
 import { SHOPS, REALM_ORDER } from '../../constants';
 import { uid } from '../../utils/gameUtils';
 import { calculateItemSellPrice } from '../../utils/itemUtils';
+import { generateShopItems } from '../../services/shopService';
 
 interface UseShopHandlersProps {
   player: PlayerStats;
@@ -32,6 +33,7 @@ interface UseShopHandlersProps {
  */
 
 export function useShopHandlers({
+  player,
   setPlayer,
   addLog,
   currentShop,
@@ -42,7 +44,26 @@ export function useShopHandlers({
   const handleOpenShop = (shopType: ShopType) => {
     const shop = SHOPS.find((s) => s.type === shopType);
     if (shop) {
-      setCurrentShop(shop);
+      // 对于动态商店（黑市、限时商店、声望商店），需要生成物品
+      const dynamicShopTypes = [
+        ShopType.BlackMarket,
+        ShopType.LimitedTime,
+        ShopType.Reputation,
+      ];
+
+      if (dynamicShopTypes.includes(shopType)) {
+        // 生成商店物品
+        const generatedItems = generateShopItems(shopType, player.realm, false);
+        const shopWithItems: Shop = {
+          ...shop,
+          items: generatedItems,
+        };
+        setCurrentShop(shopWithItems);
+      } else {
+        // 普通商店直接使用预定义的物品
+        setCurrentShop(shop);
+      }
+
       setIsShopOpen(true);
       addLog(`你来到了【${shop.name}】。`, 'normal');
     }

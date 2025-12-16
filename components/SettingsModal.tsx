@@ -9,6 +9,7 @@ import {
   Download,
   Github,
   RotateCcw,
+  FolderOpen,
 } from 'lucide-react';
 import { GameSettings } from '../types';
 import dayjs from 'dayjs';
@@ -21,6 +22,7 @@ interface Props {
   onUpdateSettings: (settings: Partial<GameSettings>) => void;
   onImportSave?: () => void;
   onRestartGame?: () => void;
+  onOpenSaveManager?: () => void;
 }
 
 const SettingsModal: React.FC<Props> = ({
@@ -30,6 +32,7 @@ const SettingsModal: React.FC<Props> = ({
   onUpdateSettings,
   onImportSave,
   onRestartGame,
+  onOpenSaveManager,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const SAVE_KEY = 'xiuxian-game-save';
@@ -333,6 +336,26 @@ const SettingsModal: React.FC<Props> = ({
               <h3 className="font-bold">存档管理</h3>
             </div>
             <div className="space-y-3">
+              {onOpenSaveManager && (
+                <div>
+                  <label className="block text-sm text-stone-400 mb-2">
+                    多存档槽位管理
+                  </label>
+                  <button
+                    onClick={() => {
+                      onOpenSaveManager();
+                      onClose();
+                    }}
+                    className="w-full bg-mystic-gold hover:bg-yellow-600 text-stone-900 border border-yellow-500 rounded px-4 py-2 flex items-center justify-center transition-colors font-semibold"
+                  >
+                    <FolderOpen size={16} className="mr-2" />
+                    打开存档管理器
+                  </button>
+                  <p className="text-xs text-stone-500 mt-2">
+                    管理多个存档槽位、备份和对比存档
+                  </p>
+                </div>
+              )}
               <div>
                 <label className="block text-sm text-stone-400 mb-2">
                   导出存档
