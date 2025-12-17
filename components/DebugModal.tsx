@@ -9,7 +9,6 @@ import {
   BookOpen,
   Award,
   Building2,
-  MapPin,
   Trophy,
   Heart,
   FlaskConical,
@@ -28,7 +27,6 @@ import {
   Title,
   CultivationArt,
   PetTemplate,
-  Achievement,
   Recipe,
   SectRank,
   Pet,
@@ -46,7 +44,6 @@ import {
   DISCOVERABLE_RECIPES,
   INITIAL_ITEMS,
   SECTS,
-  SECRET_REALMS,
   EQUIPMENT_TEMPLATES,
   LOTTERY_PRIZES,
   SECT_SHOP_ITEMS,
@@ -1182,10 +1179,7 @@ const DebugModal: React.FC<Props> = ({
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <button
                 onClick={() => {
-                  setLocalPlayer((prev) => ({
-                    ...prev,
-                    hp: prev.maxHp,
-                  }));
+                  onUpdatePlayer({...localPlayer, hp: localPlayer.maxHp});
                 }}
                 className="bg-green-700 hover:bg-green-600 text-white rounded px-3 py-2 text-sm"
               >
@@ -1193,10 +1187,7 @@ const DebugModal: React.FC<Props> = ({
               </button>
               <button
                 onClick={() => {
-                  setLocalPlayer((prev) => ({
-                    ...prev,
-                    exp: prev.maxExp - 1,
-                  }));
+                  onUpdatePlayer({ ...localPlayer, exp: localPlayer.maxExp - 1});
                 }}
                 className="bg-blue-700 hover:bg-blue-600 text-white rounded px-3 py-2 text-sm"
               >
@@ -1204,10 +1195,7 @@ const DebugModal: React.FC<Props> = ({
               </button>
               <button
                 onClick={() => {
-                  setLocalPlayer((prev) => ({
-                    ...prev,
-                    spiritStones: 999999,
-                  }));
+                  onUpdatePlayer({...localPlayer, spiritStones: 999999});
                 }}
                 className="bg-yellow-700 hover:bg-yellow-600 text-white rounded px-3 py-2 text-sm"
               >
@@ -1215,10 +1203,7 @@ const DebugModal: React.FC<Props> = ({
               </button>
               <button
                 onClick={() => {
-                  setLocalPlayer((prev) => ({
-                    ...prev,
-                    lotteryTickets: 999,
-                  }));
+                  onUpdatePlayer({...localPlayer, lotteryTickets: 999});
                 }}
                 className="bg-purple-700 hover:bg-purple-600 text-white rounded px-3 py-2 text-sm"
               >

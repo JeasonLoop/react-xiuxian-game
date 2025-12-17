@@ -1413,6 +1413,7 @@ const calcDamage = (attack: number, defense: number) => {
   return Math.round(Math.max(1, baseDamage * randomFactor));
 };
 
+// 战斗触发
 export const shouldTriggerBattle = (
   player: PlayerStats,
   adventureType: AdventureType
@@ -1432,7 +1433,6 @@ export const resolveBattleEncounter = async (
   riskLevel?: '低' | '中' | '高' | '极度危险',
   realmMinRealm?: RealmType,
   realmName?: string,
-  realmDescription?: string
 ): Promise<BattleResolution> => {
   const enemy = await createEnemy(
     player,

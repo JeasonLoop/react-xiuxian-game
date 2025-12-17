@@ -230,7 +230,17 @@ export async function executeAdventureCore({
 
     let newInv = [...prev.inventory];
     let newArts = [...prev.cultivationArts];
-    let newUnlockedArts = [...(prev.unlockedArts || [])]; // 已解锁的功法列表
+    // 确保所有已学习的功法都在 unlockedArts 中（修复旧存档问题）
+    // 重要：基于 prev.unlockedArts 和 prev.cultivationArts 的并集，确保不会丢失已解锁的功法
+    let newUnlockedArts = [...(prev.unlockedArts || [])];
+    // 同步 cultivationArts 到 unlockedArts（修复通过其他方式获得的功法未解锁的问题）
+    // 注意：这里同步的是 prev.cultivationArts，因为 newArts 可能还没有包含本次历练获得的功法
+    prev.cultivationArts.forEach(artId => {
+      if (!newUnlockedArts.includes(artId)) {
+        newUnlockedArts.push(artId);
+        console.log(`[功法解锁] 修复同步: 将已学习的功法 ${artId} 添加到 unlockedArts`);
+      }
+    });
     let newTalentId = prev.talentId;
     let newAttack = prev.attack;
     let newDefense = prev.defense;
@@ -1163,9 +1173,10 @@ export async function executeAdventureCore({
           availableArts[Math.floor(Math.random() * availableArts.length)];
         // 双重检查确保功法没有被重复添加（防御性编程）
         if (!newArts.includes(randomArt.id)) {
-          // 先解锁功法（添加到unlockedArts）
+          // 先解锁功法（添加到unlockedArts）- 确保解锁逻辑优先执行
           if (!newUnlockedArts.includes(randomArt.id)) {
             newUnlockedArts.push(randomArt.id);
+            console.log(`[功法解锁] 历练中解锁功法: ${randomArt.name} (${randomArt.id})`);
           }
           // 然后直接学习（添加到cultivationArts）
           newArts.push(randomArt.id);
@@ -1181,6 +1192,13 @@ export async function executeAdventureCore({
             `🎉 你在历练中领悟了功法【${randomArt.name}】！可在功法阁查看。`,
             'special'
           );
+        } else {
+          // 如果功法已经在 cultivationArts 中，但不在 unlockedArts 中，也要添加到 unlockedArts
+          // 这可以修复通过调试模式或其他方式获得的功法未解锁的问题
+          if (!newUnlockedArts.includes(randomArt.id)) {
+            newUnlockedArts.push(randomArt.id);
+            console.log(`[功法解锁] 修复未解锁的功法: ${randomArt.name} (${randomArt.id})`);
+          }
         }
       }
     }
@@ -1410,6 +1428,24 @@ export async function executeAdventureCore({
     // 允许hp变为0或负数，用于触发死亡检测
     const finalHp = newHp + safeHpChange;
 
+    // 最终同步：确保 newArts 中的所有功法都在 newUnlockedArts 中
+    // 这可以修复在快速连续历练中可能丢失的解锁
+    newArts.forEach(artId => {
+      if (!newUnlockedArts.includes(artId)) {
+        newUnlockedArts.push(artId);
+        console.log(`[功法解锁] 最终同步: 确保功法 ${artId} 在 unlockedArts 中`);
+      }
+    });
+
+    // 确保 unlockedArts 被正确保存
+    if (artUnlocked && newUnlockedArts.length > (prev.unlockedArts || []).length) {
+      console.log(`[功法解锁] 更新 unlockedArts:`, {
+        before: prev.unlockedArts || [],
+        after: newUnlockedArts,
+        newArts: newArts.filter(id => !(prev.cultivationArts || []).includes(id))
+      });
+    }
+
     return {
       ...prev,
       hp: Math.min(newMaxHp, finalHp), // 移除 Math.max(0, ...)，允许负数
@@ -1417,7 +1453,7 @@ export async function executeAdventureCore({
       spiritStones: Math.max(0, prev.spiritStones + safeSpiritStonesChange), // 灵石不能为负
       inventory: newInv,
       cultivationArts: newArts,
-      unlockedArts: newUnlockedArts,
+      unlockedArts: newUnlockedArts, // 确保 unlockedArts 被正确更新
       talentId: newTalentId || prev.talentId,
       attack: newAttack,
       defense: newDefense,
@@ -1525,7 +1561,17 @@ export async function executeAdventureCore({
         let newPhysique = prev.physique;
         let newSpeed = prev.speed;
         let newArts = [...prev.cultivationArts];
-        let newUnlockedArts = [...(prev.unlockedArts || [])]; // 已解锁的功法列表
+        // 确保所有已学习的功法都在 unlockedArts 中（修复旧存档问题）
+        // 重要：基于 prev.unlockedArts 和 prev.cultivationArts 的并集，确保不会丢失已解锁的功法
+        let newUnlockedArts = [...(prev.unlockedArts || [])];
+        // 同步 cultivationArts 到 unlockedArts（修复通过其他方式获得的功法未解锁的问题）
+        // 注意：这里同步的是 prev.cultivationArts，因为 newArts 可能还没有包含本次秘境获得的功法
+        prev.cultivationArts.forEach(artId => {
+          if (!newUnlockedArts.includes(artId)) {
+            newUnlockedArts.push(artId);
+            console.log(`[功法解锁] 修复同步: 将已学习的功法 ${artId} 添加到 unlockedArts`);
+          }
+        });
         let newPets = [...prev.pets];
         let newLotteryTickets = prev.lotteryTickets;
         let newInheritanceLevel = prev.inheritanceLevel;
@@ -1966,9 +2012,12 @@ export async function executeAdventureCore({
             const randomArt =
               availableArts[Math.floor(Math.random() * availableArts.length)];
             if (!newArts.includes(randomArt.id)) {
+              // 先解锁功法（添加到unlockedArts）- 确保解锁逻辑优先执行
               if (!newUnlockedArts.includes(randomArt.id)) {
                 newUnlockedArts.push(randomArt.id);
+                console.log(`[功法解锁] 秘境中解锁功法: ${randomArt.name} (${randomArt.id})`);
               }
+              // 然后直接学习（添加到cultivationArts）
               newArts.push(randomArt.id);
               newStats.artCount += 1;
               newAttack += randomArt.effects.attack || 0;
@@ -1981,6 +2030,13 @@ export async function executeAdventureCore({
                 `🎉 你在秘境中领悟了功法【${randomArt.name}】！可在功法阁查看。`,
                 'special'
               );
+            } else {
+              // 如果功法已经在 cultivationArts 中，但不在 unlockedArts 中，也要添加到 unlockedArts
+              // 这可以修复通过调试模式或其他方式获得的功法未解锁的问题
+              if (!newUnlockedArts.includes(randomArt.id)) {
+                newUnlockedArts.push(randomArt.id);
+                console.log(`[功法解锁] 修复未解锁的功法: ${randomArt.name} (${randomArt.id})`);
+              }
             }
           }
         }
@@ -2134,6 +2190,15 @@ export async function executeAdventureCore({
         const safeSecretExpChange = typeof secretRealmResult.expChange === 'number' && !isNaN(secretRealmResult.expChange) ? secretRealmResult.expChange : 0;
         const safeSecretSpiritStonesChange = typeof secretRealmResult.spiritStonesChange === 'number' && !isNaN(secretRealmResult.spiritStonesChange) ? secretRealmResult.spiritStonesChange : 0;
 
+        // 最终同步：确保 newArts 中的所有功法都在 newUnlockedArts 中
+        // 这可以修复在快速连续秘境中可能丢失的解锁
+        newArts.forEach(artId => {
+          if (!newUnlockedArts.includes(artId)) {
+            newUnlockedArts.push(artId);
+            console.log(`[功法解锁] 最终同步: 确保功法 ${artId} 在 unlockedArts 中`);
+          }
+        });
+
         return {
           ...prev,
           hp: Math.max(
@@ -2147,7 +2212,7 @@ export async function executeAdventureCore({
           ),
           inventory: newInv,
           cultivationArts: newArts,
-          unlockedArts: newUnlockedArts,
+          unlockedArts: newUnlockedArts, // 确保 unlockedArts 被正确更新
           talentId: prev.talentId, // 保持天赋ID不变
           attack: newAttack,
           defense: newDefense,
