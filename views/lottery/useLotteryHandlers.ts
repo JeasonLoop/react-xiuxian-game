@@ -47,13 +47,26 @@ export function useLotteryHandlers({
       if (guaranteedRare && i === count - 1) {
         // 保底稀有以上
         const rarePrizes = LOTTERY_PRIZES.filter((p) => p.rarity !== '普通');
-        const totalWeight = rarePrizes.reduce((sum, p) => sum + p.weight, 0);
-        let random = Math.random() * totalWeight;
-        for (const prize of rarePrizes) {
-          random -= prize.weight;
-          if (random <= 0) {
-            results.push(prize);
-            break;
+        // 如果稀有奖品列表为空，回退到普通抽奖
+        if (rarePrizes.length === 0) {
+          const totalWeight = LOTTERY_PRIZES.reduce((sum, p) => sum + p.weight, 0);
+          let random = Math.random() * totalWeight;
+          for (const prize of LOTTERY_PRIZES) {
+            random -= prize.weight;
+            if (random <= 0) {
+              results.push(prize);
+              break;
+            }
+          }
+        } else {
+          const totalWeight = rarePrizes.reduce((sum, p) => sum + p.weight, 0);
+          let random = Math.random() * totalWeight;
+          for (const prize of rarePrizes) {
+            random -= prize.weight;
+            if (random <= 0) {
+              results.push(prize);
+              break;
+            }
           }
         }
       } else {

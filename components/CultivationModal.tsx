@@ -23,8 +23,6 @@ const CultivationModal: React.FC<Props> = ({
   const [statusFilter, setStatusFilter] = useState<'all' | 'learned' | 'obtained' | 'unobtained'>('all');
   const [learningArtId, setLearningArtId] = useState<string | null>(null); // 防止重复点击
   const learningArtIdRef = useRef<string | null>(null); // 同步检查用
-  const [sortedArts, setSortedArts] = useState<CultivationArt[]>([]); // 存储排序后的功法列表
-  const prevIsOpenRef = useRef(false); // 跟踪弹窗是否刚刚打开
   const [searchQuery, setSearchQuery] = useState(''); // 搜索关键词
 
   const getRealmIndex = (r: RealmType) => REALM_ORDER.indexOf(r);
@@ -55,71 +53,40 @@ const CultivationModal: React.FC<Props> = ({
     }, 500);
   };
 
-  // 只在弹窗打开时进行排序
-  useEffect(() => {
-    if (isOpen && !prevIsOpenRef.current) {
-      // 弹窗刚刚打开，进行排序
-      const learnedSet = new Set(player.cultivationArts);
-      const unlockedArts = player.unlockedArts || [];
-      const unlockedSet = new Set(unlockedArts);
-      // 使用 Map 去重，确保每个 id 只出现一次
-      const artMap = new Map<string, CultivationArt>();
-      // 只显示已解锁的功法（包括已学习和未学习的）
-      CULTIVATION_ARTS.forEach((art) => {
-        // 只包含已解锁的功法
-        if (unlockedSet.has(art.id) && !artMap.has(art.id)) {
-          artMap.set(art.id, art);
+  // 使用 useMemo 直接计算并排序功法列表（包含未解锁的功法，用于“未获得”筛选）
+  const sortedArts = useMemo(() => {
+    if (!isOpen) return [];
+
+    const learnedSet = new Set(player.cultivationArts || []);
+    const unlockedSet = new Set(player.unlockedArts || []);
+
+    const gradeOrder = { 天: 4, 地: 3, 玄: 2, 黄: 1 };
+
+    // 排序权重：已激活 < 已学习 < 已解锁未学 < 未解锁
+    const statusWeight = (artId: string) => {
+      if (player.activeArtId === artId) return 0;
+      if (learnedSet.has(artId)) return 1;
+      if (unlockedSet.has(artId)) return 2;
+      return 3;
+    };
+
+    return CULTIVATION_ARTS.map((art, idx) => ({ art, idx }))
+      .sort((a, b) => {
+        const wa = statusWeight(a.art.id);
+        const wb = statusWeight(b.art.id);
+        if (wa !== wb) return wa - wb;
+
+        // 同状态下，如果都是已学习，按品级排序；否则保持原顺序
+        if (wa <= 1) {
+          const ga = gradeOrder[a.art.grade] || 0;
+          const gb = gradeOrder[b.art.grade] || 0;
+          if (ga !== gb) return gb - ga; // 高品级在前
         }
-      });
-      const uniqueArts = Array.from(artMap.values());
-      const sorted = uniqueArts
-        .map((art, idx) => ({ art, idx }))
-        .sort((a, b) => {
-          const aActive = player.activeArtId === a.art.id;
-          const bActive = player.activeArtId === b.art.id;
-          if (aActive !== bActive) return aActive ? -1 : 1; // 已激活在最前
 
-          const aLearned = learnedSet.has(a.art.id);
-          const bLearned = learnedSet.has(b.art.id);
-          if (aLearned !== bLearned) return aLearned ? -1 : 1; // 已学习排在未学习前
-
-          // 已学习的按品级排序（天>地>玄>黄），未学习的按原有次序
-          if (aLearned && bLearned) {
-            const gradeOrder = { '天': 4, '地': 3, '玄': 2, '黄': 1 };
-            const aGrade = gradeOrder[a.art.grade] || 0;
-            const bGrade = gradeOrder[b.art.grade] || 0;
-            if (aGrade !== bGrade) return bGrade - aGrade; // 高品级在前
-          }
-
-          return a.idx - b.idx; // 保持原有次序
-        })
-        .map((item) => item.art);
-      setSortedArts(sorted);
-    } else if (isOpen && prevIsOpenRef.current) {
-      // 弹窗已经打开，检查是否有新解锁或新学习的功法
-      const learnedSet = new Set(player.cultivationArts);
-      const unlockedArts = player.unlockedArts || [];
-      const unlockedSet = new Set(unlockedArts);
-      // 使用函数式更新来避免闭包问题
-      setSortedArts((prev) => {
-        // 找出新解锁或新学习的功法（包括已解锁但未学习的，以及新学习的）
-        const prevArtIds = new Set(prev.map((art) => art.id));
-        // 检查所有已解锁的功法（包括已学习和未学习的）
-        const newArtIds = unlockedArts.filter((id) => !prevArtIds.has(id));
-        if (newArtIds.length > 0) {
-          // 有新解锁的功法，添加到列表末尾（不重新排序）
-          const newArts = newArtIds
-            .map((id) => CULTIVATION_ARTS.find((art) => art.id === id))
-            .filter((art): art is CultivationArt => art !== undefined);
-          return [...prev, ...newArts];
-        }
-        return prev;
-      });
-    }
-    prevIsOpenRef.current = isOpen;
-    // 注意：不依赖 player.activeArtId，激活状态改变时不重新排序
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, player.cultivationArts, player.unlockedArts]);
+        return a.idx - b.idx; // 保持原有次序
+      })
+      .map((item) => item.art);
+  }, [isOpen, player.unlockedArts, player.cultivationArts, player.activeArtId]);
 
   // 过滤功法 - 基于已排序的列表进行过滤
   const filteredArts = useMemo(() => {
@@ -137,7 +104,7 @@ const CultivationModal: React.FC<Props> = ({
         const isUnlocked = unlockedArts.includes(art.id);
         if (statusFilter === 'learned' && !isLearned) return false; // 已学习：已学习的功法
         if (statusFilter === 'obtained' && (!isUnlocked || isLearned)) return false; // 已获得：已解锁但未学习的功法
-        if (statusFilter === 'unobtained' && isUnlocked) return false; // 未获得：未解锁的功法
+        if (statusFilter === 'unobtained' && (isUnlocked || isLearned)) return false; // 未获得：未解锁的功法（已学习也应排除）
       }
 
       // 搜索过滤（按名称和描述）

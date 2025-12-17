@@ -66,7 +66,12 @@ export function useAchievementHandlers({
             achievement.requirement.target as RealmType
           );
           const playerRealmIndex = REALM_ORDER.indexOf(prev.realm);
-          completed = playerRealmIndex >= realmIndex;
+          // 如果索引无效（-1），保守处理：不满足条件
+          if (realmIndex < 0 || playerRealmIndex < 0) {
+            completed = false;
+          } else {
+            completed = playerRealmIndex >= realmIndex;
+          }
         } else if (achievement.requirement.type === 'kill') {
           // 击杀成就
           completed = stats.killCount >= achievement.requirement.value;

@@ -1157,7 +1157,26 @@ const createEnemy = async (
     );
   }
 
-  const realm = REALM_ORDER[targetRealmIndex];
+  // 确保targetRealmIndex有效，防止访问undefined
+  const validTargetRealmIndex = Math.max(0, Math.min(targetRealmIndex, REALM_ORDER.length - 1));
+  const realm = REALM_ORDER[validTargetRealmIndex];
+  if (!realm) {
+    // 如果仍然获取不到，使用第一个境界作为默认值
+    const fallbackRealm = REALM_ORDER[0];
+    if (!fallbackRealm) {
+      throw new Error('REALM_ORDER is empty or invalid');
+    }
+    return {
+      name: '未知敌人',
+      title: '神秘的',
+      realm: fallbackRealm,
+      attack: 10,
+      defense: 8,
+      maxHp: 50,
+      speed: 10,
+      strengthMultiplier: 1,
+    };
+  }
   const baseDifficulty = getBattleDifficulty(adventureType, riskLevel);
 
   // 引入强度等级系统：弱敌、普通、强敌

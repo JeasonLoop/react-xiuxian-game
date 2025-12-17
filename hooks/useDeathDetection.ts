@@ -7,6 +7,7 @@ import { useEffect } from 'react';
 import { PlayerStats, Item, EquipmentSlot, GameSettings } from '../types';
 import { BattleReplay } from '../services/battleService';
 import { SAVE_KEY } from '../utils/gameUtils';
+import { clearAllSlots } from '../utils/saveManagerUtils';
 
 interface UseDeathDetectionParams {
   player: PlayerStats | null;
@@ -48,7 +49,7 @@ export function useDeathDetection({
       addLog('⏰ 你的寿命已尽，寿终正寝 还是无缘窥探大道...', 'danger');
 
       if (settings.difficulty === 'hard') {
-        // 困难模式：死亡惩罚
+        // 困难模式：死亡惩罚 - 清除所有存档
         setIsDead(true);
         setPlayer((prev) => {
           if (!prev) return prev;
@@ -60,6 +61,8 @@ export function useDeathDetection({
         const reason = '你的寿命已尽，寿终正寝。';
         setDeathReason(reason);
         setDeathBattleData(null);
+        // 清除所有存档槽位和旧存档
+        clearAllSlots();
         localStorage.removeItem(SAVE_KEY);
         setIsBattleModalOpen(false);
         setAutoMeditate(false);
@@ -153,9 +156,11 @@ export function useDeathDetection({
       const difficulty = settings.difficulty || 'normal';
 
       if (difficulty === 'hard') {
-        // 困难模式：清除存档
+        // 困难模式：清除所有存档
         setIsDead(true);
         setDeathBattleData(lastBattleReplay);
+        // 清除所有存档槽位和旧存档
+        clearAllSlots();
         localStorage.removeItem(SAVE_KEY);
 
         setIsBattleModalOpen(false);

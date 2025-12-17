@@ -5,6 +5,48 @@ import { RARITY_MULTIPLIERS, REALM_ORDER, REALM_DATA } from '../constants';
 type ItemEffect = NonNullable<Item['effect']>;
 type ItemPermanentEffect = NonNullable<Item['permanentEffect']>;
 
+// 将常见的类型别称规范化，避免多处硬编码
+const normalizeTypeHint = (type?: ItemType | string): ItemType | undefined => {
+  if (!type) return undefined;
+  const t = String(type).toLowerCase();
+  const map: Record<string, ItemType> = {
+    防具: ItemType.Armor,
+    护具: ItemType.Armor,
+    甲: ItemType.Armor,
+    装备: ItemType.Armor,
+    armor: ItemType.Armor,
+    灵器: ItemType.Artifact,
+    神器: ItemType.Artifact,
+    灵宝: ItemType.Artifact,
+    法器: ItemType.Artifact,
+    artifact: ItemType.Artifact,
+    weapon: ItemType.Weapon,
+    武器: ItemType.Weapon,
+    丹: ItemType.Pill,
+    药: ItemType.Pill,
+    pill: ItemType.Pill,
+    potion: ItemType.Pill,
+    elixir: ItemType.Pill,
+    草: ItemType.Herb,
+    灵草: ItemType.Herb,
+    herb: ItemType.Herb,
+    material: ItemType.Material,
+    材料: ItemType.Material,
+    accessory: ItemType.Accessory,
+    首饰: ItemType.Accessory,
+    ring: ItemType.Ring,
+    戒指: ItemType.Ring,
+    recipe: ItemType.Recipe,
+  };
+  return map[t] || (Object.values(ItemType).includes(type as ItemType) ? (type as ItemType) : undefined);
+};
+
+// 稳定的槽位选择：同名物品在任意流程都会落在同一个槽位
+const stablePickSlot = (name: string, slots: EquipmentSlot[]) => {
+  const hash = Array.from(name).reduce((acc, ch) => ((acc * 31 + ch.charCodeAt(0)) >>> 0) & 0xffffffff, 0);
+  return slots[hash % slots.length];
+};
+
 // 已知物品的效果映射表（确保描述和实际效果一致）
 export const KNOWN_ITEM_EFFECTS: Record<
   string,
@@ -166,195 +208,195 @@ export const inferItemTypeAndSlot = (
   const descLower = description.toLowerCase();
   const combined = nameLower + descLower;
 
-  // 武器类（优先级最高，即使描述中提到"灵器"、"法器"等，只要名称包含武器关键词就是武器）
-  // 武器关键词：剑、刀、枪、戟、斧、锤、鞭、棍、棒、矛、弓、弩、匕首等
-  if (
-    combined.match(
-      /剑|刀|枪|戟|斧|锤|鞭|棍|棒|矛|弓|弩|匕首|短剑|长剑|重剑|飞剑|灵剑|仙剑|裂空剑|青莲剑|紫霄剑|玄天剑|青云剑|精铁剑|玄冰剑|宝剑/
-    )
-  ) {
-    return {
-      type: ItemType.Weapon,
-      isEquippable: true,
-      equipmentSlot: EquipmentSlot.Weapon,
-    };
-  }
+  const weaponKeywords =
+    /剑|刀|枪|戟|斧|锤|鞭|棍|棒|矛|弓|弩|匕首|短剑|长剑|重剑|飞剑|灵剑|仙剑|裂空剑|青莲剑|紫霄剑|玄天剑|青云剑|精铁剑|玄冰剑|宝剑/;
 
-  // 头部装备（优先检查，避免被其他规则误判）
-  if (
-    combined.match(
-      /头盔|头冠|道冠|法冠|仙冠|龙冠|凤冠|冠|帽|发簪|发带|头饰|面罩|头|首/
-    )
-  ) {
-    return {
+  const rules: Array<{
+    match: RegExp;
+    exclude?: RegExp;
+    type: ItemType;
+    isEquippable: boolean;
+    slot?: EquipmentSlot | EquipmentSlot[];
+  }> = [
+    { match: weaponKeywords, type: ItemType.Weapon, isEquippable: true, slot: EquipmentSlot.Weapon },
+    {
+      match: /头盔|头冠|道冠|法冠|仙冠|龙冠|凤冠|冠|帽|发簪|发带|头饰|面罩|头|首/,
       type: ItemType.Armor,
       isEquippable: true,
-      equipmentSlot: EquipmentSlot.Head,
-    };
-  }
-
-  // 肩部装备
-  if (combined.match(/肩|裘|披风|斗篷|肩甲|护肩|肩饰|肩胛|云肩|法肩|仙肩/)) {
-    return {
+      slot: EquipmentSlot.Head,
+    },
+    {
+      match: /肩|裘|披风|斗篷|肩甲|护肩|肩饰|肩胛|云肩|法肩|仙肩/,
       type: ItemType.Armor,
       isEquippable: true,
-      equipmentSlot: EquipmentSlot.Shoulder,
-    };
-  }
-
-  // 戒指（优先检查，避免被其他规则误判）
-  if (combined.match(/戒指|指环|戒/)) {
-    // 随机分配一个戒指槽位
-    const ringSlots = [
-      EquipmentSlot.Ring1,
-      EquipmentSlot.Ring2,
-      EquipmentSlot.Ring3,
-      EquipmentSlot.Ring4,
-    ];
-    return {
+      slot: EquipmentSlot.Shoulder,
+    },
+    {
+      match: /戒指|指环|戒/,
       type: ItemType.Ring,
       isEquippable: true,
-      equipmentSlot: ringSlots[Math.floor(Math.random() * ringSlots.length)],
-    };
-  }
-
-  // 首饰（项链、玉佩、手镯等，优先检查，避免被手套规则误判）
-  if (combined.match(/项链|玉佩|手镯|手链|吊坠|护符|符|佩|饰/)) {
-    const accessorySlots = [EquipmentSlot.Accessory1, EquipmentSlot.Accessory2];
-    return {
+      slot: [EquipmentSlot.Ring1, EquipmentSlot.Ring2, EquipmentSlot.Ring3, EquipmentSlot.Ring4],
+    },
+    {
+      match: /项链|玉佩|手镯|手链|吊坠|护符|佩|饰|腰佩|腰坠/,
+      exclude: /手套|护手|手甲|法宝|法器|仙器|神器|灵器|灵宝/, // 避免手套和法宝被误判
       type: ItemType.Accessory,
       isEquippable: true,
-      equipmentSlot:
-        accessorySlots[Math.floor(Math.random() * accessorySlots.length)],
-    };
-  }
-
-  // 手套（排除手镯、手链等首饰关键词）
-  if (
-    combined.match(/手套|护手|手甲|拳套|法手|仙手|龙爪套/) &&
-    !combined.match(/手镯|手链/) // 排除首饰关键词
-  ) {
-    return {
+      slot: [EquipmentSlot.Accessory1, EquipmentSlot.Accessory2],
+    },
+    {
+      match: /手套|护手|手甲|拳套|法手|仙手|龙爪套/,
+      exclude: /手镯|手链/,
       type: ItemType.Armor,
       isEquippable: true,
-      equipmentSlot: EquipmentSlot.Gloves,
-    };
-  }
-
-  // 鞋子（优先检查，避免被其他规则误判）
-  if (combined.match(/靴|鞋|足|步|履|仙履|云履|龙鳞靴|战靴|法靴/)) {
-    return {
+      slot: EquipmentSlot.Gloves,
+    },
+    {
+      match: /靴|鞋|足|步|履|仙履|云履|龙鳞靴|战靴|法靴/,
       type: ItemType.Armor,
       isEquippable: true,
-      equipmentSlot: EquipmentSlot.Boots,
-    };
-  }
-
-  // 裤腿
-  if (combined.match(/裤|腿甲|护腿|下装|法裤|仙裤|龙鳞裤|腿/)) {
-    return {
+      slot: EquipmentSlot.Boots,
+    },
+    {
+      match: /裤|腿甲|护腿|下装|法裤|仙裤|龙鳞裤|腿/,
       type: ItemType.Armor,
       isEquippable: true,
-      equipmentSlot: EquipmentSlot.Legs,
-    };
-  }
-
-  // 草药类（应该在护甲检查之前，避免误判）
-  if (
-    combined.match(
-      /草药|药草|灵草|仙草|草|花|果|叶|根|茎|枝|胆草|解毒|疗伤|恢复|治疗|回血|回蓝|回灵|回气/
-    ) &&
-    !combined.match(/草甲|草衣|草帽|草鞋/) // 排除名称中包含"草"的装备（如草甲）
-  ) {
-    return {
+      slot: EquipmentSlot.Legs,
+    },
+    {
+      match: /草药|药草|灵草|仙草|草|花|果|叶|根|茎|枝|胆草|解毒|疗伤|恢复|治疗|回血|回蓝|回灵|回气/,
+      exclude: /草甲|草衣|草帽|草鞋/,
       type: ItemType.Herb,
       isEquippable: false,
-    };
-  }
-
-  // 丹药类
-  if (combined.match(/丹药|丹|丸|散|液|膏|剂|药|灵丹|仙丹/)) {
-    return {
+    },
+    {
+      // 丹方判断必须在丹药判断之前（优先级更高）
+      match: /丹方|配方|炼制方法|炼药|炼丹.*方法|炼制.*方法|配方.*丹/,
+      type: ItemType.Recipe,
+      isEquippable: false,
+    },
+    {
+      match: /丹药|丹|丸|散|液|膏|剂|药|灵丹|仙丹/,
+      exclude: /丹方|配方/, // 排除丹方关键词，避免误判
       type: ItemType.Pill,
       isEquippable: false,
-    };
-  }
-
-  // 材料类
-  if (
-    combined.match(
-      /材料|矿物|矿石|晶石|灵石|铁|铜|银|金|木|石|骨|皮|角|鳞|羽|毛|丝|线|布|纸/
-    )
-  ) {
-    return {
+    },
+    {
+      match: /材料|矿物|矿石|晶石|灵石|铁|铜|银|金|木|石|骨|皮|角|鳞|羽|毛|丝|线|布|纸/,
       type: ItemType.Material,
       isEquippable: false,
-    };
-  }
-
-  // 胸甲装备（放在最后，作为默认护甲类型，但要避免误判）
-  // 更精确的匹配，避免匹配到"胆草"中的"草"、"护甲"等
-  if (
-    combined.match(
-      /道袍|法衣|胸甲|护胸|铠甲|战甲|法袍|长袍|外衣|护甲|重甲|轻甲|板甲|锁甲|软甲|硬甲|袍|衣/
-    ) &&
-    !combined.match(/胆草|草药|药草|灵草|仙草/) // 排除草药相关词汇
-  ) {
-    return {
+    },
+    {
+      match: /道袍|法衣|胸甲|护胸|铠甲|战甲|法袍|长袍|外衣|护甲|重甲|轻甲|板甲|锁甲|软甲|硬甲|袍|衣/,
+      exclude: /胆草|草药|药草|灵草|仙草/,
       type: ItemType.Armor,
       isEquippable: true,
-      equipmentSlot: EquipmentSlot.Chest,
-    };
-  }
-
-  // 法宝（注意：如果名称包含武器关键词，已经在上面被判定为武器了，不会到这里）
-  // 法宝关键词：法宝、法器、仙器、神器、鼎、钟、镜、塔、扇、珠、印、盘、笔、袋、旗、炉、图等
-  // 注意：斧、锤如果明确是武器（如"开天斧"、"辟地锤"），应该在上面被判定为武器
-  // 但如果只是"斧"、"锤"且没有武器特征，可能是法宝类工具
-  if (
-    combined.match(
-      /法宝|法器|仙器|神器|鼎|钟|镜|塔|扇|珠|印|盘|笔|袋|旗|炉|图/
-    ) &&
-    !combined.match(/剑|刀|枪|戟|鞭|棍|棒|矛|弓|弩|匕首/) // 确保不包含武器关键词
-  ) {
-    const artifactSlots = [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2];
-    return {
+      slot: EquipmentSlot.Chest,
+    },
+    {
+      match: /法宝|法器|仙器|神器|灵器|灵宝|鼎|钟|镜|塔|扇|珠|印|盘|笔|袋|旗|炉|图|符箓|灵符|仙符|神符|法符|兽符/,
+      exclude: weaponKeywords,
       type: ItemType.Artifact,
       isEquippable: true,
-      equipmentSlot:
-        artifactSlots[Math.floor(Math.random() * artifactSlots.length)],
-    };
+      slot: [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2],
+    },
+  ];
+
+  // 如果当前类型已经是明确的装备类型，优先保持类型，只推断槽位
+  const normalized = normalizeTypeHint(currentType) || currentType;
+  const isKnownEquipmentType = [
+    ItemType.Weapon,
+    ItemType.Armor,
+    ItemType.Artifact,
+    ItemType.Ring,
+    ItemType.Accessory,
+  ].includes(normalized as ItemType);
+
+  // 如果当前类型是明确的装备类型，且isEquippable为true，优先保持类型
+  if (isKnownEquipmentType && (currentIsEquippable || normalized === ItemType.Artifact || normalized === ItemType.Weapon || normalized === ItemType.Armor || normalized === ItemType.Ring || normalized === ItemType.Accessory)) {
+    // 只推断槽位，不改变类型
+    switch (normalized) {
+      case ItemType.Weapon:
+        return { type: ItemType.Weapon, isEquippable: true, equipmentSlot: EquipmentSlot.Weapon };
+      case ItemType.Armor:
+        // 尝试推断具体部位
+        for (const rule of rules) {
+          if (rule.type === ItemType.Armor && rule.slot && rule.match.test(combined)) {
+            if (!rule.exclude || !rule.exclude.test(combined)) {
+              const slot = Array.isArray(rule.slot) ? stablePickSlot(nameLower, rule.slot) : rule.slot;
+              return { type: ItemType.Armor, isEquippable: true, equipmentSlot: slot };
+            }
+          }
+        }
+        return { type: ItemType.Armor, isEquippable: true, equipmentSlot: EquipmentSlot.Chest };
+      case ItemType.Artifact:
+        return {
+          type: ItemType.Artifact,
+          isEquippable: true,
+          equipmentSlot: stablePickSlot(nameLower, [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2]),
+        };
+      case ItemType.Ring:
+        return {
+          type: ItemType.Ring,
+          isEquippable: true,
+          equipmentSlot: stablePickSlot(nameLower, [EquipmentSlot.Ring1, EquipmentSlot.Ring2, EquipmentSlot.Ring3, EquipmentSlot.Ring4]),
+        };
+      case ItemType.Accessory:
+        return {
+          type: ItemType.Accessory,
+          isEquippable: true,
+          equipmentSlot: stablePickSlot(nameLower, [EquipmentSlot.Accessory1, EquipmentSlot.Accessory2]),
+        };
+    }
   }
 
-  // 如果当前类型是"防具"等非标准类型，转换为护甲
-  if (currentType === ('防具' as any)) {
-    // 默认作为胸甲处理
-    return {
-      type: ItemType.Armor,
-      isEquippable: true,
-      equipmentSlot: EquipmentSlot.Chest,
-    };
-  }
-
-  // 保持原有类型，但如果是装备类且没有槽位，尝试推断
-  if (currentIsEquippable) {
-    if (currentType === ItemType.Armor) {
+  // 规则化的优先级匹配（仅在类型不明确时使用）
+  for (const rule of rules) {
+    if (rule.exclude && rule.exclude.test(combined)) continue;
+    if (rule.match.test(combined)) {
+      const slot = Array.isArray(rule.slot) ? stablePickSlot(nameLower, rule.slot) : rule.slot;
       return {
-        type: ItemType.Armor,
-        isEquippable: true,
-        equipmentSlot: EquipmentSlot.Chest, // 默认胸甲
-      };
-    } else if (currentType === ItemType.Weapon) {
-      return {
-        type: ItemType.Weapon,
-        isEquippable: true,
-        equipmentSlot: EquipmentSlot.Weapon,
+        type: rule.type,
+        isEquippable: rule.isEquippable,
+        equipmentSlot: rule.isEquippable ? slot : undefined,
       };
     }
   }
 
+  // 使用规范化的类型提示作兜底（如果上面的逻辑都没有匹配到）
+  if (currentIsEquippable || isKnownEquipmentType) {
+    switch (normalized) {
+      case ItemType.Weapon:
+        return { type: ItemType.Weapon, isEquippable: true, equipmentSlot: EquipmentSlot.Weapon };
+      case ItemType.Armor:
+        return { type: ItemType.Armor, isEquippable: true, equipmentSlot: EquipmentSlot.Chest };
+      case ItemType.Artifact:
+        return {
+          type: ItemType.Artifact,
+          isEquippable: true,
+          equipmentSlot: stablePickSlot(nameLower, [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2]),
+        };
+      case ItemType.Ring:
+        return {
+          type: ItemType.Ring,
+          isEquippable: true,
+          equipmentSlot: stablePickSlot(nameLower, [EquipmentSlot.Ring1, EquipmentSlot.Ring2, EquipmentSlot.Ring3, EquipmentSlot.Ring4]),
+        };
+      case ItemType.Accessory:
+        return {
+          type: ItemType.Accessory,
+          isEquippable: true,
+          equipmentSlot: stablePickSlot(nameLower, [EquipmentSlot.Accessory1, EquipmentSlot.Accessory2]),
+        };
+      default:
+        break;
+    }
+  }
+
+  const fallbackType = (normalized || currentType || ItemType.Material) as ItemType;
+
   return {
-    type: currentType,
+    type: fallbackType,
     isEquippable: currentIsEquippable || false,
   };
 };
@@ -365,9 +407,11 @@ export const inferItemTypeAndSlot = (
  */
 export const getRealmEquipmentMultiplier = (realm: RealmType, realmLevel: number): number => {
   const realmIndex = REALM_ORDER.indexOf(realm);
+  // 如果境界索引无效，使用默认值（炼气期，索引0）
+  const validRealmIndex = realmIndex >= 0 ? realmIndex : 0;
   // 基础倍数：根据境界指数增长 [1, 2, 4, 8, 16, 32, 64]
   const realmBaseMultipliers = [1, 2, 4, 8, 16, 32, 64];
-  const realmBaseMultiplier = realmBaseMultipliers[realmIndex] || 1;
+  const realmBaseMultiplier = realmBaseMultipliers[validRealmIndex] || 1;
   // 境界等级加成：每级增加10%（更温和的增长）
   const levelMultiplier = 1 + (realmLevel - 1) * 0.1;
   return realmBaseMultiplier * levelMultiplier;
@@ -391,6 +435,15 @@ export const adjustEquipmentStatsByRealm = (
   const realmIndex = REALM_ORDER.indexOf(realm);
   // 获取当前境界的基础属性值作为参考
   const realmData = REALM_DATA[realm];
+  // 如果境界数据不存在，使用炼气期作为默认值
+  if (!realmData) {
+    const defaultRealmData = REALM_DATA[RealmType.QiRefining];
+    if (!defaultRealmData) {
+      // 如果连默认值都没有，直接返回原效果（防止崩溃）
+      return effect;
+    }
+    return adjustEquipmentStatsByRealm(effect, RealmType.QiRefining, realmLevel, rarity);
+  }
   const baseAttack = realmData.baseAttack;
   const baseDefense = realmData.baseDefense;
   const baseMaxHp = realmData.baseMaxHp;

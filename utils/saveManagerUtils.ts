@@ -196,6 +196,31 @@ export const deleteSlot = (slotId: number): boolean => {
 };
 
 /**
+ * 清除所有存档槽位（包括所有槽位和备份）
+ * 用于困难模式死亡时清空所有存档
+ */
+export const clearAllSlots = (): void => {
+  try {
+    // 清除所有存档槽位
+    for (let i = 1; i <= MAX_SLOTS; i++) {
+      const slotKey = getSlotKey(i);
+      localStorage.removeItem(slotKey);
+
+      // 清除该槽位的所有备份
+      for (let j = 0; j < MAX_BACKUPS; j++) {
+        const backupKey = getBackupKey(i, j);
+        localStorage.removeItem(backupKey);
+      }
+    }
+
+    // 清除当前槽位标记（可选，因为下次会自动设为1）
+    localStorage.removeItem(CURRENT_SLOT_KEY);
+  } catch (error) {
+    console.error('清除所有存档失败:', error);
+  }
+};
+
+/**
  * 创建备份
  */
 export const createBackup = (slotId: number, saveData?: SaveData): boolean => {

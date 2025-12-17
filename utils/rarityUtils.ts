@@ -109,3 +109,27 @@ export const getRarityDisplayName = (rarity: ItemRarity | undefined): string => 
   return rarity || '普通';
 };
 
+/**
+ * 稀有度别名映射（兼容英文和别称）
+ */
+const rarityAliasMap: Record<string, ItemRarity> = {
+  rare: '稀有',
+  common: '普通',
+  normal: '普通',
+  legend: '传说',
+  legendary: '传说',
+  epic: '传说',
+  mythic: '仙品',
+  immortal: '仙品',
+};
+
+/**
+ * 规范化稀有度值（将英文/别称转换为标准中文）
+ * 用于统一显示，兼容AI可能返回的英文稀有度
+ */
+export const normalizeRarityValue = (rarity?: ItemRarity | string): ItemRarity => {
+  if (!rarity) return '普通';
+  const key = String(rarity).toLowerCase();
+  return rarityAliasMap[key] || (rarity as ItemRarity);
+};
+
