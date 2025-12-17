@@ -928,8 +928,8 @@ export async function executeAdventureCore({
       if (!targetPet && prev.activePetId) {
         targetPet = newPets.find((p) => p.id === prev.activePetId) || null;
       }
-      // 如果还是没有，随机选择一个
-      if (!targetPet) {
+      // 如果还是没有，随机选择一个（添加防御性检查）
+      if (!targetPet && newPets.length > 0) {
         const randomPet = newPets[Math.floor(Math.random() * newPets.length)];
         targetPet = randomPet;
       }
@@ -1667,7 +1667,8 @@ export async function executeAdventureCore({
           if (!targetPet && prev.activePetId) {
             targetPet = newPets.find((p) => p.id === prev.activePetId) || null;
           }
-          if (!targetPet) {
+          // 如果还是没有，随机选择一个（添加防御性检查）
+          if (!targetPet && newPets.length > 0) {
             const randomPet = newPets[Math.floor(Math.random() * newPets.length)];
             targetPet = randomPet;
           }

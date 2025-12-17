@@ -49,6 +49,11 @@ export function useEquipmentHandlers({
       addLog('该物品无法装备！', 'danger');
       return;
     }
+    // 防御性检查：确保slot不为null或undefined
+    if (!slot) {
+      addLog('装备槽位无效！', 'danger');
+      return;
+    }
 
     setPlayer((prev) => {
       // 检查物品是否在背包中

@@ -1457,7 +1457,7 @@ export const resolveBattleEncounter = async (
     // 确保速度值是有效数字，防止NaN
     const playerSpeed = Number(player.speed) || 0;
     const enemySpeed = Number(enemy.speed) || 0;
-    const speedSum = playerSpeed + enemySpeed + 1; // 避免除零
+    const speedSum = Math.max(1, playerSpeed + enemySpeed); // 确保至少为1，避免除零
     const critSpeed = isPlayerTurn ? playerSpeed : enemySpeed;
     const critChanceBase = 0.08 + (critSpeed / speedSum) * 0.2;
     // 确保暴击率在合理范围内
@@ -1935,7 +1935,9 @@ export const initializeTurnBasedBattle = async (
     if (fasterActionPower <= slowerActionPower) return 1; // 行动力不占优，只有1次行动
 
     const powerDiff = fasterActionPower - slowerActionPower;
-    const powerRatio = powerDiff / slowerActionPower; // 行动力差比例
+    // 确保slowerActionPower至少为1，避免除零
+    const safeSlowerPower = Math.max(1, slowerActionPower);
+    const powerRatio = powerDiff / safeSlowerPower; // 行动力差比例
 
     // 基础1次 + 每50%行动力优势额外1次行动
     // 例如：行动力是敌人的1.5倍 = 2次行动，2倍 = 3次行动，3倍 = 4次行动
@@ -2296,7 +2298,9 @@ export function executeEnemyTurn(battleState: BattleState): BattleState {
 
       if (fasterActionPower <= slowerActionPower) return 1;
       const powerDiff = fasterActionPower - slowerActionPower;
-      const powerRatio = powerDiff / slowerActionPower;
+      // 确保slowerActionPower至少为1，避免除零
+      const safeSlowerPower = Math.max(1, slowerActionPower);
+      const powerRatio = powerDiff / safeSlowerPower;
       const extraActions = Math.floor(powerRatio / 0.5);
       return Math.min(5, Math.max(1, 1 + extraActions));
     };

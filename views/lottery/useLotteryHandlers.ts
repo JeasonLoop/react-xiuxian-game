@@ -47,13 +47,41 @@ export function useLotteryHandlers({
       if (guaranteedRare && i === count - 1) {
         // 保底稀有以上
         const rarePrizes = LOTTERY_PRIZES.filter((p) => p.rarity !== '普通');
-        const totalWeight = rarePrizes.reduce((sum, p) => sum + p.weight, 0);
-        let random = Math.random() * totalWeight;
-        for (const prize of rarePrizes) {
-          random -= prize.weight;
-          if (random <= 0) {
-            results.push(prize);
-            break;
+        if (rarePrizes.length === 0) {
+          // 如果没有稀有以上奖品，降级使用所有奖品（防御性处理）
+          const totalWeight = LOTTERY_PRIZES.reduce(
+            (sum, p) => sum + p.weight,
+            0
+          );
+          if (totalWeight > 0) {
+            let random = Math.random() * totalWeight;
+            for (const prize of LOTTERY_PRIZES) {
+              random -= prize.weight;
+              if (random <= 0) {
+                results.push(prize);
+                break;
+              }
+            }
+          } else {
+            // 如果所有奖品权重都为0，使用第一个奖品作为保底
+            if (LOTTERY_PRIZES.length > 0) {
+              results.push(LOTTERY_PRIZES[0]);
+            }
+          }
+        } else {
+          const totalWeight = rarePrizes.reduce((sum, p) => sum + p.weight, 0);
+          if (totalWeight > 0) {
+            let random = Math.random() * totalWeight;
+            for (const prize of rarePrizes) {
+              random -= prize.weight;
+              if (random <= 0) {
+                results.push(prize);
+                break;
+              }
+            }
+          } else {
+            // 如果稀有奖品权重都为0，使用第一个稀有奖品作为保底
+            results.push(rarePrizes[0]);
           }
         }
       } else {
@@ -61,12 +89,19 @@ export function useLotteryHandlers({
           (sum, p) => sum + p.weight,
           0
         );
-        let random = Math.random() * totalWeight;
-        for (const prize of LOTTERY_PRIZES) {
-          random -= prize.weight;
-          if (random <= 0) {
-            results.push(prize);
-            break;
+        if (totalWeight > 0) {
+          let random = Math.random() * totalWeight;
+          for (const prize of LOTTERY_PRIZES) {
+            random -= prize.weight;
+            if (random <= 0) {
+              results.push(prize);
+              break;
+            }
+          }
+        } else {
+          // 如果所有奖品权重都为0，使用第一个奖品作为保底
+          if (LOTTERY_PRIZES.length > 0) {
+            results.push(LOTTERY_PRIZES[0]);
           }
         }
       }
