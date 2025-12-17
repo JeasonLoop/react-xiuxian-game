@@ -376,7 +376,7 @@ const SectModal: React.FC<Props> = ({
                       {currentSect.exitCost.spiritStones && (
                         <div>灵石: {currentSect.exitCost.spiritStones}</div>
                       )}
-                      {currentSect.exitCost.items && currentSect.exitCost.items.map((item, idx) => (
+                      {currentSect.exitCost.items && Array.isArray(currentSect.exitCost.items) && currentSect.exitCost.items.map((item, idx) => (
                         <div key={idx}>{item.name} x{item.quantity}</div>
                       ))}
                     </div>
@@ -430,7 +430,7 @@ const SectModal: React.FC<Props> = ({
                       player.spiritStones < task.cost.spiritStones
                     )
                       return false;
-                    if (task.cost?.items) {
+                    if (task.cost?.items && Array.isArray(player.inventory)) {
                       for (const itemReq of task.cost.items) {
                         const item = player.inventory.find(
                           (i) => i.name === itemReq.name
@@ -551,7 +551,7 @@ const SectModal: React.FC<Props> = ({
                               <span>{task.cost.spiritStones} 灵石</span>
                             )}
                             {task.cost.items &&
-                              task.cost.items.map((item, idx) => (
+                              task.cost.items && Array.isArray(task.cost.items) && task.cost.items.map((item, idx) => (
                                 <span key={idx}>
                                   {idx > 0 && '、'}
                                   {item.quantity} {item.name}

@@ -17,6 +17,16 @@ const ReputationEventModal: React.FC<Props> = ({
 }) => {
   if (!isOpen || !event) return null;
 
+  // 防御性检查：确保必要字段存在
+  if (!event.title || !event.description) {
+    return null;
+  }
+
+  // 防御性检查：确保 choices 存在且是数组
+  if (!event.choices || !Array.isArray(event.choices) || event.choices.length === 0) {
+    return null;
+  }
+
   const handleChoice = (choiceIndex: number) => {
     onChoice(choiceIndex);
     onClose();

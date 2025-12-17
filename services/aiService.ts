@@ -359,6 +359,20 @@ ${realmKeywords}
 
     // 获取境界基础属性，用于装备数值平衡
     const realmData = REALM_DATA[player.realm];
+    // 如果境界数据不存在，使用炼气期作为默认值
+    if (!realmData) {
+      const defaultRealmData = REALM_DATA[RealmType.QiRefining];
+      if (!defaultRealmData) {
+        throw new Error('REALM_DATA configuration is invalid');
+      }
+      return generateAdventureEvent(
+        { ...player, realm: RealmType.QiRefining },
+        adventureType,
+        riskLevel,
+        realmName,
+        realmDescription
+      );
+    }
     const realmLevelMultiplier = 1 + (player.realmLevel - 1) * 0.05;
     const baseAttack = Math.floor(realmData.baseAttack * realmLevelMultiplier);
     const baseDefense = Math.floor(realmData.baseDefense * realmLevelMultiplier);
@@ -412,10 +426,12 @@ ${typeInstructions}
 7. equipmentSlot不冲突（戒指/首饰自动分配除外）
 8. attributeReduction仅极度危险事件，需稀有奖励补偿
 9. 声望事件（reputationEvent）：5-10%概率触发，提供2-3个选择，每个选择包含text（选择文本）、reputationChange（声望变化-30到+50）、description（选择后描述，可选）、hpChange/expChange/spiritStonesChange（可选的其他变化）
+10. 【重要】禁止在story中提及功法相关内容（如"领悟功法"、"获得功法"等），功法解锁由系统控制，AI不应在story中描述
 
 物品规则：
 - 类型：草药/丹药/材料/法宝/武器/护甲/首饰/戒指
 - 装备类型判断：剑/刀/枪→武器；头盔/冠→头部；道袍/甲→胸甲；戒指/戒→戒指；项链/玉佩→首饰；鼎/钟/镜→法宝
+- 【关键】物品类型必须与名称匹配：名称包含"草/花/果/叶/根"→草药；包含"丹/丸/散/液/膏"→丹药；包含"剑/刀/枪"→武器；包含"鼎/钟/镜/塔/扇/珠/印/盘/笔/袋/旗/炉/图"→法宝；名称与类型必须一致
 - 装备用effect，消耗品用permanentEffect
 - 法宝不能有exp加成
 - 装备数值必须严格根据玩家境界平衡（参考prompt中的境界基础属性）：

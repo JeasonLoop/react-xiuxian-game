@@ -2,7 +2,7 @@ import React from 'react';
 import { EquipmentSlot, Item, PlayerStats } from '../types';
 import { ShieldCheck, X } from 'lucide-react';
 import { getItemStats } from '../utils/itemUtils';
-import { getRarityColor } from '../utils/rarityUtils';
+import { getRarityColor, normalizeRarityValue } from '../utils/rarityUtils';
 import { getEquipmentSlotConfig } from '../utils/equipmentUtils';
 
 interface Props {
@@ -35,7 +35,7 @@ const EquipmentPanel: React.FC<Props> = ({ equippedItems, inventory, player, onU
           const item = getItemById(itemId);
           const isNatal = item ? item.id === player.natalArtifactId : false;
           const stats = item ? getItemStats(item, isNatal) : null;
-          const rarity = item?.rarity || '普通';
+          const rarity = normalizeRarityValue(item?.rarity);
           const showLevel =
             item && typeof item.level === 'number' && Number.isFinite(item.level) && item.level > 0;
           const reviveChances =

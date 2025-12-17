@@ -526,6 +526,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   const availablePotions = useMemo(() => {
     if (!battleState) return [];
     const inventory = battleState.playerInventory || player.inventory;
+    if (!Array.isArray(inventory)) return [];
     return inventory.filter((item) => {
       const potionConfig = Object.values(BATTLE_POTIONS).find(
         (p) => p.name === item.name

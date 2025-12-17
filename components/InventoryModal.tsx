@@ -36,6 +36,8 @@ import {
   getRarityBorder,
   getRarityBadge,
   getRarityOrder,
+  getRarityDisplayName,
+  normalizeRarityValue,
 } from '../utils/rarityUtils';
 import { getItemStats } from '../utils/itemUtils';
 import {
@@ -63,6 +65,27 @@ interface Props {
 }
 
 type ItemCategory = 'all' | 'equipment' | 'pill' | 'consumable' | 'recipe';
+
+// 统一稀有度与类型显示，兼容英文/别称数据
+// normalizeRarityValue 已移至 rarityUtils.ts，直接导入使用
+
+const typeAliasMap: Record<string, string> = {
+  herb: '草药',
+  pill: '丹药',
+  material: '材料',
+  artifact: '法宝',
+  weapon: '武器',
+  armor: '护甲',
+  accessory: '首饰',
+  ring: '戒指',
+  recipe: '丹方',
+};
+
+const normalizeTypeLabel = (type: ItemType | string): string => {
+  if (!type) return '未知';
+  const key = String(type).toLowerCase();
+  return typeAliasMap[key] || (type as string);
+};
 
 // 物品项组件 - 使用 memo 优化性能
 interface InventoryItemProps {
@@ -98,7 +121,9 @@ const InventoryItem = memo<InventoryItemProps>(
     // 使用统一的工具函数计算物品统计
     const isNatal = item.id === player.natalArtifactId;
     const stats = getItemStats(item, isNatal);
-    const rarity = item.rarity || '普通';
+    const rarity = normalizeRarityValue(item.rarity);
+    const rarityLabel = getRarityDisplayName(rarity);
+    const typeLabel = normalizeTypeLabel(item.type);
     const showLevel =
       typeof item.level === 'number' && Number.isFinite(item.level) && item.level > 0;
     const reviveChances =
@@ -117,7 +142,7 @@ const InventoryItem = memo<InventoryItemProps>(
 
     return (
       <div
-        className={`p-3 rounded border flex flex-col justify-between relative transition-colors ${isEquipped ? 'bg-ink-800 border-mystic-gold shadow-md' : `bg-ink-800 hover:bg-ink-700 ${getRarityBorder(item.rarity)}`}`}
+        className={`p-3 rounded border flex flex-col justify-between relative transition-colors ${isEquipped ? 'bg-ink-800 border-mystic-gold shadow-md' : `bg-ink-800 hover:bg-ink-700 ${getRarityBorder(rarity)}`}`}
         onMouseEnter={() => onHover(item)}
         onMouseLeave={() => onHover(null)}
       >
@@ -129,7 +154,7 @@ const InventoryItem = memo<InventoryItemProps>(
 
         <div>
           <div className="flex justify-between items-start pr-16 mb-1">
-            <h4 className={getRarityNameClasses(item.rarity)}>
+            <h4 className={getRarityNameClasses(rarity)}>
               {item.name}{' '}
               {showLevel && (
                 <span className="text-stone-500 text-xs font-normal ml-1">
@@ -144,11 +169,11 @@ const InventoryItem = memo<InventoryItemProps>(
 
           <div className="flex gap-2 mb-2">
             <span
-              className={`text-[10px] px-1.5 py-0.5 rounded border ${getRarityBadge(item.rarity)}`}
+              className={`text-[10px] px-1.5 py-0.5 rounded border ${getRarityBadge(rarity)}`}
             >
-              {rarity}
+              {rarityLabel}
             </span>
-            <span className="text-xs text-stone-500 py-0.5">{item.type}</span>
+            <span className="text-xs text-stone-500 py-0.5">{typeLabel}</span>
           </div>
 
           <p className="text-xs text-stone-500 italic mb-3">
@@ -397,7 +422,8 @@ const InventoryModal: React.FC<Props> = ({
 
     // 判断物品分类
     const getItemCategory = (item: Item): ItemCategory => {
-      if (item.type === ItemType.Recipe) {
+      const typeKey = String(item.type).toLowerCase();
+      if (item.type === ItemType.Recipe || typeKey === 'recipe') {
         return 'recipe'; // 丹方单独分类
       }
       if (
@@ -406,11 +432,12 @@ const InventoryModal: React.FC<Props> = ({
         item.type === ItemType.Armor ||
         item.type === ItemType.Artifact ||
         item.type === ItemType.Accessory ||
-        item.type === ItemType.Ring
+        item.type === ItemType.Ring ||
+        ['weapon', 'armor', 'artifact', 'accessory', 'ring'].includes(typeKey)
       ) {
         return 'equipment';
       }
-      if (item.type === ItemType.Pill) {
+      if (item.type === ItemType.Pill || ['pill', 'elixir', 'potion'].includes(typeKey)) {
         return 'pill';
       }
       return 'consumable';
@@ -446,7 +473,9 @@ const InventoryModal: React.FC<Props> = ({
 
     // 稀有度过滤
     if (rarityFilter !== 'all') {
-      filtered = filtered.filter((item) => item.rarity === rarityFilter);
+      filtered = filtered.filter(
+        (item) => normalizeRarityValue(item.rarity) === rarityFilter
+      );
     }
 
     // 属性过滤
@@ -462,8 +491,8 @@ const InventoryModal: React.FC<Props> = ({
     // 按品级排序（从高到低）
     if (sortByRarity) {
       filtered = [...filtered].sort((a, b) => {
-        const rarityA = getRarityOrder(a.rarity);
-        const rarityB = getRarityOrder(b.rarity);
+        const rarityA = getRarityOrder(normalizeRarityValue(a.rarity));
+        const rarityB = getRarityOrder(normalizeRarityValue(b.rarity));
         if (rarityB !== rarityA) {
           return rarityB - rarityA; // 品级从高到低
         }

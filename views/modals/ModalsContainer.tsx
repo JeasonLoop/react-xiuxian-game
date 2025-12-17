@@ -220,6 +220,7 @@ export default function ModalsContainer({
       )}
 
       <InventoryModal
+        key={`inventory-${player.inventory.length}-${player.inventory.length > 0 ? player.inventory[player.inventory.length - 1].id : 'empty'}`}
         isOpen={modals.isInventoryOpen}
         onClose={() => handlers.setIsInventoryOpen(false)}
         inventory={player.inventory}
@@ -315,6 +316,7 @@ export default function ModalsContainer({
       />
 
       <LotteryModal
+        key={`lottery-${player.lotteryTickets}-${player.lotteryCount}-${player.inventory.length}`}
         isOpen={modals.isLotteryOpen}
         onClose={() => handlers.setIsLotteryOpen(false)}
         player={player}

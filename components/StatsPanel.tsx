@@ -47,7 +47,7 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
   // 查找本命法宝（通过natalArtifactId）
   const natalArtifact = useMemo(
     () =>
-      player.natalArtifactId
+      player.natalArtifactId && Array.isArray(player.inventory)
         ? player.inventory.find((i) => i.id === player.natalArtifactId)
         : null,
     [player.natalArtifactId, player.inventory]

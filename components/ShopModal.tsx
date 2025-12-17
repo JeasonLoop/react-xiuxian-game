@@ -80,6 +80,10 @@ const ShopModal: React.FC<Props> = ({
   };
 
   const canBuyItem = (shopItem: ShopItem): boolean => {
+    // 检查声望要求（声望商店）
+    if (shop.reputationRequired && (player.reputation || 0) < shop.reputationRequired) {
+      return false;
+    }
     if (player.spiritStones < shopItem.price) return false;
     if (shopItem.minRealm) {
       const itemRealmIndex = REALM_ORDER.indexOf(shopItem.minRealm);
@@ -205,6 +209,7 @@ const ShopModal: React.FC<Props> = ({
 
   // 可出售的物品（排除已装备的，并根据类型和品质筛选）
   const sellableItems = useMemo(() => {
+    if (!Array.isArray(player.inventory)) return [];
     let filtered = player.inventory.filter((item) => {
       // 不能出售已装备的物品
       const isEquipped = Object.values(player.equippedItems).includes(item.id);

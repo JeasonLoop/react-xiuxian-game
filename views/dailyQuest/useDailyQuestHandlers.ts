@@ -182,8 +182,11 @@ export function useDailyQuestHandlers({
         return prev;
       }
       const updatedQuests = prev.dailyQuests.map((quest) => {
+        // 只更新匹配类型且未完成的任务
         if (quest.type === questType && !quest.completed) {
+          // 计算新进度，确保不超过目标值
           const newProgress = Math.min(quest.progress + amount, quest.target);
+          // 完成判定：当进度达到或超过目标值时，任务完成
           const completed = newProgress >= quest.target;
 
           return {
@@ -195,9 +198,10 @@ export function useDailyQuestHandlers({
         return quest;
       });
 
-      // 更新进度记录
+      // 更新进度记录（保存所有匹配类型的任务的当前进度）
       const updatedProgress = { ...prev.dailyQuestProgress };
       updatedQuests.forEach((quest) => {
+        // 只更新匹配类型的任务进度（包括已完成的任务，用于记录）
         if (quest.type === questType) {
           updatedProgress[quest.id] = quest.progress;
         }

@@ -28,6 +28,7 @@ import {
   inferItemTypeAndSlot,
   adjustEquipmentStatsByRealm,
 } from '../../utils/itemUtils';
+import { normalizeRarityValue } from '../../utils/rarityUtils';
 
 /**
  * 历练核心逻辑
@@ -300,7 +301,7 @@ export async function executeAdventureCore({
     }
 
     // 处理获得的多个物品（搜刮奖励等）
-    if (result.itemsObtained && result.itemsObtained.length > 0) {
+    if (result.itemsObtained && Array.isArray(result.itemsObtained) && result.itemsObtained.length > 0) {
       // 用于跟踪本次获得的物品名称，避免数组内部重复
       const currentBatchNames = new Set<string>();
 
@@ -356,13 +357,27 @@ export async function executeAdventureCore({
           const nameLower = itemName.toLowerCase();
           const hasWeaponKeyword = /剑|刀|枪|戟|斧|锤|鞭|棍|棒|矛|弓|弩|匕首/.test(nameLower);
           const hasHerbKeyword = /草|花|果|叶|根/.test(nameLower) && !/草甲|草衣|草帽|草鞋/.test(nameLower);
-          const hasPillKeyword = /丹|丸|散|液|膏/.test(nameLower);
+          const hasRecipeKeyword = /丹方|配方|炼制方法|炼药|炼丹.*方法|炼制.*方法/.test(nameLower);
+          const hasPillKeyword = /丹|丸|散|液|膏/.test(nameLower) && !/丹方|配方/.test(nameLower); // 排除丹方关键词
+          const hasArtifactKeyword = /鼎|钟|镜|塔|扇|珠|印|盘|笔|袋|旗|炉|图/.test(nameLower) && !/剑|刀|枪|戟|斧|锤|鞭|棍|棒|矛|弓|弩|匕首/.test(nameLower);
 
           if (hasWeaponKeyword && itemType !== ItemType.Weapon) {
             needsCorrection = true;
-          } else if (hasHerbKeyword && itemType !== ItemType.Herb) {
+          } else if (hasRecipeKeyword && itemType !== ItemType.Recipe) {
+            // 如果名称包含丹方关键词，必须识别为Recipe类型
             needsCorrection = true;
-          } else if (hasPillKeyword && itemType !== ItemType.Pill) {
+          } else if (hasHerbKeyword && itemType !== ItemType.Herb) {
+            // 如果名称包含草药关键词（如"碧玉草"），但类型是法宝或其他装备类型，需要修正
+            if (itemType === ItemType.Artifact || itemType === ItemType.Weapon || itemType === ItemType.Armor || itemType === ItemType.Ring || itemType === ItemType.Accessory) {
+              needsCorrection = true;
+            }
+          } else if (hasPillKeyword && itemType !== ItemType.Pill && itemType !== ItemType.Recipe) {
+            needsCorrection = true;
+          } else if (hasArtifactKeyword && itemType !== ItemType.Artifact) {
+            // 如果名称包含法宝关键词，但类型不是法宝，需要修正
+            needsCorrection = true;
+          } else if (itemType === ItemType.Artifact && !hasArtifactKeyword && hasHerbKeyword) {
+            // 如果类型是法宝，但名称明显是草药（如"碧玉草"），需要修正
             needsCorrection = true;
           }
         }
@@ -392,6 +407,32 @@ export async function executeAdventureCore({
             isEquippable
           );
           if (inferred.equipmentSlot) {
+            equipmentSlot = inferred.equipmentSlot;
+          }
+        }
+
+        // 如果类型是明确的装备类型，但isEquippable未设置或为false，确保正确设置
+        if (
+          (itemType === ItemType.Artifact ||
+            itemType === ItemType.Weapon ||
+            itemType === ItemType.Armor ||
+            itemType === ItemType.Ring ||
+            itemType === ItemType.Accessory) &&
+          !isEquippable
+        ) {
+          const inferred = inferItemTypeAndSlot(
+            itemName,
+            itemType,
+            itemDescription,
+            false
+          );
+          // 如果推断结果确认是装备类型，更新isEquippable和equipmentSlot
+          if (
+            inferred.type === itemType &&
+            inferred.isEquippable &&
+            inferred.equipmentSlot
+          ) {
+            isEquippable = true;
             equipmentSlot = inferred.equipmentSlot;
           }
         }
@@ -631,12 +672,22 @@ export async function executeAdventureCore({
           const hasWeaponKeyword = /剑|刀|枪|戟|斧|锤|鞭|棍|棒|矛|弓|弩|匕首/.test(nameLower);
           const hasHerbKeyword = /草|花|果|叶|根/.test(nameLower) && !/草甲|草衣|草帽|草鞋/.test(nameLower);
           const hasPillKeyword = /丹|丸|散|液|膏/.test(nameLower);
+          const hasArtifactKeyword = /鼎|钟|镜|塔|扇|珠|印|盘|笔|袋|旗|炉|图/.test(nameLower) && !/剑|刀|枪|戟|斧|锤|鞭|棍|棒|矛|弓|弩|匕首/.test(nameLower);
 
           if (hasWeaponKeyword && itemType !== ItemType.Weapon) {
             needsCorrection = true;
           } else if (hasHerbKeyword && itemType !== ItemType.Herb) {
-            needsCorrection = true;
+            // 如果名称包含草药关键词（如"碧玉草"），但类型是法宝或其他装备类型，需要修正
+            if (itemType === ItemType.Artifact || itemType === ItemType.Weapon || itemType === ItemType.Armor || itemType === ItemType.Ring || itemType === ItemType.Accessory) {
+              needsCorrection = true;
+            }
           } else if (hasPillKeyword && itemType !== ItemType.Pill) {
+            needsCorrection = true;
+          } else if (hasArtifactKeyword && itemType !== ItemType.Artifact) {
+            // 如果名称包含法宝关键词，但类型不是法宝，需要修正
+            needsCorrection = true;
+          } else if (itemType === ItemType.Artifact && !hasArtifactKeyword && hasHerbKeyword) {
+            // 如果类型是法宝，但名称明显是草药（如"碧玉草"），需要修正
             needsCorrection = true;
           }
         }
@@ -666,6 +717,32 @@ export async function executeAdventureCore({
             isEquippable
           );
           if (inferred.equipmentSlot) {
+            equipmentSlot = inferred.equipmentSlot;
+          }
+        }
+
+        // 如果类型是明确的装备类型，但isEquippable未设置或为false，确保正确设置
+        if (
+          (itemType === ItemType.Artifact ||
+            itemType === ItemType.Weapon ||
+            itemType === ItemType.Armor ||
+            itemType === ItemType.Ring ||
+            itemType === ItemType.Accessory) &&
+          !isEquippable
+        ) {
+          const inferred = inferItemTypeAndSlot(
+            itemName,
+            itemType,
+            itemDescription,
+            false
+          );
+          // 如果推断结果确认是装备类型，更新isEquippable和equipmentSlot
+          if (
+            inferred.type === itemType &&
+            inferred.isEquippable &&
+            inferred.equipmentSlot
+          ) {
+            isEquippable = true;
             equipmentSlot = inferred.equipmentSlot;
           }
         }
@@ -1061,16 +1138,18 @@ export async function executeAdventureCore({
 
     // 获得功法概率（普通历练2.5%，秘境中5%，大机缘中8%）
     // 每次历练最多解锁一个功法（逻辑保证：只选择一个随机功法并添加一次）
+    // 注意：功法解锁由本地概率控制，AI不应在story中提及功法相关内容
     const artChance = adventureType === 'lucky' ? 0.08 : realmName ? 0.05 : 0.025;
+    let artUnlocked = false; // 标记是否真的解锁了功法
     if (Math.random() < artChance) {
       const availableArts = CULTIVATION_ARTS.filter((art) => {
         // 已经拥有的排除
         if (newArts.includes(art.id)) return false;
         // 境界要求
-        if (
-          REALM_ORDER.indexOf(art.realmRequirement) >
-          REALM_ORDER.indexOf(prev.realm)
-        ) {
+        const artRealmIndex = REALM_ORDER.indexOf(art.realmRequirement);
+        const playerRealmIndex = REALM_ORDER.indexOf(prev.realm);
+        // 如果索引无效（-1），保守处理：不满足条件
+        if (artRealmIndex < 0 || playerRealmIndex < 0 || artRealmIndex > playerRealmIndex) {
           return false;
         }
         // 宗门专属功法：需要同宗门
@@ -1096,11 +1175,32 @@ export async function executeAdventureCore({
           newMaxHp += randomArt.effects.hp || 0;
           newHp += randomArt.effects.hp || 0;
           // 确保总是显示提示（使用 triggerVisual 增强视觉效果）
+          artUnlocked = true; // 标记已解锁功法
           triggerVisual('special', `🎉 领悟功法【${randomArt.name}】`, 'special');
           addLog(
             `🎉 你在历练中领悟了功法【${randomArt.name}】！可在功法阁查看。`,
             'special'
           );
+        }
+      }
+    }
+
+    // 如果AI在story中提到了功法但实际没有解锁，需要过滤掉相关描述
+    // 检查story中是否包含功法相关关键词，但实际没有解锁
+    if (!artUnlocked && result.story) {
+      const artKeywords = /功法|心法|体术|领悟|获得.*功法|习得.*功法|学会.*功法/i;
+      if (artKeywords.test(result.story)) {
+        // 如果story中提到了功法但实际没有解锁，移除相关描述
+        // 使用简单的替换，移除包含功法关键词的句子
+        result.story = result.story
+          .split(/[。！？\n]/)
+          .filter(sentence => !artKeywords.test(sentence))
+          .join('。')
+          .replace(/。+/g, '。') // 移除多余的句号
+          .trim();
+        // 如果过滤后story为空，使用默认描述
+        if (!result.story || result.story.length < 10) {
+          result.story = '你在历练中有所收获，但大道渺茫，还需继续努力。';
         }
       }
     }
@@ -1337,7 +1437,15 @@ export async function executeAdventureCore({
   });
 
   // 处理声望事件（需要玩家选择，通过回调处理）
-  if (result.reputationEvent && onReputationEvent) {
+  if (
+    result.reputationEvent &&
+    onReputationEvent &&
+    result.reputationEvent.title &&
+    result.reputationEvent.description &&
+    result.reputationEvent.choices &&
+    Array.isArray(result.reputationEvent.choices) &&
+    result.reputationEvent.choices.length > 0
+  ) {
     addLog(`📜 你遇到了一个需要做出选择的事件：${result.reputationEvent.title}`, 'special');
     onReputationEvent(result.reputationEvent);
   }
@@ -1375,9 +1483,10 @@ export async function executeAdventureCore({
   }
 
   // 显示获得的物品
-  if (result.itemsObtained && result.itemsObtained.length > 0) {
+  if (result.itemsObtained && Array.isArray(result.itemsObtained) && result.itemsObtained.length > 0) {
     result.itemsObtained.forEach((item) => {
-      const rarityText = item.rarity ? `【${item.rarity}】` : '';
+      const normalizedRarity = normalizeRarityValue(item.rarity);
+      const rarityText = normalizedRarity ? `【${normalizedRarity}】` : '';
       addLog(`获得物品: ${rarityText}${item.name}`, 'gain');
     });
   } else if (result.itemObtained) {
@@ -1436,7 +1545,7 @@ export async function executeAdventureCore({
         let newStats = { ...stats };
 
         // 处理秘境中的多个物品（优先处理itemsObtained）
-        if (secretRealmResult.itemsObtained && secretRealmResult.itemsObtained.length > 0) {
+        if (secretRealmResult.itemsObtained && Array.isArray(secretRealmResult.itemsObtained) && secretRealmResult.itemsObtained.length > 0) {
           const currentBatchNames = new Set<string>();
           secretRealmResult.itemsObtained.forEach((itemData) => {
             let itemName = itemData.name;
@@ -1836,14 +1945,16 @@ export async function executeAdventureCore({
         }
 
         // 获得功法概率（秘境中5%概率）
+        // 注意：功法解锁由本地概率控制，AI不应在story中提及功法相关内容
         const artChance = 0.05;
+        let secretRealmArtUnlocked = false; // 标记是否真的解锁了功法
         if (Math.random() < artChance) {
           const availableArts = CULTIVATION_ARTS.filter((art) => {
             if (newArts.includes(art.id)) return false;
-            if (
-              REALM_ORDER.indexOf(art.realmRequirement) >
-              REALM_ORDER.indexOf(prev.realm)
-            ) {
+            const artRealmIndex2 = REALM_ORDER.indexOf(art.realmRequirement);
+            const playerRealmIndex2 = REALM_ORDER.indexOf(prev.realm);
+            // 如果索引无效（-1），保守处理：不满足条件
+            if (artRealmIndex2 < 0 || playerRealmIndex2 < 0 || artRealmIndex2 > playerRealmIndex2) {
               return false;
             }
             if (art.sectId !== null && art.sectId !== undefined) {
@@ -1864,11 +1975,30 @@ export async function executeAdventureCore({
               newDefense += randomArt.effects.defense || 0;
               newMaxHp += randomArt.effects.hp || 0;
               newHp += randomArt.effects.hp || 0;
+              secretRealmArtUnlocked = true; // 标记已解锁功法
               triggerVisual('special', `🎉 领悟功法【${randomArt.name}】`, 'special');
               addLog(
                 `🎉 你在秘境中领悟了功法【${randomArt.name}】！可在功法阁查看。`,
                 'special'
               );
+            }
+          }
+        }
+
+        // 如果AI在story中提到了功法但实际没有解锁，需要过滤掉相关描述
+        if (!secretRealmArtUnlocked && secretRealmResult.story) {
+          const artKeywords = /功法|心法|体术|领悟|获得.*功法|习得.*功法|学会.*功法/i;
+          if (artKeywords.test(secretRealmResult.story)) {
+            // 如果story中提到了功法但实际没有解锁，移除相关描述
+            secretRealmResult.story = secretRealmResult.story
+              .split(/[。！？\n]/)
+              .filter(sentence => !artKeywords.test(sentence))
+              .join('。')
+              .replace(/。+/g, '。') // 移除多余的句号
+              .trim();
+            // 如果过滤后story为空，使用默认描述
+            if (!secretRealmResult.story || secretRealmResult.story.length < 10) {
+              secretRealmResult.story = '你在秘境中探索，虽然有所收获，但大道渺茫，还需继续努力。';
             }
           }
         }
@@ -2037,9 +2167,10 @@ export async function executeAdventureCore({
       addLog(secretRealmResult.story, secretRealmResult.eventColor);
 
       // 显示获得的物品
-      if (secretRealmResult.itemsObtained && secretRealmResult.itemsObtained.length > 0) {
+      if (secretRealmResult.itemsObtained && Array.isArray(secretRealmResult.itemsObtained) && secretRealmResult.itemsObtained.length > 0) {
         secretRealmResult.itemsObtained.forEach((item) => {
-          const rarityText = item.rarity ? `【${item.rarity}】` : '';
+          const normalizedRarity = normalizeRarityValue(item.rarity);
+          const rarityText = normalizedRarity ? `【${normalizedRarity}】` : '';
           addLog(`获得物品: ${rarityText}${item.name}`, 'gain');
         });
       } else if (secretRealmResult.itemObtained) {

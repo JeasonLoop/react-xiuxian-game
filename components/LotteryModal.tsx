@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Gift, Sparkles } from 'lucide-react';
 import { PlayerStats, LotteryPrize, ItemRarity } from '../types';
 import { LOTTERY_PRIZES } from '../constants';
@@ -17,11 +17,18 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
 
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastResult, setLastResult] = useState<LotteryPrize[] | null>(null);
+  const [displayTickets, setDisplayTickets] = useState(player.lotteryTickets);
+
+  // 监听抽奖券数量变化，确保及时更新显示
+  useEffect(() => {
+    setDisplayTickets(player.lotteryTickets);
+  }, [player.lotteryTickets]);
 
   const handleDraw = async (count: 1 | 10) => {
-    if (player.lotteryTickets < count) {
+    const currentTickets = player.lotteryTickets;
+    if (currentTickets < count) {
       showError(
-        `抽奖券不足！需要 ${count} 张，当前拥有 ${player.lotteryTickets} 张`
+        `抽奖券不足！需要 ${count} 张，当前拥有 ${currentTickets} 张`
       );
       return;
     }
@@ -81,7 +88,7 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
           {/* 抽奖券信息 */}
           <div className="bg-stone-900 rounded p-4 border border-stone-700 text-center">
             <div className="text-2xl font-bold text-yellow-400 mb-2">
-              {player.lotteryTickets} 张
+              {displayTickets} 张
             </div>
             <div className="text-stone-400">抽奖券</div>
             <div className="text-xs text-stone-500 mt-2">
@@ -98,7 +105,7 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
           <div className="grid grid-cols-2 gap-4">
             <button
               onClick={() => handleDraw(1)}
-              disabled={isDrawing || player.lotteryTickets < 1}
+              disabled={isDrawing || displayTickets < 1}
               className="relative px-6 py-8 bg-gradient-to-br from-purple-900 to-blue-900 hover:from-purple-800 hover:to-blue-800 rounded-lg border-2 border-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {isDrawing ? (
@@ -120,7 +127,7 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
 
             <button
               onClick={() => handleDraw(10)}
-              disabled={isDrawing || player.lotteryTickets < 10}
+              disabled={isDrawing || displayTickets < 10}
               className="relative px-6 py-8 bg-gradient-to-br from-yellow-900 to-orange-900 hover:from-yellow-800 hover:to-orange-800 rounded-lg border-2 border-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               {isDrawing ? (

@@ -70,18 +70,13 @@ export function useLotteryHandlers({
           }
         } else {
           const totalWeight = rarePrizes.reduce((sum, p) => sum + p.weight, 0);
-          if (totalWeight > 0) {
-            let random = Math.random() * totalWeight;
-            for (const prize of rarePrizes) {
-              random -= prize.weight;
-              if (random <= 0) {
-                results.push(prize);
-                break;
-              }
+          let random = Math.random() * totalWeight;
+          for (const prize of rarePrizes) {
+            random -= prize.weight;
+            if (random <= 0) {
+              results.push(prize);
+              break;
             }
-          } else {
-            // 如果稀有奖品权重都为0，使用第一个稀有奖品作为保底
-            results.push(rarePrizes[0]);
           }
         }
       } else {
