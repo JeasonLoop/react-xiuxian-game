@@ -621,6 +621,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
               <span>攻击: {enemyUnit.attack}</span>
               <span>防御: {enemyUnit.defense}</span>
               <span>速度: {enemyUnit.speed}</span>
+              <span>神识: {enemyUnit.spirit}</span>
             </div>
           </div>
 

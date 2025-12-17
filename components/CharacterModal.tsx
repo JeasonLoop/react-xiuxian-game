@@ -251,7 +251,10 @@ const CharacterModal: React.FC<Props> = ({
   // 根据境界计算属性点实际增加值
   const attributeGains = useMemo(() => {
     const realmIndex = REALM_ORDER.indexOf(player.realm);
-    const multiplier = Math.pow(2, realmIndex + 1);
+    // 确保realmIndex有效，防止NaN
+    const validRealmIndex = realmIndex >= 0 ? realmIndex : 0;
+    // 与useCharacterHandlers.ts保持一致：线性增长
+    const multiplier = 1 + validRealmIndex * 2; // 炼气期1倍，渡劫飞升13倍
 
     // 基础属性增加值
     const baseAttack = 5;
@@ -291,7 +294,10 @@ const CharacterModal: React.FC<Props> = ({
     const attributeName = attributeNames[type];
     const points = player.attributePoints;
     const realmIndex = REALM_ORDER.indexOf(player.realm);
-    const multiplier = Math.pow(2, realmIndex + 1);
+    // 确保realmIndex有效，防止NaN
+    const validRealmIndex = realmIndex >= 0 ? realmIndex : 0;
+    // 与useCharacterHandlers.ts保持一致：线性增长
+    const multiplier = 1 + validRealmIndex * 2; // 炼气期1倍，渡劫飞升13倍
 
     // 计算总增加值
     let totalGain = 0;

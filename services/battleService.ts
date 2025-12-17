@@ -19,7 +19,7 @@ import {
 } from '../types';
 import {
   REALM_ORDER,
-  RARITY_MULTIPLIERS,
+  REALM_DATA,
   DISCOVERABLE_RECIPES,
   CULTIVATION_ARTS,
   CULTIVATION_ART_BATTLE_SKILLS,
@@ -1091,6 +1091,7 @@ export interface BattleReplay {
     attack: number;
     defense: number;
     speed: number;
+    spirit: number; // 敌人神识属性
     strengthMultiplier?: number; // 敌人强度倍数
   };
   rounds: BattleRoundLog[];
@@ -1124,6 +1125,7 @@ const createEnemy = async (
   defense: number;
   maxHp: number;
   speed: number;
+  spirit: number;
   strengthMultiplier: number;
 }> => {
   const currentRealmIndex = REALM_ORDER.indexOf(player.realm);
@@ -1174,6 +1176,7 @@ const createEnemy = async (
       defense: 8,
       maxHp: 50,
       speed: 10,
+      spirit: 5,
       strengthMultiplier: 1,
     };
   }
@@ -1306,6 +1309,7 @@ const createEnemy = async (
   let basePlayerDefense: number;
   let basePlayerMaxHp: number;
   let basePlayerSpeed: number;
+  let basePlayerSpirit: number;
   let basePlayerRealmLevel: number;
 
   if (adventureType === 'secret_realm' && realmMinRealm) {
@@ -1324,6 +1328,8 @@ const createEnemy = async (
         (Number(player.maxHp) || 0) * (0.3 + realmRatio * 0.3); // 30%-60%
       basePlayerSpeed =
         (Number(player.speed) || 10) * (0.5 + realmRatio * 0.3);
+      basePlayerSpirit =
+        (Number(player.spirit) || 0) * (0.4 + realmRatio * 0.3);
       basePlayerRealmLevel = Math.max(
         1,
         player.realmLevel - (currentRealmIndex - realmMinIndex)
@@ -1334,6 +1340,7 @@ const createEnemy = async (
       basePlayerDefense = player.defense;
       basePlayerMaxHp = player.maxHp;
       basePlayerSpeed = player.speed || 10;
+      basePlayerSpirit = player.spirit || 0;
       basePlayerRealmLevel = player.realmLevel;
     }
   } else {
@@ -1342,12 +1349,16 @@ const createEnemy = async (
     basePlayerDefense = player.defense;
     basePlayerMaxHp = player.maxHp;
     basePlayerSpeed = player.speed || 10;
+    basePlayerSpirit = player.spirit || 0;
     basePlayerRealmLevel = player.realmLevel;
   }
 
   // 平衡敌人的基础属性，提高攻击力系数使战斗更有挑战性
   const baseAttack = basePlayerAttack * 0.85 + basePlayerRealmLevel * 3; // 从0.7提升到0.85
   const baseDefense = basePlayerDefense * 0.7 + basePlayerRealmLevel * 2;
+  // 计算敌人神识：基于玩家神识和境界基础神识
+  const realmBaseSpirit = REALM_DATA[realm]?.baseSpirit || 0;
+  const baseSpirit = basePlayerSpirit * 0.3 + realmBaseSpirit * 0.5 + basePlayerRealmLevel * 1;
 
   return {
     name,
@@ -1369,6 +1380,10 @@ const createEnemy = async (
       Math.round(
         basePlayerSpeed * (0.7 + Math.random() * 0.3) * strengthMultiplier
       )
+    ),
+    spirit: Math.max(
+      5,
+      Math.round(baseSpirit * variance() * finalDifficulty)
     ),
     strengthMultiplier, // 保存强度倍数用于生成奖励
   };
@@ -1885,7 +1900,7 @@ export const initializeTurnBasedBattle = async (
     attack: enemyData.attack,
     defense: enemyData.defense,
     speed: enemyData.speed,
-    spirit: Math.floor(enemyData.attack * 0.5), // 敌人神识基于攻击力
+    spirit: enemyData.spirit, // 使用敌人数据中的神识属性
     buffs: [],
     debuffs: [],
     skills: [], // 敌人技能（可以后续添加）

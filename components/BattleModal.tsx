@@ -92,6 +92,7 @@ const BattleModal: React.FC<BattleModalProps> = ({
             <span>敌方攻击：{replay.enemy.attack}</span>
             <span>敌方防御：{replay.enemy.defense}</span>
             <span>敌方速度：{replay.enemy.speed}</span>
+            <span>敌方神识：{replay.enemy.spirit}</span>
           </div>
           <p
             className={`mt-3 text-sm md:text-base font-semibold ${
