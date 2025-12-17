@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   X,
   Volume2,
@@ -14,6 +14,7 @@ import {
 import { GameSettings } from '../types';
 import dayjs from 'dayjs';
 import { showError, showSuccess, showInfo, showConfirm } from '../utils/toastUtils';
+import ChangelogModal from './ChangelogModal';
 
 interface Props {
   isOpen: boolean;
@@ -36,6 +37,7 @@ const SettingsModal: React.FC<Props> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const SAVE_KEY = 'xiuxian-game-save';
+  const [isChangelogOpen, setIsChangelogOpen] = useState(false);
 
   if (!isOpen) return null;
 
@@ -469,16 +471,13 @@ const SettingsModal: React.FC<Props> = ({
                 <span>GitHub 仓库</span>
                 <span className="ml-auto text-xs text-stone-400">↗</span>
               </a>
-              <a
-                href="https://github.com/JeasonLoop/react-xiuxian-game/blob/main/CHANGELOG.md"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 w-full bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded px-4 py-2 transition-colors"
+              <button
+                onClick={() => setIsChangelogOpen(true)}
+                className="flex items-center gap-2 w-full bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded px-4 py-2 transition-colors text-left"
               >
                 <Save size={16} />
                 <span>查看更新日志</span>
-                <span className="ml-auto text-xs text-stone-400">↗</span>
-              </a>
+              </button>
               <p className="text-xs text-stone-500">
                 一款文字修仙小游戏，欢迎 Star 和 Fork！
               </p>
@@ -486,6 +485,12 @@ const SettingsModal: React.FC<Props> = ({
           </div>
         </div>
       </div>
+
+      {/* 更新日志弹窗 */}
+      <ChangelogModal
+        isOpen={isChangelogOpen}
+        onClose={() => setIsChangelogOpen(false)}
+      />
     </div>
   );
 };
