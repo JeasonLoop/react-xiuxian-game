@@ -58,7 +58,7 @@ function GameHeader({
 }: GameHeaderProps) {
   const [clickCount, setClickCount] = useState(0);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const appVersion = import.meta.env.VITE_APP_VERSION || '0.2.2';
+  const appVersion = import.meta.env.VITE_APP_VERSION || '-';
 
   const newAchievements = useMemo(
     () =>
