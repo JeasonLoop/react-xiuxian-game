@@ -1446,18 +1446,18 @@ export async function executeAdventureCore({
     // 处理寿命变化
     const safeLifespanChange = typeof result.lifespanChange === 'number' && !isNaN(result.lifespanChange) ? result.lifespanChange : 0;
 
-    // 基础寿命流逝：每次历练流逝少量寿命（0.1-0.5年，根据风险等级调整）
+    // 基础寿命流逝：每次历练流逝少量寿命（根据风险等级调整，已提高流失速度）
     let baseLifespanLoss = 0;
     if (riskLevel === '低') {
-      baseLifespanLoss = 0.1;
+      baseLifespanLoss = 0.3; // 从0.1提高到0.3
     } else if (riskLevel === '中') {
-      baseLifespanLoss = 0.2;
+      baseLifespanLoss = 0.6; // 从0.2提高到0.6
     } else if (riskLevel === '高') {
-      baseLifespanLoss = 0.3;
+      baseLifespanLoss = 1.0; // 从0.3提高到1.0
     } else if (riskLevel === '极度危险') {
-      baseLifespanLoss = 0.5;
+      baseLifespanLoss = 1.5; // 从0.5提高到1.5
     } else {
-      baseLifespanLoss = 0.15; // 默认
+      baseLifespanLoss = 0.4; // 默认，从0.15提高到0.4
     }
 
     // 特殊事件可能额外流失寿命（已在result.lifespanChange中处理）

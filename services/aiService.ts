@@ -432,7 +432,17 @@ ${typeInstructions}
 - 类型：草药/丹药/材料/法宝/武器/护甲/首饰/戒指
 - 装备类型判断：剑/刀/枪→武器；头盔/冠→头部；道袍/甲→胸甲；戒指/戒→戒指；项链/玉佩→首饰；鼎/钟/镜→法宝
 - 【关键】物品类型必须与名称匹配：名称包含"草/花/果/叶/根"→草药；包含"丹/丸/散/液/膏"→丹药；包含"剑/刀/枪"→武器；包含"鼎/钟/镜/塔/扇/珠/印/盘/笔/袋/旗/炉/图"→法宝；名称与类型必须一致
-- 装备用effect，消耗品用permanentEffect
+- 【重要】丹药和草药效果规范（必须严格遵守）：
+  * 必须同时包含effect（即时效果）和permanentEffect（永久效果）两个字段，两者都不能缺失
+  * effect用于即时效果：hp（恢复气血）、exp（获得修为）、lifespan（增加寿命）等
+  * permanentEffect用于永久提升属性：attack（攻击）、defense（防御）、spirit（神识）、physique（体魄）、speed（速度）、maxHp（气血上限）、maxLifespan（最大寿命）等
+  * 根据稀有度调整数值范围：
+    - 普通：effect={hp: 50-100, exp: 10-30}，permanentEffect={spirit: 1-3, maxHp: 1-100, attack: 1-200, defense: 1-100, physique: 1-100, speed: 1-100}
+    - 稀有：effect={hp: 100-200, exp: 30-100}，permanentEffect={spirit: 5-10, maxHp: 10-30, attack: 30-200, defense: 20-90}
+    - 传说：effect={hp: 200-500, exp: 100-500}，permanentEffect={spirit: 10-30, maxHp: 100-500, attack: 100-500, defense: 100-500}
+    - 仙品：effect={hp: 500+, exp: 500+}，permanentEffect={spirit: 150+, maxHp: 100+, attack: 200+, defense: 150+}
+  * 注意：每个丹药/草药必须同时有effect和permanentEffect，不能只有其中一个
+- 装备用effect（装备时生效的属性加成），不使用permanentEffect
 - 法宝不能有exp加成
 - 装备数值必须严格根据玩家境界平衡（参考prompt中的境界基础属性）：
   * 普通装备：攻击${commonRange.attack}，防御${commonRange.defense}，气血${commonRange.hp}，神识${commonRange.spirit}，体魄${commonRange.physique}，速度${commonRange.speed}
@@ -487,7 +497,11 @@ ${typeInstructions}
 - 物品名称需与story描述一致，根据事件场景选择合适的名称风格
 - 装备槽位不重复
 - hpChange需匹配story描述的事件性质
-- 【关键】如果使用itemsObtained数组，数组中的每个物品名称必须完全不同，不能有重复名称，特别是装备类物品，每个装备必须有独特的名称`;
+- 【关键】如果使用itemsObtained数组，数组中的每个物品名称必须完全不同，不能有重复名称，特别是装备类物品，每个装备必须有独特的名称
+- 【必须】丹药和草药必须同时包含effect和permanentEffect两个字段：
+  * effect：即时效果（hp恢复、exp获得等），必须至少包含一个非零属性
+  * permanentEffect：永久提升属性（attack、defense、spirit、physique、speed、maxHp等），必须至少包含一个非零属性
+  * 不能只提供effect或只提供permanentEffect，两者都必须存在且至少各有一个非零值`;
 
     const resultText = await requestModel(
       [
