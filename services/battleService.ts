@@ -26,6 +26,7 @@ import {
   ARTIFACT_BATTLE_SKILLS,
   WEAPON_BATTLE_SKILLS,
   BATTLE_POTIONS,
+  getPillDefinition,
 } from '../constants';
 import { generateEnemyName } from './aiService';
 
@@ -316,52 +317,44 @@ export const LOOT_ITEMS = {
       effect: { hp: 450, maxHp: 90, physique: 20, spirit: 40 },
     },
   ],
-  // 丹药类
-  pills: [
-    {
-      name: '回血丹',
-      type: ItemType.Pill,
-      rarity: '普通' as ItemRarity,
-      effect: { hp: 50 },
-    },
-    {
-      name: '聚气丹',
-      type: ItemType.Pill,
-      rarity: '普通' as ItemRarity,
-      effect: { exp: 20 },
-    },
-    {
-      name: '强体丹',
-      type: ItemType.Pill,
-      rarity: '稀有' as ItemRarity,
-      permanentEffect: { physique: 5 },
-    },
-    {
-      name: '凝神丹',
-      type: ItemType.Pill,
-      rarity: '稀有' as ItemRarity,
-      permanentEffect: { spirit: 5 },
-    },
-    {
-      name: '筑基丹',
-      type: ItemType.Pill,
-      rarity: '传说' as ItemRarity,
-      effect: { exp: 100 },
-    },
-    {
-      name: '破境丹',
-      type: ItemType.Pill,
-      rarity: '传说' as ItemRarity,
-      effect: { exp: 200 },
-    },
-    {
-      name: '仙灵丹',
-      type: ItemType.Pill,
-      rarity: '仙品' as ItemRarity,
-      effect: { exp: 500 },
-      permanentEffect: { maxHp: 100 },
-    },
-  ],
+  // 丹药类（从常量中获取定义）
+  pills: (() => {
+    const createPillFromDef = (pillName: string, fallback?: Partial<Item>) => {
+      const pillDef = getPillDefinition(pillName);
+      if (pillDef) {
+        return {
+          name: pillDef.name,
+          type: pillDef.type,
+          rarity: pillDef.rarity as ItemRarity,
+          effect: pillDef.effect,
+          permanentEffect: pillDef.permanentEffect,
+        };
+      }
+      // 如果常量中没有（如回血丹），使用fallback
+      if (fallback) {
+        return {
+          name: pillName,
+          type: ItemType.Pill,
+          rarity: (fallback.rarity || '普通') as ItemRarity,
+          effect: fallback.effect,
+          permanentEffect: fallback.permanentEffect,
+        };
+      }
+      return null;
+    };
+
+    const pills = [
+      createPillFromDef('回血丹', { rarity: '普通', effect: { hp: 50 } }),
+      createPillFromDef('聚气丹'),
+      createPillFromDef('强体丹'),
+      createPillFromDef('凝神丹'),
+      createPillFromDef('筑基丹'),
+      createPillFromDef('破境丹'),
+      createPillFromDef('仙灵丹'),
+    ].filter((p): p is NonNullable<typeof p> => p !== null);
+
+    return pills;
+  })(),
   // 材料类
   materials: [
     // 普通材料

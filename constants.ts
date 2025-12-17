@@ -796,7 +796,7 @@ export const PILL_RECIPES: Recipe[] = [
       type: ItemType.Pill,
       description: '易筋洗髓，脱胎换骨。永久增加少量最大生命值。',
       rarity: '稀有',
-      effect: { hp: 50 }, // Treated as permanent in App logic special case or simple maxHp boost
+      permanentEffect: { maxHp: 50 },
     },
   },
   {
@@ -809,9 +809,10 @@ export const PILL_RECIPES: Recipe[] = [
     result: {
       name: '筑基丹',
       type: ItemType.Pill,
-      description: '增加突破到筑基期的几率。服用后获得海量修为。',
+      description: '增加突破到筑基期的几率。服用后获得海量修为，并永久提升基础属性。',
       rarity: '传说',
       effect: { exp: 500 },
+      permanentEffect: { spirit: 30, physique: 30, maxHp: 100 },
     },
   },
   {
@@ -826,7 +827,7 @@ export const PILL_RECIPES: Recipe[] = [
       type: ItemType.Pill,
       description: '蕴含一丝真龙之血，服用后气血如龙。大幅增加气血上限。',
       rarity: '传说',
-      effect: { hp: 500 },
+      permanentEffect: { maxHp: 500, physique: 50 },
     },
   },
   {
@@ -841,7 +842,8 @@ export const PILL_RECIPES: Recipe[] = [
       type: ItemType.Pill,
       description: '传说中的仙丹，服用后甚至能让凡人立地飞升。',
       rarity: '仙品',
-      effect: { exp: 5000, attack: 10, defense: 10 },
+      effect: { exp: 50000 },
+      permanentEffect: { maxLifespan: 1000, spirit: 1000, attack: 1000, defense: 1000, physique: 1000, speed: 1000},
     },
   },
   {
@@ -871,8 +873,7 @@ export const PILL_RECIPES: Recipe[] = [
       type: ItemType.Pill,
       description: '增加寿命的极品丹药，可延长50年寿命并增加最大寿命。',
       rarity: '传说',
-      effect: { lifespan: 50 },
-      permanentEffect: { maxLifespan: 20 },
+      permanentEffect: { maxLifespan: 50 },
     },
   },
   {
@@ -886,10 +887,10 @@ export const PILL_RECIPES: Recipe[] = [
     result: {
       name: '不死仙丹',
       type: ItemType.Pill,
-      description: '传说中的不死仙丹，可延长200年寿命并大幅增加最大寿命。',
+      description: '传说中的不死仙丹，可延长200年寿命并大幅增加最大寿命500年。',
       rarity: '仙品',
       effect: { lifespan: 200 },
-      permanentEffect: { maxLifespan: 100 },
+      permanentEffect: { maxLifespan: 500 },
     },
   },
   {
@@ -902,15 +903,15 @@ export const PILL_RECIPES: Recipe[] = [
     result: {
       name: '洗灵丹',
       type: ItemType.Pill,
-      description: '洗涤灵根，随机提升一种灵根5点。',
+      description: '洗涤灵根，所有灵根各提升5点。',
       rarity: '稀有',
       permanentEffect: {
         spiritualRoots: {
-          metal: 0,
-          wood: 0,
-          water: 0,
-          fire: 0,
-          earth: 0,
+          metal: 5,
+          wood: 5,
+          water: 5,
+          fire: 5,
+          earth: 5,
         },
       },
     },
@@ -979,7 +980,7 @@ export const DISCOVERABLE_RECIPES: Recipe[] = [
       type: ItemType.Pill,
       description: '凝神静气，提升神识。永久增加神识属性。',
       rarity: '稀有',
-      effect: { spirit: 20 },
+      permanentEffect: { spirit: 20 },
     },
   },
   {
@@ -994,7 +995,7 @@ export const DISCOVERABLE_RECIPES: Recipe[] = [
       type: ItemType.Pill,
       description: '强身健体，提升体魄。永久增加体魄属性。',
       rarity: '稀有',
-      effect: { physique: 20 },
+      permanentEffect: { physique: 20 },
     },
   },
   {
@@ -1007,9 +1008,10 @@ export const DISCOVERABLE_RECIPES: Recipe[] = [
     result: {
       name: '破境丹',
       type: ItemType.Pill,
-      description: '突破境界的辅助丹药，大幅提升修为。',
+      description: '突破境界的辅助丹药，大幅提升修为并永久增强属性。',
       rarity: '传说',
-      effect: { exp: 1000 },
+      effect: { exp: 10000 },
+      permanentEffect: { spirit: 50, physique: 50, attack: 30, defense: 30 },
     },
   },
   {
@@ -1025,6 +1027,7 @@ export const DISCOVERABLE_RECIPES: Recipe[] = [
       description: '仙家灵丹，服用后修为与属性大幅提升。',
       rarity: '传说',
       effect: { exp: 2000, spirit: 50, physique: 50 },
+      permanentEffect: { maxLifespan: 300, spirit: 300, attack: 300, defense: 300, physique: 300, speed: 300},
     },
   },
   {
@@ -1042,15 +1045,93 @@ export const DISCOVERABLE_RECIPES: Recipe[] = [
       rarity: '仙品',
       effect: {
         exp: 10000,
-        attack: 50,
-        defense: 50,
-        spirit: 100,
-        physique: 100,
-        speed: 30,
       },
+      permanentEffect: { maxLifespan: 500, spirit: 500, attack: 500, defense: 500, physique: 500, speed: 500},
+    },
+  },
+  {
+    name: '结金丹',
+    cost: 3000,
+    ingredients: [
+      { name: '千年灵芝', qty: 2 },
+      { name: '妖兽内丹', qty: 3 },
+    ],
+    result: {
+      name: '结金丹',
+      type: ItemType.Pill,
+      description: '有助于凝结金丹的珍贵丹药。服用后大幅提升修为，并永久增强神识。',
+      rarity: '稀有',
+      effect: { exp: 30000, spirit: 20 },
+      permanentEffect: { spirit: 50, maxHp: 200 },
+    },
+  },
+  {
+    name: '凝魂丹',
+    cost: 4000,
+    ingredients: [
+      { name: '万年仙草', qty: 1 },
+      { name: '千年灵芝', qty: 2 },
+      { name: '高阶妖丹', qty: 2 },
+    ],
+    result: {
+      name: '凝魂丹',
+      type: ItemType.Pill,
+      description: '能够凝聚神魂的珍贵丹药。服用后大幅提升修为和神识，并永久增强神魂。',
+      rarity: '传说',
+      effect: { exp: 10000, spirit: 50, hp: 300 },
+      permanentEffect: { spirit: 100, maxHp: 300, attack: 50 },
+    },
+  },
+  {
+    name: '凤凰涅槃丹',
+    cost: 6000,
+    ingredients: [
+      { name: '万年灵乳', qty: 1 },
+      { name: '九叶芝草', qty: 2 },
+      { name: '龙鳞果', qty: 3 },
+      { name: '高阶妖丹', qty: 3 },
+    ],
+    result: {
+      name: '凤凰涅槃丹',
+      type: ItemType.Pill,
+      description: '蕴含凤凰涅槃之力的神丹。服用后获得涅槃重生之力，大幅提升修为和属性。',
+      rarity: '传说',
+      effect: { hp: 800, exp: 1500, attack: 30 },
+      permanentEffect: { maxHp: 400, attack: 100, defense: 100, spirit: 80, physique: 80, speed: 50 },
     },
   },
 ];
+
+// 统一的丹药池：合并所有丹方中的丹药定义，供其他模块使用
+export const ALL_PILL_RECIPES = [...PILL_RECIPES, ...DISCOVERABLE_RECIPES];
+
+// 根据丹药名称获取丹药定义（从所有丹方中查找）
+export const getPillDefinition = (pillName: string): Recipe['result'] | null => {
+  const recipe = ALL_PILL_RECIPES.find(r => r.result.name === pillName);
+  return recipe ? recipe.result : null;
+};
+
+// 常用丹药的快速访问（从常量中获取，避免硬编码）
+export const COMMON_PILLS = {
+  聚气丹: () => getPillDefinition('聚气丹'),
+  回春丹: () => getPillDefinition('回春丹'),
+  回血丹: () => getPillDefinition('回血丹'), // 注意：回血丹不在丹方中，需要特殊处理
+  洗髓丹: () => getPillDefinition('洗髓丹'),
+  筑基丹: () => getPillDefinition('筑基丹'),
+  龙血丹: () => getPillDefinition('龙血丹'),
+  九转金丹: () => getPillDefinition('九转金丹'),
+  延寿丹: () => getPillDefinition('延寿丹'),
+  长生丹: () => getPillDefinition('长生丹'),
+  不死仙丹: () => getPillDefinition('不死仙丹'),
+  洗灵丹: () => getPillDefinition('洗灵丹'),
+  五行灵丹: () => getPillDefinition('五行灵丹'),
+  天灵根丹: () => getPillDefinition('天灵根丹'),
+  凝神丹: () => getPillDefinition('凝神丹'),
+  强体丹: () => getPillDefinition('强体丹'),
+  破境丹: () => getPillDefinition('破境丹'),
+  仙灵丹: () => getPillDefinition('仙灵丹'),
+  天元丹: () => getPillDefinition('天元丹'),
+};
 
 // Upgrade Constants
 export const UPGRADE_MATERIAL_NAME = '炼器石';
@@ -3553,10 +3634,11 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
       item: {
         name: '结金丹',
         type: ItemType.Pill,
-        description: '有助于凝结金丹的珍贵丹药',
+        description: '有助于凝结金丹的珍贵丹药。服用后大幅提升修为，并永久增强神识。',
         quantity: 1,
         rarity: '稀有',
         effect: { exp: 30000, spirit: 20 },
+        permanentEffect: { spirit: 50, maxHp: 200 },
       },
     },
   },
@@ -3570,10 +3652,11 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
       item: {
         name: '凝魂丹',
         type: ItemType.Pill,
-        description: '能够凝聚神魂的珍贵丹药',
+        description: '能够凝聚神魂的珍贵丹药。服用后大幅提升修为和神识，并永久增强神魂。',
         quantity: 1,
         rarity: '传说',
         effect: { exp: 10000, spirit: 50, hp: 300 },
+        permanentEffect: { spirit: 100, maxHp: 300, attack: 50 },
       },
     },
   },
@@ -3587,10 +3670,10 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
       item: {
         name: '龙血丹',
         type: ItemType.Pill,
-        description: '蕴含一丝真龙之血，气血如龙',
+        description: '蕴含一丝真龙之血，服用后气血如龙。大幅增加气血上限。',
         quantity: 1,
         rarity: '传说',
-        effect: { hp: 500, attack: 20, defense: 20 },
+        permanentEffect: { maxHp: 500, physique: 50 },
       },
     },
   },
@@ -3604,10 +3687,11 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
       item: {
         name: '凤凰涅槃丹',
         type: ItemType.Pill,
-        description: '蕴含凤凰涅槃之力的神丹',
+        description: '蕴含凤凰涅槃之力的神丹。服用后获得涅槃重生之力，大幅提升修为和属性。',
         quantity: 1,
         rarity: '传说',
         effect: { hp: 800, exp: 1500, attack: 30 },
+        permanentEffect: { maxHp: 400, attack: 100, defense: 100, spirit: 80, physique: 80, speed: 50 },
       },
     },
   },

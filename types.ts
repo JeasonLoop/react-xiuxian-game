@@ -629,6 +629,14 @@ export interface ShopItem {
     physique?: number;
     speed?: number;
   };
+  permanentEffect?: {
+    attack?: number;
+    defense?: number;
+    spirit?: number;
+    physique?: number;
+    speed?: number;
+    maxLifespan?: number;
+  };
   equipmentSlot?: EquipmentSlot;
   isEquippable?: boolean;
   minRealm?: RealmType; // 最低境界要求

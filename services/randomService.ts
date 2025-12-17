@@ -1,5 +1,5 @@
 import { SecretRealm, RealmType, Item, ItemType } from '../types';
-import { REALM_ORDER, SectInfo, SectGrade } from '../constants';
+import { REALM_ORDER, SectInfo, SectGrade, getPillDefinition } from '../constants';
 
 const randomId = () => Math.random().toString(36).slice(2, 9);
 
@@ -844,18 +844,43 @@ export const generateRandomSectTasks = (
   return tasks;
 };
 
+// 从常量中获取丹药定义的辅助函数
+const createPillItem = (pillName: string, cost: number, defaultItem?: Partial<Item>): { name: string; cost: number; item: Omit<Item, 'id'> } => {
+  const pillDef = getPillDefinition(pillName);
+  if (!pillDef) {
+    // 如果常量中没有，使用默认值（如回血丹）
+    if (defaultItem) {
+      return { name: pillName, cost, item: { ...defaultItem, name: pillName, quantity: 1 } as Omit<Item, 'id'> };
+    }
+    throw new Error(`丹药定义未找到: ${pillName}`);
+  }
+  return {
+    name: pillName,
+    cost,
+    item: {
+      name: pillDef.name,
+      type: pillDef.type,
+      description: pillDef.description,
+      rarity: pillDef.rarity,
+      quantity: 1,
+      effect: pillDef.effect,
+      permanentEffect: pillDef.permanentEffect,
+    },
+  };
+};
+
 // 宗门商店物品池（用于生成藏宝阁物品）
 const SECT_SHOP_ITEM_POOL: Array<{ name: string; cost: number; item: Omit<Item, 'id'> }> = [
   { name: '炼器石', cost: 10, item: { name: '炼器石', type: ItemType.Material, description: '用于强化法宝的基础材料。', quantity: 1, rarity: '普通' } },
-  { name: '聚气丹', cost: 20, item: { name: '聚气丹', type: ItemType.Pill, description: '短时间内大幅提升修炼速度。', quantity: 1, rarity: '普通', effect: { exp: 50 } } },
+  createPillItem('聚气丹', 20),
   { name: '紫猴花', cost: 50, item: { name: '紫猴花', type: ItemType.Herb, description: '炼制洗髓丹的材料，生长在悬崖峭壁。', quantity: 1, rarity: '稀有' } },
-  { name: '洗髓丹', cost: 100, item: { name: '洗髓丹', type: ItemType.Pill, description: '强身健体，略微提升最大气血。', quantity: 1, rarity: '稀有', effect: { hp: 50 } } },
-  { name: '筑基丹', cost: 1000, item: { name: '筑基丹', type: ItemType.Pill, description: '增加突破到筑基期的几率。', quantity: 1, rarity: '传说', effect: { exp: 500 } } },
+  createPillItem('洗髓丹', 100),
+  createPillItem('筑基丹', 1000),
   { name: '高阶妖丹', cost: 500, item: { name: '高阶妖丹', type: ItemType.Material, description: '强大妖兽的内丹，灵气逼人。', quantity: 1, rarity: '稀有' } },
   { name: '强化石', cost: 30, item: { name: '强化石', type: ItemType.Material, description: '用于强化法宝的珍贵材料。', quantity: 1, rarity: '稀有' } },
-  { name: '凝神丹', cost: 80, item: { name: '凝神丹', type: ItemType.Pill, description: '凝神聚气，提升神识。', quantity: 1, rarity: '稀有', effect: { spirit: 10 } } },
-  { name: '强体丹', cost: 80, item: { name: '强体丹', type: ItemType.Pill, description: '强身健体，提升体魄。', quantity: 1, rarity: '稀有', effect: { physique: 10 } } },
-  { name: '回血丹', cost: 15, item: { name: '回血丹', type: ItemType.Pill, description: '快速恢复气血。', quantity: 1, rarity: '普通', effect: { hp: 50 } } },
+  createPillItem('凝神丹', 80),
+  createPillItem('强体丹', 80),
+  { name: '回血丹', cost: 15, item: { name: '回血丹', type: ItemType.Pill, description: '快速恢复气血。', quantity: 1, rarity: '普通', effect: { hp: 50 } } }, // 回血丹不在丹方中，保留硬编码
   { name: '聚灵草', cost: 25, item: { name: '聚灵草', type: ItemType.Herb, description: '吸收天地灵气的草药。', quantity: 1, rarity: '普通' } },
   { name: '玄铁', cost: 40, item: { name: '玄铁', type: ItemType.Material, description: '珍贵的炼器材料。', quantity: 1, rarity: '稀有' } },
   { name: '星辰石', cost: 60, item: { name: '星辰石', type: ItemType.Material, description: '蕴含星辰之力的稀有矿石。', quantity: 1, rarity: '稀有' } },
@@ -867,8 +892,8 @@ const SECT_SHOP_ITEM_POOL: Array<{ name: string; cost: number; item: Omit<Item, 
 const SECT_SHOP_ITEM_POOL_FLOOR2: Array<{ name: string; cost: number; item: Omit<Item, 'id'> }> = [
   { name: '天外陨铁', cost: 800, item: { name: '天外陨铁', type: ItemType.Material, description: '来自天外的神秘金属，炼制仙器的材料。', quantity: 1, rarity: '传说' } },
   { name: '仙晶', cost: 1500, item: { name: '仙晶', type: ItemType.Material, description: '蕴含仙气的晶石，极其珍贵。', quantity: 1, rarity: '仙品' } },
-  { name: '九转金丹', cost: 3000, item: { name: '九转金丹', type: ItemType.Pill, description: '传说中的仙丹，服用后甚至能让凡人立地飞升。', quantity: 1, rarity: '仙品', effect: { exp: 5000, attack: 10, defense: 10 } } },
-  { name: '天元丹', cost: 2000, item: { name: '天元丹', type: ItemType.Pill, description: '天元级别的仙丹，服用后全属性大幅提升。', quantity: 1, rarity: '仙品', effect: { exp: 10000, attack: 50, defense: 50, spirit: 100, physique: 100, speed: 30 } } },
+  createPillItem('九转金丹', 3000),
+  createPillItem('天元丹', 2000),
   { name: '万年灵乳', cost: 1200, item: { name: '万年灵乳', type: ItemType.Material, description: '万年灵脉中凝聚的精华，炼制仙丹的珍贵材料。', quantity: 1, rarity: '传说' } },
   { name: '九叶芝草', cost: 1000, item: { name: '九叶芝草', type: ItemType.Herb, description: '九叶灵芝，炼制仙丹的顶级材料。', quantity: 1, rarity: '传说' } },
   { name: '龙鳞果', cost: 900, item: { name: '龙鳞果', type: ItemType.Herb, description: '龙族栖息地生长的灵果，蕴含龙族血脉之力。', quantity: 1, rarity: '传说' } },

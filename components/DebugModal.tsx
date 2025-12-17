@@ -48,6 +48,7 @@ import {
   LOTTERY_PRIZES,
   SECT_SHOP_ITEMS,
   INHERITANCE_ROUTES,
+  getPillDefinition,
   INHERITANCE_SKILLS,
 } from '../constants';
 import { LOOT_ITEMS } from '../services/battleService';
@@ -255,7 +256,7 @@ const DebugModal: React.FC<Props> = ({
       }
     });
 
-    // 从丹药配方
+    // 从丹药配方（优先使用常量中的定义）
     [...PILL_RECIPES, ...DISCOVERABLE_RECIPES].forEach((recipe) => {
       if (!itemNames.has(recipe.result.name)) {
         itemNames.add(recipe.result.name);
@@ -265,15 +266,32 @@ const DebugModal: React.FC<Props> = ({
           description: recipe.result.description,
           rarity: recipe.result.rarity,
           effect: recipe.result.effect,
-          permanentEffect: recipe.result.effect,
+          permanentEffect: recipe.result.permanentEffect,
         });
       }
     });
 
-    // 从抽奖奖品中提取物品
+    // 从抽奖奖品中提取物品（如果是丹药，优先使用常量中的定义）
     LOTTERY_PRIZES.forEach((prize) => {
       if (prize.type === 'item' && prize.value.item) {
         const item = prize.value.item;
+        // 如果是丹药，优先从常量中获取完整定义
+        if (item.type === ItemType.Pill) {
+          const pillDef = getPillDefinition(item.name);
+          if (pillDef && !itemNames.has(item.name)) {
+            itemNames.add(item.name);
+            items.push({
+              name: pillDef.name,
+              type: pillDef.type,
+              description: pillDef.description,
+              rarity: pillDef.rarity,
+              effect: pillDef.effect,
+              permanentEffect: pillDef.permanentEffect,
+            });
+            return; // 已从常量中获取，跳过原始定义
+          }
+        }
+        // 非丹药或常量中没有定义的物品，使用原始定义
         if (!itemNames.has(item.name)) {
           itemNames.add(item.name);
           items.push({
@@ -2358,6 +2376,7 @@ const DebugModal: React.FC<Props> = ({
                                 physique: '体魄',
                                 speed: '速度',
                                 exp: '经验',
+                                lifespan: '寿命',
                               };
                               return `${keyMap[key] || key}+${value}`;
                             })
@@ -2373,12 +2392,32 @@ const DebugModal: React.FC<Props> = ({
                                 attack: '攻击',
                                 defense: '防御',
                                 maxHp: '最大气血',
+                                maxLifespan: '最大寿命',
                                 spirit: '神识',
                                 physique: '体魄',
                                 speed: '速度',
                               };
+
+                              // 特殊处理spiritualRoots对象
+                              if (key === 'spiritualRoots' && typeof value === 'object' && value !== null) {
+                                const roots = value as Record<string, number>;
+                                const rootNames: Record<string, string> = {
+                                  metal: '金',
+                                  wood: '木',
+                                  water: '水',
+                                  fire: '火',
+                                  earth: '土',
+                                };
+                                const rootEntries = Object.entries(roots)
+                                  .filter(([_, val]) => val > 0)
+                                  .map(([rootKey, val]) => `${rootNames[rootKey] || rootKey}灵根+${val}`)
+                                  .join(', ');
+                                return rootEntries || '灵根提升';
+                              }
+
                               return `${keyMap[key] || key}+${value}`;
                             })
+                            .filter(Boolean)
                             .join(', ')}
                         </div>
                       )}

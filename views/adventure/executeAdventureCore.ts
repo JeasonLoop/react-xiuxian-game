@@ -96,6 +96,36 @@ function ensureEquipmentAttributes(
     processedEffect = restEffect;
   }
 
+  // 获取境界基础属性作为参考
+  let realmData = realm ? REALM_DATA[realm] : null;
+  if (!realmData) {
+    // 如果没有提供境界，使用炼气期作为默认
+    realmData = REALM_DATA[RealmType.QiRefining];
+  }
+
+  const level = realmLevel || 1;
+  const levelMultiplier = 1 + (level - 1) * 0.05;
+
+  // 根据稀有度确定装备数值占境界基础属性的百分比（提高装备属性占比）
+  const rarityPercentages: Record<ItemRarity, { min: number; max: number }> = {
+    普通: { min: 0.08, max: 0.12 },
+    稀有: { min: 0.20, max: 0.30 }, // 提高稀有装备数值
+    传说: { min: 0.40, max: 0.60 }, // 大幅提高传说装备数值
+    仙品: { min: 0.70, max: 1.00 }, // 大幅提高仙品装备数值
+  };
+
+  // 根据稀有度设置最小属性值（确保高品质装备数值更高）
+  const rarityMinStats: Record<ItemRarity, { attack: number; defense: number; hp: number; spirit: number; physique: number; speed: number }> = {
+    普通: { attack: 1, defense: 1, hp: 5, spirit: 1, physique: 1, speed: 1 },
+    稀有: { attack: 5, defense: 3, hp: 20, spirit: 3, physique: 3, speed: 3 },
+    传说: { attack: 15, defense: 10, hp: 50, spirit: 10, physique: 10, speed: 10 },
+    仙品: { attack: 50, defense: 30, hp: 150, spirit: 30, physique: 30, speed: 30 },
+  };
+
+  const percentage = rarityPercentages[rarity] || rarityPercentages['普通'];
+  const targetPercentage = percentage.min + (percentage.max - percentage.min) * Math.random();
+  const minStats = rarityMinStats[rarity] || rarityMinStats['普通'];
+
   // 检查是否已有任何属性
   const hasAnyAttribute =
     processedEffect?.attack ||
@@ -106,28 +136,15 @@ function ensureEquipmentAttributes(
     processedEffect?.speed;
 
   // 如果没有属性，根据品阶和境界生成属性
-  if (!hasAnyAttribute) {
-    // 获取境界基础属性作为参考
-    let realmData = realm ? REALM_DATA[realm] : null;
-    if (!realmData) {
-      // 如果没有提供境界，使用炼气期作为默认
-      realmData = REALM_DATA[RealmType.QiRefining];
-    }
-
-    const level = realmLevel || 1;
-    const levelMultiplier = 1 + (level - 1) * 0.05;
-
-    // 根据稀有度确定装备数值占境界基础属性的百分比（提高装备属性占比）
-    const rarityPercentages: Record<ItemRarity, { min: number; max: number }> = {
-      普通: { min: 0.08, max: 0.12 }, // 从5%-8%提高到8%-12%
-      稀有: { min: 0.15, max: 0.22 }, // 从8%-12%提高到15%-22%
-      传说: { min: 0.25, max: 0.35 }, // 从12%-18%提高到25%-35%
-      仙品: { min: 0.40, max: 0.55 }, // 从18%-25%提高到40%-55%
-    };
-
-    const percentage = rarityPercentages[rarity] || rarityPercentages['普通'];
-    const targetPercentage = percentage.min + (percentage.max - percentage.min) * Math.random();
-
+  // 如果有属性但数值太低（不符合稀有度），也需要重新生成或调整
+  if (!hasAnyAttribute || (hasAnyAttribute && processedEffect && (
+    (processedEffect.attack && processedEffect.attack < minStats.attack) ||
+    (processedEffect.defense && processedEffect.defense < minStats.defense) ||
+    (processedEffect.hp && processedEffect.hp < minStats.hp) ||
+    (processedEffect.spirit && processedEffect.spirit < minStats.spirit) ||
+    (processedEffect.physique && processedEffect.physique < minStats.physique) ||
+    (processedEffect.speed && processedEffect.speed < minStats.speed)
+  ))) {
     // 随机生成1-3种属性
     const attributeTypes = [
       'attack',
@@ -143,7 +160,37 @@ function ensureEquipmentAttributes(
       .slice(0, numAttributes);
 
     const newEffect: NonNullable<AdventureResult['itemObtained']>['effect'] = {};
+
+    // 如果已有属性，保留符合稀有度的属性，只替换或生成不符合的
+    if (hasAnyAttribute && processedEffect) {
+      // 保留符合稀有度要求的现有属性
+      if (processedEffect.attack && processedEffect.attack >= minStats.attack) {
+        newEffect.attack = processedEffect.attack;
+      }
+      if (processedEffect.defense && processedEffect.defense >= minStats.defense) {
+        newEffect.defense = processedEffect.defense;
+      }
+      if (processedEffect.hp && processedEffect.hp >= minStats.hp) {
+        newEffect.hp = processedEffect.hp;
+      }
+      if (processedEffect.spirit && processedEffect.spirit >= minStats.spirit) {
+        newEffect.spirit = processedEffect.spirit;
+      }
+      if (processedEffect.physique && processedEffect.physique >= minStats.physique) {
+        newEffect.physique = processedEffect.physique;
+      }
+      if (processedEffect.speed && processedEffect.speed >= minStats.speed) {
+        newEffect.speed = processedEffect.speed;
+      }
+    }
+
+    // 为选中的属性生成或更新数值
     selectedAttributes.forEach((attr) => {
+      // 如果该属性已经存在且符合要求，跳过
+      if (newEffect[attr as keyof typeof newEffect] !== undefined) {
+        return;
+      }
+
       let baseValue = 0;
       switch (attr) {
         case 'attack':
@@ -167,19 +214,23 @@ function ensureEquipmentAttributes(
       }
       // 根据境界基础属性和稀有度百分比生成数值
       const value = Math.floor(baseValue * targetPercentage * levelMultiplier);
+      // 确保数值不低于该稀有度的最小值
+      const minValue = minStats[attr as keyof typeof minStats];
+      const finalValue = Math.max(minValue, value);
+
       // 类型安全地设置属性
       if (attr === 'attack') {
-        newEffect.attack = Math.max(1, value);
+        newEffect.attack = finalValue;
       } else if (attr === 'defense') {
-        newEffect.defense = Math.max(1, value);
+        newEffect.defense = finalValue;
       } else if (attr === 'hp') {
-        newEffect.hp = Math.max(1, value);
+        newEffect.hp = finalValue;
       } else if (attr === 'spirit') {
-        newEffect.spirit = Math.max(1, value);
+        newEffect.spirit = finalValue;
       } else if (attr === 'physique') {
-        newEffect.physique = Math.max(1, value);
+        newEffect.physique = finalValue;
       } else if (attr === 'speed') {
-        newEffect.speed = Math.max(1, value);
+        newEffect.speed = finalValue;
       }
     });
 
@@ -1146,10 +1197,10 @@ export async function executeAdventureCore({
       }
     }
 
-    // 获得功法概率（普通历练2.5%，秘境中5%，大机缘中8%）
+    // 获得功法概率（普通历练5%，秘境中10%，大机缘中15%）
     // 每次历练最多解锁一个功法（逻辑保证：只选择一个随机功法并添加一次）
     // 注意：功法解锁由本地概率控制，AI不应在story中提及功法相关内容
-    const artChance = adventureType === 'lucky' ? 0.08 : realmName ? 0.05 : 0.025;
+    const artChance = adventureType === 'lucky' ? 0.15 : realmName ? 0.10 : 0.05;
     let artUnlocked = false; // 标记是否真的解锁了功法
     if (Math.random() < artChance) {
       const availableArts = CULTIVATION_ARTS.filter((art) => {
@@ -1990,9 +2041,9 @@ export async function executeAdventureCore({
           };
         }
 
-        // 获得功法概率（秘境中5%概率）
+        // 获得功法概率（秘境中10%概率）
         // 注意：功法解锁由本地概率控制，AI不应在story中提及功法相关内容
-        const artChance = 0.05;
+        const artChance = 0.10;
         let secretRealmArtUnlocked = false; // 标记是否真的解锁了功法
         if (Math.random() < artChance) {
           const availableArts = CULTIVATION_ARTS.filter((art) => {
