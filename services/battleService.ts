@@ -1157,7 +1157,26 @@ const createEnemy = async (
     );
   }
 
-  const realm = REALM_ORDER[targetRealmIndex];
+  // 确保targetRealmIndex有效，防止访问undefined
+  const validTargetRealmIndex = Math.max(0, Math.min(targetRealmIndex, REALM_ORDER.length - 1));
+  const realm = REALM_ORDER[validTargetRealmIndex];
+  if (!realm) {
+    // 如果仍然获取不到，使用第一个境界作为默认值
+    const fallbackRealm = REALM_ORDER[0];
+    if (!fallbackRealm) {
+      throw new Error('REALM_ORDER is empty or invalid');
+    }
+    return {
+      name: '未知敌人',
+      title: '神秘的',
+      realm: fallbackRealm,
+      attack: 10,
+      defense: 8,
+      maxHp: 50,
+      speed: 10,
+      strengthMultiplier: 1,
+    };
+  }
   const baseDifficulty = getBattleDifficulty(adventureType, riskLevel);
 
   // 引入强度等级系统：弱敌、普通、强敌
@@ -1895,28 +1914,72 @@ export const initializeTurnBasedBattle = async (
   // 确定先手
   const playerFirst = (playerUnit.speed || 0) >= enemyUnit.speed;
 
-  // 计算行动次数（基于速度差）
-  const calculateActionCount = (fasterSpeed: number, slowerSpeed: number): number => {
+  // 计算行动次数（基于速度差和神识差）
+  const calculateActionCount = (
+    fasterSpeed: number,
+    slowerSpeed: number,
+    fasterSpirit: number,
+    slowerSpirit: number
+  ): number => {
     // 确保速度值是有效数字，防止NaN
     const validFasterSpeed = Number(fasterSpeed) || 0;
     const validSlowerSpeed = Number(slowerSpeed) || 1; // 避免除零，默认至少为1
+    const validFasterSpirit = Number(fasterSpirit) || 0;
+    const validSlowerSpirit = Number(slowerSpirit) || 1; // 避免除零，默认至少为1
 
-    if (validFasterSpeed <= validSlowerSpeed) return 1; // 速度不占优，只有1次行动
+    // 计算速度和神识的综合行动力
+    // 速度权重0.6，神识权重0.4
+    const fasterActionPower = validFasterSpeed * 0.6 + validFasterSpirit * 0.4;
+    const slowerActionPower = validSlowerSpeed * 0.6 + validSlowerSpirit * 0.4;
 
-    const speedDiff = validFasterSpeed - validSlowerSpeed;
-    const speedRatio = speedDiff / validSlowerSpeed; // 速度差比例
+    if (fasterActionPower <= slowerActionPower) return 1; // 行动力不占优，只有1次行动
 
-    // 基础1次 + 每50%速度优势额外1次行动
-    // 例如：速度是敌人的1.5倍 = 2次行动，2倍 = 3次行动，3倍 = 4次行动
-    const extraActions = Math.floor(speedRatio / 0.5);
+    const powerDiff = fasterActionPower - slowerActionPower;
+    const powerRatio = powerDiff / slowerActionPower; // 行动力差比例
+
+    // 基础1次 + 每50%行动力优势额外1次行动
+    // 例如：行动力是敌人的1.5倍 = 2次行动，2倍 = 3次行动，3倍 = 4次行动
+    const extraActions = Math.floor(powerRatio / 0.5);
     const totalActions = 1 + extraActions;
 
     // 最多5次行动（避免过于不平衡）
     return Math.min(5, Math.max(1, totalActions));
   };
 
-  const playerMaxActions = calculateActionCount(playerUnit.speed, enemyUnit.speed);
-  const enemyMaxActions = calculateActionCount(enemyUnit.speed, playerUnit.speed);
+  const playerMaxActions = calculateActionCount(
+    playerUnit.speed,
+    enemyUnit.speed,
+    playerUnit.spirit,
+    enemyUnit.spirit
+  );
+  const enemyMaxActions = calculateActionCount(
+    enemyUnit.speed,
+    playerUnit.speed,
+    enemyUnit.spirit,
+    playerUnit.spirit
+  );
+
+  // 初始化战斗历史
+  const initialHistory: BattleAction[] = [];
+
+  // 如果玩家神识比对手高，添加震慑提示
+  if (playerUnit.spirit > enemyUnit.spirit) {
+    const spiritDiff = playerUnit.spirit - enemyUnit.spirit;
+    const spiritRatio = spiritDiff / enemyUnit.spirit;
+    // 如果神识优势超过20%，添加震慑日志
+    if (spiritRatio >= 0.2) {
+      const intimidateAction: BattleAction = {
+        id: randomId(),
+        round: 1,
+        turn: 'player',
+        actor: 'player',
+        actionType: 'attack',
+        result: {},
+        description: `✨ 你的神识远超对手，对手被你震慑了！`,
+      };
+      initialHistory.push(intimidateAction);
+    }
+  }
 
   return {
     id: randomId(),
@@ -1924,7 +1987,7 @@ export const initializeTurnBasedBattle = async (
     turn: playerFirst ? 'player' : 'enemy',
     player: playerUnit,
     enemy: enemyUnit,
-    history: [],
+    history: initialHistory,
     isPlayerTurn: playerFirst,
     waitingForPlayerAction: playerFirst,
     playerInventory: player.inventory, // 保存玩家背包
@@ -2209,22 +2272,46 @@ export function executeEnemyTurn(battleState: BattleState): BattleState {
     newState.waitingForPlayerAction = true;
     newState.turn = 'player';
     newState.round += 1;
-    // 重新计算并重置玩家行动次数（速度可能因为Buff/Debuff改变）
+    // 重新计算并重置玩家行动次数（速度和神识可能因为Buff/Debuff改变）
     const playerSpeed = newState.player.speed;
     const enemySpeed = newState.enemy.speed;
-    const calculateActionCount = (fasterSpeed: number, slowerSpeed: number): number => {
+    const playerSpirit = newState.player.spirit;
+    const enemySpirit = newState.enemy.spirit;
+    const calculateActionCount = (
+      fasterSpeed: number,
+      slowerSpeed: number,
+      fasterSpirit: number,
+      slowerSpirit: number
+    ): number => {
       // 确保速度值是有效数字，防止NaN
       const validFasterSpeed = Number(fasterSpeed) || 0;
       const validSlowerSpeed = Number(slowerSpeed) || 1; // 避免除零，默认至少为1
+      const validFasterSpirit = Number(fasterSpirit) || 0;
+      const validSlowerSpirit = Number(slowerSpirit) || 1; // 避免除零，默认至少为1
 
-      if (validFasterSpeed <= validSlowerSpeed) return 1;
-      const speedDiff = validFasterSpeed - validSlowerSpeed;
-      const speedRatio = speedDiff / validSlowerSpeed;
-      const extraActions = Math.floor(speedRatio / 0.5);
+      // 计算速度和神识的综合行动力
+      // 速度权重0.6，神识权重0.4
+      const fasterActionPower = validFasterSpeed * 0.6 + validFasterSpirit * 0.4;
+      const slowerActionPower = validSlowerSpeed * 0.6 + validSlowerSpirit * 0.4;
+
+      if (fasterActionPower <= slowerActionPower) return 1;
+      const powerDiff = fasterActionPower - slowerActionPower;
+      const powerRatio = powerDiff / slowerActionPower;
+      const extraActions = Math.floor(powerRatio / 0.5);
       return Math.min(5, Math.max(1, 1 + extraActions));
     };
-    newState.playerMaxActions = calculateActionCount(playerSpeed, enemySpeed);
-    newState.enemyMaxActions = calculateActionCount(enemySpeed, playerSpeed);
+    newState.playerMaxActions = calculateActionCount(
+      playerSpeed,
+      enemySpeed,
+      playerSpirit,
+      enemySpirit
+    );
+    newState.enemyMaxActions = calculateActionCount(
+      enemySpeed,
+      playerSpeed,
+      enemySpirit,
+      playerSpirit
+    );
     newState.playerActionsRemaining = newState.playerMaxActions;
 
     // 如果玩家行动次数为0（速度太慢），立即切换回敌人回合
