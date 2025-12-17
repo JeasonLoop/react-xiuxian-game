@@ -384,6 +384,11 @@ const DebugModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
+  // 检查 player 是否有效，如果无效则不渲染
+  if (!player || !localPlayer) {
+    return null;
+  }
+
   // 移除 handleSave，因为所有修改现在都直接生效
 
   const handleReset = () => {
@@ -696,12 +701,19 @@ const DebugModal: React.FC<Props> = ({
 
   // 添加物品
   const handleAddItem = (itemTemplate: Partial<Item> | Recipe['result'], quantity: number = 1) => {
+    // 检查 itemTemplate 是否有效
+    if (!itemTemplate || !itemTemplate.name) {
+      showError('物品模板无效');
+      return;
+    }
+
     const isEquipment = (itemTemplate as any).isEquippable && (itemTemplate as any).equipmentSlot;
     const isRecipe = itemTemplate.type === ItemType.Recipe;
 
     setLocalPlayer((prev) => {
       const newInv = [...prev.inventory];
       const existingIdx = newInv.findIndex((i) => i.name === itemTemplate.name);
+      let successMessage = '';
 
       if (existingIdx >= 0 && !isEquipment && !isRecipe) {
         // 非装备类、非丹方类物品可以叠加
@@ -709,7 +721,7 @@ const DebugModal: React.FC<Props> = ({
           ...newInv[existingIdx],
           quantity: newInv[existingIdx].quantity + quantity,
         };
-        showSuccess(`已添加物品：${itemTemplate.name} x${quantity}（当前数量：${newInv[existingIdx].quantity}）`);
+        successMessage = `已添加物品：${itemTemplate.name} x${quantity}（当前数量：${newInv[existingIdx].quantity}）`;
       } else {
         // 装备类物品、丹方或新物品，每个单独占一格
         const itemsToAdd = isEquipment ? quantity : 1;
@@ -746,18 +758,23 @@ const DebugModal: React.FC<Props> = ({
           };
           newInv.push(newItem);
         }
-        showSuccess(`已添加物品：${itemTemplate.name} x${quantity}`);
+        successMessage = `已添加物品：${itemTemplate.name} x${quantity}`;
       }
 
-      const updated = {
-        ...localPlayer,
+      // 使用 setTimeout 延迟调用，避免在渲染期间更新父组件
+      setTimeout(() => {
+        onUpdatePlayer({
+          inventory: newInv,
+        });
+        if (successMessage) {
+          showSuccess(successMessage);
+        }
+      }, 0);
+
+      return {
+        ...prev,
         inventory: newInv,
       };
-      setLocalPlayer(updated);
-      // 在状态更新回调外调用，避免在渲染期间更新父组件
-      onUpdatePlayer({
-        inventory: updated.inventory,
-      });
     });
   };
 
