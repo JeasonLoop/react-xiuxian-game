@@ -234,8 +234,8 @@ const SaveCompareModal: React.FC<Props> = ({ isOpen, onClose, save1, save2 }) =>
                   />
                   <ComparisonRow
                     label="灵石"
-                    oldVal={comparison.gold.old}
-                    newVal={comparison.gold.new}
+                    oldVal={comparison.spiritStones.old}
+                    newVal={comparison.spiritStones.new}
                     format={formatNumber}
                   />
                   <ComparisonRow

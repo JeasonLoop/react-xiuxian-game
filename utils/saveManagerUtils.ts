@@ -305,7 +305,7 @@ export interface SaveComparison {
   spirit: { old: number; new: number };
   physique: { old: number; new: number };
   speed: { old: number; new: number };
-  gold: { old: number; new: number };
+  spiritStones: { old: number; new: number };
   inventoryCount: { old: number; new: number };
   equipmentCount: { old: number; new: number };
   timestamp: { old: number; new: number };
@@ -331,14 +331,14 @@ export const compareSaves = (
     spirit: { old: p1.spirit, new: p2.spirit },
     physique: { old: p1.physique, new: p2.physique },
     speed: { old: p1.speed, new: p2.speed },
-    gold: { old: p1.gold, new: p2.gold },
+    spiritStones: { old: p1.spiritStones, new: p2.spiritStones },
     inventoryCount: {
       old: p1.inventory?.length || 0,
       new: p2.inventory?.length || 0,
     },
     equipmentCount: {
-      old: Object.values(p1.equipment || {}).filter((e) => e !== null).length,
-      new: Object.values(p2.equipment || {}).filter((e) => e !== null).length,
+      old: Object.values(p1.equippedItems || {}).filter((e) => e !== null).length,
+      new: Object.values(p2.equippedItems || {}).filter((e) => e !== null).length,
     },
     timestamp: { old: save1.timestamp, new: save2.timestamp },
   };
