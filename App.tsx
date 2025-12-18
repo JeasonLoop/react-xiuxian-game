@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Item,
   Shop,
@@ -29,6 +29,13 @@ import { setGlobalAlertSetter } from './utils/toastUtils';
 import AlertModal from './components/AlertModal';
 import { AlertType } from './components/AlertModal';
 import { useDelayedState } from './hooks/useDelayedState';
+import { useKeyboardShortcuts, KeyboardShortcut } from './hooks/useKeyboardShortcuts';
+import {
+  DEFAULT_SHORTCUTS,
+  SHORTCUT_DESCRIPTIONS,
+  getShortcutConfig,
+  configToShortcut,
+} from './utils/shortcutUtils';
 
 // 导入模块化的 handlers
 import {
@@ -763,6 +770,314 @@ function App() {
     player?.lotteryCount,
     checkAchievements,
   ]);
+
+  // 关闭当前打开的弹窗
+  const handleCloseCurrentModal = useCallback(() => {
+    if (isShopOpen) setIsShopOpen(false);
+    else if (isInventoryOpen) setIsInventoryOpen(false);
+    else if (isCultivationOpen) setIsCultivationOpen(false);
+    else if (isCharacterOpen) setIsCharacterOpen(false);
+    else if (isAchievementOpen) setIsAchievementOpen(false);
+    else if (isPetOpen) setIsPetOpen(false);
+    else if (isLotteryOpen) setIsLotteryOpen(false);
+    else if (isSettingsOpen) setIsSettingsOpen(false);
+    else if (isRealmOpen) setIsRealmOpen(false);
+    else if (isAlchemyOpen) setIsAlchemyOpen(false);
+    else if (isSectOpen) setIsSectOpen(false);
+    else if (isDailyQuestOpen) setIsDailyQuestOpen(false);
+    else if (isUpgradeOpen) setIsUpgradeOpen(false);
+    else if (isBattleModalOpen) setIsBattleModalOpen(false);
+    else if (isTurnBasedBattleOpen) setIsTurnBasedBattleOpen(false);
+    else if (isReputationEventOpen) setIsReputationEventOpen(false);
+    else if (isMobileSidebarOpen) setIsMobileSidebarOpen(false);
+    else if (isMobileStatsOpen) setIsMobileStatsOpen(false);
+    else if (isDebugOpen) setIsDebugOpen(false);
+  }, [
+    isShopOpen,
+    isInventoryOpen,
+    isCultivationOpen,
+    isCharacterOpen,
+    isAchievementOpen,
+    isPetOpen,
+    isLotteryOpen,
+    isSettingsOpen,
+    isRealmOpen,
+    isAlchemyOpen,
+    isSectOpen,
+    isDailyQuestOpen,
+    isUpgradeOpen,
+    isBattleModalOpen,
+    isTurnBasedBattleOpen,
+    isReputationEventOpen,
+    isMobileSidebarOpen,
+    isMobileStatsOpen,
+    isDebugOpen,
+    setIsShopOpen,
+    setIsInventoryOpen,
+    setIsCultivationOpen,
+    setIsCharacterOpen,
+    setIsAchievementOpen,
+    setIsPetOpen,
+    setIsLotteryOpen,
+    setIsSettingsOpen,
+    setIsRealmOpen,
+    setIsAlchemyOpen,
+    setIsSectOpen,
+    setIsDailyQuestOpen,
+    setIsUpgradeOpen,
+    setIsBattleModalOpen,
+    setIsTurnBasedBattleOpen,
+    setIsReputationEventOpen,
+    setIsMobileSidebarOpen,
+    setIsMobileStatsOpen,
+    setIsDebugOpen,
+  ]);
+
+  // 定义键盘快捷键（使用保存的配置）
+  const keyboardShortcuts: KeyboardShortcut[] = useMemo(() => {
+    if (!player || !gameStarted) return [];
+
+    const customShortcuts = settings.keyboardShortcuts || {};
+
+    const shortcuts: KeyboardShortcut[] = [];
+
+    // 打坐
+    const meditateConfig = getShortcutConfig('meditate', customShortcuts);
+    shortcuts.push(
+      configToShortcut(meditateConfig, handleMeditate, '打坐', '基础操作')
+    );
+
+    // 历练
+    const adventureConfig = getShortcutConfig('adventure', customShortcuts);
+    shortcuts.push(
+      configToShortcut(adventureConfig, handleAdventure, '历练', '基础操作')
+    );
+
+    // 切换自动打坐
+    const toggleAutoMeditateConfig = getShortcutConfig(
+      'toggleAutoMeditate',
+      customShortcuts
+    );
+    shortcuts.push(
+      configToShortcut(
+        toggleAutoMeditateConfig,
+        () => {
+          setAutoMeditate((prev) => {
+            const newValue = !prev;
+            if (newValue && autoAdventure) {
+              setAutoAdventure(false);
+              addLog('已关闭自动历练，开启自动打坐。', 'normal');
+            }
+            return newValue;
+          });
+        },
+        '切换自动打坐',
+        '基础操作'
+      )
+    );
+
+    // 切换自动历练
+    const toggleAutoAdventureConfig = getShortcutConfig(
+      'toggleAutoAdventure',
+      customShortcuts
+    );
+    shortcuts.push(
+      configToShortcut(
+        toggleAutoAdventureConfig,
+        () => {
+          setAutoAdventure((prev) => {
+            const newValue = !prev;
+            if (newValue && autoMeditate) {
+              setAutoMeditate(false);
+              addLog('已关闭自动打坐，开启自动历练。', 'normal');
+            }
+            return newValue;
+          });
+        },
+        '切换自动历练',
+        '基础操作'
+      )
+    );
+
+    // 打开储物袋
+    const openInventoryConfig = getShortcutConfig('openInventory', customShortcuts);
+    shortcuts.push(
+      configToShortcut(
+        openInventoryConfig,
+        () => setIsInventoryOpen(true),
+        '打开储物袋',
+        '打开面板'
+      )
+    );
+
+    // 打开功法
+    const openCultivationConfig = getShortcutConfig(
+      'openCultivation',
+      customShortcuts
+    );
+    shortcuts.push(
+      configToShortcut(
+        openCultivationConfig,
+        () => setIsCultivationOpen(true),
+        '打开功法',
+        '打开面板'
+      )
+    );
+
+    // 打开角色
+    const openCharacterConfig = getShortcutConfig('openCharacter', customShortcuts);
+    shortcuts.push(
+      configToShortcut(
+        openCharacterConfig,
+        () => setIsCharacterOpen(true),
+        '打开角色',
+        '打开面板'
+      )
+    );
+
+    // 打开成就
+    const openAchievementConfig = getShortcutConfig(
+      'openAchievement',
+      customShortcuts
+    );
+    shortcuts.push(
+      configToShortcut(
+        openAchievementConfig,
+        () => {
+          setIsAchievementOpen(true);
+          setPlayer((prev) => ({
+            ...prev,
+            viewedAchievements: [...prev.achievements],
+          }));
+        },
+        '打开成就',
+        '打开面板'
+      )
+    );
+
+    // 打开灵宠
+    const openPetConfig = getShortcutConfig('openPet', customShortcuts);
+    shortcuts.push(
+      configToShortcut(
+        openPetConfig,
+        () => setIsPetOpen(true),
+        '打开灵宠',
+        '打开面板'
+      )
+    );
+
+    // 打开抽奖
+    const openLotteryConfig = getShortcutConfig('openLottery', customShortcuts);
+    shortcuts.push(
+      configToShortcut(
+        openLotteryConfig,
+        () => setIsLotteryOpen(true),
+        '打开抽奖',
+        '打开面板'
+      )
+    );
+
+    // 打开设置
+    const openSettingsConfig = getShortcutConfig('openSettings', customShortcuts);
+    shortcuts.push(
+      configToShortcut(
+        openSettingsConfig,
+        () => setIsSettingsOpen(true),
+        '打开设置',
+        '打开面板'
+      )
+    );
+
+    // 打开秘境
+    const openRealmConfig = getShortcutConfig('openRealm', customShortcuts);
+    shortcuts.push(
+      configToShortcut(
+        openRealmConfig,
+        () => setIsRealmOpen(true),
+        '打开秘境',
+        '打开面板'
+      )
+    );
+
+    // 打开炼丹
+    const openAlchemyConfig = getShortcutConfig('openAlchemy', customShortcuts);
+    shortcuts.push(
+      configToShortcut(
+        openAlchemyConfig,
+        () => setIsAlchemyOpen(true),
+        '打开炼丹',
+        '打开面板'
+      )
+    );
+
+    // 打开宗门
+    const openSectConfig = getShortcutConfig('openSect', customShortcuts);
+    shortcuts.push(
+      configToShortcut(
+        openSectConfig,
+        () => setIsSectOpen(true),
+        '打开宗门',
+        '打开面板'
+      )
+    );
+
+    // 打开日常任务
+    const openDailyQuestConfig = getShortcutConfig(
+      'openDailyQuest',
+      customShortcuts
+    );
+    shortcuts.push(
+      configToShortcut(
+        openDailyQuestConfig,
+        () => setIsDailyQuestOpen(true),
+        '打开日常任务',
+        '打开面板'
+      )
+    );
+
+    // 关闭当前弹窗
+    const closeModalConfig = getShortcutConfig('closeModal', customShortcuts);
+    shortcuts.push(
+      configToShortcut(
+        closeModalConfig,
+        handleCloseCurrentModal,
+        '关闭当前弹窗',
+        '通用操作'
+      )
+    );
+
+    return shortcuts;
+  }, [
+    player,
+    gameStarted,
+    settings.keyboardShortcuts,
+    handleMeditate,
+    handleAdventure,
+    autoMeditate,
+    autoAdventure,
+    setAutoMeditate,
+    setAutoAdventure,
+    addLog,
+    setIsInventoryOpen,
+    setIsCultivationOpen,
+    setIsCharacterOpen,
+    setIsAchievementOpen,
+    setIsPetOpen,
+    setIsLotteryOpen,
+    setIsSettingsOpen,
+    setIsRealmOpen,
+    setIsAlchemyOpen,
+    setIsSectOpen,
+    setIsDailyQuestOpen,
+    setPlayer,
+    handleCloseCurrentModal,
+  ]);
+
+  // 使用键盘快捷键
+  useKeyboardShortcuts({
+    shortcuts: keyboardShortcuts,
+    enabled: gameStarted && !!player && !isDead,
+  });
 
   // 显示欢迎界面
   if (showWelcome) {

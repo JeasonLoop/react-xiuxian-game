@@ -158,14 +158,23 @@ export function useShopHandlers({
       const shopItem = currentShop.items.find((si) => si.name === item.name);
       const sellPrice = shopItem?.sellPrice || calculateItemSellPrice(item);
 
+      // 确保 sellPrice 是有效数字
+      const validSellPrice = isNaN(sellPrice) || sellPrice <= 0 ? 1 : sellPrice;
+
       // 确定要出售的数量（默认为1，但不超过物品的实际数量）
       const sellQuantity = quantity !== undefined
-        ? Math.min(quantity, item.quantity)
+        ? Math.min(quantity, item.quantity || 1)
         : 1;
 
       if (sellQuantity <= 0) return prev;
 
-      const totalPrice = sellPrice * sellQuantity;
+      const totalPrice = validSellPrice * sellQuantity;
+
+      // 确保 totalPrice 是有效数字
+      if (isNaN(totalPrice) || totalPrice <= 0) {
+        addLog('出售价格计算错误，请重试。', 'danger');
+        return prev;
+      }
 
       const newInv = prev.inventory
         .map((i) => {
@@ -177,14 +186,24 @@ export function useShopHandlers({
         .filter((i) => i.quantity > 0);
 
       if (sellQuantity === 1) {
-        addLog(`你出售了 ${item.name}，获得 ${sellPrice} 灵石。`, 'gain');
+        addLog(`你出售了 ${item.name}，获得 ${validSellPrice} 灵石。`, 'gain');
       } else {
         addLog(`你出售了 ${item.name} x${sellQuantity}，获得 ${totalPrice} 灵石。`, 'gain');
       }
 
+      // 确保 spiritStones 是有效数字，防止 NaN
+      const currentSpiritStones = prev.spiritStones || 0;
+      const newSpiritStones = currentSpiritStones + totalPrice;
+
+      // 再次检查，确保结果不是 NaN
+      if (isNaN(newSpiritStones)) {
+        addLog('灵石数量计算错误，请重试。', 'danger');
+        return prev;
+      }
+
       return {
         ...prev,
-        spiritStones: prev.spiritStones + totalPrice,
+        spiritStones: newSpiritStones,
         inventory: newInv,
       };
     });

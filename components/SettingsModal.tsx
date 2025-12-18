@@ -10,11 +10,21 @@ import {
   Github,
   RotateCcw,
   FolderOpen,
+  Keyboard,
 } from 'lucide-react';
 import { GameSettings } from '../types';
 import dayjs from 'dayjs';
 import { showError, showSuccess, showInfo, showConfirm } from '../utils/toastUtils';
 import ChangelogModal from './ChangelogModal';
+import ShortcutsModal from './ShortcutsModal';
+import { KeyboardShortcut } from '../hooks/useKeyboardShortcuts';
+import { KeyboardShortcutConfig } from '../types';
+import {
+  DEFAULT_SHORTCUTS,
+  SHORTCUT_DESCRIPTIONS,
+  getShortcutConfig,
+  configToShortcut,
+} from '../utils/shortcutUtils';
 
 interface Props {
   isOpen: boolean;
@@ -38,6 +48,29 @@ const SettingsModal: React.FC<Props> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const SAVE_KEY = 'xiuxian-game-save';
   const [isChangelogOpen, setIsChangelogOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+
+  // 生成快捷键列表（用于显示）
+  const shortcuts: KeyboardShortcut[] = Object.keys(SHORTCUT_DESCRIPTIONS).map(
+    (actionId) => {
+      const desc = SHORTCUT_DESCRIPTIONS[actionId];
+      const config = getShortcutConfig(
+        actionId,
+        settings.keyboardShortcuts
+      );
+      return configToShortcut(
+        config,
+        () => {}, // 空操作，仅用于显示
+        desc.description,
+        desc.category
+      );
+    }
+  );
+
+  // 处理快捷键更新
+  const handleUpdateShortcuts = (newShortcuts: Record<string, KeyboardShortcutConfig>) => {
+    onUpdateSettings({ keyboardShortcuts: newShortcuts });
+  };
 
   if (!isOpen) return null;
 
@@ -443,6 +476,26 @@ const SettingsModal: React.FC<Props> = ({
             </select>
           </div>
 
+          {/* 快捷键 */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Keyboard size={20} className="text-stone-400" />
+              <h3 className="font-bold">快捷键</h3>
+            </div>
+            <div className="space-y-3">
+              <button
+                onClick={() => setIsShortcutsOpen(true)}
+                className="flex items-center gap-2 w-full bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded px-4 py-2 transition-colors text-left"
+              >
+                <Keyboard size={16} />
+                <span>查看键盘快捷键</span>
+              </button>
+              <p className="text-xs text-stone-500">
+                查看所有可用的键盘快捷键，提高操作效率
+              </p>
+            </div>
+          </div>
+
           {/* 关于 */}
           <div>
             <div className="flex items-center gap-2 mb-3">
@@ -490,6 +543,15 @@ const SettingsModal: React.FC<Props> = ({
       <ChangelogModal
         isOpen={isChangelogOpen}
         onClose={() => setIsChangelogOpen(false)}
+      />
+
+      {/* 快捷键说明弹窗 */}
+      <ShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
+        shortcuts={shortcuts}
+        customShortcuts={settings.keyboardShortcuts}
+        onUpdateShortcuts={handleUpdateShortcuts}
       />
     </div>
   );

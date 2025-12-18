@@ -571,11 +571,13 @@ export const calculateItemSellPrice = (item: Item): number => {
     传说: 300,
     仙品: 2000,
   };
-  let basePrice = basePrices[rarity];
+  // 确保 basePrice 有默认值，防止 undefined
+  let basePrice = basePrices[rarity] || 10;
 
   // 计算属性价值
   let attributeValue = 0;
-  const rarityMultiplier = RARITY_MULTIPLIERS[rarity];
+  // 确保 rarityMultiplier 有默认值，防止 undefined
+  const rarityMultiplier = RARITY_MULTIPLIERS[rarity] || 1;
 
   // 临时效果价值（effect）
   if (item.effect) {
@@ -600,8 +602,8 @@ export const calculateItemSellPrice = (item: Item): number => {
     attributeValue += (permEffect.speed || 0) * 10; // 永久速度每点值10灵石
   }
 
-  // 应用稀有度倍率到属性价值
-  attributeValue = Math.floor(attributeValue * rarityMultiplier);
+  // 应用稀有度倍率到属性价值（确保不是 NaN）
+  attributeValue = Math.floor((attributeValue || 0) * (rarityMultiplier || 1));
 
   // 装备类物品额外价值加成
   let equipmentBonus = 0;
@@ -609,27 +611,27 @@ export const calculateItemSellPrice = (item: Item): number => {
     // 装备类物品根据类型有不同的基础价值
     switch (item.type) {
       case ItemType.Weapon:
-        equipmentBonus = basePrice * 1.5; // 武器额外50%价值
+        equipmentBonus = (basePrice || 0) * 1.5; // 武器额外50%价值
         break;
       case ItemType.Armor:
-        equipmentBonus = basePrice * 1.2; // 护甲额外20%价值
+        equipmentBonus = (basePrice || 0) * 1.2; // 护甲额外20%价值
         break;
       case ItemType.Artifact:
-        equipmentBonus = basePrice * 2; // 法宝额外100%价值
+        equipmentBonus = (basePrice || 0) * 2; // 法宝额外100%价值
         break;
       case ItemType.Ring:
       case ItemType.Accessory:
-        equipmentBonus = basePrice * 1.3; // 戒指和首饰额外30%价值
+        equipmentBonus = (basePrice || 0) * 1.3; // 戒指和首饰额外30%价值
         break;
     }
   }
 
   // 强化等级加成（每级增加20%价值）
-  const levelMultiplier = 1 + level * 0.2;
+  const levelMultiplier = 1 + (level || 0) * 0.2;
 
-  // 计算最终价格
+  // 计算最终价格（确保所有值都是数字）
   const totalValue =
-    (basePrice + attributeValue + equipmentBonus) * levelMultiplier;
+    ((basePrice || 0) + (attributeValue || 0) + (equipmentBonus || 0)) * (levelMultiplier || 1);
 
   // 根据物品类型调整（消耗品价值较低）
   let typeMultiplier = 1;
@@ -639,6 +641,8 @@ export const calculateItemSellPrice = (item: Item): number => {
     typeMultiplier = 0.3; // 材料价值更低
   }
 
-  // 最终价格（取整，最低为1）
-  return Math.max(1, Math.floor(totalValue * typeMultiplier));
+  // 最终价格（取整，最低为1，确保不是 NaN）
+  const finalPrice = Math.max(1, Math.floor((totalValue || 0) * (typeMultiplier || 1)));
+  // 如果计算结果仍然是 NaN，返回默认值
+  return isNaN(finalPrice) ? 1 : finalPrice;
 };
