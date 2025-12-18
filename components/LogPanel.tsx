@@ -6,9 +6,12 @@ import React, {
   useCallback,
 } from 'react';
 import { LogEntry } from '../types';
+import { GlobalChat } from './GlobalChat';
+import { ChevronsDown } from 'lucide-react';
 
 interface Props {
   logs: LogEntry[];
+  playerName: string;
   className?: string;
 }
 
@@ -51,7 +54,7 @@ const LogItem = React.memo<{ log: LogEntry }>(({ log }) => {
 
 LogItem.displayName = 'LogItem';
 
-const LogPanel: React.FC<Props> = ({ logs, className }) => {
+const LogPanel: React.FC<Props> = ({ logs, playerName, className }) => {
   const endRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -183,35 +186,23 @@ const LogPanel: React.FC<Props> = ({ logs, className }) => {
       {showScrollButton && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-3 right-3 md:bottom-4 md:right-4 z-[100]
+          className="absolute bottom-3 right-14 md:bottom-4 md:right-16 z-[100]
                      w-9 h-9 md:w-11 md:h-11
-                     bg-mystic-jade hover:bg-mystic-jade/90
-                     text-white rounded-full
-                     flex items-center justify-center
+                     bg-stone-900/90 border border-stone-700 text-stone-400
+                     hover:border-amber-500/50 hover:text-amber-500
+                     rounded-full flex items-center justify-center
                      shadow-xl hover:shadow-2xl hover:scale-110 active:scale-95
                      transition-all duration-200
-                     border-2 border-white/20
-                     cursor-pointer
-                     pointer-events-auto"
+                     cursor-pointer pointer-events-auto"
           title="滚动到底部"
           aria-label="滚动到底部"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5 md:w-6 md:h-6"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={2.5}
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M19 14l-7 7m0 0l-7-7m7 7V3"
-            />
-          </svg>
+          <ChevronsDown size={20} strokeWidth={2.5} />
         </button>
       )}
+
+      {/* 世界聊天按钮 */}
+      <GlobalChat playerName={playerName} />
     </div>
   );
 };

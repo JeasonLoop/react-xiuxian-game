@@ -23,12 +23,16 @@
     "docker:pack-uncompressed": "node scripts/docker-build.js pack-uncompressed",
     "docker:build-and-pack": "npm run docker:build-image && npm run docker:pack-uncompressed",
     "docker:build-and-up": "node scripts/docker-build.js build-and-up",
-    "docker:push-image": "node scripts/docker-build.js build-image && node scripts/docker-build.js push-image"
+    "docker:push-image": "node scripts/docker-build.js build-image && node scripts/docker-build.js push-image",
+    "party:dev": "partykit dev",
+    "party:deploy": "partykit deploy"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",
     "dayjs": "^1.11.19",
     "lucide-react": "^0.554.0",
+    "partykit": "^0.0.115",
+    "partysocket": "^1.1.6",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
