@@ -337,9 +337,18 @@ export function usePetHandlers({
             }
           }
 
+          // 更新技能和图片
+          const stageSkills = newStage === 1
+            ? (template.stageSkills?.stage1 || [])
+            : (template.stageSkills?.stage2 || []);
+
+          const stageImage = newStage === 1
+            ? (template.stageImages?.stage1 || template.image)
+            : (template.stageImages?.stage2 || template.image);
+
           const stageName = newStage === 1 ? '成熟期' : '完全体';
           addLog(
-            `【${p.name}】进化到${stageName}！${newName !== p.name ? `更名为【${newName}】！` : ''}实力大幅提升！`,
+            `【${p.name}】进化到${stageName}！${newName !== p.name ? `更名为【${newName}】！` : ''}实力大幅提升，并领悟了新技能！`,
             'special'
           );
 
@@ -347,6 +356,8 @@ export function usePetHandlers({
             ...p,
             name: newName,
             evolutionStage: newStage,
+            image: stageImage,
+            skills: [...p.skills, ...stageSkills], // 保留旧技能，增加新技能
             stats: {
               attack: Math.floor(p.stats.attack * statMultiplier),
               defense: Math.floor(p.stats.defense * statMultiplier),

@@ -55,7 +55,7 @@ export const REALM_DATA: Record<
     basePhysique: 10,
     baseSpeed: 10,
     maxExpBase: 100,
-    baseMaxLifespan: 100, // 炼气期基础寿命100年
+    baseMaxLifespan: 120, // 炼气期基础寿命120年
   },
   [RealmType.Foundation]: {
     baseMaxHp: 500,
@@ -65,7 +65,7 @@ export const REALM_DATA: Record<
     basePhysique: 50,
     baseSpeed: 30,
     maxExpBase: 1000,
-    baseMaxLifespan: 200, // 筑基期基础寿命200年
+    baseMaxLifespan: 300, // 筑基期基础寿命300年
   },
   [RealmType.GoldenCore]: {
     baseMaxHp: 2500,
@@ -75,7 +75,7 @@ export const REALM_DATA: Record<
     basePhysique: 200,
     baseSpeed: 50,
     maxExpBase: 5000,
-    baseMaxLifespan: 500, // 金丹期基础寿命500年
+    baseMaxLifespan: 800, // 金丹期基础寿命800年
   },
   [RealmType.NascentSoul]: {
     baseMaxHp: 10000,
@@ -85,7 +85,7 @@ export const REALM_DATA: Record<
     basePhysique: 1000,
     baseSpeed: 100,
     maxExpBase: 25000,
-    baseMaxLifespan: 1000, // 元婴期基础寿命1000年
+    baseMaxLifespan: 2000, // 元婴期基础寿命2000年
   },
   [RealmType.SpiritSevering]: {
     baseMaxHp: 50000,
@@ -95,7 +95,7 @@ export const REALM_DATA: Record<
     basePhysique: 5000,
     baseSpeed: 200,
     maxExpBase: 100000,
-    baseMaxLifespan: 2000, // 化神期基础寿命2000年
+    baseMaxLifespan: 5000, // 化神期基础寿命5000年
   },
   [RealmType.VoidRefining]: {
     baseMaxHp: 200000,
@@ -105,7 +105,7 @@ export const REALM_DATA: Record<
     basePhysique: 20000,
     baseSpeed: 300,
     maxExpBase: 500000,
-    baseMaxLifespan: 5000, // 炼虚期基础寿命5000年
+    baseMaxLifespan: 15000, // 炼虚期基础寿命15000年
   },
   [RealmType.ImmortalAscension]: {
     baseMaxHp: 1000000,
@@ -114,8 +114,8 @@ export const REALM_DATA: Record<
     baseSpirit: 50000,
     basePhysique: 100000,
     baseSpeed: 500,
-    maxExpBase: 2500000, // 降低修为需求，从9999999降到2500000（约5倍增长）
-    baseMaxLifespan: 10000, // 渡劫飞升基础寿命10000年
+    maxExpBase: 2500000,
+    baseMaxLifespan: 100000, // 渡劫飞升基础寿命10万年
   },
 };
 
@@ -1374,16 +1374,6 @@ export const SECTS: SectInfo[] = [
   },
 ];
 
-export const SECT_RANK_REQUIREMENTS: Record<
-  SectRank,
-  { contribution: number; realmIndex: number }
-> = {
-  [SectRank.Outer]: { contribution: 0, realmIndex: 0 },
-  [SectRank.Inner]: { contribution: 500, realmIndex: 1 }, // Foundation
-  [SectRank.Core]: { contribution: 2000, realmIndex: 2 }, // Golden Core
-  [SectRank.Elder]: { contribution: 10000, realmIndex: 3 }, // Nascent Soul
-};
-
 export const SECT_SHOP_ITEMS: {
   name: string;
   cost: number;
@@ -1929,7 +1919,7 @@ export const TITLES: Title[] = [
   },
   {
     id: 'title-sect-master',
-    name: '宗门之主',
+    name: '宗门主事',
     description: '担任过宗门长老。',
     requirement: '达到长老职位',
     category: 'special',
@@ -2410,62 +2400,12 @@ export const ACHIEVEMENTS: Achievement[] = [
     rarity: '普通',
   },
   {
-    id: 'ach-collector',
-    name: '收藏家',
-    description: '收集10种不同的物品',
-    category: 'collection',
-    requirement: { type: 'collect', value: 10 },
-    reward: { exp: 300, spiritStones: 200 },
-    rarity: '稀有',
-  },
-  {
-    id: 'ach-immortal',
-    name: '飞升成仙',
-    description: '达到渡劫飞升境界',
-    category: 'special',
-    requirement: {
-      type: 'realm',
-      value: 1,
-      target: RealmType.ImmortalAscension,
-    },
-    reward: { exp: 10000, spiritStones: 10000, titleId: 'title-immortal' },
-    rarity: '仙品',
-  },
-  // 新增20个成就
-  {
-    id: 'ach-nascent-soul',
-    name: '元婴出窍',
-    description: '突破到元婴期',
-    category: 'cultivation',
-    requirement: { type: 'realm', value: 1, target: RealmType.NascentSoul },
-    reward: { exp: 5000, spiritStones: 3000 },
-    rarity: '传说',
-  },
-  {
-    id: 'ach-spirit-severing',
-    name: '化神之境',
-    description: '突破到化神期',
-    category: 'cultivation',
-    requirement: { type: 'realm', value: 1, target: RealmType.SpiritSevering },
-    reward: { exp: 8000, spiritStones: 5000 },
-    rarity: '传说',
-  },
-  {
-    id: 'ach-void-refining',
-    name: '炼虚合道',
-    description: '突破到炼虚期',
-    category: 'cultivation',
-    requirement: { type: 'realm', value: 1, target: RealmType.VoidRefining },
-    reward: { exp: 12000, spiritStones: 8000 },
-    rarity: '仙品',
-  },
-  {
     id: 'ach-killer-10',
     name: '十人斩',
     description: '击败10个敌人',
     category: 'combat',
     requirement: { type: 'kill', value: 10 },
-    reward: { exp: 200, spiritStones: 100 },
+    reward: { exp: 200, spiritStones: 100, titleId: 'title-warrior' },
     rarity: '普通',
   },
   {
@@ -2474,7 +2414,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: '击败50个敌人',
     category: 'combat',
     requirement: { type: 'kill', value: 50 },
-    reward: { exp: 1000, spiritStones: 500 },
+    reward: { exp: 1000, spiritStones: 500, titleId: 'title-slayer' },
     rarity: '稀有',
   },
   {
@@ -2483,8 +2423,17 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: '击败100个敌人',
     category: 'combat',
     requirement: { type: 'kill', value: 100 },
-    reward: { exp: 3000, spiritStones: 1500 },
+    reward: { exp: 3000, spiritStones: 1500, titleId: 'title-champion' },
     rarity: '传说',
+  },
+  {
+    id: 'ach-collector',
+    name: '收藏家',
+    description: '收集10种不同的物品',
+    category: 'collection',
+    requirement: { type: 'collect', value: 10 },
+    reward: { exp: 300, spiritStones: 200, titleId: 'title-collector' },
+    rarity: '稀有',
   },
   {
     id: 'ach-collector-20',
@@ -2492,7 +2441,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: '收集20种不同的物品',
     category: 'collection',
     requirement: { type: 'collect', value: 20 },
-    reward: { exp: 500, spiritStones: 300 },
+    reward: { exp: 500, spiritStones: 300, titleId: 'title-hoarder' },
     rarity: '稀有',
   },
   {
@@ -2501,34 +2450,7 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: '收集50种不同的物品',
     category: 'collection',
     requirement: { type: 'collect', value: 50 },
-    reward: { exp: 2000, spiritStones: 1000 },
-    rarity: '传说',
-  },
-  {
-    id: 'ach-meditate-10',
-    name: '勤修不辍',
-    description: '完成10次打坐修炼',
-    category: 'cultivation',
-    requirement: { type: 'meditate', value: 10 },
-    reward: { exp: 150, spiritStones: 50 },
-    rarity: '普通',
-  },
-  {
-    id: 'ach-meditate-50',
-    name: '闭关苦修',
-    description: '完成50次打坐修炼',
-    category: 'cultivation',
-    requirement: { type: 'meditate', value: 50 },
-    reward: { exp: 800, spiritStones: 300 },
-    rarity: '稀有',
-  },
-  {
-    id: 'ach-meditate-100',
-    name: '道心坚定',
-    description: '完成100次打坐修炼',
-    category: 'cultivation',
-    requirement: { type: 'meditate', value: 100 },
-    reward: { exp: 2000, spiritStones: 1000 },
+    reward: { exp: 2000, spiritStones: 1000, titleId: 'title-treasurer' },
     rarity: '传说',
   },
   {
@@ -2537,8 +2459,17 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: '完成20次历练',
     category: 'exploration',
     requirement: { type: 'adventure', value: 20 },
-    reward: { exp: 300, spiritStones: 150 },
+    reward: { exp: 300, spiritStones: 150, titleId: 'title-explorer' },
     rarity: '普通',
+  },
+  {
+    id: 'ach-adventure-50',
+    name: '冒险达人',
+    description: '完成50次历练',
+    category: 'exploration',
+    requirement: { type: 'adventure', value: 50 },
+    reward: { exp: 800, spiritStones: 400, titleId: 'title-adventurer' },
+    rarity: '稀有',
   },
   {
     id: 'ach-adventure-100',
@@ -2546,8 +2477,17 @@ export const ACHIEVEMENTS: Achievement[] = [
     description: '完成100次历练',
     category: 'exploration',
     requirement: { type: 'adventure', value: 100 },
-    reward: { exp: 1500, spiritStones: 800 },
+    reward: { exp: 1500, spiritStones: 800, titleId: 'title-traveler' },
     rarity: '稀有',
+  },
+  {
+    id: 'ach-meditate-100',
+    name: '道心坚定',
+    description: '完成100次打坐修炼',
+    category: 'cultivation',
+    requirement: { type: 'meditate', value: 100 },
+    reward: { exp: 2000, spiritStones: 1000, titleId: 'title-hermit' },
+    rarity: '传说',
   },
   {
     id: 'ach-equip-5',
@@ -2639,6 +2579,24 @@ export const ACHIEVEMENTS: Achievement[] = [
     reward: { exp: 2000, spiritStones: 1500 },
     rarity: '稀有',
   },
+  {
+    id: 'ach-alchemy-20',
+    name: '炼丹宗师',
+    description: '成功炼制20次丹药',
+    category: 'special',
+    requirement: { type: 'custom', value: 20, target: 'alchemy' },
+    reward: { exp: 1000, spiritStones: 1000, titleId: 'title-alchemist' },
+    rarity: '传说',
+  },
+  {
+    id: 'ach-sect-master',
+    name: '宗门砥柱',
+    description: '在宗门内晋升至长老或以上职位',
+    category: 'special',
+    requirement: { type: 'custom', value: 1, target: 'sect_elder' },
+    reward: { exp: 2000, spiritStones: 2000, titleId: 'title-sect-master' },
+    rarity: '传说',
+  },
 ];
 
 // --- 灵宠系统 ---
@@ -2712,6 +2670,10 @@ export const PET_TEMPLATES: PetTemplate[] = [
     description: '聪明伶俐的灵狐，擅长辅助。',
     rarity: '普通',
     image: '🦊',
+    stageImages: {
+      stage1: '🦊',
+      stage2: '🎑',
+    },
     baseStats: { attack: 50, defense: 25, hp: 500, speed: 30 },
     skills: [
       {
@@ -2729,6 +2691,28 @@ export const PET_TEMPLATES: PetTemplate[] = [
         effect: { heal: 250 },
       },
     ],
+    stageSkills: {
+      stage1: [
+        {
+          id: 'skill-fox-fire',
+          name: '灵狐火',
+          description: '发射灵气狐火攻击敌人',
+          type: 'attack',
+          effect: { damage: 150 },
+          cooldown: 3,
+        }
+      ],
+      stage2: [
+        {
+          id: 'skill-fox-enchant',
+          name: '魅惑',
+          description: '使敌人分神，降低其防御',
+          type: 'debuff',
+          effect: { buff: { defense: -100 } },
+          cooldown: 5,
+        }
+      ]
+    },
     evolutionRequirements: {
       stage1: {
         level: 10,
@@ -2752,6 +2736,10 @@ export const PET_TEMPLATES: PetTemplate[] = [
     description: '凶猛威武的雷虎，攻击力极强。',
     rarity: '稀有',
     image: '🐅',
+    stageImages: {
+      stage1: '🐆',
+      stage2: '⚡',
+    },
     baseStats: { attack: 100, defense: 50, hp: 1000, speed: 40 },
     skills: [
       {
@@ -2770,6 +2758,28 @@ export const PET_TEMPLATES: PetTemplate[] = [
         cooldown: 3,
       },
     ],
+    stageSkills: {
+      stage1: [
+        {
+          id: 'skill-thunder-roar',
+          name: '雷霆咆哮',
+          description: '震慑敌人，造成大量伤害',
+          type: 'attack',
+          effect: { damage: 300 },
+          cooldown: 4,
+        }
+      ],
+      stage2: [
+        {
+          id: 'skill-heavenly-thunder',
+          name: '九天引雷',
+          description: '引动九天神雷，毁灭性打击',
+          type: 'attack',
+          effect: { damage: 800 },
+          cooldown: 6,
+        }
+      ]
+    },
     evolutionRequirements: {
       stage1: {
         level: 20,
@@ -2793,6 +2803,10 @@ export const PET_TEMPLATES: PetTemplate[] = [
     description: '传说中的神兽凤凰，拥有强大的力量。',
     rarity: '仙品',
     image: '🦅',
+    stageImages: {
+      stage1: '🔥',
+      stage2: '🌅',
+    },
     baseStats: { attack: 200, defense: 100, hp: 2500, speed: 50 },
     skills: [
       {
@@ -2806,12 +2820,34 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-rebirth',
         name: '涅槃',
-        description: '复活主人',
+        description: '大量恢复气血',
         type: 'support',
-        effect: { heal: 50000 },
+        effect: { heal: 5000 },
         cooldown: 10,
       },
     ],
+    stageSkills: {
+      stage1: [
+        {
+          id: 'skill-phoenix-fire',
+          name: '凤凰真火',
+          description: '焚尽世间万物的神火',
+          type: 'attack',
+          effect: { damage: 600 },
+          cooldown: 4,
+        }
+      ],
+      stage2: [
+        {
+          id: 'skill-immortal-aura',
+          name: '长生领域',
+          description: '散发仙气，大幅提升全属性',
+          type: 'support',
+          effect: { buff: { attack: 1000, defense: 500, hp: 2000 } },
+          cooldown: 8,
+        }
+      ]
+    },
     evolutionRequirements: {
       stage1: {
         level: 30,
@@ -2836,6 +2872,10 @@ export const PET_TEMPLATES: PetTemplate[] = [
     description: '掌控寒冰之力的龙族，防御力极强。',
     rarity: '传说',
     image: '🐉',
+    stageImages: {
+      stage1: '🐲',
+      stage2: '🧊',
+    },
     baseStats: { attack: 150, defense: 75, hp: 2000, speed: 50 },
     skills: [
       {
@@ -2855,6 +2895,28 @@ export const PET_TEMPLATES: PetTemplate[] = [
         cooldown: 5,
       },
     ],
+    stageSkills: {
+      stage1: [
+        {
+          id: 'skill-ice-prison',
+          name: '寒冰牢笼',
+          description: '困住敌人并造成伤害',
+          type: 'attack',
+          effect: { damage: 800 },
+          cooldown: 5,
+        }
+      ],
+      stage2: [
+        {
+          id: 'skill-absolute-zero',
+          name: '绝对零度',
+          description: '极寒领域，冻结一切',
+          type: 'attack',
+          effect: { damage: 2000 },
+          cooldown: 8,
+        }
+      ]
+    },
     evolutionRequirements: {
       stage1: {
         level: 25,
@@ -2878,6 +2940,10 @@ export const PET_TEMPLATES: PetTemplate[] = [
     description: '掌控火焰之力的灵鸟，攻击力强大。',
     rarity: '稀有',
     image: '🔥',
+    stageImages: {
+      stage1: '🐥',
+      stage2: '🐦',
+    },
     baseStats: { attack: 100, defense: 50, hp: 1000, speed: 40 },
     skills: [
       {
@@ -2889,6 +2955,28 @@ export const PET_TEMPLATES: PetTemplate[] = [
         cooldown: 3,
       },
     ],
+    stageSkills: {
+      stage1: [
+        {
+          id: 'skill-fire-wing',
+          name: '烈焰之翼',
+          description: '挥动火翼，造成扇形伤害',
+          type: 'attack',
+          effect: { damage: 300 },
+          cooldown: 3,
+        }
+      ],
+      stage2: [
+        {
+          id: 'skill-vermilion-bird-strike',
+          name: '朱雀神击',
+          description: '化身朱雀，毁灭性冲击',
+          type: 'attack',
+          effect: { damage: 1200 },
+          cooldown: 6,
+        }
+      ]
+    },
     evolutionRequirements: {
       stage1: {
         level: 15,
@@ -2912,6 +3000,10 @@ export const PET_TEMPLATES: PetTemplate[] = [
     description: '防御力极强的灵龟，擅长守护。',
     rarity: '普通',
     image: '🐢',
+    stageImages: {
+      stage1: '🛡️',
+      stage2: '⛰️',
+    },
     baseStats: { attack: 30, defense: 50, hp: 500, speed: 20 },
     skills: [
       {
@@ -2923,6 +3015,28 @@ export const PET_TEMPLATES: PetTemplate[] = [
         cooldown: 6,
       },
     ],
+    stageSkills: {
+      stage1: [
+        {
+          id: 'skill-mystic-defense',
+          name: '玄武御',
+          description: '绝对防御，反弹部分伤害',
+          type: 'defense',
+          effect: { buff: { defense: 800 } },
+          cooldown: 8,
+        }
+      ],
+      stage2: [
+        {
+          id: 'skill-world-turtle',
+          name: '撑天之力',
+          description: '引动大地之力，固若金汤',
+          type: 'defense',
+          effect: { buff: { defense: 2000, hp: 5000 } },
+          cooldown: 12,
+        }
+      ]
+    },
     evolutionRequirements: {
       stage1: {
         level: 12,
@@ -2946,6 +3060,10 @@ export const PET_TEMPLATES: PetTemplate[] = [
     description: '速度极快的风狼，擅长突袭。',
     rarity: '稀有',
     image: '🐺',
+    stageImages: {
+      stage1: '🐕',
+      stage2: '💨',
+    },
     baseStats: { attack: 100, defense: 50, hp: 1000, speed: 55 },
     skills: [
       {
@@ -2957,6 +3075,28 @@ export const PET_TEMPLATES: PetTemplate[] = [
         cooldown: 2,
       },
     ],
+    stageSkills: {
+      stage1: [
+        {
+          id: 'skill-howl',
+          name: '月下长啸',
+          description: '提升攻击力与速度',
+          type: 'support',
+          effect: { buff: { attack: 500, speed: 50 } },
+          cooldown: 6,
+        }
+      ],
+      stage2: [
+        {
+          id: 'skill-celestial-wolf-slash',
+          name: '天狼裂星',
+          description: '极速冲杀，瞬间爆发',
+          type: 'attack',
+          effect: { damage: 2500 },
+          cooldown: 5,
+        }
+      ]
+    },
     evolutionRequirements: {
       stage1: {
         level: 18,
@@ -6329,3 +6469,182 @@ export const PREDEFINED_DAILY_QUESTS: PredefinedDailyQuest[] = [
   { type: 'realm', name: '古墓探秘', description: '探索古墓，寻找传承', targetRange: { min: 3, max: 5 }, rarity: '传说' },
   { type: 'realm', name: '仙府探索', description: '探索仙府遗迹，获得仙缘', targetRange: { min: 4, max: 6 }, rarity: '仙品' },
 ];
+
+// --- 宗门晋升系统 ---
+
+export const SECT_RANK_DATA: Record<SectRank, { contribution: number; title: string; description: string }> = {
+  [SectRank.Outer]: { contribution: 0, title: '外门弟子', description: '宗门最基础的成员，负责杂役和基础任务。' },
+  [SectRank.Inner]: { contribution: 500, title: '内门弟子', description: '拥有更高权限和更多资源，可接触宗门核心功法。' },
+  [SectRank.Core]: { contribution: 2000, title: '核心弟子', description: '宗门重点培养对象，有望成为未来宗门支柱。' },
+  [SectRank.Elder]: { contribution: 8000, title: '长老', description: '宗门高层，拥有决策权和丰厚俸禄。' },
+  [SectRank.Leader]: { contribution: 50000, title: '宗主', description: '宗门之主，执掌大权，统领一方。' },
+};
+
+export const SECT_RANK_REQUIREMENTS: Record<
+  SectRank,
+  { contribution: number; realmIndex: number }
+> = {
+  [SectRank.Outer]: { contribution: 0, realmIndex: 0 },
+  [SectRank.Inner]: { contribution: 500, realmIndex: 1 },
+  [SectRank.Core]: { contribution: 2000, realmIndex: 2 },
+  [SectRank.Elder]: { contribution: 8000, realmIndex: 3 },
+  [SectRank.Leader]: { contribution: 50000, realmIndex: 5 }, // 宗主需要更高境界
+};
+
+export const SECT_PROMOTION_BASE_REWARDS: Record<SectRank, { contribution: number; exp: number; spiritStones: number }> = {
+  [SectRank.Outer]: { contribution: 0, exp: 0, spiritStones: 0 },
+  [SectRank.Inner]: { contribution: 500, exp: 2000, spiritStones: 3000 },
+  [SectRank.Core]: { contribution: 1500, exp: 8000, spiritStones: 10000 },
+  [SectRank.Elder]: { contribution: 5000, exp: 30000, spiritStones: 50000 },
+  [SectRank.Leader]: { contribution: 20000, exp: 100000, spiritStones: 200000 },
+};
+
+export const SECT_MASTER_CHALLENGE_REQUIREMENTS = {
+  minRank: SectRank.Elder,
+  minRealm: RealmType.NascentSoul,
+  minContribution: 10000,
+  challengeCost: {
+    spiritStones: 50000,
+  },
+  // 挑战成功后的奖励
+  victoryReward: {
+    exp: 500000,
+    spiritStones: 1000000,
+    items: [{ name: '宗主信物', quantity: 1 }, { name: '宗门宝库钥匙', quantity: 1 }],
+  },
+  // 挑战失败的惩罚
+  defeatPenalty: {
+    contributionLoss: 5000,
+    expLoss: 100000,
+    hpLossPercent: 0.5, // 损失50%当前气血
+  },
+};
+
+export const SECT_SPECIAL_REWARDS: Record<string, Record<SectRank, { items: { name: string; quantity: number }[] }>> = {
+  'sect-cloud': {
+    [SectRank.Outer]: { items: [] },
+    [SectRank.Inner]: { items: [{ name: '聚气丹', quantity: 10 }, { name: '云灵草', quantity: 5 }] },
+    [SectRank.Core]: { items: [{ name: '洗髓丹', quantity: 5 }, { name: '云灵草', quantity: 10 }, { name: '聚灵符', quantity: 3 }] },
+    [SectRank.Elder]: { items: [{ name: '筑基丹', quantity: 2 }, { name: '云灵草', quantity: 20 }, { name: '聚灵符', quantity: 10 }, { name: '宗门制式剑', quantity: 1 }] },
+    [SectRank.Leader]: { items: [{ name: '云灵宗秘典', quantity: 1 }, { name: '仙品材料包', quantity: 1 }] },
+  },
+  'sect-fire': {
+    [SectRank.Outer]: { items: [] },
+    [SectRank.Inner]: { items: [{ name: '火精', quantity: 5 }, { name: '炼器石', quantity: 10 }] },
+    [SectRank.Core]: { items: [{ name: '火精', quantity: 10 }, { name: '炼器石', quantity: 20 }, { name: '烈火丹', quantity: 3 }] },
+    [SectRank.Elder]: { items: [{ name: '火精', quantity: 20 }, { name: '炼器石', quantity: 50 }, { name: '烈火丹', quantity: 10 }, { name: '熔岩之心', quantity: 1 }] },
+    [SectRank.Leader]: { items: [{ name: '焚天神火令', quantity: 1 }, { name: '仙品材料包', quantity: 1 }] },
+  },
+  'sect-sword': {
+    [SectRank.Outer]: { items: [] },
+    [SectRank.Inner]: { items: [{ name: '精铁', quantity: 10 }, { name: '剑意草', quantity: 5 }] },
+    [SectRank.Core]: { items: [{ name: '精铁', quantity: 20 }, { name: '剑意草', quantity: 10 }, { name: '青钢剑', quantity: 1 }] },
+    [SectRank.Elder]: { items: [{ name: '精铁', quantity: 50 }, { name: '剑意草', quantity: 20 }, { name: '青钢剑', quantity: 1 }, { name: '剑修功法残卷', quantity: 1 }] },
+    [SectRank.Leader]: { items: [{ name: '无名古剑', quantity: 1 }, { name: '仙品材料包', quantity: 1 }] },
+  },
+  'sect-temple': {
+    [SectRank.Outer]: { items: [] },
+    [SectRank.Inner]: { items: [{ name: '止血草', quantity: 10 }, { name: '护体符', quantity: 3 }] },
+    [SectRank.Core]: { items: [{ name: '止血草', quantity: 20 }, { name: '护体符', quantity: 5 }, { name: '玄铁甲', quantity: 1 }] },
+    [SectRank.Elder]: { items: [{ name: '止血草', quantity: 30 }, { name: '护体符', quantity: 10 }, { name: '玄铁甲', quantity: 1 }, { name: '佛门护符', quantity: 1 }] },
+    [SectRank.Leader]: { items: [{ name: '降魔金刚杵', quantity: 1 }, { name: '仙品材料包', quantity: 1 }] },
+  },
+  'sect-taoist': {
+    [SectRank.Outer]: { items: [] },
+    [SectRank.Inner]: { items: [{ name: '聚灵草', quantity: 10 }, { name: '经验符', quantity: 5 }] },
+    [SectRank.Core]: { items: [{ name: '聚灵草', quantity: 20 }, { name: '经验符', quantity: 10 }, { name: '聚灵符', quantity: 5 }] },
+    [SectRank.Elder]: { items: [{ name: '聚灵草', quantity: 30 }, { name: '经验符', quantity: 20 }, { name: '聚灵符', quantity: 10 }, { name: '道门心法残卷', quantity: 1 }] },
+    [SectRank.Leader]: { items: [{ name: '乾坤太极图', quantity: 1 }, { name: '仙品材料包', quantity: 1 }] },
+  },
+  'sect-blood': {
+    [SectRank.Outer]: { items: [] },
+    [SectRank.Inner]: { items: [{ name: '妖兽内丹', quantity: 5 }, { name: '血精', quantity: 3 }] },
+    [SectRank.Core]: { items: [{ name: '妖兽内丹', quantity: 10 }, { name: '血精', quantity: 5 }, { name: '魔血丹', quantity: 3 }] },
+    [SectRank.Elder]: { items: [{ name: '妖兽内丹', quantity: 20 }, { name: '血精', quantity: 10 }, { name: '魔血丹', quantity: 10 }, { name: '血魔功残卷', quantity: 1 }] },
+    [SectRank.Leader]: { items: [{ name: '血海祭坛', quantity: 1 }, { name: '仙品材料包', quantity: 1 }] },
+  },
+  'sect-lotus': {
+    [SectRank.Outer]: { items: [] },
+    [SectRank.Inner]: { items: [{ name: '精铁', quantity: 10 }, { name: '青莲叶', quantity: 5 }] },
+    [SectRank.Core]: { items: [{ name: '精铁', quantity: 20 }, { name: '青莲叶', quantity: 10 }, { name: '青钢剑', quantity: 1 }] },
+    [SectRank.Elder]: { items: [{ name: '精铁', quantity: 50 }, { name: '青莲叶', quantity: 20 }, { name: '青钢剑', quantity: 1 }, { name: '青莲剑诀残卷', quantity: 1 }] },
+    [SectRank.Leader]: { items: [{ name: '造化青莲', quantity: 1 }, { name: '仙品材料包', quantity: 1 }] },
+  },
+  'sect-xuantian': {
+    [SectRank.Outer]: { items: [] },
+    [SectRank.Inner]: { items: [{ name: '千年人参', quantity: 3 }, { name: '聚灵草', quantity: 10 }] },
+    [SectRank.Core]: { items: [{ name: '千年人参', quantity: 5 }, { name: '聚灵草', quantity: 20 }, { name: '玄天丹', quantity: 3 }] },
+    [SectRank.Elder]: { items: [{ name: '千年人参', quantity: 10 }, { name: '聚灵草', quantity: 30 }, { name: '玄天丹', quantity: 10 }, { name: '玄天功残卷', quantity: 1 }] },
+    [SectRank.Leader]: { items: [{ name: '玄天令', quantity: 1 }, { name: '仙品材料包', quantity: 1 }] },
+  },
+  'sect-jiuyou': {
+    [SectRank.Outer]: { items: [] },
+    [SectRank.Inner]: { items: [{ name: '妖兽内丹', quantity: 5 }, { name: '阴魂石', quantity: 3 }] },
+    [SectRank.Core]: { items: [{ name: '妖兽内丹', quantity: 10 }, { name: '阴魂石', quantity: 5 }, { name: '九幽丹', quantity: 3 }] },
+    [SectRank.Elder]: { items: [{ name: '妖兽内丹', quantity: 20 }, { name: '阴魂石', quantity: 10 }, { name: '九幽丹', quantity: 10 }, { name: '九幽魔功残卷', quantity: 1 }] },
+    [SectRank.Leader]: { items: [{ name: '冥王玺', quantity: 1 }, { name: '仙品材料包', quantity: 1 }] },
+  },
+  'sect-star': {
+    [SectRank.Outer]: { items: [] },
+    [SectRank.Inner]: { items: [{ name: '星辰石', quantity: 5 }, { name: '星辉草', quantity: 5 }] },
+    [SectRank.Core]: { items: [{ name: '星辰石', quantity: 10 }, { name: '星辉草', quantity: 10 }, { name: '星辰剑', quantity: 1 }] },
+    [SectRank.Elder]: { items: [{ name: '星辰石', quantity: 20 }, { name: '星辉草', quantity: 20 }, { name: '星辰剑', quantity: 1 }, { name: '星辰诀残卷', quantity: 1 }] },
+    [SectRank.Leader]: { items: [{ name: '万星盘', quantity: 1 }, { name: '仙品材料包', quantity: 1 }] },
+  },
+  'sect-dragon': {
+    [SectRank.Outer]: { items: [] },
+    [SectRank.Inner]: { items: [{ name: '龙鳞果', quantity: 3 }, { name: '龙血草', quantity: 5 }] },
+    [SectRank.Core]: { items: [{ name: '龙鳞果', quantity: 5 }, { name: '龙血草', quantity: 10 }, { name: '龙鳞甲', quantity: 1 }] },
+    [SectRank.Elder]: { items: [{ name: '龙鳞果', quantity: 10 }, { name: '龙血草', quantity: 20 }, { name: '龙鳞甲', quantity: 1 }, { name: '真龙诀残卷', quantity: 1 }] },
+    [SectRank.Leader]: { items: [{ name: '真龙逆鳞', quantity: 1 }, { name: '仙品材料包', quantity: 1 }] },
+  },
+  'sect-phoenix': {
+    [SectRank.Outer]: { items: [] },
+    [SectRank.Inner]: { items: [{ name: '九叶芝草', quantity: 3 }, { name: '凤凰羽', quantity: 5 }] },
+    [SectRank.Core]: { items: [{ name: '九叶芝草', quantity: 5 }, { name: '凤凰羽', quantity: 10 }, { name: '涅槃丹', quantity: 3 }] },
+    [SectRank.Elder]: { items: [{ name: '九叶芝草', quantity: 10 }, { name: '凤凰羽', quantity: 20 }, { name: '涅槃丹', quantity: 10 }, { name: '凤凰涅槃功残卷', quantity: 1 }] },
+    [SectRank.Leader]: { items: [{ name: '凤凰精血', quantity: 1 }, { name: '仙品材料包', quantity: 1 }] },
+  },
+  'sect-thunder': {
+    [SectRank.Outer]: { items: [] },
+    [SectRank.Inner]: { items: [{ name: '炼器石', quantity: 10 }, { name: '雷晶', quantity: 5 }] },
+    [SectRank.Core]: { items: [{ name: '炼器石', quantity: 20 }, { name: '雷晶', quantity: 10 }, { name: '雷霆符', quantity: 3 }] },
+    [SectRank.Elder]: { items: [{ name: '炼器石', quantity: 50 }, { name: '雷晶', quantity: 20 }, { name: '雷霆符', quantity: 10 }, { name: '雷神诀残卷', quantity: 1 }] },
+    [SectRank.Leader]: { items: [{ name: '雷公锤', quantity: 1 }, { name: '仙品材料包', quantity: 1 }] },
+  },
+  'sect-ice': {
+    [SectRank.Outer]: { items: [] },
+    [SectRank.Inner]: { items: [{ name: '聚灵草', quantity: 10 }, { name: '冰晶', quantity: 5 }] },
+    [SectRank.Core]: { items: [{ name: '聚灵草', quantity: 20 }, { name: '冰晶', quantity: 10 }, { name: '寒冰符', quantity: 3 }] },
+    [SectRank.Elder]: { items: [{ name: '聚灵草', quantity: 30 }, { name: '冰晶', quantity: 20 }, { name: '寒冰符', quantity: 10 }, { name: '冰魄诀残卷', quantity: 1 }] },
+    [SectRank.Leader]: { items: [{ name: '极寒冰魄', quantity: 1 }, { name: '仙品材料包', quantity: 1 }] },
+  },
+  'sect-poison': {
+    [SectRank.Outer]: { items: [] },
+    [SectRank.Inner]: { items: [{ name: '止血草', quantity: 10 }, { name: '毒草', quantity: 5 }] },
+    [SectRank.Core]: { items: [{ name: '止血草', quantity: 20 }, { name: '毒草', quantity: 10 }, { name: '毒丹', quantity: 3 }] },
+    [SectRank.Elder]: { items: [{ name: '止血草', quantity: 30 }, { name: '毒草', quantity: 20 }, { name: '毒丹', quantity: 10 }, { name: '毒王经残卷', quantity: 1 }] },
+    [SectRank.Leader]: { items: [{ name: '万毒珠', quantity: 1 }, { name: '仙品材料包', quantity: 1 }] },
+  },
+  'sect-illusion': {
+    [SectRank.Outer]: { items: [] },
+    [SectRank.Inner]: { items: [{ name: '聚灵草', quantity: 10 }, { name: '幻心草', quantity: 5 }] },
+    [SectRank.Core]: { items: [{ name: '聚灵草', quantity: 20 }, { name: '幻心草', quantity: 10 }, { name: '迷魂符', quantity: 3 }] },
+    [SectRank.Elder]: { items: [{ name: '聚灵草', quantity: 30 }, { name: '幻心草', quantity: 20 }, { name: '迷魂符', quantity: 10 }, { name: '幻月诀残卷', quantity: 1 }] },
+    [SectRank.Leader]: { items: [{ name: '蜃楼宝盒', quantity: 1 }, { name: '仙品材料包', quantity: 1 }] },
+  },
+  'sect-diamond': {
+    [SectRank.Outer]: { items: [] },
+    [SectRank.Inner]: { items: [{ name: '炼器石', quantity: 10 }, { name: '金刚石', quantity: 5 }] },
+    [SectRank.Core]: { items: [{ name: '炼器石', quantity: 20 }, { name: '金刚石', quantity: 10 }, { name: '玄铁甲', quantity: 1 }] },
+    [SectRank.Elder]: { items: [{ name: '炼器石', quantity: 50 }, { name: '金刚石', quantity: 20 }, { name: '玄铁甲', quantity: 1 }, { name: '金刚体诀残卷', quantity: 1 }] },
+    [SectRank.Leader]: { items: [{ name: '金刚不坏身', quantity: 1 }, { name: '仙品材料包', quantity: 1 }] },
+  },
+  'sect-yinyang': {
+    [SectRank.Outer]: { items: [] },
+    [SectRank.Inner]: { items: [{ name: '聚灵草', quantity: 10 }, { name: '阴阳石', quantity: 5 }] },
+    [SectRank.Core]: { items: [{ name: '聚灵草', quantity: 20 }, { name: '阴阳石', quantity: 10 }, { name: '阴阳丹', quantity: 3 }] },
+    [SectRank.Elder]: { items: [{ name: '聚灵草', quantity: 30 }, { name: '阴阳石', quantity: 20 }, { name: '阴阳丹', quantity: 10 }, { name: '阴阳诀残卷', quantity: 1 }] },
+    [SectRank.Leader]: { items: [{ name: '阴阳鱼', quantity: 1 }, { name: '仙品材料包', quantity: 1 }] },
+  },
+};

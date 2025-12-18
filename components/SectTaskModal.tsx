@@ -53,12 +53,24 @@ const SectTaskModal: React.FC<Props> = ({
       setLoading(true);
       setProgress(0);
 
+      // 根据推荐属性计算成功率加成
+      let statBonus = 0;
+      if (task.recommendedFor) {
+        if (task.recommendedFor.highAttack) statBonus += (player.attack / 500);
+        if (task.recommendedFor.highDefense) statBonus += (player.defense / 250);
+        if (task.recommendedFor.highSpirit) statBonus += (player.spirit / 100);
+        if (task.recommendedFor.highSpeed) statBonus += (player.speed / 100);
+      }
+
+      // 限制加成上限为 20%
+      const finalStatBonus = Math.min(20, statBonus);
+
       // 模拟任务执行进度
       const duration = {
-        'instant': 1000,
-        'short': 2000,
-        'medium': 4000,
-        'long': 6000,
+        'instant': 800,
+        'short': 1500,
+        'medium': 3000,
+        'long': 5000,
       }[task.timeCost] || 2000;
 
       const steps = 20;
@@ -68,8 +80,8 @@ const SectTaskModal: React.FC<Props> = ({
         await new Promise((resolve) => setTimeout(resolve, stepDuration));
         setProgress((i / steps) * 100);
 
-        // 在任务执行过程中随机触发奇遇（1%概率）
-        if (i === Math.floor(steps / 2) && Math.random() < 0.01) {
+        // 在任务执行过程中随机触发奇遇 (提高到 3% 概率)
+        if (i === Math.floor(steps / 2) && Math.random() < 0.03) {
           setLoading(false);
           setStage('encounter');
 
@@ -78,14 +90,13 @@ const SectTaskModal: React.FC<Props> = ({
             const result = await generateAdventureEvent(
               player,
               'lucky',
-              '低', // 任务中的奇遇风险较低
+              '低',
               undefined,
               undefined
             );
             setEncounterResult(result);
           } catch (error) {
             console.error('生成奇遇失败:', error);
-            // 如果AI失败，使用默认奇遇
             const difficultyMultiplier = {
               '简单': 0.7,
               '普通': 1,
@@ -94,10 +105,10 @@ const SectTaskModal: React.FC<Props> = ({
             }[task.difficulty] || 1;
 
             setEncounterResult({
-              story: '你在执行任务途中遇到了一位神秘修士，他给了你一些奖励。',
+              story: '你在执行任务途中遇到了一位宗门前辈，他见你勤勉，随手赐下一番机缘。',
               hpChange: 0,
-              expChange: Math.floor(20 * difficultyMultiplier),
-              spiritStonesChange: Math.floor(50 * difficultyMultiplier),
+              expChange: Math.floor(50 * difficultyMultiplier),
+              spiritStonesChange: Math.floor(100 * difficultyMultiplier),
               eventColor: 'special',
             });
           }
@@ -114,31 +125,51 @@ const SectTaskModal: React.FC<Props> = ({
     }
   };
 
-  const handleEncounterContinue = () => {
-    setStage('executing');
-    setLoading(true);
+  const handleEncounterContinue = async () => {
+    try {
+      setStage('executing');
+      setLoading(true);
 
-    // 继续任务执行
-    const remainingProgress = 50;
-    const steps = 10;
-    const stepDuration = 200;
+      // 继续任务执行，从50%进度开始
+      const duration = {
+        'instant': 800,
+        'short': 1500,
+        'medium': 3000,
+        'long': 5000,
+      }[task.timeCost] || 2000;
 
-    const continueTask = async () => {
-      for (let i = 0; i <= steps; i++) {
+      const steps = 20;
+      const stepDuration = duration / steps;
+      const startProgress = 50; // 从50%开始，因为奇遇发生在中间
+
+      for (let i = Math.floor(steps / 2); i <= steps; i++) {
         await new Promise((resolve) => setTimeout(resolve, stepDuration));
-        setProgress(remainingProgress + (i / steps) * 50);
+        setProgress((i / steps) * 100);
       }
+
       setLoading(false);
       setStage('complete');
-    };
-
-    continueTask();
+    } catch (error) {
+      console.error('继续执行任务出错:', error);
+      setLoading(false);
+      setStage('complete');
+    }
   };
 
   const handleComplete = () => {
-    // 根据成功率判断是否完美完成
-    const successRate = task.successRate ?? 75;
-    const isPerfectCompletion = Math.random() * 100 < successRate;
+    // 计算最终成功率
+    let successRate = task.successRate ?? 75;
+
+    // 加上属性加成
+    if (task.recommendedFor) {
+      const attackBonus = task.recommendedFor.highAttack ? (player.attack / 1000) * 10 : 0;
+      const defenseBonus = task.recommendedFor.highDefense ? (player.defense / 500) * 10 : 0;
+      const spiritBonus = task.recommendedFor.highSpirit ? (player.spirit / 200) * 10 : 0;
+      const speedBonus = task.recommendedFor.highSpeed ? (player.speed / 200) * 10 : 0;
+      successRate += (attackBonus + defenseBonus + spiritBonus + speedBonus);
+    }
+
+    const isPerfectCompletion = Math.random() * 100 < Math.min(95, successRate);
 
     onTaskComplete(task, encounterResult || undefined, isPerfectCompletion);
     onClose();
@@ -177,6 +208,14 @@ const SectTaskModal: React.FC<Props> = ({
                   task.timeCost === 'medium' ? '中等' : '较长'
                 }
               </span>
+              {task.recommendedFor && (
+                <div className="flex gap-1 ml-auto">
+                  {task.recommendedFor.highAttack && <span className="text-[10px] bg-red-900/30 text-red-400 px-1.5 py-0.5 rounded">推荐攻击</span>}
+                  {task.recommendedFor.highDefense && <span className="text-[10px] bg-blue-900/30 text-blue-400 px-1.5 py-0.5 rounded">推荐防御</span>}
+                  {task.recommendedFor.highSpirit && <span className="text-[10px] bg-purple-900/30 text-purple-400 px-1.5 py-0.5 rounded">推荐神识</span>}
+                  {task.recommendedFor.highSpeed && <span className="text-[10px] bg-green-900/30 text-green-400 px-1.5 py-0.5 rounded">推荐速度</span>}
+                </div>
+              )}
             </div>
           </div>
           <button

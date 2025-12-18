@@ -246,6 +246,30 @@ function App() {
   );
   const [deathReason, setDeathReason] = useState('');
 
+  // 统一处理回合制战斗打开逻辑
+  const handleOpenTurnBasedBattle = useCallback(
+    (params: {
+      adventureType: AdventureType;
+      riskLevel?: '低' | '中' | '高' | '极度危险';
+      realmMinRealm?: RealmType;
+    }) => {
+      // 如果正在自动历练，暂停自动历练但保存状态
+      if (autoAdventure) {
+        setAutoAdventure(false);
+        setAutoAdventurePausedByBattle(true);
+      }
+      setTurnBasedBattleParams(params);
+      setIsTurnBasedBattleOpen(true);
+    },
+    [
+      autoAdventure,
+      setAutoAdventure,
+      setAutoAdventurePausedByBattle,
+      setTurnBasedBattleParams,
+      setIsTurnBasedBattleOpen,
+    ]
+  );
+
   // 初始化所有模块化的 handlers
   const battleHandlers = useBattleHandlers({
     battleReplay,
@@ -349,28 +373,6 @@ function App() {
     setLotteryRewards,
   });
 
-  const sectHandlers = useSectHandlers({
-    player,
-    setPlayer,
-    addLog,
-    setIsSectOpen,
-    setPurchaseSuccess,
-    setItemActionLog,
-  });
-
-  const achievementHandlers = useAchievementHandlers({
-    player,
-    setPlayer,
-    addLog,
-  });
-
-  // 日常任务相关逻辑
-  const dailyQuestHandlers = useDailyQuestHandlers({
-    player,
-    setPlayer,
-    addLog,
-  });
-
   // 冒险相关逻辑抽离到 useAdventureHandlers
   const adventureHandlers = useAdventureHandlers({
     player,
@@ -401,17 +403,32 @@ function App() {
       setReputationEvent(event);
       setIsReputationEventOpen(true);
     },
-    onOpenTurnBasedBattle: (params) => {
-      // 如果正在自动历练，暂停自动历练但保存状态
-      if (autoAdventure) {
-        setAutoAdventure(false);
-        setAutoAdventurePausedByBattle(true);
-      }
-      setTurnBasedBattleParams(params);
-      setIsTurnBasedBattleOpen(true);
-    },
+    onOpenTurnBasedBattle: handleOpenTurnBasedBattle,
     skipBattle: false, // 不再跳过战斗，自动模式下也会弹出战斗弹窗
     useTurnBasedBattle: true, // 使用新的回合制战斗系统
+  });
+
+  const sectHandlers = useSectHandlers({
+    player,
+    setPlayer,
+    addLog,
+    setIsSectOpen,
+    setPurchaseSuccess,
+    setItemActionLog,
+    onChallengeLeader: handleOpenTurnBasedBattle,
+  });
+
+  const achievementHandlers = useAchievementHandlers({
+    player,
+    setPlayer,
+    addLog,
+  });
+
+  // 日常任务相关逻辑
+  const dailyQuestHandlers = useDailyQuestHandlers({
+    player,
+    setPlayer,
+    addLog,
   });
 
   // 从 handlers 中提取函数
@@ -477,24 +494,8 @@ function App() {
 
   const handleUseItem = itemHandlers.handleUseItem;
   const handleDiscardItem = itemHandlers.handleDiscardItem;
-  const handleBatchUse = async (itemIds: string[]) => {
-    if (itemIds.length === 0) return;
-
-    // 获取所有要使用的物品
-    const itemsToUse = itemIds
-      .map((id) => player.inventory.find((item) => item.id === id))
-      .filter(
-        (item): item is (typeof player.inventory)[0] => item !== undefined
-      );
-
-    // 批量使用：逐个使用物品（使用延迟以避免状态更新冲突）
-    for (const item of itemsToUse) {
-      if (item.quantity > 0) {
-        handleUseItem(item);
-        // 添加小延迟以确保状态更新完成
-        await new Promise((resolve) => setTimeout(resolve, 50));
-      }
-    }
+  const handleBatchUse = (itemIds: string[]) => {
+    itemHandlers.handleBatchUseItems(itemIds);
   };
 
   const handleBatchDiscard = (itemIds: string[]) => {
@@ -1208,6 +1209,7 @@ function App() {
         cooldown={cooldown}
         purchaseSuccess={purchaseSuccess}
         lotteryRewards={lotteryRewards}
+        onCloseLotteryRewards={() => setLotteryRewards([])}
         itemActionLog={itemActionLogValue}
         isMobileSidebarOpen={isMobileSidebarOpen}
         isMobileStatsOpen={isMobileStatsOpen}
@@ -1450,6 +1452,7 @@ function App() {
           handleSectTask,
           handleSectPromote,
           handleSectBuy,
+          handleChallengeLeader: sectHandlers.handleChallengeLeader,
           handleEnterRealm,
           handleSelectTalent,
           handleSelectTitle,
@@ -1510,6 +1513,16 @@ function App() {
           },
         }}
       />
+
+      {/* 寿元将尽预警 */}
+      {player && !isDead && player.lifespan < Math.max(5, (player.maxLifespan || 100) * 0.1) && (
+        <>
+          <div className="lifespan-warning" />
+          <div className="lifespan-warning-text animate-pulse">
+            ⚠️ 寿元将尽 (剩余 {player.lifespan.toFixed(1)} 年)
+          </div>
+        </>
+      )}
     </>
   );
 }

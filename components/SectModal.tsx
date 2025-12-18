@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { PlayerStats, SectRank, RealmType, Item, AdventureResult } from '../types';
-import { SECTS, SECT_RANK_REQUIREMENTS, REALM_ORDER } from '../constants';
+import { SECTS, SECT_RANK_REQUIREMENTS, REALM_ORDER, SECT_RANK_DATA } from '../constants';
 import { generateRandomSects, generateRandomSectTasks, generateSectShopItems, RandomSectTask } from '../services/randomService';
 import { X, Users, ShoppingBag, Shield, Scroll, ArrowUp, RefreshCw } from 'lucide-react';
 import SectTaskModal from './SectTaskModal';
+import { showConfirm } from '../utils/toastUtils';
 
 interface Props {
   isOpen: boolean;
@@ -15,6 +16,7 @@ interface Props {
   onTask: (task: RandomSectTask, encounterResult?: AdventureResult) => void;
   onPromote: () => void;
   onBuy: (item: Partial<Item>, cost: number, quantity?: number) => void;
+  onChallengeLeader: () => void;
 }
 
 const SectModal: React.FC<Props> = ({
@@ -27,6 +29,7 @@ const SectModal: React.FC<Props> = ({
   onTask,
   onPromote,
   onBuy,
+  onChallengeLeader,
 }) => {
   const [activeTab, setActiveTab] = useState<'hall' | 'mission' | 'shop'>(
     'hall'
@@ -249,8 +252,9 @@ const SectModal: React.FC<Props> = ({
               <h3 className="text-xl md:text-2xl font-serif text-mystic-gold">
                 {currentSect?.name}
               </h3>
-              <span className="text-[10px] md:text-xs px-2 py-0.5 rounded bg-stone-700 text-stone-300 border border-stone-600">
-                {player.sectRank}
+              <span className="text-[10px] md:text-xs px-2 py-0.5 rounded bg-stone-700 text-stone-300 border border-stone-600 flex items-center gap-1">
+                <Shield size={10} className="text-blue-400" />
+                {SECT_RANK_DATA[player.sectRank]?.title || player.sectRank}
               </span>
             </div>
             <div className="text-xs md:text-sm text-stone-400 flex gap-4">
@@ -350,7 +354,22 @@ const SectModal: React.FC<Props> = ({
                       </div>
                     </div>
                     <button
-                      onClick={onPromote}
+                      onClick={() => {
+                        if (!canPromote) return;
+                        // 如果是晋升到宗主，弹出确认对话框
+                        if (nextRank === SectRank.Leader) {
+                          showConfirm(
+                            '宗主之位需通过挑战禁地并战胜上代宗主方可继任。\n\n挑战失败将损失贡献和气血，是否确认挑战？',
+                            '挑战宗主',
+                            () => {
+                              onChallengeLeader();
+                            }
+                          );
+                        } else {
+                          // 其他等级直接晋升
+                          onPromote();
+                        }
+                      }}
                       disabled={!canPromote}
                       className={`
                          w-full py-2 rounded font-serif text-sm transition-colors flex items-center justify-center gap-2
@@ -365,9 +384,35 @@ const SectModal: React.FC<Props> = ({
                     </button>
                   </div>
                 ) : (
-                  <p className="text-mystic-gold text-center py-4">
-                    你已位极人臣，乃宗门之中流砥柱。
-                  </p>
+                  <div>
+                    {player.sectRank === SectRank.Elder && (
+                      <div className="mt-4 pt-4 border-t border-stone-700">
+                        <p className="text-sm text-stone-400 mb-2 text-center">
+                          你已身为长老，是否有志更进一步，挑战现任宗主？
+                        </p>
+                        <button
+                          onClick={onChallengeLeader}
+                          className="w-full py-3 bg-red-900/30 text-red-400 border border-red-900 hover:bg-red-900/50 rounded font-serif text-base transition-all animate-pulse"
+                        >
+                          🔥 挑战宗主 🔥
+                        </button>
+                      </div>
+                    )}
+                    <p className="text-mystic-gold text-center py-4">
+                      {player.sectRank === SectRank.Leader ? (
+                        <div className="space-y-4">
+                          <p>你已登临宗主之位，统领全宗。</p>
+                          <div className="bg-mystic-gold/10 p-4 rounded border border-mystic-gold/30">
+                            <h5 className="text-mystic-gold font-bold mb-2">宗主特权</h5>
+                            <ul className="text-xs text-stone-400 text-left space-y-1 list-disc list-inside">
+                              <li>藏宝阁兑换享受 <span className="text-mystic-gold">5折</span> 优惠</li>
+                              <li>后续将解锁更多宗门管理功能...</li>
+                            </ul>
+                          </div>
+                        </div>
+                      ) : '你已位极人臣，乃宗门之中流砥柱。'}
+                    </p>
+                  </div>
                 )}
               </div>
 
@@ -462,37 +507,16 @@ const SectModal: React.FC<Props> = ({
                         }
                       }
                     }
-                    // 检查每日任务限制
+                    // 检查每日任务次数限制（按单个任务）
                     const today = new Date().toISOString().split('T')[0];
                     const lastReset = player.lastTaskResetDate || today;
-                    const taskLimits: Record<string, number> = {
-                      instant: 10,
-                      short: 5,
-                      medium: 3,
-                      long: 2,
-                    };
-                    const limit = taskLimits[task.timeCost];
-                    if (limit) {
-                      const dailyTaskCount =
-                        lastReset === today
-                          ? player.dailyTaskCount &&
-                            typeof player.dailyTaskCount === 'object'
-                            ? player.dailyTaskCount
-                            : typeof player.dailyTaskCount === 'number'
-                              ? {
-                                  instant: player.dailyTaskCount,
-                                  short: 0,
-                                  medium: 0,
-                                  long: 0,
-                                }
-                              : { instant: 0, short: 0, medium: 0, long: 0 }
-                          : { instant: 0, short: 0, medium: 0, long: 0 };
-                      const currentCount =
-                        dailyTaskCount[
-                          task.timeCost as keyof typeof dailyTaskCount
-                        ] || 0;
-                      if (currentCount >= limit) {
-                        reasons.push('今日已完成该类型任务');
+                    const TASK_DAILY_LIMIT = 3; // 每个任务每天最多3次
+
+                    if (lastReset === today) {
+                      const dailyTaskCount = player.dailyTaskCount || {};
+                      const currentCount = dailyTaskCount[task.id] || 0;
+                      if (currentCount >= TASK_DAILY_LIMIT) {
+                        reasons.push(`今日已完成${TASK_DAILY_LIMIT}次该任务`);
                       }
                     }
                     return {
@@ -652,40 +676,14 @@ const SectModal: React.FC<Props> = ({
                         {(() => {
                           const today = new Date().toISOString().split('T')[0];
                           const lastReset = player.lastTaskResetDate || today;
-                          const taskLimits: Record<string, number> = {
-                            instant: 10,
-                            short: 5,
-                            medium: 3,
-                            long: 2,
-                          };
-                          const limit = taskLimits[task.timeCost];
-                          if (limit) {
-                            const dailyTaskCount =
-                              lastReset === today
-                                ? player.dailyTaskCount &&
-                                  typeof player.dailyTaskCount === 'object'
-                                  ? player.dailyTaskCount
-                                  : typeof player.dailyTaskCount === 'number'
-                                    ? {
-                                        instant: player.dailyTaskCount,
-                                        short: 0,
-                                        medium: 0,
-                                        long: 0,
-                                      }
-                                    : {
-                                        instant: 0,
-                                        short: 0,
-                                        medium: 0,
-                                        long: 0,
-                                      }
-                                : { instant: 0, short: 0, medium: 0, long: 0 };
-                            const currentCount =
-                              dailyTaskCount[
-                                task.timeCost as keyof typeof dailyTaskCount
-                              ] || 0;
+                          const TASK_DAILY_LIMIT = 3; // 每个任务每天最多3次
+
+                          if (lastReset === today) {
+                            const dailyTaskCount = player.dailyTaskCount || {};
+                            const currentCount = dailyTaskCount[task.id] || 0;
                             return (
                               <div className="text-xs text-stone-500">
-                                今日已完成: {currentCount} / {limit} 次
+                                今日已完成: {currentCount} / {TASK_DAILY_LIMIT} 次
                               </div>
                             );
                           }
@@ -764,7 +762,9 @@ const SectModal: React.FC<Props> = ({
               </div>
               {(shopFloor === 1 ? sectShopItems : sectShopItemsFloor2).map((item, idx) => {
                 const quantity = buyQuantities[idx] || 1;
-                const totalCost = item.cost * quantity;
+                // 宗主享受5折优惠
+                const baseCost = player.sectRank === SectRank.Leader ? Math.ceil(item.cost * 0.5) : item.cost;
+                const totalCost = baseCost * quantity;
                 const canBuy = player.sectContribution >= totalCost;
 
                 return (
@@ -775,6 +775,11 @@ const SectModal: React.FC<Props> = ({
                     <div>
                       <div className="font-bold text-stone-200">
                         {item.name}
+                        {player.sectRank === SectRank.Leader && (
+                          <span className="text-[10px] ml-2 px-1 bg-mystic-gold/20 text-mystic-gold border border-mystic-gold/30 rounded">
+                            宗主特权 5折
+                          </span>
+                        )}
                       </div>
                       <div className="text-xs text-stone-500">
                         {item.item.description}
@@ -782,7 +787,7 @@ const SectModal: React.FC<Props> = ({
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-mystic-gold font-bold">
-                        {item.cost} 贡献
+                        {baseCost} 贡献
                         {quantity > 1 && (
                           <span className="text-xs text-stone-400 ml-1">
                             x{quantity} = {totalCost}
@@ -832,7 +837,7 @@ const SectModal: React.FC<Props> = ({
                         </div>
                         <button
                           onClick={() => {
-                            onBuy(item.item, item.cost, quantity);
+                            onBuy(item.item, baseCost, quantity);
                             setBuyQuantities((prev) => ({ ...prev, [idx]: 1 }));
                           }}
                           disabled={!canBuy}

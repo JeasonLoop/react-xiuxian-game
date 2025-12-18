@@ -266,16 +266,23 @@ export function useBreakthroughHandlers({
           );
         }
 
-        // 计算寿命增加（境界升级时增加更多）
-        const lifespanIncrease = isRealmUpgrade
-          ? newBaseMaxLifespan - (prev.maxLifespan || newBaseMaxLifespan)
-          : Math.floor((newBaseMaxLifespan - (prev.maxLifespan || newBaseMaxLifespan)) / 9); // 层数升级时增加1/9
+        // 计算寿命增加（更明显的驱动力：长生）
+        const oldMaxLifespan = prev.maxLifespan || 100;
+        let lifespanIncrease = 0;
 
-        const newMaxLifespan = newBaseMaxLifespan;
-        const newLifespan = Math.min(
-          (prev.lifespan ?? prev.maxLifespan ?? newBaseMaxLifespan) + Math.max(0, lifespanIncrease),
-          newMaxLifespan
-        );
+        if (isRealmUpgrade) {
+          // 境界升级：获得两个境界基础寿命差额的全额，并额外奖励基础值
+          const baseIncrease = newBaseMaxLifespan - oldMaxLifespan;
+          lifespanIncrease = baseIncrease + Math.floor(newBaseMaxLifespan * 0.1);
+        } else {
+          // 层数升级：获得差额的 1/9，并至少增加 1-5 年随机寿命，体现积少成多
+          const baseIncrease = Math.floor((newBaseMaxLifespan - oldMaxLifespan) / 9);
+          const bonus = Math.floor(Math.random() * 5) + 1;
+          lifespanIncrease = baseIncrease + bonus;
+        }
+
+        const newMaxLifespan = oldMaxLifespan + lifespanIncrease;
+        const newLifespan = (prev.lifespan ?? oldMaxLifespan) + lifespanIncrease;
 
         if (lifespanIncrease > 0) {
           addLog(

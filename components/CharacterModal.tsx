@@ -145,16 +145,10 @@ const CharacterModal: React.FC<Props> = ({
     return false;
   }, []);
 
-  // 获取已解锁的称号列表（包括实时检查满足条件的）
+  // 获取已解锁的称号列表
   const unlockedTitles = useMemo(() => {
-    const unlocked = TITLES.filter(t => (player.unlockedTitles || []).includes(t.id));
-    // 检查未解锁但满足条件的称号
-    const newlyUnlocked = TITLES.filter(t =>
-      !(player.unlockedTitles || []).includes(t.id) &&
-      checkTitleRequirement(t, player)
-    );
-    return [...unlocked, ...newlyUnlocked];
-  }, [player.unlockedTitles, player, checkTitleRequirement]);
+    return TITLES.filter(t => (player.unlockedTitles || []).includes(t.id));
+  }, [player.unlockedTitles]);
 
   // 计算当前称号效果（包括套装效果）
   const titleEffects = useMemo(() => {

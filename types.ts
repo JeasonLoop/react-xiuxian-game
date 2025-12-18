@@ -129,6 +129,7 @@ export enum SectRank {
   Inner = '内门弟子',
   Core = '真传弟子',
   Elder = '长老',
+  Leader = '宗主',
 }
 
 export interface SecretRealm {
@@ -229,6 +230,7 @@ export interface PlayerStats {
   };
   betrayedSects: string[]; // 背叛过的宗门ID列表
   sectHuntEndTime: number | null; // 宗门追杀结束时间戳（毫秒），null表示未被追杀
+  sectMasterId: string | null; // 当前宗门的宗主ID (如果玩家是宗主，则为玩家自己的ID)
   // 角色系统扩展
   talentId: string | null; // 天赋ID（游戏开始时随机生成，之后不可修改）
   titleId: string | null; // 当前装备的称号ID
@@ -249,12 +251,7 @@ export interface PlayerStats {
   inheritanceExp: number; // 传承经验值（用于提升传承等级）
   inheritanceSkills: string[]; // 已学习的传承技能ID列表
   // 每日任务系统
-  dailyTaskCount: {
-    instant: number; // 今日已完成瞬时任务次数（限制10次）
-    short: number; // 今日已完成短暂任务次数（限制5次）
-    medium: number; // 今日已完成中等任务次数（限制3次）
-    long: number; // 今日已完成较长任务次数（限制2次）
-  };
+  dailyTaskCount: Record<string, number>; // 按任务ID记录每日完成次数，每个任务每天最多3次
   lastTaskResetDate: string; // 上次重置任务计数的日期（YYYY-MM-DD格式）
   lastCompletedTaskType?: string; // 最后完成的任务类型（用于连续完成加成）
   // 成就系统扩展
@@ -277,6 +274,7 @@ export interface PlayerStats {
     artCount: number; // 学习功法数量
     breakthroughCount: number; // 突破次数
     secretRealmCount: number; // 进入秘境次数
+    alchemyCount?: number; // 炼丹次数
   };
   // 寿命系统
   lifespan: number; // 当前寿命
@@ -306,7 +304,7 @@ export interface LogEntry {
   timestamp: number;
 }
 
-export type AdventureType = 'normal' | 'lucky' | 'secret_realm';
+export type AdventureType = 'normal' | 'lucky' | 'secret_realm' | 'sect_challenge';
 
 export interface AdventureResult {
   story: string;
@@ -526,6 +524,7 @@ export interface Pet {
   exp: number;
   maxExp: number;
   rarity: ItemRarity;
+  image?: string; // 灵宠图片 (Emoji)
   stats: {
     attack: number;
     defense: number;
@@ -542,11 +541,11 @@ export interface PetSkill {
   id: string;
   name: string;
   description: string;
-  type: 'attack' | 'defense' | 'support' | 'passive';
+  type: 'attack' | 'defense' | 'support' | 'passive' | 'debuff' | 'buff';
   effect: {
     damage?: number;
     heal?: number;
-    buff?: { attack?: number; defense?: number; hp?: number };
+    buff?: { attack?: number; defense?: number; hp?: number; speed?: number };
   };
   cooldown?: number;
 }
@@ -558,14 +557,22 @@ export interface PetTemplate {
   species: string;
   description: string;
   rarity: ItemRarity;
-  image?: string; // 灵宠图片（emoji或SVG路径）
+  image: string; // 初始形态 (幼年期)
+  stageImages?: {
+    stage1?: string; // 成熟期图片
+    stage2?: string; // 完全体图片
+  };
   baseStats: {
     attack: number;
     defense: number;
     hp: number;
     speed: number;
   };
-  skills: PetSkill[];
+  skills: PetSkill[]; // 初始技能 (幼年期)
+  stageSkills?: {
+    stage1?: PetSkill[]; // 成熟期新增技能组
+    stage2?: PetSkill[]; // 完全体新增技能组
+  };
   evolutionRequirements?: {
     // 幼年期 -> 成熟期 (evolutionStage 0 -> 1)
     stage1?: {
@@ -806,6 +813,7 @@ export interface BattleResult {
   expChange: number;
   spiritChange: number;
   summary: string;
+  adventureType?: AdventureType; // 添加历练类型
 }
 
 // 战斗状态

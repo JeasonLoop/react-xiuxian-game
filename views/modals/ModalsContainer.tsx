@@ -59,7 +59,7 @@ interface ModalsContainerProps {
     battleReplay: BattleReplay | null;
     revealedBattleRounds: number;
     turnBasedBattleParams?: {
-      adventureType: 'normal' | 'lucky' | 'secret_realm';
+      adventureType: AdventureType;
       riskLevel?: '低' | '中' | '高' | '极度危险';
       realmMinRealm?: RealmType;
     } | null;
@@ -117,6 +117,7 @@ interface ModalsContainerProps {
       cost: number,
       quantity?: number
     ) => void;
+    handleChallengeLeader: () => void;
     // Realm
     handleEnterRealm: (realm: any) => void;
     // Character
@@ -275,6 +276,7 @@ export default function ModalsContainer({
         onTask={handlers.handleSectTask}
         onPromote={handlers.handleSectPromote}
         onBuy={handlers.handleSectBuy}
+        onChallengeLeader={handlers.handleChallengeLeader}
       />
 
       <SecretRealmModal

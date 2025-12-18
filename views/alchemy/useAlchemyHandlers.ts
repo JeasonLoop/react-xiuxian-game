@@ -8,6 +8,7 @@ import {
   ItemRarity,
 } from '../../types';
 import { uid } from '../../utils/gameUtils';
+import { addItemToInventory } from '../../utils/inventoryUtils';
 import { showSuccess } from '../../utils/toastUtils';
 
 interface UseAlchemyHandlersProps {
@@ -54,78 +55,13 @@ export function useAlchemyHandlers({
         };
       }
 
-      const cleanedInventory = newInventory.filter((i) => i.quantity > 0);
-
-      const isEquipment =
-        recipe.result.type === ItemType.Artifact ||
-        recipe.result.type === ItemType.Weapon ||
-        recipe.result.type === ItemType.Armor ||
-        recipe.result.type === ItemType.Ring ||
-        recipe.result.type === ItemType.Accessory;
-      const existingResultIdx = cleanedInventory.findIndex(
-        (i) => i.name === recipe.result.name
-      );
-
-      if (existingResultIdx >= 0 && !isEquipment) {
-        // 非装备类物品可以叠加
-        cleanedInventory[existingResultIdx] = {
-          ...cleanedInventory[existingResultIdx],
-          quantity: cleanedInventory[existingResultIdx].quantity + 1,
-        };
-      } else {
-        // 装备类物品或新物品，创建新物品
-        const newItem: Item = {
-          id: uid(),
-          name: recipe.result.name || 'Unknown',
-          type: recipe.result.type || ItemType.Pill,
-          description: recipe.result.description || '',
-          quantity: 1,
-          rarity: (recipe.result.rarity as ItemRarity) || '普通',
-          level: 0,
-          effect: recipe.result.effect,
-        };
-
-        // 如果是装备，添加装备相关属性
-        if (isEquipment) {
-          newItem.isEquippable = true;
-          if ('equipmentSlot' in recipe.result && recipe.result.equipmentSlot) {
-            newItem.equipmentSlot = recipe.result
-              .equipmentSlot as EquipmentSlot;
-          } else {
-            // 根据类型推断装备槽位
-            if (recipe.result.type === ItemType.Artifact) {
-              const artifactSlots = [
-                EquipmentSlot.Artifact1,
-                EquipmentSlot.Artifact2,
-              ];
-              newItem.equipmentSlot =
-                artifactSlots[Math.floor(Math.random() * artifactSlots.length)];
-            } else if (recipe.result.type === ItemType.Weapon) {
-              newItem.equipmentSlot = EquipmentSlot.Weapon;
-            } else if (recipe.result.type === ItemType.Ring) {
-              const ringSlots = [
-                EquipmentSlot.Ring1,
-                EquipmentSlot.Ring2,
-                EquipmentSlot.Ring3,
-                EquipmentSlot.Ring4,
-              ];
-              newItem.equipmentSlot =
-                ringSlots[Math.floor(Math.random() * ringSlots.length)];
-            } else if (recipe.result.type === ItemType.Accessory) {
-              const accessorySlots = [
-                EquipmentSlot.Accessory1,
-                EquipmentSlot.Accessory2,
-              ];
-              newItem.equipmentSlot =
-                accessorySlots[
-                  Math.floor(Math.random() * accessorySlots.length)
-                ];
-            }
-          }
-        }
-
-        cleanedInventory.push(newItem);
-      }
+      const cleanedInventory = addItemToInventory(newInventory.filter((i) => i.quantity > 0), {
+        name: recipe.result.name || 'Unknown',
+        type: recipe.result.type || ItemType.Pill,
+        description: recipe.result.description || '',
+        rarity: (recipe.result.rarity as ItemRarity) || '普通',
+        effect: recipe.result.effect,
+      });
 
       addLog(`丹炉火起，药香四溢。你炼制出了 ${recipe.result.name}。`, 'gain');
       // 显示全局成功提示
@@ -138,10 +74,27 @@ export function useAlchemyHandlers({
         }, 200);
       }
 
+      const newStats = {
+        ...(prev.statistics || {
+          killCount: 0,
+          meditateCount: 0,
+          adventureCount: 0,
+          equipCount: 0,
+          petCount: 0,
+          recipeCount: 0,
+          artCount: 0,
+          breakthroughCount: 0,
+          secretRealmCount: 0,
+          alchemyCount: 0,
+        }),
+      };
+      newStats.alchemyCount = (newStats.alchemyCount || 0) + 1;
+
       return {
         ...prev,
         spiritStones: prev.spiritStones - recipe.cost,
         inventory: cleanedInventory,
+        statistics: newStats,
       };
     });
   };

@@ -27,6 +27,7 @@ import {
   WEAPON_BATTLE_SKILLS,
   BATTLE_POTIONS,
   getPillDefinition,
+  SECT_MASTER_CHALLENGE_REQUIREMENTS,
 } from '../constants';
 import { generateEnemyName } from './aiService';
 
@@ -184,6 +185,7 @@ const getBattleDifficulty = (
     normal: 1,
     lucky: 0.85,
     secret_realm: 1.25,
+    sect_challenge: 2.0, // 宗主挑战难度较高
   };
   return baseDifficulty[adventureType];
 };
@@ -192,6 +194,7 @@ const baseBattleChance: Record<AdventureType, number> = {
   normal: 0.4, // 历练基础概率从22%提高到40%
   lucky: 0.2, // 机缘历练基础概率从8%提高到20%
   secret_realm: 0.65, // 秘境基础概率从45%提高到65%
+  sect_challenge: 1.0, // 挑战必然触发
 };
 
 const pickOne = <T>(list: T[]): T =>
@@ -1109,7 +1112,8 @@ const createEnemy = async (
   player: PlayerStats,
   adventureType: AdventureType,
   riskLevel?: '低' | '中' | '高' | '极度危险',
-  realmMinRealm?: RealmType
+  realmMinRealm?: RealmType,
+  sectMasterId?: string | null
 ): Promise<{
   name: string;
   title: string;
@@ -1145,11 +1149,18 @@ const createEnemy = async (
   } else {
     // 普通历练和机缘历练，按原逻辑
     const realmOffset =
-      adventureType === 'secret_realm' ? 1 : adventureType === 'lucky' ? -1 : 0;
+      adventureType === 'secret_realm' ? 1 :
+      adventureType === 'sect_challenge' ? 2 : // 宗主比玩家高2个境界
+      adventureType === 'lucky' ? -1 : 0;
     targetRealmIndex = clampMin(
       Math.min(REALM_ORDER.length - 1, currentRealmIndex + realmOffset),
       0
     );
+  }
+
+  // 宗门挑战特殊逻辑：如果是挑战宗主，且玩家已是长老，宗主至少要是化神期或更高
+  if (adventureType === 'sect_challenge') {
+    targetRealmIndex = Math.max(targetRealmIndex, 4); // 至少化神期
   }
 
   // 确保targetRealmIndex有效，防止访问undefined
@@ -1183,7 +1194,10 @@ const createEnemy = async (
   let strengthMultiplier = 1;
   let strengthVariance = { min: 0.85, max: 1.2 };
 
-  if (adventureType === 'normal') {
+  if (adventureType === 'sect_challenge') {
+    strengthMultiplier = 1.1;
+    strengthVariance = { min: 1.2, max: 2 };
+  } else if (adventureType === 'normal') {
     if (strengthRoll < 0.4) {
       // 弱敌 40%
       strengthMultiplier = 0.6 + Math.random() * 0.2; // 0.6 - 0.8
@@ -1275,7 +1289,12 @@ const createEnemy = async (
   let name = pickOne(ENEMY_NAMES);
   let title = pickOne(ENEMY_TITLES);
 
-  if (Math.random() < 0.15) {
+  if (adventureType === 'sect_challenge') {
+    name = '上代宗主';
+    title = '威震八方的';
+  }
+
+  if (Math.random() < 0.15 && adventureType !== 'sect_challenge') {
     try {
       // 添加超时处理，防止AI调用卡住战斗初始化
       const timeoutPromise = new Promise<{ name: string; title: string }>((_, reject) => {
@@ -1847,6 +1866,37 @@ export const calculateBattleRewards = (
     Math.round(baseStones * totalRewardMultiplier)
   );
 
+  // 宗门挑战特殊奖励
+  if (actualAdventureType === 'sect_challenge') {
+    if (victory) {
+      // 宗门挑战胜利奖励使用常量定义的数值
+      return {
+        expChange: SECT_MASTER_CHALLENGE_REQUIREMENTS.victoryReward.exp,
+        spiritChange: SECT_MASTER_CHALLENGE_REQUIREMENTS.victoryReward.spiritStones,
+        items: [
+          {
+            name: '宗主信物',
+            type: ItemType.Material,
+            rarity: '仙品',
+            description: '宗门之主的象征，持此信物可号令宗门上下。'
+          },
+          {
+            name: '宗门宝库钥匙',
+            type: ItemType.Material,
+            rarity: '仙品',
+            description: '用于开启宗门宝库的钥匙，藏有历代宗主的积累。'
+          }
+        ]
+      };
+    } else {
+      // 挑战失败，根据常量扣除修为
+      return {
+        expChange: -SECT_MASTER_CHALLENGE_REQUIREMENTS.defeatPenalty.expLoss,
+        spiritChange: 0,
+      };
+    }
+  }
+
   const expChange = victory
     ? rewardExp
     : -Math.max(5, Math.round(rewardExp * 0.5));
@@ -1875,10 +1925,11 @@ export const initializeTurnBasedBattle = async (
   player: PlayerStats,
   adventureType: AdventureType,
   riskLevel?: '低' | '中' | '高' | '极度危险',
-  realmMinRealm?: RealmType
+  realmMinRealm?: RealmType,
+  sectMasterId?: string | null
 ): Promise<BattleState> => {
   // 创建敌人
-  const enemyData = await createEnemy(player, adventureType, riskLevel, realmMinRealm);
+  const enemyData = await createEnemy(player, adventureType, riskLevel, realmMinRealm, sectMasterId);
 
   // 创建玩家战斗单位
   const playerUnit = createBattleUnitFromPlayer(player);
@@ -2633,7 +2684,22 @@ function updateBattleStateAfterAction(
   battleState: BattleState,
   action: BattleAction
 ): BattleState {
-  const newState = { ...battleState };
+  // 深拷贝玩家和敌人状态，确保不可变性
+  const newState: BattleState = {
+    ...battleState,
+    player: {
+      ...battleState.player,
+      buffs: battleState.player.buffs.map(b => ({ ...b })),
+      debuffs: battleState.player.debuffs.map(d => ({ ...d })),
+      cooldowns: { ...battleState.player.cooldowns },
+    },
+    enemy: {
+      ...battleState.enemy,
+      buffs: battleState.enemy.buffs.map(b => ({ ...b })),
+      debuffs: battleState.enemy.debuffs.map(d => ({ ...d })),
+      cooldowns: { ...battleState.enemy.cooldowns },
+    },
+  };
 
   // 处理持续效果
   [newState.player, newState.enemy].forEach((unit) => {

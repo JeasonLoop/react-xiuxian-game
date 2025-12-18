@@ -129,12 +129,7 @@ export const createInitialPlayer = (
     inheritanceRoute: null,
     inheritanceExp: 0,
     inheritanceSkills: [],
-    dailyTaskCount: {
-      instant: 0,
-      short: 0,
-      medium: 0,
-      long: 0,
-    },
+    dailyTaskCount: {},
     lastTaskResetDate: new Date().toISOString().split('T')[0],
     viewedAchievements: [],
     natalArtifactId: null,
@@ -151,6 +146,7 @@ export const createInitialPlayer = (
       artCount: 0,
       breakthroughCount: 0,
       secretRealmCount: 0,
+      alchemyCount: 0,
     },
     lifespan: initialLifespan,
     maxLifespan: initialMaxLifespan,
@@ -162,5 +158,6 @@ export const createInitialPlayer = (
     lastDailyQuestResetDate: new Date().toISOString().split('T')[0],
     gameDays: 1, // 游戏内天数，从第1天开始
     reputation: 0, // 声望值
+    sectMasterId: null, // 当前宗门的宗主ID (如果玩家是宗主，则为玩家自己的ID)
   };
 };

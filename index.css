@@ -63,7 +63,75 @@ body {
   display: none;
 }
 
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+/* 寿元将尽特效 */
+@keyframes lifespan-pulse {
+  0% { box-shadow: inset 0 0 20px rgba(220, 38, 38, 0); }
+  50% { box-shadow: inset 0 0 60px rgba(220, 38, 38, 0.4); }
+  100% { box-shadow: inset 0 0 20px rgba(220, 38, 38, 0); }
 }
+
+.lifespan-warning {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  animation: lifespan-pulse 2s infinite;
+  border: 4px solid rgba(220, 38, 38, 0.2);
+}
+
+.lifespan-warning-text {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #ef4444;
+  font-size: 2rem;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.8), 0 0 20px rgba(239, 68, 68, 0.5);
+  pointer-events: none;
+  z-index: 10000;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+/* 抽奖系统特效 */
+@keyframes bagua-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes spirit-orbit {
+  0% { transform: rotate(var(--rotation)) translateX(60px) rotate(calc(-1 * var(--rotation))); opacity: 0; scale: 0.5; }
+  50% { opacity: 1; scale: 1.2; }
+  100% { transform: rotate(calc(var(--rotation) + 360deg)) translateX(0px) rotate(calc(-1 * (var(--rotation) + 360deg))); opacity: 0; scale: 0.2; }
+}
+
+@keyframes draw-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-bagua {
+  animation: bagua-rotate 10s linear infinite;
+}
+
+.spirit-particle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin-top: -8px;
+  margin-left: -8px;
+  border-radius: 50%;
+  filter: blur(2px);
+  animation: spirit-orbit 2s ease-in-out infinite;
+  box-shadow: 0 0 15px currentColor;
+}
+
+.draw-button-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  background-size: 200% 100%;
+  animation: draw-shimmer 2s infinite;
+}
+

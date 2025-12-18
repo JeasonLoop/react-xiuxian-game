@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { PlayerStats, Item, Pet, ItemType, EquipmentSlot } from '../../types';
 import { LOTTERY_PRIZES, PET_TEMPLATES } from '../../constants';
 import { uid } from '../../utils/gameUtils';
+import { addItemToInventory } from '../../utils/inventoryUtils';
 
 interface UseLotteryHandlersProps {
   player: PlayerStats;
@@ -179,36 +180,7 @@ export function useLotteryHandlers({
           addLog(`获得 ${amount} 修为`, 'gain');
         } else if (prize.type === 'item' && prize.value.item) {
           const item = prize.value.item;
-          const isEquipment = item.isEquippable && item.equipmentSlot;
-          const existingIdx = newInv.findIndex((i) => i.name === item.name);
-
-          if (existingIdx >= 0 && !isEquipment) {
-            // 非装备类物品可以叠加
-            newInv[existingIdx] = {
-              ...newInv[existingIdx],
-              quantity: newInv[existingIdx].quantity + 1,
-            };
-          } else {
-            // 装备类物品或新物品，每个装备单独占一格
-            // 如果是法宝类型但没有装备槽位，自动分配
-            let finalItem = { ...item };
-            if (item.type === ItemType.Artifact && !item.equipmentSlot) {
-              const artifactSlots = [
-                EquipmentSlot.Artifact1,
-                EquipmentSlot.Artifact2,
-              ];
-              finalItem.equipmentSlot =
-                artifactSlots[Math.floor(Math.random() * artifactSlots.length)];
-              finalItem.isEquippable = true;
-            }
-
-            newInv.push({
-              ...finalItem,
-              id: uid(),
-              description: finalItem.description || '',
-              quantity: 1, // 装备quantity始终为1
-            } as Item);
-          }
+          newInv = addItemToInventory(newInv, item);
           addLog(`获得 ${item.name}！`, 'gain');
         } else if (prize.type === 'pet' && prize.value.petId) {
           const template = PET_TEMPLATES.find(
@@ -221,7 +193,7 @@ export function useLotteryHandlers({
               species: template.species,
               level: 1,
               exp: 0,
-              maxExp: 100,
+              maxExp: 60, // 统一为60
               rarity: template.rarity,
               stats: { ...template.baseStats },
               skills: [...template.skills],

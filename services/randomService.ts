@@ -343,6 +343,332 @@ const TASK_DESCRIPTIONS_BY_TYPE: Record<TaskType, string[]> = {
   ],
 };
 
+// 任务类型配置接口
+interface TaskTypeConfig {
+  realmOffset: number;
+  requiresCombat?: boolean;
+  recommendedFor?: {
+    highAttack?: boolean;
+    highDefense?: boolean;
+    highSpirit?: boolean;
+    highSpeed?: boolean;
+  };
+  getCost?: (difficultyMultiplier: number) => RandomSectTask['cost'];
+  getReward?: (
+    rankMultiplier: number,
+    difficultyMultiplier: number,
+    qualityMultiplier: number,
+    realmMultiplier: number,
+    quality: TaskQuality
+  ) => RandomSectTask['reward'];
+}
+
+// 物品池定义
+const ITEM_POOLS = {
+  herbs: ['聚灵草', '紫猴花', '天灵草', '血参', '灵芝'],
+  materials: ['炼器石', '妖兽内丹', '灵矿', '符纸', '精铁', '玄铁', '星辰石'],
+  alchemy: ['聚灵草', '紫猴花', '天灵草', '血参'],
+  forge: ['炼器石', '精铁', '灵矿', '妖兽内丹'],
+  maintain: ['炼器石', '符纸', '灵矿'],
+  repair: ['炼器石', '精铁', '玄铁', '星辰石'],
+  masterAlchemy: ['万年灵乳', '九叶芝草', '龙鳞果', '仙晶'],
+};
+
+// 任务类型详细配置
+const TASK_TYPE_CONFIGS: Record<TaskType, TaskTypeConfig> = {
+  patrol: {
+    realmOffset: 0,
+    recommendedFor: { highSpeed: true },
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((10 + Math.random() * 20) * rank * diff * qual * realm)
+    })
+  },
+  donate_stone: {
+    realmOffset: 0,
+    getCost: (diff) => ({ spiritStones: Math.floor((50 + Math.random() * 150) * diff) }),
+    getReward: (rank, diff, qual, realm) => {
+      const stones = Math.floor((50 + Math.random() * 150) * diff);
+      return {
+        contribution: Math.floor((20 + Math.random() * 30) * rank * diff * qual * realm),
+        spiritStones: Math.floor(stones * 0.3)
+      };
+    }
+  },
+  donate_herb: {
+    realmOffset: 0,
+    getCost: (diff) => ({
+      items: [{
+        name: ITEM_POOLS.herbs[Math.floor(Math.random() * ITEM_POOLS.herbs.length)],
+        quantity: Math.floor((1 + Math.random() * 3) * diff)
+      }]
+    }),
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((15 + Math.random() * 25) * rank * diff * qual * realm)
+    })
+  },
+  collect: {
+    realmOffset: 0,
+    getCost: (diff) => ({
+      items: [{
+        name: ITEM_POOLS.materials[Math.floor(Math.random() * ITEM_POOLS.materials.length)],
+        quantity: Math.floor((1 + Math.random() * 2) * diff)
+      }]
+    }),
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((25 + Math.random() * 35) * rank * diff * qual * realm),
+      items: [{ name: '聚气丹', quantity: Math.floor(diff * qual) }]
+    })
+  },
+  hunt: {
+    realmOffset: 0,
+    requiresCombat: true,
+    recommendedFor: { highAttack: true },
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((30 + Math.random() * 40) * rank * diff * qual * realm),
+      exp: Math.floor((50 + Math.random() * 100) * rank * diff * qual * realm)
+    })
+  },
+  alchemy: {
+    realmOffset: 1,
+    recommendedFor: { highSpirit: true },
+    getCost: (diff) => ({
+      items: [{
+        name: ITEM_POOLS.alchemy[Math.floor(Math.random() * ITEM_POOLS.alchemy.length)],
+        quantity: Math.floor((2 + Math.random() * 3) * diff)
+      }]
+    }),
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((30 + Math.random() * 40) * rank * diff * qual * realm),
+      items: [{ name: '聚气丹', quantity: Math.floor((2 + Math.random() * 3) * diff * qual) }]
+    })
+  },
+  forge: {
+    realmOffset: 1,
+    recommendedFor: { highSpirit: true },
+    getCost: (diff) => ({
+      items: [{
+        name: ITEM_POOLS.forge[Math.floor(Math.random() * ITEM_POOLS.forge.length)],
+        quantity: Math.floor((2 + Math.random() * 3) * diff)
+      }]
+    }),
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((35 + Math.random() * 45) * rank * diff * qual * realm),
+      spiritStones: Math.floor((50 + Math.random() * 100) * diff * qual)
+    })
+  },
+  teach: {
+    realmOffset: 2,
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((25 + Math.random() * 35) * rank * diff * qual * realm),
+      exp: Math.floor((30 + Math.random() * 60) * rank * diff * qual * realm)
+    })
+  },
+  defend: {
+    realmOffset: 0,
+    requiresCombat: true,
+    recommendedFor: { highDefense: true },
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((40 + Math.random() * 50) * rank * diff * qual * realm),
+      exp: Math.floor((60 + Math.random() * 120) * rank * diff * qual * realm)
+    })
+  },
+  explore: {
+    realmOffset: 1,
+    getReward: (rank, diff, qual, realm, quality) => {
+      const items = [{ name: '炼器石', quantity: Math.floor((1 + Math.random() * 2) * diff * qual) }];
+      if (quality === '传说' || quality === '仙品') {
+        items.push({ name: quality === '仙品' ? '仙品材料' : '传说材料', quantity: 1 });
+      }
+      return {
+        contribution: Math.floor((35 + Math.random() * 45) * rank * diff * qual * realm),
+        items
+      };
+    }
+  },
+  trade: {
+    realmOffset: 0,
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((30 + Math.random() * 40) * rank * diff * qual * realm),
+      spiritStones: Math.floor((100 + Math.random() * 200) * diff * qual)
+    })
+  },
+  research: {
+    realmOffset: 1,
+    recommendedFor: { highSpirit: true },
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((20 + Math.random() * 30) * rank * diff * qual * realm),
+      exp: Math.floor((80 + Math.random() * 150) * rank * diff * qual * realm)
+    })
+  },
+  cultivate: {
+    realmOffset: 0,
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((15 + Math.random() * 25) * rank * diff * qual * realm),
+      items: [{ name: '聚灵草', quantity: Math.floor((3 + Math.random() * 5) * diff * qual) }]
+    })
+  },
+  maintain: {
+    realmOffset: 1,
+    getCost: (diff) => ({
+      items: [{
+        name: ITEM_POOLS.maintain[Math.floor(Math.random() * ITEM_POOLS.maintain.length)],
+        quantity: Math.floor((1 + Math.random() * 2) * diff)
+      }]
+    }),
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((25 + Math.random() * 35) * rank * diff * qual * realm)
+    })
+  },
+  diplomacy: {
+    realmOffset: 3,
+    getReward: (rank, diff, qual, realm, quality) => {
+      const reward: RandomSectTask['reward'] = {
+        contribution: Math.floor((50 + Math.random() * 70) * rank * diff * qual * realm),
+        spiritStones: Math.floor((200 + Math.random() * 300) * diff * qual)
+      };
+      if (quality === '传说' || quality === '仙品') {
+        reward.items = [{ name: '外交信物', quantity: 1 }];
+      }
+      return reward;
+    }
+  },
+  trial: {
+    realmOffset: 2,
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((45 + Math.random() * 55) * rank * diff * qual * realm),
+      exp: Math.floor((100 + Math.random() * 200) * rank * diff * qual * realm),
+      spiritStones: Math.floor((150 + Math.random() * 250) * diff * qual)
+    })
+  },
+  rescue: {
+    realmOffset: 1,
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((40 + Math.random() * 50) * rank * diff * qual * realm),
+      exp: Math.floor((70 + Math.random() * 130) * rank * diff * qual * realm)
+    })
+  },
+  investigate: {
+    realmOffset: 1,
+    recommendedFor: { highSpeed: true },
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((30 + Math.random() * 40) * rank * diff * qual * realm),
+      exp: Math.floor((40 + Math.random() * 80) * rank * diff * qual * realm)
+    })
+  },
+  battle: {
+    realmOffset: 0,
+    requiresCombat: true,
+    recommendedFor: { highAttack: true },
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((35 + Math.random() * 45) * rank * diff * qual * realm),
+      exp: Math.floor((60 + Math.random() * 120) * rank * diff * qual * realm)
+    })
+  },
+  treasure_hunt: {
+    realmOffset: 1,
+    getReward: (rank, diff, qual, realm, quality) => {
+      const items = [{ name: '炼器石', quantity: Math.floor((2 + Math.random() * 3) * diff * qual) }];
+      if (quality === '传说' || quality === '仙品') {
+        items.push({ name: quality === '仙品' ? '仙品法宝碎片' : '传说法宝碎片', quantity: 1 });
+      }
+      return {
+        contribution: Math.floor((40 + Math.random() * 50) * rank * diff * qual * realm),
+        items
+      };
+    }
+  },
+  escort: {
+    realmOffset: 0,
+    requiresCombat: true,
+    recommendedFor: { highDefense: true },
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((45 + Math.random() * 55) * rank * diff * qual * realm),
+      spiritStones: Math.floor((150 + Math.random() * 250) * diff * qual)
+    })
+  },
+  assassination: {
+    realmOffset: 1,
+    recommendedFor: { highSpeed: true },
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((50 + Math.random() * 70) * rank * diff * qual * realm),
+      exp: Math.floor((80 + Math.random() * 150) * rank * diff * qual * realm),
+      spiritStones: Math.floor((200 + Math.random() * 300) * diff * qual)
+    })
+  },
+  artifact_repair: {
+    realmOffset: 1,
+    recommendedFor: { highSpirit: true },
+    getCost: (diff) => ({
+      items: [{
+        name: ITEM_POOLS.repair[Math.floor(Math.random() * ITEM_POOLS.repair.length)],
+        quantity: Math.floor((2 + Math.random() * 3) * diff)
+      }]
+    }),
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((30 + Math.random() * 40) * rank * diff * qual * realm),
+      items: [{ name: '强化石', quantity: Math.floor((1 + Math.random() * 2) * diff * qual) }]
+    })
+  },
+  spirit_beast: {
+    realmOffset: 1,
+    requiresCombat: true,
+    getReward: (rank, diff, qual, realm, quality) => {
+      const reward: RandomSectTask['reward'] = {
+        contribution: Math.floor((40 + Math.random() * 50) * rank * diff * qual * realm),
+        exp: Math.floor((70 + Math.random() * 130) * rank * diff * qual * realm)
+      };
+      if (quality === '传说' || quality === '仙品') {
+        reward.items = [{ name: quality === '仙品' ? '仙品灵兽内丹' : '传说灵兽内丹', quantity: 1 }];
+      }
+      return reward;
+    }
+  },
+  sect_war: {
+    realmOffset: 2,
+    requiresCombat: true,
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((60 + Math.random() * 80) * rank * diff * qual * realm),
+      exp: Math.floor((100 + Math.random() * 200) * rank * diff * qual * realm),
+      spiritStones: Math.floor((300 + Math.random() * 500) * diff * qual)
+    })
+  },
+  inheritance: {
+    realmOffset: 2,
+    getReward: (rank, diff, qual, realm, quality) => {
+      const reward: RandomSectTask['reward'] = {
+        contribution: Math.floor((50 + Math.random() * 70) * rank * diff * qual * realm),
+        exp: Math.floor((150 + Math.random() * 300) * rank * diff * qual * realm)
+      };
+      if (quality === '传说' || quality === '仙品') {
+        reward.items = [{ name: '传承玉简', quantity: 1 }];
+      }
+      return reward;
+    }
+  },
+  tribulation: {
+    realmOffset: 3,
+    getReward: (rank, diff, qual, realm) => ({
+      contribution: Math.floor((55 + Math.random() * 75) * rank * diff * qual * realm),
+      exp: Math.floor((200 + Math.random() * 400) * rank * diff * qual * realm),
+      spiritStones: Math.floor((250 + Math.random() * 450) * diff * qual)
+    })
+  },
+  alchemy_master: {
+    realmOffset: 2,
+    recommendedFor: { highSpirit: true },
+    getCost: (diff) => ({
+      items: [{
+        name: ITEM_POOLS.masterAlchemy[Math.floor(Math.random() * ITEM_POOLS.masterAlchemy.length)],
+        quantity: Math.floor((1 + Math.random() * 2) * diff)
+      }]
+    }),
+    getReward: (rank, diff, qual, realm, quality) => ({
+      contribution: Math.floor((40 + Math.random() * 60) * rank * diff * qual * realm),
+      items: [{ name: quality === '仙品' ? '九转金丹' : quality === '传说' ? '天元丹' : '筑基丹', quantity: Math.floor((1 + Math.random() * 2) * diff * qual) }]
+    })
+  }
+};
+
 // 任务品质配置
 const TASK_QUALITY_CONFIG: Record<TaskQuality, {
   probability: number;
@@ -596,40 +922,8 @@ const getRealmMultiplier = (playerRealm: RealmType, taskRealm: RealmType): numbe
 // 根据任务类型和玩家境界确定推荐境界
 const getRecommendedRealm = (type: TaskType, playerRealm: RealmType): RealmType => {
   const playerIndex = REALM_ORDER.indexOf(playerRealm);
-
-  // 不同任务类型有不同的境界要求
-  const realmOffsets: Record<TaskType, number> = {
-    patrol: 0,           // 巡逻：无要求
-    donate_stone: 0,     // 上交灵石：无要求
-    donate_herb: 0,      // 上交草药：无要求
-    collect: 0,          // 收集：无要求
-    hunt: 0,             // 猎杀：无要求
-    alchemy: 1,          // 炼制丹药：需要一定境界
-    forge: 1,            // 炼制法宝：需要一定境界
-    teach: 2,            // 教导弟子：需要较高境界
-    defend: 0,           // 守护：无要求
-    explore: 1,          // 探索：需要一定境界
-    trade: 0,            // 贸易：无要求
-    research: 1,        // 研究：需要一定境界
-    cultivate: 0,       // 培育：无要求
-    maintain: 1,        // 维护：需要一定境界
-    diplomacy: 3,       // 外交：需要高境界
-    trial: 2,           // 试炼：需要较高境界
-    rescue: 1,          // 救援：需要一定境界
-    investigate: 1,     // 调查：需要一定境界
-    battle: 0,           // 战斗：无要求
-    treasure_hunt: 1,    // 寻宝：需要一定境界
-    escort: 0,           // 护送：无要求
-    assassination: 1,    // 刺杀：需要一定境界
-    artifact_repair: 1,  // 法宝修复：需要一定境界
-    spirit_beast: 1,     // 灵兽驯服：需要一定境界
-    sect_war: 2,        // 宗门战争：需要较高境界
-    inheritance: 2,      // 传承：需要较高境界
-    tribulation: 3,      // 渡劫：需要高境界
-    alchemy_master: 2,   // 炼丹大师：需要较高境界
-  };
-
-  const offset = realmOffsets[type] || 0;
+  const config = TASK_TYPE_CONFIGS[type];
+  const offset = config?.realmOffset || 0;
   const recommendedIndex = Math.min(
     playerIndex + offset,
     REALM_ORDER.length - 1

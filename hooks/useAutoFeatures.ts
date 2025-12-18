@@ -69,7 +69,7 @@ export function useAutoFeatures({
       if (autoAdventure && !loading && cooldown === 0 && player && !autoMeditate) {
         handleAdventure();
       }
-    }, 100);
+    }, 500);
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
