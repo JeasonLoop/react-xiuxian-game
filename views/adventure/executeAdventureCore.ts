@@ -367,7 +367,15 @@ export async function executeAdventureCore({
       const currentBatchNames = new Set<string>();
 
       result.itemsObtained.forEach((itemData) => {
-        let itemName = itemData.name;
+        try {
+          // 验证物品数据完整性
+          if (!itemData || !itemData.name || typeof itemData.name !== 'string' || itemData.name.trim() === '') {
+            console.warn('[物品处理] 跳过无效物品数据:', itemData);
+            addLog(`⚠️ 获得了一个无效物品，已跳过。`, 'normal');
+            return; // 跳过无效物品
+          }
+
+          let itemName = itemData.name.trim();
 
         // 检查数组内部是否有重复名称（装备类物品）
         const isEquippableCheck = itemData.isEquippable;
@@ -613,6 +621,13 @@ export async function executeAdventureCore({
           }
         }
 
+        // 确保 itemName 仍然有效（防止在处理过程中被清空）
+        if (!itemName || itemName.trim() === '') {
+          console.warn('[物品处理] 物品名称在处理过程中丢失，跳过该物品');
+          addLog(`⚠️ 物品【${itemData.name}】处理失败，已跳过。`, 'normal');
+          return; // 跳过无效物品
+        }
+
         // 重新检查（因为可能重命名了）
         const finalExistingIdx = newInv.findIndex((i) => i.name === itemName);
 
@@ -659,22 +674,32 @@ export async function executeAdventureCore({
           };
           newInv.push(newItem);
         }
+        } catch (error) {
+          console.error('[物品处理] 处理物品时出错:', error, itemData);
+          addLog(`⚠️ 处理物品【${itemData?.name || '未知'}】时出错，已跳过。`, 'normal');
+        }
       });
     }
 
     // 处理获得的单个物品（兼容旧代码）
     if (result.itemObtained) {
-      let itemName = result.itemObtained.name;
-      let itemType =
-        (result.itemObtained.type as ItemType) || ItemType.Material;
-      let isEquippable = result.itemObtained.isEquippable;
-      let equipmentSlot = result.itemObtained.equipmentSlot as
-        | EquipmentSlot
-        | undefined;
-      const itemDescription = result.itemObtained.description || '';
+      try {
+        // 验证物品数据完整性
+        if (!result.itemObtained.name || typeof result.itemObtained.name !== 'string' || result.itemObtained.name.trim() === '') {
+          console.warn('[物品处理] 跳过无效物品数据:', result.itemObtained);
+          addLog(`⚠️ 获得了一个无效物品，已跳过。`, 'normal');
+        } else {
+          let itemName = result.itemObtained.name.trim();
+          let itemType =
+            (result.itemObtained.type as ItemType) || ItemType.Material;
+          let isEquippable = result.itemObtained.isEquippable;
+          let equipmentSlot = result.itemObtained.equipmentSlot as
+            | EquipmentSlot
+            | undefined;
+          const itemDescription = result.itemObtained.description || '';
 
-      // 处理神秘法宝：随机命名并设置为法宝类型
-      if (itemName?.includes('神秘') || itemName?.includes('法宝')) {
+          // 处理神秘法宝：随机命名并设置为法宝类型
+          if (itemName?.includes('神秘') || itemName?.includes('法宝')) {
         const artifactNames = [
           '青莲剑',
           '紫霄钟',
@@ -700,277 +725,282 @@ export async function executeAdventureCore({
           '三生石',
           '六道轮',
           '九重天',
-        ];
-        itemName =
-          artifactNames[Math.floor(Math.random() * artifactNames.length)];
-        itemType = ItemType.Artifact;
-        isEquippable = true;
-        // 随机分配一个法宝槽位
-        const artifactSlots = [
-          EquipmentSlot.Artifact1,
-          EquipmentSlot.Artifact2,
-        ];
-        equipmentSlot =
-          artifactSlots[Math.floor(Math.random() * artifactSlots.length)];
-      } else {
-        // 只在AI返回的类型明显错误或缺失时才进行推断和修正
-        // 优先信任AI返回的类型，只在必要时才修正
-        let needsCorrection = false;
-
-        // 检查是否需要修正：
-        // 1. AI没有返回类型或类型无效
-        // 2. 装备类物品缺少槽位信息
-        // 3. 类型与名称明显不匹配（如名称是"剑"但类型是"草药"）
-        if (!itemType || itemType === ItemType.Material) {
-          // 如果类型缺失或默认是材料，尝试推断
-          needsCorrection = true;
-        } else if (isEquippable && !equipmentSlot) {
-          // 如果是装备但没有槽位，尝试推断槽位
-          needsCorrection = true;
-        } else {
-          // 检查明显的类型错误（只检查极端不匹配的情况）
-          const nameLower = itemName.toLowerCase();
-          const hasWeaponKeyword = /剑|刀|枪|戟|斧|锤|鞭|棍|棒|矛|弓|弩|匕首/.test(nameLower);
-          const hasHerbKeyword = /草|花|果|叶|根/.test(nameLower) && !/草甲|草衣|草帽|草鞋/.test(nameLower);
-          const hasPillKeyword = /丹|丸|散|液|膏/.test(nameLower);
-          const hasArtifactKeyword = /鼎|钟|镜|塔|扇|珠|印|盘|笔|袋|旗|炉|图/.test(nameLower) && !/剑|刀|枪|戟|斧|锤|鞭|棍|棒|矛|弓|弩|匕首/.test(nameLower);
-
-          if (hasWeaponKeyword && itemType !== ItemType.Weapon) {
-            needsCorrection = true;
-          } else if (hasHerbKeyword && itemType !== ItemType.Herb) {
-            // 如果名称包含草药关键词（如"碧玉草"），但类型是法宝或其他装备类型，需要修正
-            if (itemType === ItemType.Artifact || itemType === ItemType.Weapon || itemType === ItemType.Armor || itemType === ItemType.Ring || itemType === ItemType.Accessory) {
-              needsCorrection = true;
-            }
-          } else if (hasPillKeyword && itemType !== ItemType.Pill) {
-            needsCorrection = true;
-          } else if (hasArtifactKeyword && itemType !== ItemType.Artifact) {
-            // 如果名称包含法宝关键词，但类型不是法宝，需要修正
-            needsCorrection = true;
-          } else if (itemType === ItemType.Artifact && !hasArtifactKeyword && hasHerbKeyword) {
-            // 如果类型是法宝，但名称明显是草药（如"碧玉草"），需要修正
-            needsCorrection = true;
-          }
-        }
-
-        if (needsCorrection) {
-          const inferred = inferItemTypeAndSlot(
-            itemName,
-            itemType,
-            itemDescription,
-            isEquippable
-          );
-          // 只在类型确实改变时才更新
-          if (inferred.type !== itemType) {
-            itemType = inferred.type;
-            isEquippable = inferred.isEquippable;
-            equipmentSlot = inferred.equipmentSlot || equipmentSlot;
-          } else if (isEquippable && !equipmentSlot && inferred.equipmentSlot) {
-            // 如果只是缺少槽位信息，补充槽位
-            equipmentSlot = inferred.equipmentSlot;
-          }
-        } else if (isEquippable && !equipmentSlot) {
-          // 如果只是缺少槽位，尝试推断槽位（不改变类型）
-          const inferred = inferItemTypeAndSlot(
-            itemName,
-            itemType,
-            itemDescription,
-            isEquippable
-          );
-          if (inferred.equipmentSlot) {
-            equipmentSlot = inferred.equipmentSlot;
-          }
-        }
-
-        // 如果类型是明确的装备类型，但isEquippable未设置或为false，确保正确设置
-        if (
-          (itemType === ItemType.Artifact ||
-            itemType === ItemType.Weapon ||
-            itemType === ItemType.Armor ||
-            itemType === ItemType.Ring ||
-            itemType === ItemType.Accessory) &&
-          !isEquippable
-        ) {
-          const inferred = inferItemTypeAndSlot(
-            itemName,
-            itemType,
-            itemDescription,
-            false
-          );
-          // 如果推断结果确认是装备类型，更新isEquippable和equipmentSlot
-          if (
-            inferred.type === itemType &&
-            inferred.isEquippable &&
-            inferred.equipmentSlot
-          ) {
+            ];
+            itemName =
+              artifactNames[Math.floor(Math.random() * artifactNames.length)];
+            itemType = ItemType.Artifact;
             isEquippable = true;
-            equipmentSlot = inferred.equipmentSlot;
-          }
-        }
-      }
+            // 随机分配一个法宝槽位
+            const artifactSlots = [
+              EquipmentSlot.Artifact1,
+              EquipmentSlot.Artifact2,
+            ];
+            equipmentSlot =
+              artifactSlots[Math.floor(Math.random() * artifactSlots.length)];
+          } else {
+            // 只在AI返回的类型明显错误或缺失时才进行推断和修正
+            // 优先信任AI返回的类型，只在必要时才修正
+            let needsCorrection = false;
 
-      // 规范化物品效果（确保已知物品的效果与描述一致）
-      // 对于丹药，根据稀有度调整效果，确保仙品丹药效果明显强于稀有
-      const normalized = normalizeItemEffect(
-        itemName,
-        result.itemObtained.effect,
-        result.itemObtained.permanentEffect,
-        itemType,
-        result.itemObtained.rarity as ItemRarity
-      );
-      let finalEffect = normalized.effect;
-      let finalPermanentEffect = normalized.permanentEffect;
+            // 检查是否需要修正：
+            // 1. AI没有返回类型或类型无效
+            // 2. 装备类物品缺少槽位信息
+            // 3. 类型与名称明显不匹配（如名称是"剑"但类型是"草药"）
+            if (!itemType || itemType === ItemType.Material) {
+              // 如果类型缺失或默认是材料，尝试推断
+              needsCorrection = true;
+            } else if (isEquippable && !equipmentSlot) {
+              // 如果是装备但没有槽位，尝试推断槽位
+              needsCorrection = true;
+            } else {
+              // 检查明显的类型错误（只检查极端不匹配的情况）
+              const nameLower = itemName.toLowerCase();
+              const hasWeaponKeyword = /剑|刀|枪|戟|斧|锤|鞭|棍|棒|矛|弓|弩|匕首/.test(nameLower);
+              const hasHerbKeyword = /草|花|果|叶|根/.test(nameLower) && !/草甲|草衣|草帽|草鞋/.test(nameLower);
+              const hasPillKeyword = /丹|丸|散|液|膏/.test(nameLower);
+              const hasArtifactKeyword = /鼎|钟|镜|塔|扇|珠|印|盘|笔|袋|旗|炉|图/.test(nameLower) && !/剑|刀|枪|戟|斧|锤|鞭|棍|棒|矛|弓|弩|匕首/.test(nameLower);
 
-      // 装备类物品应该使用 effect 而不是 permanentEffect
-      // 如果装备只有 permanentEffect 而没有 effect，将其转换为 effect
-      if (isEquippable && !finalEffect && finalPermanentEffect) {
-        // 将 permanentEffect 转换为 effect（除了 maxHp，因为装备不提供 maxHp）
-        finalEffect = {
-          attack: finalPermanentEffect.attack,
-          defense: finalPermanentEffect.defense,
-          spirit: finalPermanentEffect.spirit,
-          physique: finalPermanentEffect.physique,
-          speed: finalPermanentEffect.speed,
-          hp: 0, // maxHp 转换为 hp（装备时增加当前气血上限）
-        };
-        // 如果有 maxHp，也加到 hp 中
-        if (finalPermanentEffect.maxHp) {
-          finalEffect.hp = (finalEffect.hp || 0) + finalPermanentEffect.maxHp;
-        }
-        // 清空 permanentEffect（装备不应该有 permanentEffect）
-        finalPermanentEffect = undefined;
-        console.log(
-          `[装备效果修正] "${itemName}": 将 permanentEffect 转换为 effect`
-        );
-      }
-
-      // 确保所有装备类型都有属性加成（如果没有属性，根据品阶自动生成）
-      if (isEquippable) {
-        const rarity = (result.itemObtained.rarity as ItemRarity) || '普通';
-        finalEffect = ensureEquipmentAttributes(
-          itemType,
-          finalEffect,
-          rarity,
-          player.realm,
-          player.realmLevel
-        ) as typeof finalEffect;
-
-        // 应用境界调整，确保装备数值与玩家境界匹配
-        if (finalEffect) {
-          finalEffect = adjustEquipmentStatsByRealm(
-            finalEffect,
-            player.realm,
-            player.realmLevel,
-            rarity
-          ) as typeof finalEffect;
-        }
-      }
-
-      // 处理丹方：需要添加 recipeData
-      let recipeData = undefined;
-      if (itemType === ItemType.Recipe) {
-        // 从 result.itemObtained 中获取 recipeName（如果存在）
-        let recipeName = (result.itemObtained as any).recipeName;
-        if (!recipeName) {
-          // 如果 recipeName 不存在，尝试从物品名称中推断
-          // 例如："天元丹丹方" -> "天元丹"
-          const nameWithoutSuffix = itemName.replace(/丹方$/, '');
-          // 在 DISCOVERABLE_RECIPES 中查找匹配的配方
-          const matchedRecipe = DISCOVERABLE_RECIPES.find(
-            (recipe) => recipe.name === nameWithoutSuffix
-          );
-          if (matchedRecipe) {
-            recipeName = matchedRecipe.name;
-          }
-        }
-        if (recipeName) {
-          // 从 DISCOVERABLE_RECIPES 中查找对应的配方
-          const recipe = DISCOVERABLE_RECIPES.find(
-            (r) => r.name === recipeName
-          );
-          if (recipe) {
-            recipeData = recipe;
-          }
-        }
-      }
-
-      // 装备类物品不能有同名，如果已存在同名装备，跳过或重命名
-      const isEquipment = isEquippable && equipmentSlot;
-
-      if (isEquipment) {
-        const existingIdx = newInv.findIndex((i) => i.name === itemName);
-        if (existingIdx >= 0) {
-          // 如果已存在同名装备，生成一个变体名称
-          const baseName = itemName;
-          const suffixes = ['·改', '·变', '·异', '·新', '·复', '·二', '·三'];
-          let variantName = baseName;
-          let attempts = 0;
-          // 尝试找到未使用的变体名称
-          while (attempts < suffixes.length) {
-            variantName = baseName + suffixes[attempts];
-            if (newInv.findIndex((i) => i.name === variantName) < 0) {
-              // 找到了未使用的变体名称
-              break;
+              if (hasWeaponKeyword && itemType !== ItemType.Weapon) {
+                needsCorrection = true;
+              } else if (hasHerbKeyword && itemType !== ItemType.Herb) {
+                // 如果名称包含草药关键词（如"碧玉草"），但类型是法宝或其他装备类型，需要修正
+                if (itemType === ItemType.Artifact || itemType === ItemType.Weapon || itemType === ItemType.Armor || itemType === ItemType.Ring || itemType === ItemType.Accessory) {
+                  needsCorrection = true;
+                }
+              } else if (hasPillKeyword && itemType !== ItemType.Pill) {
+                needsCorrection = true;
+              } else if (hasArtifactKeyword && itemType !== ItemType.Artifact) {
+                // 如果名称包含法宝关键词，但类型不是法宝，需要修正
+                needsCorrection = true;
+              } else if (itemType === ItemType.Artifact && !hasArtifactKeyword && hasHerbKeyword) {
+                // 如果类型是法宝，但名称明显是草药（如"碧玉草"），需要修正
+                needsCorrection = true;
+              }
             }
-            attempts++;
+
+            if (needsCorrection) {
+              const inferred = inferItemTypeAndSlot(
+                itemName,
+                itemType,
+                itemDescription,
+                isEquippable
+              );
+              // 只在类型确实改变时才更新
+              if (inferred.type !== itemType) {
+                itemType = inferred.type;
+                isEquippable = inferred.isEquippable;
+                equipmentSlot = inferred.equipmentSlot || equipmentSlot;
+              } else if (isEquippable && !equipmentSlot && inferred.equipmentSlot) {
+                // 如果只是缺少槽位信息，补充槽位
+                equipmentSlot = inferred.equipmentSlot;
+              }
+            } else if (isEquippable && !equipmentSlot) {
+              // 如果只是缺少槽位，尝试推断槽位（不改变类型）
+              const inferred = inferItemTypeAndSlot(
+                itemName,
+                itemType,
+                itemDescription,
+                isEquippable
+              );
+              if (inferred.equipmentSlot) {
+                equipmentSlot = inferred.equipmentSlot;
+              }
+            }
+
+            // 如果类型是明确的装备类型，但isEquippable未设置或为false，确保正确设置
+            if (
+              (itemType === ItemType.Artifact ||
+                itemType === ItemType.Weapon ||
+                itemType === ItemType.Armor ||
+                itemType === ItemType.Ring ||
+                itemType === ItemType.Accessory) &&
+              !isEquippable
+            ) {
+              const inferred = inferItemTypeAndSlot(
+                itemName,
+                itemType,
+                itemDescription,
+                false
+              );
+              // 如果推断结果确认是装备类型，更新isEquippable和equipmentSlot
+              if (
+                inferred.type === itemType &&
+                inferred.isEquippable &&
+                inferred.equipmentSlot
+              ) {
+                isEquippable = true;
+                equipmentSlot = inferred.equipmentSlot;
+              }
+            }
           }
-          // 如果所有变体都被占用，跳过这个装备
-          if (attempts >= suffixes.length) {
-            addLog(`⚠️ 已存在同名装备【${itemName}】，跳过重复装备。`, 'normal');
-            return; // 跳过这个物品
+
+          // 规范化物品效果（确保已知物品的效果与描述一致）
+          // 对于丹药，根据稀有度调整效果，确保仙品丹药效果明显强于稀有
+          const normalized = normalizeItemEffect(
+            itemName,
+            result.itemObtained.effect,
+            result.itemObtained.permanentEffect,
+            itemType,
+            result.itemObtained.rarity as ItemRarity
+          );
+          let finalEffect = normalized.effect;
+          let finalPermanentEffect = normalized.permanentEffect;
+
+          // 装备类物品应该使用 effect 而不是 permanentEffect
+          // 如果装备只有 permanentEffect 而没有 effect，将其转换为 effect
+          if (isEquippable && !finalEffect && finalPermanentEffect) {
+            // 将 permanentEffect 转换为 effect（除了 maxHp，因为装备不提供 maxHp）
+            finalEffect = {
+              attack: finalPermanentEffect.attack,
+              defense: finalPermanentEffect.defense,
+              spirit: finalPermanentEffect.spirit,
+              physique: finalPermanentEffect.physique,
+              speed: finalPermanentEffect.speed,
+              hp: 0, // maxHp 转换为 hp（装备时增加当前气血上限）
+            };
+            // 如果有 maxHp，也加到 hp 中
+            if (finalPermanentEffect.maxHp) {
+              finalEffect.hp = (finalEffect.hp || 0) + finalPermanentEffect.maxHp;
+            }
+            // 清空 permanentEffect（装备不应该有 permanentEffect）
+            finalPermanentEffect = undefined;
+            console.log(
+              `[装备效果修正] "${itemName}": 将 permanentEffect 转换为 effect`
+            );
           }
-          itemName = variantName;
+
+          // 确保所有装备类型都有属性加成（如果没有属性，根据品阶自动生成）
+          if (isEquippable) {
+            const rarity = (result.itemObtained.rarity as ItemRarity) || '普通';
+            finalEffect = ensureEquipmentAttributes(
+              itemType,
+              finalEffect,
+              rarity,
+              player.realm,
+              player.realmLevel
+            ) as typeof finalEffect;
+
+            // 应用境界调整，确保装备数值与玩家境界匹配
+            if (finalEffect) {
+              finalEffect = adjustEquipmentStatsByRealm(
+                finalEffect,
+                player.realm,
+                player.realmLevel,
+                rarity
+              ) as typeof finalEffect;
+            }
+          }
+
+          // 处理丹方：需要添加 recipeData
+          let recipeData = undefined;
+          if (itemType === ItemType.Recipe) {
+            // 从 result.itemObtained 中获取 recipeName（如果存在）
+            let recipeName = (result.itemObtained as any).recipeName;
+            if (!recipeName) {
+              // 如果 recipeName 不存在，尝试从物品名称中推断
+              // 例如："天元丹丹方" -> "天元丹"
+              const nameWithoutSuffix = itemName.replace(/丹方$/, '');
+              // 在 DISCOVERABLE_RECIPES 中查找匹配的配方
+              const matchedRecipe = DISCOVERABLE_RECIPES.find(
+                (recipe) => recipe.name === nameWithoutSuffix
+              );
+              if (matchedRecipe) {
+                recipeName = matchedRecipe.name;
+              }
+            }
+            if (recipeName) {
+              // 从 DISCOVERABLE_RECIPES 中查找对应的配方
+              const recipe = DISCOVERABLE_RECIPES.find(
+                (r) => r.name === recipeName
+              );
+              if (recipe) {
+                recipeData = recipe;
+              }
+            }
+          }
+
+          // 装备类物品不能有同名，如果已存在同名装备，跳过或重命名
+          const isEquipment = isEquippable && equipmentSlot;
+
+          if (isEquipment) {
+            const existingIdx = newInv.findIndex((i) => i.name === itemName);
+            if (existingIdx >= 0) {
+              // 如果已存在同名装备，生成一个变体名称
+              const baseName = itemName;
+              const suffixes = ['·改', '·变', '·异', '·新', '·复', '·二', '·三'];
+              let variantName = baseName;
+              let attempts = 0;
+              // 尝试找到未使用的变体名称
+              while (attempts < suffixes.length) {
+                variantName = baseName + suffixes[attempts];
+                if (newInv.findIndex((i) => i.name === variantName) < 0) {
+                  // 找到了未使用的变体名称
+                  break;
+                }
+                attempts++;
+              }
+              // 如果所有变体都被占用，跳过这个装备
+              if (attempts >= suffixes.length) {
+                addLog(`⚠️ 已存在同名装备【${itemName}】，跳过重复装备。`, 'normal');
+                return; // 跳过这个物品
+              }
+              itemName = variantName;
+            }
+          }
+
+          const existingIdx = newInv.findIndex((i) => i.name === itemName);
+
+          if (existingIdx >= 0 && !isEquipment && itemType !== ItemType.Recipe) {
+            // 非装备类物品可以叠加，但丹方不能叠加
+            newInv[existingIdx] = {
+              ...newInv[existingIdx],
+              quantity: newInv[existingIdx].quantity + 1,
+            };
+          } else {
+            // 装备类物品或新物品，创建新物品（每个装备单独占一格）
+            // 检查是否为传说或仙品装备，随机添加保命机会
+            const rarity = (result.itemObtained.rarity as ItemRarity) || '普通';
+            let reviveChances: number | undefined = undefined;
+
+            // 检查是否从itemObtained中已经有保命机会（从battleService生成）
+            if ((result.itemObtained as any).reviveChances !== undefined) {
+              reviveChances = (result.itemObtained as any).reviveChances;
+            } else if (
+              (rarity === '传说' || rarity === '仙品') &&
+              (itemType === ItemType.Weapon || itemType === ItemType.Artifact)
+            ) {
+              // 只有武器和法宝类型的传说/仙品装备可能有保命机会
+              // 传说装备30%概率有保命，仙品装备60%概率有保命
+              const hasRevive =
+                rarity === '传说' ? Math.random() < 0.3 : Math.random() < 0.6;
+
+              if (hasRevive) {
+                // 随机1-3次保命机会
+                reviveChances = Math.floor(Math.random() * 3) + 1;
+              }
+            }
+
+            const newItem: Item = {
+              id: uid(),
+              name: itemName,
+              type: itemType,
+              description: result.itemObtained.description,
+              quantity: 1, // 装备quantity始终为1
+              rarity: rarity,
+              level: 0,
+              isEquippable: isEquippable,
+              equipmentSlot: equipmentSlot,
+              effect: finalEffect,
+              permanentEffect: finalPermanentEffect,
+              recipeData: recipeData,
+              reviveChances: reviveChances,
+            };
+            newInv.push(newItem);
+          }
         }
-      }
-
-      const existingIdx = newInv.findIndex((i) => i.name === itemName);
-
-      if (existingIdx >= 0 && !isEquipment && itemType !== ItemType.Recipe) {
-        // 非装备类物品可以叠加，但丹方不能叠加
-        newInv[existingIdx] = {
-          ...newInv[existingIdx],
-          quantity: newInv[existingIdx].quantity + 1,
-        };
-      } else {
-        // 装备类物品或新物品，创建新物品（每个装备单独占一格）
-        // 检查是否为传说或仙品装备，随机添加保命机会
-        const rarity = (result.itemObtained.rarity as ItemRarity) || '普通';
-        let reviveChances: number | undefined = undefined;
-
-        // 检查是否从itemObtained中已经有保命机会（从battleService生成）
-        if ((result.itemObtained as any).reviveChances !== undefined) {
-          reviveChances = (result.itemObtained as any).reviveChances;
-        } else if (
-          (rarity === '传说' || rarity === '仙品') &&
-          (itemType === ItemType.Weapon || itemType === ItemType.Artifact)
-        ) {
-          // 只有武器和法宝类型的传说/仙品装备可能有保命机会
-          // 传说装备30%概率有保命，仙品装备60%概率有保命
-          const hasRevive =
-            rarity === '传说' ? Math.random() < 0.3 : Math.random() < 0.6;
-
-          if (hasRevive) {
-            // 随机1-3次保命机会
-            reviveChances = Math.floor(Math.random() * 3) + 1;
-          }
-        }
-
-        const newItem: Item = {
-          id: uid(),
-          name: itemName,
-          type: itemType,
-          description: result.itemObtained.description,
-          quantity: 1, // 装备quantity始终为1
-          rarity: rarity,
-          level: 0,
-          isEquippable: isEquippable,
-          equipmentSlot: equipmentSlot,
-          effect: finalEffect,
-          permanentEffect: finalPermanentEffect,
-          recipeData: recipeData,
-          reviveChances: reviveChances,
-        };
-        newInv.push(newItem);
+      } catch (error) {
+        console.error('[物品处理] 处理单个物品时出错:', error, result.itemObtained);
+        addLog(`⚠️ 处理物品【${result.itemObtained?.name || '未知'}】时出错，已跳过。`, 'normal');
       }
     }
 
@@ -1569,14 +1599,19 @@ export async function executeAdventureCore({
     });
   }
 
-  // 显示获得的物品
+  // 显示获得的物品（只显示有效物品）
+  // 注意：实际物品已经在setPlayer中处理，这里只显示log
+  // 如果物品处理失败，会在处理过程中显示错误log
   if (result.itemsObtained && Array.isArray(result.itemsObtained) && result.itemsObtained.length > 0) {
     result.itemsObtained.forEach((item) => {
-      const normalizedRarity = normalizeRarityValue(item.rarity);
-      const rarityText = normalizedRarity ? `【${normalizedRarity}】` : '';
-      addLog(`获得物品: ${rarityText}${item.name}`, 'gain');
+      // 只显示有效的物品名称
+      if (item && item.name && typeof item.name === 'string' && item.name.trim() !== '') {
+        const normalizedRarity = normalizeRarityValue(item.rarity);
+        const rarityText = normalizedRarity ? `【${normalizedRarity}】` : '';
+        addLog(`获得物品: ${rarityText}${item.name}`, 'gain');
+      }
     });
-  } else if (result.itemObtained) {
+  } else if (result.itemObtained && result.itemObtained.name && typeof result.itemObtained.name === 'string' && result.itemObtained.name.trim() !== '') {
     addLog(`获得物品: ${result.itemObtained.name}`, 'gain');
   }
 
