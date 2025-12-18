@@ -9,7 +9,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   player: PlayerStats;
-  onJoinSect: (sectId: string, sectName?: string) => void;
+  onJoinSect: (sectId: string, sectName?: string, sectInfo?: { exitCost?: { spiritStones?: number; items?: { name: string; quantity: number }[] } }) => void;
   onLeaveSect: () => void;
   onSafeLeaveSect: () => void;
   onTask: (task: RandomSectTask, encounterResult?: AdventureResult) => void;
@@ -123,7 +123,16 @@ const SectModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
+  // 获取当前宗门信息，优先从保存的信息中获取（用于随机生成的宗门）
   const currentSect =
+    (player.currentSectInfo ? {
+      id: player.currentSectInfo.id,
+      name: player.currentSectInfo.name,
+      description: '',
+      reqRealm: RealmType.QiRefining,
+      grade: '黄',
+      exitCost: player.currentSectInfo.exitCost,
+    } : null) ||
     availableSects.find((s) => s.id === player.sectId) ||
     SECTS.find((s) => s.id === player.sectId);
   const getRealmIndex = (r: RealmType) => REALM_ORDER.indexOf(r);
@@ -185,7 +194,7 @@ const SectModal: React.FC<Props> = ({
                       e.preventDefault();
                       e.stopPropagation();
                       if (canJoin) {
-                        onJoinSect(sect.id, sect.name);
+                        onJoinSect(sect.id, sect.name, { exitCost: sect.exitCost });
                       }
                     }}
                     disabled={!canJoin}
@@ -369,7 +378,7 @@ const SectModal: React.FC<Props> = ({
                 <p className="text-sm text-stone-500 mb-4">
                   退出宗门将清空所有贡献值。可以选择安全退出（支付代价）或直接背叛（会被追杀）。
                 </p>
-                {currentSect && currentSect.exitCost && (
+                {currentSect && currentSect.exitCost ? (
                   <div className="mb-4 p-3 bg-ink-900 rounded border border-stone-600">
                     <p className="text-xs text-stone-400 mb-2">安全退出代价：</p>
                     <div className="text-xs text-stone-300 space-y-1">
@@ -379,6 +388,14 @@ const SectModal: React.FC<Props> = ({
                       {currentSect.exitCost.items && Array.isArray(currentSect.exitCost.items) && currentSect.exitCost.items.map((item, idx) => (
                         <div key={idx}>{item.name} x{item.quantity}</div>
                       ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mb-4 p-3 bg-ink-900 rounded border border-stone-600">
+                    <p className="text-xs text-stone-400 mb-2">安全退出代价：</p>
+                    <div className="text-xs text-stone-300 space-y-1">
+                      <div>灵石: 300</div>
+                      <div>聚灵草 x5</div>
                     </div>
                   </div>
                 )}
@@ -416,27 +433,33 @@ const SectModal: React.FC<Props> = ({
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto flex-1 min-h-0">
                 {randomTasks.map((task) => {
-                  const canComplete = (() => {
+                  // 检查任务是否可以完成（但不阻止点击）
+                  const taskStatus = (() => {
+                    const reasons: string[] = [];
+
                     // 检查境界要求
                     if (task.minRealm) {
                       const realmIndex = REALM_ORDER.indexOf(player.realm);
                       const minRealmIndex = REALM_ORDER.indexOf(task.minRealm);
                       if (realmIndex < minRealmIndex) {
-                        return false;
+                        reasons.push('境界不足');
                       }
                     }
                     if (
                       task.cost?.spiritStones &&
                       player.spiritStones < task.cost.spiritStones
-                    )
-                      return false;
+                    ) {
+                      reasons.push('灵石不足');
+                    }
                     if (task.cost?.items && Array.isArray(player.inventory)) {
                       for (const itemReq of task.cost.items) {
                         const item = player.inventory.find(
                           (i) => i.name === itemReq.name
                         );
-                        if (!item || item.quantity < itemReq.quantity)
-                          return false;
+                        if (!item || item.quantity < itemReq.quantity) {
+                          reasons.push(`缺少${itemReq.name}`);
+                          break;
+                        }
                       }
                     }
                     // 检查每日任务限制
@@ -468,9 +491,14 @@ const SectModal: React.FC<Props> = ({
                         dailyTaskCount[
                           task.timeCost as keyof typeof dailyTaskCount
                         ] || 0;
-                      if (currentCount >= limit) return false;
+                      if (currentCount >= limit) {
+                        reasons.push('今日已完成该类型任务');
+                      }
                     }
-                    return true;
+                    return {
+                      canComplete: reasons.length === 0,
+                      reasons: reasons.join('、'),
+                    };
                   })();
 
                   const timeCostText = {
@@ -626,15 +654,21 @@ const SectModal: React.FC<Props> = ({
                       </div>
 
                       <button
-                        onClick={() => setSelectedTask(task)}
-                        disabled={!canComplete}
+                        onClick={() => {
+                          if (!taskStatus.canComplete && taskStatus.reasons) {
+                            // 如果无法完成，显示提示但允许点击查看详情
+                            // 实际限制检查会在任务执行时进行
+                          }
+                          setSelectedTask(task);
+                        }}
                         className={`w-full py-2 rounded text-sm ${
-                          !canComplete
-                            ? 'bg-stone-900 text-stone-600 cursor-not-allowed'
+                          !taskStatus.canComplete
+                            ? 'bg-stone-800 text-stone-400 border border-stone-600 hover:bg-stone-700'
                             : 'bg-stone-700 hover:bg-stone-600 text-stone-200'
                         }`}
+                        title={!taskStatus.canComplete ? `无法完成：${taskStatus.reasons}` : ''}
                       >
-                        {!canComplete ? '无法完成' : '执行任务'}
+                        {!taskStatus.canComplete ? `无法完成（${taskStatus.reasons}）` : '执行任务'}
                       </button>
                     </div>
                   );

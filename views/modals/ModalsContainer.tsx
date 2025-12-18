@@ -107,7 +107,7 @@ interface ModalsContainerProps {
     // Alchemy
     handleCraft: (recipe: Recipe) => Promise<void>;
     // Sect
-    handleJoinSect: (sectId: string, sectName?: string) => void;
+    handleJoinSect: (sectId: string, sectName?: string, sectInfo?: { exitCost?: { spiritStones?: number; items?: { name: string; quantity: number }[] } }) => void;
     handleLeaveSect: () => void;
     handleSafeLeaveSect: () => void;
     handleSectTask: (task: RandomSectTask, encounterResult?: any) => void;

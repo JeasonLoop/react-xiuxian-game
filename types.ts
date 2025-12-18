@@ -211,6 +211,15 @@ export interface PlayerStats {
   sectId: string | null;
   sectRank: SectRank;
   sectContribution: number;
+  currentSectInfo?: {
+    // 当前宗门的完整信息（用于随机生成的宗门）
+    id: string;
+    name: string;
+    exitCost?: {
+      spiritStones?: number;
+      items?: { name: string; quantity: number }[];
+    };
+  };
   betrayedSects: string[]; // 背叛过的宗门ID列表
   sectHuntEndTime: number | null; // 宗门追杀结束时间戳（毫秒），null表示未被追杀
   // 角色系统扩展

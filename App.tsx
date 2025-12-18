@@ -332,6 +332,7 @@ function App() {
     addLog,
     setIsSectOpen,
     setPurchaseSuccess,
+    setItemActionLog,
   });
 
   const achievementHandlers = useAchievementHandlers({

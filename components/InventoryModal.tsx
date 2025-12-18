@@ -322,7 +322,7 @@ const InventoryItem = memo<InventoryItemProps>(
             </>
           ) : (
             <>
-              {(item.effect || item.type === ItemType.Recipe) &&
+              {(item.effect || item.permanentEffect || item.type === ItemType.Recipe) &&
                 item.type !== ItemType.Material && (
                   <button
                     onClick={() => onUseItem(item)}

@@ -77,6 +77,11 @@ export function useAdventureHandlers({
     setLoading(true);
     if (realmName) {
       addLog(`你进入了【${realmName}】，只觉灵气逼人，杀机四伏...`, 'special');
+      // 添加探索中的提示，避免用户感觉卡住
+      // 使用 setTimeout 确保提示在日志中显示
+      setTimeout(() => {
+        addLog('正在探索秘境，寻找机缘...', 'normal');
+      }, 100);
     } else {
       addLog('你走出洞府，前往荒野历练...', 'normal');
     }
