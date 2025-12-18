@@ -46,6 +46,7 @@ import {
   findItemEquippedSlot,
   areSlotsInSameGroup,
 } from '../utils/equipmentUtils';
+import { useDebounce } from '../hooks/useDebounce';
 
 interface Props {
   isOpen: boolean;
@@ -342,6 +343,32 @@ const InventoryItem = memo<InventoryItemProps>(
         </div>
       </div>
     );
+  },
+  (prevProps, nextProps) => {
+    // 自定义比较函数，只在关键属性变化时重新渲染
+    // 如果返回 true，表示 props 相等，跳过重新渲染
+    // 如果返回 false，表示 props 不相等，需要重新渲染
+    if (prevProps.item.id !== nextProps.item.id) return false;
+    if (prevProps.item.quantity !== nextProps.item.quantity) return false;
+    if (prevProps.item.level !== nextProps.item.level) return false;
+    if (prevProps.item.rarity !== nextProps.item.rarity) return false;
+    if (prevProps.isEquipped !== nextProps.isEquipped) return false;
+    if (prevProps.player.natalArtifactId !== nextProps.player.natalArtifactId) return false;
+    if (prevProps.player.realm !== nextProps.player.realm) return false;
+
+    // 检查 equippedItems 是否有变化（简化比较，只检查长度和关键槽位）
+    const prevKeys = Object.keys(prevProps.equippedItems);
+    const nextKeys = Object.keys(nextProps.equippedItems);
+    if (prevKeys.length !== nextKeys.length) return false;
+
+    // 检查每个槽位的值是否相同
+    for (const key of prevKeys) {
+      if (prevProps.equippedItems[key as EquipmentSlot] !== nextProps.equippedItems[key as EquipmentSlot]) {
+        return false;
+      }
+    }
+
+    return true;
   }
 );
 
@@ -385,6 +412,9 @@ const InventoryModal: React.FC<Props> = ({
   // 使用 useTransition 优化分类切换，避免阻塞UI
   const [isPending, startTransition] = useTransition();
 
+  // 防抖搜索输入，减少不必要的重新渲染
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
   const handleBatchDiscard = (itemIds: string[]) => {
     onBatchDiscard(itemIds);
   };
@@ -416,10 +446,17 @@ const InventoryModal: React.FC<Props> = ({
     setHoveredItem(item);
   }, []);
 
+  // 预计算物品装备状态映射，避免在渲染时重复计算
+  const itemEquippedMap = useMemo(() => {
+    const map = new Map<string, boolean>();
+    inventory.forEach((item) => {
+      map.set(item.id, checkItemEquipped(item, equippedItems));
+    });
+    return map;
+  }, [inventory, equippedItems]);
+
   // 过滤和排序物品
   const filteredAndSortedInventory = useMemo(() => {
-    // 使用统一的工具函数获取品级排序权重
-
     // 判断物品分类
     const getItemCategory = (item: Item): ItemCategory => {
       const typeKey = String(item.type).toLowerCase();
@@ -461,9 +498,9 @@ const InventoryModal: React.FC<Props> = ({
       });
     }
 
-    // 搜索过滤（按名称和描述）
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
+    // 搜索过滤（按名称和描述）- 使用防抖后的搜索词
+    if (debouncedSearchQuery.trim()) {
+      const query = debouncedSearchQuery.toLowerCase().trim();
       filtered = filtered.filter((item) => {
         const nameMatch = item.name.toLowerCase().includes(query);
         const descMatch = item.description?.toLowerCase().includes(query);
@@ -478,7 +515,7 @@ const InventoryModal: React.FC<Props> = ({
       );
     }
 
-    // 属性过滤
+    // 属性过滤 - 优化：只在需要时计算属性
     if (statFilter !== 'all' && statFilterMin > 0) {
       filtered = filtered.filter((item) => {
         const isNatal = item.id === player.natalArtifactId;
@@ -502,7 +539,7 @@ const InventoryModal: React.FC<Props> = ({
     }
 
     return filtered;
-  }, [inventory, selectedCategory, selectedEquipmentSlot, sortByRarity, searchQuery, rarityFilter, statFilter, statFilterMin, player.natalArtifactId]);
+  }, [inventory, selectedCategory, selectedEquipmentSlot, sortByRarity, debouncedSearchQuery, rarityFilter, statFilter, statFilterMin, player.natalArtifactId]);
 
   // 计算所有已装备物品的总属性（使用统一的工具函数）
   const calculateTotalEquippedStats = useMemo(() => {
@@ -537,9 +574,9 @@ const InventoryModal: React.FC<Props> = ({
     [player.natalArtifactId]
   );
 
-  if (!isOpen) return null;
-
-  const calculateComparison = () => {
+  // 使用 useMemo 缓存装备比较结果，避免每次渲染都重新计算
+  // 注意：必须在 if (!isOpen) return null; 之前调用，遵守 React Hooks 规则
+  const comparison = useMemo(() => {
     if (!hoveredItem || !hoveredItem.isEquippable || !hoveredItem.equipmentSlot)
       return null;
 
@@ -565,14 +602,9 @@ const InventoryModal: React.FC<Props> = ({
       defense: hoveredStats.defense - currentEquippedStats.defense,
       hp: hoveredStats.hp - currentEquippedStats.hp,
     };
-  };
+  }, [hoveredItem, equippedItems, inventory, getItemStatsForComparison]);
 
-  // 使用统一的工具函数检查物品是否已装备
-  const isItemEquipped = (item: Item): boolean => {
-    return checkItemEquipped(item, equippedItems);
-  };
-
-  const comparison = calculateComparison();
+  if (!isOpen) return null;
 
   return (
     <div
@@ -1058,7 +1090,7 @@ const InventoryModal: React.FC<Props> = ({
                     item={item}
                     player={player}
                     equippedItems={equippedItems}
-                    isEquipped={isItemEquipped(item)}
+                    isEquipped={itemEquippedMap.get(item.id) || false}
                     onHover={handleHoverItem}
                     onUseItem={onUseItem}
                     onEquipItem={onEquipItem}
