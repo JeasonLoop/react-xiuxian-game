@@ -20,7 +20,7 @@ interface VersionInfo {
 const ChangelogModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [versions, setVersions] = useState<VersionInfo[]>([]);
   const [loading, setLoading] = useState(true);
-  const currentVersion = import.meta.env.VITE_APP_VERSION || '0.2.4';
+  const currentVersion = import.meta.env.VITE_APP_VERSION || '-';
 
   useEffect(() => {
     if (isOpen) {
@@ -38,7 +38,7 @@ const ChangelogModal: React.FC<Props> = ({ isOpen, onClose }) => {
       }
       const content = await response.text();
       const parsed = parseChangelog(content);
-      setVersions(parsed);
+      setVersions(parsed.slice(0, 5));
     } catch (error) {
       console.error('Failed to load changelog:', error);
       // 如果加载失败，使用默认的版本信息
