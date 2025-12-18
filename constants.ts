@@ -2015,6 +2015,13 @@ export interface InheritanceSkill {
     speed?: number;
     expRate?: number;
     luck?: number;
+    // 百分比效果（0.15 表示提升15%）
+    attackPercent?: number;
+    defensePercent?: number;
+    hpPercent?: number;
+    spiritPercent?: number;
+    physiquePercent?: number;
+    speedPercent?: number;
   };
   passiveEffect?: {
     type: 'combat' | 'cultivation' | 'exploration' | 'general';
@@ -2093,112 +2100,187 @@ export const INHERITANCE_SKILLS: InheritanceSkill[] = [
   {
     id: 'dragon-roar',
     name: '龙吟',
-    description: '真龙之吼，震慑敌人，提升攻击力。',
+    description: '真龙之吼，震慑敌人，攻击力大幅提升。',
     route: 'dragon',
     unlockLevel: 1,
-    effects: { attack: 100 },
+    effects: {
+      attackPercent: 0.25, // 攻击力提升25%
+      attack: 200, // 基础攻击力加成
+    },
     passiveEffect: {
       type: 'combat',
-      description: '战斗时攻击力额外提升10%',
+      description: '战斗时攻击力额外提升15%，造成伤害时有一定概率触发龙威，造成额外30%伤害',
     },
   },
   {
     id: 'dragon-scale',
     name: '龙鳞护体',
-    description: '龙鳞般的防御，大幅提升防御力。',
+    description: '龙鳞般的防御，防御力和气血大幅提升。',
     route: 'dragon',
     unlockLevel: 2,
-    effects: { defense: 150, hp: 300 },
+    effects: {
+      defensePercent: 0.30, // 防御力提升30%
+      hpPercent: 0.25, // 气血提升25%
+      defense: 300,
+      hp: 500,
+    },
     passiveEffect: {
       type: 'combat',
-      description: '受到伤害减少15%',
+      description: '受到伤害减少20%，受到致命伤害时有30%概率免疫',
     },
   },
   {
     id: 'dragon-rage',
     name: '龙怒',
-    description: '真龙之怒，大幅提升所有属性。',
+    description: '真龙之怒，所有属性大幅提升，攻击力额外增强。',
     route: 'dragon',
     unlockLevel: 3,
-    effects: { attack: 200, defense: 100, hp: 500, speed: 30 },
+    effects: {
+      attackPercent: 0.35, // 攻击力提升35%
+      defensePercent: 0.20, // 防御力提升20%
+      hpPercent: 0.30, // 气血提升30%
+      speedPercent: 0.25, // 速度提升25%
+      attack: 500,
+      defense: 300,
+      hp: 1000,
+      speed: 100,
+    },
   },
   // 凤凰传承技能
   {
     id: 'phoenix-rebirth',
     name: '涅槃重生',
-    description: '凤凰涅槃之力，提升恢复能力和气血。',
+    description: '凤凰涅槃之力，气血和修炼速度大幅提升。',
     route: 'phoenix',
     unlockLevel: 1,
-    effects: { hp: 600, expRate: 0.1 },
+    effects: {
+      hpPercent: 0.40, // 气血提升40%
+      expRate: 0.30, // 修炼速度提升30%
+      hp: 800,
+    },
     passiveEffect: {
       type: 'cultivation',
-      description: '修炼速度提升20%',
+      description: '修炼速度提升30%，死亡时有50%概率涅槃重生，恢复50%气血',
     },
   },
   {
     id: 'phoenix-fire',
     name: '凤凰真火',
-    description: '凤凰真火之力，提升攻击和神识。',
+    description: '凤凰真火之力，攻击力和神识大幅提升。',
     route: 'phoenix',
     unlockLevel: 2,
-    effects: { attack: 120, spirit: 100 },
+    effects: {
+      attackPercent: 0.30, // 攻击力提升30%
+      spiritPercent: 0.35, // 神识提升35%
+      attack: 400,
+      spirit: 300,
+    },
+    passiveEffect: {
+      type: 'combat',
+      description: '攻击时附加真火伤害，造成额外25%火焰伤害',
+    },
   },
   {
     id: 'phoenix-blessing',
     name: '凤凰祝福',
-    description: '凤凰的祝福，全面提升属性。',
+    description: '凤凰的祝福，所有属性全面提升。',
     route: 'phoenix',
     unlockLevel: 3,
-    effects: { attack: 150, defense: 120, hp: 800, spirit: 100, expRate: 0.15 },
+    effects: {
+      attackPercent: 0.25, // 攻击力提升25%
+      defensePercent: 0.25, // 防御力提升25%
+      hpPercent: 0.35, // 气血提升35%
+      spiritPercent: 0.30, // 神识提升30%
+      expRate: 0.25, // 修炼速度提升25%
+      attack: 600,
+      defense: 400,
+      hp: 1500,
+      spirit: 500,
+    },
   },
   // 虚空传承技能
   {
     id: 'void-step',
     name: '虚空步',
-    description: '虚空之力，大幅提升速度。',
+    description: '虚空之力，速度大幅提升，行动如影随形。',
     route: 'void',
     unlockLevel: 1,
-    effects: { speed: 80 },
+    effects: {
+      speedPercent: 0.50, // 速度提升50%
+      speed: 200,
+    },
     passiveEffect: {
       type: 'exploration',
-      description: '历练时获得的奖励提升30%',
+      description: '历练时获得的奖励提升40%，有概率触发虚空穿梭，直接获得奖励',
     },
   },
   {
     id: 'void-mind',
     name: '虚空心法',
-    description: '虚空心法，大幅提升神识。',
+    description: '虚空心法，神识和修炼速度大幅提升。',
     route: 'void',
     unlockLevel: 2,
-    effects: { spirit: 150, expRate: 0.15 },
+    effects: {
+      spiritPercent: 0.45, // 神识提升45%
+      expRate: 0.30, // 修炼速度提升30%
+      spirit: 400,
+    },
+    passiveEffect: {
+      type: 'cultivation',
+      description: '修炼时进入虚空状态，修炼速度额外提升20%',
+    },
   },
   {
     id: 'void-break',
     name: '破虚',
-    description: '破除虚空，大幅提升所有属性。',
+    description: '破除虚空，所有属性大幅提升，神识额外增强。',
     route: 'void',
     unlockLevel: 3,
-    effects: { attack: 150, defense: 100, spirit: 200, speed: 60, expRate: 0.2 },
+    effects: {
+      attackPercent: 0.30, // 攻击力提升30%
+      defensePercent: 0.25, // 防御力提升25%
+      spiritPercent: 0.50, // 神识提升50%
+      speedPercent: 0.40, // 速度提升40%
+      expRate: 0.35, // 修炼速度提升35%
+      attack: 700,
+      defense: 500,
+      spirit: 800,
+      speed: 300,
+    },
   },
   // 雷霆传承技能
   {
     id: 'thunder-bolt',
     name: '雷霆一击',
-    description: '雷霆之力，大幅提升攻击和速度。',
+    description: '雷霆之力，攻击力和速度大幅提升。',
     route: 'thunder',
     unlockLevel: 1,
-    effects: { attack: 80, speed: 60 },
+    effects: {
+      attackPercent: 0.35, // 攻击力提升35%
+      speedPercent: 0.40, // 速度提升40%
+      attack: 400,
+      speed: 250,
+    },
+    passiveEffect: {
+      type: 'combat',
+      description: '攻击时有30%概率触发雷霆，造成额外50%伤害并麻痹敌人',
+    },
   },
   {
     id: 'thunder-speed',
     name: '雷霆之速',
-    description: '雷霆般的速度，大幅提升速度属性。',
+    description: '雷霆般的速度，速度和神识大幅提升。',
     route: 'thunder',
     unlockLevel: 2,
-    effects: { speed: 100, spirit: 50 },
+    effects: {
+      speedPercent: 0.60, // 速度提升60%
+      spiritPercent: 0.30, // 神识提升30%
+      speed: 400,
+      spirit: 300,
+    },
     passiveEffect: {
       type: 'general',
-      description: '移动和行动速度提升25%',
+      description: '移动和行动速度提升40%，战斗时先手概率大幅提升',
     },
   },
 ];

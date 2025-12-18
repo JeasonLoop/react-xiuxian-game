@@ -141,6 +141,7 @@ interface ModalsContainerProps {
       itemId?: string
     ) => void;
     handleBatchFeedItems?: (petId: string, itemIds: string[]) => void;
+    handleBatchFeedHp?: (petId: string) => void;
     handleEvolvePet: (petId: string) => void;
     handleReleasePet?: (petId: string) => void;
     handleBatchReleasePets?: (petIds: string[]) => void;
@@ -310,6 +311,7 @@ export default function ModalsContainer({
         onDeactivatePet={handlers.handleDeactivatePet}
         onFeedPet={handlers.handleFeedPet}
         onBatchFeedItems={handlers.handleBatchFeedItems}
+        onBatchFeedHp={handlers.handleBatchFeedHp}
         onEvolvePet={handlers.handleEvolvePet}
         onReleasePet={handlers.handleReleasePet}
         onBatchReleasePets={handlers.handleBatchReleasePets}

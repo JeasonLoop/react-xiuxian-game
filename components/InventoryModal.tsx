@@ -181,6 +181,31 @@ const InventoryItem = memo<InventoryItemProps>(
             {item.description}
           </p>
 
+          {/* 材料用途说明 */}
+          {item.type === ItemType.Material && (
+            <div className="text-xs text-blue-400 mb-2 p-2 bg-blue-900/20 rounded border border-blue-800/50">
+              <div className="font-bold mb-1">💡 用途说明：</div>
+              <div className="space-y-0.5 text-blue-300">
+                {item.name.includes('炼器') || item.name.includes('石') || item.name.includes('铁') || item.name.includes('矿') ? (
+                  <div>• 可用于强化法宝和装备</div>
+                ) : null}
+                {item.name.includes('草') || item.name.includes('花') || item.name.includes('参') || item.name.includes('芝') ? (
+                  <div>• 可用于炼制丹药（查看丹方）</div>
+                ) : null}
+                {item.name.includes('内丹') || item.name.includes('妖丹') ? (
+                  <div>• 可用于炼制丹药或喂养灵宠</div>
+                ) : null}
+                {item.name.includes('符') ? (
+                  <div>• 可用于制作符箓或直接使用</div>
+                ) : null}
+                <div>• 可喂养灵宠获得经验</div>
+                {!item.effect && (
+                  <div className="text-stone-400">• 此材料暂无直接使用效果</div>
+                )}
+              </div>
+            </div>
+          )}
+
           {item.isNatal && (
             <div className="text-xs text-mystic-gold mb-2 flex items-center gap-1">
               <Sparkles size={12} />

@@ -1,11 +1,10 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { X, Star, Award, Info, Zap, BarChart3, TrendingUp, Sparkles, BookOpen, Users } from 'lucide-react';
-import { PlayerStats,  ItemRarity } from '../types';
+import { PlayerStats,  ItemRarity, RealmType, Title } from '../types';
 import {
   TALENTS,
   TITLES,
   TITLE_SET_EFFECTS,
-  RARITY_MULTIPLIERS,
   ACHIEVEMENTS,
   CULTIVATION_ARTS,
   REALM_ORDER,
@@ -68,10 +67,94 @@ const CharacterModal: React.FC<Props> = ({
   const currentTalent = TALENTS.find((t) => t.id === player.talentId);
   const currentTitle = TITLES.find((t) => t.id === player.titleId);
 
-  // 获取已解锁的称号列表
+  // 检查称号是否满足解锁条件
+  const checkTitleRequirement = useCallback((title: Title, player: PlayerStats): boolean => {
+    const requirement = title.requirement.toLowerCase();
+    const stats = player.statistics || {
+      killCount: 0,
+      meditateCount: 0,
+      adventureCount: 0,
+      equipCount: 0,
+      petCount: 0,
+      recipeCount: 0,
+      artCount: 0,
+      breakthroughCount: 0,
+      secretRealmCount: 0,
+    };
+
+    // 检查境界类称号
+    if (requirement.includes('筑基期') || requirement.includes('筑基')) {
+      return REALM_ORDER.indexOf(player.realm) >= REALM_ORDER.indexOf(RealmType.Foundation);
+    }
+    if (requirement.includes('金丹期') || requirement.includes('金丹')) {
+      return REALM_ORDER.indexOf(player.realm) >= REALM_ORDER.indexOf(RealmType.GoldenCore);
+    }
+    if (requirement.includes('元婴期') || requirement.includes('元婴')) {
+      return REALM_ORDER.indexOf(player.realm) >= REALM_ORDER.indexOf(RealmType.NascentSoul);
+    }
+    if (requirement.includes('渡劫飞升') || requirement.includes('飞升')) {
+      return REALM_ORDER.indexOf(player.realm) >= REALM_ORDER.indexOf(RealmType.ImmortalAscension);
+    }
+
+    // 检查战斗类称号
+    if (requirement.includes('击败10个敌人') || requirement.includes('击败10')) {
+      return stats.killCount >= 10;
+    }
+    if (requirement.includes('击败50个敌人') || requirement.includes('击败50')) {
+      return stats.killCount >= 50;
+    }
+    if (requirement.includes('击败100个敌人') || requirement.includes('击败100')) {
+      return stats.killCount >= 100;
+    }
+
+    // 检查探索类称号
+    if (requirement.includes('完成20次历练') || requirement.includes('20次历练')) {
+      return stats.adventureCount >= 20;
+    }
+    if (requirement.includes('完成50次历练') || requirement.includes('50次历练')) {
+      return stats.adventureCount >= 50;
+    }
+    if (requirement.includes('完成100次历练') || requirement.includes('100次历练')) {
+      return stats.adventureCount >= 100;
+    }
+
+    // 检查打坐类称号
+    if (requirement.includes('打坐') || requirement.includes('冥想')) {
+      const match = requirement.match(/(\d+)/);
+      if (match) {
+        const count = parseInt(match[1]);
+        return stats.meditateCount >= count;
+      }
+    }
+
+    // 检查收集类称号
+    if (requirement.includes('收集') || requirement.includes('物品')) {
+      const match = requirement.match(/(\d+)/);
+      if (match) {
+        const count = parseInt(match[1]);
+        const uniqueItems = new Set(player.inventory.map(i => i.name)).size;
+        return uniqueItems >= count;
+      }
+    }
+
+    // 初始称号默认解锁
+    if (requirement.includes('初始称号')) {
+      return true;
+    }
+
+    return false;
+  }, []);
+
+  // 获取已解锁的称号列表（包括实时检查满足条件的）
   const unlockedTitles = useMemo(() => {
-    return TITLES.filter(t => (player.unlockedTitles || []).includes(t.id));
-  }, [player.unlockedTitles]);
+    const unlocked = TITLES.filter(t => (player.unlockedTitles || []).includes(t.id));
+    // 检查未解锁但满足条件的称号
+    const newlyUnlocked = TITLES.filter(t =>
+      !(player.unlockedTitles || []).includes(t.id) &&
+      checkTitleRequirement(t, player)
+    );
+    return [...unlocked, ...newlyUnlocked];
+  }, [player.unlockedTitles, player, checkTitleRequirement]);
 
   // 计算当前称号效果（包括套装效果）
   const titleEffects = useMemo(() => {
@@ -898,11 +981,18 @@ const CharacterModal: React.FC<Props> = ({
                     return (
                       <button
                         key={title.id}
-                        onClick={() => !isEquipped && onSelectTitle(title.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (!isEquipped && onSelectTitle) {
+                            onSelectTitle(title.id);
+                          }
+                        }}
+                        disabled={isEquipped}
                         className={`text-left rounded p-3 border transition-colors ${
                           isEquipped
-                            ? 'bg-yellow-900/30 border-yellow-500 cursor-default'
-                            : 'bg-stone-900 hover:bg-stone-700 border-stone-700'
+                            ? 'bg-yellow-900/30 border-yellow-500 cursor-default opacity-60'
+                            : 'bg-stone-900 hover:bg-stone-700 border-stone-700 cursor-pointer'
                         }`}
                       >
                         <div className="flex justify-between items-start">
@@ -959,22 +1049,28 @@ const CharacterModal: React.FC<Props> = ({
                       未解锁的称号 ({TITLES.filter(t => !(player.unlockedTitles || []).includes(t.id)).length})
                     </summary>
                     <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto mt-2">
-                      {TITLES.filter(t => !(player.unlockedTitles || []).includes(t.id)).map((title) => (
-                        <div
-                          key={title.id}
-                          className="bg-stone-900/50 rounded p-3 border border-stone-800 opacity-60"
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`font-bold ${getRarityColor(title.rarity || '普通')}`}>
-                              {title.name}
-                            </span>
-                            {title.rarity && (
-                              <span className="text-xs text-stone-500">({title.rarity})</span>
-                            )}
+                      {TITLES.filter(t => !unlockedTitles.map(ut => ut.id).includes(t.id)).map((title) => {
+                        const isMet = checkTitleRequirement(title, player);
+                        return (
+                          <div
+                            key={title.id}
+                            className={`bg-stone-900/50 rounded p-3 border ${isMet ? 'border-green-600 opacity-100' : 'border-stone-800 opacity-60'}`}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`font-bold ${getRarityColor(title.rarity || '普通')}`}>
+                                {title.name}
+                              </span>
+                              {title.rarity && (
+                                <span className="text-xs text-stone-500">({title.rarity})</span>
+                              )}
+                              {isMet && (
+                                <span className="text-xs text-green-400 font-bold">✓ 可解锁</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-stone-500">{title.requirement}</p>
                           </div>
-                          <p className="text-xs text-stone-500">{title.requirement}</p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </details>
                 )}

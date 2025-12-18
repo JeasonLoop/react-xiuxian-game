@@ -245,7 +245,10 @@ function App() {
     addLog,
     setLoading,
     updateQuestProgress: (type: string, amount: number = 1) => {
-      dailyQuestHandlers.updateQuestProgress(type as any, amount);
+      // 类型转换：string -> DailyQuestType，运行时验证
+      if (['meditate', 'adventure', 'breakthrough', 'alchemy', 'equip', 'pet', 'sect', 'realm', 'kill', 'collect', 'learn', 'other'].includes(type)) {
+        dailyQuestHandlers.updateQuestProgress(type as any, amount);
+      }
     },
   });
 
@@ -295,6 +298,7 @@ function App() {
     player,
     setPlayer,
     addLog,
+    setItemActionLog,
   });
 
   // 初始化新的模块化 handlers
@@ -594,6 +598,7 @@ function App() {
     dailyQuestHandlers.updateQuestProgress('pet', 1);
   };
   const handleBatchFeedItems = petHandlers.handleBatchFeedItems;
+  const handleBatchFeedHp = petHandlers.handleBatchFeedHp;
   // 包装 handleEvolvePet，添加任务进度更新
   const handleEvolvePet = (petId: string) => {
     petHandlers.handleEvolvePet(petId);
@@ -700,7 +705,7 @@ function App() {
 
   // 初始化日常任务（只在游戏开始时执行一次，或日期变化时执行）
   useEffect(() => {
-    if (player && gameStarted && dailyQuestHandlers) {
+    if (player && gameStarted) {
       // 确保 player 对象已经完整初始化
       try {
         dailyQuestHandlers.initializeDailyQuests();
@@ -1409,6 +1414,7 @@ function App() {
           handleDeactivatePet,
           handleFeedPet,
           handleBatchFeedItems,
+          handleBatchFeedHp,
           handleEvolvePet,
           handleReleasePet,
           handleBatchReleasePets,
@@ -1439,8 +1445,8 @@ function App() {
               if (playerHpAfter <= 0) {
                 setAutoAdventurePausedByBattle(false);
               }
-            } else if (!result) {
-              // 如果没有战斗结果，也清除暂停状态
+            } else {
+              // 如果没有战斗结果或玩家不存在，也清除暂停状态
               setAutoAdventurePausedByBattle(false);
             }
             // 如果玩家还活着，useEffect 会自动恢复自动历练

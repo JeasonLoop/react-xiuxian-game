@@ -543,6 +543,11 @@ const SectModal: React.FC<Props> = ({
                       <div className="flex items-start justify-between mb-1">
                         <h4 className="font-serif font-bold text-stone-200 flex-1">
                           {task.name}
+                          {task.isDailySpecial && (
+                            <span className="text-xs text-yellow-400 ml-2 animate-pulse">
+                              ⭐ 每日特殊
+                            </span>
+                          )}
                         </h4>
                         {task.quality && (
                           <span className={`text-xs px-2 py-0.5 rounded border ${qualityColors[task.quality]}`}>
@@ -609,6 +614,41 @@ const SectModal: React.FC<Props> = ({
                         <div className="text-xs text-stone-500">
                           耗时: {timeCostText}
                         </div>
+                        {task.successRate && (
+                          <div className="text-xs text-yellow-400">
+                            完美完成概率: {task.successRate}%
+                          </div>
+                        )}
+                        {task.completionBonus && (
+                          <div className="text-xs text-purple-400">
+                            完美完成可获得额外奖励
+                          </div>
+                        )}
+                        {task.typeBonus && player.lastCompletedTaskType === task.type && (
+                          <div className="text-xs text-green-400 font-bold">
+                            ⚡ 连续完成加成: +{task.typeBonus}%
+                          </div>
+                        )}
+                        {task.recommendedFor && (() => {
+                          const recommendations: string[] = [];
+                          if (task.recommendedFor.highAttack && player.attack > 50) {
+                            recommendations.push('适合高攻击');
+                          }
+                          if (task.recommendedFor.highDefense && player.defense > 50) {
+                            recommendations.push('适合高防御');
+                          }
+                          if (task.recommendedFor.highSpirit && player.spirit > 50) {
+                            recommendations.push('适合高神识');
+                          }
+                          if (task.recommendedFor.highSpeed && player.speed > 50) {
+                            recommendations.push('适合高速度');
+                          }
+                          return recommendations.length > 0 ? (
+                            <div className="text-xs text-blue-400">
+                              💡 推荐: {recommendations.join('、')}
+                            </div>
+                          ) : null;
+                        })()}
                         {(() => {
                           const today = new Date().toISOString().split('T')[0];
                           const lastReset = player.lastTaskResetDate || today;
@@ -826,8 +866,8 @@ const SectModal: React.FC<Props> = ({
           }}
           task={selectedTask}
           player={player}
-          onTaskComplete={(task, encounterResult) => {
-            onTask(task, encounterResult);
+          onTaskComplete={(task, encounterResult, isPerfectCompletion) => {
+            onTask(task, encounterResult, isPerfectCompletion);
             setSelectedTask(null);
           }}
         />

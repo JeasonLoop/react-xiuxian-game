@@ -36,6 +36,13 @@ export interface CultivationArt {
     physique?: number;
     speed?: number;
     expRate?: number; // e.g., 0.1 for +10% exp from meditation
+    // 百分比效果（传承技能使用，0.15 表示提升15%）
+    attackPercent?: number;
+    defensePercent?: number;
+    hpPercent?: number;
+    spiritPercent?: number;
+    physiquePercent?: number;
+    speedPercent?: number;
   };
 }
 
@@ -249,6 +256,7 @@ export interface PlayerStats {
     long: number; // 今日已完成较长任务次数（限制2次）
   };
   lastTaskResetDate: string; // 上次重置任务计数的日期（YYYY-MM-DD格式）
+  lastCompletedTaskType?: string; // 最后完成的任务类型（用于连续完成加成）
   // 成就系统扩展
   viewedAchievements: string[]; // 已查看过的成就ID（用于角标显示）
   // 本命法宝系统

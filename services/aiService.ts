@@ -353,7 +353,7 @@ ${realmKeywords}
 物品命名：每次必须使用不同的物品名称，根据事件场景创造新的名称组合，避免模板化重复（如：不要总是"青钢剑"、"回血丹"等常见名称，要创造"赤焰刀"、"凝元丹"、"寒霜枪"等多样化名称）。
 物品稀有度：${Math.max(0, 60 - realmIndex * 10)}%普通，${Math.min(30 + realmIndex * 5, 50)}%稀有，${Math.min(realmIndex * 3, 20)}%传说。
 奖励：修为${Math.floor(10 * realmMultiplier)}-${Math.floor(100 * realmMultiplier)}，灵石${Math.floor(5 * realmMultiplier)}-${Math.floor(50 * realmMultiplier)}，传承${Math.floor(1 * realmMultiplier)}-${Math.floor(4 * realmMultiplier)}（极罕见）。
-声望事件：5-10%概率触发声望事件（reputationEvent），需要提供2-3个选择，每个选择有不同的声望变化（-30到+50）和可能的其他奖励/惩罚。事件场景包括：救助他人/惩恶扬善/宗门任务/发现秘密/道德抉择等。`;
+声望事件：15-25%概率触发声望事件（reputationEvent），需要提供2-3个选择，每个选择有不同的声望变化（-30到+50）和可能的其他奖励/惩罚。事件场景包括：救助他人/惩恶扬善/宗门任务/发现秘密/道德抉择等。`;
         break;
     }
 

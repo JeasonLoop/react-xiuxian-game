@@ -1,4 +1,4 @@
-import { SecretRealm, RealmType, Item, ItemType } from '../types';
+import { SecretRealm, RealmType, Item, ItemType, EquipmentSlot } from '../types';
 import { REALM_ORDER, SectInfo, SectGrade, getPillDefinition } from '../constants';
 
 const randomId = () => Math.random().toString(36).slice(2, 9);
@@ -187,6 +187,16 @@ const TASK_NAMES_BY_TYPE: Record<TaskType, string[]> = {
   trial: ['试炼任务', '宗门试炼', '考验任务', '历练任务'],
   rescue: ['救援任务', '营救同门', '救援行动', '紧急救援'],
   investigate: ['调查任务', '情报收集', '探查任务', '侦查任务'],
+  battle: ['宗门比武', '挑战同门', '切磋交流', '实力证明'],
+  treasure_hunt: ['寻宝任务', '寻找遗宝', '探宝行动', '寻获机缘'],
+  escort: ['护送要人', '护送长老', '护送物资', '护送任务'],
+  assassination: ['暗杀任务', '清除威胁', '秘密行动', '刺杀目标'],
+  artifact_repair: ['修复法宝', '重铸法器', '法宝维护', '法器修复'],
+  spirit_beast: ['驯服灵兽', '捕捉妖兽', '灵兽契约', '收服坐骑'],
+  sect_war: ['宗门战争', '征伐任务', '攻伐行动', '战争任务'],
+  inheritance: ['传承试炼', '接受传承', '传承考验', '获得传承'],
+  tribulation: ['渡劫护法', '天劫试炼', '渡劫任务', '天劫考验'],
+  alchemy_master: ['炼丹大师', '炼制仙丹', '丹道考验', '炼丹宗师'],
 };
 
 // 任务描述池（按类型分类）
@@ -281,6 +291,56 @@ const TASK_DESCRIPTIONS_BY_TYPE: Record<TaskType, string[]> = {
     '收集情报，探查敌情。',
     '侦查任务，需要谨慎和智慧。',
   ],
+  battle: [
+    '与同门切磋，提升实战能力，可能获得战斗经验。',
+    '参加宗门比武，证明自己的实力。',
+    '挑战同门高手，检验修炼成果。',
+  ],
+  treasure_hunt: [
+    '寻找传说中的宝物，需要运气和实力，可能获得稀有物品。',
+    '探索未知区域，寻找遗落的宝物。',
+    '根据线索寻找珍贵物品，考验智慧和运气。',
+  ],
+  escort: [
+    '护送重要人物或物资，可能遭遇敌人袭击。',
+    '护送宗门长老前往目的地，责任重大。',
+    '护送珍贵物资，确保安全送达。',
+  ],
+  assassination: [
+    '执行秘密刺杀任务，需要强大的实力和隐蔽能力。',
+    '清除对宗门有威胁的目标，高风险高回报。',
+    '执行暗杀任务，需要谨慎和实力。',
+  ],
+  artifact_repair: [
+    '修复损坏的法宝，需要炼器材料和技能。',
+    '重铸破损的法器，恢复其威力。',
+    '维护宗门的法宝，确保其正常运转。',
+  ],
+  spirit_beast: [
+    '驯服强大的灵兽，需要实力和耐心，可能获得灵宠。',
+    '捕捉妖兽，将其收为坐骑或灵宠。',
+    '与灵兽建立契约，获得强大的伙伴。',
+  ],
+  sect_war: [
+    '参与宗门战争，与敌对势力战斗，可能获得大量奖励。',
+    '征伐敌对宗门，为宗门开疆拓土。',
+    '参与大规模战斗，考验实力和勇气。',
+  ],
+  inheritance: [
+    '接受宗门传承，获得强大的功法和技能。',
+    '通过传承试炼，获得前辈的传承。',
+    '接受传承考验，证明自己的资质。',
+  ],
+  tribulation: [
+    '为同门护法渡劫，需要强大的实力，可能获得天劫奖励。',
+    '参与天劫试炼，获得天劫之力。',
+    '协助同门渡劫，获得功德和奖励。',
+  ],
+  alchemy_master: [
+    '炼制传说中的仙丹，需要极高的炼丹造诣，可能获得稀有丹药。',
+    '接受炼丹大师的考验，证明炼丹实力。',
+    '炼制顶级丹药，考验炼丹技艺。',
+  ],
 };
 
 // 任务品质配置
@@ -333,7 +393,17 @@ export type TaskType =
   | 'diplomacy'        // 外交任务
   | 'trial'            // 试炼任务
   | 'rescue'           // 救援任务
-  | 'investigate';     // 调查任务
+  | 'investigate'      // 调查任务
+  | 'battle'           // 战斗任务（新增）
+  | 'treasure_hunt'    // 寻宝任务（新增）
+  | 'escort'           // 护送任务（新增）
+  | 'assassination'    // 刺杀任务（新增）
+  | 'artifact_repair'  // 法宝修复（新增）
+  | 'spirit_beast'     // 灵兽驯服（新增）
+  | 'sect_war'         // 宗门战争（新增）
+  | 'inheritance'      // 传承任务（新增）
+  | 'tribulation'      // 渡劫任务（新增）
+  | 'alchemy_master';  // 炼丹大师（新增）
 
 export interface RandomSectTask {
   id: string;
@@ -355,6 +425,27 @@ export interface RandomSectTask {
     items?: { name: string; quantity: number }[];
   };
   timeCost: 'instant' | 'short' | 'medium' | 'long';
+  // 新增字段
+  completionBonus?: { // 完美完成奖励
+    contribution?: number;
+    exp?: number;
+    spiritStones?: number;
+    items?: { name: string; quantity: number }[];
+  };
+  specialReward?: { // 特殊奖励（低概率触发）
+    type: 'equipment' | 'cultivationArt' | 'rareMaterial' | 'title';
+    item?: { name: string; quantity: number };
+  };
+  requiresCombat?: boolean; // 是否需要战斗
+  successRate?: number; // 成功率（0-100），影响是否完美完成
+  isDailySpecial?: boolean; // 是否为每日特殊任务
+  recommendedFor?: { // 推荐给特定属性的玩家
+    highAttack?: boolean; // 高攻击力
+    highDefense?: boolean; // 高防御力
+    highSpirit?: boolean; // 高神识
+    highSpeed?: boolean; // 高速度
+  };
+  typeBonus?: number; // 任务类型连续完成加成（百分比）
 }
 
 // 生成随机秘境
@@ -526,6 +617,16 @@ const getRecommendedRealm = (type: TaskType, playerRealm: RealmType): RealmType 
     trial: 2,           // 试炼：需要较高境界
     rescue: 1,          // 救援：需要一定境界
     investigate: 1,     // 调查：需要一定境界
+    battle: 0,           // 战斗：无要求
+    treasure_hunt: 1,    // 寻宝：需要一定境界
+    escort: 0,           // 护送：无要求
+    assassination: 1,    // 刺杀：需要一定境界
+    artifact_repair: 1,  // 法宝修复：需要一定境界
+    spirit_beast: 1,     // 灵兽驯服：需要一定境界
+    sect_war: 2,        // 宗门战争：需要较高境界
+    inheritance: 2,      // 传承：需要较高境界
+    tribulation: 3,      // 渡劫：需要高境界
+    alchemy_master: 2,   // 炼丹大师：需要较高境界
   };
 
   const offset = realmOffsets[type] || 0;
@@ -559,6 +660,9 @@ export const generateRandomSectTasks = (
     'alchemy', 'forge', 'teach', 'defend', 'explore',
     'trade', 'research', 'cultivate', 'maintain',
     'diplomacy', 'trial', 'rescue', 'investigate',
+    'battle', 'treasure_hunt', 'escort', 'assassination',
+    'artifact_repair', 'spirit_beast', 'sect_war', 'inheritance',
+    'tribulation', 'alchemy_master',
   ];
 
   // 根据等级调整奖励基数
@@ -581,7 +685,7 @@ export const generateRandomSectTasks = (
     // 从对应类型的名称和描述池中选择
     const names = TASK_NAMES_BY_TYPE[type];
     const descriptions = TASK_DESCRIPTIONS_BY_TYPE[type];
-    const name = names[Math.floor(Math.random() * names.length)];
+    let name = names[Math.floor(Math.random() * names.length)];
     const description = descriptions[Math.floor(Math.random() * descriptions.length)];
 
     // 生成任务品质
@@ -824,7 +928,217 @@ export const generateRandomSectTasks = (
           (40 + Math.random() * 80) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
         );
         break;
+      case 'battle':
+        reward.contribution = Math.floor(
+          (35 + Math.random() * 45) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+        ) + qualityConfig.contributionBonus;
+        reward.exp = Math.floor(
+          (60 + Math.random() * 120) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+        );
+        break;
+      case 'treasure_hunt':
+        reward.contribution = Math.floor(
+          (40 + Math.random() * 50) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+        ) + qualityConfig.contributionBonus;
+        reward.items = [
+          {
+            name: '炼器石',
+            quantity: Math.floor((2 + Math.random() * 3) * difficultyMultiplier * qualityConfig.rewardMultiplier),
+          },
+        ];
+        // 高品质寻宝任务可能获得稀有物品
+        if (quality === '传说' || quality === '仙品') {
+          if (!reward.items) reward.items = [];
+          reward.items.push({
+            name: quality === '仙品' ? '仙品法宝碎片' : '传说法宝碎片',
+            quantity: 1,
+          });
+        }
+        break;
+      case 'escort':
+        reward.contribution = Math.floor(
+          (45 + Math.random() * 55) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+        ) + qualityConfig.contributionBonus;
+        reward.spiritStones = Math.floor(
+          (150 + Math.random() * 250) * difficultyMultiplier * qualityConfig.rewardMultiplier
+        );
+        break;
+      case 'assassination':
+        reward.contribution = Math.floor(
+          (50 + Math.random() * 70) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+        ) + qualityConfig.contributionBonus;
+        reward.exp = Math.floor(
+          (80 + Math.random() * 150) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+        );
+        reward.spiritStones = Math.floor(
+          (200 + Math.random() * 300) * difficultyMultiplier * qualityConfig.rewardMultiplier
+        );
+        break;
+      case 'artifact_repair':
+        const repairMaterials = ['炼器石', '精铁', '玄铁', '星辰石'];
+        cost.items = [
+          {
+            name: repairMaterials[Math.floor(Math.random() * repairMaterials.length)],
+            quantity: Math.floor((2 + Math.random() * 3) * difficultyMultiplier),
+          },
+        ];
+        reward.contribution = Math.floor(
+          (30 + Math.random() * 40) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+        ) + qualityConfig.contributionBonus;
+        reward.items = [
+          {
+            name: '强化石',
+            quantity: Math.floor((1 + Math.random() * 2) * difficultyMultiplier * qualityConfig.rewardMultiplier),
+          },
+        ];
+        break;
+      case 'spirit_beast':
+        reward.contribution = Math.floor(
+          (40 + Math.random() * 50) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+        ) + qualityConfig.contributionBonus;
+        reward.exp = Math.floor(
+          (70 + Math.random() * 130) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+        );
+        // 高品质灵兽任务可能获得灵宠相关物品
+        if (quality === '传说' || quality === '仙品') {
+          reward.items = [
+            {
+              name: quality === '仙品' ? '仙品灵兽内丹' : '传说灵兽内丹',
+              quantity: 1,
+            },
+          ];
+        }
+        break;
+      case 'sect_war':
+        reward.contribution = Math.floor(
+          (60 + Math.random() * 80) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+        ) + qualityConfig.contributionBonus;
+        reward.exp = Math.floor(
+          (100 + Math.random() * 200) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+        );
+        reward.spiritStones = Math.floor(
+          (300 + Math.random() * 500) * difficultyMultiplier * qualityConfig.rewardMultiplier
+        );
+        break;
+      case 'inheritance':
+        reward.contribution = Math.floor(
+          (50 + Math.random() * 70) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+        ) + qualityConfig.contributionBonus;
+        reward.exp = Math.floor(
+          (150 + Math.random() * 300) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+        );
+        // 传承任务可能获得功法相关物品
+        if (quality === '传说' || quality === '仙品') {
+          reward.items = [
+            {
+              name: '传承玉简',
+              quantity: 1,
+            },
+          ];
+        }
+        break;
+      case 'tribulation':
+        reward.contribution = Math.floor(
+          (55 + Math.random() * 75) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+        ) + qualityConfig.contributionBonus;
+        reward.exp = Math.floor(
+          (200 + Math.random() * 400) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+        );
+        reward.spiritStones = Math.floor(
+          (250 + Math.random() * 450) * difficultyMultiplier * qualityConfig.rewardMultiplier
+        );
+        break;
+      case 'alchemy_master':
+        const masterMaterials = ['万年灵乳', '九叶芝草', '龙鳞果', '仙晶'];
+        cost.items = [
+          {
+            name: masterMaterials[Math.floor(Math.random() * masterMaterials.length)],
+            quantity: Math.floor((1 + Math.random() * 2) * difficultyMultiplier),
+          },
+        ];
+        reward.contribution = Math.floor(
+          (40 + Math.random() * 60) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+        ) + qualityConfig.contributionBonus;
+        reward.items = [
+          {
+            name: quality === '仙品' ? '九转金丹' : quality === '传说' ? '天元丹' : '筑基丹',
+            quantity: Math.floor((1 + Math.random() * 2) * difficultyMultiplier * qualityConfig.rewardMultiplier),
+          },
+        ];
+        break;
     }
+
+    // 确定是否需要战斗
+    const requiresCombat = ['hunt', 'defend', 'battle', 'escort', 'assassination', 'sect_war', 'spirit_beast'].includes(type);
+
+    // 计算成功率（基于难度和品质）
+    const baseSuccessRate = {
+      '简单': 90,
+      '普通': 75,
+      '困难': 60,
+      '极难': 45,
+    }[difficulty];
+    const qualityBonus = {
+      '普通': 0,
+      '稀有': 5,
+      '传说': 10,
+      '仙品': 15,
+    }[quality];
+    const successRate = Math.min(100, baseSuccessRate + qualityBonus);
+
+    // 生成完美完成奖励（基础奖励的20-50%）
+    const completionBonusMultiplier = 0.2 + Math.random() * 0.3;
+    const completionBonus: RandomSectTask['completionBonus'] = {
+      contribution: Math.floor(reward.contribution * completionBonusMultiplier),
+    };
+    if (reward.exp) {
+      completionBonus.exp = Math.floor(reward.exp * completionBonusMultiplier);
+    }
+    if (reward.spiritStones) {
+      completionBonus.spiritStones = Math.floor(reward.spiritStones * completionBonusMultiplier);
+    }
+
+    // 特殊奖励（低概率，仅高品质任务）
+    let specialReward: RandomSectTask['specialReward'] | undefined;
+    if ((quality === '传说' || quality === '仙品') && Math.random() < 0.15) {
+      const specialTypes: Array<'equipment' | 'cultivationArt' | 'rareMaterial' | 'title'> =
+        ['equipment', 'rareMaterial'];
+      specialReward = {
+        type: specialTypes[Math.floor(Math.random() * specialTypes.length)],
+        item: {
+          name: quality === '仙品' ? '仙品法宝' : '传说法宝',
+          quantity: 1,
+        },
+      };
+    }
+
+    // 每日特殊任务（5%概率，高奖励）
+    const isDailySpecial = Math.random() < 0.05;
+    if (isDailySpecial) {
+      // 特殊任务奖励翻倍
+      reward.contribution = Math.floor(reward.contribution * 2);
+      if (reward.exp) reward.exp = Math.floor(reward.exp * 2);
+      if (reward.spiritStones) reward.spiritStones = Math.floor(reward.spiritStones * 2);
+      name = `【每日特殊】${name}`;
+    }
+
+    // 任务推荐系统（根据玩家属性推荐）
+    const recommendedFor: RandomSectTask['recommendedFor'] = {};
+    if (type === 'battle' || type === 'hunt' || type === 'defend') {
+      recommendedFor.highAttack = true;
+    }
+    if (type === 'defend' || type === 'escort') {
+      recommendedFor.highDefense = true;
+    }
+    if (type === 'research' || type === 'alchemy' || type === 'forge') {
+      recommendedFor.highSpirit = true;
+    }
+    if (type === 'patrol' || type === 'investigate' || type === 'assassination') {
+      recommendedFor.highSpeed = true;
+    }
+
+    // 任务类型连续完成加成（根据任务类型计算）
+    const typeBonus = Math.floor(Math.random() * 20) + 5; // 5-25%加成
 
     tasks.push({
       id: `task-${randomId()}`,
@@ -838,6 +1152,13 @@ export const generateRandomSectTasks = (
       cost,
       reward,
       timeCost,
+      completionBonus,
+      specialReward,
+      requiresCombat,
+      successRate,
+      isDailySpecial,
+      recommendedFor,
+      typeBonus,
     });
   }
 
@@ -880,12 +1201,27 @@ const SECT_SHOP_ITEM_POOL: Array<{ name: string; cost: number; item: Omit<Item, 
   { name: '强化石', cost: 30, item: { name: '强化石', type: ItemType.Material, description: '用于强化法宝的珍贵材料。', quantity: 1, rarity: '稀有' } },
   createPillItem('凝神丹', 80),
   createPillItem('强体丹', 80),
-  { name: '回血丹', cost: 15, item: { name: '回血丹', type: ItemType.Pill, description: '快速恢复气血。', quantity: 1, rarity: '普通', effect: { hp: 50 } } }, // 回血丹不在丹方中，保留硬编码
+  { name: '回血丹', cost: 15, item: { name: '回血丹', type: ItemType.Pill, description: '快速恢复气血。', quantity: 1, rarity: '普通', effect: { hp: 50 } } },
   { name: '聚灵草', cost: 25, item: { name: '聚灵草', type: ItemType.Herb, description: '吸收天地灵气的草药。', quantity: 1, rarity: '普通' } },
   { name: '玄铁', cost: 40, item: { name: '玄铁', type: ItemType.Material, description: '珍贵的炼器材料。', quantity: 1, rarity: '稀有' } },
   { name: '星辰石', cost: 60, item: { name: '星辰石', type: ItemType.Material, description: '蕴含星辰之力的稀有矿石。', quantity: 1, rarity: '稀有' } },
   { name: '精铁', cost: 20, item: { name: '精铁', type: ItemType.Material, description: '优质的炼器材料。', quantity: 1, rarity: '普通' } },
   { name: '天灵草', cost: 35, item: { name: '天灵草', type: ItemType.Herb, description: '珍贵的灵草，可用于炼制高级丹药。', quantity: 1, rarity: '稀有' } },
+  // 新增装备类物品
+  { name: '宗门制式剑', cost: 150, item: { name: '宗门制式剑', type: ItemType.Weapon, description: '宗门统一配发的制式武器，基础攻击力。', quantity: 1, rarity: '普通', isEquippable: true, equipmentSlot: EquipmentSlot.Weapon, effect: { attack: 15 } } },
+  { name: '宗门制式甲', cost: 120, item: { name: '宗门制式甲', type: ItemType.Armor, description: '宗门统一配发的制式护甲，基础防御力。', quantity: 1, rarity: '普通', isEquippable: true, equipmentSlot: EquipmentSlot.Chest, effect: { defense: 12, hp: 30 } } },
+  { name: '青钢剑', cost: 300, item: { name: '青钢剑', type: ItemType.Weapon, description: '青钢锻造的利剑，攻击力不俗。', quantity: 1, rarity: '稀有', isEquippable: true, equipmentSlot: EquipmentSlot.Weapon, effect: { attack: 35, speed: 5 } } },
+  { name: '玄铁甲', cost: 400, item: { name: '玄铁甲', type: ItemType.Armor, description: '玄铁打造的护甲，防御力强劲。', quantity: 1, rarity: '稀有', isEquippable: true, equipmentSlot: EquipmentSlot.Chest, effect: { defense: 40, hp: 80 } } },
+  { name: '灵玉护符', cost: 250, item: { name: '灵玉护符', type: ItemType.Accessory, description: '蕴含灵气的护符，可提升神识。', quantity: 1, rarity: '稀有', isEquippable: true, equipmentSlot: EquipmentSlot.Accessory1, effect: { spirit: 20, hp: 50 } } },
+  // 新增特殊消耗品
+  { name: '经验符', cost: 200, item: { name: '经验符', type: ItemType.Material, description: '使用后下次修炼获得双倍经验。', quantity: 1, rarity: '稀有' } },
+  { name: '幸运符', cost: 180, item: { name: '幸运符', type: ItemType.Material, description: '使用后短时间内提升幸运值，增加奇遇概率。', quantity: 1, rarity: '稀有' } },
+  { name: '护体符', cost: 150, item: { name: '护体符', type: ItemType.Material, description: '使用后短时间内提升防御力。', quantity: 1, rarity: '普通' } },
+  { name: '聚灵符', cost: 220, item: { name: '聚灵符', type: ItemType.Material, description: '使用后短时间内提升修炼速度。', quantity: 1, rarity: '稀有' } },
+  // 新增材料
+  { name: '妖兽内丹', cost: 80, item: { name: '妖兽内丹', type: ItemType.Material, description: '妖兽的内丹，可用于炼丹或炼器。', quantity: 1, rarity: '普通' } },
+  { name: '符纸', cost: 30, item: { name: '符纸', type: ItemType.Material, description: '制作符箓的基础材料。', quantity: 1, rarity: '普通' } },
+  { name: '灵矿', cost: 45, item: { name: '灵矿', type: ItemType.Material, description: '蕴含灵气的矿石，炼器材料。', quantity: 1, rarity: '普通' } },
 ];
 
 // 二楼高级物品池
@@ -897,6 +1233,16 @@ const SECT_SHOP_ITEM_POOL_FLOOR2: Array<{ name: string; cost: number; item: Omit
   { name: '万年灵乳', cost: 1200, item: { name: '万年灵乳', type: ItemType.Material, description: '万年灵脉中凝聚的精华，炼制仙丹的珍贵材料。', quantity: 1, rarity: '传说' } },
   { name: '九叶芝草', cost: 1000, item: { name: '九叶芝草', type: ItemType.Herb, description: '九叶灵芝，炼制仙丹的顶级材料。', quantity: 1, rarity: '传说' } },
   { name: '龙鳞果', cost: 900, item: { name: '龙鳞果', type: ItemType.Herb, description: '龙族栖息地生长的灵果，蕴含龙族血脉之力。', quantity: 1, rarity: '传说' } },
+  // 新增高级装备
+  { name: '星辰剑', cost: 2000, item: { name: '星辰剑', type: ItemType.Weapon, description: '蕴含星辰之力的宝剑，威力强大。', quantity: 1, rarity: '传说', isEquippable: true, equipmentSlot: EquipmentSlot.Weapon, effect: { attack: 80, spirit: 30, speed: 15 } } },
+  { name: '龙鳞甲', cost: 2500, item: { name: '龙鳞甲', type: ItemType.Armor, description: '龙鳞制成的护甲，防御力极强。', quantity: 1, rarity: '传说', isEquippable: true, equipmentSlot: EquipmentSlot.Chest, effect: { defense: 90, hp: 200, physique: 25 } } },
+  { name: '仙灵护符', cost: 1800, item: { name: '仙灵护符', type: ItemType.Accessory, description: '仙气缭绕的护符，可大幅提升属性。', quantity: 1, rarity: '传说', isEquippable: true, equipmentSlot: EquipmentSlot.Accessory1, effect: { spirit: 50, hp: 150, exp: 100 } } },
+  { name: '天阶功法残卷', cost: 3500, item: { name: '天阶功法残卷', type: ItemType.Material, description: '天阶功法的残卷，可用于学习或研究。', quantity: 1, rarity: '传说' } },
+  { name: '仙品法宝碎片', cost: 4000, item: { name: '仙品法宝碎片', type: ItemType.Material, description: '仙品法宝的碎片，可用于修复或炼制。', quantity: 1, rarity: '仙品' } },
+  { name: '传承玉简', cost: 3000, item: { name: '传承玉简', type: ItemType.Material, description: '记录着强大传承的玉简，使用后可获得传承。', quantity: 1, rarity: '传说' } },
+  { name: '仙品丹药材料包', cost: 2500, item: { name: '仙品丹药材料包', type: ItemType.Material, description: '包含多种仙品丹药材料的礼包。', quantity: 1, rarity: '传说' } },
+  { name: '灵兽契约符', cost: 2200, item: { name: '灵兽契约符', type: ItemType.Material, description: '用于与灵兽建立契约的符箓。', quantity: 1, rarity: '传说' } },
+  { name: '天劫护符', cost: 2800, item: { name: '天劫护符', type: ItemType.Accessory, description: '可抵御天劫的护符，渡劫时使用。', quantity: 1, rarity: '传说', isEquippable: true, equipmentSlot: EquipmentSlot.Accessory2, effect: { defense: 60, hp: 300 } } },
 ];
 
 // 生成宗门商店物品（藏宝阁物品，每次刷新4-8个）

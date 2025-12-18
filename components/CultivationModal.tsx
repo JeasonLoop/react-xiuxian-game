@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { CultivationArt, RealmType, PlayerStats, ArtGrade } from '../types';
-import { CULTIVATION_ARTS, REALM_ORDER } from '../constants';
+import { CULTIVATION_ARTS, REALM_ORDER, INHERITANCE_SKILLS } from '../constants';
 import { X, BookOpen, Check, Lock, Search } from 'lucide-react';
 
 interface Props {
@@ -37,8 +37,9 @@ const CultivationModal: React.FC<Props> = ({
       return;
     }
 
-    // 检查是否已经学习过
-    if (player.cultivationArts.includes(art.id)) {
+    // 检查是否已经学习过（包括传承技能）
+    const isInheritanceArt = player.inheritanceSkills?.includes(art.id) || false;
+    if (player.cultivationArts.includes(art.id) || isInheritanceArt) {
       return;
     }
 
@@ -53,12 +54,45 @@ const CultivationModal: React.FC<Props> = ({
     }, 500);
   };
 
-  // 使用 useMemo 直接计算并排序功法列表（包含未解锁的功法，用于“未获得”筛选）
+  // 将传承技能转换为CultivationArt
+  const inheritanceArts = useMemo(() => {
+    if (!player.inheritanceRoute || !player.inheritanceSkills) return [];
+
+    return INHERITANCE_SKILLS
+      .filter(skill =>
+        skill.route === player.inheritanceRoute &&
+        player.inheritanceSkills.includes(skill.id)
+      )
+      .map(skill => ({
+        id: skill.id,
+        name: skill.name,
+        type: (skill.effects.expRate ? 'mental' : 'body') as 'mental' | 'body',
+        description: skill.description,
+        grade: '天' as ArtGrade, // 传承技能都是天阶
+        realmRequirement: RealmType.QiRefining,
+        cost: 0, // 传承技能无需学习费用
+        effects: {
+          ...skill.effects,
+        },
+      } as CultivationArt));
+  }, [player.inheritanceRoute, player.inheritanceSkills]);
+
+  // 合并普通功法和传承功法
+  const allArts = useMemo(() => {
+    return [...CULTIVATION_ARTS, ...inheritanceArts];
+  }, [inheritanceArts]);
+
+  // 使用 useMemo 直接计算并排序功法列表（包含未解锁的功法，用于"未获得"筛选）
   const sortedArts = useMemo(() => {
     if (!isOpen) return [];
 
     const learnedSet = new Set(player.cultivationArts || []);
     const unlockedSet = new Set(player.unlockedArts || []);
+    // 传承技能自动解锁和学习
+    inheritanceArts.forEach(art => {
+      learnedSet.add(art.id);
+      unlockedSet.add(art.id);
+    });
 
     const gradeOrder = { 天: 4, 地: 3, 玄: 2, 黄: 1 };
 
@@ -70,7 +104,7 @@ const CultivationModal: React.FC<Props> = ({
       return 3;
     };
 
-    return CULTIVATION_ARTS.map((art, idx) => ({ art, idx }))
+    return allArts.map((art, idx) => ({ art, idx }))
       .sort((a, b) => {
         const wa = statusWeight(a.art.id);
         const wb = statusWeight(b.art.id);
@@ -86,11 +120,18 @@ const CultivationModal: React.FC<Props> = ({
         return a.idx - b.idx; // 保持原有次序
       })
       .map((item) => item.art);
-  }, [isOpen, player.unlockedArts, player.cultivationArts, player.activeArtId]);
+  }, [isOpen, player.unlockedArts, player.cultivationArts, player.activeArtId, allArts, inheritanceArts]);
 
   // 过滤功法 - 基于已排序的列表进行过滤
   const filteredArts = useMemo(() => {
     const learnedSet = new Set(player.cultivationArts);
+    const unlockedSet = new Set(player.unlockedArts || []);
+    // 传承技能自动解锁和学习
+    inheritanceArts.forEach(art => {
+      learnedSet.add(art.id);
+      unlockedSet.add(art.id);
+    });
+
     return sortedArts.filter((art) => {
       // 兼容性处理：如果功法没有 grade 字段，默认显示
       const artGrade = art.grade || '黄';
@@ -100,8 +141,7 @@ const CultivationModal: React.FC<Props> = ({
       // 状态筛选：已学习、已获得（已解锁但未学习）、未获得（未解锁）
       if (statusFilter !== 'all') {
         const isLearned = learnedSet.has(art.id);
-        const unlockedArts = player.unlockedArts || [];
-        const isUnlocked = unlockedArts.includes(art.id);
+        const isUnlocked = unlockedSet.has(art.id);
         if (statusFilter === 'learned' && !isLearned) return false; // 已学习：已学习的功法
         if (statusFilter === 'obtained' && (!isUnlocked || isLearned)) return false; // 已获得：已解锁但未学习的功法
         if (statusFilter === 'unobtained' && (isUnlocked || isLearned)) return false; // 未获得：未解锁的功法（已学习也应排除）
@@ -249,10 +289,12 @@ const CultivationModal: React.FC<Props> = ({
             ) : (
               filteredArts.map((art) => {
                 if (!art) return null; // 安全处理
-                const isLearned = player.cultivationArts.includes(art.id);
+                // 传承技能自动视为已学习和已解锁
+                const isInheritanceArt = inheritanceArts.some(ia => ia.id === art.id);
+                const isLearned = player.cultivationArts.includes(art.id) || isInheritanceArt;
                 const isActive = player.activeArtId === art.id;
                 const unlockedArts = player.unlockedArts || [];
-                const isUnlocked = unlockedArts.includes(art.id);
+                const isUnlocked = unlockedArts.includes(art.id) || isInheritanceArt;
                 const canLearn =
                   !isLearned &&
                   isUnlocked && // 必须已解锁
@@ -341,19 +383,46 @@ const CultivationModal: React.FC<Props> = ({
                           +{(art.effects.expRate * 100).toFixed(0)}% 修炼速度
                         </span>
                       )}
-                      {art.effects.attack && (
+                      {(art.effects.attack || art.effects.attackPercent) && (
                         <span className="text-stone-300">
-                          +{art.effects.attack} 攻击
+                          {art.effects.attack ? `+${art.effects.attack} ` : ''}
+                          {art.effects.attackPercent ? `+${(art.effects.attackPercent * 100).toFixed(0)}% ` : ''}
+                          攻击
                         </span>
                       )}
-                      {art.effects.defense && (
+                      {(art.effects.defense || art.effects.defensePercent) && (
                         <span className="text-stone-300">
-                          +{art.effects.defense} 防御
+                          {art.effects.defense ? `+${art.effects.defense} ` : ''}
+                          {art.effects.defensePercent ? `+${(art.effects.defensePercent * 100).toFixed(0)}% ` : ''}
+                          防御
                         </span>
                       )}
-                      {art.effects.hp && (
+                      {(art.effects.hp || art.effects.hpPercent) && (
                         <span className="text-stone-300">
-                          +{art.effects.hp} 气血
+                          {art.effects.hp ? `+${art.effects.hp} ` : ''}
+                          {art.effects.hpPercent ? `+${(art.effects.hpPercent * 100).toFixed(0)}% ` : ''}
+                          气血
+                        </span>
+                      )}
+                      {(art.effects.spirit || art.effects.spiritPercent) && (
+                        <span className="text-stone-300">
+                          {art.effects.spirit ? `+${art.effects.spirit} ` : ''}
+                          {art.effects.spiritPercent ? `+${(art.effects.spiritPercent * 100).toFixed(0)}% ` : ''}
+                          神识
+                        </span>
+                      )}
+                      {(art.effects.physique || art.effects.physiquePercent) && (
+                        <span className="text-stone-300">
+                          {art.effects.physique ? `+${art.effects.physique} ` : ''}
+                          {art.effects.physiquePercent ? `+${(art.effects.physiquePercent * 100).toFixed(0)}% ` : ''}
+                          体魄
+                        </span>
+                      )}
+                      {(art.effects.speed || art.effects.speedPercent) && (
+                        <span className="text-stone-300">
+                          {art.effects.speed ? `+${art.effects.speed} ` : ''}
+                          {art.effects.speedPercent ? `+${(art.effects.speedPercent * 100).toFixed(0)}% ` : ''}
+                          速度
                         </span>
                       )}
                     </div>

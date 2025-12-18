@@ -9,7 +9,7 @@ interface Props {
   onClose: () => void;
   task: RandomSectTask;
   player: PlayerStats;
-  onTaskComplete: (task: RandomSectTask, encounterResult?: AdventureResult) => void;
+  onTaskComplete: (task: RandomSectTask, encounterResult?: AdventureResult, isPerfectCompletion?: boolean) => void;
 }
 
 const SectTaskModal: React.FC<Props> = ({
@@ -136,7 +136,11 @@ const SectTaskModal: React.FC<Props> = ({
   };
 
   const handleComplete = () => {
-    onTaskComplete(task, encounterResult || undefined);
+    // 根据成功率判断是否完美完成
+    const successRate = task.successRate ?? 75;
+    const isPerfectCompletion = Math.random() * 100 < successRate;
+
+    onTaskComplete(task, encounterResult || undefined, isPerfectCompletion);
     onClose();
   };
 
@@ -208,6 +212,27 @@ const SectTaskModal: React.FC<Props> = ({
                     ))}</div>
                   )}
                 </div>
+                {task.completionBonus && (
+                  <div className="mt-3 pt-3 border-t border-stone-700">
+                    <div className="text-xs text-stone-500 mb-1">完美完成额外奖励:</div>
+                    <div className="space-y-1 text-xs text-stone-400">
+                      {task.completionBonus.contribution && (
+                        <div>贡献: <span className="text-mystic-gold">+{task.completionBonus.contribution}</span></div>
+                      )}
+                      {task.completionBonus.exp && (
+                        <div>修为: <span className="text-green-400">+{task.completionBonus.exp}</span></div>
+                      )}
+                      {task.completionBonus.spiritStones && (
+                        <div>灵石: <span className="text-blue-400">+{task.completionBonus.spiritStones}</span></div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {task.successRate && (
+                  <div className="mt-2 text-xs text-stone-500">
+                    完美完成概率: <span className="text-yellow-400">{task.successRate}%</span>
+                  </div>
+                )}
               </div>
 
               <button
@@ -288,13 +313,22 @@ const SectTaskModal: React.FC<Props> = ({
             </div>
           )}
 
-          {stage === 'complete' && (
-            <div className="space-y-4">
-              <div className="text-center">
-                <div className="text-4xl mb-4">✅</div>
-                <p className="text-xl font-serif text-mystic-gold mb-2">任务完成！</p>
-                <p className="text-stone-400">你成功完成了任务，获得了相应的奖励。</p>
-              </div>
+          {stage === 'complete' && (() => {
+            const successRate = task.successRate ?? 75;
+            const isPerfectCompletion = Math.random() * 100 < successRate;
+            return (
+              <div className="space-y-4">
+                <div className="text-center">
+                  <div className="text-4xl mb-4">{isPerfectCompletion ? '✨' : '✅'}</div>
+                  <p className="text-xl font-serif text-mystic-gold mb-2">
+                    {isPerfectCompletion ? '完美完成！' : '任务完成！'}
+                  </p>
+                  <p className="text-stone-400">
+                    {isPerfectCompletion
+                      ? '你完美地完成了任务，获得了额外奖励！'
+                      : '你成功完成了任务，获得了相应的奖励。'}
+                  </p>
+                </div>
 
               {encounterResult && (
                 <div className="bg-ink-800 p-4 rounded border border-stone-700">
@@ -315,14 +349,15 @@ const SectTaskModal: React.FC<Props> = ({
                 </div>
               )}
 
-              <button
-                onClick={handleComplete}
-                className="w-full py-3 bg-mystic-gold/20 text-mystic-gold border border-mystic-gold hover:bg-mystic-gold/30 rounded transition-colors font-serif"
-              >
-                确认
-              </button>
-            </div>
-          )}
+                <button
+                  onClick={handleComplete}
+                  className="w-full py-3 bg-mystic-gold/20 text-mystic-gold border border-mystic-gold hover:bg-mystic-gold/30 rounded transition-colors font-serif"
+                >
+                  确认
+                </button>
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>

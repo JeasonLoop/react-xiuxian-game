@@ -223,7 +223,7 @@ export function useSectHandlers({
     });
   };
 
-  const handleSectTask = (task: RandomSectTask, encounterResult?: AdventureResult) => {
+  const handleSectTask = (task: RandomSectTask, encounterResult?: AdventureResult, isPerfectCompletion?: boolean) => {
     setPlayer((prev) => {
       // 检查每日任务限制
       const today = new Date().toISOString().split('T')[0];
@@ -309,6 +309,51 @@ export function useSectHandlers({
       let expGain = task.reward.exp || 0;
       let stoneGain = task.reward.spiritStones || 0;
 
+      // 任务类型连续完成加成（检查玩家最近完成的任务类型）
+      let typeBonusMultiplier = 1.0;
+      const lastCompletedTaskType = prev.lastCompletedTaskType;
+      if (lastCompletedTaskType === task.type && task.typeBonus) {
+        typeBonusMultiplier = 1 + (task.typeBonus / 100);
+        contribGain = Math.floor(contribGain * typeBonusMultiplier);
+        expGain = Math.floor(expGain * typeBonusMultiplier);
+        stoneGain = Math.floor(stoneGain * typeBonusMultiplier);
+        logMessage(`连续完成${task.type}任务，获得${task.typeBonus}%奖励加成！`, 'special');
+      }
+
+      // 完美完成奖励
+      if (isPerfectCompletion && task.completionBonus) {
+        contribGain += task.completionBonus.contribution || 0;
+        expGain += task.completionBonus.exp || 0;
+        stoneGain += task.completionBonus.spiritStones || 0;
+      }
+
+      // 特殊奖励（低概率触发）
+      let specialRewardObtained = false;
+      if (task.specialReward && Math.random() < 0.1) {
+        specialRewardObtained = true;
+        if (task.specialReward.item) {
+          const specialItem = task.specialReward.item;
+          const existingIdx = updatedInventory.findIndex(
+            (i) => i.name === specialItem.name
+          );
+          if (existingIdx >= 0) {
+            updatedInventory[existingIdx] = {
+              ...updatedInventory[existingIdx],
+              quantity: updatedInventory[existingIdx].quantity + (specialItem.quantity || 1),
+            };
+          } else {
+            updatedInventory.push({
+              id: uid(),
+              name: specialItem.name,
+              type: ItemType.Material,
+              description: `完成任务获得的特殊奖励：${specialItem.name}`,
+              quantity: specialItem.quantity || 1,
+              rarity: task.quality === '仙品' ? '仙品' : '传说',
+            });
+          }
+        }
+      }
+
       // 如果有奇遇结果，添加奇遇奖励
       if (encounterResult) {
         expGain += encounterResult.expChange || 0;
@@ -355,7 +400,17 @@ export function useSectHandlers({
         .filter(Boolean)
         .join('、');
 
-      logMessage(`你完成了任务【${task.name}】，获得了 ${rewardText}。`, 'gain');
+      let completionMessage = `你完成了任务【${task.name}】`;
+      if (isPerfectCompletion) {
+        completionMessage += '（完美完成）';
+      }
+      completionMessage += `，获得了 ${rewardText}。`;
+
+      if (specialRewardObtained && task.specialReward?.item) {
+        completionMessage += ` 额外获得特殊奖励：${task.specialReward.item.name}！`;
+      }
+
+      logMessage(completionMessage, isPerfectCompletion ? 'special' : 'gain');
 
       // 处理奇遇的HP变化
       let newHp = prev.hp;
@@ -374,6 +429,7 @@ export function useSectHandlers({
         sectContribution: prev.sectContribution + contribGain,
         dailyTaskCount,
         lastTaskResetDate,
+        lastCompletedTaskType: task.type, // 记录最后完成的任务类型
       };
     });
   };
@@ -389,12 +445,180 @@ export function useSectHandlers({
       const req = SECT_RANK_REQUIREMENTS[nextRank];
       if (prev.sectContribution < req.contribution) return prev;
 
-      logMessage(`恭喜！你晋升为【${nextRank}】，地位大增。`, 'special');
+      // 根据宗门和等级给予奖励
+      const getSectPromotionReward = (sectId: string | null, rank: SectRank) => {
+        const baseRewards: Record<SectRank, { contribution: number; exp: number; spiritStones: number }> = {
+          [SectRank.Outer]: { contribution: 0, exp: 0, spiritStones: 0 },
+          [SectRank.Inner]: { contribution: 500, exp: 2000, spiritStones: 3000 },
+          [SectRank.Core]: { contribution: 1500, exp: 8000, spiritStones: 10000 },
+          [SectRank.Elder]: { contribution: 5000, exp: 30000, spiritStones: 50000 },
+        };
+
+        const base = baseRewards[rank];
+
+        // 根据宗门特色给予特殊奖励
+        const sectSpecialRewards: Record<string, Record<SectRank, { items: { name: string; quantity: number }[] }>> = {
+          'sect-cloud': {
+            [SectRank.Outer]: { items: [] },
+            [SectRank.Inner]: { items: [{ name: '聚气丹', quantity: 10 }, { name: '云灵草', quantity: 5 }] },
+            [SectRank.Core]: { items: [{ name: '洗髓丹', quantity: 5 }, { name: '云灵草', quantity: 10 }, { name: '聚灵符', quantity: 3 }] },
+            [SectRank.Elder]: { items: [{ name: '筑基丹', quantity: 2 }, { name: '云灵草', quantity: 20 }, { name: '聚灵符', quantity: 10 }, { name: '宗门制式剑', quantity: 1 }] },
+          },
+          'sect-fire': {
+            [SectRank.Outer]: { items: [] },
+            [SectRank.Inner]: { items: [{ name: '火精', quantity: 5 }, { name: '炼器石', quantity: 10 }] },
+            [SectRank.Core]: { items: [{ name: '火精', quantity: 10 }, { name: '炼器石', quantity: 20 }, { name: '烈火丹', quantity: 3 }] },
+            [SectRank.Elder]: { items: [{ name: '火精', quantity: 20 }, { name: '炼器石', quantity: 50 }, { name: '烈火丹', quantity: 10 }, { name: '熔岩之心', quantity: 1 }] },
+          },
+          'sect-sword': {
+            [SectRank.Outer]: { items: [] },
+            [SectRank.Inner]: { items: [{ name: '精铁', quantity: 10 }, { name: '剑意草', quantity: 5 }] },
+            [SectRank.Core]: { items: [{ name: '精铁', quantity: 20 }, { name: '剑意草', quantity: 10 }, { name: '青钢剑', quantity: 1 }] },
+            [SectRank.Elder]: { items: [{ name: '精铁', quantity: 50 }, { name: '剑意草', quantity: 20 }, { name: '青钢剑', quantity: 1 }, { name: '剑修功法残卷', quantity: 1 }] },
+          },
+          'sect-temple': {
+            [SectRank.Outer]: { items: [] },
+            [SectRank.Inner]: { items: [{ name: '止血草', quantity: 10 }, { name: '护体符', quantity: 3 }] },
+            [SectRank.Core]: { items: [{ name: '止血草', quantity: 20 }, { name: '护体符', quantity: 5 }, { name: '玄铁甲', quantity: 1 }] },
+            [SectRank.Elder]: { items: [{ name: '止血草', quantity: 30 }, { name: '护体符', quantity: 10 }, { name: '玄铁甲', quantity: 1 }, { name: '佛门护符', quantity: 1 }] },
+          },
+          'sect-taoist': {
+            [SectRank.Outer]: { items: [] },
+            [SectRank.Inner]: { items: [{ name: '聚灵草', quantity: 10 }, { name: '经验符', quantity: 5 }] },
+            [SectRank.Core]: { items: [{ name: '聚灵草', quantity: 20 }, { name: '经验符', quantity: 10 }, { name: '聚灵符', quantity: 5 }] },
+            [SectRank.Elder]: { items: [{ name: '聚灵草', quantity: 30 }, { name: '经验符', quantity: 20 }, { name: '聚灵符', quantity: 10 }, { name: '道门心法残卷', quantity: 1 }] },
+          },
+          'sect-blood': {
+            [SectRank.Outer]: { items: [] },
+            [SectRank.Inner]: { items: [{ name: '妖兽内丹', quantity: 5 }, { name: '血精', quantity: 3 }] },
+            [SectRank.Core]: { items: [{ name: '妖兽内丹', quantity: 10 }, { name: '血精', quantity: 5 }, { name: '魔血丹', quantity: 3 }] },
+            [SectRank.Elder]: { items: [{ name: '妖兽内丹', quantity: 20 }, { name: '血精', quantity: 10 }, { name: '魔血丹', quantity: 10 }, { name: '血魔功残卷', quantity: 1 }] },
+          },
+          'sect-lotus': {
+            [SectRank.Outer]: { items: [] },
+            [SectRank.Inner]: { items: [{ name: '精铁', quantity: 10 }, { name: '青莲叶', quantity: 5 }] },
+            [SectRank.Core]: { items: [{ name: '精铁', quantity: 20 }, { name: '青莲叶', quantity: 10 }, { name: '青钢剑', quantity: 1 }] },
+            [SectRank.Elder]: { items: [{ name: '精铁', quantity: 50 }, { name: '青莲叶', quantity: 20 }, { name: '青钢剑', quantity: 1 }, { name: '青莲剑诀残卷', quantity: 1 }] },
+          },
+          'sect-xuantian': {
+            [SectRank.Outer]: { items: [] },
+            [SectRank.Inner]: { items: [{ name: '千年人参', quantity: 3 }, { name: '聚灵草', quantity: 10 }] },
+            [SectRank.Core]: { items: [{ name: '千年人参', quantity: 5 }, { name: '聚灵草', quantity: 20 }, { name: '玄天丹', quantity: 3 }] },
+            [SectRank.Elder]: { items: [{ name: '千年人参', quantity: 10 }, { name: '聚灵草', quantity: 30 }, { name: '玄天丹', quantity: 10 }, { name: '玄天功残卷', quantity: 1 }] },
+          },
+          'sect-jiuyou': {
+            [SectRank.Outer]: { items: [] },
+            [SectRank.Inner]: { items: [{ name: '妖兽内丹', quantity: 5 }, { name: '阴魂石', quantity: 3 }] },
+            [SectRank.Core]: { items: [{ name: '妖兽内丹', quantity: 10 }, { name: '阴魂石', quantity: 5 }, { name: '九幽丹', quantity: 3 }] },
+            [SectRank.Elder]: { items: [{ name: '妖兽内丹', quantity: 20 }, { name: '阴魂石', quantity: 10 }, { name: '九幽丹', quantity: 10 }, { name: '九幽魔功残卷', quantity: 1 }] },
+          },
+          'sect-star': {
+            [SectRank.Outer]: { items: [] },
+            [SectRank.Inner]: { items: [{ name: '星辰石', quantity: 5 }, { name: '星辉草', quantity: 5 }] },
+            [SectRank.Core]: { items: [{ name: '星辰石', quantity: 10 }, { name: '星辉草', quantity: 10 }, { name: '星辰剑', quantity: 1 }] },
+            [SectRank.Elder]: { items: [{ name: '星辰石', quantity: 20 }, { name: '星辉草', quantity: 20 }, { name: '星辰剑', quantity: 1 }, { name: '星辰诀残卷', quantity: 1 }] },
+          },
+          'sect-dragon': {
+            [SectRank.Outer]: { items: [] },
+            [SectRank.Inner]: { items: [{ name: '龙鳞果', quantity: 3 }, { name: '龙血草', quantity: 5 }] },
+            [SectRank.Core]: { items: [{ name: '龙鳞果', quantity: 5 }, { name: '龙血草', quantity: 10 }, { name: '龙鳞甲', quantity: 1 }] },
+            [SectRank.Elder]: { items: [{ name: '龙鳞果', quantity: 10 }, { name: '龙血草', quantity: 20 }, { name: '龙鳞甲', quantity: 1 }, { name: '真龙诀残卷', quantity: 1 }] },
+          },
+          'sect-phoenix': {
+            [SectRank.Outer]: { items: [] },
+            [SectRank.Inner]: { items: [{ name: '九叶芝草', quantity: 3 }, { name: '凤凰羽', quantity: 5 }] },
+            [SectRank.Core]: { items: [{ name: '九叶芝草', quantity: 5 }, { name: '凤凰羽', quantity: 10 }, { name: '涅槃丹', quantity: 3 }] },
+            [SectRank.Elder]: { items: [{ name: '九叶芝草', quantity: 10 }, { name: '凤凰羽', quantity: 20 }, { name: '涅槃丹', quantity: 10 }, { name: '凤凰涅槃功残卷', quantity: 1 }] },
+          },
+          'sect-thunder': {
+            [SectRank.Outer]: { items: [] },
+            [SectRank.Inner]: { items: [{ name: '炼器石', quantity: 10 }, { name: '雷晶', quantity: 5 }] },
+            [SectRank.Core]: { items: [{ name: '炼器石', quantity: 20 }, { name: '雷晶', quantity: 10 }, { name: '雷霆符', quantity: 3 }] },
+            [SectRank.Elder]: { items: [{ name: '炼器石', quantity: 50 }, { name: '雷晶', quantity: 20 }, { name: '雷霆符', quantity: 10 }, { name: '雷神诀残卷', quantity: 1 }] },
+          },
+          'sect-ice': {
+            [SectRank.Outer]: { items: [] },
+            [SectRank.Inner]: { items: [{ name: '聚灵草', quantity: 10 }, { name: '冰晶', quantity: 5 }] },
+            [SectRank.Core]: { items: [{ name: '聚灵草', quantity: 20 }, { name: '冰晶', quantity: 10 }, { name: '寒冰符', quantity: 3 }] },
+            [SectRank.Elder]: { items: [{ name: '聚灵草', quantity: 30 }, { name: '冰晶', quantity: 20 }, { name: '寒冰符', quantity: 10 }, { name: '冰魄诀残卷', quantity: 1 }] },
+          },
+          'sect-poison': {
+            [SectRank.Outer]: { items: [] },
+            [SectRank.Inner]: { items: [{ name: '止血草', quantity: 10 }, { name: '毒草', quantity: 5 }] },
+            [SectRank.Core]: { items: [{ name: '止血草', quantity: 20 }, { name: '毒草', quantity: 10 }, { name: '毒丹', quantity: 3 }] },
+            [SectRank.Elder]: { items: [{ name: '止血草', quantity: 30 }, { name: '毒草', quantity: 20 }, { name: '毒丹', quantity: 10 }, { name: '毒王经残卷', quantity: 1 }] },
+          },
+          'sect-illusion': {
+            [SectRank.Outer]: { items: [] },
+            [SectRank.Inner]: { items: [{ name: '聚灵草', quantity: 10 }, { name: '幻心草', quantity: 5 }] },
+            [SectRank.Core]: { items: [{ name: '聚灵草', quantity: 20 }, { name: '幻心草', quantity: 10 }, { name: '迷魂符', quantity: 3 }] },
+            [SectRank.Elder]: { items: [{ name: '聚灵草', quantity: 30 }, { name: '幻心草', quantity: 20 }, { name: '迷魂符', quantity: 10 }, { name: '幻月诀残卷', quantity: 1 }] },
+          },
+          'sect-diamond': {
+            [SectRank.Outer]: { items: [] },
+            [SectRank.Inner]: { items: [{ name: '炼器石', quantity: 10 }, { name: '金刚石', quantity: 5 }] },
+            [SectRank.Core]: { items: [{ name: '炼器石', quantity: 20 }, { name: '金刚石', quantity: 10 }, { name: '玄铁甲', quantity: 1 }] },
+            [SectRank.Elder]: { items: [{ name: '炼器石', quantity: 50 }, { name: '金刚石', quantity: 20 }, { name: '玄铁甲', quantity: 1 }, { name: '金刚体诀残卷', quantity: 1 }] },
+          },
+          'sect-yinyang': {
+            [SectRank.Outer]: { items: [] },
+            [SectRank.Inner]: { items: [{ name: '聚灵草', quantity: 10 }, { name: '阴阳石', quantity: 5 }] },
+            [SectRank.Core]: { items: [{ name: '聚灵草', quantity: 20 }, { name: '阴阳石', quantity: 10 }, { name: '阴阳丹', quantity: 3 }] },
+            [SectRank.Elder]: { items: [{ name: '聚灵草', quantity: 30 }, { name: '阴阳石', quantity: 20 }, { name: '阴阳丹', quantity: 10 }, { name: '阴阳诀残卷', quantity: 1 }] },
+          },
+        };
+
+        const specialReward = sectSpecialRewards[sectId || '']?.[rank] || { items: [] };
+
+        return {
+          ...base,
+          items: specialReward.items,
+        };
+      };
+
+      const reward = getSectPromotionReward(prev.sectId, nextRank);
+      let updatedInventory = [...prev.inventory];
+
+      // 添加奖励物品
+      if (reward.items) {
+        reward.items.forEach((rewardItem) => {
+          const existingIdx = updatedInventory.findIndex(
+            (i) => i.name === rewardItem.name
+          );
+          if (existingIdx >= 0) {
+            updatedInventory[existingIdx] = {
+              ...updatedInventory[existingIdx],
+              quantity: updatedInventory[existingIdx].quantity + (rewardItem.quantity || 1),
+            };
+          } else {
+            updatedInventory.push({
+              id: uid(),
+              name: rewardItem.name,
+              type: ItemType.Material,
+              description: `晋升奖励：${rewardItem.name}`,
+              quantity: rewardItem.quantity || 1,
+              rarity: '普通',
+            });
+          }
+        });
+      }
+
+      const rewardText = [
+        `${reward.contribution} 贡献`,
+        `${reward.exp} 修为`,
+        `${reward.spiritStones} 灵石`,
+        reward.items ? reward.items.map((i) => `${i.quantity} ${i.name}`).join('、') : '',
+      ].filter(Boolean).join('、');
+
+      logMessage(`恭喜！你晋升为【${nextRank}】，地位大增。获得奖励：${rewardText}。`, 'special');
 
       return {
         ...prev,
         sectRank: nextRank,
-        sectContribution: prev.sectContribution - req.contribution,
+        sectContribution: prev.sectContribution - req.contribution + reward.contribution,
+        exp: prev.exp + reward.exp,
+        spiritStones: prev.spiritStones + reward.spiritStones,
+        inventory: updatedInventory,
       };
     });
   };
