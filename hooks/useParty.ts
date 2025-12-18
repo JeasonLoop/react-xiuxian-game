@@ -7,7 +7,7 @@ const PARTYKIT_HOST =
     : import.meta.env.VITE_PARTYKIT_HOST ||
       'xiuxian-game-party.dnzzk2.partykit.dev';
 
-export function useParty(roomName: string = 'main') {
+export function useParty(roomName: string = 'main', limit: number = 150) {
   const [socket, setSocket] = useState<PartySocket | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
 
@@ -20,9 +20,15 @@ export function useParty(roomName: string = 'main') {
     s.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
-        setMessages((prev) => [...prev, data]);
+        setMessages((prev) => {
+          const newMessages = [...prev, data];
+          return newMessages.slice(-limit);
+        });
       } catch (e) {
-        setMessages((prev) => [...prev, event.data]);
+        setMessages((prev) => {
+          const newMessages = [...prev, event.data];
+          return newMessages.slice(-limit);
+        });
       }
     };
 
@@ -31,7 +37,7 @@ export function useParty(roomName: string = 'main') {
     return () => {
       s.close();
     };
-  }, [roomName]);
+  }, [roomName, limit]);
 
   const sendMessage = (message: any) => {
     if (socket) {
