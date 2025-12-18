@@ -145,7 +145,11 @@ function GameView({
           isDebugModeEnabled={isDebugModeEnabled}
         />
 
-        <LogPanel logs={logs} className="pb-[23rem] md:pb-0" />
+        <LogPanel
+          logs={logs}
+          playerName={player.name}
+          className="pb-[23rem] md:pb-0"
+        />
 
         <ActionBar
           loading={loading}

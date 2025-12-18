@@ -12,6 +12,8 @@ node_modules
 *.tar.gz
 dist
 dist-ssr
+.partykit
+.vercel
 *.local
 
 # Environment variables

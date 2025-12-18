@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+} from 'react';
 import {
   Item,
   Shop,
@@ -29,7 +35,10 @@ import { setGlobalAlertSetter } from './utils/toastUtils';
 import AlertModal from './components/AlertModal';
 import { AlertType } from './components/AlertModal';
 import { useDelayedState } from './hooks/useDelayedState';
-import { useKeyboardShortcuts, KeyboardShortcut } from './hooks/useKeyboardShortcuts';
+import {
+  useKeyboardShortcuts,
+  KeyboardShortcut,
+} from './hooks/useKeyboardShortcuts';
 import {
   DEFAULT_SHORTCUTS,
   SHORTCUT_DESCRIPTIONS,
@@ -153,9 +162,14 @@ function App() {
 
   const { currentShop, setCurrentShop } = shop;
   const { itemToUpgrade, setItemToUpgrade } = upgrade;
-  const { purchaseSuccess, setPurchaseSuccess, lotteryRewards, setLotteryRewards } =
-    notifications;
-  const { event: reputationEvent, setEvent: setReputationEvent } = appState.reputationEvent;
+  const {
+    purchaseSuccess,
+    setPurchaseSuccess,
+    lotteryRewards,
+    setLotteryRewards,
+  } = notifications;
+  const { event: reputationEvent, setEvent: setReputationEvent } =
+    appState.reputationEvent;
   const {
     battleReplay,
     setBattleReplay,
@@ -166,7 +180,8 @@ function App() {
   } = battle;
   const { params: turnBasedBattleParams, setParams: setTurnBasedBattleParams } =
     turnBasedBattle;
-  const { value: itemActionLogValue, setValue: setItemActionLogRaw } = itemActionLog;
+  const { value: itemActionLogValue, setValue: setItemActionLogRaw } =
+    itemActionLog;
 
   // 使用 useDelayedState 管理 itemActionLog，自动清理 setTimeout
   const [delayedItemActionLog, setDelayedItemActionLog] = useDelayedState<{
@@ -221,10 +236,14 @@ function App() {
   // 自动功能和死亡状态
   const [autoMeditate, setAutoMeditate] = useState(false);
   const [autoAdventure, setAutoAdventure] = useState(false);
-  const [autoAdventurePausedByShop, setAutoAdventurePausedByShop] = useState(false);
-  const [autoAdventurePausedByBattle, setAutoAdventurePausedByBattle] = useState(false);
+  const [autoAdventurePausedByShop, setAutoAdventurePausedByShop] =
+    useState(false);
+  const [autoAdventurePausedByBattle, setAutoAdventurePausedByBattle] =
+    useState(false);
   const [isDead, setIsDead] = useState(false);
-  const [deathBattleData, setDeathBattleData] = useState<BattleReplay | null>(null);
+  const [deathBattleData, setDeathBattleData] = useState<BattleReplay | null>(
+    null
+  );
   const [deathReason, setDeathReason] = useState('');
 
   // 初始化所有模块化的 handlers
@@ -413,7 +432,13 @@ function App() {
 
   // 战斗结束后，如果玩家还活着且之前是自动历练模式，继续自动历练
   useEffect(() => {
-    if (autoAdventurePausedByBattle && player && player.hp > 0 && !isDead && !loading) {
+    if (
+      autoAdventurePausedByBattle &&
+      player &&
+      player.hp > 0 &&
+      !isDead &&
+      !loading
+    ) {
       // 延迟一小段时间后恢复自动历练，确保状态更新完成
       const timer = setTimeout(() => {
         setAutoAdventure(true);
@@ -506,7 +531,8 @@ function App() {
   const handleSelectTalent = characterHandlers.handleSelectTalent;
   const handleSelectTitle = characterHandlers.handleSelectTitle;
   const handleAllocateAttribute = characterHandlers.handleAllocateAttribute;
-  const handleAllocateAllAttributes = characterHandlers.handleAllocateAllAttributes;
+  const handleAllocateAllAttributes =
+    characterHandlers.handleAllocateAllAttributes;
 
   // 提取新的模块化 handlers
   const handleBuyItem = shopHandlers.handleBuyItem;
@@ -540,7 +566,10 @@ function App() {
     if (!choice) return;
 
     setPlayer((prev) => {
-      const newReputation = Math.max(0, (prev.reputation || 0) + choice.reputationChange);
+      const newReputation = Math.max(
+        0,
+        (prev.reputation || 0) + choice.reputationChange
+      );
       let newHp = prev.hp;
       let newExp = prev.exp;
       let newSpiritStones = prev.spiritStones;
@@ -553,18 +582,34 @@ function App() {
         newExp = Math.max(0, prev.exp + choice.expChange);
       }
       if (choice.spiritStonesChange !== undefined) {
-        newSpiritStones = Math.max(0, prev.spiritStones + choice.spiritStonesChange);
+        newSpiritStones = Math.max(
+          0,
+          prev.spiritStones + choice.spiritStonesChange
+        );
       }
 
       // 记录日志
       if (choice.reputationChange > 0) {
-        addLog(`✨ 你的声望增加了 ${choice.reputationChange} 点！当前声望：${newReputation}`, 'gain');
+        addLog(
+          `✨ 你的声望增加了 ${choice.reputationChange} 点！当前声望：${newReputation}`,
+          'gain'
+        );
       } else if (choice.reputationChange < 0) {
-        addLog(`⚠️ 你的声望减少了 ${Math.abs(choice.reputationChange)} 点！当前声望：${newReputation}`, 'danger');
+        addLog(
+          `⚠️ 你的声望减少了 ${Math.abs(choice.reputationChange)} 点！当前声望：${newReputation}`,
+          'danger'
+        );
       }
 
       if (choice.description) {
-        addLog(choice.description, choice.reputationChange > 0 ? 'gain' : choice.reputationChange < 0 ? 'danger' : 'normal');
+        addLog(
+          choice.description,
+          choice.reputationChange > 0
+            ? 'gain'
+            : choice.reputationChange < 0
+              ? 'danger'
+              : 'normal'
+        );
       }
 
       return {
@@ -901,7 +946,10 @@ function App() {
     );
 
     // 打开储物袋
-    const openInventoryConfig = getShortcutConfig('openInventory', customShortcuts);
+    const openInventoryConfig = getShortcutConfig(
+      'openInventory',
+      customShortcuts
+    );
     shortcuts.push(
       configToShortcut(
         openInventoryConfig,
@@ -926,7 +974,10 @@ function App() {
     );
 
     // 打开角色
-    const openCharacterConfig = getShortcutConfig('openCharacter', customShortcuts);
+    const openCharacterConfig = getShortcutConfig(
+      'openCharacter',
+      customShortcuts
+    );
     shortcuts.push(
       configToShortcut(
         openCharacterConfig,
@@ -979,7 +1030,10 @@ function App() {
     );
 
     // 打开设置
-    const openSettingsConfig = getShortcutConfig('openSettings', customShortcuts);
+    const openSettingsConfig = getShortcutConfig(
+      'openSettings',
+      customShortcuts
+    );
     shortcuts.push(
       configToShortcut(
         openSettingsConfig,
@@ -1110,7 +1164,7 @@ function App() {
   // 如果有存档但 player 还在加载中，显示加载状态
   if (hasSave && !player) {
     return (
-      <div className="fixed inset-0 bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-linear-to-br from-stone-900 via-stone-800 to-stone-900 flex items-center justify-center z-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mystic-gold mx-auto mb-4"></div>
           <p className="text-stone-400 text-lg">加载存档中...</p>
@@ -1274,45 +1328,45 @@ function App() {
         />
       )}
 
-        {/* 存档管理器 */}
-        {player && (
-          <SaveManagerModal
-            isOpen={isSaveManagerOpen}
-            onClose={() => setIsSaveManagerOpen(false)}
-            currentPlayer={player}
-            currentLogs={logs}
-            onLoadSave={(loadedPlayer, loadedLogs) => {
-              setPlayer(loadedPlayer);
-              setLogs(loadedLogs);
-            }}
-            onCompareSaves={(save1, save2) => {
-              setCompareSave1(save1);
-              setCompareSave2(save2);
-              setIsSaveCompareOpen(true);
-            }}
-          />
-        )}
+      {/* 存档管理器 */}
+      {player && (
+        <SaveManagerModal
+          isOpen={isSaveManagerOpen}
+          onClose={() => setIsSaveManagerOpen(false)}
+          currentPlayer={player}
+          currentLogs={logs}
+          onLoadSave={(loadedPlayer, loadedLogs) => {
+            setPlayer(loadedPlayer);
+            setLogs(loadedLogs);
+          }}
+          onCompareSaves={(save1, save2) => {
+            setCompareSave1(save1);
+            setCompareSave2(save2);
+            setIsSaveCompareOpen(true);
+          }}
+        />
+      )}
 
-        {/* 存档对比 */}
-        {compareSave1 && compareSave2 && (
-          <SaveCompareModal
-            isOpen={isSaveCompareOpen}
-            onClose={() => {
-              setIsSaveCompareOpen(false);
-              setCompareSave1(null);
-              setCompareSave2(null);
-            }}
-            save1={compareSave1}
-            save2={compareSave2}
-          />
-        )}
+      {/* 存档对比 */}
+      {compareSave1 && compareSave2 && (
+        <SaveCompareModal
+          isOpen={isSaveCompareOpen}
+          onClose={() => {
+            setIsSaveCompareOpen(false);
+            setCompareSave1(null);
+            setCompareSave2(null);
+          }}
+          save1={compareSave1}
+          save2={compareSave2}
+        />
+      )}
 
-        <ModalsContainer
-          player={player}
-          settings={settings}
-          setItemActionLog={setItemActionLog}
-          autoAdventure={autoAdventure}
-          modals={{
+      <ModalsContainer
+        player={player}
+        settings={settings}
+        setItemActionLog={setItemActionLog}
+        autoAdventure={autoAdventure}
+        modals={{
           isInventoryOpen,
           isCultivationOpen,
           isAlchemyOpen,
@@ -1435,7 +1489,10 @@ function App() {
 
             // 如果玩家死亡，清除自动历练暂停状态（死亡检测会处理）
             if (result && player) {
-              const playerHpAfter = Math.max(0, player.hp - (result.hpLoss || 0));
+              const playerHpAfter = Math.max(
+                0,
+                player.hp - (result.hpLoss || 0)
+              );
               if (playerHpAfter <= 0) {
                 setAutoAdventurePausedByBattle(false);
               }
