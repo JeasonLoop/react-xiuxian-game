@@ -36,17 +36,12 @@ export function useAutoFeatures({
 }: UseAutoFeaturesParams) {
   // 自动打坐逻辑
   useEffect(() => {
+    // 提前检查所有条件，避免不必要的 timer 创建
     if (!autoMeditate || !player || loading || cooldown > 0 || autoAdventure) return;
 
     const timer = setTimeout(() => {
-      if (
-        autoMeditate &&
-        !loading &&
-        cooldown === 0 &&
-        player &&
-        !autoAdventure
-      ) {
-        if (loading || cooldown > 0 || !player || autoAdventure) return;
+      // 再次检查条件，防止状态在延迟期间发生变化
+      if (autoMeditate && !loading && cooldown === 0 && player && !autoAdventure) {
         handleMeditate();
         setCooldown(1);
       }
@@ -58,6 +53,7 @@ export function useAutoFeatures({
 
   // 自动历练逻辑
   useEffect(() => {
+    // 提前检查所有条件，避免不必要的 timer 创建
     if (
       !autoAdventure ||
       !player ||
@@ -69,13 +65,8 @@ export function useAutoFeatures({
       return;
 
     const timer = setTimeout(() => {
-      if (
-        autoAdventure &&
-        !loading &&
-        cooldown === 0 &&
-        player &&
-        !autoMeditate
-      ) {
+      // 再次检查条件，防止状态在延迟期间发生变化
+      if (autoAdventure && !loading && cooldown === 0 && player && !autoMeditate) {
         handleAdventure();
       }
     }, 100);

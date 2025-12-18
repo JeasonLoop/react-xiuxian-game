@@ -1,5 +1,5 @@
 import React from 'react';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { LogEntry } from '../types';
 import { uid } from '../utils/gameUtils';
 
@@ -12,6 +12,9 @@ export function useGameEffects() {
       id: string;
     }[]
   >([]);
+
+  // 跟踪所有活动的定时器，用于清理
+  const activeTimersRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   // Helper to add logs (带去重机制，防止短时间内重复添加相同内容)
   // 限制日志数量，避免内存占用过大
@@ -58,12 +61,23 @@ export function useGameEffects() {
       setVisualEffects((prev) => [...prev, { type, value, color, id }]);
       // 炼丹动画持续时间更长
       const duration = type === 'alchemy' ? 2000 : 1000;
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         setVisualEffects((prev) => prev.filter((v) => v.id !== id));
+        activeTimersRef.current.delete(id);
       }, duration);
+      // 记录定时器以便清理
+      activeTimersRef.current.set(id, timer);
     },
     []
   );
+
+  // 组件卸载时清理所有活动的定时器
+  useEffect(() => {
+    return () => {
+      activeTimersRef.current.forEach((timer) => clearTimeout(timer));
+      activeTimersRef.current.clear();
+    };
+  }, []);
 
   return {
     visualEffects,

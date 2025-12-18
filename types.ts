@@ -591,6 +591,14 @@ export interface LotteryPrize {
 export type DifficultyMode = 'easy' | 'normal' | 'hard';
 
 // 设置系统
+export interface KeyboardShortcutConfig {
+  key: string;
+  ctrl?: boolean;
+  shift?: boolean;
+  alt?: boolean;
+  meta?: boolean;
+}
+
 export interface GameSettings {
   soundEnabled: boolean;
   musicEnabled: boolean;
@@ -600,6 +608,7 @@ export interface GameSettings {
   animationSpeed: 'slow' | 'normal' | 'fast';
   language: 'zh' | 'en';
   difficulty: DifficultyMode; // 游戏难度模式
+  keyboardShortcuts?: Record<string, KeyboardShortcutConfig>; // 自定义快捷键配置，key 为 actionId
 }
 
 // 商店系统

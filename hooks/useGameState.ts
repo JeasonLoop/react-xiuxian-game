@@ -217,6 +217,19 @@ export function useGameState() {
 
   // 自动保存 - 使用防抖机制，避免频繁保存导致卡顿
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // 使用 ref 存储最新的 player 和 logs，避免因对象引用变化而频繁触发保存
+  const playerRef = useRef<PlayerStats | null>(player);
+  const logsRef = useRef<LogEntry[]>(logs);
+
+  // 更新 ref 当数据变化时
+  useEffect(() => {
+    playerRef.current = player;
+  }, [player]);
+
+  useEffect(() => {
+    logsRef.current = logs;
+  }, [logs]);
+
   useEffect(() => {
     if (player && gameStarted && settings.autoSave) {
       // 清除之前的定时器
@@ -224,8 +237,13 @@ export function useGameState() {
         clearTimeout(saveTimeoutRef.current);
       }
       // 设置新的定时器，延迟2秒保存
+      // 使用 ref 获取最新数据，避免闭包问题
       saveTimeoutRef.current = setTimeout(() => {
-        saveGame(player, logs);
+        const currentPlayer = playerRef.current;
+        const currentLogs = logsRef.current;
+        if (currentPlayer && currentLogs) {
+          saveGame(currentPlayer, currentLogs);
+        }
       }, 2000);
 
       return () => {
@@ -234,7 +252,9 @@ export function useGameState() {
         }
       };
     }
-  }, [player, logs, settings.autoSave, saveGame, gameStarted]);
+    // 只依赖关键状态，而不是整个对象
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!player, gameStarted, settings.autoSave, saveGame]);
 
   return {
     hasSave,
