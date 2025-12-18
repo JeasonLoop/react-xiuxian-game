@@ -28,6 +28,7 @@ export interface AppModalState {
   isSettingsOpen: boolean;
   isDailyQuestOpen: boolean;
   isShopOpen: boolean;
+  isGrottoOpen: boolean;
   isDebugOpen: boolean;
   isBattleModalOpen: boolean;
   isTurnBasedBattleOpen: boolean;
@@ -51,6 +52,7 @@ export interface AppModalSetters {
   setIsSettingsOpen: (open: boolean) => void;
   setIsDailyQuestOpen: (open: boolean) => void;
   setIsShopOpen: (open: boolean) => void;
+  setIsGrottoOpen: (open: boolean) => void;
   setIsDebugOpen: (open: boolean) => void;
   setIsBattleModalOpen: (open: boolean) => void;
   setIsTurnBasedBattleOpen: (open: boolean) => void;
@@ -125,6 +127,7 @@ export function useAppState(): AppState {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isDailyQuestOpen, setIsDailyQuestOpen] = useState(false);
   const [isShopOpen, setIsShopOpen] = useState(false);
+  const [isGrottoOpen, setIsGrottoOpen] = useState(false);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
   const [isBattleModalOpen, setIsBattleModalOpen] = useState(false);
   const [isTurnBasedBattleOpen, setIsTurnBasedBattleOpen] = useState(false);
@@ -184,6 +187,7 @@ export function useAppState(): AppState {
       isSettingsOpen,
       isDailyQuestOpen,
       isShopOpen,
+      isGrottoOpen,
       isDebugOpen,
       isBattleModalOpen,
       isTurnBasedBattleOpen,
@@ -206,6 +210,7 @@ export function useAppState(): AppState {
       setIsSettingsOpen,
       setIsDailyQuestOpen,
       setIsShopOpen,
+      setIsGrottoOpen,
       setIsDebugOpen,
       setIsBattleModalOpen,
       setIsTurnBasedBattleOpen,

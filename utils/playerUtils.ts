@@ -162,5 +162,14 @@ export const createInitialPlayer = (
     lastDailyQuestResetDate: new Date().toISOString().split('T')[0],
     gameDays: 1, // 游戏内天数，从第1天开始
     reputation: 0, // 声望值
+    // 洞府系统
+    grotto: {
+      level: 0, // 未拥有洞府
+      expRateBonus: 0, // 无加成
+      storageCapacity: 0, // 无额外存储
+      plantedHerbs: [], // 无种植的灵草
+      lastHarvestTime: null, // 无收获记录
+      spiritArrayEnhancement: 0, // 聚灵阵改造加成
+    },
   };
 };

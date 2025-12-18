@@ -70,6 +70,22 @@ export function useMeditationHandlers({
       baseGain = Math.floor(baseGain * (1 + talent.effects.expRate));
     }
 
+    // Apply Grotto Bonus (聚灵阵加成 + 改造加成)
+    if (player.grotto) {
+      const totalGrottoBonus = (player.grotto.expRateBonus || 0) + (player.grotto.spiritArrayEnhancement || 0);
+      if (totalGrottoBonus > 0) {
+        const beforeGrotto = baseGain;
+        baseGain = Math.floor(baseGain * (1 + totalGrottoBonus));
+        // 只在有改造加成时显示额外提示
+        if (player.grotto.spiritArrayEnhancement && player.grotto.spiritArrayEnhancement > 0) {
+          const enhancementGain = Math.floor(beforeGrotto * player.grotto.spiritArrayEnhancement);
+          if (enhancementGain > 0) {
+            addLog(`聚灵阵改造为你带来了额外的灵气加持！(+${enhancementGain} 修为)`, 'special');
+          }
+        }
+      }
+    }
+
     // 检查是否触发顿悟（0.1%概率）
     const isEnlightenment = Math.random() < 0.001;
     let actualGain: number;

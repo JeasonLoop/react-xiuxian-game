@@ -56,6 +56,7 @@ import {
   useAchievementHandlers, // 成就
   useAdventureHandlers, // 历练
   useDailyQuestHandlers, // 日常任务
+  useGrottoHandlers, // 洞府
   GameView, // 游戏视图
   ModalsContainer, // 弹窗容器
 } from './views';
@@ -111,6 +112,7 @@ function App() {
     isSettingsOpen,
     isDailyQuestOpen,
     isShopOpen,
+    isGrottoOpen,
     isDebugOpen,
     isBattleModalOpen,
     isTurnBasedBattleOpen,
@@ -133,6 +135,7 @@ function App() {
     setIsSettingsOpen,
     setIsDailyQuestOpen,
     setIsShopOpen,
+    setIsGrottoOpen,
     setIsDebugOpen,
     setIsBattleModalOpen,
     setIsTurnBasedBattleOpen,
@@ -342,6 +345,13 @@ function App() {
 
   // 日常任务相关逻辑
   const dailyQuestHandlers = useDailyQuestHandlers({
+    player,
+    setPlayer,
+    addLog,
+  });
+
+  // 洞府相关逻辑
+  const grottoHandlers = useGrottoHandlers({
     player,
     setPlayer,
     addLog,
@@ -785,6 +795,7 @@ function App() {
     else if (isAlchemyOpen) setIsAlchemyOpen(false);
     else if (isSectOpen) setIsSectOpen(false);
     else if (isDailyQuestOpen) setIsDailyQuestOpen(false);
+    else if (isGrottoOpen) setIsGrottoOpen(false);
     else if (isUpgradeOpen) setIsUpgradeOpen(false);
     else if (isBattleModalOpen) setIsBattleModalOpen(false);
     else if (isTurnBasedBattleOpen) setIsTurnBasedBattleOpen(false);
@@ -805,6 +816,7 @@ function App() {
     isAlchemyOpen,
     isSectOpen,
     isDailyQuestOpen,
+    isGrottoOpen,
     isUpgradeOpen,
     isBattleModalOpen,
     isTurnBasedBattleOpen,
@@ -1195,6 +1207,7 @@ function App() {
           onOpenPet: () => setIsPetOpen(true),
           onOpenLottery: () => setIsLotteryOpen(true),
           onOpenDailyQuest: () => setIsDailyQuestOpen(true),
+          onOpenGrotto: () => setIsGrottoOpen(true),
           onOpenSettings: () => setIsSettingsOpen(true),
           onOpenDebug: () => setIsDebugOpen(true),
           onOpenStats: () => setIsMobileStatsOpen(true),
@@ -1325,6 +1338,7 @@ function App() {
           isSettingsOpen,
           isDailyQuestOpen,
           isShopOpen,
+          isGrottoOpen,
           isBattleModalOpen: isBattleModalOpen && !isDead, // 死亡时不显示战斗弹窗
           isTurnBasedBattleOpen: isTurnBasedBattleOpen && !isDead,
           isReputationEventOpen,
@@ -1353,6 +1367,7 @@ function App() {
           setIsLotteryOpen: (open: boolean) => setIsLotteryOpen(open),
           setIsSettingsOpen: (open: boolean) => setIsSettingsOpen(open),
           setIsDailyQuestOpen: (open: boolean) => setIsDailyQuestOpen(open),
+          setIsGrottoOpen: (open: boolean) => setIsGrottoOpen(open),
           setIsShopOpen: (open: boolean) => {
             setIsShopOpen(open);
             if (!open) {
@@ -1416,6 +1431,11 @@ function App() {
           handleRestartGame: handleRebirth,
           onOpenSaveManager: () => setIsSaveManagerOpen(true),
           handleClaimQuestReward: dailyQuestHandlers.claimQuestReward,
+          handleUpgradeGrotto: grottoHandlers.handleUpgradeGrotto,
+          handlePlantHerb: grottoHandlers.handlePlantHerb,
+          handleHarvestHerb: grottoHandlers.handleHarvestHerb,
+          handleHarvestAll: grottoHandlers.handleHarvestAll,
+          handleEnhanceSpiritArray: grottoHandlers.handleEnhanceSpiritArray,
           handleBuyItem,
           handleSellItem,
           handleRefreshShop,

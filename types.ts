@@ -280,6 +280,21 @@ export interface PlayerStats {
   gameDays: number; // 游戏内天数（从开始游戏起计算）
   // 声望系统
   reputation: number; // 声望值（用于解锁声望商店等）
+  // 洞府系统
+  grotto: {
+    level: number; // 洞府等级 (0表示未拥有，1-10级)
+    expRateBonus: number; // 聚灵阵提供的修炼速度加成 (0-1之间的小数，例如0.2表示20%加成)
+    storageCapacity: number; // 洞府仓库容量（额外存储空间）
+    plantedHerbs: Array<{
+      herbId: string; // 灵草ID
+      herbName: string; // 灵草名称
+      plantTime: number; // 种植时间戳
+      harvestTime: number; // 收获时间戳
+      quantity: number; // 收获数量
+    }>; // 种植的灵草列表
+    lastHarvestTime: number | null; // 上次收获时间（用于计算自动收获）
+    spiritArrayEnhancement: number; // 聚灵阵改造加成（额外提升的修炼速度，0-1之间的小数）
+  };
 }
 
 export interface LogEntry {
@@ -870,4 +885,16 @@ export interface DailyQuest {
   };
   rarity: ItemRarity; // 任务稀有度（影响奖励）
   completed: boolean; // 是否已完成
+}
+
+// 洞府配置
+export interface GrottoConfig {
+  level: number; // 洞府等级
+  name: string; // 洞府名称
+  cost: number; // 购买/升级成本（灵石）
+  expRateBonus: number; // 聚灵阵提供的修炼速度加成
+  storageCapacity: number; // 洞府仓库容量（额外存储空间）
+  maxHerbSlots: number; // 最大灵草种植槽位
+  realmRequirement?: RealmType; // 境界要求（可选）
+  description: string; // 描述
 }

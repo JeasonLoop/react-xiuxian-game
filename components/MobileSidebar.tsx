@@ -11,6 +11,7 @@ import {
   Settings,
   BarChart3,
   Bug,
+  Home,
 } from 'lucide-react';
 
 interface Props {
@@ -24,11 +25,13 @@ interface Props {
   onOpenPet: () => void;
   onOpenLottery: () => void;
   onOpenSettings: () => void;
+  onOpenGrotto?: () => void;
   onOpenDebug?: () => void;
   isDebugModeEnabled?: boolean;
   achievementCount?: number;
   petCount?: number;
   lotteryTickets?: number;
+  player?: any; // 用于显示洞府等级
 }
 
 const MobileSidebar: React.FC<Props> = ({
@@ -42,11 +45,13 @@ const MobileSidebar: React.FC<Props> = ({
   onOpenPet,
   onOpenLottery,
   onOpenSettings,
+  onOpenGrotto,
   onOpenDebug,
   isDebugModeEnabled = false,
   achievementCount = 0,
   petCount = 0,
   lotteryTickets = 0,
+  player,
 }) => {
   const menuItems = useMemo(
     () => [
@@ -95,6 +100,17 @@ const MobileSidebar: React.FC<Props> = ({
         color: 'text-orange-400',
         badge: lotteryTickets > 0 ? lotteryTickets : undefined,
       },
+      ...(onOpenGrotto
+        ? [
+            {
+              icon: Home,
+              label: '洞府',
+              onClick: onOpenGrotto,
+              color: 'text-purple-400',
+              badge: player?.grotto?.level > 0 ? `Lv.${player.grotto.level}` : undefined,
+            },
+          ]
+        : []),
       {
         icon: Settings,
         label: '设置',
@@ -121,11 +137,13 @@ const MobileSidebar: React.FC<Props> = ({
       onOpenPet,
       onOpenLottery,
       onOpenSettings,
+      onOpenGrotto,
       onOpenDebug,
       isDebugModeEnabled,
       achievementCount,
       petCount,
       lotteryTickets,
+      player,
     ]
   );
 
@@ -182,7 +200,11 @@ const MobileSidebar: React.FC<Props> = ({
                     {item.label}
                   </span>
                   {item.badge !== undefined && (
-                    <span className="bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center font-bold">
+                    <span className={`text-white text-xs px-2 py-0.5 rounded font-bold ${
+                      typeof item.badge === 'string' && item.badge.startsWith('Lv.')
+                        ? 'bg-purple-500'
+                        : 'bg-red-500 rounded-full w-6 h-6 flex items-center justify-center'
+                    }`}>
                       {item.badge}
                     </span>
                   )}

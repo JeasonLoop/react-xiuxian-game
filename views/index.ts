@@ -32,3 +32,4 @@ export { usePetHandlers } from './pet';
 export { useLotteryHandlers } from './lottery';
 export { useAchievementHandlers } from './achievement';
 export { useDailyQuestHandlers } from './dailyQuest';
+export { useGrottoHandlers } from './grotto';

@@ -129,6 +129,18 @@ export function useGameState() {
             inheritanceSkills: savedData.player.inheritanceSkills || [],
             // 声望系统
             reputation: savedData.player.reputation || 0,
+            // 洞府系统
+            grotto: savedData.player.grotto ? {
+              ...savedData.player.grotto,
+              spiritArrayEnhancement: savedData.player.grotto.spiritArrayEnhancement || 0,
+            } : {
+              level: 0,
+              expRateBonus: 0,
+              storageCapacity: 0,
+              plantedHerbs: [],
+              lastHarvestTime: null,
+              spiritArrayEnhancement: 0,
+            },
           };
           setPlayer(loadedPlayer);
           setLogs(savedData.logs || []);

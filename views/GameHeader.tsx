@@ -10,6 +10,7 @@ import {
   Menu,
   Bug,
   Calendar,
+  Home,
 } from 'lucide-react';
 import { PlayerStats } from '../types';
 
@@ -38,6 +39,7 @@ interface GameHeaderProps {
   onOpenLottery: () => void;
   onOpenSettings: () => void;
   onOpenDailyQuest?: () => void;
+  onOpenGrotto?: () => void;
   onOpenDebug?: () => void;
   isDebugModeEnabled?: boolean;
 }
@@ -53,6 +55,7 @@ function GameHeader({
   onOpenLottery,
   onOpenSettings,
   onOpenDailyQuest,
+  onOpenGrotto,
   onOpenDebug,
   isDebugModeEnabled = false,
 }: GameHeaderProps) {
@@ -214,6 +217,21 @@ function GameHeader({
             {dailyQuestCompletedCount > 0 && (player.dailyQuests || []).length > 0 && (
               <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                 {dailyQuestCompletedCount}/{(player.dailyQuests || []).length}
+              </span>
+            )}
+          </button>
+        )}
+        {onOpenGrotto && (
+          <button
+            onClick={onOpenGrotto}
+            className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
+            title="洞府"
+          >
+            <Home size={18} />
+            <span>洞府</span>
+            {player.grotto && player.grotto.level > 0 && (
+              <span className="text-xs bg-purple-500 text-white px-1.5 py-0.5 rounded">
+                Lv.{player.grotto.level}
               </span>
             )}
           </button>

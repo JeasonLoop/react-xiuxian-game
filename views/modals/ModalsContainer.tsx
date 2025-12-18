@@ -16,6 +16,7 @@ import SettingsModal from '../../components/SettingsModal';
 import DailyQuestModal from '../../components/DailyQuestModal';
 import ShopModal from '../../components/ShopModal';
 import ReputationEventModal from '../../components/ReputationEventModal';
+import GrottoModal from '../../components/GrottoModal';
 import { BattleReplay } from '../../services/battleService';
 import { CultivationArt, Recipe } from '../../types';
 import { RandomSectTask } from '../../services/randomService';
@@ -49,6 +50,7 @@ interface ModalsContainerProps {
     isSettingsOpen: boolean;
     isDailyQuestOpen: boolean;
     isShopOpen: boolean;
+    isGrottoOpen: boolean;
     isBattleModalOpen: boolean;
     isTurnBasedBattleOpen?: boolean;
     isReputationEventOpen: boolean;
@@ -68,6 +70,7 @@ interface ModalsContainerProps {
   handlers: {
     // Modal toggles
     setIsInventoryOpen: (open: boolean) => void;
+    setIsGrottoOpen: (open: boolean) => void;
     setIsCultivationOpen: (open: boolean) => void;
     setIsAlchemyOpen: (open: boolean) => void;
     setIsUpgradeOpen: (open: boolean) => void;
@@ -152,6 +155,12 @@ interface ModalsContainerProps {
     onOpenSaveManager?: () => void;
     // Daily Quest
     handleClaimQuestReward?: (questId: string) => void;
+    // Grotto
+    handleUpgradeGrotto: (level: number) => void;
+    handlePlantHerb: (herbId: string) => void;
+    handleHarvestHerb: (index: number) => void;
+    handleHarvestAll: () => void;
+    handleEnhanceSpiritArray: (enhancementId: string) => void;
     // Shop
     handleBuyItem: (shopItem: any, quantity?: number) => void;
     handleSellItem: (item: Item, quantity?: number) => void;
@@ -362,6 +371,17 @@ export default function ModalsContainer({
         }}
         event={modalState.reputationEvent}
         onChoice={handlers.handleReputationEventChoice}
+      />
+
+      <GrottoModal
+        isOpen={modals.isGrottoOpen}
+        onClose={() => handlers.setIsGrottoOpen(false)}
+        player={player}
+        onUpgradeGrotto={handlers.handleUpgradeGrotto}
+        onPlantHerb={handlers.handlePlantHerb}
+        onHarvestHerb={handlers.handleHarvestHerb}
+        onHarvestAll={handlers.handleHarvestAll}
+        onEnhanceSpiritArray={handlers.handleEnhanceSpiritArray}
       />
     </>
   );
