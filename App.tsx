@@ -451,6 +451,32 @@ function App() {
     }
   }, [autoAdventurePausedByBattle, player?.hp, isDead, loading]);
 
+  // 确保新游戏开始时自动历练状态被重置
+  // 当检测到新游戏开始时（玩家从null变为有值，且是初始状态），重置自动历练状态
+  const prevPlayerNameRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (gameStarted && player) {
+      // 检测是否是真正的新游戏：玩家名字变化，且玩家是初始状态（exp为0，境界为初始境界）
+      const isNewPlayer = prevPlayerNameRef.current !== null &&
+                          prevPlayerNameRef.current !== player.name;
+      const isInitialState = player.exp === 0 &&
+                             player.realm === 'QiRefining' &&
+                             player.realmLevel === 1;
+
+      if (isNewPlayer && isInitialState) {
+        // 新游戏开始时，确保自动历练状态被重置
+        setAutoAdventure(false);
+        setAutoAdventurePausedByBattle(false);
+        setAutoAdventurePausedByShop(false);
+      }
+
+      prevPlayerNameRef.current = player.name;
+    } else if (!gameStarted || !player) {
+      // 游戏未开始或玩家为null时，重置ref
+      prevPlayerNameRef.current = null;
+    }
+  }, [gameStarted, player?.name, player?.exp, player?.realm, player?.realmLevel]);
+
   // 涅槃重生功能
   const handleRebirth = () => {
     // 清除所有存档（包括新的多存档槽位系统和旧的存档系统）
@@ -464,6 +490,8 @@ function App() {
     setLastBattleReplay(null);
     setAutoMeditate(false);
     setAutoAdventure(false);
+    setAutoAdventurePausedByBattle(false);
+    setAutoAdventurePausedByShop(false);
     setPlayer(null);
     setLogs([]);
     setGameStarted(false);
