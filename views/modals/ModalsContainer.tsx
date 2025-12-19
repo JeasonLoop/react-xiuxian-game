@@ -231,128 +231,150 @@ export default function ModalsContainer({
         />
       )}
 
-      <InventoryModal
-        key={`inventory-${player.inventory.length}-${player.inventory.length > 0 ? player.inventory[player.inventory.length - 1].id : 'empty'}`}
-        isOpen={modals.isInventoryOpen}
-        onClose={() => handlers.setIsInventoryOpen(false)}
-        inventory={player.inventory}
-        equippedItems={player.equippedItems}
-        player={player}
-        onUseItem={handlers.handleUseItem}
-        onEquipItem={handlers.handleEquipItem}
-        onUnequipItem={handlers.handleUnequipItem}
-        onUpgradeItem={handlers.handleOpenUpgrade}
-        onDiscardItem={handlers.handleDiscardItem}
-        onBatchDiscard={handlers.handleBatchDiscard}
-        onBatchUse={handlers.handleBatchUse}
-        onOrganizeInventory={handlers.handleOrganizeInventory}
-        onRefineNatalArtifact={handlers.handleRefineNatalArtifact}
-        onUnrefineNatalArtifact={handlers.handleUnrefineNatalArtifact}
-      />
+      {modals.isInventoryOpen && (
+        <InventoryModal
+          isOpen={modals.isInventoryOpen}
+          onClose={() => handlers.setIsInventoryOpen(false)}
+          inventory={player.inventory}
+          equippedItems={player.equippedItems}
+          player={player}
+          onUseItem={handlers.handleUseItem}
+          onEquipItem={handlers.handleEquipItem}
+          onUnequipItem={handlers.handleUnequipItem}
+          onUpgradeItem={handlers.handleOpenUpgrade}
+          onDiscardItem={handlers.handleDiscardItem}
+          onBatchDiscard={handlers.handleBatchDiscard}
+          onBatchUse={handlers.handleBatchUse}
+          onOrganizeInventory={handlers.handleOrganizeInventory}
+          onRefineNatalArtifact={handlers.handleRefineNatalArtifact}
+          onUnrefineNatalArtifact={handlers.handleUnrefineNatalArtifact}
+        />
+      )}
 
-      <CultivationModal
-        isOpen={modals.isCultivationOpen}
-        onClose={() => handlers.setIsCultivationOpen(false)}
-        player={player}
-        onLearnArt={handlers.handleLearnArt}
-        onActivateArt={handlers.handleActivateArt}
-      />
+      {modals.isCultivationOpen && (
+        <CultivationModal
+          isOpen={modals.isCultivationOpen}
+          onClose={() => handlers.setIsCultivationOpen(false)}
+          player={player}
+          onLearnArt={handlers.handleLearnArt}
+          onActivateArt={handlers.handleActivateArt}
+        />
+      )}
 
-      <AlchemyModal
-        isOpen={modals.isAlchemyOpen}
-        onClose={() => handlers.setIsAlchemyOpen(false)}
-        player={player}
-        onCraft={handlers.handleCraft}
-      />
+      {modals.isAlchemyOpen && (
+        <AlchemyModal
+          isOpen={modals.isAlchemyOpen}
+          onClose={() => handlers.setIsAlchemyOpen(false)}
+          player={player}
+          onCraft={handlers.handleCraft}
+        />
+      )}
 
-      <ArtifactUpgradeModal
-        isOpen={modals.isUpgradeOpen}
-        onClose={() => {
-          handlers.setIsUpgradeOpen(false);
-          handlers.setItemToUpgrade(null);
-        }}
-        item={modalState.itemToUpgrade}
-        player={player}
-        onConfirm={handlers.handleUpgradeItem}
-        setItemActionLog={setItemActionLog}
-      />
+      {modals.isUpgradeOpen && (
+        <ArtifactUpgradeModal
+          isOpen={modals.isUpgradeOpen}
+          onClose={() => {
+            handlers.setIsUpgradeOpen(false);
+            handlers.setItemToUpgrade(null);
+          }}
+          item={modalState.itemToUpgrade}
+          player={player}
+          onConfirm={handlers.handleUpgradeItem}
+          setItemActionLog={setItemActionLog}
+        />
+      )}
 
-      <SectModal
-        isOpen={modals.isSectOpen}
-        onClose={() => handlers.setIsSectOpen(false)}
-        player={player}
-        onJoinSect={handlers.handleJoinSect}
-        onLeaveSect={handlers.handleLeaveSect}
-        onSafeLeaveSect={handlers.handleSafeLeaveSect}
-        onTask={handlers.handleSectTask}
-        onPromote={handlers.handleSectPromote}
-        onBuy={handlers.handleSectBuy}
-        onChallengeLeader={handlers.handleChallengeLeader}
-      />
+      {modals.isSectOpen && (
+        <SectModal
+          isOpen={modals.isSectOpen}
+          onClose={() => handlers.setIsSectOpen(false)}
+          player={player}
+          onJoinSect={handlers.handleJoinSect}
+          onLeaveSect={handlers.handleLeaveSect}
+          onSafeLeaveSect={handlers.handleSafeLeaveSect}
+          onTask={handlers.handleSectTask}
+          onPromote={handlers.handleSectPromote}
+          onBuy={handlers.handleSectBuy}
+          onChallengeLeader={handlers.handleChallengeLeader}
+        />
+      )}
 
-      <SecretRealmModal
-        isOpen={modals.isRealmOpen}
-        onClose={() => handlers.setIsRealmOpen(false)}
-        player={player}
-        onEnter={handlers.handleEnterRealm}
-      />
+      {modals.isRealmOpen && (
+        <SecretRealmModal
+          isOpen={modals.isRealmOpen}
+          onClose={() => handlers.setIsRealmOpen(false)}
+          player={player}
+          onEnter={handlers.handleEnterRealm}
+        />
+      )}
 
-      <CharacterModal
-        isOpen={modals.isCharacterOpen}
-        onClose={() => handlers.setIsCharacterOpen(false)}
-        player={player}
-        setPlayer={handlers.setPlayer}
-        onSelectTalent={handlers.handleSelectTalent}
-        onSelectTitle={handlers.handleSelectTitle}
-        onAllocateAttribute={handlers.handleAllocateAttribute}
-        onAllocateAllAttributes={handlers.handleAllocateAllAttributes}
-        onUseInheritance={handlers.handleUseInheritance}
-        addLog={handlers.addLog}
-      />
+      {modals.isCharacterOpen && (
+        <CharacterModal
+          isOpen={modals.isCharacterOpen}
+          onClose={() => handlers.setIsCharacterOpen(false)}
+          player={player}
+          setPlayer={handlers.setPlayer}
+          onSelectTalent={handlers.handleSelectTalent}
+          onSelectTitle={handlers.handleSelectTitle}
+          onAllocateAttribute={handlers.handleAllocateAttribute}
+          onAllocateAllAttributes={handlers.handleAllocateAllAttributes}
+          onUseInheritance={handlers.handleUseInheritance}
+          addLog={handlers.addLog}
+        />
+      )}
 
-      <AchievementModal
-        isOpen={modals.isAchievementOpen}
-        onClose={() => handlers.setIsAchievementOpen(false)}
-        player={player}
-      />
+      {modals.isAchievementOpen && (
+        <AchievementModal
+          isOpen={modals.isAchievementOpen}
+          onClose={() => handlers.setIsAchievementOpen(false)}
+          player={player}
+        />
+      )}
 
-      <PetModal
-        isOpen={modals.isPetOpen}
-        onClose={() => handlers.setIsPetOpen(false)}
-        player={player}
-        onActivatePet={handlers.handleActivatePet}
-        onDeactivatePet={handlers.handleDeactivatePet}
-        onFeedPet={handlers.handleFeedPet}
-        onBatchFeedItems={handlers.handleBatchFeedItems}
-        onBatchFeedHp={handlers.handleBatchFeedHp}
-        onEvolvePet={handlers.handleEvolvePet}
-        onReleasePet={handlers.handleReleasePet}
-        onBatchReleasePets={handlers.handleBatchReleasePets}
-      />
+      {modals.isPetOpen && (
+        <PetModal
+          isOpen={modals.isPetOpen}
+          onClose={() => handlers.setIsPetOpen(false)}
+          player={player}
+          onActivatePet={handlers.handleActivatePet}
+          onDeactivatePet={handlers.handleDeactivatePet}
+          onFeedPet={handlers.handleFeedPet}
+          onBatchFeedItems={handlers.handleBatchFeedItems}
+          onBatchFeedHp={handlers.handleBatchFeedHp}
+          onEvolvePet={handlers.handleEvolvePet}
+          onReleasePet={handlers.handleReleasePet}
+          onBatchReleasePets={handlers.handleBatchReleasePets}
+        />
+      )}
 
-      <LotteryModal
-        key={`lottery-${player.lotteryTickets}-${player.lotteryCount}-${player.inventory.length}`}
-        isOpen={modals.isLotteryOpen}
-        onClose={() => handlers.setIsLotteryOpen(false)}
-        player={player}
-        onDraw={handlers.handleDraw}
-      />
+      {modals.isLotteryOpen && (
+        <LotteryModal
+          isOpen={modals.isLotteryOpen}
+          onClose={() => handlers.setIsLotteryOpen(false)}
+          player={player}
+          onDraw={handlers.handleDraw}
+        />
+      )}
 
-      <SettingsModal
-        isOpen={modals.isSettingsOpen}
-        onClose={() => handlers.setIsSettingsOpen(false)}
-        settings={settings}
-        onUpdateSettings={handlers.handleUpdateSettings}
-        onRestartGame={handlers.handleRestartGame}
-        onOpenSaveManager={handlers.onOpenSaveManager}
-      />
+      {modals.isSettingsOpen && (
+        <SettingsModal
+          isOpen={modals.isSettingsOpen}
+          onClose={() => handlers.setIsSettingsOpen(false)}
+          settings={settings}
+          onUpdateSettings={handlers.handleUpdateSettings}
+          onRestartGame={handlers.handleRestartGame}
+          onOpenSaveManager={handlers.onOpenSaveManager}
+        />
+      )}
 
-      <DailyQuestModal
-        isOpen={modals.isDailyQuestOpen}
-        onClose={() => handlers.setIsDailyQuestOpen(false)}
-        player={player}
-        onClaimReward={handlers.handleClaimQuestReward || (() => {})}
-      />
+      {modals.isDailyQuestOpen && (
+        <DailyQuestModal
+          isOpen={modals.isDailyQuestOpen}
+          onClose={() => handlers.setIsDailyQuestOpen(false)}
+          player={player}
+          onClaimReward={handlers.handleClaimQuestReward || (() => {})}
+        />
+      )}
 
       {modalState.currentShop && (
         <ShopModal
