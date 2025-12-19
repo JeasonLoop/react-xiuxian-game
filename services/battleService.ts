@@ -172,12 +172,12 @@ const getBattleDifficulty = (
   riskLevel?: '低' | '中' | '高' | '极度危险'
 ): number => {
   if (adventureType === 'secret_realm' && riskLevel) {
-    // 秘境根据风险等级调整难度
+    // 秘境根据风险等级调整难度（降低基础难度，减少死亡率）
     const riskMultipliers = {
-      低: 1.0,
-      中: 1.25,
-      高: 1.5,
-      极度危险: 2.0,
+      低: 0.85,  // 从1.0降低到0.85
+      中: 1.0,   // 从1.25降低到1.0
+      高: 1.2,   // 从1.5降低到1.2
+      极度危险: 1.5, // 从2.0降低到1.5
     };
     return riskMultipliers[riskLevel];
   }
@@ -1136,7 +1136,7 @@ const createEnemy = async (
   if (adventureType === 'secret_realm' && realmMinRealm) {
     const realmMinIndex = REALM_ORDER.indexOf(realmMinRealm);
     // 敌人境界基于秘境最低境界，而不是玩家境界
-    const realmOffset = 1; // 秘境中敌人比秘境要求高1个境界
+    const realmOffset = 0; // 秘境中敌人与秘境要求相同境界（从+1改为0，降低难度）
     targetRealmIndex = clampMin(
       Math.min(REALM_ORDER.length - 1, realmMinIndex + realmOffset),
       0
@@ -1238,54 +1238,54 @@ const createEnemy = async (
       strengthVariance = { min: 0.8, max: 1.2 };
     }
   } else if (adventureType === 'secret_realm') {
-    // 秘境历练：根据风险等级调整敌人强度分布
+    // 秘境历练：根据风险等级调整敌人强度分布（降低死亡率，增加弱敌和普通敌人比例）
     if (riskLevel === '极度危险') {
-      // 极度危险：5%弱敌，30%普通，65%强敌
-      if (strengthRoll < 0.05) {
-        strengthMultiplier = 0.9 + Math.random() * 0.2; // 0.9 - 1.1
-        strengthVariance = { min: 0.85, max: 1.2 };
-      } else if (strengthRoll < 0.35) {
-        strengthMultiplier = 1.1 + Math.random() * 0.2; // 1.1 - 1.3
-        strengthVariance = { min: 1.0, max: 1.4 };
+      // 极度危险：15%弱敌，45%普通，40%强敌（从5%/30%/65%调整）
+      if (strengthRoll < 0.15) {
+        strengthMultiplier = 0.85 + Math.random() * 0.15; // 0.85 - 1.0
+        strengthVariance = { min: 0.8, max: 1.1 };
+      } else if (strengthRoll < 0.6) {
+        strengthMultiplier = 1.0 + Math.random() * 0.2; // 1.0 - 1.2
+        strengthVariance = { min: 0.9, max: 1.3 };
       } else {
-        strengthMultiplier = 1.3 + Math.random() * 0.4; // 1.3 - 1.7
-        strengthVariance = { min: 1.2, max: 1.8 };
+        strengthMultiplier = 1.2 + Math.random() * 0.3; // 1.2 - 1.5（从1.3-1.7降低）
+        strengthVariance = { min: 1.1, max: 1.6 }; // 从1.2-1.8降低
       }
     } else if (riskLevel === '高') {
-      // 高风险：10%弱敌，40%普通，50%强敌
-      if (strengthRoll < 0.1) {
-        strengthMultiplier = 0.8 + Math.random() * 0.2; // 0.8 - 1.0
-        strengthVariance = { min: 0.75, max: 1.1 };
-      } else if (strengthRoll < 0.5) {
-        strengthMultiplier = 1.0 + Math.random() * 0.2; // 1.0 - 1.2
-        strengthVariance = { min: 0.9, max: 1.3 };
-      } else {
-        strengthMultiplier = 1.2 + Math.random() * 0.3; // 1.2 - 1.5
-        strengthVariance = { min: 1.1, max: 1.6 };
-      }
-    } else if (riskLevel === '中') {
-      // 中风险：20%弱敌，50%普通，30%强敌
+      // 高风险：20%弱敌，50%普通，30%强敌（从10%/40%/50%调整）
       if (strengthRoll < 0.2) {
-        strengthMultiplier = 0.7 + Math.random() * 0.2; // 0.7 - 0.9
-        strengthVariance = { min: 0.65, max: 1.0 };
+        strengthMultiplier = 0.75 + Math.random() * 0.15; // 0.75 - 0.9
+        strengthVariance = { min: 0.7, max: 1.0 };
       } else if (strengthRoll < 0.7) {
         strengthMultiplier = 0.9 + Math.random() * 0.2; // 0.9 - 1.1
-        strengthVariance = { min: 0.8, max: 1.2 };
+        strengthVariance = { min: 0.85, max: 1.2 };
       } else {
-        strengthMultiplier = 1.1 + Math.random() * 0.3; // 1.1 - 1.4
-        strengthVariance = { min: 1.0, max: 1.5 };
+        strengthMultiplier = 1.1 + Math.random() * 0.25; // 1.1 - 1.35（从1.2-1.5降低）
+        strengthVariance = { min: 1.0, max: 1.5 }; // 从1.1-1.6降低
+      }
+    } else if (riskLevel === '中') {
+      // 中风险：30%弱敌，55%普通，15%强敌（从20%/50%/30%调整）
+      if (strengthRoll < 0.3) {
+        strengthMultiplier = 0.65 + Math.random() * 0.2; // 0.65 - 0.85
+        strengthVariance = { min: 0.6, max: 0.95 };
+      } else if (strengthRoll < 0.85) {
+        strengthMultiplier = 0.85 + Math.random() * 0.2; // 0.85 - 1.05
+        strengthVariance = { min: 0.75, max: 1.15 };
+      } else {
+        strengthMultiplier = 1.05 + Math.random() * 0.2; // 1.05 - 1.25（从1.1-1.4降低）
+        strengthVariance = { min: 0.95, max: 1.3 }; // 从1.0-1.5降低
       }
     } else {
-      // 低风险：30%弱敌，55%普通，15%强敌
-      if (strengthRoll < 0.3) {
-        strengthMultiplier = 0.6 + Math.random() * 0.2; // 0.6 - 0.8
-        strengthVariance = { min: 0.55, max: 0.9 };
-      } else if (strengthRoll < 0.85) {
-        strengthMultiplier = 0.8 + Math.random() * 0.2; // 0.8 - 1.0
-        strengthVariance = { min: 0.75, max: 1.1 };
+      // 低风险：40%弱敌，50%普通，10%强敌（从30%/55%/15%调整）
+      if (strengthRoll < 0.4) {
+        strengthMultiplier = 0.55 + Math.random() * 0.2; // 0.55 - 0.75
+        strengthVariance = { min: 0.5, max: 0.85 };
+      } else if (strengthRoll < 0.9) {
+        strengthMultiplier = 0.75 + Math.random() * 0.2; // 0.75 - 0.95
+        strengthVariance = { min: 0.7, max: 1.05 };
       } else {
-        strengthMultiplier = 1.0 + Math.random() * 0.2; // 1.0 - 1.2
-        strengthVariance = { min: 0.9, max: 1.3 };
+        strengthMultiplier = 0.95 + Math.random() * 0.2; // 0.95 - 1.15（从1.0-1.2降低）
+        strengthVariance = { min: 0.85, max: 1.2 }; // 从0.9-1.3降低
       }
     }
   }
