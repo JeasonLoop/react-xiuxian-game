@@ -54,7 +54,7 @@ export const REALM_DATA: Record<
     baseSpirit: 5,
     basePhysique: 10,
     baseSpeed: 10,
-    maxExpBase: 100,
+    maxExpBase: 250, // 提高至2.5倍，提升升级难度
     baseMaxLifespan: 120, // 炼气期基础寿命120年
   },
   [RealmType.Foundation]: {
@@ -64,7 +64,7 @@ export const REALM_DATA: Record<
     baseSpirit: 25,
     basePhysique: 50,
     baseSpeed: 30,
-    maxExpBase: 1000,
+    maxExpBase: 2500, // 提高至2.5倍，提升升级难度
     baseMaxLifespan: 300, // 筑基期基础寿命300年
   },
   [RealmType.GoldenCore]: {
@@ -74,7 +74,7 @@ export const REALM_DATA: Record<
     baseSpirit: 100,
     basePhysique: 200,
     baseSpeed: 50,
-    maxExpBase: 5000,
+    maxExpBase: 12500, // 提高至2.5倍，提升升级难度
     baseMaxLifespan: 800, // 金丹期基础寿命800年
   },
   [RealmType.NascentSoul]: {
@@ -84,7 +84,7 @@ export const REALM_DATA: Record<
     baseSpirit: 500,
     basePhysique: 1000,
     baseSpeed: 100,
-    maxExpBase: 25000,
+    maxExpBase: 62500, // 提高至2.5倍，提升升级难度
     baseMaxLifespan: 2000, // 元婴期基础寿命2000年
   },
   [RealmType.SpiritSevering]: {
@@ -94,7 +94,7 @@ export const REALM_DATA: Record<
     baseSpirit: 2500,
     basePhysique: 5000,
     baseSpeed: 200,
-    maxExpBase: 100000,
+    maxExpBase: 250000, // 提高至2.5倍，提升升级难度
     baseMaxLifespan: 5000, // 化神期基础寿命5000年
   },
   [RealmType.VoidRefining]: {
@@ -104,7 +104,7 @@ export const REALM_DATA: Record<
     baseSpirit: 10000,
     basePhysique: 20000,
     baseSpeed: 300,
-    maxExpBase: 500000,
+    maxExpBase: 1250000, // 提高至2.5倍，提升升级难度
     baseMaxLifespan: 15000, // 炼虚期基础寿命15000年
   },
   [RealmType.ImmortalAscension]: {
@@ -114,7 +114,7 @@ export const REALM_DATA: Record<
     baseSpirit: 50000,
     basePhysique: 100000,
     baseSpeed: 500,
-    maxExpBase: 2500000,
+    maxExpBase: 6250000, // 提高至2.5倍，提升升级难度
     baseMaxLifespan: 100000, // 渡劫飞升基础寿命10万年
   },
 };
@@ -5320,13 +5320,13 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     },
   },
 
-  // 普通奖励 - 灵宠
+  // 普通奖励 - 灵宠（提高权重，增加获得概率）
   {
     id: 'lottery-pet-fox',
     name: '灵狐',
     type: 'pet',
     rarity: '普通',
-    weight: 5,
+    weight: 12, // 从5提高到12，增加2.4倍概率
     value: { petId: 'pet-spirit-fox' },
   },
   {
@@ -5334,7 +5334,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     name: '雷虎',
     type: 'pet',
     rarity: '稀有',
-    weight: 3,
+    weight: 8, // 从3提高到8，增加约2.7倍概率
     value: { petId: 'pet-thunder-tiger' },
   },
   {
@@ -5342,7 +5342,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     name: '凤凰',
     type: 'pet',
     rarity: '仙品',
-    weight: 1,
+    weight: 3, // 从1提高到3，增加3倍概率
     value: { petId: 'pet-phoenix' },
   },
 

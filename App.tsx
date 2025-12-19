@@ -21,7 +21,7 @@ import DeathModal from './components/DeathModal';
 import DebugModal from './components/DebugModal';
 import SaveManagerModal from './components/SaveManagerModal';
 import SaveCompareModal from './components/SaveCompareModal';
-import { SaveData } from './utils/saveManagerUtils';
+import { SaveData, clearAllSlots } from './utils/saveManagerUtils';
 import { BattleReplay } from './services/battleService';
 import { useGameState } from './hooks/useGameState';
 import { useGameEffects } from './hooks/useGameEffects';
@@ -453,8 +453,9 @@ function App() {
 
   // 涅槃重生功能
   const handleRebirth = () => {
-    // 清除存档
-    localStorage.removeItem(SAVE_KEY);
+    // 清除所有存档（包括新的多存档槽位系统和旧的存档系统）
+    clearAllSlots(); // 清除所有存档槽位和备份
+    localStorage.removeItem(SAVE_KEY); // 清除旧存档系统（兼容性）
 
     // 重置所有状态
     setIsDead(false);
