@@ -1,5 +1,15 @@
 import React from 'react';
-import { PlayerStats, Shop, GameSettings, Item, ShopItem, RealmType } from '../../types';
+import {
+  PlayerStats,
+  Shop,
+  GameSettings,
+  Item,
+  ShopItem,
+  RealmType,
+  AdventureType,
+  CultivationArt,
+  Recipe,
+} from '../../types';
 import InventoryModal from '../../components/InventoryModal';
 import CultivationModal from '../../components/CultivationModal';
 import AlchemyModal from '../../components/AlchemyModal';
@@ -17,7 +27,6 @@ import DailyQuestModal from '../../components/DailyQuestModal';
 import ShopModal from '../../components/ShopModal';
 import ReputationEventModal from '../../components/ReputationEventModal';
 import { BattleReplay } from '../../services/battleService';
-import { CultivationArt, Recipe } from '../../types';
 import { RandomSectTask } from '../../services/randomService';
 
 /**
