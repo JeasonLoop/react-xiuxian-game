@@ -129,7 +129,7 @@ export function usePetHandlers({
             普通: 1.0,
             稀有: 2.5,  // 稀有是普通的2.5倍
             传说: 5.0,  // 传说是普通的5倍
-            仙品: 10.0, // 仙品是普通的10倍
+            仙品: 15.0, // 仙品是普通的15倍
           };
           rarityMultiplier = rarityBaseMultipliers[rarity] || 1.0;
 
@@ -413,7 +413,7 @@ export function usePetHandlers({
             普通: 1.0,
             稀有: 2.5,  // 稀有是普通的2.5倍
             传说: 5.0,  // 传说是普通的5倍
-            仙品: 10.0, // 仙品是普通的10倍
+            仙品: 15.0, // 仙品是普通的15倍
           };
           let rarityMultiplier = rarityBaseMultipliers[rarity] || 1.0;
 

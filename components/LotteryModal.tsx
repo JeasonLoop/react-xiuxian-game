@@ -120,7 +120,7 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 p-0 md:p-4 touch-manipulation"
-      onClick={onClose}
+      onClick={() => !isDrawing && onClose()}
     >
       {renderDrawingOverlay()}
       <div
@@ -134,7 +134,10 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
           </h2>
           <button
             onClick={onClose}
-            className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+            disabled={isDrawing}
+            className={`text-stone-400 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation transition-colors ${
+              isDrawing ? 'opacity-20 cursor-not-allowed' : 'active:text-white hover:text-stone-300'
+            }`}
           >
             <X size={24} />
           </button>

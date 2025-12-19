@@ -133,10 +133,18 @@ export function useCultivationHandlers({
         earth: 0,
       });
 
-      const newAttack = prev.attack + Math.floor((art.effects.attack || 0) * spiritualRootBonus);
-      const newDefense = prev.defense + Math.floor((art.effects.defense || 0) * spiritualRootBonus);
-      const newMaxHp = prev.maxHp + Math.floor((art.effects.hp || 0) * spiritualRootBonus);
-      const newHp = prev.hp + Math.floor((art.effects.hp || 0) * spiritualRootBonus);
+      // 属性加成逻辑：体术功法永久增加属性，心法功法通过激活动态增加
+      let newAttack = prev.attack;
+      let newDefense = prev.defense;
+      let newMaxHp = prev.maxHp;
+      let newHp = prev.hp;
+
+      if (art.type === 'body') {
+        newAttack += Math.floor((art.effects.attack || 0) * spiritualRootBonus);
+        newDefense += Math.floor((art.effects.defense || 0) * spiritualRootBonus);
+        newMaxHp += Math.floor((art.effects.hp || 0) * spiritualRootBonus);
+        newHp += Math.floor((art.effects.hp || 0) * spiritualRootBonus);
+      }
 
       // 确保不会重复添加
       const newArts = prev.cultivationArts.includes(art.id)

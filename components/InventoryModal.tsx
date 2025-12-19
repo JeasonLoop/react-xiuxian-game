@@ -61,6 +61,7 @@ interface Props {
   onDiscardItem: (item: Item) => void;
   onBatchDiscard: (itemIds: string[]) => void;
   onBatchUse?: (itemIds: string[]) => void;
+  onOrganizeInventory?: () => void;
   onRefineNatalArtifact?: (item: Item) => void;
   onUnrefineNatalArtifact?: () => void;
 }
@@ -412,6 +413,7 @@ const InventoryModal: React.FC<Props> = ({
   onDiscardItem,
   onBatchDiscard,
   onBatchUse,
+  onOrganizeInventory,
   onRefineNatalArtifact,
   onUnrefineNatalArtifact,
 }) => {
@@ -645,6 +647,21 @@ const InventoryModal: React.FC<Props> = ({
             <Package size={18} className="md:w-5 md:h-5" /> 储物袋
           </h3>
           <div className="flex gap-2">
+            {onOrganizeInventory && (
+              <button
+                onClick={() => {
+                  onOrganizeInventory();
+                  setSortByRarity(false); // 整理后切换到原始顺序，以显示整理后的分类排序
+                }}
+                className="px-2 md:px-3 py-1.5 md:py-1 rounded text-xs md:text-sm border transition-colors min-h-[44px] md:min-h-0 touch-manipulation bg-blue-900/20 border-blue-700 text-blue-300 hover:bg-blue-900/30"
+                title="合并同类物品并按分类/品质排序"
+              >
+                <div className="flex items-center">
+                  <ArrowUpDown size={14} className="inline mr-1" />
+                  整理背包
+                </div>
+              </button>
+            )}
             {onBatchUse && (
               <button
                 onClick={() => setIsBatchUseOpen(true)}

@@ -8,6 +8,8 @@ import { PlayerStats, Item, EquipmentSlot, GameSettings } from '../types';
 import { BattleReplay } from '../services/battleService';
 import { SAVE_KEY } from '../utils/gameUtils';
 import { clearAllSlots } from '../utils/saveManagerUtils';
+import { useItemActionLog } from '../hooks/useItemActionLog';
+
 
 /**
  * 生成具体的死亡原因
@@ -130,6 +132,7 @@ export function useDeathDetection({
   setAutoMeditate,
   setAutoAdventure,
 }: UseDeathDetectionParams) {
+  const { setItemActionLog } = useItemActionLog();
   useEffect(() => {
     if (!player || isDead) return;
 
@@ -217,6 +220,7 @@ export function useDeathDetection({
                 `💫 ${item.name}的保命之力被触发！你留下一口气，从死亡边缘被拉了回来。剩余保命机会：${newChances}次`,
                 'special'
               );
+              if (setItemActionLog) setItemActionLog({ text: `💫 ${item.name}的保命之力被触发！你留下一口气，从死亡边缘被拉了回来。剩余保命机会：${newChances}次`, type: 'special' });
               return {
                 ...item,
                 reviveChances: newChances,

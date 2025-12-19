@@ -123,7 +123,7 @@ export const RARITY_MULTIPLIERS: Record<ItemRarity, number> = {
   普通: 1,
   稀有: 1.5,
   传说: 2.5,
-  仙品: 5.0,
+  仙品: 6.0,
 };
 
 export const CULTIVATION_ARTS: CultivationArt[] = [

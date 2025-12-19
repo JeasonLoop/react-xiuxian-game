@@ -692,8 +692,8 @@ const TASK_QUALITY_CONFIG: Record<TaskQuality, {
   },
   仙品: {
     probability: 0.03,
-    rewardMultiplier: 5.0,
-    contributionBonus: 1000,
+    rewardMultiplier: 8.0,
+    contributionBonus: 3000,
   },
 };
 

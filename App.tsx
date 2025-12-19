@@ -34,14 +34,13 @@ import { SAVE_KEY } from './utils/gameUtils';
 import { setGlobalAlertSetter } from './utils/toastUtils';
 import AlertModal from './components/AlertModal';
 import { AlertType } from './components/AlertModal';
-import { useDelayedState } from './hooks/useDelayedState';
+import { useItemActionLog } from './hooks/useItemActionLog';
+import { REALM_ORDER } from './constants';
 import {
   useKeyboardShortcuts,
   KeyboardShortcut,
 } from './hooks/useKeyboardShortcuts';
 import {
-  DEFAULT_SHORTCUTS,
-  SHORTCUT_DESCRIPTIONS,
   getShortcutConfig,
   configToShortcut,
 } from './utils/shortcutUtils';
@@ -183,28 +182,11 @@ function App() {
   const { value: itemActionLogValue, setValue: setItemActionLogRaw } =
     itemActionLog;
 
-  // 使用 useDelayedState 管理 itemActionLog，自动清理 setTimeout
-  const [delayedItemActionLog, setDelayedItemActionLog] = useDelayedState<{
-    text: string;
-    type: string;
-  }>(3000);
-
-  // 同步 delayedItemActionLog 到 itemActionLog
-  useEffect(() => {
-    setItemActionLogRaw(delayedItemActionLog);
-  }, [delayedItemActionLog, setItemActionLogRaw]);
-
-  // 包装 setItemActionLog，使用延迟状态管理
-  const setItemActionLog = useCallback(
-    (log: { text: string; type: string } | null) => {
-      if (log) {
-        setDelayedItemActionLog(log);
-      } else {
-        setItemActionLogRaw(null);
-      }
-    },
-    [setDelayedItemActionLog, setItemActionLogRaw]
-  );
+  // 使用公共 hook 管理 itemActionLog，自动处理延迟清除
+  const { itemActionLog: delayedItemActionLog, setItemActionLog } = useItemActionLog({
+    delay: 3000,
+    externalSetter: setItemActionLogRaw,
+  });
 
   // 加载和冷却状态
   const [loading, setLoading] = useState(false);
@@ -493,6 +475,7 @@ function App() {
   const handleUseInheritance = breakthroughHandlers.handleUseInheritance;
 
   const handleUseItem = itemHandlers.handleUseItem;
+  const handleOrganizeInventory = itemHandlers.handleOrganizeInventory;
   const handleDiscardItem = itemHandlers.handleDiscardItem;
   const handleBatchUse = (itemIds: string[]) => {
     itemHandlers.handleBatchUseItems(itemIds);
@@ -739,15 +722,20 @@ function App() {
   // Reactive Level Up Check
   useEffect(() => {
     if (player && player.exp >= player.maxExp) {
-      const prevRealm = player.realm;
-      const prevRealmLevel = player.realmLevel;
+      // 检查是否达到绝对巅峰
+      const realms = REALM_ORDER;
+      const isMaxRealm = player.realm === realms[realms.length - 1];
+      if (isMaxRealm && player.realmLevel >= 9) {
+        // 锁定经验为满值
+        if (player.exp > player.maxExp) {
+          setPlayer((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
+        }
+        return;
+      }
       breakthroughHandlers.handleBreakthrough();
-      // 检查是否真的突破了（境界或等级变化）
-      // 注意：由于handleBreakthrough是异步的，这里可能无法立即检测到变化
-      // 更好的方法是在breakthroughHandlers内部添加任务进度更新
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [player?.exp, player?.maxExp]);
+  }, [player?.exp, player?.maxExp, player?.realm, player?.realmLevel]);
 
   // 初始化日常任务（只在游戏开始时执行一次，或日期变化时执行）
   useEffect(() => {
@@ -1440,6 +1428,7 @@ function App() {
           handleDiscardItem,
           handleBatchDiscard,
           handleBatchUse,
+          handleOrganizeInventory,
           handleRefineNatalArtifact,
           handleUnrefineNatalArtifact,
           handleUpgradeItem,

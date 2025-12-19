@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlayerStats, RealmType } from '../../types';
-import { REALM_DATA, CULTIVATION_ARTS, TALENTS, TITLES, INHERITANCE_SKILLS, calculateSpiritualRootArtBonus } from '../../constants';
+import { REALM_DATA, CULTIVATION_ARTS, TALENTS, TITLES, INHERITANCE_SKILLS, calculateSpiritualRootArtBonus, REALM_ORDER } from '../../constants';
 import { getItemStats } from '../../utils/itemUtils';
 import { generateBreakthroughFlavorText } from '../../services/aiService';
 
@@ -39,14 +39,22 @@ export function useBreakthroughHandlers({
 
     if (roll < successChance) {
       setLoading(true);
-      const nextLevel = isRealmUpgrade ? 1 : player.realmLevel + 1;
 
       let nextRealm = player.realm;
+      let nextLevel = player.realmLevel + 1;
+
       if (isRealmUpgrade) {
-        const realms = Object.values(RealmType);
-        const currentIndex = realms.indexOf(player.realm);
-        if (currentIndex < realms.length - 1) {
-          nextRealm = realms[currentIndex + 1];
+        const currentIndex = REALM_ORDER.indexOf(player.realm);
+        if (currentIndex < REALM_ORDER.length - 1) {
+          nextRealm = REALM_ORDER[currentIndex + 1];
+          nextLevel = 1;
+        } else {
+          // 已经是最高境界且达到9层，无法再通过正常方式突破
+          addLog('你已达到仙道巅峰，由于位面限制，无法再行突破！', 'special');
+          setLoading(false);
+          // 将经验值锁定在满值，避免反复触发
+          setPlayer(prev => ({ ...prev, exp: prev.maxExp }));
+          return;
         }
       }
 
@@ -247,8 +255,7 @@ export function useBreakthroughHandlers({
 
         // 突破时给予属性点：指数级别增长
         // 境界升级：2^(境界索引+1)，层数升级：2^境界索引/9 + 1
-        const realms = Object.values(RealmType);
-        const currentRealmIndex = realms.indexOf(isRealmUpgrade ? nextRealm : prev.realm);
+        const currentRealmIndex = REALM_ORDER.indexOf(isRealmUpgrade ? nextRealm : prev.realm);
         // 确保realmIndex有效，防止NaN
         const validRealmIndex = currentRealmIndex >= 0 ? currentRealmIndex : 0;
         let attributePointsGained: number;
@@ -385,14 +392,14 @@ export function useBreakthroughHandlers({
         const isRealmUpgrade = currentLevel >= 9;
 
         if (isRealmUpgrade) {
-          const realms = Object.values(RealmType);
-          const currentIndex = realms.indexOf(currentRealm);
-          if (currentIndex < realms.length - 1) {
-            currentRealm = realms[currentIndex + 1];
+          const currentIndex = REALM_ORDER.indexOf(currentRealm);
+          if (currentIndex < REALM_ORDER.length - 1) {
+            currentRealm = REALM_ORDER[currentIndex + 1];
             currentLevel = 1;
             breakthroughCount++;
             remainingInheritance--;
           } else {
+            // 达到巅峰，停止突破
             break;
           }
         } else {
@@ -572,22 +579,21 @@ export function useBreakthroughHandlers({
         let attributePointsGained = 0;
         let tempRealm = prev.realm;
         let tempLevel = prev.realmLevel;
-        const realms = Object.values(RealmType);
         for (let i = 0; i < breakthroughCount; i++) {
           const isRealmUpgrade = tempLevel >= 9;
           if (isRealmUpgrade) {
-            const currentRealmIndex = realms.indexOf(tempRealm);
+            const currentRealmIndex = REALM_ORDER.indexOf(tempRealm);
             // 确保realmIndex有效，防止NaN
             const validRealmIndex = currentRealmIndex >= 0 ? currentRealmIndex : 0;
-            if (validRealmIndex < realms.length - 1) {
+            if (validRealmIndex < REALM_ORDER.length - 1) {
               const nextRealmIndex = validRealmIndex + 1;
               // 境界升级：2^(新境界索引+1)
               attributePointsGained += Math.floor(Math.pow(2, nextRealmIndex + 1));
-              tempRealm = realms[nextRealmIndex];
+              tempRealm = REALM_ORDER[nextRealmIndex];
               tempLevel = 1;
             }
           } else {
-            const currentRealmIndex = realms.indexOf(tempRealm);
+            const currentRealmIndex = REALM_ORDER.indexOf(tempRealm);
             // 确保realmIndex有效，防止NaN
             const validRealmIndex = currentRealmIndex >= 0 ? currentRealmIndex : 0;
             // 层数升级：2^境界索引/9 + 1（至少1点）

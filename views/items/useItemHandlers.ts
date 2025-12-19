@@ -96,17 +96,15 @@ const applyItemEffect = (
     effectLogs.push(`增长了 ${item.effect.exp} 点修为。`);
   }
   if (item.effect?.lifespan) {
-    const currentLifespan = newStats.lifespan || newStats.maxLifespan || 100;
-    const maxLifespan = newStats.maxLifespan || 100;
+    const currentLifespan = newStats.lifespan ?? newStats.maxLifespan ?? 100;
+    const maxLifespan = newStats.maxLifespan ?? 100;
     const lifespanIncrease = item.effect.lifespan;
-    const nextLifespan = currentLifespan + lifespanIncrease;
 
-    if (nextLifespan > maxLifespan) {
-      newStats.maxLifespan = nextLifespan;
-      newStats.lifespan = nextLifespan;
-    } else {
-      newStats.lifespan = nextLifespan;
-    }
+    // 修复：普通效果增加寿命不应超过当前上限
+    const nextLifespan = Math.min(maxLifespan, currentLifespan + lifespanIncrease);
+
+    // 确保寿命不会因为普通效果减少（除非增加值为负，但通常为正）
+    newStats.lifespan = Math.max(newStats.lifespan ?? 0, nextLifespan);
     effectLogs.push(`寿命增加了 ${lifespanIncrease} 年。`);
   }
 
@@ -125,10 +123,10 @@ const applyItemEffect = (
       permLogs.push(`气血上限永久 +${pe.maxHp}`);
     }
     if (pe.maxLifespan) {
-      newStats.maxLifespan = (newStats.maxLifespan || 100) + pe.maxLifespan;
+      newStats.maxLifespan = (newStats.maxLifespan ?? 100) + pe.maxLifespan;
       newStats.lifespan = Math.min(
         newStats.maxLifespan,
-        (newStats.lifespan || newStats.maxLifespan || 100) + pe.maxLifespan
+        (newStats.lifespan ?? newStats.maxLifespan ?? 100) + pe.maxLifespan
       );
       permLogs.push(`最大寿命永久 +${pe.maxLifespan} 年`);
     }
@@ -206,15 +204,113 @@ const applyItemEffect = (
 };
 
 /**
+ * 整理背包逻辑
+ */
+const organizeInventory = (player: PlayerStats): Item[] => {
+  const inventory = [...player.inventory];
+  const equippedIds = new Set(Object.values(player.equippedItems).filter(Boolean) as string[]);
+
+  // 1. 合并可堆叠物品
+  const mergedInventory: Item[] = [];
+  const stackMap = new Map<string, Item>();
+
+  for (const item of inventory) {
+    // 已装备的物品不参与合并，直接保留
+    if (equippedIds.has(item.id)) {
+      mergedInventory.push(item);
+      continue;
+    }
+
+    // 生成唯一标识符用于判断是否可堆叠
+    const itemKey = `${item.name}-${item.type}-${item.rarity || '普通'}-${item.level || 0}-${JSON.stringify(item.effect || {})}-${JSON.stringify(item.permanentEffect || {})}`;
+
+    // 只有非装备类物品（草药、丹药、材料、丹方等）才自动合并
+    const isStackable =
+      item.type === ItemType.Herb ||
+      item.type === ItemType.Pill ||
+      item.type === ItemType.Material ||
+      item.type === ItemType.Recipe;
+
+    if (isStackable) {
+      if (stackMap.has(itemKey)) {
+        const existingItem = stackMap.get(itemKey)!;
+        existingItem.quantity += item.quantity;
+      } else {
+        const newItem = { ...item };
+        stackMap.set(itemKey, newItem);
+        mergedInventory.push(newItem);
+      }
+    } else {
+      // 装备类或不可堆叠类物品，直接加入
+      mergedInventory.push(item);
+    }
+  }
+
+  // 2. 排序逻辑
+  const typeOrder: Record<string, number> = {
+    [ItemType.Weapon]: 1,
+    [ItemType.Armor]: 2,
+    [ItemType.Artifact]: 3,
+    [ItemType.Accessory]: 4,
+    [ItemType.Ring]: 5,
+    [ItemType.Pill]: 6,
+    [ItemType.Herb]: 7,
+    [ItemType.Material]: 8,
+    [ItemType.Recipe]: 9,
+  };
+
+  const rarityOrder: Record<string, number> = {
+    '仙品': 1,
+    '传说': 2,
+    '稀有': 3,
+    '普通': 4,
+  };
+
+  return mergedInventory.sort((a, b) => {
+    // 已装备优先
+    const aEquipped = equippedIds.has(a.id);
+    const bEquipped = equippedIds.has(b.id);
+    if (aEquipped !== bEquipped) return aEquipped ? -1 : 1;
+
+    // 按类型排序
+    const aType = typeOrder[a.type] || 99;
+    const bType = typeOrder[b.type] || 99;
+    if (aType !== bType) return aType - bType;
+
+    // 按稀有度排序
+    const aRarity = rarityOrder[a.rarity || '普通'] || 99;
+    const bRarity = rarityOrder[b.rarity || '普通'] || 99;
+    if (aRarity !== bRarity) return aRarity - bRarity; // 仙品(1) < 普通(4)，所以 aRarity - bRarity 为负，a 排在前面
+
+    // 按等级排序（高到低）
+    const aLevel = a.level || 0;
+    const bLevel = b.level || 0;
+    if (aLevel !== bLevel) return bLevel - aLevel;
+
+    // 按名称排序
+    return a.name.localeCompare(b.name, 'zh-CN');
+  });
+};
+
+/**
  * 物品处理钩子
  */
 export function useItemHandlers({
+  player,
   setPlayer,
   addLog,
   setItemActionLog,
 }: UseItemHandlersProps) {
   const handleUseItem = (item: Item) => {
     setPlayer((prev) => applyItemEffect(prev, item, { addLog, setItemActionLog }));
+  };
+
+  const handleOrganizeInventory = () => {
+    setPlayer((prev) => {
+      const newInventory = organizeInventory(prev);
+      addLog('背包整理完毕。', 'gain');
+      return { ...prev, inventory: newInventory };
+    });
   };
 
   const handleDiscardItem = (item: Item) => {
@@ -261,6 +357,7 @@ export function useItemHandlers({
 
   return {
     handleUseItem,
+    handleOrganizeInventory,
     handleDiscardItem,
     handleBatchUseItems,
   };

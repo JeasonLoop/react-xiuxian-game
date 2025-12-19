@@ -17,6 +17,7 @@ import { showConfirm, showError } from '../utils/toastUtils';
 import { SAVE_KEY } from '../utils/gameUtils';
 import { calculateTitleEffects, getActiveSetEffects } from '../utils/titleUtils';
 import { useInheritanceHandlers } from '../views/inheritance';
+import { getPlayerTotalStats, getActiveMentalArt } from '../utils/statUtils';
 
 interface Props {
   isOpen: boolean;
@@ -51,7 +52,12 @@ const CharacterModal: React.FC<Props> = ({
 }) => {
   if (!isOpen) return null;
 
+  // 使用 getPlayerTotalStats 获取包含心法加成的总属性
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const totalStats = useMemo(() => getPlayerTotalStats(player), [player]);
+
   // 传承处理函数
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const inheritanceHandlers = useInheritanceHandlers({
     player,
     setPlayer,
@@ -229,6 +235,27 @@ const CharacterModal: React.FC<Props> = ({
       }
     });
 
+    // 传承加成 (体术类)
+    let inheritanceStats = {
+      attack: 0,
+      defense: 0,
+      hp: 0,
+      spirit: 0,
+      physique: 0,
+      speed: 0,
+    };
+    (player.inheritanceSkills || []).forEach((skillId) => {
+      const skill = INHERITANCE_SKILLS.find((s) => s.id === skillId);
+      if (skill && !skill.effects.expRate) { // 只有体术类传承技能永久加成
+        inheritanceStats.attack += skill.effects.attack || 0;
+        inheritanceStats.defense += skill.effects.defense || 0;
+        inheritanceStats.hp += skill.effects.hp || 0;
+        inheritanceStats.spirit += skill.effects.spirit || 0;
+        inheritanceStats.physique += skill.effects.physique || 0;
+        inheritanceStats.speed += skill.effects.speed || 0;
+      }
+    });
+
     // 装备加成
     let equipmentStats = {
       attack: 0,
@@ -252,12 +279,33 @@ const CharacterModal: React.FC<Props> = ({
       }
     });
 
+    // 当前激活心法加成
+    const activeArt = getActiveMentalArt(player);
+    let activeArtStats = {
+      attack: 0,
+      defense: 0,
+      hp: 0,
+      spirit: 0,
+      physique: 0,
+      speed: 0,
+    };
+    if (activeArt && activeArt.type === 'mental') {
+      activeArtStats.attack = activeArt.effects.attack || 0;
+      activeArtStats.defense = activeArt.effects.defense || 0;
+      activeArtStats.hp = activeArt.effects.hp || 0;
+      activeArtStats.spirit = activeArt.effects.spirit || 0;
+      activeArtStats.physique = activeArt.effects.physique || 0;
+      activeArtStats.speed = activeArt.effects.speed || 0;
+    }
+
     return {
       base: baseStats,
       talent: baseStats,
       title: titleStats,
       art: artStats,
+      inheritance: inheritanceStats,
       equipment: equipmentStats,
+      activeArt: activeArtStats,
     };
   };
 
@@ -653,31 +701,31 @@ const CharacterModal: React.FC<Props> = ({
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
               <div>
                 <span className="text-stone-400">攻击:</span>{' '}
-                <span className="text-red-400 font-bold">{player.attack}</span>
+                <span className="text-red-400 font-bold">{totalStats.attack}</span>
               </div>
               <div>
                 <span className="text-stone-400">防御:</span>{' '}
-                <span className="text-blue-400 font-bold">{player.defense}</span>
+                <span className="text-blue-400 font-bold">{totalStats.defense}</span>
               </div>
               <div>
                 <span className="text-stone-400">气血:</span>{' '}
                 <span className="text-green-400 font-bold">
-                  {player.hp}/{player.maxHp}
+                  {player.hp}/{totalStats.maxHp}
                 </span>
               </div>
               <div>
                 <span className="text-stone-400">神识:</span>{' '}
-                <span className="text-purple-400 font-bold">{player.spirit}</span>
+                <span className="text-purple-400 font-bold">{totalStats.spirit}</span>
               </div>
               <div>
                 <span className="text-stone-400">体魄:</span>{' '}
                 <span className="text-orange-400 font-bold">
-                  {player.physique}
+                  {totalStats.physique}
                 </span>
               </div>
               <div>
                 <span className="text-stone-400">速度:</span>{' '}
-                <span className="text-yellow-400 font-bold">{player.speed}</span>
+                <span className="text-yellow-400 font-bold">{totalStats.speed}</span>
               </div>
               <div>
                 <span className="text-stone-400">声望:</span>{' '}
@@ -712,10 +760,21 @@ const CharacterModal: React.FC<Props> = ({
                     {attributeSources.art.defense}, 气血 {attributeSources.art.hp}
                   </div>
                   <div>
+                    <span className="text-stone-400">传承:</span> 攻击{' '}
+                    {attributeSources.inheritance.attack}, 防御{' '}
+                    {attributeSources.inheritance.defense}, 气血 {attributeSources.inheritance.hp}
+                  </div>
+                  <div>
                     <span className="text-stone-400">装备:</span> 攻击{' '}
                     {attributeSources.equipment.attack}, 防御{' '}
                     {attributeSources.equipment.defense}, 气血{' '}
                     {attributeSources.equipment.hp}
+                  </div>
+                  <div className="col-span-2 text-blue-400">
+                    <span className="text-stone-400 text-xs">当前心法:</span> 攻击{' '}
+                    {attributeSources.activeArt.attack}, 防御{' '}
+                    {attributeSources.activeArt.defense}, 气血{' '}
+                    {attributeSources.activeArt.hp}
                   </div>
                 </div>
               </div>

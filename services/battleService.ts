@@ -29,6 +29,7 @@ import {
   getPillDefinition,
   SECT_MASTER_CHALLENGE_REQUIREMENTS,
 } from '../constants';
+import { getPlayerTotalStats } from '../utils/statUtils';
 import { generateEnemyName } from './aiService';
 
 const randomId = () => Math.random().toString(36).slice(2, 9);
@@ -185,7 +186,7 @@ const getBattleDifficulty = (
     normal: 1,
     lucky: 0.85,
     secret_realm: 1.25,
-    sect_challenge: 2.0, // 宗主挑战难度较高
+    sect_challenge: 1.5, // 宗主挑战难度稍微下调，从2.0降至1.8
   };
   return baseDifficulty[adventureType];
 };
@@ -453,7 +454,7 @@ export const LOOT_ITEMS = {
       type: ItemType.Weapon,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Weapon,
-      effect: { attack: 200, spirit: 50 },
+      effect: { attack: 500, spirit: 150 },
     },
   ],
   // 装备类（护甲）- 包含所有部位
@@ -655,7 +656,7 @@ export const LOOT_ITEMS = {
       type: ItemType.Armor,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Head,
-      effect: { defense: 150, hp: 400, spirit: 50, attack: 30 },
+      effect: { defense: 350, hp: 1200, spirit: 150, attack: 100 },
     },
     // 仙品 - 肩部
     {
@@ -663,7 +664,7 @@ export const LOOT_ITEMS = {
       type: ItemType.Armor,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Shoulder,
-      effect: { defense: 150, hp: 400, spirit: 50, attack: 30 },
+      effect: { defense: 350, hp: 1200, spirit: 150, attack: 100 },
     },
     // 仙品 - 胸甲
     {
@@ -671,7 +672,7 @@ export const LOOT_ITEMS = {
       type: ItemType.Armor,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Chest,
-      effect: { defense: 250, hp: 800, spirit: 100 },
+      effect: { defense: 600, hp: 3000, spirit: 300 },
     },
     // 仙品 - 手套
     {
@@ -679,7 +680,7 @@ export const LOOT_ITEMS = {
       type: ItemType.Armor,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Gloves,
-      effect: { defense: 150, hp: 400, spirit: 50, attack: 30 },
+      effect: { defense: 350, hp: 1200, spirit: 150, attack: 100 },
     },
     // 仙品 - 裤腿
     {
@@ -687,7 +688,7 @@ export const LOOT_ITEMS = {
       type: ItemType.Armor,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Legs,
-      effect: { defense: 180, hp: 500, spirit: 60 },
+      effect: { defense: 450, hp: 1800, spirit: 200 },
     },
     // 仙品 - 鞋子
     {
@@ -695,7 +696,7 @@ export const LOOT_ITEMS = {
       type: ItemType.Armor,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Boots,
-      effect: { defense: 150, hp: 400, speed: 60 },
+      effect: { defense: 350, hp: 1200, speed: 150 },
     },
   ],
   // 装备类（首饰）
@@ -726,11 +727,12 @@ export const LOOT_ITEMS = {
       type: ItemType.Accessory,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Accessory1,
-      effect: { attack: 80, defense: 80, hp: 200 },
+      effect: { attack: 250, defense: 250, hp: 800 },
     },
   ],
   // 装备类（戒指）
   rings: [
+    // ...
     {
       name: '铁戒指',
       type: ItemType.Ring,
@@ -764,7 +766,7 @@ export const LOOT_ITEMS = {
       type: ItemType.Ring,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Ring1,
-      effect: { attack: 100, defense: 100, spirit: 50 },
+      effect: { attack: 300, defense: 300, spirit: 150 },
     },
   ],
   // 法宝类
@@ -802,7 +804,7 @@ export const LOOT_ITEMS = {
       type: ItemType.Artifact,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Artifact1,
-      effect: { attack: 150, defense: 150, spirit: 150, hp: 500 },
+      effect: { attack: 450, defense: 450, spirit: 450, hp: 2000 },
     },
   ],
 };
@@ -1146,21 +1148,21 @@ const createEnemy = async (
       // 每高1个境界，降低15%难度，最多降低60%
       realmLevelReduction = Math.max(0.4, 1.0 - realmDiff * 0.15);
     }
+  } else   if (adventureType === 'sect_challenge') {
+    // 宗主挑战特殊逻辑：宗主境界通常高出玩家 1 个境界，少数高出 2 个
+    const realmOffset = Math.random() < 0.85 ? 1 : 2; // 85% 概率高出 1 个境界，15% 概率高出 2 个
+    targetRealmIndex = clampMin(
+      Math.min(REALM_ORDER.length - 1, currentRealmIndex + realmOffset),
+      3 // 至少元婴期
+    );
   } else {
     // 普通历练和机缘历练，按原逻辑
     const realmOffset =
-      adventureType === 'secret_realm' ? 1 :
-      adventureType === 'sect_challenge' ? 2 : // 宗主比玩家高2个境界
       adventureType === 'lucky' ? -1 : 0;
     targetRealmIndex = clampMin(
       Math.min(REALM_ORDER.length - 1, currentRealmIndex + realmOffset),
       0
     );
-  }
-
-  // 宗门挑战特殊逻辑：如果是挑战宗主，且玩家已是长老，宗主至少要是化神期或更高
-  if (adventureType === 'sect_challenge') {
-    targetRealmIndex = Math.max(targetRealmIndex, 4); // 至少化神期
   }
 
   // 确保targetRealmIndex有效，防止访问undefined
@@ -1195,8 +1197,18 @@ const createEnemy = async (
   let strengthVariance = { min: 0.85, max: 1.2 };
 
   if (adventureType === 'sect_challenge') {
-    strengthMultiplier = 1.1;
-    strengthVariance = { min: 1.2, max: 2 };
+    // 宗主属性平衡：收窄波动范围，确保既有挑战性又不至于绝望
+    strengthMultiplier = 1.0;
+    if (strengthRoll < 0.3) {
+      // 30% 概率：由于长期闭关或旧疾复发，实力处于低谷
+      strengthVariance = { min: 0.9, max: 1.1 };
+    } else if (strengthRoll < 0.8) {
+      // 50% 概率：平稳期，正常发挥
+      strengthVariance = { min: 1.1, max: 1.3 };
+    } else {
+      // 20% 概率：境界突破或感悟提升，实力处于顶峰
+      strengthVariance = { min: 1.3, max: 1.6 };
+    }
   } else if (adventureType === 'normal') {
     if (strengthRoll < 0.4) {
       // 弱敌 40%
@@ -2068,21 +2080,18 @@ export const initializeTurnBasedBattle = async (
  * 从玩家数据创建战斗单位
  */
 function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
-  // 计算装备加成后的属性
-  const equippedItems = getEquippedItems(player);
-  let totalAttack = player.attack;
-  let totalDefense = player.defense;
-  let totalSpirit = player.spirit;
-  let totalSpeed = player.speed;
+  // 获取包含心法加成的总属性
+  const totalStats = getPlayerTotalStats(player);
 
-  equippedItems.forEach((item) => {
-    if (item.effect) {
-      totalAttack += item.effect.attack || 0;
-      totalDefense += item.effect.defense || 0;
-      totalSpirit += item.effect.spirit || 0;
-      totalSpeed += item.effect.speed || 0;
-    }
-  });
+  const equippedItems = getEquippedItems(player);
+  let totalAttack = totalStats.attack;
+  let totalDefense = totalStats.defense;
+  let totalSpirit = totalStats.spirit;
+  let totalSpeed = totalStats.speed;
+
+  // 注意：player.attack 等字段已经包含了装备加成
+  // getPlayerTotalStats 也包含了心法加成
+  // 所以这里不再需要遍历 equippedItems 累加属性，否则会重复计算
 
   // 收集所有可用技能
   const skills: BattleSkill[] = [];

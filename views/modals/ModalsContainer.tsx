@@ -98,6 +98,7 @@ interface ModalsContainerProps {
     handleDiscardItem: (item: Item) => void;
     handleBatchDiscard: (itemIds: string[]) => void;
     handleBatchUse?: (itemIds: string[]) => void;
+    handleOrganizeInventory?: () => void;
     handleRefineNatalArtifact: (item: Item) => void;
     handleUnrefineNatalArtifact: () => void;
     handleUpgradeItem: (item: Item, costStones: number, costMats: number, upgradeStones?: number) => Promise<'success' | 'failure' | 'error'>;
@@ -235,6 +236,7 @@ export default function ModalsContainer({
         onDiscardItem={handlers.handleDiscardItem}
         onBatchDiscard={handlers.handleBatchDiscard}
         onBatchUse={handlers.handleBatchUse}
+        onOrganizeInventory={handlers.handleOrganizeInventory}
         onRefineNatalArtifact={handlers.handleRefineNatalArtifact}
         onUnrefineNatalArtifact={handlers.handleUnrefineNatalArtifact}
       />

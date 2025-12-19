@@ -79,14 +79,14 @@ function ensureEquipmentAttributes(
     普通: { min: 0.08, max: 0.12 },
     稀有: { min: 0.20, max: 0.30 },
     传说: { min: 0.40, max: 0.60 },
-    仙品: { min: 0.70, max: 1.00 },
+    仙品: { min: 1.20, max: 1.80 },
   };
 
   const rarityMinStats: Record<ItemRarity, { attack: number; defense: number; hp: number; spirit: number; physique: number; speed: number }> = {
     普通: { attack: 1, defense: 1, hp: 5, spirit: 1, physique: 1, speed: 1 },
     稀有: { attack: 5, defense: 3, hp: 20, spirit: 3, physique: 3, speed: 3 },
     传说: { attack: 15, defense: 10, hp: 50, spirit: 10, physique: 10, speed: 10 },
-    仙品: { attack: 50, defense: 30, hp: 150, spirit: 30, physique: 30, speed: 30 },
+    仙品: { attack: 200, defense: 150, hp: 500, spirit: 100, physique: 100, speed: 80 },
   };
 
   const percentage = rarityPercentages[rarity] || rarityPercentages['普通'];
@@ -183,7 +183,7 @@ const applyResultToPlayer = (
   let newSpirit = prev.spirit;
   let newPhysique = prev.physique;
   let newSpeed = prev.speed;
-  let newLifespan = prev.lifespan || prev.maxLifespan || 100;
+  let newLifespan = prev.lifespan ?? prev.maxLifespan ?? 100;
   let newSpiritualRoots = { ...prev.spiritualRoots };
   let newExp = prev.exp;
   let newStones = prev.spiritStones;
@@ -298,10 +298,15 @@ const applyResultToPlayer = (
       newArts.push(randomArt.id);
       if (!newUnlockedArts.includes(randomArt.id)) newUnlockedArts.push(randomArt.id);
       newStats.artCount += 1;
-      newAttack += randomArt.effects.attack || 0;
-      newDefense += randomArt.effects.defense || 0;
-      newMaxHp += randomArt.effects.hp || 0;
-      newHp += randomArt.effects.hp || 0;
+
+      // 只有体术类功法才永久增加基础属性
+      if (randomArt.type === 'body') {
+        newAttack += randomArt.effects.attack || 0;
+        newDefense += randomArt.effects.defense || 0;
+        newMaxHp += randomArt.effects.hp || 0;
+        newHp += randomArt.effects.hp || 0;
+      }
+
       artUnlocked = true;
       triggerVisual('special', `🎉 领悟功法【${randomArt.name}】`, 'special');
       addLog(`🎉 你领悟了功法【${randomArt.name}】！`, 'special');
@@ -398,7 +403,7 @@ const applyResultToPlayer = (
 
   // 寿命流逝
   const lifespanLoss = isSecretRealm ? 1.0 : (riskLevel === '低' ? 0.3 : riskLevel === '中' ? 0.6 : riskLevel === '高' ? 1.0 : riskLevel === '极度危险' ? 1.5 : 0.4);
-  newLifespan = Math.max(0, newLifespan + (result.lifespanChange || 0) - lifespanLoss);
+  newLifespan = Math.max(0, Math.min(prev.maxLifespan, newLifespan + (result.lifespanChange || 0) - lifespanLoss));
 
   // 灵根变化
   if (result.spiritualRootsChange) {
