@@ -447,7 +447,11 @@ export async function executeAdventureCore({
   setPlayer(prev => applyResultToPlayer(prev, result, { isSecretRealm: false, adventureType, realmName, riskLevel, battleContext, petSkillCooldowns, addLog, triggerVisual }));
 
   // Events & Logs
-  if (result.reputationEvent && onReputationEvent) { addLog(`📜 遇到了事件：${result.reputationEvent.title}`, 'special'); onReputationEvent(result.reputationEvent); }
+  if (result.reputationEvent && onReputationEvent) {
+    const eventTitle = result.reputationEvent.title || result.reputationEvent.text || '神秘事件';
+    addLog(`📜 遇到了事件：${eventTitle}`, 'special');
+    onReputationEvent(result.reputationEvent);
+  }
   addLog(result.story, result.eventColor);
 
   if (result.lifespanChange) addLog(result.lifespanChange > 0 ? `✨ 寿命增加 ${result.lifespanChange.toFixed(1)} 年` : `⚠️ 寿命减少 ${Math.abs(result.lifespanChange).toFixed(1)} 年`, result.lifespanChange > 0 ? 'gain' : 'danger');

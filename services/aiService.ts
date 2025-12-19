@@ -169,7 +169,8 @@ const executeRequest = async (messages: ChatMessage[], temperature = 0.7, maxTok
     const requestBody: Record<string, unknown> = {
       model: API_MODEL,
       messages,
-      response_format: {"type": "json_object"},
+      // TODO: 部分模型不适用
+      // response_format: {"type": "json_object"},
       temperature,
     };
 
@@ -425,7 +426,7 @@ ${typeInstructions}
 6. 禁止重复模板，每次改写开头句式
 7. equipmentSlot不冲突（戒指/首饰自动分配除外）
 8. attributeReduction仅极度危险事件，需稀有奖励补偿
-9. 声望事件（reputationEvent）：20-30%概率触发，提供2-3个选择，每个选择包含text（选择文本）、reputationChange（声望变化-30到+50）、description（选择后描述，可选）、hpChange/expChange/spiritStonesChange（可选的其他变化）
+9. 声望事件（reputationEvent）：20-30%概率触发，必须包含title（简短标题，如"意外发现"、"道德抉择"）、description（详细描述），并提供2-3个选择，每个选择包含text（选择文本）、reputationChange（声望变化-30到+50）、description（选择后描述，可选）、hpChange/expChange/spiritStonesChange（可选的其他变化）
 10. 【重要】禁止在story中提及功法相关内容（如"领悟功法"、"获得功法"等），功法解锁由系统控制，AI不应在story中描述
 
 物品规则：
@@ -488,7 +489,19 @@ ${typeInstructions}
   "petOpportunity": {机缘对象，可选},
   "attributeReduction": {属性降低对象，可选，仅极度危险},
   "reputationChange": 整数（可选，声望直接变化，-50到+50）,
-  "reputationEvent": {声望事件对象，可选，需要玩家选择}
+  "reputationEvent": {
+    "title": "事件简短标题",
+    "description": "事件详细描述",
+    "choices": [
+      {
+        "text": "选项1文字",
+        "reputationChange": 10,
+        "description": "选择后的描述",
+        "hpChange": 0,
+        "expChange": 50
+      }
+    ]
+  }
 }
 
 重要：
@@ -550,7 +563,13 @@ ${typeInstructions}
       ...(parsed.petObtained && { petObtained: parsed.petObtained }),
       ...(parsed.petOpportunity && { petOpportunity: parsed.petOpportunity }),
       ...(parsed.reputationChange !== undefined && { reputationChange: ensureNumber(parsed.reputationChange, 0) }),
-      ...(parsed.reputationEvent && { reputationEvent: parsed.reputationEvent }),
+      ...(parsed.reputationEvent && {
+        reputationEvent: {
+          title: parsed.reputationEvent.title || parsed.reputationEvent.text || '神秘事件',
+          description: parsed.reputationEvent.description || parsed.reputationEvent.text || '你遇到了一个需要抉择的神秘事件。',
+          choices: parsed.reputationEvent.choices || []
+        }
+      }),
       };
 
       return validatedResult;

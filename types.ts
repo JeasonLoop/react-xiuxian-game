@@ -319,6 +319,7 @@ export interface AdventureResult {
     // 声望事件（需要玩家选择）
     title: string; // 事件标题
     description: string; // 事件描述
+    text?: string; // 兼容性字段：AI 偶尔会返回 text 而不是 title/description
     choices: Array<{
       text: string; // 选择文本
       reputationChange: number; // 声望变化
