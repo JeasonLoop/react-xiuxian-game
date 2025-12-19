@@ -22,7 +22,7 @@
 // 默认配置
 const DEFAULT_PROVIDER = 'glm';
 const DEFAULT_API_URL = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
-const DEFAULT_MODEL = 'glm-4.5-air';
+const DEFAULT_MODEL = 'glm-4.5v';
 
 // API Key 必须从环境变量获取
 const API_KEY = import.meta.env.VITE_AI_KEY;
@@ -39,7 +39,7 @@ const API_KEY = import.meta.env.VITE_AI_KEY;
 # AI 提供商选择: 'glm' | 'siliconflow' | 'openai' | 'custom'
 VITE_AI_PROVIDER=glm
 VITE_AI_KEY=your-api-key-here
-VITE_AI_MODEL=glm-4.5-air
+VITE_AI_MODEL=glm-4.5v
 VITE_AI_API_URL=https://open.bigmodel.cn/api/paas/v4/chat/completions
 # 是否使用代理（开发环境默认 true，生产环境默认 false）
 VITE_AI_USE_PROXY=true
@@ -60,13 +60,13 @@ VITE_AI_USE_PROXY=true
 ```bash
 VITE_AI_PROVIDER=glm
 VITE_AI_KEY=your-glm-api-key
-VITE_AI_MODEL=glm-4.5-air
+VITE_AI_MODEL=glm-4.5v
 ```
 
 **特点**:
 
 - 国内访问速度快
-- 支持 glm-4.5-air 等高质量模型
+- 支持 glm-4.5v 等高质量模型
 - API 兼容 OpenAI 格式
 - 适合中文场景
 
@@ -531,7 +531,7 @@ export default async function handler(req, res) {
    ```bash
    VITE_AI_PROVIDER=glm  # 选择提供商: 'glm' | 'siliconflow' | 'openai' | 'custom'
    VITE_AI_KEY=your-api-key-here
-   VITE_AI_MODEL=glm-4.5-air  # 可选，使用默认模型时可省略
+   VITE_AI_MODEL=glm-4.5v  # 可选，使用默认模型时可省略
    VITE_AI_API_URL=https://open.bigmodel.cn/api/paas/v4/chat/completions  # 可选，使用默认URL时可省略
    VITE_AI_USE_PROXY=true  # 推荐：使用代理模式
    ```
