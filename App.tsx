@@ -222,6 +222,8 @@ function App() {
     useState(false);
   const [autoAdventurePausedByBattle, setAutoAdventurePausedByBattle] =
     useState(false);
+  const [autoAdventurePausedByReputationEvent, setAutoAdventurePausedByReputationEvent] =
+    useState(false);
   const [isDead, setIsDead] = useState(false);
   const [deathBattleData, setDeathBattleData] = useState<BattleReplay | null>(
     null
@@ -381,6 +383,11 @@ function App() {
       battleHandlers.openBattleModal(replay);
     },
     onReputationEvent: (event) => {
+      // 如果正在自动历练，暂停自动历练
+      if (autoAdventure) {
+        setAutoAdventurePausedByReputationEvent(true);
+        setAutoAdventure(false);
+      }
       // 打开声望事件弹窗
       setReputationEvent(event);
       setIsReputationEventOpen(true);
@@ -468,6 +475,7 @@ function App() {
         setAutoAdventure(false);
         setAutoAdventurePausedByBattle(false);
         setAutoAdventurePausedByShop(false);
+        setAutoAdventurePausedByReputationEvent(false);
       }
 
       prevPlayerNameRef.current = player.name;
@@ -492,6 +500,7 @@ function App() {
     setAutoAdventure(false);
     setAutoAdventurePausedByBattle(false);
     setAutoAdventurePausedByShop(false);
+    setAutoAdventurePausedByReputationEvent(false);
     setPlayer(null);
     setLogs([]);
     setGameStarted(false);
@@ -641,6 +650,12 @@ function App() {
     // 关闭弹窗并清除事件
     setIsReputationEventOpen(false);
     setReputationEvent(null);
+
+    // 如果自动历练是因为声望事件暂停的，恢复自动历练
+    if (autoAdventurePausedByReputationEvent) {
+      setAutoAdventurePausedByReputationEvent(false);
+      setAutoAdventure(true);
+    }
   };
 
   const handleUpdateSettings = settingsHandlers.handleUpdateSettings;
@@ -722,6 +737,7 @@ function App() {
     loading,
     cooldown,
     isShopOpen,
+    isReputationEventOpen,
     autoAdventurePausedByShop,
     setAutoAdventurePausedByShop,
     handleMeditate,
@@ -1502,7 +1518,17 @@ function App() {
           handleSellItem,
           handleRefreshShop,
           handleReputationEventChoice,
-          setIsReputationEventOpen,
+          setIsReputationEventOpen: (open: boolean) => {
+            setIsReputationEventOpen(open);
+            if (!open) {
+              setReputationEvent(null);
+              // 如果自动历练是因为声望事件暂停的，恢复自动历练
+              if (autoAdventurePausedByReputationEvent) {
+                setAutoAdventurePausedByReputationEvent(false);
+                setAutoAdventure(true);
+              }
+            }
+          },
           setIsTurnBasedBattleOpen: (open: boolean) => {
             setIsTurnBasedBattleOpen(open);
             if (!open) {

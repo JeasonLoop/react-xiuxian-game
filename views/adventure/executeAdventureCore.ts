@@ -393,8 +393,12 @@ const applyResultToPlayer = (
     addLog(`🎁 你获得了灵宠进阶材料【${m.name}】！`, 'gain');
   }
 
-  // 抽奖券与传承
-  if (Math.random() < 0.05) { const count = Math.floor(Math.random() * 10) + 1; newLotteryTickets += count; addLog(`🎫 捡到了 ${count} 张抽奖券！`, 'gain'); }
+  // 抽奖券与传承（如果AI没有生成抽奖券变化，则使用随机逻辑）
+  if (result.lotteryTicketsChange === undefined && Math.random() < 0.05) {
+    const count = Math.floor(Math.random() * 10) + 1;
+    newLotteryTickets += count;
+    addLog(`🎫 捡到了 ${count} 张抽奖券！`, 'gain');
+  }
   const inheritanceChance = isSecretRealm ? 0.005 : (adventureType === 'lucky' ? 0.01 : 0.001);
   if (Math.random() < inheritanceChance || (result.inheritanceLevelChange || 0) > 0) {
     const oldLevel = newInheritanceLevel; newInheritanceLevel = Math.min(4, newInheritanceLevel + (Math.floor(Math.random() * 4) + 1));
@@ -415,6 +419,14 @@ const applyResultToPlayer = (
       fire: Math.min(100, Math.max(0, (newSpiritualRoots.fire || 0) + (src.fire || 0))),
       earth: Math.min(100, Math.max(0, (newSpiritualRoots.earth || 0) + (src.earth || 0))),
     };
+  }
+
+  // 抽奖券结算（处理AI生成的lotteryTicketsChange）
+  if (result.lotteryTicketsChange !== undefined) {
+    newLotteryTickets = Math.max(0, newLotteryTickets + result.lotteryTicketsChange);
+    if (result.lotteryTicketsChange > 0) {
+      addLog(`🎫 捡到了 ${result.lotteryTicketsChange} 张抽奖券！`, 'gain');
+    }
   }
 
   // 修为灵石结算
