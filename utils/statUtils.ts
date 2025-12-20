@@ -1,5 +1,5 @@
 import { PlayerStats, CultivationArt, ArtGrade } from '../types';
-import { CULTIVATION_ARTS, INHERITANCE_SKILLS } from '../constants';
+import { CULTIVATION_ARTS, INHERITANCE_SKILLS, calculateSpiritualRootArtBonus } from '../constants';
 
 /**
  * 获取玩家激活的心法（包括普通功法和传承功法）
@@ -60,13 +60,23 @@ export const getPlayerTotalStats = (player: PlayerStats): {
   if (activeArt && activeArt.type === 'mental') {
     const effects = activeArt.effects;
 
-    // 加上固定数值加成
-    stats.attack += effects.attack || 0;
-    stats.defense += effects.defense || 0;
-    stats.maxHp += effects.hp || 0;
-    stats.spirit += effects.spirit || 0;
-    stats.physique += effects.physique || 0;
-    stats.speed += effects.speed || 0;
+    // 计算灵根对心法的加成
+    const spiritualRoots = player.spiritualRoots || {
+      metal: 0,
+      wood: 0,
+      water: 0,
+      fire: 0,
+      earth: 0,
+    };
+    const spiritualRootBonus = calculateSpiritualRootArtBonus(activeArt, spiritualRoots);
+
+    // 加上固定数值加成（应用灵根加成）
+    stats.attack += Math.floor((effects.attack || 0) * spiritualRootBonus);
+    stats.defense += Math.floor((effects.defense || 0) * spiritualRootBonus);
+    stats.maxHp += Math.floor((effects.hp || 0) * spiritualRootBonus);
+    stats.spirit += Math.floor((effects.spirit || 0) * spiritualRootBonus);
+    stats.physique += Math.floor((effects.physique || 0) * spiritualRootBonus);
+    stats.speed += Math.floor((effects.speed || 0) * spiritualRootBonus);
 
     // 加上百分比加成（如果有）
     // 注意：百分比加成通常基于当前已有的属性（基础+装备等）

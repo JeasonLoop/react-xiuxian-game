@@ -235,19 +235,42 @@ const applyResultToPlayer = (
       }
 
       // 效果规范化
-      const normalized = normalizeItemEffect(itemName, itemData.effect, itemData.permanentEffect, itemType, itemData.rarity as ItemRarity);
+      // 对于高级丹药，根据名称推断稀有度（如果未设置或设置为普通）
+      let itemRarity = (itemData.rarity as ItemRarity) || '普通';
+      if (itemType === ItemType.Pill && itemRarity === '普通') {
+        // 根据丹药名称推断稀有度
+        const name = itemName.toLowerCase();
+        if (name.includes('真仙') || name.includes('仙丹') || name.includes('九转') || name.includes('天元') || name.includes('不死')) {
+          itemRarity = '仙品';
+        } else if (name.includes('仙灵') || name.includes('破境') || name.includes('龙血') || name.includes('五行') || name.includes('天灵根')) {
+          itemRarity = '传说';
+        } else if (name.includes('筑基') || name.includes('洗髓') || name.includes('凝神') || name.includes('强体')) {
+          itemRarity = '稀有';
+        }
+      }
+      const normalized = normalizeItemEffect(itemName, itemData.effect, itemData.permanentEffect, itemType, itemRarity);
       let finalEffect = normalized.effect;
       let finalPermanentEffect = normalized.permanentEffect;
 
-      if (isEquippable && !finalEffect && finalPermanentEffect) {
-        finalEffect = { attack: finalPermanentEffect.attack, defense: finalPermanentEffect.defense, spirit: finalPermanentEffect.spirit, physique: finalPermanentEffect.physique, speed: finalPermanentEffect.speed, hp: finalPermanentEffect.maxHp || 0 };
+      // 装备不应该有永久效果，如果有则转换为临时效果（effect）
+      if (isEquippable && finalPermanentEffect) {
+        // 将 permanentEffect 的属性合并到 effect 中
+        if (!finalEffect) {
+          finalEffect = {};
+        }
+        if (finalPermanentEffect.attack) finalEffect.attack = (finalEffect.attack || 0) + finalPermanentEffect.attack;
+        if (finalPermanentEffect.defense) finalEffect.defense = (finalEffect.defense || 0) + finalPermanentEffect.defense;
+        if (finalPermanentEffect.spirit) finalEffect.spirit = (finalEffect.spirit || 0) + finalPermanentEffect.spirit;
+        if (finalPermanentEffect.physique) finalEffect.physique = (finalEffect.physique || 0) + finalPermanentEffect.physique;
+        if (finalPermanentEffect.speed) finalEffect.speed = (finalEffect.speed || 0) + finalPermanentEffect.speed;
+        if (finalPermanentEffect.maxHp) finalEffect.hp = (finalEffect.hp || 0) + finalPermanentEffect.maxHp;
+        // 装备不应该有永久效果
         finalPermanentEffect = undefined;
       }
 
       if (isEquippable) {
-        const rarity = (itemData.rarity as ItemRarity) || '普通';
-        finalEffect = ensureEquipmentAttributes(itemType, finalEffect, rarity, prev.realm, prev.realmLevel);
-        if (finalEffect) finalEffect = adjustEquipmentStatsByRealm(finalEffect, prev.realm, prev.realmLevel, rarity);
+        finalEffect = ensureEquipmentAttributes(itemType, finalEffect, itemRarity, prev.realm, prev.realmLevel);
+        if (finalEffect) finalEffect = adjustEquipmentStatsByRealm(finalEffect, prev.realm, prev.realmLevel, itemRarity);
       }
 
       // 重名装备处理
@@ -273,12 +296,13 @@ const applyResultToPlayer = (
       if (existingIdx >= 0 && !isEquippable && itemType !== ItemType.Recipe) {
         newInv[existingIdx] = { ...newInv[existingIdx], quantity: newInv[existingIdx].quantity + 1 };
       } else {
-        const rarity = (itemData.rarity as ItemRarity) || '普通';
         let reviveChances = (itemData as any).reviveChances;
-        if (reviveChances === undefined && (rarity === '传说' || rarity === '仙品') && (itemType === ItemType.Weapon || itemType === ItemType.Artifact)) {
-          if (Math.random() < (rarity === '传说' ? 0.3 : 0.6)) reviveChances = Math.floor(Math.random() * 3) + 1;
+        if (reviveChances === undefined && (itemRarity === '传说' || itemRarity === '仙品') && (itemType === ItemType.Weapon || itemType === ItemType.Artifact)) {
+          if (Math.random() < (itemRarity === '传说' ? 0.3 : 0.6)) reviveChances = Math.floor(Math.random() * 3) + 1;
         }
-        newInv.push({ id: uid(), name: itemName, type: itemType, description: itemData.description, quantity: 1, rarity, level: 0, isEquippable, equipmentSlot, effect: finalEffect, permanentEffect: finalPermanentEffect, recipeData, reviveChances });
+        // 确保装备不会有 permanentEffect
+        const equipmentPermanentEffect = isEquippable ? undefined : finalPermanentEffect;
+        newInv.push({ id: uid(), name: itemName, type: itemType, description: itemData.description, quantity: 1, rarity: itemRarity, level: 0, isEquippable, equipmentSlot, effect: finalEffect, permanentEffect: equipmentPermanentEffect, recipeData, reviveChances });
       }
     } catch (e) { console.error('Item processing error:', e); }
   });
@@ -288,28 +312,24 @@ const applyResultToPlayer = (
   let artUnlocked = false;
   if (Math.random() < artChance) {
     const availableArts = CULTIVATION_ARTS.filter(art => {
+      // 排除已学习的功法
       if (newArts.includes(art.id)) return false;
+      // 排除已解锁的功法（避免重复解锁）
+      if (newUnlockedArts.includes(art.id)) return false;
       const artRealmIdx = REALM_ORDER.indexOf(art.realmRequirement);
       const playerRealmIdx = REALM_ORDER.indexOf(prev.realm);
       return artRealmIdx >= 0 && playerRealmIdx >= artRealmIdx && (!art.sectId || art.sectId === prev.sectId);
     });
     if (availableArts.length > 0) {
       const randomArt = availableArts[Math.floor(Math.random() * availableArts.length)];
-      newArts.push(randomArt.id);
-      if (!newUnlockedArts.includes(randomArt.id)) newUnlockedArts.push(randomArt.id);
-      newStats.artCount += 1;
-
-      // 只有体术类功法才永久增加基础属性
-      if (randomArt.type === 'body') {
-        newAttack += randomArt.effects.attack || 0;
-        newDefense += randomArt.effects.defense || 0;
-        newMaxHp += randomArt.effects.hp || 0;
-        newHp += randomArt.effects.hp || 0;
+      // 领悟功法只解锁，不直接学习（需要花费灵石学习）
+      if (!newUnlockedArts.includes(randomArt.id)) {
+        newUnlockedArts.push(randomArt.id);
+        newStats.artCount += 1;
+        artUnlocked = true;
+        triggerVisual('special', `🎉 领悟功法【${randomArt.name}】`, 'special');
+        addLog(`🎉 你领悟了功法【${randomArt.name}】！现在可以在功法阁中学习它了。`, 'special');
       }
-
-      artUnlocked = true;
-      triggerVisual('special', `🎉 领悟功法【${randomArt.name}】`, 'special');
-      addLog(`🎉 你领悟了功法【${randomArt.name}】！`, 'special');
     }
   }
 

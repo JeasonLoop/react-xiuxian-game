@@ -61,6 +61,7 @@ export function useAlchemyHandlers({
         description: recipe.result.description || '',
         rarity: (recipe.result.rarity as ItemRarity) || '普通',
         effect: recipe.result.effect,
+        permanentEffect: recipe.result.permanentEffect,
       });
 
       addLog(`丹炉火起，药香四溢。你炼制出了 ${recipe.result.name}。`, 'gain');

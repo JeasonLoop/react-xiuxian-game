@@ -278,10 +278,10 @@ const REPUTATION_SHOP_TEMPLATES: Array<Omit<ShopItem, 'id'>> = [
   {
     name: '传承石',
     type: ItemType.Material,
-    description: '蕴含传承之力的神秘石头，可用于传承修炼。',
-    rarity: '传说',
-    price: 5000,
-    sellPrice: 1500,
+    description: '蕴含传承之力的神秘石头，使用后可直接获得传承。',
+    rarity: '仙品',
+    price: 50000,
+    sellPrice: 50000,
   },
   {
     name: '仙品功法残卷',

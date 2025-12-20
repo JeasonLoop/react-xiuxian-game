@@ -24,6 +24,7 @@ const CultivationModal: React.FC<Props> = ({
   const [learningArtId, setLearningArtId] = useState<string | null>(null); // 防止重复点击
   const learningArtIdRef = useRef<string | null>(null); // 同步检查用
   const [searchQuery, setSearchQuery] = useState(''); // 搜索关键词
+  const scrollContainerRef = useRef<HTMLDivElement>(null); // 滚动容器引用
 
   const getRealmIndex = (r: RealmType) => REALM_ORDER.indexOf(r);
 
@@ -43,9 +44,22 @@ const CultivationModal: React.FC<Props> = ({
       return;
     }
 
+    // 保存当前滚动位置
+    const scrollContainer = scrollContainerRef.current;
+    const scrollTop = scrollContainer?.scrollTop || 0;
+
     learningArtIdRef.current = art.id;
     setLearningArtId(art.id);
     onLearnArt(art);
+
+    // 恢复滚动位置（使用 requestAnimationFrame 确保在 DOM 更新后恢复）
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (scrollContainer) {
+          scrollContainer.scrollTop = scrollTop;
+        }
+      });
+    });
 
     // 500ms 后重置，允许再次点击（如果需要）
     setTimeout(() => {
@@ -183,7 +197,7 @@ const CultivationModal: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="p-3 md:p-4 bg-paper-800 overflow-y-auto flex-1">
+        <div ref={scrollContainerRef} className="p-3 md:p-4 bg-paper-800 overflow-y-auto flex-1">
           <div className="mb-3 md:mb-4 text-xs md:text-sm text-stone-400 bg-ink-900/50 p-2 md:p-3 rounded border border-stone-700">
             <p>心法：主修功法，激活后提升修炼效率。</p>
             <p>体术：辅修功法，习得后永久提升身体属性。</p>
@@ -453,6 +467,7 @@ const CultivationModal: React.FC<Props> = ({
                       )
                     ) : (
                       <button
+                        type="button"
                         onClick={(e) => handleLearnClick(art, e)}
                         disabled={locked || learningArtId === art.id}
                         className={`

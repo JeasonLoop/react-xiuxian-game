@@ -30,7 +30,7 @@ export const getEquipmentSlotsByType = (itemType: ItemType): EquipmentSlot[] => 
  * 查找物品可以装备到的空槽位
  * @param item 要装备的物品
  * @param equippedItems 当前已装备的物品映射
- * @returns 可用的槽位，如果没有空槽位则返回物品的默认槽位
+ * @returns 可用的槽位，如果没有空槽位则返回物品的默认槽位（戒指会返回Ring1）
  */
 export const findEmptyEquipmentSlot = (
   item: Item,
@@ -42,7 +42,17 @@ export const findEmptyEquipmentSlot = (
   const slots = getEquipmentSlotsByType(item.type);
   if (slots.length > 0) {
     const emptySlot = slots.find((slot) => !equippedItems[slot]);
-    return emptySlot || item.equipmentSlot; // 如果没有空槽位，返回默认槽位（会替换现有装备）
+    if (emptySlot) {
+      // 有空槽位，返回第一个空槽位
+      return emptySlot;
+    }
+    // 如果没有空槽位
+    if (item.type === ItemType.Ring) {
+      // 戒指：4个栏位都满时，替换第一个（Ring1）
+      return EquipmentSlot.Ring1;
+    }
+    // 其他类型（首饰、法宝）：返回第一个槽位
+    return slots[0];
   }
 
   // 其他装备类型直接使用默认槽位
