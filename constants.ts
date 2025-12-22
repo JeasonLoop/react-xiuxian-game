@@ -1388,6 +1388,108 @@ export const SECT_MASTER_CHALLENGE_REQUIREMENTS = {
   },
   defeatPenalty: {
     expLoss: 10000, // 失败扣除10000修为
+    contributionLoss: 2000, // 失败扣除2000宗门贡献
+    hpLossPercent: 0.3, // 失败额外扣除30%当前气血
+  },
+};
+
+// 宗门晋升基础奖励
+export const SECT_PROMOTION_BASE_REWARDS: Record<SectRank, {
+  exp: number;
+  spiritStones: number;
+  contribution: number;
+}> = {
+  [SectRank.Outer]: {
+    exp: 0,
+    spiritStones: 0,
+    contribution: 0,
+  },
+  [SectRank.Inner]: {
+    exp: 100,
+    spiritStones: 50,
+    contribution: 100,
+  },
+  [SectRank.Core]: {
+    exp: 500,
+    spiritStones: 200,
+    contribution: 500,
+  },
+  [SectRank.Elder]: {
+    exp: 2000,
+    spiritStones: 1000,
+    contribution: 2000,
+  },
+  [SectRank.Leader]: {
+    exp: 10000,
+    spiritStones: 50000,
+    contribution: 5000,
+  },
+};
+
+// 宗门特殊奖励（按宗门ID和职位）
+export const SECT_SPECIAL_REWARDS: Record<string, Partial<Record<SectRank, {
+  items: Array<{ name: string; quantity: number }>;
+}>>> = {
+  // 可以在这里为特定宗门添加特殊奖励
+  // 例如：
+  // 'sect-cloud': {
+  //   [SectRank.Leader]: {
+  //     items: [{ name: '云灵宗传承', quantity: 1 }],
+  //   },
+  // },
+};
+
+// 宗门职位晋升要求
+export const SECT_RANK_REQUIREMENTS: Record<SectRank, {
+  contribution: number;
+  realmIndex: number;
+}> = {
+  [SectRank.Outer]: {
+    contribution: 0, // 初始职位，无要求
+    realmIndex: 0, // 炼气期
+  },
+  [SectRank.Inner]: {
+    contribution: 100, // 需要100贡献
+    realmIndex: 0, // 炼气期
+  },
+  [SectRank.Core]: {
+    contribution: 500, // 需要500贡献
+    realmIndex: 1, // 筑基期
+  },
+  [SectRank.Elder]: {
+    contribution: 2000, // 需要2000贡献
+    realmIndex: 2, // 金丹期
+  },
+  [SectRank.Leader]: {
+    contribution: 10000, // 需要10000贡献（通过挑战获得）
+    realmIndex: 3, // 元婴期
+  },
+};
+
+// 宗门职位显示数据
+export const SECT_RANK_DATA: Record<SectRank, {
+  title: string;
+  description?: string;
+}> = {
+  [SectRank.Outer]: {
+    title: '外门弟子',
+    description: '宗门最基础的职位',
+  },
+  [SectRank.Inner]: {
+    title: '内门弟子',
+    description: '宗门核心弟子',
+  },
+  [SectRank.Core]: {
+    title: '真传弟子',
+    description: '宗门重点培养的弟子',
+  },
+  [SectRank.Elder]: {
+    title: '长老',
+    description: '宗门高层管理者',
+  },
+  [SectRank.Leader]: {
+    title: '宗主',
+    description: '宗门之主',
   },
 };
 
