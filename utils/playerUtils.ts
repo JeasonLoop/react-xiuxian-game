@@ -162,10 +162,14 @@ export const createInitialPlayer = (
     grotto: {
       level: 0, // 未拥有洞府
       expRateBonus: 0, // 无加成
-      storageCapacity: 0, // 无额外存储
+      autoHarvest: false, // 自动收获关闭
+      growthSpeedBonus: 0, // 无生长速度加成
       plantedHerbs: [], // 无种植的灵草
       lastHarvestTime: null, // 无收获记录
       spiritArrayEnhancement: 0, // 聚灵阵改造加成
+      herbarium: [], // 灵草图鉴（已收集的灵草名称列表）
+      dailySpeedupCount: 0, // 今日已使用加速次数
+      lastSpeedupResetDate: new Date().toISOString().split('T')[0], // 上次重置加速次数的日期
     },
     sectMasterId: null, // 当前宗门的宗主ID (如果玩家是宗主，则为玩家自己的ID)
   };
