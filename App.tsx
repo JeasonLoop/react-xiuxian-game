@@ -360,27 +360,6 @@ function App() {
     setLotteryRewards,
   });
 
-  const sectHandlers = useSectHandlers({
-    player,
-    setPlayer,
-    addLog,
-    setIsSectOpen,
-    setPurchaseSuccess,
-  });
-
-  const achievementHandlers = useAchievementHandlers({
-    player,
-    setPlayer,
-    addLog,
-  });
-
-  // 日常任务相关逻辑
-  const dailyQuestHandlers = useDailyQuestHandlers({
-    player,
-    setPlayer,
-    addLog,
-  });
-
   // 洞府相关逻辑
   const grottoHandlers = useGrottoHandlers({
     player,

@@ -1375,6 +1375,22 @@ export const SECTS: SectInfo[] = [
   },
 ];
 
+// 宗主挑战要求与奖励
+export const SECT_MASTER_CHALLENGE_REQUIREMENTS = {
+  minRealm: RealmType.NascentSoul, // 需要元婴期
+  minContribution: 10000, // 需要10000宗门贡献
+  challengeCost: {
+    spiritStones: 50000, // 挑战需要50000灵石
+  },
+  victoryReward: {
+    exp: 50000, // 胜利获得50000修为
+    spiritStones: 100000, // 胜利获得100000灵石
+  },
+  defeatPenalty: {
+    expLoss: 10000, // 失败扣除10000修为
+  },
+};
+
 export const SECT_SHOP_ITEMS: {
   name: string;
   cost: number;
