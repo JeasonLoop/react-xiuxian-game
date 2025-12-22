@@ -129,7 +129,7 @@ export function usePetHandlers({
             普通: 1.0,
             稀有: 2.5,  // 稀有是普通的2.5倍
             传说: 5.0,  // 传说是普通的5倍
-            仙品: 10.0, // 仙品是普通的10倍
+            仙品: 15.0, // 仙品是普通的15倍
           };
           rarityMultiplier = rarityBaseMultipliers[rarity] || 1.0;
 
@@ -337,9 +337,18 @@ export function usePetHandlers({
             }
           }
 
+          // 更新技能和图片
+          const stageSkills = newStage === 1
+            ? (template.stageSkills?.stage1 || [])
+            : (template.stageSkills?.stage2 || []);
+
+          const stageImage = newStage === 1
+            ? (template.stageImages?.stage1 || template.image)
+            : (template.stageImages?.stage2 || template.image);
+
           const stageName = newStage === 1 ? '成熟期' : '完全体';
           addLog(
-            `【${p.name}】进化到${stageName}！${newName !== p.name ? `更名为【${newName}】！` : ''}实力大幅提升！`,
+            `【${p.name}】进化到${stageName}！${newName !== p.name ? `更名为【${newName}】！` : ''}实力大幅提升，并领悟了新技能！`,
             'special'
           );
 
@@ -347,6 +356,8 @@ export function usePetHandlers({
             ...p,
             name: newName,
             evolutionStage: newStage,
+            image: stageImage,
+            skills: [...p.skills, ...stageSkills], // 保留旧技能，增加新技能
             stats: {
               attack: Math.floor(p.stats.attack * statMultiplier),
               defense: Math.floor(p.stats.defense * statMultiplier),
@@ -402,7 +413,7 @@ export function usePetHandlers({
             普通: 1.0,
             稀有: 2.5,  // 稀有是普通的2.5倍
             传说: 5.0,  // 传说是普通的5倍
-            仙品: 10.0, // 仙品是普通的10倍
+            仙品: 15.0, // 仙品是普通的15倍
           };
           let rarityMultiplier = rarityBaseMultipliers[rarity] || 1.0;
 
@@ -583,11 +594,110 @@ export function usePetHandlers({
     });
   };
 
+  const handleBatchFeedHp = (petId: string, times?: number) => {
+    if (!player) return;
+
+    const pet = player.pets.find((p) => p.id === petId);
+    if (!pet) return;
+
+    const hpCost = 200;
+    const maxFeeds = times || Math.floor(player.hp / hpCost);
+
+    if (maxFeeds <= 0) {
+      addLog(`气血不足，无法喂养！需要 ${hpCost} 点气血，当前只有 ${player.hp} 点`, 'danger');
+      return;
+    }
+
+    setPlayer((prev) => {
+      if (!prev) return prev;
+
+      const actualFeeds = Math.min(maxFeeds, Math.floor(prev.hp / hpCost));
+      if (actualFeeds <= 0) return prev;
+
+      // 计算总经验值
+      let totalExpGain = 0;
+      let totalAffectionGain = 0;
+
+      for (let i = 0; i < actualFeeds; i++) {
+        // 基础经验值
+        let baseExp = 200;
+        const realmIndex = REALM_ORDER.indexOf(prev.realm);
+        const realmMultiplier = 1 + realmIndex * 2.5;
+        const levelMultiplier = 1 + prev.realmLevel * 0.5;
+        baseExp = Math.floor(baseExp * realmMultiplier * levelMultiplier);
+
+        // 气血喂养给1.2倍经验
+        const feedTypeMultiplier = 1.2;
+        let expGain = Math.floor(baseExp * feedTypeMultiplier);
+        const randomVariation = 0.85 + Math.random() * 0.3;
+        expGain = Math.floor(expGain * randomVariation);
+
+        totalExpGain += expGain;
+        totalAffectionGain += Math.floor(2 + Math.random() * 4);
+      }
+
+      // 扣除气血
+      const newHp = Math.max(0, prev.hp - (hpCost * actualFeeds));
+
+      // 更新灵宠
+      const newPets = prev.pets.map((p) => {
+        if (p.id === petId) {
+          let petNewExp = p.exp + totalExpGain;
+          let petNewLevel = p.level;
+          let petNewMaxExp = p.maxExp;
+          let leveledUp = false;
+
+          // 处理升级
+          while (petNewExp >= petNewMaxExp && petNewLevel < 100) {
+            petNewExp -= petNewMaxExp;
+            petNewLevel += 1;
+            petNewMaxExp = Math.floor(petNewMaxExp * 1.3);
+            leveledUp = true;
+            addLog(`【${p.name}】升级了！现在是 ${petNewLevel} 级`, 'gain');
+          }
+
+          const newStats = leveledUp
+            ? {
+                attack: Math.floor(p.stats.attack * 1.1),
+                defense: Math.floor(p.stats.defense * 1.1),
+                hp: Math.floor(p.stats.hp * 1.1),
+                speed: Math.floor(p.stats.speed * 1.05),
+              }
+            : p.stats;
+
+          const newAffection = Math.min(100, p.affection + totalAffectionGain);
+
+          return {
+            ...p,
+            level: petNewLevel,
+            exp: petNewExp,
+            maxExp: petNewMaxExp,
+            stats: newStats,
+            affection: newAffection,
+          };
+        }
+        return p;
+      });
+
+      addLog(
+        `批量喂血完成（${actualFeeds}次），【${pet.name}】获得了 ${totalExpGain} 点经验，亲密度提升了 ${totalAffectionGain} 点。`,
+        'gain'
+      );
+
+      return {
+        ...prev,
+        hp: newHp,
+        pets: newPets,
+      };
+    });
+  };
+
   return {
     handleActivatePet,
     handleDeactivatePet,
     handleFeedPet,
     handleBatchFeedItems,
+    handleBatchFeedHp,
     handleEvolvePet,
     handleReleasePet,
     handleBatchReleasePets,

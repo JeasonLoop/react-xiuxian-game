@@ -2,17 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { PlayerStats } from '../types';
 import { CULTIVATION_ARTS } from '../constants';
 import { getRarityTextColor } from '../utils/rarityUtils';
-import {
-  Shield,
-  Zap,
-  Coins,
-  BookOpen,
-  Sword,
-  ChevronDown,
-  ChevronUp,
-  Clock,
-  Sparkles,
-} from 'lucide-react';
+import { Shield, Zap, Coins, BookOpen, Sword, ChevronDown, ChevronUp, Clock, Sparkles } from 'lucide-react';
+import { getPlayerTotalStats } from '../utils/statUtils';
 
 interface Props {
   player: PlayerStats;
@@ -21,19 +12,22 @@ interface Props {
 const StatsPanel: React.FC<Props> = ({ player }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  // 使用 getPlayerTotalStats 获取包含心法加成的总属性
+  const totalStats = useMemo(() => getPlayerTotalStats(player), [player]);
+
   // 使用 useMemo 缓存计算结果
   const expPercentage = useMemo(
     () => Math.min(100, (player.exp / player.maxExp) * 100),
     [player.exp, player.maxExp]
   );
   const hpPercentage = useMemo(
-    () => Math.min(100, (player.hp / player.maxHp) * 100),
-    [player.hp, player.maxHp]
+    () => Math.min(100, (player.hp / totalStats.maxHp) * 100),
+    [player.hp, totalStats.maxHp]
   );
   const lifespanPercentage = useMemo(
     () => {
-      const maxLifespan = player.maxLifespan || 100;
-      const lifespan = player.lifespan || maxLifespan;
+      const maxLifespan = player.maxLifespan ?? 100;
+      const lifespan = player.lifespan ?? maxLifespan;
       return Math.min(100, (lifespan / maxLifespan) * 100);
     },
     [player.lifespan, player.maxLifespan]
@@ -93,7 +87,7 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
             <div className="flex justify-between text-xs text-stone-400 mb-1">
               <span>气血 (HP)</span>
               <span>
-                {player.hp} / {player.maxHp}
+                {player.hp} / {totalStats.maxHp}
               </span>
             </div>
             <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
@@ -123,7 +117,7 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
             <div className="flex justify-between text-xs text-stone-400 mb-1">
               <span>寿命 (年)</span>
               <span>
-                {Math.floor(player.lifespan || player.maxLifespan || 100)} / {Math.floor(player.maxLifespan || 100)}
+                {Math.floor(player.lifespan ?? player.maxLifespan ?? 100)} / {Math.floor(player.maxLifespan ?? 100)}
               </span>
             </div>
             <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
@@ -178,7 +172,7 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
             <div>
               <div className="text-[10px] md:text-xs text-stone-500">攻击</div>
               <div className="text-stone-200 font-bold text-xs md:text-base">
-                {player.attack}
+                {totalStats.attack}
               </div>
             </div>
           </div>
@@ -190,7 +184,7 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
             <div>
               <div className="text-[10px] md:text-xs text-stone-500">防御</div>
               <div className="text-stone-200 font-bold text-xs md:text-base">
-                {player.defense}
+                {totalStats.defense}
               </div>
             </div>
           </div>
@@ -202,7 +196,7 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
             <div>
               <div className="text-[10px] md:text-xs text-stone-500">神识</div>
               <div className="text-stone-200 font-bold text-xs md:text-base">
-                {player.spirit}
+                {totalStats.spirit}
               </div>
             </div>
           </div>
@@ -214,7 +208,7 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
             <div>
               <div className="text-[10px] md:text-xs text-stone-500">体魄</div>
               <div className="text-stone-200 font-bold text-xs md:text-base">
-                {player.physique}
+                {totalStats.physique}
               </div>
             </div>
           </div>
@@ -223,7 +217,7 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
             <div>
               <div className="text-[10px] md:text-xs text-stone-500">速度</div>
               <div className="text-stone-200 font-bold text-xs md:text-base">
-                {player.speed}
+                {totalStats.speed}
               </div>
             </div>
           </div>

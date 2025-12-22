@@ -62,8 +62,8 @@ export const KNOWN_ITEM_EFFECTS: Record<
     permanentEffect: { maxHp: 200, physique: 100 },
   },
   万年仙草: {
-    effect: { hp: 3000 },
-    permanentEffect: { maxHp: 500, spirit: 50 },
+    effect: { hp: 10000 },
+    permanentEffect: { maxHp: 2000, spirit: 200 },
   },
   回血丹: { effect: { hp: 50 } },
   聚气丹: { effect: { exp: 20 } },
@@ -452,12 +452,12 @@ export const adjustEquipmentStatsByRealm = (
   const baseSpeed = realmData.baseSpeed;
 
   // 根据稀有度确定装备数值占境界基础属性的百分比
-  // 普通：5-8%，稀有：8-12%，传说：12-18%，仙品：18-25%
+  // 普通：5-8%，稀有：8-12%，传说：12-18%，仙品：35-50%
   const rarityPercentages: Record<ItemRarity, { min: number; max: number }> = {
     普通: { min: 0.05, max: 0.08 },
     稀有: { min: 0.08, max: 0.12 },
     传说: { min: 0.12, max: 0.18 },
-    仙品: { min: 0.18, max: 0.25 },
+    仙品: { min: 0.35, max: 0.50 },
   };
 
   const percentage = rarityPercentages[rarity] || rarityPercentages['普通'];

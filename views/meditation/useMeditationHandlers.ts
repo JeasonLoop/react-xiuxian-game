@@ -7,6 +7,7 @@ import {
   REALM_ORDER,
   calculateSpiritualRootArtBonus,
 } from '../../constants';
+import { getActiveMentalArt } from '../../utils/statUtils';
 
 interface UseMeditationHandlersProps {
   player: PlayerStats;
@@ -48,7 +49,7 @@ export function useMeditationHandlers({
     );
 
     // Apply Active Art Bonus
-    const activeArt = CULTIVATION_ARTS.find((a) => a.id === player.activeArtId);
+    const activeArt = getActiveMentalArt(player);
     if (activeArt && activeArt.effects.expRate) {
       // 计算灵根对心法的加成
       const spiritualRootBonus = calculateSpiritualRootArtBonus(

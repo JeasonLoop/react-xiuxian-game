@@ -1767,6 +1767,39 @@ const DebugModal: React.FC<Props> = ({
                     </span>
                   )}
                 </div>
+                {localPlayer.sectId && (
+                  <div className="mb-4 p-3 bg-stone-800/50 rounded border border-stone-700">
+                    <label className="block text-sm text-stone-400 mb-2">
+                      宗门贡献
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => adjustNumber('sectContribution', -1000)}
+                        className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
+                      >
+                        -1K
+                      </button>
+                      <input
+                        type="number"
+                        min="0"
+                        value={localPlayer.sectContribution}
+                        onChange={(e) =>
+                          updateField(
+                            'sectContribution',
+                            Math.max(0, parseInt(e.target.value) || 0)
+                          )
+                        }
+                        className="flex-1 bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                      />
+                      <button
+                        onClick={() => adjustNumber('sectContribution', 1000)}
+                        className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
+                      >
+                        +1K
+                      </button>
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
                   {SECTS.map((sect) => {
                     const isJoined = localPlayer.sectId === sect.id;

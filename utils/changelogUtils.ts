@@ -100,6 +100,6 @@ export function parseChangelog(changelogContent: string): VersionInfo[] {
  * 获取当前版本号
  */
 export function getCurrentVersion(): string {
-  return import.meta.env.VITE_APP_VERSION || '0.2.4';
+  return import.meta.env.VITE_APP_VERSION;
 }
 

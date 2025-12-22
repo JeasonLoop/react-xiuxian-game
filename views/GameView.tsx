@@ -37,6 +37,7 @@ interface GameViewProps {
   cooldown: number;
   purchaseSuccess: { item: string; quantity: number } | null;
   lotteryRewards: Array<{ type: string; name: string; quantity?: number }>;
+  onCloseLotteryRewards?: () => void;
   itemActionLog: { text: string; type: string } | null;
   isMobileSidebarOpen: boolean;
   isMobileStatsOpen: boolean;
@@ -99,6 +100,7 @@ function GameView({
   cooldown,
   purchaseSuccess,
   lotteryRewards,
+  onCloseLotteryRewards,
   itemActionLog,
   isMobileSidebarOpen,
   isMobileStatsOpen,
@@ -147,7 +149,11 @@ function GameView({
           isDebugModeEnabled={isDebugModeEnabled}
         />
 
-        <LogPanel logs={logs} className="pb-[23rem] md:pb-0" />
+        <LogPanel
+          logs={logs}
+          playerName={player.name}
+          className="pb-[23rem] md:pb-0"
+        />
 
         <ActionBar
           loading={loading}
@@ -171,7 +177,10 @@ function GameView({
           quantity={purchaseSuccess.quantity}
         />
       )}
-      <LotteryRewardsToast rewards={lotteryRewards} />
+      <LotteryRewardsToast
+        rewards={lotteryRewards}
+        onClose={onCloseLotteryRewards}
+      />
       {itemActionLog && (
         <ItemActionToast
           log={{

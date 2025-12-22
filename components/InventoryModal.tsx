@@ -61,6 +61,7 @@ interface Props {
   onDiscardItem: (item: Item) => void;
   onBatchDiscard: (itemIds: string[]) => void;
   onBatchUse?: (itemIds: string[]) => void;
+  onOrganizeInventory?: () => void;
   onRefineNatalArtifact?: (item: Item) => void;
   onUnrefineNatalArtifact?: () => void;
 }
@@ -91,13 +92,13 @@ const normalizeTypeLabel = (type: ItemType | string): string => {
 // 物品项组件 - 使用 memo 优化性能
 interface InventoryItemProps {
   item: Item;
-  player: PlayerStats;
-  equippedItems: Partial<Record<EquipmentSlot, string>>;
+  isNatal: boolean;
+  canRefine: boolean;
   isEquipped: boolean;
   onHover: (item: Item | null) => void;
   onUseItem: (item: Item) => void;
-  onEquipItem: (item: Item, slot: EquipmentSlot) => void;
-  onUnequipItem: (slot: EquipmentSlot) => void;
+  onEquipItem: (item: Item) => void;
+  onUnequipItem: (item: Item) => void;
   onUpgradeItem: (item: Item) => void;
   onDiscardItem: (item: Item) => void;
   onRefineNatalArtifact?: (item: Item) => void;
@@ -107,8 +108,8 @@ interface InventoryItemProps {
 const InventoryItem = memo<InventoryItemProps>(
   ({
     item,
-    player,
-    equippedItems,
+    isNatal,
+    canRefine,
     isEquipped,
     onHover,
     onUseItem,
@@ -120,7 +121,6 @@ const InventoryItem = memo<InventoryItemProps>(
     onUnrefineNatalArtifact,
   }) => {
     // 使用统一的工具函数计算物品统计
-    const isNatal = item.id === player.natalArtifactId;
     const stats = getItemStats(item, isNatal);
     const rarity = normalizeRarityValue(item.rarity);
     const rarityLabel = getRarityDisplayName(rarity);
@@ -131,15 +131,6 @@ const InventoryItem = memo<InventoryItemProps>(
       typeof item.reviveChances === 'number' && Number.isFinite(item.reviveChances)
         ? item.reviveChances
         : undefined;
-
-    // 使用统一的工具函数查找空槽位
-    const handleEquip = useCallback(() => {
-      if (!item.equipmentSlot) return;
-      const targetSlot = findEmptyEquipmentSlot(item, equippedItems);
-      if (targetSlot) {
-        onEquipItem(item, targetSlot);
-      }
-    }, [item, equippedItems, onEquipItem]);
 
     return (
       <div
@@ -181,7 +172,32 @@ const InventoryItem = memo<InventoryItemProps>(
             {item.description}
           </p>
 
-          {item.isNatal && (
+          {/* 材料用途说明 */}
+          {item.type === ItemType.Material && (
+            <div className="text-xs text-blue-400 mb-2 p-2 bg-blue-900/20 rounded border border-blue-800/50">
+              <div className="font-bold mb-1">💡 用途说明：</div>
+              <div className="space-y-0.5 text-blue-300">
+                {item.name.includes('炼器') || item.name.includes('石') || item.name.includes('铁') || item.name.includes('矿') ? (
+                  <div>• 可用于强化法宝和装备</div>
+                ) : null}
+                {item.name.includes('草') || item.name.includes('花') || item.name.includes('参') || item.name.includes('芝') ? (
+                  <div>• 可用于炼制丹药（查看丹方）</div>
+                ) : null}
+                {item.name.includes('内丹') || item.name.includes('妖丹') ? (
+                  <div>• 可用于炼制丹药或喂养灵宠</div>
+                ) : null}
+                {item.name.includes('符') ? (
+                  <div>• 可用于制作符箓或直接使用</div>
+                ) : null}
+                <div>• 可喂养灵宠获得经验</div>
+                {!item.effect && (
+                  <div className="text-stone-400">• 此材料暂无直接使用效果</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {isNatal && (
             <div className="text-xs text-mystic-gold mb-2 flex items-center gap-1">
               <Sparkles size={12} />
               <span className="font-bold">本命法宝（属性+50%）</span>
@@ -250,51 +266,41 @@ const InventoryItem = memo<InventoryItemProps>(
             <>
               {isEquipped ? (
                 <button
-                  onClick={() => {
-                    // 使用统一的工具函数查找实际装备的槽位
-                    const actualSlot = findItemEquippedSlot(item, equippedItems);
-                    if (actualSlot) {
-                      onUnequipItem(actualSlot);
-                    }
-                  }}
+                  onClick={() => onUnequipItem(item)}
                   className="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-200 text-xs py-2 rounded transition-colors border border-stone-500"
                 >
                   卸下
                 </button>
               ) : (
                 <button
-                  onClick={handleEquip}
+                  onClick={() => onEquipItem(item)}
                   className="flex-1 bg-mystic-gold/20 hover:bg-mystic-gold/30 text-mystic-gold text-xs py-2 rounded transition-colors border border-mystic-gold/50"
                 >
                   装备
                 </button>
               )}
               {item.type === ItemType.Artifact && onRefineNatalArtifact && (() => {
-                // 检查境界要求：必须达到金丹期才能祭炼本命法宝
-                const realmIndex = REALM_ORDER.indexOf(player.realm);
-                const goldenCoreIndex = REALM_ORDER.indexOf(RealmType.GoldenCore);
-                const canRefine = realmIndex >= goldenCoreIndex;
-                const isDisabled = !item.isNatal && !canRefine;
+                const isDisabled = !isNatal && !canRefine;
 
                 return (
                   <button
                     onClick={() => {
-                      if (item.isNatal && onUnrefineNatalArtifact) {
+                      if (isNatal && onUnrefineNatalArtifact) {
                         onUnrefineNatalArtifact();
-                      } else if (!item.isNatal && canRefine) {
+                      } else if (!isNatal && canRefine) {
                         onRefineNatalArtifact(item);
                       }
                     }}
                     disabled={isDisabled}
                     className={`px-3 text-xs py-2 rounded transition-colors border ${
-                      item.isNatal
+                      isNatal
                         ? 'bg-mystic-gold/20 hover:bg-mystic-gold/30 text-mystic-gold border-mystic-gold/50'
                         : isDisabled
                         ? 'bg-stone-800/50 text-stone-500 border-stone-700/50 cursor-not-allowed opacity-50'
                         : 'bg-purple-900/20 hover:bg-purple-900/30 text-purple-300 border-purple-700/50'
                     }`}
                     title={
-                      item.isNatal
+                      isNatal
                         ? '解除本命祭炼'
                         : isDisabled
                         ? '祭炼本命法宝需要达到金丹期境界'
@@ -322,7 +328,7 @@ const InventoryItem = memo<InventoryItemProps>(
             </>
           ) : (
             <>
-              {(item.effect || item.type === ItemType.Recipe) &&
+              {(item.effect || item.permanentEffect || item.type === ItemType.Recipe) &&
                 item.type !== ItemType.Material && (
                   <button
                     onClick={() => onUseItem(item)}
@@ -345,30 +351,16 @@ const InventoryItem = memo<InventoryItemProps>(
     );
   },
   (prevProps, nextProps) => {
-    // 自定义比较函数，只在关键属性变化时重新渲染
-    // 如果返回 true，表示 props 相等，跳过重新渲染
-    // 如果返回 false，表示 props 不相等，需要重新渲染
-    if (prevProps.item.id !== nextProps.item.id) return false;
-    if (prevProps.item.quantity !== nextProps.item.quantity) return false;
-    if (prevProps.item.level !== nextProps.item.level) return false;
-    if (prevProps.item.rarity !== nextProps.item.rarity) return false;
-    if (prevProps.isEquipped !== nextProps.isEquipped) return false;
-    if (prevProps.player.natalArtifactId !== nextProps.player.natalArtifactId) return false;
-    if (prevProps.player.realm !== nextProps.player.realm) return false;
-
-    // 检查 equippedItems 是否有变化（简化比较，只检查长度和关键槽位）
-    const prevKeys = Object.keys(prevProps.equippedItems);
-    const nextKeys = Object.keys(nextProps.equippedItems);
-    if (prevKeys.length !== nextKeys.length) return false;
-
-    // 检查每个槽位的值是否相同
-    for (const key of prevKeys) {
-      if (prevProps.equippedItems[key as EquipmentSlot] !== nextProps.equippedItems[key as EquipmentSlot]) {
-        return false;
-      }
-    }
-
-    return true;
+    // 只有关键属性变化时才重新渲染
+    return (
+      prevProps.item.id === nextProps.item.id &&
+      prevProps.item.quantity === nextProps.item.quantity &&
+      prevProps.item.level === nextProps.item.level &&
+      prevProps.item.rarity === nextProps.item.rarity &&
+      prevProps.isEquipped === nextProps.isEquipped &&
+      prevProps.isNatal === nextProps.isNatal &&
+      prevProps.canRefine === nextProps.canRefine
+    );
   }
 );
 
@@ -387,6 +379,7 @@ const InventoryModal: React.FC<Props> = ({
   onDiscardItem,
   onBatchDiscard,
   onBatchUse,
+  onOrganizeInventory,
   onRefineNatalArtifact,
   onUnrefineNatalArtifact,
 }) => {
@@ -445,6 +438,21 @@ const InventoryModal: React.FC<Props> = ({
   const handleHoverItem = useCallback((item: Item | null) => {
     setHoveredItem(item);
   }, []);
+
+  const handleEquipWrapper = useCallback((item: Item) => {
+    if (!item.equipmentSlot) return;
+    const targetSlot = findEmptyEquipmentSlot(item, equippedItems);
+    if (targetSlot) {
+      onEquipItem(item, targetSlot);
+    }
+  }, [equippedItems, onEquipItem]);
+
+  const handleUnequipWrapper = useCallback((item: Item) => {
+    const actualSlot = findItemEquippedSlot(item, equippedItems);
+    if (actualSlot) {
+      onUnequipItem(actualSlot);
+    }
+  }, [equippedItems, onUnequipItem]);
 
   // 预计算物品装备状态映射，避免在渲染时重复计算
   const itemEquippedMap = useMemo(() => {
@@ -604,8 +612,6 @@ const InventoryModal: React.FC<Props> = ({
     };
   }, [hoveredItem, equippedItems, inventory, getItemStatsForComparison]);
 
-  if (!isOpen) return null;
-
   return (
     <div
       className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-[60] p-0 md:p-4 backdrop-blur-sm touch-manipulation"
@@ -620,6 +626,21 @@ const InventoryModal: React.FC<Props> = ({
             <Package size={18} className="md:w-5 md:h-5" /> 储物袋
           </h3>
           <div className="flex gap-2">
+            {onOrganizeInventory && (
+              <button
+                onClick={() => {
+                  onOrganizeInventory();
+                  setSortByRarity(false); // 整理后切换到原始顺序，以显示整理后的分类排序
+                }}
+                className="px-2 md:px-3 py-1.5 md:py-1 rounded text-xs md:text-sm border transition-colors min-h-[44px] md:min-h-0 touch-manipulation bg-blue-900/20 border-blue-700 text-blue-300 hover:bg-blue-900/30"
+                title="合并同类物品并按分类/品质排序"
+              >
+                <div className="flex items-center">
+                  <ArrowUpDown size={14} className="inline mr-1" />
+                  整理背包
+                </div>
+              </button>
+            )}
             {onBatchUse && (
               <button
                 onClick={() => setIsBatchUseOpen(true)}
@@ -1083,25 +1104,29 @@ const InventoryModal: React.FC<Props> = ({
                     ? '储物袋空空如也，快去历练一番吧！'
                     : `当前分类暂无物品`}
                 </div>
-              ) : (
-                filteredAndSortedInventory.map((item) => (
+              ) : (() => {
+                const realmIndex = REALM_ORDER.indexOf(player.realm);
+                const goldenCoreIndex = REALM_ORDER.indexOf(RealmType.GoldenCore);
+                const canRefineGlobal = realmIndex >= goldenCoreIndex;
+
+                return filteredAndSortedInventory.map((item) => (
                   <InventoryItem
                     key={item.id}
                     item={item}
-                    player={player}
-                    equippedItems={equippedItems}
+                    isNatal={item.id === player.natalArtifactId}
+                    canRefine={canRefineGlobal}
                     isEquipped={itemEquippedMap.get(item.id) || false}
                     onHover={handleHoverItem}
                     onUseItem={onUseItem}
-                    onEquipItem={onEquipItem}
-                    onUnequipItem={onUnequipItem}
+                    onEquipItem={handleEquipWrapper}
+                    onUnequipItem={handleUnequipWrapper}
                     onUpgradeItem={onUpgradeItem}
                     onDiscardItem={onDiscardItem}
                     onRefineNatalArtifact={onRefineNatalArtifact}
                     onUnrefineNatalArtifact={onUnrefineNatalArtifact}
                   />
-                ))
-              )}
+                ));
+              })()}
             </div>
           </div>
         </div>

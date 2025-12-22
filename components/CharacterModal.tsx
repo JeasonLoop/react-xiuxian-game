@@ -1,11 +1,10 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { X, Star, Award, Info, Zap, BarChart3, TrendingUp, Sparkles, BookOpen, Users } from 'lucide-react';
-import { PlayerStats,  ItemRarity } from '../types';
+import { PlayerStats,  ItemRarity, RealmType, Title } from '../types';
 import {
   TALENTS,
   TITLES,
   TITLE_SET_EFFECTS,
-  RARITY_MULTIPLIERS,
   ACHIEVEMENTS,
   CULTIVATION_ARTS,
   REALM_ORDER,
@@ -18,6 +17,7 @@ import { showConfirm, showError } from '../utils/toastUtils';
 import { SAVE_KEY } from '../utils/gameUtils';
 import { calculateTitleEffects, getActiveSetEffects } from '../utils/titleUtils';
 import { useInheritanceHandlers } from '../views/inheritance';
+import { getPlayerTotalStats, getActiveMentalArt } from '../utils/statUtils';
 
 interface Props {
   isOpen: boolean;
@@ -52,7 +52,12 @@ const CharacterModal: React.FC<Props> = ({
 }) => {
   if (!isOpen) return null;
 
+  // 使用 getPlayerTotalStats 获取包含心法加成的总属性
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const totalStats = useMemo(() => getPlayerTotalStats(player), [player]);
+
   // 传承处理函数
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   const inheritanceHandlers = useInheritanceHandlers({
     player,
     setPlayer,
@@ -67,6 +72,84 @@ const CharacterModal: React.FC<Props> = ({
   const [gameStartTime, setGameStartTime] = useState<number | null>(null);
   const currentTalent = TALENTS.find((t) => t.id === player.talentId);
   const currentTitle = TITLES.find((t) => t.id === player.titleId);
+
+  // 检查称号是否满足解锁条件
+  const checkTitleRequirement = useCallback((title: Title, player: PlayerStats): boolean => {
+    const requirement = title.requirement.toLowerCase();
+    const stats = player.statistics || {
+      killCount: 0,
+      meditateCount: 0,
+      adventureCount: 0,
+      equipCount: 0,
+      petCount: 0,
+      recipeCount: 0,
+      artCount: 0,
+      breakthroughCount: 0,
+      secretRealmCount: 0,
+    };
+
+    // 检查境界类称号
+    if (requirement.includes('筑基期') || requirement.includes('筑基')) {
+      return REALM_ORDER.indexOf(player.realm) >= REALM_ORDER.indexOf(RealmType.Foundation);
+    }
+    if (requirement.includes('金丹期') || requirement.includes('金丹')) {
+      return REALM_ORDER.indexOf(player.realm) >= REALM_ORDER.indexOf(RealmType.GoldenCore);
+    }
+    if (requirement.includes('元婴期') || requirement.includes('元婴')) {
+      return REALM_ORDER.indexOf(player.realm) >= REALM_ORDER.indexOf(RealmType.NascentSoul);
+    }
+    if (requirement.includes('渡劫飞升') || requirement.includes('飞升')) {
+      return REALM_ORDER.indexOf(player.realm) >= REALM_ORDER.indexOf(RealmType.ImmortalAscension);
+    }
+
+    // 检查战斗类称号
+    if (requirement.includes('击败10个敌人') || requirement.includes('击败10')) {
+      return stats.killCount >= 10;
+    }
+    if (requirement.includes('击败50个敌人') || requirement.includes('击败50')) {
+      return stats.killCount >= 50;
+    }
+    if (requirement.includes('击败100个敌人') || requirement.includes('击败100')) {
+      return stats.killCount >= 100;
+    }
+
+    // 检查探索类称号
+    if (requirement.includes('完成20次历练') || requirement.includes('20次历练')) {
+      return stats.adventureCount >= 20;
+    }
+    if (requirement.includes('完成50次历练') || requirement.includes('50次历练')) {
+      return stats.adventureCount >= 50;
+    }
+    if (requirement.includes('完成100次历练') || requirement.includes('100次历练')) {
+      return stats.adventureCount >= 100;
+    }
+
+    // 检查打坐类称号
+    if (requirement.includes('打坐') || requirement.includes('冥想')) {
+      const match = requirement.match(/(\d+)/);
+      if (match) {
+        const count = parseInt(match[1]);
+        return stats.meditateCount >= count;
+      }
+    }
+
+    // 检查收集类称号
+    if (requirement.includes('收集') || requirement.includes('物品')) {
+      const match = requirement.match(/(\d+)/);
+      if (match) {
+        const count = parseInt(match[1]);
+        const uniqueItems = new Set(player.inventory.map(i => i.name)).size;
+        return uniqueItems >= count;
+      }
+    }
+
+    // 初始称号默认解锁
+    if (requirement.includes('初始称号')) {
+      return true;
+    }
+
+    return false;
+  }, []);
 
   // 获取已解锁的称号列表
   const unlockedTitles = useMemo(() => {
@@ -152,6 +235,27 @@ const CharacterModal: React.FC<Props> = ({
       }
     });
 
+    // 传承加成 (体术类)
+    let inheritanceStats = {
+      attack: 0,
+      defense: 0,
+      hp: 0,
+      spirit: 0,
+      physique: 0,
+      speed: 0,
+    };
+    (player.inheritanceSkills || []).forEach((skillId) => {
+      const skill = INHERITANCE_SKILLS.find((s) => s.id === skillId);
+      if (skill && !skill.effects.expRate) { // 只有体术类传承技能永久加成
+        inheritanceStats.attack += skill.effects.attack || 0;
+        inheritanceStats.defense += skill.effects.defense || 0;
+        inheritanceStats.hp += skill.effects.hp || 0;
+        inheritanceStats.spirit += skill.effects.spirit || 0;
+        inheritanceStats.physique += skill.effects.physique || 0;
+        inheritanceStats.speed += skill.effects.speed || 0;
+      }
+    });
+
     // 装备加成
     let equipmentStats = {
       attack: 0,
@@ -175,12 +279,33 @@ const CharacterModal: React.FC<Props> = ({
       }
     });
 
+    // 当前激活心法加成
+    const activeArt = getActiveMentalArt(player);
+    let activeArtStats = {
+      attack: 0,
+      defense: 0,
+      hp: 0,
+      spirit: 0,
+      physique: 0,
+      speed: 0,
+    };
+    if (activeArt && activeArt.type === 'mental') {
+      activeArtStats.attack = activeArt.effects.attack || 0;
+      activeArtStats.defense = activeArt.effects.defense || 0;
+      activeArtStats.hp = activeArt.effects.hp || 0;
+      activeArtStats.spirit = activeArt.effects.spirit || 0;
+      activeArtStats.physique = activeArt.effects.physique || 0;
+      activeArtStats.speed = activeArt.effects.speed || 0;
+    }
+
     return {
       base: baseStats,
       talent: baseStats,
       title: titleStats,
       art: artStats,
+      inheritance: inheritanceStats,
       equipment: equipmentStats,
+      activeArt: activeArtStats,
     };
   };
 
@@ -576,31 +701,31 @@ const CharacterModal: React.FC<Props> = ({
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
               <div>
                 <span className="text-stone-400">攻击:</span>{' '}
-                <span className="text-red-400 font-bold">{player.attack}</span>
+                <span className="text-red-400 font-bold">{totalStats.attack}</span>
               </div>
               <div>
                 <span className="text-stone-400">防御:</span>{' '}
-                <span className="text-blue-400 font-bold">{player.defense}</span>
+                <span className="text-blue-400 font-bold">{totalStats.defense}</span>
               </div>
               <div>
                 <span className="text-stone-400">气血:</span>{' '}
                 <span className="text-green-400 font-bold">
-                  {player.hp}/{player.maxHp}
+                  {player.hp}/{totalStats.maxHp}
                 </span>
               </div>
               <div>
                 <span className="text-stone-400">神识:</span>{' '}
-                <span className="text-purple-400 font-bold">{player.spirit}</span>
+                <span className="text-purple-400 font-bold">{totalStats.spirit}</span>
               </div>
               <div>
                 <span className="text-stone-400">体魄:</span>{' '}
                 <span className="text-orange-400 font-bold">
-                  {player.physique}
+                  {totalStats.physique}
                 </span>
               </div>
               <div>
                 <span className="text-stone-400">速度:</span>{' '}
-                <span className="text-yellow-400 font-bold">{player.speed}</span>
+                <span className="text-yellow-400 font-bold">{totalStats.speed}</span>
               </div>
               <div>
                 <span className="text-stone-400">声望:</span>{' '}
@@ -635,10 +760,21 @@ const CharacterModal: React.FC<Props> = ({
                     {attributeSources.art.defense}, 气血 {attributeSources.art.hp}
                   </div>
                   <div>
+                    <span className="text-stone-400">传承:</span> 攻击{' '}
+                    {attributeSources.inheritance.attack}, 防御{' '}
+                    {attributeSources.inheritance.defense}, 气血 {attributeSources.inheritance.hp}
+                  </div>
+                  <div>
                     <span className="text-stone-400">装备:</span> 攻击{' '}
                     {attributeSources.equipment.attack}, 防御{' '}
                     {attributeSources.equipment.defense}, 气血{' '}
                     {attributeSources.equipment.hp}
+                  </div>
+                  <div className="col-span-2 text-blue-400">
+                    <span className="text-stone-400 text-xs">当前心法:</span> 攻击{' '}
+                    {attributeSources.activeArt.attack}, 防御{' '}
+                    {attributeSources.activeArt.defense}, 气血{' '}
+                    {attributeSources.activeArt.hp}
                   </div>
                 </div>
               </div>
@@ -898,11 +1034,18 @@ const CharacterModal: React.FC<Props> = ({
                     return (
                       <button
                         key={title.id}
-                        onClick={() => !isEquipped && onSelectTitle(title.id)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (!isEquipped && onSelectTitle) {
+                            onSelectTitle(title.id);
+                          }
+                        }}
+                        disabled={isEquipped}
                         className={`text-left rounded p-3 border transition-colors ${
                           isEquipped
-                            ? 'bg-yellow-900/30 border-yellow-500 cursor-default'
-                            : 'bg-stone-900 hover:bg-stone-700 border-stone-700'
+                            ? 'bg-yellow-900/30 border-yellow-500 cursor-default opacity-60'
+                            : 'bg-stone-900 hover:bg-stone-700 border-stone-700 cursor-pointer'
                         }`}
                       >
                         <div className="flex justify-between items-start">
@@ -959,22 +1102,28 @@ const CharacterModal: React.FC<Props> = ({
                       未解锁的称号 ({TITLES.filter(t => !(player.unlockedTitles || []).includes(t.id)).length})
                     </summary>
                     <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto mt-2">
-                      {TITLES.filter(t => !(player.unlockedTitles || []).includes(t.id)).map((title) => (
-                        <div
-                          key={title.id}
-                          className="bg-stone-900/50 rounded p-3 border border-stone-800 opacity-60"
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className={`font-bold ${getRarityColor(title.rarity || '普通')}`}>
-                              {title.name}
-                            </span>
-                            {title.rarity && (
-                              <span className="text-xs text-stone-500">({title.rarity})</span>
-                            )}
+                      {TITLES.filter(t => !unlockedTitles.map(ut => ut.id).includes(t.id)).map((title) => {
+                        const isMet = checkTitleRequirement(title, player);
+                        return (
+                          <div
+                            key={title.id}
+                            className={`bg-stone-900/50 rounded p-3 border ${isMet ? 'border-green-600 opacity-100' : 'border-stone-800 opacity-60'}`}
+                          >
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`font-bold ${getRarityColor(title.rarity || '普通')}`}>
+                                {title.name}
+                              </span>
+                              {title.rarity && (
+                                <span className="text-xs text-stone-500">({title.rarity})</span>
+                              )}
+                              {isMet && (
+                                <span className="text-xs text-green-400 font-bold">✓ 可解锁</span>
+                              )}
+                            </div>
+                            <p className="text-xs text-stone-500">{title.requirement}</p>
                           </div>
-                          <p className="text-xs text-stone-500">{title.requirement}</p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </details>
                 )}

@@ -41,7 +41,8 @@ export function useAchievementHandlers({
       let newExp = prev.exp;
       let newStones = prev.spiritStones;
       let newInv = [...prev.inventory];
-      let newTitleId = prev.titleId;
+      let lastRewardedTitleId = '';
+      const newlyUnlockedTitles: string[] = [];
 
       ACHIEVEMENTS.forEach((achievement) => {
         // 跳过已完成的成就，避免重复触发
@@ -113,6 +114,13 @@ export function useAchievementHandlers({
           if (achievement.requirement.target === 'meditate') {
             // 这个需要在打坐时单独检查
             return;
+          } else if (achievement.requirement.target === 'alchemy') {
+            completed = (stats.alchemyCount || 0) >= achievement.requirement.value;
+          } else if (achievement.requirement.target === 'sect_elder') {
+            const rankOrder = ['外门弟子', '内门弟子', '核心弟子', '真传弟子', '长老', '掌门'];
+            const playerRankIdx = rankOrder.indexOf(prev.sectRank || '');
+            const targetRankIdx = rankOrder.indexOf('长老');
+            completed = playerRankIdx >= targetRankIdx;
           }
           // 其他自定义成就可以根据需要添加
         }
@@ -138,84 +146,85 @@ export function useAchievementHandlers({
           }
 
           if (achievement.reward.titleId) {
-            newTitleId = achievement.reward.titleId;
+            lastRewardedTitleId = achievement.reward.titleId;
+            if (!prev.unlockedTitles?.includes(lastRewardedTitleId) && !newlyUnlockedTitles.includes(lastRewardedTitleId)) {
+              newlyUnlockedTitles.push(lastRewardedTitleId);
+            }
           }
 
           addLog(`🎉 达成成就：【${achievement.name}】！`, 'special');
         }
       });
 
-      // 更新已解锁的称号列表
-      let updatedUnlockedTitles = [...(prev.unlockedTitles || [])];
-      if (newTitleId && !updatedUnlockedTitles.includes(newTitleId)) {
-        updatedUnlockedTitles.push(newTitleId);
+      if (!hasNewAchievement) {
+        checkingAchievementsRef.current = false;
+        return prev;
       }
 
-      if (hasNewAchievement && newTitleId && newTitleId !== prev.titleId) {
-        // 如果自动装备新称号，应用新称号效果
-        const title = TITLES.find((t) => t.id === newTitleId);
-        if (title) {
-          // 使用称号工具函数计算效果（包括套装效果）
-          const oldEffects = calculateTitleEffects(prev.titleId, prev.unlockedTitles || []);
-          const newEffects = calculateTitleEffects(newTitleId, updatedUnlockedTitles);
+      // 更新已解锁的称号列表
+      const updatedUnlockedTitles = [...(prev.unlockedTitles || [])];
+      newlyUnlockedTitles.forEach(tid => {
+        if (!updatedUnlockedTitles.includes(tid)) {
+          updatedUnlockedTitles.push(tid);
+        }
+      });
 
-          const attackDiff = newEffects.attack - oldEffects.attack;
-          const defenseDiff = newEffects.defense - oldEffects.defense;
-          const hpDiff = newEffects.hp - oldEffects.hp;
-          const spiritDiff = newEffects.spirit - oldEffects.spirit;
-          const physiqueDiff = newEffects.physique - oldEffects.physique;
-          const speedDiff = newEffects.speed - oldEffects.speed;
-          const expRateDiff = newEffects.expRate - oldEffects.expRate;
-          const luckDiff = newEffects.luck - oldEffects.luck;
+      // 决定是否自动装备新称号
+      // 如果获得了新称号，且当前没有称号，或者新称号比当前称号好（这里简单处理为最后获得的称号）
+      let finalTitleId = prev.titleId;
+      let statUpdates = {};
 
-          checkingAchievementsRef.current = false;
-          return {
-            ...prev,
-            achievements: newAchievements,
-            exp: newExp,
-            spiritStones: newStones,
-            inventory: newInv,
-            titleId: newTitleId,
-            unlockedTitles: updatedUnlockedTitles,
-            attack: prev.attack + attackDiff,
-            defense: prev.defense + defenseDiff,
-            maxHp: prev.maxHp + hpDiff,
-            hp: Math.min(prev.hp + hpDiff, prev.maxHp + hpDiff),
-            spirit: prev.spirit + spiritDiff,
-            physique: prev.physique + physiqueDiff,
-            speed: prev.speed + speedDiff,
-            luck: prev.luck + luckDiff,
+      if (lastRewardedTitleId && lastRewardedTitleId !== prev.titleId) {
+        // 自动装备最后一个获得的称号
+        finalTitleId = lastRewardedTitleId;
+
+        // 计算效果差值
+        const oldEffects = calculateTitleEffects(prev.titleId, prev.unlockedTitles || []);
+        const newEffects = calculateTitleEffects(finalTitleId, updatedUnlockedTitles);
+
+        statUpdates = {
+          attack: prev.attack + (newEffects.attack - oldEffects.attack),
+          defense: prev.defense + (newEffects.defense - oldEffects.defense),
+          maxHp: prev.maxHp + (newEffects.hp - oldEffects.hp),
+          hp: Math.min(prev.hp + (newEffects.hp - oldEffects.hp), prev.maxHp + (newEffects.hp - oldEffects.hp)),
+          spirit: prev.spirit + (newEffects.spirit - oldEffects.spirit),
+          physique: prev.physique + (newEffects.physique - oldEffects.physique),
+          speed: prev.speed + (newEffects.speed - oldEffects.speed),
+          luck: prev.luck + (newEffects.luck - oldEffects.luck),
+        };
+        addLog(`✨ 已自动为你装备新称号：【${TITLES.find(t => t.id === finalTitleId)?.name}】！`, 'special');
+      } else if (newlyUnlockedTitles.length > 0) {
+        // 即使没有自动装备，如果解锁了新称号且满足套装效果，属性也会变化
+        const oldEffects = calculateTitleEffects(prev.titleId, prev.unlockedTitles || []);
+        const newEffects = calculateTitleEffects(prev.titleId, updatedUnlockedTitles);
+
+        if (JSON.stringify(oldEffects) !== JSON.stringify(newEffects)) {
+          statUpdates = {
+            attack: prev.attack + (newEffects.attack - oldEffects.attack),
+            defense: prev.defense + (newEffects.defense - oldEffects.defense),
+            maxHp: prev.maxHp + (newEffects.hp - oldEffects.hp),
+            hp: Math.min(prev.hp + (newEffects.hp - oldEffects.hp), prev.maxHp + (newEffects.hp - oldEffects.hp)),
+            spirit: prev.spirit + (newEffects.spirit - oldEffects.spirit),
+            physique: prev.physique + (newEffects.physique - oldEffects.physique),
+            speed: prev.speed + (newEffects.speed - oldEffects.speed),
+            luck: prev.luck + (newEffects.luck - oldEffects.luck),
           };
+          addLog(`✨ 解锁新称号触发了称号套装效果，实力获得了提升！`, 'special');
         }
       }
 
-      // 即使没有自动装备称号，也要更新解锁列表
-      if (hasNewAchievement && newTitleId && !updatedUnlockedTitles.includes(newTitleId)) {
-        checkingAchievementsRef.current = false;
-        return {
-          ...prev,
-          achievements: newAchievements,
-          exp: newExp,
-          spiritStones: newStones,
-          inventory: newInv,
-          unlockedTitles: updatedUnlockedTitles,
-        };
-      }
-
-      if (hasNewAchievement) {
-        checkingAchievementsRef.current = false;
-        return {
-          ...prev,
-          achievements: newAchievements,
-          exp: newExp,
-          spiritStones: newStones,
-          inventory: newInv,
-          titleId: newTitleId || prev.titleId,
-        };
-      }
-
       checkingAchievementsRef.current = false;
-      return prev;
+      return {
+        ...prev,
+        achievements: newAchievements,
+        exp: newExp,
+        spiritStones: newStones,
+        inventory: newInv,
+        titleId: finalTitleId,
+        unlockedTitles: updatedUnlockedTitles,
+        ...statUpdates,
+      };
+
     });
   }, [player, setPlayer, addLog]);
 

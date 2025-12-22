@@ -8,6 +8,97 @@ import { PlayerStats, Item, EquipmentSlot, GameSettings } from '../types';
 import { BattleReplay } from '../services/battleService';
 import { SAVE_KEY } from '../utils/gameUtils';
 import { clearAllSlots } from '../utils/saveManagerUtils';
+import { useItemActionLog } from '../hooks/useItemActionLog';
+
+
+/**
+ * 生成具体的死亡原因
+ */
+function generateDetailedDeathReason(
+  battleReplay: BattleReplay | null,
+  difficulty: 'easy' | 'normal' | 'hard'
+): string {
+  if (!battleReplay) {
+    const reasons = [
+      '你在历练途中遭遇不测，被未知的强敌偷袭，伤势过重，最终不治身亡。',
+      '你在探索秘境时，触发了古老的禁制，强大的反噬之力将你重创，最终不治身亡。',
+      '你在修炼途中走火入魔，真气逆流，经脉尽断，最终不治身亡。',
+      '你在历练途中遭遇天劫余波，被狂暴的天地之力撕碎，最终不治身亡。',
+    ];
+    const baseReason = reasons[Math.floor(Math.random() * reasons.length)];
+    if (difficulty === 'hard') {
+      return baseReason;
+    } else if (difficulty === 'normal') {
+      return `${baseReason}但你的灵魂尚未完全消散，在付出代价后得以重生。`;
+    } else {
+      return `${baseReason}但天道的仁慈让你得以重生，继续你的修仙之路。`;
+    }
+  }
+
+  const { enemy, rounds, victory } = battleReplay;
+  const enemyName = `${enemy.title}${enemy.name}`;
+
+  // 找到最后一击（导致玩家死亡的那一击）
+  const lastEnemyAttack = rounds
+    .filter((round) => round.attacker === 'enemy')
+    .slice(-1)[0];
+
+  // 生成具体的死亡描述
+  let deathDescription = '';
+
+  if (victory) {
+    // 虽然胜利但伤势过重
+    const victoryReasons = [
+      `虽然你成功击败了${enemyName}，但在激烈的战斗中，你被其临死前的反扑重创，五脏六腑皆受重创，最终不治身亡。`,
+      `你虽然战胜了${enemyName}，但战斗中的伤势过重，失血过多，最终力竭而亡。`,
+      `虽然${enemyName}倒在了你的剑下，但你在战斗中受到的致命伤无法愈合，最终不治身亡。`,
+      `你成功斩杀了${enemyName}，但自己也身负重伤，真气耗尽，最终油尽灯枯而亡。`,
+    ];
+    deathDescription = victoryReasons[Math.floor(Math.random() * victoryReasons.length)];
+  } else {
+    // 战斗失败
+    if (lastEnemyAttack) {
+      const isCrit = lastEnemyAttack.crit;
+      const damage = lastEnemyAttack.damage;
+
+      if (isCrit) {
+        const critReasons = [
+          `${enemyName}的致命一击直接贯穿了你的心脏，你当场毙命。`,
+          `${enemyName}的暴击攻击击碎了你的护体真气，强大的力量瞬间摧毁了你的生机。`,
+          `${enemyName}的致命一击撕裂了你的丹田，你的修为瞬间崩散，当场身死道消。`,
+          `${enemyName}的暴击攻击直接命中你的要害，你连反应的机会都没有，便已魂飞魄散。`,
+        ];
+        deathDescription = critReasons[Math.floor(Math.random() * critReasons.length)];
+      } else if (damage > 100) {
+        const heavyReasons = [
+          `${enemyName}的强力攻击重创了你的经脉，你无法承受如此巨大的伤害，最终力竭而亡。`,
+          `${enemyName}的攻击威力巨大，你的防御被彻底击破，身受重伤，最终不治身亡。`,
+          `${enemyName}的猛烈攻击让你五脏移位，伤势过重，最终不治身亡。`,
+        ];
+        deathDescription = heavyReasons[Math.floor(Math.random() * heavyReasons.length)];
+      } else {
+        const normalReasons = [
+          `在与${enemyName}的激战中，你逐渐力不从心，最终被其击败，力竭而亡。`,
+          `${enemyName}的境界远高于你，你拼尽全力也无法抵挡，最终被其重创，不治身亡。`,
+          `面对${enemyName}的强大实力，你的防御被层层击破，最终身受致命伤，不治身亡。`,
+          `在与${enemyName}的战斗中，你节节败退，最终被其抓住破绽，一击致命。`,
+        ];
+        deathDescription = normalReasons[Math.floor(Math.random() * normalReasons.length)];
+      }
+    } else {
+      deathDescription = `在与${enemyName}的战斗中，你力竭而亡。`;
+    }
+  }
+
+  // 根据难度添加重生说明
+  if (difficulty === 'hard') {
+    return deathDescription;
+  } else if (difficulty === 'normal') {
+    return `${deathDescription}但你的灵魂尚未完全消散，在付出代价后得以重生。`;
+  } else {
+    return `${deathDescription}但天道的仁慈让你得以重生，继续你的修仙之路。`;
+  }
+}
 
 interface UseDeathDetectionParams {
   player: PlayerStats | null;
@@ -41,12 +132,22 @@ export function useDeathDetection({
   setAutoMeditate,
   setAutoAdventure,
 }: UseDeathDetectionParams) {
+  const { setItemActionLog } = useItemActionLog();
   useEffect(() => {
     if (!player || isDead) return;
 
     // 检测寿命归零（老死）
     if (player.lifespan !== undefined && player.lifespan <= 0) {
       addLog('⏰ 你的寿命已尽，寿终正寝 还是无缘窥探大道...', 'danger');
+
+      // 生成具体的寿终正寝原因
+      const lifespanReasons = [
+        '你的寿命已尽，大限将至。在生命的最后时刻，你盘膝而坐，试图突破境界以延寿，但终究未能成功，最终寿终正寝。',
+        '你的寿命已尽，体内的生机逐渐消散。尽管你拼尽全力想要延续生命，但天道无情，你最终还是走到了生命的尽头，寿终正寝。',
+        '你的寿命已尽，岁月在你身上留下了无法磨灭的痕迹。你的修为虽高，但终究无法突破寿命的桎梏，最终寿终正寝。',
+        '你的寿命已尽，体内的真元逐渐枯竭。你尝试了各种延寿之法，但都未能成功，最终在遗憾中寿终正寝。',
+      ];
+      const baseReason = lifespanReasons[Math.floor(Math.random() * lifespanReasons.length)];
 
       if (settings.difficulty === 'hard') {
         // 困难模式：死亡惩罚 - 清除所有存档
@@ -58,8 +159,7 @@ export function useDeathDetection({
             hp: 0, // 触发死亡
           };
         });
-        const reason = '你的寿命已尽，寿终正寝。';
-        setDeathReason(reason);
+        setDeathReason(baseReason);
         setDeathBattleData(null);
         // 清除所有存档槽位和旧存档
         clearAllSlots();
@@ -81,7 +181,7 @@ export function useDeathDetection({
           };
         });
 
-        const reason = '你的寿命已尽，寿终正寝。但天道的仁慈让你得以重生，继续你的修仙之路。';
+        const reason = `${baseReason}但天道的仁慈让你得以重生，继续你的修仙之路。`;
         setDeathReason(reason);
         setDeathBattleData(null);
         setIsBattleModalOpen(false);
@@ -120,6 +220,7 @@ export function useDeathDetection({
                 `💫 ${item.name}的保命之力被触发！你留下一口气，从死亡边缘被拉了回来。剩余保命机会：${newChances}次`,
                 'special'
               );
+              if (setItemActionLog) setItemActionLog({ text: `💫 ${item.name}的保命之力被触发！你留下一口气，从死亡边缘被拉了回来。剩余保命机会：${newChances}次`, type: 'special' });
               return {
                 ...item,
                 reviveChances: newChances,
@@ -165,14 +266,7 @@ export function useDeathDetection({
 
         setIsBattleModalOpen(false);
 
-        let reason = '';
-        if (lastBattleReplay && !lastBattleReplay.victory) {
-          reason = `在与${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}的战斗中，你力竭而亡。`;
-        } else if (lastBattleReplay) {
-          reason = `虽然战胜了${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}，但你伤势过重，最终不治身亡。`;
-        } else {
-          reason = '你在历练途中遭遇不测，伤势过重，最终不治身亡。';
-        }
+        const reason = generateDetailedDeathReason(lastBattleReplay, 'hard');
         setDeathReason(reason);
 
         setAutoMeditate(false);
@@ -258,15 +352,7 @@ export function useDeathDetection({
         });
 
         // 生成死亡原因
-        let reason = '';
-        if (lastBattleReplay && !lastBattleReplay.victory) {
-          reason = `在与${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}的战斗中，你力竭而亡。但你的灵魂尚未完全消散，在付出代价后得以重生。`;
-        } else if (lastBattleReplay) {
-          reason = `虽然战胜了${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}，但你伤势过重，最终不治身亡。但你的灵魂尚未完全消散，在付出代价后得以重生。`;
-        } else {
-          reason =
-            '你在历练途中遭遇不测，伤势过重，最终不治身亡。但你的灵魂尚未完全消散，在付出代价后得以重生。';
-        }
+        const reason = generateDetailedDeathReason(lastBattleReplay, 'normal');
         setDeathReason(reason);
         setIsDead(true);
         setDeathBattleData(lastBattleReplay);
@@ -285,15 +371,7 @@ export function useDeathDetection({
         });
 
         // 生成死亡原因
-        let reason = '';
-        if (lastBattleReplay && !lastBattleReplay.victory) {
-          reason = `在与${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}的战斗中，你力竭而亡。但天道的仁慈让你得以重生，继续你的修仙之路。`;
-        } else if (lastBattleReplay) {
-          reason = `虽然战胜了${lastBattleReplay.enemy.title}${lastBattleReplay.enemy.name}，但你伤势过重，最终不治身亡。但天道的仁慈让你得以重生，继续你的修仙之路。`;
-        } else {
-          reason =
-            '你在历练途中遭遇不测，伤势过重，最终不治身亡。但天道的仁慈让你得以重生，继续你的修仙之路。';
-        }
+        const reason = generateDetailedDeathReason(lastBattleReplay, 'easy');
         setDeathReason(reason);
         setIsDead(true);
         setDeathBattleData(lastBattleReplay);

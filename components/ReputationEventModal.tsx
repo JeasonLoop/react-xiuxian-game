@@ -18,11 +18,9 @@ const ReputationEventModal: React.FC<Props> = ({
   if (!isOpen || !event) return null;
 
   // 防御性检查：确保必要字段存在
-  if (!event.title || !event.description) {
-    return null;
-  }
+  const title = event.title || event.text || '神秘事件';
+  const description = event.description || event.text || '你遇到了一个需要抉择的神秘事件。';
 
-  // 防御性检查：确保 choices 存在且是数组
   if (!event.choices || !Array.isArray(event.choices) || event.choices.length === 0) {
     return null;
   }
@@ -54,7 +52,7 @@ const ReputationEventModal: React.FC<Props> = ({
       >
         <div className="sticky top-0 bg-stone-800 border-b border-stone-700 p-3 md:p-4 flex justify-between items-center">
           <h2 className="text-lg md:text-xl font-serif text-mystic-gold">
-            📜 {event.title}
+            📜 {title}
           </h2>
           <button
             onClick={onClose}
@@ -67,7 +65,7 @@ const ReputationEventModal: React.FC<Props> = ({
         <div className="p-4 md:p-6 overflow-y-auto flex-1">
           <div className="mb-6">
             <p className="text-stone-300 leading-relaxed whitespace-pre-line">
-              {event.description}
+              {description}
             </p>
           </div>
 

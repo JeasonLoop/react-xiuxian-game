@@ -13,6 +13,7 @@ interface UseAutoFeaturesParams {
   loading: boolean;
   cooldown: number;
   isShopOpen: boolean;
+  isReputationEventOpen: boolean;
   autoAdventurePausedByShop: boolean;
   setAutoAdventurePausedByShop: (paused: boolean) => void;
   handleMeditate: () => void;
@@ -30,6 +31,7 @@ export function useAutoFeatures({
   loading,
   cooldown,
   isShopOpen,
+  isReputationEventOpen,
   handleMeditate,
   handleAdventure,
   setCooldown,
@@ -60,19 +62,20 @@ export function useAutoFeatures({
       loading ||
       cooldown > 0 ||
       isShopOpen ||
+      isReputationEventOpen ||
       autoMeditate
     )
       return;
 
     const timer = setTimeout(() => {
       // 再次检查条件，防止状态在延迟期间发生变化
-      if (autoAdventure && !loading && cooldown === 0 && player && !autoMeditate) {
+      if (autoAdventure && !loading && cooldown === 0 && player && !autoMeditate && !isReputationEventOpen) {
         handleAdventure();
       }
-    }, 100);
+    }, 500);
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoAdventure, player, loading, cooldown, autoMeditate, isShopOpen]);
+  }, [autoAdventure, player, loading, cooldown, autoMeditate, isShopOpen, isReputationEventOpen]);
 }
 

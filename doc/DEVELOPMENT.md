@@ -75,7 +75,7 @@ yarn install
 # AI 提供商选择: 'glm' | 'siliconflow' | 'openai' | 'custom'
 VITE_AI_PROVIDER=glm
 VITE_AI_KEY=your-api-key-here
-VITE_AI_MODEL=glm-4.5-air
+VITE_AI_MODEL=glm-4.5v
 VITE_AI_API_URL=https://open.bigmodel.cn/api/paas/v4/chat/completions
 # 是否使用代理（开发环境默认 true，生产环境默认 false）
 VITE_AI_USE_PROXY=true

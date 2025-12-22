@@ -27,7 +27,7 @@ import { BATTLE_POTIONS } from '../constants';
 interface TurnBasedBattleModalProps {
   isOpen: boolean;
   player: PlayerStats;
-  adventureType: 'normal' | 'lucky' | 'secret_realm';
+  adventureType: 'normal' | 'lucky' | 'secret_realm' | 'sect_challenge';
   riskLevel?: '低' | '中' | '高' | '极度危险';
   realmMinRealm?: RealmType;
   autoAdventure?: boolean; // 是否在自动历练模式下
@@ -37,6 +37,7 @@ interface TurnBasedBattleModalProps {
       hpLoss: number;
       expChange: number;
       spiritChange: number;
+      adventureType?: 'normal' | 'lucky' | 'secret_realm' | 'sect_challenge';
       items?: Array<{
         name: string;
         type: string;
@@ -272,6 +273,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
               hpLoss,
               expChange: rewards.expChange,
               spiritChange: rewards.spiritChange,
+              adventureType,
               items: rewards.items,
               petSkillCooldowns:
                 Object.keys(finalPetSkillCooldowns).length > 0
@@ -362,6 +364,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
             hpLoss,
             expChange: rewards.expChange,
             spiritChange: rewards.spiritChange,
+            adventureType,
             items: rewards.items,
             petSkillCooldowns: Object.keys(finalPetSkillCooldowns).length > 0 ? finalPetSkillCooldowns : undefined,
           },
@@ -489,6 +492,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
           hpLoss,
           expChange: rewards.expChange,
           spiritChange: rewards.spiritChange,
+          adventureType,
           items: rewards.items,
         },
         currentState.playerInventory

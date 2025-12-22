@@ -36,13 +36,68 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
     setIsDrawing(true);
     setLastResult(null);
 
+    // 抽奖动画持续时间
+    const drawDuration = 2500;
+
     // 模拟抽奖动画
     setTimeout(() => {
       setIsDrawing(false);
       onDraw(count);
       // 这里应该从实际抽奖结果中获取，暂时用空数组
       setLastResult([]);
-    }, 1500);
+    }, drawDuration);
+  };
+
+  // 渲染抽奖动画遮罩
+  const renderDrawingOverlay = () => {
+    if (!isDrawing) return null;
+
+    return (
+      <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 animate-in fade-in duration-500">
+        <div className="relative w-64 h-64 flex items-center justify-center">
+          {/* 八卦阵背景 */}
+          <div className="absolute inset-0 border-4 border-mystic-gold/20 rounded-full animate-bagua flex items-center justify-center">
+            <div className="w-[90%] h-[90%] border-2 border-mystic-gold/10 rounded-full border-dashed" />
+            <div className="absolute inset-0 flex items-center justify-center opacity-20">
+              <div className="text-4xl text-mystic-gold font-bold">☯</div>
+            </div>
+          </div>
+
+          {/* 灵气汇聚粒子 */}
+          {[...Array(12)].map((_, i) => (
+            <div
+              key={i}
+              className="spirit-particle"
+              style={{
+                '--rotation': `${i * 30}deg`,
+                animationDelay: `${i * 0.1}s`,
+                color: i % 3 === 0 ? '#fbbf24' : i % 3 === 1 ? '#a78bfa' : '#60a5fa'
+              } as React.CSSProperties}
+            />
+          ))}
+
+          {/* 中心光点 */}
+          <div className="relative z-10 w-16 h-16 bg-mystic-gold rounded-full shadow-[0_0_50px_rgba(203,161,53,0.8)] flex items-center justify-center animate-pulse">
+            <Sparkles className="text-white w-8 h-8 animate-spin" style={{ animationDuration: '3s' }} />
+          </div>
+        </div>
+
+        <div className="mt-12 text-center">
+          <div className="text-2xl font-serif text-mystic-gold tracking-[0.5em] animate-pulse">
+            天机演化中...
+          </div>
+          <div className="mt-2 text-stone-500 text-sm">
+            正在窥探大道先机
+          </div>
+        </div>
+
+        {/* 氛围装饰 */}
+        <div className="absolute bottom-10 left-0 right-0 flex justify-center gap-24 opacity-30">
+          <div className="w-1 h-32 bg-gradient-to-t from-transparent via-mystic-gold to-transparent" />
+          <div className="w-1 h-32 bg-gradient-to-t from-transparent via-mystic-gold to-transparent" />
+        </div>
+      </div>
+    );
   };
 
   // 使用统一的工具函数获取稀有度颜色（带边框）
@@ -65,8 +120,9 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 p-0 md:p-4 touch-manipulation"
-      onClick={onClose}
+      onClick={() => !isDrawing && onClose()}
     >
+      {renderDrawingOverlay()}
       <div
         className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[80vh] md:h-auto md:max-w-2xl md:max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
@@ -78,7 +134,10 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
           </h2>
           <button
             onClick={onClose}
-            className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+            disabled={isDrawing}
+            className={`text-stone-400 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation transition-colors ${
+              isDrawing ? 'opacity-20 cursor-not-allowed' : 'active:text-white hover:text-stone-300'
+            }`}
           >
             <X size={24} />
           </button>
@@ -106,21 +165,22 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
             <button
               onClick={() => handleDraw(1)}
               disabled={isDrawing || displayTickets < 1}
-              className="relative px-6 py-8 bg-gradient-to-br from-purple-900 to-blue-900 hover:from-purple-800 hover:to-blue-800 rounded-lg border-2 border-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="group relative px-6 py-8 bg-stone-900 hover:bg-stone-800 rounded-lg border-2 border-purple-900/50 hover:border-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all overflow-hidden shadow-lg"
             >
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute -inset-y-2 w-px bg-purple-500/20 left-4 group-hover:bg-purple-500/40 transition-colors" />
+              <div className="absolute -inset-y-2 w-px bg-purple-500/20 right-4 group-hover:bg-purple-500/40 transition-colors" />
+
               {isDrawing ? (
-                <div className="flex flex-col items-center gap-2">
-                  <Sparkles
-                    className="animate-spin text-yellow-400"
-                    size={32}
-                  />
-                  <span>抽奖中...</span>
+                <div className="flex flex-col items-center gap-2 relative z-10">
+                  <div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-purple-400 text-sm">寻觅机缘...</span>
                 </div>
               ) : (
-                <div className="flex flex-col items-center gap-2">
-                  <Gift size={32} className="text-yellow-400" />
-                  <span className="font-bold">单抽</span>
-                  <span className="text-xs">消耗 1 张</span>
+                <div className="flex flex-col items-center gap-2 relative z-10">
+                  <Gift size={32} className="text-purple-400 group-hover:scale-110 transition-transform" />
+                  <span className="font-bold text-stone-200">单抽</span>
+                  <span className="text-xs text-stone-500">消耗 1 张</span>
                 </div>
               )}
             </button>
@@ -128,21 +188,23 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
             <button
               onClick={() => handleDraw(10)}
               disabled={isDrawing || displayTickets < 10}
-              className="relative px-6 py-8 bg-gradient-to-br from-yellow-900 to-orange-900 hover:from-yellow-800 hover:to-orange-800 rounded-lg border-2 border-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="group relative px-6 py-8 bg-stone-900 hover:bg-stone-800 rounded-lg border-2 border-yellow-900/50 hover:border-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all overflow-hidden shadow-xl"
             >
+              <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute -inset-y-2 w-px bg-yellow-500/20 left-4 group-hover:bg-yellow-500/40 transition-colors" />
+              <div className="absolute -inset-y-2 w-px bg-yellow-500/20 right-4 group-hover:bg-yellow-500/40 transition-colors" />
+              <div className="absolute inset-0 draw-button-shimmer pointer-events-none opacity-20" />
+
               {isDrawing ? (
-                <div className="flex flex-col items-center gap-2">
-                  <Sparkles
-                    className="animate-spin text-yellow-400"
-                    size={32}
-                  />
-                  <span>抽奖中...</span>
+                <div className="flex flex-col items-center gap-2 relative z-10">
+                  <div className="w-8 h-8 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-yellow-400 text-sm">天降大任...</span>
                 </div>
               ) : (
-                <div className="flex flex-col items-center gap-2">
-                  <Gift size={32} className="text-yellow-400" />
-                  <span className="font-bold">十连抽</span>
-                  <span className="text-xs">消耗 10 张 (必出稀有以上)</span>
+                <div className="flex flex-col items-center gap-2 relative z-10">
+                  <Sparkles size={32} className="text-yellow-400 group-hover:scale-110 transition-transform" />
+                  <span className="font-bold text-stone-200">十连抽</span>
+                  <span className="text-xs text-stone-500">消耗 10 张</span>
                 </div>
               )}
             </button>

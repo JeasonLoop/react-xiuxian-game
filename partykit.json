@@ -1,0 +1,5 @@
+{
+    "name": "xiuxian-game-party",
+    "main": "party/index.ts",
+    "compatibilityDate": "2025-12-18"
+}

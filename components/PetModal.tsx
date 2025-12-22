@@ -30,6 +30,7 @@ interface Props {
     itemId?: string
   ) => void;
   onBatchFeedItems?: (petId: string, itemIds: string[]) => void;
+  onBatchFeedHp?: (petId: string) => void;
   onEvolvePet: (petId: string) => void;
   onReleasePet?: (petId: string) => void;
   onBatchReleasePets?: (petIds: string[]) => void;
@@ -43,6 +44,7 @@ const PetModal: React.FC<Props> = ({
   onDeactivatePet,
   onFeedPet,
   onBatchFeedItems,
+  onBatchFeedHp,
   onEvolvePet,
   onReleasePet,
   onBatchReleasePets,
@@ -663,6 +665,27 @@ const PetModal: React.FC<Props> = ({
                       <div className="text-xs text-stone-400">消耗 200 点气血 (经验根据境界计算，+2~5亲密度)</div>
                     </div>
                   </button>
+
+                  {onBatchFeedHp && (
+                    <button
+                      onClick={() => {
+                        if (!selectedPetId) return;
+                        onBatchFeedHp(selectedPetId);
+                        setSelectedPetId(null);
+                        setFeedType(null);
+                      }}
+                      className="w-full px-4 py-3 bg-red-800 hover:bg-red-700 rounded border border-red-600 flex items-center gap-3"
+                      title={`批量喂血：可喂 ${Math.floor(player.hp / 200)} 次`}
+                    >
+                      <Droplet className="text-red-300" size={20} />
+                      <div className="flex-1 text-left">
+                        <div className="font-bold">批量喂血</div>
+                        <div className="text-xs text-stone-400">
+                          消耗所有可用气血 (可喂 {Math.floor(player.hp / 200)} 次，每次200点)
+                        </div>
+                      </div>
+                    </button>
+                  )}
 
                   <button
                     onClick={() => setFeedType('item')}

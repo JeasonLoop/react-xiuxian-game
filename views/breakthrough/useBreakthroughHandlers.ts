@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlayerStats, RealmType } from '../../types';
-import { REALM_DATA, CULTIVATION_ARTS, TALENTS, TITLES, calculateSpiritualRootArtBonus } from '../../constants';
+import { REALM_DATA, CULTIVATION_ARTS, TALENTS, TITLES, INHERITANCE_SKILLS, calculateSpiritualRootArtBonus, REALM_ORDER } from '../../constants';
 import { getItemStats } from '../../utils/itemUtils';
 import { generateBreakthroughFlavorText } from '../../services/aiService';
 
@@ -39,14 +39,22 @@ export function useBreakthroughHandlers({
 
     if (roll < successChance) {
       setLoading(true);
-      const nextLevel = isRealmUpgrade ? 1 : player.realmLevel + 1;
 
       let nextRealm = player.realm;
+      let nextLevel = player.realmLevel + 1;
+
       if (isRealmUpgrade) {
-        const realms = Object.values(RealmType);
-        const currentIndex = realms.indexOf(player.realm);
-        if (currentIndex < realms.length - 1) {
-          nextRealm = realms[currentIndex + 1];
+        const currentIndex = REALM_ORDER.indexOf(player.realm);
+        if (currentIndex < REALM_ORDER.length - 1) {
+          nextRealm = REALM_ORDER[currentIndex + 1];
+          nextLevel = 1;
+        } else {
+          // 已经是最高境界且达到9层，无法再通过正常方式突破
+          addLog('你已达到仙道巅峰，由于位面限制，无法再行突破！', 'special');
+          setLoading(false);
+          // 将经验值锁定在满值，避免反复触发
+          setPlayer(prev => ({ ...prev, exp: prev.maxExp }));
+          return;
         }
       }
 
@@ -143,15 +151,86 @@ export function useBreakthroughHandlers({
           bonusSpeed += title.effects.speed || 0;
         }
 
+        // Inheritance skill bonuses (fixed values first)
+        let inheritanceFixedBonusAttack = 0;
+        let inheritanceFixedBonusDefense = 0;
+        let inheritanceFixedBonusHp = 0;
+        let inheritanceFixedBonusSpirit = 0;
+        let inheritanceFixedBonusPhysique = 0;
+        let inheritanceFixedBonusSpeed = 0;
+
+        if (prev.inheritanceRoute && prev.inheritanceSkills) {
+          prev.inheritanceSkills.forEach((skillId) => {
+            const skill = INHERITANCE_SKILLS.find((s) => s.id === skillId);
+            if (skill && skill.route === prev.inheritanceRoute) {
+              inheritanceFixedBonusAttack += skill.effects.attack || 0;
+              inheritanceFixedBonusDefense += skill.effects.defense || 0;
+              inheritanceFixedBonusHp += skill.effects.hp || 0;
+              inheritanceFixedBonusSpirit += skill.effects.spirit || 0;
+              inheritanceFixedBonusPhysique += skill.effects.physique || 0;
+              inheritanceFixedBonusSpeed += skill.effects.speed || 0;
+            }
+          });
+        }
+
+        bonusAttack += inheritanceFixedBonusAttack;
+        bonusDefense += inheritanceFixedBonusDefense;
+        bonusHp += inheritanceFixedBonusHp;
+        bonusSpirit += inheritanceFixedBonusSpirit;
+        bonusPhysique += inheritanceFixedBonusPhysique;
+        bonusSpeed += inheritanceFixedBonusSpeed;
+
+        // 计算旧境界时的基础属性+固定加成（用于计算分配的属性点）
+        const oldBaseWithFixedBonusAttack = oldBaseAttack + bonusAttack;
+        const oldBaseWithFixedBonusDefense = oldBaseDefense + bonusDefense;
+        const oldBaseWithFixedBonusHp = oldBaseHp + bonusHp;
+        const oldBaseWithFixedBonusSpirit = oldBaseSpirit + bonusSpirit;
+        const oldBaseWithFixedBonusPhysique = oldBasePhysique + bonusPhysique;
+        const oldBaseWithFixedBonusSpeed = oldBaseSpeed + bonusSpeed;
+
+        // 计算旧境界时传承技能的百分比加成
+        let oldInheritancePercentBonusAttack = 0;
+        let oldInheritancePercentBonusDefense = 0;
+        let oldInheritancePercentBonusHp = 0;
+        let oldInheritancePercentBonusSpirit = 0;
+        let oldInheritancePercentBonusPhysique = 0;
+        let oldInheritancePercentBonusSpeed = 0;
+
+        if (prev.inheritanceRoute && prev.inheritanceSkills) {
+          prev.inheritanceSkills.forEach((skillId) => {
+            const skill = INHERITANCE_SKILLS.find((s) => s.id === skillId);
+            if (skill && skill.route === prev.inheritanceRoute) {
+              if (skill.effects.attackPercent) {
+                oldInheritancePercentBonusAttack += Math.floor(oldBaseWithFixedBonusAttack * skill.effects.attackPercent);
+              }
+              if (skill.effects.defensePercent) {
+                oldInheritancePercentBonusDefense += Math.floor(oldBaseWithFixedBonusDefense * skill.effects.defensePercent);
+              }
+              if (skill.effects.hpPercent) {
+                oldInheritancePercentBonusHp += Math.floor(oldBaseWithFixedBonusHp * skill.effects.hpPercent);
+              }
+              if (skill.effects.spiritPercent) {
+                oldInheritancePercentBonusSpirit += Math.floor(oldBaseWithFixedBonusSpirit * skill.effects.spiritPercent);
+              }
+              if (skill.effects.physiquePercent) {
+                oldInheritancePercentBonusPhysique += Math.floor(oldBaseWithFixedBonusPhysique * skill.effects.physiquePercent);
+              }
+              if (skill.effects.speedPercent) {
+                oldInheritancePercentBonusSpeed += Math.floor(oldBaseWithFixedBonusSpeed * skill.effects.speedPercent);
+              }
+            }
+          });
+        }
+
         // 计算用户通过属性点分配的额外属性
-        // 当前属性 = 基础属性（旧境界） + 加成 + 分配的属性点
-        // 分配的属性点 = 当前属性 - 基础属性（旧境界） - 加成
-        const allocatedAttack = Math.max(0, prev.attack - oldBaseAttack - bonusAttack);
-        const allocatedDefense = Math.max(0, prev.defense - oldBaseDefense - bonusDefense);
-        const allocatedHp = Math.max(0, prev.maxHp - oldBaseHp - bonusHp);
-        const allocatedSpirit = Math.max(0, prev.spirit - oldBaseSpirit - bonusSpirit);
-        const allocatedPhysique = Math.max(0, prev.physique - oldBasePhysique - bonusPhysique);
-        const allocatedSpeed = Math.max(0, prev.speed - oldBaseSpeed - bonusSpeed);
+        // 当前属性 = 基础属性（旧境界） + 固定加成 + 传承技能百分比加成 + 分配的属性点
+        // 分配的属性点 = 当前属性 - 基础属性（旧境界） - 固定加成 - 传承技能百分比加成
+        const allocatedAttack = Math.max(0, prev.attack - oldBaseWithFixedBonusAttack - oldInheritancePercentBonusAttack);
+        const allocatedDefense = Math.max(0, prev.defense - oldBaseWithFixedBonusDefense - oldInheritancePercentBonusDefense);
+        const allocatedHp = Math.max(0, prev.maxHp - oldBaseWithFixedBonusHp - oldInheritancePercentBonusHp);
+        const allocatedSpirit = Math.max(0, prev.spirit - oldBaseWithFixedBonusSpirit - oldInheritancePercentBonusSpirit);
+        const allocatedPhysique = Math.max(0, prev.physique - oldBaseWithFixedBonusPhysique - oldInheritancePercentBonusPhysique);
+        const allocatedSpeed = Math.max(0, prev.speed - oldBaseWithFixedBonusSpeed - oldInheritancePercentBonusSpeed);
 
         const newBaseMaxHp = Math.floor(stats.baseMaxHp * levelMultiplier);
         const newMaxExp = Math.floor(stats.maxExpBase * levelMultiplier * 1.5);
@@ -176,8 +255,7 @@ export function useBreakthroughHandlers({
 
         // 突破时给予属性点：指数级别增长
         // 境界升级：2^(境界索引+1)，层数升级：2^境界索引/9 + 1
-        const realms = Object.values(RealmType);
-        const currentRealmIndex = realms.indexOf(isRealmUpgrade ? nextRealm : prev.realm);
+        const currentRealmIndex = REALM_ORDER.indexOf(isRealmUpgrade ? nextRealm : prev.realm);
         // 确保realmIndex有效，防止NaN
         const validRealmIndex = currentRealmIndex >= 0 ? currentRealmIndex : 0;
         let attributePointsGained: number;
@@ -195,16 +273,23 @@ export function useBreakthroughHandlers({
           );
         }
 
-        // 计算寿命增加（境界升级时增加更多）
-        const lifespanIncrease = isRealmUpgrade
-          ? newBaseMaxLifespan - (prev.maxLifespan || newBaseMaxLifespan)
-          : Math.floor((newBaseMaxLifespan - (prev.maxLifespan || newBaseMaxLifespan)) / 9); // 层数升级时增加1/9
+        // 计算寿命增加（更明显的驱动力：长生）
+        const oldMaxLifespan = prev.maxLifespan || 100;
+        let lifespanIncrease = 0;
 
-        const newMaxLifespan = newBaseMaxLifespan;
-        const newLifespan = Math.min(
-          (prev.lifespan ?? prev.maxLifespan ?? newBaseMaxLifespan) + Math.max(0, lifespanIncrease),
-          newMaxLifespan
-        );
+        if (isRealmUpgrade) {
+          // 境界升级：获得两个境界基础寿命差额的全额，并额外奖励基础值
+          const baseIncrease = newBaseMaxLifespan - oldMaxLifespan;
+          lifespanIncrease = baseIncrease + Math.floor(newBaseMaxLifespan * 0.1);
+        } else {
+          // 层数升级：获得差额的 1/9，并至少增加 1-5 年随机寿命，体现积少成多
+          const baseIncrease = Math.floor((newBaseMaxLifespan - oldMaxLifespan) / 9);
+          const bonus = Math.floor(Math.random() * 5) + 1;
+          lifespanIncrease = baseIncrease + bonus;
+        }
+
+        const newMaxLifespan = oldMaxLifespan + lifespanIncrease;
+        const newLifespan = (prev.lifespan ?? oldMaxLifespan) + lifespanIncrease;
 
         if (lifespanIncrease > 0) {
           addLog(
@@ -213,23 +298,62 @@ export function useBreakthroughHandlers({
           );
         }
 
+        // 先计算基础属性 + 固定加成 + 分配的属性点
+        const baseAttack = Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack + allocatedAttack;
+        const baseDefense = Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense + allocatedDefense;
+        const baseMaxHp = newBaseMaxHp + bonusHp + allocatedHp;
+        const baseSpirit = Math.floor(stats.baseSpirit * levelMultiplier) + bonusSpirit + allocatedSpirit;
+        const basePhysique = Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique + allocatedPhysique;
+        const baseSpeed = Math.max(0, Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed + allocatedSpeed);
+
+        // 再计算传承技能的百分比加成（基于上面计算出的属性值）
+        let inheritancePercentBonusAttack = 0;
+        let inheritancePercentBonusDefense = 0;
+        let inheritancePercentBonusHp = 0;
+        let inheritancePercentBonusSpirit = 0;
+        let inheritancePercentBonusPhysique = 0;
+        let inheritancePercentBonusSpeed = 0;
+
+        if (prev.inheritanceRoute && prev.inheritanceSkills) {
+          prev.inheritanceSkills.forEach((skillId) => {
+            const skill = INHERITANCE_SKILLS.find((s) => s.id === skillId);
+            if (skill && skill.route === prev.inheritanceRoute) {
+              if (skill.effects.attackPercent) {
+                inheritancePercentBonusAttack += Math.floor(baseAttack * skill.effects.attackPercent);
+              }
+              if (skill.effects.defensePercent) {
+                inheritancePercentBonusDefense += Math.floor(baseDefense * skill.effects.defensePercent);
+              }
+              if (skill.effects.hpPercent) {
+                inheritancePercentBonusHp += Math.floor(baseMaxHp * skill.effects.hpPercent);
+              }
+              if (skill.effects.spiritPercent) {
+                inheritancePercentBonusSpirit += Math.floor(baseSpirit * skill.effects.spiritPercent);
+              }
+              if (skill.effects.physiquePercent) {
+                inheritancePercentBonusPhysique += Math.floor(basePhysique * skill.effects.physiquePercent);
+              }
+              if (skill.effects.speedPercent) {
+                inheritancePercentBonusSpeed += Math.floor(baseSpeed * skill.effects.speedPercent);
+              }
+            }
+          });
+        }
+
         return {
           ...prev,
           realm: nextRealm,
           realmLevel: nextLevel,
           exp: newExp, // 保留超出部分
           maxExp: newMaxExp,
-          // 新属性 = 基础属性（新境界） + 加成 + 分配的属性点
-          maxHp: newBaseMaxHp + bonusHp + allocatedHp,
-          hp: newBaseMaxHp + bonusHp + allocatedHp, // Full heal
-          attack: Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack + allocatedAttack,
-          defense: Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense + allocatedDefense,
-          spirit: Math.floor(stats.baseSpirit * levelMultiplier) + bonusSpirit + allocatedSpirit,
-          physique: Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique + allocatedPhysique,
-          speed: Math.max(
-            0,
-            Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed + allocatedSpeed
-          ),
+          // 新属性 = 基础属性（新境界） + 固定加成 + 分配的属性点 + 传承技能百分比加成
+          maxHp: baseMaxHp + inheritancePercentBonusHp,
+          hp: baseMaxHp + inheritancePercentBonusHp, // Full heal
+          attack: baseAttack + inheritancePercentBonusAttack,
+          defense: baseDefense + inheritancePercentBonusDefense,
+          spirit: baseSpirit + inheritancePercentBonusSpirit,
+          physique: basePhysique + inheritancePercentBonusPhysique,
+          speed: baseSpeed + inheritancePercentBonusSpeed,
           attributePoints: prev.attributePoints + attributePointsGained,
           maxLifespan: newMaxLifespan,
           lifespan: newLifespan,
@@ -268,14 +392,14 @@ export function useBreakthroughHandlers({
         const isRealmUpgrade = currentLevel >= 9;
 
         if (isRealmUpgrade) {
-          const realms = Object.values(RealmType);
-          const currentIndex = realms.indexOf(currentRealm);
-          if (currentIndex < realms.length - 1) {
-            currentRealm = realms[currentIndex + 1];
+          const currentIndex = REALM_ORDER.indexOf(currentRealm);
+          if (currentIndex < REALM_ORDER.length - 1) {
+            currentRealm = REALM_ORDER[currentIndex + 1];
             currentLevel = 1;
             breakthroughCount++;
             remainingInheritance--;
           } else {
+            // 达到巅峰，停止突破
             break;
           }
         } else {
@@ -363,13 +487,86 @@ export function useBreakthroughHandlers({
           bonusSpeed += title.effects.speed || 0;
         }
 
+        // Inheritance skill bonuses (fixed values first)
+        let inheritanceFixedBonusAttack = 0;
+        let inheritanceFixedBonusDefense = 0;
+        let inheritanceFixedBonusHp = 0;
+        let inheritanceFixedBonusSpirit = 0;
+        let inheritanceFixedBonusPhysique = 0;
+        let inheritanceFixedBonusSpeed = 0;
+
+        if (prev.inheritanceRoute && prev.inheritanceSkills) {
+          prev.inheritanceSkills.forEach((skillId) => {
+            const skill = INHERITANCE_SKILLS.find((s) => s.id === skillId);
+            if (skill && skill.route === prev.inheritanceRoute) {
+              inheritanceFixedBonusAttack += skill.effects.attack || 0;
+              inheritanceFixedBonusDefense += skill.effects.defense || 0;
+              inheritanceFixedBonusHp += skill.effects.hp || 0;
+              inheritanceFixedBonusSpirit += skill.effects.spirit || 0;
+              inheritanceFixedBonusPhysique += skill.effects.physique || 0;
+              inheritanceFixedBonusSpeed += skill.effects.speed || 0;
+            }
+          });
+        }
+
+        bonusAttack += inheritanceFixedBonusAttack;
+        bonusDefense += inheritanceFixedBonusDefense;
+        bonusHp += inheritanceFixedBonusHp;
+        bonusSpirit += inheritanceFixedBonusSpirit;
+        bonusPhysique += inheritanceFixedBonusPhysique;
+        bonusSpeed += inheritanceFixedBonusSpeed;
+
+        // 计算旧境界时的基础属性+固定加成（用于计算分配的属性点）
+        const oldBaseWithFixedBonusAttack = oldBaseAttack + bonusAttack;
+        const oldBaseWithFixedBonusDefense = oldBaseDefense + bonusDefense;
+        const oldBaseWithFixedBonusHp = oldBaseHp + bonusHp;
+        const oldBaseWithFixedBonusSpirit = oldBaseSpirit + bonusSpirit;
+        const oldBaseWithFixedBonusPhysique = oldBasePhysique + bonusPhysique;
+        const oldBaseWithFixedBonusSpeed = oldBaseSpeed + bonusSpeed;
+
+        // 计算旧境界时传承技能的百分比加成
+        let oldInheritancePercentBonusAttack = 0;
+        let oldInheritancePercentBonusDefense = 0;
+        let oldInheritancePercentBonusHp = 0;
+        let oldInheritancePercentBonusSpirit = 0;
+        let oldInheritancePercentBonusPhysique = 0;
+        let oldInheritancePercentBonusSpeed = 0;
+
+        if (prev.inheritanceRoute && prev.inheritanceSkills) {
+          prev.inheritanceSkills.forEach((skillId) => {
+            const skill = INHERITANCE_SKILLS.find((s) => s.id === skillId);
+            if (skill && skill.route === prev.inheritanceRoute) {
+              if (skill.effects.attackPercent) {
+                oldInheritancePercentBonusAttack += Math.floor(oldBaseWithFixedBonusAttack * skill.effects.attackPercent);
+              }
+              if (skill.effects.defensePercent) {
+                oldInheritancePercentBonusDefense += Math.floor(oldBaseWithFixedBonusDefense * skill.effects.defensePercent);
+              }
+              if (skill.effects.hpPercent) {
+                oldInheritancePercentBonusHp += Math.floor(oldBaseWithFixedBonusHp * skill.effects.hpPercent);
+              }
+              if (skill.effects.spiritPercent) {
+                oldInheritancePercentBonusSpirit += Math.floor(oldBaseWithFixedBonusSpirit * skill.effects.spiritPercent);
+              }
+              if (skill.effects.physiquePercent) {
+                oldInheritancePercentBonusPhysique += Math.floor(oldBaseWithFixedBonusPhysique * skill.effects.physiquePercent);
+              }
+              if (skill.effects.speedPercent) {
+                oldInheritancePercentBonusSpeed += Math.floor(oldBaseWithFixedBonusSpeed * skill.effects.speedPercent);
+              }
+            }
+          });
+        }
+
         // 计算用户通过属性点分配的额外属性
-        const allocatedAttack = Math.max(0, prev.attack - oldBaseAttack - bonusAttack);
-        const allocatedDefense = Math.max(0, prev.defense - oldBaseDefense - bonusDefense);
-        const allocatedHp = Math.max(0, prev.maxHp - oldBaseHp - bonusHp);
-        const allocatedSpirit = Math.max(0, prev.spirit - oldBaseSpirit - bonusSpirit);
-        const allocatedPhysique = Math.max(0, prev.physique - oldBasePhysique - bonusPhysique);
-        const allocatedSpeed = Math.max(0, prev.speed - oldBaseSpeed - bonusSpeed);
+        // 当前属性 = 基础属性（旧境界） + 固定加成 + 传承技能百分比加成 + 分配的属性点
+        // 分配的属性点 = 当前属性 - 基础属性（旧境界） - 固定加成 - 传承技能百分比加成
+        const allocatedAttack = Math.max(0, prev.attack - oldBaseWithFixedBonusAttack - oldInheritancePercentBonusAttack);
+        const allocatedDefense = Math.max(0, prev.defense - oldBaseWithFixedBonusDefense - oldInheritancePercentBonusDefense);
+        const allocatedHp = Math.max(0, prev.maxHp - oldBaseWithFixedBonusHp - oldInheritancePercentBonusHp);
+        const allocatedSpirit = Math.max(0, prev.spirit - oldBaseWithFixedBonusSpirit - oldInheritancePercentBonusSpirit);
+        const allocatedPhysique = Math.max(0, prev.physique - oldBaseWithFixedBonusPhysique - oldInheritancePercentBonusPhysique);
+        const allocatedSpeed = Math.max(0, prev.speed - oldBaseWithFixedBonusSpeed - oldInheritancePercentBonusSpeed);
 
         const newBaseMaxHp = Math.floor(stats.baseMaxHp * levelMultiplier);
         const newMaxExp = Math.floor(stats.maxExpBase * levelMultiplier * 1.5);
@@ -382,22 +579,21 @@ export function useBreakthroughHandlers({
         let attributePointsGained = 0;
         let tempRealm = prev.realm;
         let tempLevel = prev.realmLevel;
-        const realms = Object.values(RealmType);
         for (let i = 0; i < breakthroughCount; i++) {
           const isRealmUpgrade = tempLevel >= 9;
           if (isRealmUpgrade) {
-            const currentRealmIndex = realms.indexOf(tempRealm);
+            const currentRealmIndex = REALM_ORDER.indexOf(tempRealm);
             // 确保realmIndex有效，防止NaN
             const validRealmIndex = currentRealmIndex >= 0 ? currentRealmIndex : 0;
-            if (validRealmIndex < realms.length - 1) {
+            if (validRealmIndex < REALM_ORDER.length - 1) {
               const nextRealmIndex = validRealmIndex + 1;
               // 境界升级：2^(新境界索引+1)
               attributePointsGained += Math.floor(Math.pow(2, nextRealmIndex + 1));
-              tempRealm = realms[nextRealmIndex];
+              tempRealm = REALM_ORDER[nextRealmIndex];
               tempLevel = 1;
             }
           } else {
-            const currentRealmIndex = realms.indexOf(tempRealm);
+            const currentRealmIndex = REALM_ORDER.indexOf(tempRealm);
             // 确保realmIndex有效，防止NaN
             const validRealmIndex = currentRealmIndex >= 0 ? currentRealmIndex : 0;
             // 层数升级：2^境界索引/9 + 1（至少1点）
@@ -411,23 +607,62 @@ export function useBreakthroughHandlers({
           'special'
         );
 
+        // 先计算基础属性 + 固定加成 + 分配的属性点
+        const baseAttack = Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack + allocatedAttack;
+        const baseDefense = Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense + allocatedDefense;
+        const baseMaxHp = newBaseMaxHp + bonusHp + allocatedHp;
+        const baseSpirit = Math.floor(stats.baseSpirit * levelMultiplier) + bonusSpirit + allocatedSpirit;
+        const basePhysique = Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique + allocatedPhysique;
+        const baseSpeed = Math.max(0, Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed + allocatedSpeed);
+
+        // 再计算传承技能的百分比加成（基于上面计算出的属性值）
+        let inheritancePercentBonusAttack = 0;
+        let inheritancePercentBonusDefense = 0;
+        let inheritancePercentBonusHp = 0;
+        let inheritancePercentBonusSpirit = 0;
+        let inheritancePercentBonusPhysique = 0;
+        let inheritancePercentBonusSpeed = 0;
+
+        if (prev.inheritanceRoute && prev.inheritanceSkills) {
+          prev.inheritanceSkills.forEach((skillId) => {
+            const skill = INHERITANCE_SKILLS.find((s) => s.id === skillId);
+            if (skill && skill.route === prev.inheritanceRoute) {
+              if (skill.effects.attackPercent) {
+                inheritancePercentBonusAttack += Math.floor(baseAttack * skill.effects.attackPercent);
+              }
+              if (skill.effects.defensePercent) {
+                inheritancePercentBonusDefense += Math.floor(baseDefense * skill.effects.defensePercent);
+              }
+              if (skill.effects.hpPercent) {
+                inheritancePercentBonusHp += Math.floor(baseMaxHp * skill.effects.hpPercent);
+              }
+              if (skill.effects.spiritPercent) {
+                inheritancePercentBonusSpirit += Math.floor(baseSpirit * skill.effects.spiritPercent);
+              }
+              if (skill.effects.physiquePercent) {
+                inheritancePercentBonusPhysique += Math.floor(basePhysique * skill.effects.physiquePercent);
+              }
+              if (skill.effects.speedPercent) {
+                inheritancePercentBonusSpeed += Math.floor(baseSpeed * skill.effects.speedPercent);
+              }
+            }
+          });
+        }
+
         return {
           ...prev,
           realm: currentRealm,
           realmLevel: currentLevel,
           exp: newExp, // 保留超出部分
           maxExp: newMaxExp,
-          // 新属性 = 基础属性（新境界） + 加成 + 分配的属性点
-          maxHp: newBaseMaxHp + bonusHp + allocatedHp,
-          hp: newBaseMaxHp + bonusHp + allocatedHp,
-          attack: Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack + allocatedAttack,
-          defense: Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense + allocatedDefense,
-          spirit: Math.floor(stats.baseSpirit * levelMultiplier) + bonusSpirit + allocatedSpirit,
-          physique: Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique + allocatedPhysique,
-          speed: Math.max(
-            0,
-            Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed + allocatedSpeed
-          ),
+          // 新属性 = 基础属性（新境界） + 固定加成 + 分配的属性点 + 传承技能百分比加成
+          maxHp: baseMaxHp + inheritancePercentBonusHp,
+          hp: baseMaxHp + inheritancePercentBonusHp,
+          attack: baseAttack + inheritancePercentBonusAttack,
+          defense: baseDefense + inheritancePercentBonusDefense,
+          spirit: baseSpirit + inheritancePercentBonusSpirit,
+          physique: basePhysique + inheritancePercentBonusPhysique,
+          speed: baseSpeed + inheritancePercentBonusSpeed,
           attributePoints: prev.attributePoints + attributePointsGained,
           inheritanceLevel: remainingInheritance,
         };

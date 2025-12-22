@@ -121,23 +121,61 @@ export function useInheritanceHandlers({
         setPlayer((prev) => {
           // 应用技能效果
           const skillEffects = skill.effects;
-          let newAttack = prev.attack + (skillEffects.attack || 0);
-          let newDefense = prev.defense + (skillEffects.defense || 0);
-          let newMaxHp = prev.maxHp + (skillEffects.hp || 0);
-          let newHp = prev.hp + (skillEffects.hp || 0);
-          let newSpirit = prev.spirit + (skillEffects.spirit || 0);
-          let newPhysique = prev.physique + (skillEffects.physique || 0);
-          let newSpeed = prev.speed + (skillEffects.speed || 0);
+
+          // 先计算固定数值加成
+          let attackBonus = skillEffects.attack || 0;
+          let defenseBonus = skillEffects.defense || 0;
+          let hpBonus = skillEffects.hp || 0;
+          let spiritBonus = skillEffects.spirit || 0;
+          let physiqueBonus = skillEffects.physique || 0;
+          let speedBonus = skillEffects.speed || 0;
+
+          // 再计算百分比加成（基于当前属性值）
+          if (skillEffects.attackPercent) {
+            attackBonus += Math.floor(prev.attack * skillEffects.attackPercent);
+          }
+          if (skillEffects.defensePercent) {
+            defenseBonus += Math.floor(prev.defense * skillEffects.defensePercent);
+          }
+          if (skillEffects.hpPercent) {
+            hpBonus += Math.floor(prev.maxHp * skillEffects.hpPercent);
+          }
+          if (skillEffects.spiritPercent) {
+            spiritBonus += Math.floor(prev.spirit * skillEffects.spiritPercent);
+          }
+          if (skillEffects.physiquePercent) {
+            physiqueBonus += Math.floor(prev.physique * skillEffects.physiquePercent);
+          }
+          if (skillEffects.speedPercent) {
+            speedBonus += Math.floor(prev.speed * skillEffects.speedPercent);
+          }
+
+          let newAttack = prev.attack + attackBonus;
+          let newDefense = prev.defense + defenseBonus;
+          let newMaxHp = prev.maxHp + hpBonus;
+          let newHp = prev.hp + hpBonus;
+          let newSpirit = prev.spirit + spiritBonus;
+          let newPhysique = prev.physique + physiqueBonus;
+          let newSpeed = prev.speed + speedBonus;
 
           addLog(`✨ 你学会了【${skill.name}】！`, 'special');
-          if (skillEffects.attack) {
-            addLog(`攻击力 +${skillEffects.attack}`, 'gain');
+          if (attackBonus > 0) {
+            addLog(`攻击力 +${attackBonus}${skillEffects.attackPercent ? ` (${(skillEffects.attackPercent * 100).toFixed(0)}%)` : ''}`, 'gain');
           }
-          if (skillEffects.defense) {
-            addLog(`防御力 +${skillEffects.defense}`, 'gain');
+          if (defenseBonus > 0) {
+            addLog(`防御力 +${defenseBonus}${skillEffects.defensePercent ? ` (${(skillEffects.defensePercent * 100).toFixed(0)}%)` : ''}`, 'gain');
           }
-          if (skillEffects.hp) {
-            addLog(`气血 +${skillEffects.hp}`, 'gain');
+          if (hpBonus > 0) {
+            addLog(`气血 +${hpBonus}${skillEffects.hpPercent ? ` (${(skillEffects.hpPercent * 100).toFixed(0)}%)` : ''}`, 'gain');
+          }
+          if (spiritBonus > 0) {
+            addLog(`神识 +${spiritBonus}${skillEffects.spiritPercent ? ` (${(skillEffects.spiritPercent * 100).toFixed(0)}%)` : ''}`, 'gain');
+          }
+          if (physiqueBonus > 0) {
+            addLog(`体魄 +${physiqueBonus}${skillEffects.physiquePercent ? ` (${(skillEffects.physiquePercent * 100).toFixed(0)}%)` : ''}`, 'gain');
+          }
+          if (speedBonus > 0) {
+            addLog(`速度 +${speedBonus}${skillEffects.speedPercent ? ` (${(skillEffects.speedPercent * 100).toFixed(0)}%)` : ''}`, 'gain');
           }
 
           return {

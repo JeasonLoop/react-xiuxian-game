@@ -7,6 +7,7 @@ interface UseCharacterHandlersProps {
   player: PlayerStats;
   setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
   addLog: (message: string, type?: string) => void;
+  setItemActionLog?: (log: { text: string; type: string } | null) => void;
 }
 
 /**
@@ -23,6 +24,7 @@ export function useCharacterHandlers({
   player,
   setPlayer,
   addLog,
+  setItemActionLog,
 }: UseCharacterHandlersProps) {
   const handleSelectTalent = (talentId: string) => {
     // 天赋在游戏开始时随机生成，之后不可修改
@@ -35,17 +37,24 @@ export function useCharacterHandlers({
     if (!title) return;
 
     // 检查是否已解锁该称号
-    if (!player.unlockedTitles.includes(titleId)) {
-      addLog(`你尚未解锁称号【${title.name}】！`, 'danger');
+    const unlockedTitles = player.unlockedTitles || [];
+    if (!unlockedTitles.includes(titleId)) {
+      const message = `你尚未解锁称号【${title.name}】！`;
+      if (setItemActionLog) {
+        setItemActionLog({ text: message, type: 'danger' });
+      } else {
+        addLog(message, 'danger');
+      }
       return;
     }
 
     setPlayer((prev) => {
       // 计算旧称号效果（包括套装效果）
-      const oldEffects = calculateTitleEffects(prev.titleId, prev.unlockedTitles);
+      const prevUnlockedTitles = prev.unlockedTitles || [];
+      const oldEffects = calculateTitleEffects(prev.titleId, prevUnlockedTitles);
 
       // 计算新称号效果（包括套装效果）
-      const newEffects = calculateTitleEffects(titleId, prev.unlockedTitles);
+      const newEffects = calculateTitleEffects(titleId, prevUnlockedTitles);
 
       // 应用效果差值
       const attackDiff = newEffects.attack - oldEffects.attack;
@@ -72,7 +81,7 @@ export function useCharacterHandlers({
       if (title.setGroup) {
         const setEffect = TITLE_SET_EFFECTS.find(se =>
           se.titles.includes(titleId) &&
-          se.titles.every(tid => prev.unlockedTitles.includes(tid))
+          se.titles.every(tid => prevUnlockedTitles.includes(tid))
         );
         if (setEffect) {
           logMessage += `\n✨ 激活了套装效果【${setEffect.setName}】！`;

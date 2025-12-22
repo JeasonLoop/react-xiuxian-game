@@ -79,16 +79,10 @@ export function useGameState() {
             ...savedData.player,
             dailyTaskCount:
               savedData.player.dailyTaskCount &&
-              typeof savedData.player.dailyTaskCount === 'object'
+              typeof savedData.player.dailyTaskCount === 'object' &&
+              !('instant' in savedData.player.dailyTaskCount) // 新格式：Record<string, number>
                 ? savedData.player.dailyTaskCount
-                : typeof savedData.player.dailyTaskCount === 'number'
-                  ? {
-                      instant: savedData.player.dailyTaskCount,
-                      short: 0,
-                      medium: 0,
-                      long: 0,
-                    } // 兼容旧存档
-                  : { instant: 0, short: 0, medium: 0, long: 0 },
+                : {}, // 兼容旧存档：旧格式转换为空对象
             lastTaskResetDate:
               savedData.player.lastTaskResetDate ||
               new Date().toISOString().split('T')[0],
@@ -264,9 +258,9 @@ export function useGameState() {
         }
       };
     }
-    // 只依赖关键状态，而不是整个对象
+    // 当 player, logs, gameStarted 或 settings.autoSave 变化时触发
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [!!player, gameStarted, settings.autoSave, saveGame]);
+  }, [player, logs, gameStarted, settings.autoSave, saveGame]);
 
   return {
     hasSave,

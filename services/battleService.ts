@@ -27,7 +27,9 @@ import {
   WEAPON_BATTLE_SKILLS,
   BATTLE_POTIONS,
   getPillDefinition,
+  SECT_MASTER_CHALLENGE_REQUIREMENTS,
 } from '../constants';
+import { getPlayerTotalStats } from '../utils/statUtils';
 import { generateEnemyName } from './aiService';
 
 const randomId = () => Math.random().toString(36).slice(2, 9);
@@ -170,12 +172,12 @@ const getBattleDifficulty = (
   riskLevel?: '低' | '中' | '高' | '极度危险'
 ): number => {
   if (adventureType === 'secret_realm' && riskLevel) {
-    // 秘境根据风险等级调整难度
+    // 秘境根据风险等级调整难度（降低基础难度，减少死亡率）
     const riskMultipliers = {
-      低: 1.0,
-      中: 1.25,
-      高: 1.5,
-      极度危险: 2.0,
+      低: 0.85,  // 从1.0降低到0.85
+      中: 1.0,   // 从1.25降低到1.0
+      高: 1.2,   // 从1.5降低到1.2
+      极度危险: 1.5, // 从2.0降低到1.5
     };
     return riskMultipliers[riskLevel];
   }
@@ -184,6 +186,7 @@ const getBattleDifficulty = (
     normal: 1,
     lucky: 0.85,
     secret_realm: 1.25,
+    sect_challenge: 1.5, // 宗主挑战难度稍微下调，从2.0降至1.8
   };
   return baseDifficulty[adventureType];
 };
@@ -192,6 +195,7 @@ const baseBattleChance: Record<AdventureType, number> = {
   normal: 0.4, // 历练基础概率从22%提高到40%
   lucky: 0.2, // 机缘历练基础概率从8%提高到20%
   secret_realm: 0.65, // 秘境基础概率从45%提高到65%
+  sect_challenge: 1.0, // 挑战必然触发
 };
 
 const pickOne = <T>(list: T[]): T =>
@@ -206,115 +210,139 @@ export const LOOT_ITEMS = {
       type: ItemType.Herb,
       rarity: '普通' as ItemRarity,
       effect: { hp: 20 },
+      permanentEffect: { physique: 1 },
     },
-    { name: '聚灵草', type: ItemType.Herb, rarity: '普通' as ItemRarity },
+    {
+      name: '聚灵草',
+      type: ItemType.Herb,
+      rarity: '普通' as ItemRarity,
+      permanentEffect: { spirit: 2 },
+    },
     {
       name: '回气草',
       type: ItemType.Herb,
       rarity: '普通' as ItemRarity,
       effect: { hp: 30 },
+      permanentEffect: { maxHp: 5 },
     },
     {
       name: '青草',
       type: ItemType.Herb,
       rarity: '普通' as ItemRarity,
       effect: { hp: 15 },
+      permanentEffect: { speed: 1 },
     },
     {
       name: '白花',
       type: ItemType.Herb,
       rarity: '普通' as ItemRarity,
       effect: { hp: 25 },
+      permanentEffect: { spirit: 1, physique: 1 },
     },
     {
       name: '黄精',
       type: ItemType.Herb,
       rarity: '普通' as ItemRarity,
       effect: { hp: 35 },
+      permanentEffect: { maxHp: 8, physique: 2 },
     },
     {
       name: '凝神花',
       type: ItemType.Herb,
       rarity: '稀有' as ItemRarity,
       effect: { hp: 50, spirit: 5 },
+      permanentEffect: { spirit: 8, maxHp: 10 },
     },
     {
       name: '血参',
       type: ItemType.Herb,
       rarity: '稀有' as ItemRarity,
       effect: { hp: 80 },
+      permanentEffect: { maxHp: 15, physique: 5 },
     },
     {
       name: '紫猴花',
       type: ItemType.Herb,
       rarity: '稀有' as ItemRarity,
       effect: { hp: 60, exp: 10 },
+      permanentEffect: { spirit: 6, speed: 4 },
     },
     {
       name: '天灵果',
       type: ItemType.Herb,
       rarity: '稀有' as ItemRarity,
       effect: { hp: 70, spirit: 10 },
+      permanentEffect: { spirit: 10, maxHp: 12 },
     },
     {
       name: '龙鳞果',
       type: ItemType.Herb,
       rarity: '稀有' as ItemRarity,
       effect: { hp: 90, maxHp: 10 },
+      permanentEffect: { maxHp: 20, defense: 3, physique: 6 },
     },
     {
       name: '千年人参',
       type: ItemType.Herb,
       rarity: '稀有' as ItemRarity,
       effect: { hp: 100, maxHp: 15 },
+      permanentEffect: { maxHp: 25, physique: 8, maxLifespan: 10 },
     },
     {
       name: '千年灵芝',
       type: ItemType.Herb,
       rarity: '传说' as ItemRarity,
       effect: { hp: 150, maxHp: 20 },
+      permanentEffect: { maxHp: 40, spirit: 20, physique: 15, maxLifespan: 30 },
     },
     {
       name: '九叶芝草',
       type: ItemType.Herb,
       rarity: '传说' as ItemRarity,
       effect: { hp: 180, maxHp: 25, spirit: 15 },
+      permanentEffect: { maxHp: 50, spirit: 30, speed: 15, maxLifespan: 50 },
     },
     {
       name: '万年灵乳',
       type: ItemType.Herb,
       rarity: '传说' as ItemRarity,
       effect: { hp: 200, maxHp: 30, exp: 50 },
+      permanentEffect: { maxHp: 60, spirit: 40, physique: 25, speed: 20, maxLifespan: 100 },
     },
     {
       name: '万年仙草',
       type: ItemType.Herb,
       rarity: '仙品' as ItemRarity,
       effect: { hp: 300, maxHp: 50 },
+      permanentEffect: { maxHp: 100, spirit: 100, physique: 80, speed: 50, maxLifespan: 200 },
     },
     {
       name: '九转还魂草',
       type: ItemType.Herb,
       rarity: '仙品' as ItemRarity,
-      effect: { hp: 400, maxHp: 80, spirit: 30 },
+      effect: { exp: 10000 },
+      permanentEffect: { maxLifespan: 1000, spirit: 2000 },
     },
     {
       name: '太虚仙草',
       type: ItemType.Herb,
       rarity: '仙品' as ItemRarity,
       effect: { hp: 350, maxHp: 70, exp: 100 },
+      permanentEffect: { attack: 1000, defense: 1000, spirit: 2000 },
     },
     {
       name: '混沌青莲',
       type: ItemType.Herb,
       rarity: '仙品' as ItemRarity,
       effect: { hp: 500, maxHp: 100, spirit: 50, exp: 150 },
+      permanentEffect: { attack: 1000, defense: 1000, spirit: 2000, physique: 2000, speed: 2000 },
     },
     {
       name: '造化仙草',
       type: ItemType.Herb,
       rarity: '仙品' as ItemRarity,
       effect: { hp: 450, maxHp: 90, physique: 20, spirit: 40 },
+      permanentEffect: { attack: 1000, defense: 1000, spirit: 7000, physique: 2000, speed: 2000 },
     },
   ],
   // 丹药类（从常量中获取定义）
@@ -450,7 +478,7 @@ export const LOOT_ITEMS = {
       type: ItemType.Weapon,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Weapon,
-      effect: { attack: 200, spirit: 50 },
+      effect: { attack: 500, spirit: 150 },
     },
   ],
   // 装备类（护甲）- 包含所有部位
@@ -652,7 +680,7 @@ export const LOOT_ITEMS = {
       type: ItemType.Armor,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Head,
-      effect: { defense: 150, hp: 400, spirit: 50, attack: 30 },
+      effect: { defense: 350, hp: 1200, spirit: 150, attack: 100 },
     },
     // 仙品 - 肩部
     {
@@ -660,7 +688,7 @@ export const LOOT_ITEMS = {
       type: ItemType.Armor,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Shoulder,
-      effect: { defense: 150, hp: 400, spirit: 50, attack: 30 },
+      effect: { defense: 350, hp: 1200, spirit: 150, attack: 100 },
     },
     // 仙品 - 胸甲
     {
@@ -668,7 +696,7 @@ export const LOOT_ITEMS = {
       type: ItemType.Armor,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Chest,
-      effect: { defense: 250, hp: 800, spirit: 100 },
+      effect: { defense: 600, hp: 3000, spirit: 300 },
     },
     // 仙品 - 手套
     {
@@ -676,7 +704,7 @@ export const LOOT_ITEMS = {
       type: ItemType.Armor,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Gloves,
-      effect: { defense: 150, hp: 400, spirit: 50, attack: 30 },
+      effect: { defense: 350, hp: 1200, spirit: 150, attack: 100 },
     },
     // 仙品 - 裤腿
     {
@@ -684,7 +712,7 @@ export const LOOT_ITEMS = {
       type: ItemType.Armor,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Legs,
-      effect: { defense: 180, hp: 500, spirit: 60 },
+      effect: { defense: 450, hp: 1800, spirit: 200 },
     },
     // 仙品 - 鞋子
     {
@@ -692,7 +720,7 @@ export const LOOT_ITEMS = {
       type: ItemType.Armor,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Boots,
-      effect: { defense: 150, hp: 400, speed: 60 },
+      effect: { defense: 350, hp: 1200, speed: 150 },
     },
   ],
   // 装备类（首饰）
@@ -723,11 +751,12 @@ export const LOOT_ITEMS = {
       type: ItemType.Accessory,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Accessory1,
-      effect: { attack: 80, defense: 80, hp: 200 },
+      effect: { attack: 250, defense: 250, hp: 800 },
     },
   ],
   // 装备类（戒指）
   rings: [
+    // ...
     {
       name: '铁戒指',
       type: ItemType.Ring,
@@ -761,7 +790,7 @@ export const LOOT_ITEMS = {
       type: ItemType.Ring,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Ring1,
-      effect: { attack: 100, defense: 100, spirit: 50 },
+      effect: { attack: 300, defense: 300, spirit: 150 },
     },
   ],
   // 法宝类
@@ -799,7 +828,7 @@ export const LOOT_ITEMS = {
       type: ItemType.Artifact,
       rarity: '仙品' as ItemRarity,
       slot: EquipmentSlot.Artifact1,
-      effect: { attack: 150, defense: 150, spirit: 150, hp: 500 },
+      effect: { attack: 450, defense: 450, spirit: 450, hp: 2000 },
     },
   ],
 };
@@ -1109,7 +1138,8 @@ const createEnemy = async (
   player: PlayerStats,
   adventureType: AdventureType,
   riskLevel?: '低' | '中' | '高' | '极度危险',
-  realmMinRealm?: RealmType
+  realmMinRealm?: RealmType,
+  sectMasterId?: string | null
 ): Promise<{
   name: string;
   title: string;
@@ -1130,7 +1160,7 @@ const createEnemy = async (
   if (adventureType === 'secret_realm' && realmMinRealm) {
     const realmMinIndex = REALM_ORDER.indexOf(realmMinRealm);
     // 敌人境界基于秘境最低境界，而不是玩家境界
-    const realmOffset = 1; // 秘境中敌人比秘境要求高1个境界
+    const realmOffset = 0; // 秘境中敌人与秘境要求相同境界（从+1改为0，降低难度）
     targetRealmIndex = clampMin(
       Math.min(REALM_ORDER.length - 1, realmMinIndex + realmOffset),
       0
@@ -1142,10 +1172,17 @@ const createEnemy = async (
       // 每高1个境界，降低15%难度，最多降低60%
       realmLevelReduction = Math.max(0.4, 1.0 - realmDiff * 0.15);
     }
+  } else   if (adventureType === 'sect_challenge') {
+    // 宗主挑战特殊逻辑：宗主境界通常高出玩家 1 个境界，少数高出 2 个
+    const realmOffset = Math.random() < 0.85 ? 1 : 2; // 85% 概率高出 1 个境界，15% 概率高出 2 个
+    targetRealmIndex = clampMin(
+      Math.min(REALM_ORDER.length - 1, currentRealmIndex + realmOffset),
+      3 // 至少元婴期
+    );
   } else {
     // 普通历练和机缘历练，按原逻辑
     const realmOffset =
-      adventureType === 'secret_realm' ? 1 : adventureType === 'lucky' ? -1 : 0;
+      adventureType === 'lucky' ? -1 : 0;
     targetRealmIndex = clampMin(
       Math.min(REALM_ORDER.length - 1, currentRealmIndex + realmOffset),
       0
@@ -1183,7 +1220,20 @@ const createEnemy = async (
   let strengthMultiplier = 1;
   let strengthVariance = { min: 0.85, max: 1.2 };
 
-  if (adventureType === 'normal') {
+  if (adventureType === 'sect_challenge') {
+    // 宗主属性平衡：收窄波动范围，确保既有挑战性又不至于绝望
+    strengthMultiplier = 1.0;
+    if (strengthRoll < 0.3) {
+      // 30% 概率：由于长期闭关或旧疾复发，实力处于低谷
+      strengthVariance = { min: 0.9, max: 1.1 };
+    } else if (strengthRoll < 0.8) {
+      // 50% 概率：平稳期，正常发挥
+      strengthVariance = { min: 1.1, max: 1.3 };
+    } else {
+      // 20% 概率：境界突破或感悟提升，实力处于顶峰
+      strengthVariance = { min: 1.3, max: 1.6 };
+    }
+  } else if (adventureType === 'normal') {
     if (strengthRoll < 0.4) {
       // 弱敌 40%
       strengthMultiplier = 0.6 + Math.random() * 0.2; // 0.6 - 0.8
@@ -1212,54 +1262,54 @@ const createEnemy = async (
       strengthVariance = { min: 0.8, max: 1.2 };
     }
   } else if (adventureType === 'secret_realm') {
-    // 秘境历练：根据风险等级调整敌人强度分布
+    // 秘境历练：根据风险等级调整敌人强度分布（降低死亡率，增加弱敌和普通敌人比例）
     if (riskLevel === '极度危险') {
-      // 极度危险：5%弱敌，30%普通，65%强敌
-      if (strengthRoll < 0.05) {
-        strengthMultiplier = 0.9 + Math.random() * 0.2; // 0.9 - 1.1
-        strengthVariance = { min: 0.85, max: 1.2 };
-      } else if (strengthRoll < 0.35) {
-        strengthMultiplier = 1.1 + Math.random() * 0.2; // 1.1 - 1.3
-        strengthVariance = { min: 1.0, max: 1.4 };
+      // 极度危险：15%弱敌，45%普通，40%强敌（从5%/30%/65%调整）
+      if (strengthRoll < 0.15) {
+        strengthMultiplier = 0.85 + Math.random() * 0.15; // 0.85 - 1.0
+        strengthVariance = { min: 0.8, max: 1.1 };
+      } else if (strengthRoll < 0.6) {
+        strengthMultiplier = 1.0 + Math.random() * 0.2; // 1.0 - 1.2
+        strengthVariance = { min: 0.9, max: 1.3 };
       } else {
-        strengthMultiplier = 1.3 + Math.random() * 0.4; // 1.3 - 1.7
-        strengthVariance = { min: 1.2, max: 1.8 };
+        strengthMultiplier = 1.2 + Math.random() * 0.3; // 1.2 - 1.5（从1.3-1.7降低）
+        strengthVariance = { min: 1.1, max: 1.6 }; // 从1.2-1.8降低
       }
     } else if (riskLevel === '高') {
-      // 高风险：10%弱敌，40%普通，50%强敌
-      if (strengthRoll < 0.1) {
-        strengthMultiplier = 0.8 + Math.random() * 0.2; // 0.8 - 1.0
-        strengthVariance = { min: 0.75, max: 1.1 };
-      } else if (strengthRoll < 0.5) {
-        strengthMultiplier = 1.0 + Math.random() * 0.2; // 1.0 - 1.2
-        strengthVariance = { min: 0.9, max: 1.3 };
-      } else {
-        strengthMultiplier = 1.2 + Math.random() * 0.3; // 1.2 - 1.5
-        strengthVariance = { min: 1.1, max: 1.6 };
-      }
-    } else if (riskLevel === '中') {
-      // 中风险：20%弱敌，50%普通，30%强敌
+      // 高风险：20%弱敌，50%普通，30%强敌（从10%/40%/50%调整）
       if (strengthRoll < 0.2) {
-        strengthMultiplier = 0.7 + Math.random() * 0.2; // 0.7 - 0.9
-        strengthVariance = { min: 0.65, max: 1.0 };
+        strengthMultiplier = 0.75 + Math.random() * 0.15; // 0.75 - 0.9
+        strengthVariance = { min: 0.7, max: 1.0 };
       } else if (strengthRoll < 0.7) {
         strengthMultiplier = 0.9 + Math.random() * 0.2; // 0.9 - 1.1
-        strengthVariance = { min: 0.8, max: 1.2 };
+        strengthVariance = { min: 0.85, max: 1.2 };
       } else {
-        strengthMultiplier = 1.1 + Math.random() * 0.3; // 1.1 - 1.4
-        strengthVariance = { min: 1.0, max: 1.5 };
+        strengthMultiplier = 1.1 + Math.random() * 0.25; // 1.1 - 1.35（从1.2-1.5降低）
+        strengthVariance = { min: 1.0, max: 1.5 }; // 从1.1-1.6降低
+      }
+    } else if (riskLevel === '中') {
+      // 中风险：30%弱敌，55%普通，15%强敌（从20%/50%/30%调整）
+      if (strengthRoll < 0.3) {
+        strengthMultiplier = 0.65 + Math.random() * 0.2; // 0.65 - 0.85
+        strengthVariance = { min: 0.6, max: 0.95 };
+      } else if (strengthRoll < 0.85) {
+        strengthMultiplier = 0.85 + Math.random() * 0.2; // 0.85 - 1.05
+        strengthVariance = { min: 0.75, max: 1.15 };
+      } else {
+        strengthMultiplier = 1.05 + Math.random() * 0.2; // 1.05 - 1.25（从1.1-1.4降低）
+        strengthVariance = { min: 0.95, max: 1.3 }; // 从1.0-1.5降低
       }
     } else {
-      // 低风险：30%弱敌，55%普通，15%强敌
-      if (strengthRoll < 0.3) {
-        strengthMultiplier = 0.6 + Math.random() * 0.2; // 0.6 - 0.8
-        strengthVariance = { min: 0.55, max: 0.9 };
-      } else if (strengthRoll < 0.85) {
-        strengthMultiplier = 0.8 + Math.random() * 0.2; // 0.8 - 1.0
-        strengthVariance = { min: 0.75, max: 1.1 };
+      // 低风险：40%弱敌，50%普通，10%强敌（从30%/55%/15%调整）
+      if (strengthRoll < 0.4) {
+        strengthMultiplier = 0.55 + Math.random() * 0.2; // 0.55 - 0.75
+        strengthVariance = { min: 0.5, max: 0.85 };
+      } else if (strengthRoll < 0.9) {
+        strengthMultiplier = 0.75 + Math.random() * 0.2; // 0.75 - 0.95
+        strengthVariance = { min: 0.7, max: 1.05 };
       } else {
-        strengthMultiplier = 1.0 + Math.random() * 0.2; // 1.0 - 1.2
-        strengthVariance = { min: 0.9, max: 1.3 };
+        strengthMultiplier = 0.95 + Math.random() * 0.2; // 0.95 - 1.15（从1.0-1.2降低）
+        strengthVariance = { min: 0.85, max: 1.2 }; // 从0.9-1.3降低
       }
     }
   }
@@ -1275,7 +1325,12 @@ const createEnemy = async (
   let name = pickOne(ENEMY_NAMES);
   let title = pickOne(ENEMY_TITLES);
 
-  if (Math.random() < 0.15) {
+  if (adventureType === 'sect_challenge') {
+    name = '上代宗主';
+    title = '威震八方的';
+  }
+
+  if (Math.random() < 0.15 && adventureType !== 'sect_challenge') {
     try {
       // 添加超时处理，防止AI调用卡住战斗初始化
       const timeoutPromise = new Promise<{ name: string; title: string }>((_, reject) => {
@@ -1847,6 +1902,37 @@ export const calculateBattleRewards = (
     Math.round(baseStones * totalRewardMultiplier)
   );
 
+  // 宗门挑战特殊奖励
+  if (actualAdventureType === 'sect_challenge') {
+    if (victory) {
+      // 宗门挑战胜利奖励使用常量定义的数值
+      return {
+        expChange: SECT_MASTER_CHALLENGE_REQUIREMENTS.victoryReward.exp,
+        spiritChange: SECT_MASTER_CHALLENGE_REQUIREMENTS.victoryReward.spiritStones,
+        items: [
+          {
+            name: '宗主信物',
+            type: ItemType.Material,
+            rarity: '仙品',
+            description: '宗门之主的象征，持此信物可号令宗门上下。'
+          },
+          {
+            name: '宗门宝库钥匙',
+            type: ItemType.Material,
+            rarity: '仙品',
+            description: '用于开启宗门宝库的钥匙，藏有历代宗主的积累。'
+          }
+        ]
+      };
+    } else {
+      // 挑战失败，根据常量扣除修为
+      return {
+        expChange: -SECT_MASTER_CHALLENGE_REQUIREMENTS.defeatPenalty.expLoss,
+        spiritChange: 0,
+      };
+    }
+  }
+
   const expChange = victory
     ? rewardExp
     : -Math.max(5, Math.round(rewardExp * 0.5));
@@ -1875,10 +1961,11 @@ export const initializeTurnBasedBattle = async (
   player: PlayerStats,
   adventureType: AdventureType,
   riskLevel?: '低' | '中' | '高' | '极度危险',
-  realmMinRealm?: RealmType
+  realmMinRealm?: RealmType,
+  sectMasterId?: string | null
 ): Promise<BattleState> => {
   // 创建敌人
-  const enemyData = await createEnemy(player, adventureType, riskLevel, realmMinRealm);
+  const enemyData = await createEnemy(player, adventureType, riskLevel, realmMinRealm, sectMasterId);
 
   // 创建玩家战斗单位
   const playerUnit = createBattleUnitFromPlayer(player);
@@ -2017,21 +2104,18 @@ export const initializeTurnBasedBattle = async (
  * 从玩家数据创建战斗单位
  */
 function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
-  // 计算装备加成后的属性
-  const equippedItems = getEquippedItems(player);
-  let totalAttack = player.attack;
-  let totalDefense = player.defense;
-  let totalSpirit = player.spirit;
-  let totalSpeed = player.speed;
+  // 获取包含心法加成的总属性
+  const totalStats = getPlayerTotalStats(player);
 
-  equippedItems.forEach((item) => {
-    if (item.effect) {
-      totalAttack += item.effect.attack || 0;
-      totalDefense += item.effect.defense || 0;
-      totalSpirit += item.effect.spirit || 0;
-      totalSpeed += item.effect.speed || 0;
-    }
-  });
+  const equippedItems = getEquippedItems(player);
+  let totalAttack = totalStats.attack;
+  let totalDefense = totalStats.defense;
+  let totalSpirit = totalStats.spirit;
+  let totalSpeed = totalStats.speed;
+
+  // 注意：player.attack 等字段已经包含了装备加成
+  // getPlayerTotalStats 也包含了心法加成
+  // 所以这里不再需要遍历 equippedItems 累加属性，否则会重复计算
 
   // 收集所有可用技能
   const skills: BattleSkill[] = [];
@@ -2633,7 +2717,22 @@ function updateBattleStateAfterAction(
   battleState: BattleState,
   action: BattleAction
 ): BattleState {
-  const newState = { ...battleState };
+  // 深拷贝玩家和敌人状态，确保不可变性
+  const newState: BattleState = {
+    ...battleState,
+    player: {
+      ...battleState.player,
+      buffs: battleState.player.buffs.map(b => ({ ...b })),
+      debuffs: battleState.player.debuffs.map(d => ({ ...d })),
+      cooldowns: { ...battleState.player.cooldowns },
+    },
+    enemy: {
+      ...battleState.enemy,
+      buffs: battleState.enemy.buffs.map(b => ({ ...b })),
+      debuffs: battleState.enemy.debuffs.map(d => ({ ...d })),
+      cooldowns: { ...battleState.enemy.cooldowns },
+    },
+  };
 
   // 处理持续效果
   [newState.player, newState.enemy].forEach((unit) => {
