@@ -6596,7 +6596,8 @@ export const GROTTO_CONFIGS: GrottoConfig[] = [
     name: '简陋洞府',
     cost: 500,
     expRateBonus: 0.05, // 5%修炼速度加成
-    storageCapacity: 10, // 额外10格存储空间
+    autoHarvest: false, // 不支持自动收获
+    growthSpeedBonus: 0.0, // 无生长速度加成
     maxHerbSlots: 1, // 1个种植槽位
     description: '一处简陋的洞府，灵气稀薄，但聊胜于无。',
   },
@@ -6605,7 +6606,8 @@ export const GROTTO_CONFIGS: GrottoConfig[] = [
     name: '普通洞府',
     cost: 2000,
     expRateBonus: 0.10, // 10%修炼速度加成
-    storageCapacity: 20, // 额外20格存储空间
+    autoHarvest: false, // 不支持自动收获
+    growthSpeedBonus: 0.05, // 5%生长速度加成（减少5%生长时间）
     maxHerbSlots: 2, // 2个种植槽位
     description: '一处普通的洞府，灵气尚可，适合低阶修士修炼。',
   },
@@ -6614,7 +6616,8 @@ export const GROTTO_CONFIGS: GrottoConfig[] = [
     name: '精良洞府',
     cost: 8000,
     expRateBonus: 0.15, // 15%修炼速度加成
-    storageCapacity: 35, // 额外35格存储空间
+    autoHarvest: false, // 不支持自动收获
+    growthSpeedBonus: 0.10, // 10%生长速度加成
     maxHerbSlots: 3, // 3个种植槽位
     description: '一处精良的洞府，灵气浓郁，修炼事半功倍。',
   },
@@ -6623,70 +6626,77 @@ export const GROTTO_CONFIGS: GrottoConfig[] = [
     name: '上等洞府',
     cost: 25000,
     expRateBonus: 0.20, // 20%修炼速度加成
-    storageCapacity: 50, // 额外50格存储空间
+    autoHarvest: true, // 支持自动收获
+    growthSpeedBonus: 0.15, // 15%生长速度加成
     maxHerbSlots: 4, // 4个种植槽位
     realmRequirement: RealmType.Foundation,
-    description: '一处上等的洞府，灵气充沛，聚灵阵效果显著。',
+    description: '一处上等的洞府，灵气充沛，聚灵阵效果显著，可自动收获灵草。',
   },
   {
     level: 5,
     name: '优质洞府',
     cost: 70000,
     expRateBonus: 0.25, // 25%修炼速度加成
-    storageCapacity: 70, // 额外70格存储空间
+    autoHarvest: true, // 支持自动收获
+    growthSpeedBonus: 0.20, // 20%生长速度加成
     maxHerbSlots: 5, // 5个种植槽位
     realmRequirement: RealmType.GoldenCore,
-    description: '一处优质的洞府，灵气如雾，修炼速度大幅提升。',
+    description: '一处优质的洞府，灵气如雾，修炼速度大幅提升，灵草生长更快。',
   },
   {
     level: 6,
     name: '极品洞府',
     cost: 200000,
     expRateBonus: 0.30, // 30%修炼速度加成
-    storageCapacity: 100, // 额外100格存储空间
+    autoHarvest: true, // 支持自动收获
+    growthSpeedBonus: 0.25, // 25%生长速度加成
     maxHerbSlots: 6, // 6个种植槽位
     realmRequirement: RealmType.NascentSoul,
-    description: '一处极品的洞府，灵气化液，是修炼的绝佳场所。',
+    description: '一处极品的洞府，灵气化液，是修炼的绝佳场所，灵草生长速度大幅提升。',
   },
   {
     level: 7,
     name: '仙品洞府',
     cost: 600000,
     expRateBonus: 0.35, // 35%修炼速度加成
-    storageCapacity: 150, // 额外150格存储空间
+    autoHarvest: true, // 支持自动收获
+    growthSpeedBonus: 0.30, // 30%生长速度加成
     maxHerbSlots: 8, // 8个种植槽位
     realmRequirement: RealmType.SpiritSevering,
-    description: '一处仙品洞府，灵气如海，聚灵阵威力惊人。',
+    description: '一处仙品洞府，灵气如海，聚灵阵威力惊人，灵草生长极快。',
   },
   {
     level: 8,
     name: '天品洞府',
     cost: 1800000,
     expRateBonus: 0.40, // 40%修炼速度加成
-    storageCapacity: 200, // 额外200格存储空间
+    autoHarvest: true, // 支持自动收获
+    growthSpeedBonus: 0.35, // 35%生长速度加成
     maxHerbSlots: 10, // 10个种植槽位
     realmRequirement: RealmType.VoidRefining,
-    description: '一处天品洞府，灵气如潮，修炼如鱼得水。',
+    description: '一处天品洞府，灵气如潮，修炼如鱼得水，灵草生长速度惊人。',
   },
   {
     level: 9,
     name: '圣品洞府',
     cost: 5000000,
     expRateBonus: 0.45, // 45%修炼速度加成
-    storageCapacity: 300, // 额外300格存储空间
+    autoHarvest: true, // 支持自动收获
+    growthSpeedBonus: 0.40, // 40%生长速度加成
     maxHerbSlots: 12, // 12个种植槽位
     realmRequirement: RealmType.ImmortalAscension,
-    description: '一处圣品洞府，灵气如龙，是修仙者的圣地。',
+    description: '一处圣品洞府，灵气如龙，是修仙者的圣地，灵草生长速度达到极致。',
   },
   {
     level: 10,
     name: '神品洞府',
     cost: 15000000,
     expRateBonus: 0.50, // 50%修炼速度加成
-    storageCapacity: 500, // 额外500格存储空间
+    autoHarvest: true, // 支持自动收获
+    growthSpeedBonus: 0.50, // 50%生长速度加成（减少一半生长时间）
     maxHerbSlots: 15, // 15个种植槽位
     realmRequirement: RealmType.ImmortalAscension,
-    description: '一处神品洞府，灵气如天，修炼速度达到极致。',
+    description: '一处神品洞府，灵气如天，修炼速度达到极致，灵草生长速度翻倍。',
   },
 ];
 
@@ -6779,3 +6789,38 @@ export const SPIRIT_ARRAY_ENHANCEMENTS: SpiritArrayEnhancementConfig[] = [
     grottoLevelRequirement: 6,
   },
 ];
+
+// 灵草图鉴奖励配置
+export interface HerbariumReward {
+  herbCount: number; // 收集的灵草种类数量
+  reward: {
+    exp?: number;
+    spiritStones?: number;
+    attributePoints?: number;
+    title?: string;
+  };
+}
+
+export const HERBARIUM_REWARDS: HerbariumReward[] = [
+  { herbCount: 5, reward: { exp: 1000, spiritStones: 500 } },
+  { herbCount: 10, reward: { exp: 5000, spiritStones: 2000, attributePoints: 1 } },
+  { herbCount: 15, reward: { exp: 10000, spiritStones: 5000, attributePoints: 2 } },
+  { herbCount: 20, reward: { exp: 20000, spiritStones: 10000, attributePoints: 3, title: '灵草收集者' } },
+  { herbCount: 25, reward: { exp: 50000, spiritStones: 25000, attributePoints: 5, title: '灵草大师' } },
+];
+
+// 灵草变异配置
+export const HERB_MUTATION_CONFIG = {
+  baseMutationChance: 0.05, // 基础变异概率 5%
+  grottoLevelBonus: 0.01, // 每级洞府增加1%变异概率
+  maxMutationChance: 0.25, // 最大变异概率 25%
+  mutationBonusRange: { min: 1.5, max: 3.0 }, // 变异加成倍数范围
+  quantityMultiplier: { min: 1.2, max: 2.0 }, // 变异灵草数量倍数
+};
+
+// 时间加速配置
+export const SPEEDUP_CONFIG = {
+  dailyLimit: 10, // 每日加速次数限制
+  costPerMinute: 10, // 每分钟消耗的灵石数量
+  minCost: 100, // 最低消耗（即使时间很短）
+};

@@ -299,16 +299,22 @@ export interface PlayerStats {
   grotto: {
     level: number; // 洞府等级 (0表示未拥有，1-10级)
     expRateBonus: number; // 聚灵阵提供的修炼速度加成 (0-1之间的小数，例如0.2表示20%加成)
-    storageCapacity: number; // 洞府仓库容量（额外存储空间）
+    autoHarvest: boolean; // 自动收获开关（成熟后自动收获到背包）
+    growthSpeedBonus: number; // 灵草生长速度加成 (0-0.5之间的小数，例如0.2表示减少20%生长时间)
     plantedHerbs: Array<{
       herbId: string; // 灵草ID
       herbName: string; // 灵草名称
       plantTime: number; // 种植时间戳
       harvestTime: number; // 收获时间戳
       quantity: number; // 收获数量
+      isMutated?: boolean; // 是否为变异灵草
+      mutationBonus?: number; // 变异加成倍数（1.5-3.0）
     }>; // 种植的灵草列表
     lastHarvestTime: number | null; // 上次收获时间（用于计算自动收获）
     spiritArrayEnhancement: number; // 聚灵阵改造加成（额外提升的修炼速度，0-1之间的小数）
+    herbarium: string[]; // 已收集的灵草图鉴（灵草名称列表）
+    dailySpeedupCount: number; // 今日已使用加速次数
+    lastSpeedupResetDate: string; // 上次重置加速次数的日期（YYYY-MM-DD格式）
   };
 }
 
@@ -919,7 +925,8 @@ export interface GrottoConfig {
   name: string; // 洞府名称
   cost: number; // 购买/升级成本（灵石）
   expRateBonus: number; // 聚灵阵提供的修炼速度加成
-  storageCapacity: number; // 洞府仓库容量（额外存储空间）
+  autoHarvest: boolean; // 是否支持自动收获（高级洞府才支持）
+  growthSpeedBonus: number; // 灵草生长速度加成（减少生长时间，0-0.5）
   maxHerbSlots: number; // 最大灵草种植槽位
   realmRequirement?: RealmType; // 境界要求（可选）
   description: string; // 描述

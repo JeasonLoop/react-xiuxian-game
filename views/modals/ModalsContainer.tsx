@@ -173,6 +173,8 @@ interface ModalsContainerProps {
     handleHarvestHerb: (index: number) => void;
     handleHarvestAll: () => void;
     handleEnhanceSpiritArray: (enhancementId: string) => void;
+    handleToggleAutoHarvest: () => void;
+    handleSpeedupHerb: (index: number) => void;
     // Shop
     handleBuyItem: (shopItem: any, quantity?: number) => void;
     handleSellItem: (item: Item, quantity?: number) => void;
@@ -419,6 +421,8 @@ export default function ModalsContainer({
         onHarvestHerb={handlers.handleHarvestHerb}
         onHarvestAll={handlers.handleHarvestAll}
         onEnhanceSpiritArray={handlers.handleEnhanceSpiritArray}
+        onToggleAutoHarvest={handlers.handleToggleAutoHarvest}
+        onSpeedupHerb={handlers.handleSpeedupHerb}
       />
     </>
   );

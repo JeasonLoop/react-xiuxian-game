@@ -126,14 +126,29 @@ export function useGameState() {
             // 洞府系统
             grotto: savedData.player.grotto ? {
               ...savedData.player.grotto,
+              autoHarvest: savedData.player.grotto.autoHarvest ?? false,
+              growthSpeedBonus: savedData.player.grotto.growthSpeedBonus ?? 0,
               spiritArrayEnhancement: savedData.player.grotto.spiritArrayEnhancement || 0,
+              herbarium: savedData.player.grotto.herbarium || [],
+              dailySpeedupCount: savedData.player.grotto.dailySpeedupCount || 0,
+              lastSpeedupResetDate: savedData.player.grotto.lastSpeedupResetDate || new Date().toISOString().split('T')[0],
+              // 兼容旧存档：确保 plantedHerbs 中的新字段存在
+              plantedHerbs: (savedData.player.grotto.plantedHerbs || []).map(herb => ({
+                ...herb,
+                isMutated: herb.isMutated || false,
+                mutationBonus: herb.mutationBonus || undefined,
+              })),
             } : {
               level: 0,
               expRateBonus: 0,
-              storageCapacity: 0,
+              autoHarvest: false,
+              growthSpeedBonus: 0,
               plantedHerbs: [],
               lastHarvestTime: null,
               spiritArrayEnhancement: 0,
+              herbarium: [],
+              dailySpeedupCount: 0,
+              lastSpeedupResetDate: new Date().toISOString().split('T')[0],
             },
           };
           setPlayer(loadedPlayer);

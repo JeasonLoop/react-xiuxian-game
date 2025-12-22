@@ -29,6 +29,7 @@ import { useAppState } from './hooks/useAppState';
 import { useDeathDetection } from './hooks/useDeathDetection';
 import { useAutoFeatures } from './hooks/useAutoFeatures';
 import { usePassiveRegeneration } from './hooks/usePassiveRegeneration';
+import { useAutoGrottoHarvest } from './hooks/useAutoGrottoHarvest';
 import { useBattleResultHandler } from './hooks/useBattleResultHandler';
 import { SAVE_KEY } from './utils/gameUtils';
 import { setGlobalAlertSetter } from './utils/toastUtils';
@@ -365,6 +366,7 @@ function App() {
     player,
     setPlayer,
     addLog,
+    setItemActionLog,
   });
 
   // 冒险相关逻辑抽离到 useAdventureHandlers
@@ -737,6 +739,13 @@ function App() {
     setPlayer,
     cooldown,
     setCooldown,
+  });
+
+  // 使用洞府自动收获 hook
+  useAutoGrottoHarvest({
+    player,
+    setPlayer,
+    addLog,
   });
 
   // 使用自动功能 hook
@@ -1534,6 +1543,8 @@ function App() {
           handleHarvestHerb: grottoHandlers.handleHarvestHerb,
           handleHarvestAll: grottoHandlers.handleHarvestAll,
           handleEnhanceSpiritArray: grottoHandlers.handleEnhanceSpiritArray,
+          handleToggleAutoHarvest: grottoHandlers.handleToggleAutoHarvest,
+          handleSpeedupHerb: grottoHandlers.handleSpeedupHerb,
           handleBuyItem,
           handleSellItem,
           handleRefreshShop,
