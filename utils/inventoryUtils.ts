@@ -69,8 +69,10 @@ export function addItemToInventory(
   // 非装备类物品尝试叠加
   const existingIdx = newInv.findIndex((i) => i.name === itemName);
   if (existingIdx >= 0) {
+    // 叠加时保留所有属性，包括permanentEffect
     newInv[existingIdx] = {
       ...newInv[existingIdx],
+      ...normalized, // 保留规范化后的effect和permanentEffect
       quantity: newInv[existingIdx].quantity + quantity,
     };
   } else {

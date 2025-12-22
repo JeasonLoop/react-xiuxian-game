@@ -99,8 +99,11 @@ export function useShopHandlers({
 
       if (existingIdx >= 0 && !isEquipment) {
         // 非装备类物品可以叠加
+        // 确保叠加时保留所有属性（包括permanentEffect）
         newInv[existingIdx] = {
           ...newInv[existingIdx],
+          ...shopItem,
+          id: newInv[existingIdx].id, // 保留原有ID
           quantity: newInv[existingIdx].quantity + quantity,
         };
       } else {
@@ -122,6 +125,7 @@ export function useShopHandlers({
             isEquippable: shopItem.isEquippable,
             equipmentSlot: shopItem.equipmentSlot,
             effect: shopItem.effect,
+            permanentEffect: shopItem.permanentEffect,
           };
           newInv.push(newItem);
         }
