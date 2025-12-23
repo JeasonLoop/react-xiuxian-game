@@ -3,12 +3,15 @@ import { PlayerStats, Item, Pet, ItemType, ItemRarity, EquipmentSlot, RealmType 
 import { PET_TEMPLATES, DISCOVERABLE_RECIPES, getRandomPetName, INHERITANCE_ROUTES, REALM_ORDER } from '../../constants';
 import { uid } from '../../utils/gameUtils';
 import { showConfirm } from '../../utils/toastUtils';
+import { LOOT_ITEMS } from '../../services/battleService';
+import { compareItemEffects } from '../../utils/objectUtils';
 
 interface UseItemHandlersProps {
   player: PlayerStats;
   setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
   addLog: (message: string, type?: string) => void;
   setItemActionLog?: (log: { text: string; type: string } | null) => void;
+  onOpenTreasureVault?: () => void; // 打开宗门宝库弹窗的回调
 }
 
 /**
@@ -242,7 +245,124 @@ const applyItemEffect = (
     if (permLogs.length > 0) effectLogs.push(`✨ ${permLogs.join('，')}`);
   }
 
-  // 4. 处理丹方使用
+  // 4. 处理材料包（使用后获得若干对应品级的丹药）
+  const isMaterialPack = item.name.includes('材料包');
+  if (isMaterialPack) {
+    // 根据材料包的稀有度确定要生成的丹药稀有度
+    const packRarity = item.rarity || '普通';
+    let targetRarity: ItemRarity = '普通';
+
+    // 材料包的稀有度对应生成丹药的稀有度
+    if (packRarity === '仙品') {
+      targetRarity = '仙品';
+    } else if (packRarity === '传说') {
+      targetRarity = '传说';
+    } else if (packRarity === '稀有') {
+      targetRarity = '稀有';
+    } else {
+      targetRarity = '普通';
+    }
+
+    // 从对应稀有度的丹药中筛选
+    const allPills = LOOT_ITEMS.pills;
+    let availablePills: Array<{
+      name: string;
+      type: ItemType;
+      rarity: ItemRarity;
+      effect?: any;
+      permanentEffect?: any;
+      description?: string;
+    }> = allPills.filter(p => p.rarity === targetRarity);
+
+    // 如果没有找到对应稀有度的丹药，降级查找
+    if (availablePills.length === 0 && targetRarity !== '普通') {
+      availablePills = allPills.filter(p => p.rarity === '普通');
+    }
+
+    // 如果还是没有，从草药中获取（草药也可以作为丹药材料）
+    if (availablePills.length === 0) {
+      const allHerbs = LOOT_ITEMS.herbs;
+      availablePills = allHerbs.filter(h => h.rarity === targetRarity || targetRarity === '普通').map(h => ({
+        name: h.name,
+        type: ItemType.Pill, // 强制设置为丹药类型，因为材料包应该生成丹药
+        rarity: h.rarity,
+        effect: h.effect,
+        permanentEffect: (h as any).permanentEffect,
+        description: (h as any).description,
+      }));
+    }
+
+    // 如果仍然为空，使用默认丹药
+    if (availablePills.length === 0) {
+      // 创建一个默认丹药作为后备
+      availablePills = [{
+        name: '聚气丹',
+        type: ItemType.Pill,
+        rarity: '普通' as ItemRarity,
+        effect: { exp: 50 },
+        permanentEffect: { spirit: 1 },
+        description: '基础的聚气丹药，可恢复少量修为。',
+      }];
+    }
+
+    // 生成3-6个随机丹药
+    const pillCount = 3 + Math.floor(Math.random() * 4); // 3-6个
+    const obtainedPills: Item[] = [];
+    const pillNames = new Set<string>();
+
+    for (let i = 0; i < pillCount && availablePills.length > 0; i++) {
+      const randomPill = availablePills[Math.floor(Math.random() * availablePills.length)];
+      const pillName = randomPill.name;
+
+      // 避免重复（如果丹药池不够大，允许少量重复）
+      if (!pillNames.has(pillName) || pillNames.size >= availablePills.length) {
+        pillNames.add(pillName);
+        const quantity = 1 + Math.floor(Math.random() * 3); // 每个丹药1-3个
+        obtainedPills.push({
+          id: uid(),
+          name: pillName,
+          type: ItemType.Pill, // 强制设置为丹药类型，确保类型正确
+          description: randomPill.description || `${pillName}，来自材料包的丹药。`,
+          quantity,
+          rarity: randomPill.rarity,
+          effect: randomPill.effect,
+          permanentEffect: randomPill.permanentEffect,
+        });
+      }
+    }
+
+    // 将获得的丹药添加到背包
+    obtainedPills.forEach(pill => {
+      // 检查背包中是否已有相同丹药（按名称、类型、稀有度、效果匹配）
+      // 使用优化的深度比较函数替代 JSON.stringify，提高性能
+      const existingIndex = newInv.findIndex(
+        i => i.name === pill.name &&
+        i.type === pill.type &&
+        i.rarity === pill.rarity &&
+        compareItemEffects(i.effect, pill.effect, i.permanentEffect, pill.permanentEffect)
+      );
+
+      if (existingIndex >= 0) {
+        newInv[existingIndex].quantity += pill.quantity;
+      } else {
+        newInv.push(pill);
+      }
+    });
+
+    if (obtainedPills.length > 0) {
+      const pillList = obtainedPills.map(p => `${p.name} x${p.quantity}`).join('、');
+      effectLogs.push(`✨ 获得了：${pillList}`);
+      if (!isBatch) {
+        addLog(`你打开了${item.name}，获得了：${pillList}`, 'gain');
+      }
+    } else {
+      if (!isBatch) {
+        addLog(`你打开了${item.name}，但似乎什么都没有...`, 'normal');
+      }
+    }
+  }
+
+  // 5. 处理丹方使用
   if (item.type === ItemType.Recipe) {
     let recipeName = item.recipeData?.name || item.name.replace(/丹方$/, '');
     if (!item.recipeData) {
@@ -388,8 +508,24 @@ export function useItemHandlers({
   setPlayer,
   addLog,
   setItemActionLog,
+  onOpenTreasureVault,
 }: UseItemHandlersProps) {
   const handleUseItem = (item: Item) => {
+    // 检查是否是宗门宝库钥匙
+    const isTreasureVaultKey = item.name === '宗门宝库钥匙';
+
+    if (isTreasureVaultKey) {
+      // 宗主身份，钥匙可重复使用，不消耗钥匙
+      addLog('你使用了宗门宝库钥匙，打开了宗门宝库！', 'special');
+
+      // 打开宗门宝库弹窗
+      if (onOpenTreasureVault) {
+        onOpenTreasureVault();
+      }
+      return;
+    }
+
+    // 其他物品正常使用
     setPlayer((prev) => applyItemEffect(prev, item, { addLog, setItemActionLog }));
   };
 

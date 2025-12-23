@@ -316,6 +316,11 @@ export interface PlayerStats {
     dailySpeedupCount: number; // 今日已使用加速次数
     lastSpeedupResetDate: string; // 上次重置加速次数的日期（YYYY-MM-DD格式）
   };
+  // 宗门宝库系统
+  sectTreasureVault?: {
+    items: Item[]; // 宝库中的物品列表
+    takenItemIds: string[]; // 已拿取的物品ID列表
+  };
 }
 
 export interface LogEntry {

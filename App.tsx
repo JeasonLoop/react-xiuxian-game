@@ -45,6 +45,7 @@ import {
   getShortcutConfig,
   configToShortcut,
 } from './utils/shortcutUtils';
+import { compareItemEffects } from './utils/objectUtils';
 
 // 导入模块化的 handlers
 import {
@@ -128,6 +129,7 @@ function App() {
     isMobileSidebarOpen,
     isMobileStatsOpen,
     isReputationEventOpen,
+    isTreasureVaultOpen,
   } = modals;
 
   const {
@@ -152,6 +154,7 @@ function App() {
     setIsMobileStatsOpen,
     setIsDebugModeEnabled,
     setIsReputationEventOpen,
+    setIsTreasureVaultOpen,
   } = setters;
 
   const { isDebugModeEnabled } = modals;
@@ -303,6 +306,7 @@ function App() {
     setPlayer,
     addLog,
     setItemActionLog,
+    onOpenTreasureVault: () => setters.setIsTreasureVaultOpen(true),
   });
 
   const equipmentHandlers = useEquipmentHandlers({
@@ -533,11 +537,68 @@ function App() {
 
   const handleBatchDiscard = (itemIds: string[]) => {
     setPlayer((prev) => {
-      const newInv = prev.inventory.filter((i) => !itemIds.includes(i.id));
+      // 使用 Set 提高查找性能，特别是当 itemIds 数组较大时
+      const itemIdsSet = new Set(itemIds);
+      const newInv = prev.inventory.filter((i) => !itemIdsSet.has(i.id));
       addLog(`你批量丢弃了 ${itemIds.length} 件物品。`, 'normal');
       return { ...prev, inventory: newInv };
     });
   };
+
+  // 处理从宗门宝库拿取物品
+  const handleTakeTreasureVaultItem = (item: Item) => {
+    setPlayer((prev) => {
+      const newInv = [...prev.inventory];
+      // 检查背包中是否已有相同物品（装备类物品不叠加）
+      const isEquipment = item.isEquippable || false;
+
+      if (!isEquipment) {
+        // 非装备类物品尝试叠加
+        // 使用优化的深度比较函数替代 JSON.stringify，提高性能
+        const existingIndex = newInv.findIndex(
+          i => i.name === item.name &&
+          i.type === item.type &&
+          i.rarity === item.rarity &&
+          compareItemEffects(i.effect, item.effect, i.permanentEffect, item.permanentEffect)
+        );
+
+        if (existingIndex >= 0) {
+          newInv[existingIndex].quantity += item.quantity;
+        } else {
+          newInv.push(item);
+        }
+      } else {
+        // 装备类物品直接添加（不叠加）
+        newInv.push(item);
+      }
+
+      // 更新宝库状态：将物品ID添加到已拿取列表（使用 Set 提高性能）
+      const currentVault = prev.sectTreasureVault || { items: [], takenItemIds: [] };
+      const takenIdsSet = new Set(currentVault.takenItemIds || []);
+      if (!takenIdsSet.has(item.id)) {
+        takenIdsSet.add(item.id);
+      }
+      const newTakenIds = Array.from(takenIdsSet);
+
+      addLog(`✨ 你从宗门宝库中获得了【${item.name}】！`, 'special');
+      return {
+        ...prev,
+        inventory: newInv,
+        sectTreasureVault: {
+          ...currentVault,
+          takenItemIds: newTakenIds,
+        },
+      };
+    });
+  };
+
+  // 处理更新宗门宝库（初始化宝库物品）
+  const handleUpdateVault = useCallback((vault: { items: Item[]; takenItemIds: string[] }) => {
+    setPlayer((prev) => ({
+      ...prev,
+      sectTreasureVault: vault,
+    }));
+  }, [setPlayer]);
 
   // 包装 handleEquipItem，添加任务进度更新
   const handleEquipItem = (item: Item, slot: EquipmentSlot) => {
@@ -1398,7 +1459,79 @@ function App() {
           currentPlayer={player}
           currentLogs={logs}
           onLoadSave={(loadedPlayer, loadedLogs) => {
-            setPlayer(loadedPlayer);
+            // 应用兼容性处理，确保旧存档包含新字段
+            const compatiblePlayer = {
+              ...loadedPlayer,
+              dailyTaskCount:
+                loadedPlayer.dailyTaskCount &&
+                typeof loadedPlayer.dailyTaskCount === 'object' &&
+                !('instant' in loadedPlayer.dailyTaskCount)
+                  ? loadedPlayer.dailyTaskCount
+                  : {},
+              lastTaskResetDate:
+                loadedPlayer.lastTaskResetDate ||
+                new Date().toISOString().split('T')[0],
+              viewedAchievements: loadedPlayer.viewedAchievements || [],
+              natalArtifactId: loadedPlayer.natalArtifactId || null,
+              unlockedRecipes: loadedPlayer.unlockedRecipes || [],
+              unlockedArts: loadedPlayer.unlockedArts || loadedPlayer.cultivationArts || [],
+              sectTreasureVault: loadedPlayer.sectTreasureVault || undefined,
+              meditationHpRegenMultiplier:
+                loadedPlayer.meditationHpRegenMultiplier ?? 1.0,
+              meditationBoostEndTime:
+                loadedPlayer.meditationBoostEndTime ?? null,
+              statistics: loadedPlayer.statistics || {
+                killCount: 0,
+                meditateCount: 0,
+                adventureCount: 0,
+                equipCount: 0,
+                petCount: 0,
+                recipeCount: loadedPlayer.unlockedRecipes?.length || 0,
+                artCount: loadedPlayer.cultivationArts?.length || 0,
+                breakthroughCount: 0,
+                secretRealmCount: 0,
+              },
+              lifespan: loadedPlayer.lifespan ?? loadedPlayer.maxLifespan ?? 100,
+              maxLifespan: loadedPlayer.maxLifespan ?? 100,
+              spiritualRoots: loadedPlayer.spiritualRoots || {
+                metal: Math.floor(Math.random() * 16),
+                wood: Math.floor(Math.random() * 16),
+                water: Math.floor(Math.random() * 16),
+                fire: Math.floor(Math.random() * 16),
+                earth: Math.floor(Math.random() * 16),
+              },
+              unlockedTitles: loadedPlayer.unlockedTitles || (loadedPlayer.titleId ? [loadedPlayer.titleId] : ['title-novice']),
+              inheritanceRoute: loadedPlayer.inheritanceRoute || null,
+              inheritanceExp: loadedPlayer.inheritanceExp || 0,
+              inheritanceSkills: loadedPlayer.inheritanceSkills || [],
+              reputation: loadedPlayer.reputation || 0,
+              grotto: loadedPlayer.grotto ? {
+                ...loadedPlayer.grotto,
+                autoHarvest: loadedPlayer.grotto.autoHarvest ?? false,
+                growthSpeedBonus: loadedPlayer.grotto.growthSpeedBonus ?? 0,
+                spiritArrayEnhancement: loadedPlayer.grotto.spiritArrayEnhancement || 0,
+                herbarium: loadedPlayer.grotto.herbarium || [],
+                dailySpeedupCount: loadedPlayer.grotto.dailySpeedupCount || 0,
+                lastSpeedupResetDate: loadedPlayer.grotto.lastSpeedupResetDate || new Date().toISOString().split('T')[0],
+                plantedHerbs: (loadedPlayer.grotto.plantedHerbs || []).map((herb: any) => ({
+                  ...herb,
+                  isMutated: herb.isMutated || false,
+                  mutationBonus: herb.mutationBonus || undefined,
+                })),
+              } : {
+                level: 0,
+                expRateBonus: 0,
+                autoHarvest: false,
+                growthSpeedBonus: 0,
+                plantedHerbs: [],
+                lastHarvestTime: null,
+                spiritArrayEnhancement: 0,
+                herbarium: [],
+                dailySpeedupCount: 0,
+                lastSpeedupResetDate: new Date().toISOString().split('T')[0],
+              },
+            };
+            setPlayer(compatiblePlayer);
             setLogs(loadedLogs);
           }}
           onCompareSaves={(save1, save2) => {
@@ -1446,6 +1579,7 @@ function App() {
           isBattleModalOpen: isBattleModalOpen && !isDead, // 死亡时不显示战斗弹窗
           isTurnBasedBattleOpen: isTurnBasedBattleOpen && !isDead,
           isReputationEventOpen,
+          isTreasureVaultOpen,
         }}
         modalState={{
           currentShop,
@@ -1560,6 +1694,9 @@ function App() {
               }
             }
           },
+          setIsTreasureVaultOpen: (open: boolean) => setIsTreasureVaultOpen(open),
+          handleTakeTreasureVaultItem,
+          handleUpdateVault,
           setIsTurnBasedBattleOpen: (open: boolean) => {
             setIsTurnBasedBattleOpen(open);
             if (!open) {

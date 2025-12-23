@@ -370,6 +370,36 @@ const DebugModal: React.FC<Props> = ({
       }
     });
 
+    // 添加材料包
+    const materialPacks = [
+      { name: '仙品丹药材料包', rarity: '传说' as ItemRarity, description: '包含多种仙品丹药材料的礼包。' },
+      { name: '传说丹药材料包', rarity: '传说' as ItemRarity, description: '包含多种传说丹药材料的礼包。' },
+      { name: '稀有丹药材料包', rarity: '稀有' as ItemRarity, description: '包含多种稀有丹药材料的礼包。' },
+      { name: '普通丹药材料包', rarity: '普通' as ItemRarity, description: '包含多种普通丹药材料的礼包。' },
+    ];
+    materialPacks.forEach((pack) => {
+      if (!itemNames.has(pack.name)) {
+        itemNames.add(pack.name);
+        items.push({
+          name: pack.name,
+          type: ItemType.Material,
+          description: pack.description,
+          rarity: pack.rarity,
+        });
+      }
+    });
+
+    // 添加宗门宝库钥匙
+    if (!itemNames.has('宗门宝库钥匙')) {
+      itemNames.add('宗门宝库钥匙');
+      items.push({
+        name: '宗门宝库钥匙',
+        type: ItemType.Material,
+        description: '用于开启宗门宝库的钥匙，藏有历代宗主的积累。',
+        rarity: '仙品' as ItemRarity,
+      });
+    }
+
     return items;
   }, []);
 

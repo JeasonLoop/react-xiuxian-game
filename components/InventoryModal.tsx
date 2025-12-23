@@ -177,6 +177,11 @@ const InventoryItem = memo<InventoryItemProps>(
             <div className="text-xs text-blue-400 mb-2 p-2 bg-blue-900/20 rounded border border-blue-800/50">
               <div className="font-bold mb-1">💡 用途说明：</div>
               <div className="space-y-0.5 text-blue-300">
+                {item.name.includes('材料包') ? (
+                  <div>• 使用后可获得对应品级的丹药材料</div>
+                ) : item.name === '宗门宝库钥匙' ? (
+                  <div>• 使用后可打开宗门宝库，选择一件物品带走</div>
+                ) : null}
                 {item.name.includes('炼器') || item.name.includes('石') || item.name.includes('铁') || item.name.includes('矿') ? (
                   <div>• 可用于强化法宝和装备</div>
                 ) : null}
@@ -189,8 +194,10 @@ const InventoryItem = memo<InventoryItemProps>(
                 {item.name.includes('符') ? (
                   <div>• 可用于制作符箓或直接使用</div>
                 ) : null}
-                <div>• 可喂养灵宠获得经验</div>
-                {!item.effect && (
+                {!item.name.includes('材料包') && item.name !== '宗门宝库钥匙' && (
+                  <div>• 可喂养灵宠获得经验</div>
+                )}
+                {!item.effect && !item.name.includes('材料包') && item.name !== '宗门宝库钥匙' && (
                   <div className="text-stone-400">• 此材料暂无直接使用效果</div>
                 )}
               </div>
@@ -328,15 +335,23 @@ const InventoryItem = memo<InventoryItemProps>(
             </>
           ) : (
             <>
-              {(item.effect || item.permanentEffect || item.type === ItemType.Recipe) &&
-                item.type !== ItemType.Material && (
+              {(() => {
+                // 判断物品是否可使用
+                const isMaterialPack = item.name.includes('材料包') && item.type === ItemType.Material;
+                const isTreasureVaultKey = item.name === '宗门宝库钥匙' && item.type === ItemType.Material;
+                const hasEffect = item.effect || item.permanentEffect;
+                const isRecipe = item.type === ItemType.Recipe;
+                const isUsable = isMaterialPack || isTreasureVaultKey || (hasEffect && item.type !== ItemType.Material) || isRecipe;
+
+                return isUsable ? (
                   <button
                     onClick={() => onUseItem(item)}
                     className="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-200 text-xs py-2 rounded transition-colors"
                   >
                     {item.type === ItemType.Recipe ? '研读' : '使用'}
                   </button>
-                )}
+                ) : null;
+              })()}
               <button
                 onClick={() => onDiscardItem(item)}
                 className="px-3 bg-red-900 hover:bg-red-800 text-red-200 text-xs py-2 rounded transition-colors border border-red-700"

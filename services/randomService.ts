@@ -1534,7 +1534,7 @@ const SECT_SHOP_ITEM_POOL_FLOOR2: Array<{ name: string; cost: number; item: Omit
   { name: '天阶功法残卷', cost: 3500, item: { name: '天阶功法残卷', type: ItemType.Material, description: '天阶功法的残卷，可用于学习或研究。', quantity: 1, rarity: '传说' } },
   { name: '仙品法宝碎片', cost: 4000, item: { name: '仙品法宝碎片', type: ItemType.Material, description: '仙品法宝的碎片，可用于修复或炼制。', quantity: 1, rarity: '仙品' } },
   { name: '传承玉简', cost: 3000, item: { name: '传承玉简', type: ItemType.Material, description: '记录着强大传承的玉简，使用后可获得传承。', quantity: 1, rarity: '传说' } },
-  { name: '仙品丹药材料包', cost: 2500, item: { name: '仙品丹药材料包', type: ItemType.Material, description: '包含多种仙品丹药材料的礼包。', quantity: 1, rarity: '传说' } },
+  { name: '仙品丹药材料包', cost: 2500, item: { name: '仙品丹药材料包', type: ItemType.Material, description: '包含多种仙品丹药材料的礼包。', quantity: 1, rarity: '仙品' } },
   { name: '灵兽契约符', cost: 2200, item: { name: '灵兽契约符', type: ItemType.Material, description: '用于与灵兽建立契约的符箓。', quantity: 1, rarity: '传说' } },
   { name: '天劫护符', cost: 2800, item: { name: '天劫护符', type: ItemType.Accessory, description: '可抵御天劫的护符，渡劫时使用。', quantity: 1, rarity: '传说', isEquippable: true, equipmentSlot: EquipmentSlot.Accessory2, effect: { defense: 60, hp: 300 } } },
 ];

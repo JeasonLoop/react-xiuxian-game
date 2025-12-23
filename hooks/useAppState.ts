@@ -36,6 +36,7 @@ export interface AppModalState {
   isMobileStatsOpen: boolean;
   isDebugModeEnabled: boolean;
   isReputationEventOpen: boolean;
+  isTreasureVaultOpen: boolean;
 }
 
 export interface AppModalSetters {
@@ -60,6 +61,7 @@ export interface AppModalSetters {
   setIsMobileStatsOpen: (open: boolean) => void;
   setIsDebugModeEnabled: (enabled: boolean) => void;
   setIsReputationEventOpen: (open: boolean) => void;
+  setIsTreasureVaultOpen: (open: boolean) => void;
 }
 
 export interface AppState {
@@ -135,6 +137,7 @@ export function useAppState(): AppState {
   const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
   const [isDebugModeEnabled, setIsDebugModeEnabled] = useState(false);
   const [isReputationEventOpen, setIsReputationEventOpen] = useState(false);
+  const [isTreasureVaultOpen, setIsTreasureVaultOpen] = useState(false);
 
   // 商店状态
   const [currentShop, setCurrentShop] = useState<Shop | null>(null);
@@ -195,6 +198,7 @@ export function useAppState(): AppState {
       isMobileStatsOpen,
       isDebugModeEnabled,
       isReputationEventOpen,
+      isTreasureVaultOpen,
     },
     setters: {
       setIsInventoryOpen,
@@ -218,6 +222,7 @@ export function useAppState(): AppState {
       setIsMobileStatsOpen,
       setIsDebugModeEnabled,
       setIsReputationEventOpen,
+      setIsTreasureVaultOpen,
     },
     shop: {
       currentShop,

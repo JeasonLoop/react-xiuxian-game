@@ -39,7 +39,11 @@ const BatchUseModal: React.FC<Props> = ({
   const isUsable = (item: Item): boolean => {
     // 装备不可使用
     if (item.isEquippable) return false;
-    // 材料不可使用（除非有 effect）
+    // 材料包和宗门宝库钥匙可以使用
+    const isMaterialPack = item.name.includes('材料包') && item.type === ItemType.Material;
+    const isTreasureVaultKey = item.name === '宗门宝库钥匙' && item.type === ItemType.Material;
+    if (isMaterialPack || isTreasureVaultKey) return true;
+    // 其他材料不可使用（除非有 effect）
     if (item.type === ItemType.Material && !item.effect) return false;
     // 有 effect 或 Recipe 类型的物品可以使用
     return !!(item.effect || item.type === ItemType.Recipe);

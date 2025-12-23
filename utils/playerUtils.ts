@@ -172,5 +172,7 @@ export const createInitialPlayer = (
       lastSpeedupResetDate: new Date().toISOString().split('T')[0], // 上次重置加速次数的日期
     },
     sectMasterId: null, // 当前宗门的宗主ID (如果玩家是宗主，则为玩家自己的ID)
+    // 宗门宝库系统
+    sectTreasureVault: undefined, // 初始时宝库为空，首次使用钥匙时生成
   };
 };

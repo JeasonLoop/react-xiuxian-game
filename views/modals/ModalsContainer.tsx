@@ -27,6 +27,7 @@ import DailyQuestModal from '../../components/DailyQuestModal';
 import ShopModal from '../../components/ShopModal';
 import ReputationEventModal from '../../components/ReputationEventModal';
 import GrottoModal from '../../components/GrottoModal';
+import SectTreasureVaultModal from '../../components/SectTreasureVaultModal';
 import { BattleReplay } from '../../services/battleService';
 import { RandomSectTask } from '../../services/randomService';
 
@@ -63,6 +64,7 @@ interface ModalsContainerProps {
     isBattleModalOpen: boolean;
     isTurnBasedBattleOpen?: boolean;
     isReputationEventOpen: boolean;
+    isTreasureVaultOpen: boolean;
   };
   modalState: {
     currentShop: Shop | null;
@@ -201,6 +203,9 @@ interface ModalsContainerProps {
     // Reputation event
     setIsReputationEventOpen: (open: boolean) => void;
     handleReputationEventChoice: (choiceIndex: number) => void;
+    setIsTreasureVaultOpen: (open: boolean) => void;
+    handleTakeTreasureVaultItem: (item: Item) => void;
+    handleUpdateVault?: (vault: { items: Item[]; takenItemIds: string[] }) => void;
   };
 }
 
@@ -423,6 +428,14 @@ export default function ModalsContainer({
         onEnhanceSpiritArray={handlers.handleEnhanceSpiritArray}
         onToggleAutoHarvest={handlers.handleToggleAutoHarvest}
         onSpeedupHerb={handlers.handleSpeedupHerb}
+      />
+
+      <SectTreasureVaultModal
+        isOpen={modals.isTreasureVaultOpen}
+        onClose={() => handlers.setIsTreasureVaultOpen(false)}
+        player={player}
+        onTakeItem={handlers.handleTakeTreasureVaultItem}
+        onUpdateVault={handlers.handleUpdateVault}
       />
     </>
   );
