@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { PlayerStats, LogEntry, GameSettings } from '../types';
 import { createInitialPlayer } from '../utils/playerUtils';
-import { SAVE_KEY, SETTINGS_KEY } from '../utils/gameUtils';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 import { TALENTS } from '../constants';
 import {
   getCurrentSlotId,
@@ -21,7 +21,7 @@ export function useGameState() {
         return true;
       }
       // 兼容旧存档系统
-      const saved = localStorage.getItem(SAVE_KEY);
+      const saved = localStorage.getItem(STORAGE_KEYS.SAVE);
       return saved !== null;
     } catch {
       return false;
@@ -33,7 +33,7 @@ export function useGameState() {
 
   const [settings, setSettings] = useState<GameSettings>(() => {
     try {
-      const saved = localStorage.getItem(SETTINGS_KEY);
+      const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
       if (saved) {
         return { ...JSON.parse(saved) };
       }
@@ -62,7 +62,7 @@ export function useGameState() {
 
         // 如果没有，尝试从旧存档系统加载（兼容性）
         if (!savedData) {
-          const saved = localStorage.getItem(SAVE_KEY);
+          const saved = localStorage.getItem(STORAGE_KEYS.SAVE);
           if (saved) {
             savedData = JSON.parse(saved);
             // 如果从旧系统加载成功，迁移到槽位1
@@ -183,10 +183,10 @@ export function useGameState() {
         saveToSlot(currentSlotId, playerData, logsData);
 
         // 同时保存到旧存档系统（兼容性）
-        localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+        localStorage.setItem(STORAGE_KEYS.SAVE, JSON.stringify(saveData));
 
         if (settings.autoSave) {
-          localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+          localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
         }
       } catch (error) {
         console.error('保存存档失败:', error);
@@ -228,7 +228,7 @@ export function useGameState() {
       saveGame(newPlayer, initialLogs);
       // 保存设置
       try {
-        localStorage.setItem(SETTINGS_KEY, JSON.stringify(newSettings));
+        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(newSettings));
       } catch (error) {
         console.error('保存设置失败:', error);
       }
@@ -241,6 +241,8 @@ export function useGameState() {
   // 使用 ref 存储最新的 player 和 logs，避免因对象引用变化而频繁触发保存
   const playerRef = useRef<PlayerStats | null>(player);
   const logsRef = useRef<LogEntry[]>(logs);
+  // 记录上次保存时间，避免短时间内重复保存
+  const lastSaveTimeRef = useRef<number>(0);
 
   // 更新 ref 当数据变化时
   useEffect(() => {
@@ -253,19 +255,24 @@ export function useGameState() {
 
   useEffect(() => {
     if (player && gameStarted && settings.autoSave) {
+      // 检查是否距离上次保存超过5秒，避免短时间内重复保存
+      const timeSinceLastSave = Date.now() - lastSaveTimeRef.current;
+      const debounceDelay = timeSinceLastSave > 5000 ? 2000 : 5000;
+
       // 清除之前的定时器
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
       }
-      // 设置新的定时器，延迟2秒保存
+      // 设置新的定时器
       // 使用 ref 获取最新数据，避免闭包问题
       saveTimeoutRef.current = setTimeout(() => {
         const currentPlayer = playerRef.current;
         const currentLogs = logsRef.current;
         if (currentPlayer && currentLogs) {
+          lastSaveTimeRef.current = Date.now();
           saveGame(currentPlayer, currentLogs);
         }
-      }, 2000);
+      }, debounceDelay);
 
       return () => {
         if (saveTimeoutRef.current) {

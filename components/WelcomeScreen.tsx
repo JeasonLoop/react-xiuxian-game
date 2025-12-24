@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 import { Sparkles, Play, Upload } from 'lucide-react';
 import logo from '../public/assets/images/logo.png';
-import { SAVE_KEY } from '../utils/gameUtils';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 import { showError, showConfirm } from '../utils/toastUtils';
 
 interface Props {
@@ -70,7 +70,7 @@ const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
         () => {
           try {
             // 保存到localStorage
-            localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+            localStorage.setItem(STORAGE_KEYS.SAVE, JSON.stringify(saveData));
 
             // 直接刷新页面，不需要再次确认
             // 延迟一小段时间让用户看到操作完成

@@ -3,6 +3,7 @@ import { PlayerStats, AdventureResult } from '../types';
 import { RandomSectTask } from '../services/randomService';
 import { generateAdventureEvent } from '../services/aiService';
 import { X, Loader2 } from 'lucide-react';
+import { logger } from '../utils/logger';
 
 interface Props {
   isOpen: boolean;
@@ -48,7 +49,7 @@ const SectTaskModal: React.FC<Props> = ({
 
   const handleStartTask = async () => {
     try {
-      console.log('开始执行任务:', task);
+      logger.log('开始执行任务:', task);
       setStage('executing');
       setLoading(true);
       setProgress(0);
@@ -278,7 +279,7 @@ const SectTaskModal: React.FC<Props> = ({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  console.log('按钮被点击，开始执行任务');
+                  logger.log('按钮被点击，开始执行任务');
                   handleStartTask();
                 }}
                 disabled={loading}

@@ -6,10 +6,6 @@ export const uid = () => {
   return `${Date.now()}-${uidCounter}-${Math.random().toString(36).substr(2, 9)}`;
 };
 
-// localStorage 键名
-export const SAVE_KEY = 'xiuxian-game-save';
-export const SETTINGS_KEY = 'xiuxian-game-settings';
-
 /**
  * 安全的随机选择函数
  * 从数组中随机选择一个元素，如果数组为空则返回null

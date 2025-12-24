@@ -31,7 +31,7 @@ import { useAutoFeatures } from './hooks/useAutoFeatures';
 import { usePassiveRegeneration } from './hooks/usePassiveRegeneration';
 import { useAutoGrottoHarvest } from './hooks/useAutoGrottoHarvest';
 import { useBattleResultHandler } from './hooks/useBattleResultHandler';
-import { SAVE_KEY } from './utils/gameUtils';
+import { STORAGE_KEYS } from './constants/storageKeys';
 import { setGlobalAlertSetter } from './utils/toastUtils';
 import AlertModal from './components/AlertModal';
 import { AlertType } from './components/AlertModal';
@@ -161,8 +161,7 @@ function App() {
 
   // 检查调试模式是否启用
   useEffect(() => {
-    const DEBUG_MODE_KEY = 'xiuxian-debug-mode';
-    const debugMode = localStorage.getItem(DEBUG_MODE_KEY) === 'true';
+    const debugMode = localStorage.getItem(STORAGE_KEYS.DEBUG_MODE) === 'true';
     setIsDebugModeEnabled(debugMode);
   }, [setIsDebugModeEnabled]);
 
@@ -505,7 +504,7 @@ function App() {
   const handleRebirth = () => {
     // 清除所有存档（包括新的多存档槽位系统和旧的存档系统）
     clearAllSlots(); // 清除所有存档槽位和备份
-    localStorage.removeItem(SAVE_KEY); // 清除旧存档系统（兼容性）
+    localStorage.removeItem(STORAGE_KEYS.SAVE); // 清除旧存档系统（兼容性）
 
     // 重置所有状态
     setIsDead(false);
@@ -1262,7 +1261,7 @@ function App() {
         hasSave={hasSave}
         onStart={() => {
           // 新游戏：清除存档并重置状态
-          localStorage.removeItem(SAVE_KEY);
+          localStorage.removeItem(STORAGE_KEYS.SAVE);
           setHasSave(false);
           setGameStarted(false);
           setPlayer(null);

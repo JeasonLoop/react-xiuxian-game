@@ -20,7 +20,7 @@ import {
 import {
   REALM_ORDER,
   REALM_DATA,
-  DISCOVERABLE_RECIPES,
+  DISCOVERABLE_RECIPES, 
   CULTIVATION_ARTS,
   CULTIVATION_ART_BATTLE_SKILLS,
   ARTIFACT_BATTLE_SKILLS,
@@ -31,6 +31,8 @@ import {
 } from '../constants';
 import { getPlayerTotalStats } from '../utils/statUtils';
 import { generateEnemyName } from './aiService';
+import { logger } from '../utils/logger';
+
 
 const randomId = () => Math.random().toString(36).slice(2, 9);
 
@@ -833,6 +835,9 @@ export const LOOT_ITEMS = {
   ],
 };
 
+// 稀有度等级顺序（缓存，避免重复创建）
+const RARITY_ORDER: ItemRarity[] = ['普通', '稀有', '传说', '仙品'];
+
 // 根据敌人强度和类型生成搜刮奖励
 const generateLoot = (
   enemyStrength: number,
@@ -982,9 +987,8 @@ const generateLoot = (
     if (itemType === '丹方') {
       // 根据稀有度筛选可获得的丹方，排除已选择的
       const availableRecipes = DISCOVERABLE_RECIPES.filter((recipe) => {
-        const rarityOrder: ItemRarity[] = ['普通', '稀有', '传说', '仙品'];
-        const targetIndex = rarityOrder.indexOf(targetRarity);
-        const recipeIndex = rarityOrder.indexOf(recipe.result.rarity);
+        const targetIndex = RARITY_ORDER.indexOf(targetRarity);
+        const recipeIndex = RARITY_ORDER.indexOf(recipe.result.rarity);
         const recipeKey = `${recipe.name}丹方-${recipe.result.rarity}`;
         return recipeIndex <= targetIndex && !selectedItems.has(recipeKey);
       });
@@ -1026,9 +1030,8 @@ const generateLoot = (
     // 如果过滤后没有可用物品，尝试降级选择
     if (availableItems.length === 0) {
       const fallbackItems = itemPool.filter((item) => {
-        const rarityOrder: ItemRarity[] = ['普通', '稀有', '传说', '仙品'];
-        const targetIndex = rarityOrder.indexOf(targetRarity);
-        const itemIndex = rarityOrder.indexOf(item.rarity);
+        const targetIndex = RARITY_ORDER.indexOf(targetRarity);
+        const itemIndex = RARITY_ORDER.indexOf(item.rarity);
         if (itemIndex > targetIndex) return false;
 
         // 同样检查是否已选择
@@ -1133,6 +1136,47 @@ export interface BattleResolution {
 }
 
 const clampMin = (value: number, min: number) => (value < min ? min : value);
+
+/**
+ * 计算行动次数（基于速度差和神识差）
+ * @param fasterSpeed 更快单位的速度
+ * @param slowerSpeed 更慢单位的速度
+ * @param fasterSpirit 更快单位的神识
+ * @param slowerSpirit 更慢单位的神识
+ * @returns 行动次数（1-5）
+ */
+const calculateActionCount = (
+  fasterSpeed: number,
+  slowerSpeed: number,
+  fasterSpirit: number,
+  slowerSpirit: number
+): number => {
+  // 确保速度值是有效数字，防止NaN
+  const validFasterSpeed = Number(fasterSpeed) || 0;
+  const validSlowerSpeed = Number(slowerSpeed) || 1; // 避免除零，默认至少为1
+  const validFasterSpirit = Number(fasterSpirit) || 0;
+  const validSlowerSpirit = Number(slowerSpirit) || 1; // 避免除零，默认至少为1
+
+  // 计算速度和神识的综合行动力
+  // 速度权重0.6，神识权重0.4
+  const fasterActionPower = validFasterSpeed * 0.6 + validFasterSpirit * 0.4;
+  const slowerActionPower = validSlowerSpeed * 0.6 + validSlowerSpirit * 0.4;
+
+  if (fasterActionPower <= slowerActionPower) return 1; // 行动力不占优，只有1次行动
+
+  const powerDiff = fasterActionPower - slowerActionPower;
+  // 确保slowerActionPower至少为1，避免除零
+  const safeSlowerPower = Math.max(1, slowerActionPower);
+  const powerRatio = powerDiff / safeSlowerPower; // 行动力差比例
+
+  // 基础1次 + 每50%行动力优势额外1次行动
+  // 例如：行动力是敌人的1.5倍 = 2次行动，2倍 = 3次行动，3倍 = 4次行动
+  const extraActions = Math.floor(powerRatio / 0.5);
+  const totalActions = 1 + extraActions;
+
+  // 最多5次行动（避免过于不平衡）
+  return Math.min(5, Math.max(1, totalActions));
+};
 
 const createEnemy = async (
   player: PlayerStats,
@@ -1348,7 +1392,7 @@ const createEnemy = async (
       }
     } catch (e) {
       // AI生成失败或超时，使用预设列表
-      console.log('AI生成敌人名字失败或超时，使用预设列表:', e);
+      logger.warn('AI生成敌人名字失败或超时，使用预设列表:', e);
     }
   }
 
@@ -2009,40 +2053,6 @@ export const initializeTurnBasedBattle = async (
   // 确定先手
   const playerFirst = (playerUnit.speed || 0) >= enemyUnit.speed;
 
-  // 计算行动次数（基于速度差和神识差）
-  const calculateActionCount = (
-    fasterSpeed: number,
-    slowerSpeed: number,
-    fasterSpirit: number,
-    slowerSpirit: number
-  ): number => {
-    // 确保速度值是有效数字，防止NaN
-    const validFasterSpeed = Number(fasterSpeed) || 0;
-    const validSlowerSpeed = Number(slowerSpeed) || 1; // 避免除零，默认至少为1
-    const validFasterSpirit = Number(fasterSpirit) || 0;
-    const validSlowerSpirit = Number(slowerSpirit) || 1; // 避免除零，默认至少为1
-
-    // 计算速度和神识的综合行动力
-    // 速度权重0.6，神识权重0.4
-    const fasterActionPower = validFasterSpeed * 0.6 + validFasterSpirit * 0.4;
-    const slowerActionPower = validSlowerSpeed * 0.6 + validSlowerSpirit * 0.4;
-
-    if (fasterActionPower <= slowerActionPower) return 1; // 行动力不占优，只有1次行动
-
-    const powerDiff = fasterActionPower - slowerActionPower;
-    // 确保slowerActionPower至少为1，避免除零
-    const safeSlowerPower = Math.max(1, slowerActionPower);
-    const powerRatio = powerDiff / safeSlowerPower; // 行动力差比例
-
-    // 基础1次 + 每50%行动力优势额外1次行动
-    // 例如：行动力是敌人的1.5倍 = 2次行动，2倍 = 3次行动，3倍 = 4次行动
-    const extraActions = Math.floor(powerRatio / 0.5);
-    const totalActions = 1 + extraActions;
-
-    // 最多5次行动（避免过于不平衡）
-    return Math.min(5, Math.max(1, totalActions));
-  };
-
   const playerMaxActions = calculateActionCount(
     playerUnit.speed,
     enemyUnit.speed,
@@ -2367,46 +2377,17 @@ export function executeEnemyTurn(battleState: BattleState): BattleState {
     newState.turn = 'player';
     newState.round += 1;
     // 重新计算并重置玩家行动次数（速度和神识可能因为Buff/Debuff改变）
-    const playerSpeed = newState.player.speed;
-    const enemySpeed = newState.enemy.speed;
-    const playerSpirit = newState.player.spirit;
-    const enemySpirit = newState.enemy.spirit;
-    const calculateActionCount = (
-      fasterSpeed: number,
-      slowerSpeed: number,
-      fasterSpirit: number,
-      slowerSpirit: number
-    ): number => {
-      // 确保速度值是有效数字，防止NaN
-      const validFasterSpeed = Number(fasterSpeed) || 0;
-      const validSlowerSpeed = Number(slowerSpeed) || 1; // 避免除零，默认至少为1
-      const validFasterSpirit = Number(fasterSpirit) || 0;
-      const validSlowerSpirit = Number(slowerSpirit) || 1; // 避免除零，默认至少为1
-
-      // 计算速度和神识的综合行动力
-      // 速度权重0.6，神识权重0.4
-      const fasterActionPower = validFasterSpeed * 0.6 + validFasterSpirit * 0.4;
-      const slowerActionPower = validSlowerSpeed * 0.6 + validSlowerSpirit * 0.4;
-
-      if (fasterActionPower <= slowerActionPower) return 1;
-      const powerDiff = fasterActionPower - slowerActionPower;
-      // 确保slowerActionPower至少为1，避免除零
-      const safeSlowerPower = Math.max(1, slowerActionPower);
-      const powerRatio = powerDiff / safeSlowerPower;
-      const extraActions = Math.floor(powerRatio / 0.5);
-      return Math.min(5, Math.max(1, 1 + extraActions));
-    };
     newState.playerMaxActions = calculateActionCount(
-      playerSpeed,
-      enemySpeed,
-      playerSpirit,
-      enemySpirit
+      newState.player.speed,
+      newState.enemy.speed,
+      newState.player.spirit,
+      newState.enemy.spirit
     );
     newState.enemyMaxActions = calculateActionCount(
-      enemySpeed,
-      playerSpeed,
-      enemySpirit,
-      playerSpirit
+      newState.enemy.speed,
+      newState.player.speed,
+      newState.enemy.spirit,
+      newState.player.spirit
     );
     newState.playerActionsRemaining = newState.playerMaxActions;
 

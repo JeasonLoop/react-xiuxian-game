@@ -14,10 +14,11 @@ import {
 import { getItemStats } from '../utils/itemUtils';
 import { getRarityTextColor } from '../utils/rarityUtils';
 import { showConfirm, showError } from '../utils/toastUtils';
-import { SAVE_KEY } from '../utils/gameUtils';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 import { calculateTitleEffects, getActiveSetEffects } from '../utils/titleUtils';
 import { useInheritanceHandlers } from '../views/inheritance';
 import { getPlayerTotalStats, getActiveMentalArt } from '../utils/statUtils';
+import { logger } from '../utils/logger';
 
 interface Props {
   isOpen: boolean;
@@ -48,7 +49,7 @@ const CharacterModal: React.FC<Props> = ({
   onAllocateAllAttributes,
   onUseInheritance,
   onResetAttributes,
-  addLog = (msg: string) => console.log(msg),
+  addLog = (msg: string) => logger.log(msg),
 }) => {
   if (!isOpen) return null;
 
@@ -169,7 +170,7 @@ const CharacterModal: React.FC<Props> = ({
   // 获取游戏开始时间（从存档时间戳计算）
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(SAVE_KEY);
+      const saved = localStorage.getItem(STORAGE_KEYS.SAVE);
       if (saved) {
         const saveData = JSON.parse(saved);
         if (saveData.timestamp) {

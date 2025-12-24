@@ -265,7 +265,7 @@ export const inferItemTypeAndSlot = (
     },
     {
       match: /草药|药草|灵草|仙草|草|花|果|叶|根|茎|枝|胆草|解毒|疗伤|恢复|治疗|回血|回蓝|回灵|回气/,
-      exclude: /草甲|草衣|草帽|草鞋/,
+      exclude: /草甲|草衣|草帽|草鞋|丹|丸|散|液|膏|剂/, // 排除丹药关键词，避免误判（如"回血丹"）
       type: ItemType.Herb,
       isEquippable: false,
     },

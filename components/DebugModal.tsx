@@ -51,6 +51,7 @@ import {
   getPillDefinition,
   INHERITANCE_SKILLS,
 } from '../constants';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 import { LOOT_ITEMS } from '../services/battleService';
 import { showSuccess, showError, showInfo, showConfirm } from '../utils/toastUtils';
 import { getRarityTextColor } from '../utils/rarityUtils';
@@ -847,8 +848,7 @@ const DebugModal: React.FC<Props> = ({
       '确定要关闭调试模式吗？关闭后需要重新点击游戏名称5次才能再次启用。',
       '确认关闭',
       () => {
-        const DEBUG_MODE_KEY = 'xiuxian-debug-mode';
-        localStorage.removeItem(DEBUG_MODE_KEY);
+        localStorage.removeItem(STORAGE_KEYS.DEBUG_MODE);
         // 刷新页面以应用更改
         window.location.reload();
       }
@@ -861,7 +861,7 @@ const DebugModal: React.FC<Props> = ({
       onClick={onClose}
     >
       <div
-        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[90vh] md:h-auto md:max-w-4xl md:max-h-[90vh] flex flex-col"
+        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[90vh] md:h-auto md:max-w-4xl md:max-h-[90vh] flex flex-col safe-area-modal"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -898,7 +898,7 @@ const DebugModal: React.FC<Props> = ({
                   type="text"
                   value={localPlayer.name}
                   onChange={(e) => updateField('name', e.target.value)}
-                  className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                  className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200 min-h-[44px] touch-manipulation"
                 />
               </div>
             </div>
@@ -919,7 +919,7 @@ const DebugModal: React.FC<Props> = ({
                   onChange={(e) =>
                     handleRealmChange(e.target.value as RealmType)
                   }
-                  className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                  className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200 min-h-[44px] touch-manipulation"
                 >
                   {REALM_ORDER.map((realm) => (
                     <option key={realm} value={realm}>
@@ -937,7 +937,7 @@ const DebugModal: React.FC<Props> = ({
                     onClick={() =>
                       handleRealmLevelChange(localPlayer.realmLevel - 1)
                     }
-                    className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-3 py-1 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                    className="bg-stone-700 active:bg-stone-600 text-stone-200 rounded px-3 py-2 min-w-[50px] md:min-w-[60px] min-h-[44px] flex items-center justify-center touch-manipulation shrink-0"
                   >
                     <Minus size={16} />
                   </button>
@@ -949,13 +949,13 @@ const DebugModal: React.FC<Props> = ({
                     onChange={(e) =>
                       handleRealmLevelChange(parseInt(e.target.value) || 1)
                     }
-                    className="flex-1 bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200 text-center"
+                    className="flex-1 bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200 text-center min-h-[44px] touch-manipulation w-0"
                   />
                   <button
                     onClick={() =>
                       handleRealmLevelChange(localPlayer.realmLevel + 1)
                     }
-                    className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-3 py-1 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                    className="bg-stone-700 active:bg-stone-600 text-stone-200 rounded px-3 py-2 min-w-[50px] md:min-w-[60px] min-h-[44px] flex items-center justify-center touch-manipulation shrink-0"
                   >
                     <Plus size={16} />
                   </button>
@@ -968,7 +968,7 @@ const DebugModal: React.FC<Props> = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => adjustNumber('exp', -1000)}
-                    className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
+                    className="bg-stone-700 active:bg-stone-600 text-stone-200 rounded px-3 py-2 text-xs min-w-[50px] md:min-w-[60px] min-h-[44px] flex items-center justify-center touch-manipulation shrink-0"
                   >
                     -1K
                   </button>
@@ -982,11 +982,11 @@ const DebugModal: React.FC<Props> = ({
                         Math.max(0, parseInt(e.target.value) || 0)
                       )
                     }
-                    className="flex-1 bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                    className="flex-1 bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200 min-h-[44px] touch-manipulation w-0"
                   />
                   <button
                     onClick={() => adjustNumber('exp', 1000)}
-                    className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
+                    className="bg-stone-700 active:bg-stone-600 text-stone-200 rounded px-3 py-2 text-xs min-w-[50px] md:min-w-[60px] min-h-[44px] flex items-center justify-center touch-manipulation shrink-0"
                   >
                     +1K
                   </button>
@@ -1006,7 +1006,7 @@ const DebugModal: React.FC<Props> = ({
                       Math.max(1, parseInt(e.target.value) || 1)
                     )
                   }
-                  className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                  className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200 min-h-[44px] touch-manipulation"
                 />
               </div>
             </div>
@@ -1048,7 +1048,7 @@ const DebugModal: React.FC<Props> = ({
                             : Math.max(0, value - 100);
                           updateField(key as keyof PlayerStats, newValue);
                         }}
-                        className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
+                        className="bg-stone-700 active:bg-stone-600 text-stone-200 rounded px-3 py-2 text-xs min-w-[50px] md:min-w-[60px] min-h-[44px] flex items-center justify-center touch-manipulation shrink-0"
                       >
                         -100
                       </button>
@@ -1065,7 +1065,7 @@ const DebugModal: React.FC<Props> = ({
                               : Math.max(0, newValue);
                           updateField(key as keyof PlayerStats, clampedValue);
                         }}
-                        className="flex-1 bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                        className="flex-1 bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200 min-h-[44px] touch-manipulation w-0"
                       />
                       <button
                         onClick={() => {
@@ -1074,7 +1074,7 @@ const DebugModal: React.FC<Props> = ({
                             : Math.max(0, value + 100);
                           updateField(key as keyof PlayerStats, newValue);
                         }}
-                        className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
+                        className="bg-stone-700 active:bg-stone-600 text-stone-200 rounded px-3 py-2 text-xs min-w-[50px] md:min-w-[60px] min-h-[44px] flex items-center justify-center touch-manipulation shrink-0"
                       >
                         +100
                       </button>
@@ -1098,7 +1098,7 @@ const DebugModal: React.FC<Props> = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => adjustNumber('spiritStones', -1000)}
-                    className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
+                    className="bg-stone-700 active:bg-stone-600 text-stone-200 rounded px-3 py-2 text-xs min-w-[50px] md:min-w-[60px] min-h-[44px] flex items-center justify-center touch-manipulation shrink-0"
                   >
                     -1K
                   </button>
@@ -1112,11 +1112,11 @@ const DebugModal: React.FC<Props> = ({
                         Math.max(0, parseInt(e.target.value) || 0)
                       )
                     }
-                    className="flex-1 bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                    className="flex-1 bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200 min-h-[44px] touch-manipulation w-0"
                   />
                   <button
                     onClick={() => adjustNumber('spiritStones', 1000)}
-                    className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
+                    className="bg-stone-700 active:bg-stone-600 text-stone-200 rounded px-3 py-2 text-xs min-w-[50px] md:min-w-[60px] min-h-[44px] flex items-center justify-center touch-manipulation shrink-0"
                   >
                     +1K
                   </button>
@@ -1129,7 +1129,7 @@ const DebugModal: React.FC<Props> = ({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => adjustNumber('lotteryTickets', -10)}
-                    className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
+                    className="bg-stone-700 active:bg-stone-600 text-stone-200 rounded px-3 py-2 text-xs min-w-[50px] md:min-w-[60px] min-h-[44px] flex items-center justify-center touch-manipulation shrink-0"
                   >
                     -10
                   </button>
@@ -1143,11 +1143,11 @@ const DebugModal: React.FC<Props> = ({
                         Math.max(0, parseInt(e.target.value) || 0)
                       )
                     }
-                    className="flex-1 bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                    className="flex-1 bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200 min-h-[44px] touch-manipulation w-0"
                   />
                   <button
                     onClick={() => adjustNumber('lotteryTickets', 10)}
-                    className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
+                    className="bg-stone-700 active:bg-stone-600 text-stone-200 rounded px-3 py-2 text-xs min-w-[50px] md:min-w-[60px] min-h-[44px] flex items-center justify-center touch-manipulation shrink-0"
                   >
                     +10
                   </button>
@@ -2977,7 +2977,7 @@ const DebugModal: React.FC<Props> = ({
                           {(() => {
                             try {
                               const settings = JSON.parse(
-                                localStorage.getItem('xiuxian-game-settings') ||
+                                localStorage.getItem(STORAGE_KEYS.SETTINGS) ||
                                   '{}'
                               );
                               const difficulty =
@@ -3310,24 +3310,22 @@ const DebugModal: React.FC<Props> = ({
         </div>
 
         {/* Footer */}
-        <div className="bg-stone-800 border-t border-stone-700 p-3 md:p-4 flex justify-between items-center shrink-0">
+        <div className="bg-stone-800 border-t border-stone-700 p-3 md:p-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 shrink-0 safe-area-footer">
           <button
             onClick={handleDisableDebugMode}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-700 hover:bg-orange-600 text-white rounded border border-orange-600 transition-colors"
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-orange-700 active:bg-orange-600 text-white rounded border border-orange-600 transition-colors min-h-[44px] touch-manipulation"
             title="关闭调试模式"
           >
             <Power size={16} />
             关闭调试模式
           </button>
-          <div className="flex gap-2">
-            <button
-              onClick={handleReset}
-              className="flex items-center gap-2 px-4 py-2 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded border border-stone-600 transition-colors"
-            >
-              <RotateCcw size={16} />
-              重置
-            </button>
-          </div>
+          <button
+            onClick={handleReset}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-stone-700 active:bg-stone-600 text-stone-200 rounded border border-stone-600 transition-colors min-h-[44px] touch-manipulation"
+          >
+            <RotateCcw size={16} />
+            重置
+          </button>
         </div>
       </div>
     </div>

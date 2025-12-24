@@ -1,8 +1,9 @@
 import React from 'react';
-import { PlayerStats, RealmType } from '../../types';
+import { PlayerStats } from '../../types';
 import { REALM_DATA, CULTIVATION_ARTS, TALENTS, TITLES, INHERITANCE_SKILLS, calculateSpiritualRootArtBonus, REALM_ORDER } from '../../constants';
 import { getItemStats } from '../../utils/itemUtils';
 import { generateBreakthroughFlavorText } from '../../services/aiService';
+import { getRealmIndex, calculateBreakthroughAttributePoints } from '../../utils/attributeUtils';
 
 interface UseBreakthroughHandlersProps {
   player: PlayerStats;
@@ -255,17 +256,8 @@ export function useBreakthroughHandlers({
 
         // 突破时给予属性点：指数级别增长
         // 境界升级：2^(境界索引+1)，层数升级：2^境界索引/9 + 1
-        const currentRealmIndex = REALM_ORDER.indexOf(isRealmUpgrade ? nextRealm : prev.realm);
-        // 确保realmIndex有效，防止NaN
-        const validRealmIndex = currentRealmIndex >= 0 ? currentRealmIndex : 0;
-        let attributePointsGained: number;
-        if (isRealmUpgrade) {
-          // 境界升级：2^(新境界索引+1)
-          attributePointsGained = Math.floor(Math.pow(2, validRealmIndex + 1));
-        } else {
-          // 层数升级：2^境界索引/9 + 1（至少1点）
-          attributePointsGained = Math.max(1, Math.floor(Math.pow(2, validRealmIndex) / 9) + 1);
-        }
+        const targetRealm = isRealmUpgrade ? nextRealm : prev.realm;
+        const attributePointsGained = calculateBreakthroughAttributePoints(isRealmUpgrade, targetRealm);
         if (attributePointsGained > 0) {
           addLog(
             `✨ 突破成功！获得 ${attributePointsGained} 点可分配属性点！`,
@@ -581,23 +573,15 @@ export function useBreakthroughHandlers({
         let tempLevel = prev.realmLevel;
         for (let i = 0; i < breakthroughCount; i++) {
           const isRealmUpgrade = tempLevel >= 9;
+          const validRealmIndex = getRealmIndex(tempRealm);
           if (isRealmUpgrade) {
-            const currentRealmIndex = REALM_ORDER.indexOf(tempRealm);
-            // 确保realmIndex有效，防止NaN
-            const validRealmIndex = currentRealmIndex >= 0 ? currentRealmIndex : 0;
             if (validRealmIndex < REALM_ORDER.length - 1) {
-              const nextRealmIndex = validRealmIndex + 1;
-              // 境界升级：2^(新境界索引+1)
-              attributePointsGained += Math.floor(Math.pow(2, nextRealmIndex + 1));
-              tempRealm = REALM_ORDER[nextRealmIndex];
+              attributePointsGained += calculateBreakthroughAttributePoints(isRealmUpgrade, REALM_ORDER[validRealmIndex + 1]);
+              tempRealm = REALM_ORDER[validRealmIndex + 1];
               tempLevel = 1;
             }
           } else {
-            const currentRealmIndex = REALM_ORDER.indexOf(tempRealm);
-            // 确保realmIndex有效，防止NaN
-            const validRealmIndex = currentRealmIndex >= 0 ? currentRealmIndex : 0;
-            // 层数升级：2^境界索引/9 + 1（至少1点）
-            attributePointsGained += Math.max(1, Math.floor(Math.pow(2, validRealmIndex) / 9) + 1);
+            attributePointsGained += calculateBreakthroughAttributePoints(isRealmUpgrade, tempRealm);
             tempLevel++;
           }
         }

@@ -1,7 +1,12 @@
 import React from 'react';
-import { PlayerStats, RealmType } from '../../types';
-import { TITLES, TITLE_SET_EFFECTS, REALM_ORDER } from '../../constants';
+import { PlayerStats } from '../../types';
+import { TITLES, TITLE_SET_EFFECTS } from '../../constants';
 import { calculateTitleEffects } from '../../utils/titleUtils';
+import {
+  getAttributeMultiplier,
+  calculateAttributeValue,
+  BASE_ATTRIBUTES,
+} from '../../utils/attributeUtils';
 
 interface UseCharacterHandlersProps {
   player: PlayerStats;
@@ -120,20 +125,16 @@ export function useCharacterHandlers({
       let newSpeed = prev.speed;
 
       // 根据境界计算属性点加成倍数（线性增长，更平衡）
-      // 基础倍数：1 + 境界索引 * 2，随境界线性增长
-      const realmIndex = REALM_ORDER.indexOf(prev.realm);
-      // 确保realmIndex有效，防止NaN
-      const validRealmIndex = realmIndex >= 0 ? realmIndex : 0;
-      const multiplier = 1 + validRealmIndex * 2; // 炼气期1倍，渡劫飞升13倍（之前是128倍）
+      const multiplier = getAttributeMultiplier(prev.realm);
 
       // 基础属性增加值
-      const baseAttack = 5;
-      const baseDefense = 3;
-      const baseHp = 20;
-      const baseSpirit = 3;
-      const basePhysique = 3;
-      const basePhysiqueHp = 10; // 体魄额外增加的气血
-      const baseSpeed = 2;
+      const baseAttack = BASE_ATTRIBUTES.attack;
+      const baseDefense = BASE_ATTRIBUTES.defense;
+      const baseHp = BASE_ATTRIBUTES.hp;
+      const baseSpirit = BASE_ATTRIBUTES.spirit;
+      const basePhysique = BASE_ATTRIBUTES.physique;
+      const basePhysiqueHp = BASE_ATTRIBUTES.physiqueHp;
+      const baseSpeed = BASE_ATTRIBUTES.speed;
 
       if (type === 'attack') {
         const gain = Math.floor(baseAttack * multiplier);
@@ -195,19 +196,16 @@ export function useCharacterHandlers({
       let newSpeed = prev.speed;
 
       // 根据境界计算属性点加成倍数（线性增长，更平衡）
-      const realmIndex = REALM_ORDER.indexOf(prev.realm);
-      // 确保realmIndex有效，防止NaN
-      const validRealmIndex = realmIndex >= 0 ? realmIndex : 0;
-      const multiplier = 1 + validRealmIndex * 2; // 炼气期1倍，渡劫飞升13倍（之前是128倍）
+      const multiplier = getAttributeMultiplier(prev.realm);
 
       // 基础属性增加值
-      const baseAttack = 5;
-      const baseDefense = 3;
-      const baseHp = 20;
-      const baseSpirit = 3;
-      const basePhysique = 3;
-      const basePhysiqueHp = 10; // 体魄额外增加的气血
-      const baseSpeed = 2;
+      const baseAttack = BASE_ATTRIBUTES.attack;
+      const baseDefense = BASE_ATTRIBUTES.defense;
+      const baseHp = BASE_ATTRIBUTES.hp;
+      const baseSpirit = BASE_ATTRIBUTES.spirit;
+      const basePhysique = BASE_ATTRIBUTES.physique;
+      const basePhysiqueHp = BASE_ATTRIBUTES.physiqueHp;
+      const baseSpeed = BASE_ATTRIBUTES.speed;
 
       // 计算总增加值
       let totalGain = 0;

@@ -6,7 +6,7 @@ import React from 'react';
 import { useEffect } from 'react';
 import { PlayerStats, Item, EquipmentSlot, GameSettings } from '../types';
 import { BattleReplay } from '../services/battleService';
-import { SAVE_KEY } from '../utils/gameUtils';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 import { clearAllSlots } from '../utils/saveManagerUtils';
 import { useItemActionLog } from '../hooks/useItemActionLog';
 
@@ -163,7 +163,7 @@ export function useDeathDetection({
         setDeathBattleData(null);
         // 清除所有存档槽位和旧存档
         clearAllSlots();
-        localStorage.removeItem(SAVE_KEY);
+        localStorage.removeItem(STORAGE_KEYS.SAVE);
         setIsBattleModalOpen(false);
         setAutoMeditate(false);
         setAutoAdventure(false);
@@ -262,7 +262,7 @@ export function useDeathDetection({
         setDeathBattleData(lastBattleReplay);
         // 清除所有存档槽位和旧存档
         clearAllSlots();
-        localStorage.removeItem(SAVE_KEY);
+        localStorage.removeItem(STORAGE_KEYS.SAVE);
 
         setIsBattleModalOpen(false);
 

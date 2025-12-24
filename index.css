@@ -6,11 +6,15 @@ body {
   background-color: #1c1c1a;
   color: #e6e6dc;
   height: 100vh;
+  height: 100dvh; /* 使用动态视口高度，移动端更准确 */
   width: 100vw;
+  width: 100dvw; /* 使用动态视口宽度 */
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
 }
+
+/* 移动端安全区域支持 - 通过其他选择器处理 */
 
 /* 移动端优化 */
 @media (max-width: 768px) {
@@ -21,6 +25,37 @@ body {
   a {
     touch-action: manipulation;
     -webkit-touch-callout: none;
+  }
+}
+
+/* 移动端头部安全区域适配 */
+.safe-area-header {
+  /* 基础内边距，确保在没有安全区域时也有间距 */
+  padding-top: 0.5rem;
+}
+
+/* 对于支持安全区域的设备，添加额外的顶部内边距 */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .safe-area-header {
+    /* 在有安全区域的设备上，使用安全区域顶部内边距 */
+    padding-top: calc(env(safe-area-inset-top, 0px) + 0.5rem);
+  }
+}
+
+/* 移动端弹窗安全区域适配 */
+@supports (height: calc(90vh - env(safe-area-inset-bottom))) {
+  .safe-area-modal {
+    /* 在移动端，高度需要考虑底部安全区域 */
+    height: calc(90vh - env(safe-area-inset-bottom, 0px));
+    max-height: calc(90vh - env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-footer {
+    /* 底部按钮区域添加安全区域内边距 */
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    margin-bottom: 0;
   }
 }
 

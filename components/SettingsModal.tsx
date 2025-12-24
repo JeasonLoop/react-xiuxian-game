@@ -15,6 +15,7 @@ import {
 import { GameSettings } from '../types';
 import dayjs from 'dayjs';
 import { showError, showSuccess, showInfo, showConfirm } from '../utils/toastUtils';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 import ChangelogModal from './ChangelogModal';
 import ShortcutsModal from './ShortcutsModal';
 import { KeyboardShortcut } from '../hooks/useKeyboardShortcuts';
@@ -46,7 +47,6 @@ const SettingsModal: React.FC<Props> = ({
   onOpenSaveManager,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const SAVE_KEY = 'xiuxian-game-save';
   const [isChangelogOpen, setIsChangelogOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
 
@@ -130,7 +130,7 @@ const SettingsModal: React.FC<Props> = ({
         () => {
           try {
             // 保存到localStorage
-            localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+            localStorage.setItem(STORAGE_KEYS.SAVE, JSON.stringify(saveData));
 
             // 直接刷新页面，不需要再次确认
             // 延迟一小段时间让用户看到操作完成
@@ -158,7 +158,7 @@ const SettingsModal: React.FC<Props> = ({
 
   const handleExportSave = () => {
     try {
-      const saved = localStorage.getItem(SAVE_KEY);
+      const saved = localStorage.getItem(STORAGE_KEYS.SAVE);
       if (!saved) {
         showError('没有找到存档数据！请先开始游戏。');
         return;

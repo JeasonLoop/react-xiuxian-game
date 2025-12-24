@@ -3,7 +3,7 @@ import { DifficultyMode, ItemRarity } from '../types';
 import { TALENTS } from '../constants';
 import { Sparkles, Sword, Shield, Heart, Zap, User, Upload, TriangleAlert } from 'lucide-react';
 import { showError, showSuccess, showConfirm } from '../utils/toastUtils';
-import { SAVE_KEY } from '../utils/gameUtils';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 import { getRarityTextColor } from '../utils/rarityUtils';
 
 interface Props {
@@ -95,7 +95,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
         '确认导入',
         () => {
           // 保存到localStorage
-          localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+          localStorage.setItem(STORAGE_KEYS.SAVE, JSON.stringify(saveData));
 
           // 提示并刷新页面
           showSuccess('存档导入成功！页面即将刷新...', undefined, () => {

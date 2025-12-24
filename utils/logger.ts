@@ -4,6 +4,8 @@
  * console.error 始终记录，用于错误追踪
  */
 
+import { STORAGE_KEYS } from '../constants/storageKeys';
+
 const isDev = import.meta.env.DEV;
 
 export const logger = {
@@ -45,8 +47,7 @@ export const logger = {
    */
   debug: (...args: unknown[]) => {
     if (isDev) {
-      const DEBUG_MODE_KEY = 'xiuxian-debug-mode';
-      const debugMode = localStorage.getItem(DEBUG_MODE_KEY) === 'true';
+      const debugMode = localStorage.getItem(STORAGE_KEYS.DEBUG_MODE) === 'true';
       if (debugMode) {
         console.debug(...args);
       }

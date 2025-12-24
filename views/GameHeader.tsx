@@ -13,6 +13,7 @@ import {
   Home,
 } from 'lucide-react';
 import { PlayerStats } from '../types';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 /**
  * 游戏头部组件
@@ -100,8 +101,7 @@ function GameHeader({
 
     // 如果达到5次，启用调试模式
     if (newCount >= 5) {
-      const DEBUG_MODE_KEY = 'xiuxian-debug-mode';
-      localStorage.setItem(DEBUG_MODE_KEY, 'true');
+      localStorage.setItem(STORAGE_KEYS.DEBUG_MODE, 'true');
       setClickCount(0);
       // 触发页面刷新以应用调试模式
       window.location.reload();
@@ -123,7 +123,7 @@ function GameHeader({
   }, []);
 
   return (
-    <header className="bg-paper-800 p-2 md:p-4 border-b border-stone-700 flex justify-between items-center shadow-lg z-10">
+    <header className="bg-paper-800 p-2 md:p-4 border-b border-stone-700 flex justify-between items-center shadow-lg z-10 sticky top-0 safe-area-header">
       <div className="flex items-center gap-3">
         <h1
           onClick={handleTitleClick}
