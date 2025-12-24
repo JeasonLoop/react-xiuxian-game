@@ -31,14 +31,16 @@ export function useBreakthroughHandlers({
   setLoading,
   loading,
 }: UseBreakthroughHandlersProps) {
-  const handleBreakthrough = async () => {
+  const handleBreakthrough = async (skipSuccessCheck: boolean = false) => {
     if (loading || !player) return;
 
     const isRealmUpgrade = player.realmLevel >= 9;
     const successChance = isRealmUpgrade ? 0.6 : 0.9;
-    const roll = Math.random();
 
-    if (roll < successChance) {
+    // 如果跳过成功率检查（天劫成功后），直接执行突破
+    const isSuccess = skipSuccessCheck || Math.random() < successChance;
+
+    if (isSuccess) {
       setLoading(true);
 
       let nextRealm = player.realm;

@@ -7077,3 +7077,137 @@ export const SPEEDUP_CONFIG = {
   costPerMinute: 10, // 每分钟消耗的灵石数量
   minCost: 100, // 最低消耗（即使时间很短）
 };
+
+// ==================== 天劫系统配置 ====================
+
+// 天劫等级配置
+export const TRIBULATION_CONFIG: Record<RealmType, {
+  requiresTribulation: boolean; // 是否需要渡劫
+  tribulationLevel: '金丹天劫' | '元婴天劫' | '化神天劫' | '炼虚天劫' | null; // 天劫等级
+  baseDeathProbability: number; // 基础死亡概率（0-1）
+  description: string; // 天劫描述
+}> = {
+  [RealmType.QiRefining]: {
+    requiresTribulation: false,
+    tribulationLevel: null,
+    baseDeathProbability: 0,
+    description: '炼气期无需渡劫'
+  },
+  [RealmType.Foundation]: {
+    requiresTribulation: false,
+    tribulationLevel: null,
+    baseDeathProbability: 0,
+    description: '筑基期无需渡劫'
+  },
+  [RealmType.GoldenCore]: {
+    requiresTribulation: true,
+    tribulationLevel: '金丹天劫',
+    baseDeathProbability: 0.20, // 基础20%死亡概率
+    description: '金丹大成，天劫将至！九九重劫，生死一线！'
+  },
+  [RealmType.NascentSoul]: {
+    requiresTribulation: true,
+    tribulationLevel: '元婴天劫',
+    baseDeathProbability: 0.30, // 基础30%死亡概率
+    description: '元婴出窍，天劫降临！此劫比金丹之劫更加凶险！'
+  },
+  [RealmType.SpiritSevering]: {
+    requiresTribulation: true,
+    tribulationLevel: '化神天劫',
+    baseDeathProbability: 0.40, // 基础40%死亡概率
+    description: '化神之劫，天地不容！若无绝世机缘，难逃此劫！'
+  },
+  [RealmType.VoidRefining]: {
+    requiresTribulation: true,
+    tribulationLevel: '炼虚天劫',
+    baseDeathProbability: 0.50, // 基础50%死亡概率
+    description: '炼虚之劫，虚与实交织！此乃通往仙界之最后一劫！'
+  },
+  [RealmType.ImmortalAscension]: {
+    requiresTribulation: false,
+    tribulationLevel: null,
+    baseDeathProbability: 0,
+    description: '已然飞升，无需渡劫'
+  },
+};
+
+// 装备品质倍率（用于天劫计算）
+export const TRIBULATION_RARITY_BONUS: Record<ItemRarity, number> = {
+  '普通': 0,   // 普通装备不加成
+  '稀有': 0.05, // 稀有装备降低5%死亡概率
+  '传说': 0.10, // 传说装备降低10%死亡概率
+  '仙品': 0.20, // 仙品装备降低20%死亡概率
+};
+
+// 本命法宝额外加成
+export const NATAL_ARTIFACT_BONUS = 0.05; // 本命法宝额外降低5%死亡概率
+
+// 天劫阶段配置
+export const TRIBULATION_STAGES = [
+  { stage: '准备中', description: '你正在调整呼吸，准备迎接天劫...', delay: 1000 },
+  { stage: '第一道雷劫', description: '天空乌云密布，第一道雷霆劈下！', delay: 2000 },
+  { stage: '第二道雷劫', description: '云层翻涌，第二道雷霆更加猛烈！', delay: 2000 },
+  { stage: '第三道雷劫', description: '天地变色，最后一道雷霆带着毁灭气息落下！', delay: 2000 },
+  { stage: '渡劫完成', description: '劫云散去，天劫已过！你成功突破！', delay: 0 },
+  { stage: '渡劫失败', description: '天劫太强，你被雷霆击中，魂飞魄散...', delay: 0 },
+];
+
+// 计算天劫死亡概率
+export const calculateTribulationDeathProbability = (
+  realm: RealmType,
+  totalStats: {
+    attack: number;
+    defense: number;
+    spirit: number;
+    physique: number;
+    speed: number;
+    maxHp: number;
+  },
+  equipmentQualityScore: number,
+  hasNatalArtifact: boolean
+): number => {
+  // 获取基础死亡概率
+  const config = TRIBULATION_CONFIG[realm];
+  let deathProbability = config.baseDeathProbability;
+
+  // 计算综合属性值（用于降低死亡概率）
+  // 归一化处理：以金丹期属性为基准
+  const normalizedStats = (
+    (totalStats.attack + totalStats.defense + totalStats.spirit +
+     totalStats.physique + totalStats.speed + totalStats.maxHp / 10) / 6
+  );
+
+  // 属性加成：每500点综合属性降低1%死亡概率，最多降低20%
+  const attributeBonus = Math.min(normalizedStats / 500 * 0.01, 0.20);
+  deathProbability -= attributeBonus;
+
+  // 装备加成
+  deathProbability -= equipmentQualityScore;
+
+  // 本命法宝加成
+  if (hasNatalArtifact) {
+    deathProbability -= NATAL_ARTIFACT_BONUS;
+  }
+
+  // 确保死亡概率在合理范围内
+  deathProbability = Math.max(0.05, Math.min(0.95, deathProbability));
+
+  return deathProbability;
+};
+
+// 计算装备品质评分（降低死亡概率的数值）
+export const calculateEquipmentQualityScore = (
+  equippedItems: Partial<Record<EquipmentSlot, string>>,
+  inventory: Item[]
+): number => {
+  let qualityScore = 0;
+
+  Object.values(equippedItems).forEach((itemId) => {
+    const item = inventory.find((i) => i.id === itemId);
+    if (item && item.rarity) {
+      qualityScore += TRIBULATION_RARITY_BONUS[item.rarity] || 0;
+    }
+  });
+
+  return qualityScore;
+};

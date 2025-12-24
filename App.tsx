@@ -14,6 +14,8 @@ import {
   AdventureType,
   RealmType,
   ItemType,
+  TribulationState,
+  TribulationResult,
 } from './types';
 import WelcomeScreen from './components/WelcomeScreen';
 import StartScreen from './components/StartScreen';
@@ -21,6 +23,7 @@ import DeathModal from './components/DeathModal';
 import DebugModal from './components/DebugModal';
 import SaveManagerModal from './components/SaveManagerModal';
 import SaveCompareModal from './components/SaveCompareModal';
+import TribulationModal from './components/TribulationModal';
 import { SaveData, clearAllSlots } from './utils/saveManagerUtils';
 import { BattleReplay } from './services/battleService';
 import { useGameState } from './hooks/useGameState';
@@ -36,7 +39,7 @@ import { setGlobalAlertSetter } from './utils/toastUtils';
 import AlertModal from './components/AlertModal';
 import { AlertType } from './components/AlertModal';
 import { useItemActionLog } from './hooks/useItemActionLog';
-import { REALM_ORDER } from './constants';
+import { REALM_ORDER, TRIBULATION_CONFIG } from './constants';
 import {
   useKeyboardShortcuts,
   KeyboardShortcut,
@@ -46,6 +49,7 @@ import {
   configToShortcut,
 } from './utils/shortcutUtils';
 import { compareItemEffects } from './utils/objectUtils';
+import { shouldTriggerTribulation, createTribulationState } from './utils/tribulationUtils';
 
 // 导入模块化的 handlers
 import {
@@ -213,6 +217,40 @@ function App() {
   const [isSaveCompareOpen, setIsSaveCompareOpen] = useState(false);
   const [compareSave1, setCompareSave1] = useState<SaveData | null>(null);
   const [compareSave2, setCompareSave2] = useState<SaveData | null>(null);
+
+  // 天劫弹窗状态
+  const [tribulationState, setTribulationState] = useState<TribulationState | null>(null);
+  // 防止天劫重复触发的标志
+  const isTribulationTriggeredRef = useRef(false);
+
+  // 处理天劫完成
+  const handleTribulationComplete = (result: TribulationResult) => {
+    // 不在这里重置标志位，让境界变化时的 useEffect 来重置
+    if (result.success) {
+      // 渡劫成功，执行突破（跳过成功率检查）
+      breakthroughHandlers.handleBreakthrough(true);
+      // 扣除气血
+      if (result.hpLoss && result.hpLoss > 0) {
+        setPlayer((prev) => {
+          if (!prev) return prev;
+          const newHp = Math.max(0, prev.hp - result.hpLoss);
+          return { ...prev, hp: newHp };
+        });
+        addLog(`渡劫成功，但损耗了${result.hpLoss}点气血。`, 'normal');
+      } else {
+        addLog(result.description, 'gain');
+      }
+      setTribulationState(null);
+    } else {
+      // 渡劫失败，触发死亡
+      setDeathReason(result.description);
+      setPlayer((prev) => {
+        if (!prev) return prev;
+        return { ...prev, hp: 0 };
+      });
+      setTribulationState(null);
+    }
+  };
 
   // 初始化全局 alert
   useEffect(() => {
@@ -856,10 +894,35 @@ function App() {
         }
         return;
       }
-      breakthroughHandlers.handleBreakthrough();
+
+      // 检查是否已经触发了天劫（防止重复触发）
+      if (isTribulationTriggeredRef.current) {
+        return;
+      }
+
+      // 检查是否需要渡劫
+      if (shouldTriggerTribulation(player) && !tribulationState?.isOpen) {
+        // 设置标志位，防止重复触发
+        isTribulationTriggeredRef.current = true;
+        // 确定目标境界
+        let targetRealm = player.realm;
+        if (player.realmLevel >= 9) {
+          const currentIndex = REALM_ORDER.indexOf(player.realm);
+          if (currentIndex < REALM_ORDER.length - 1) {
+            targetRealm = REALM_ORDER[currentIndex + 1];
+          }
+        }
+
+        // 创建天劫状态并触发弹窗
+        const newTribulationState = createTribulationState(player, targetRealm);
+        setTribulationState(newTribulationState);
+      } else if (!tribulationState?.isOpen) {
+        // 不需要渡劫，直接突破
+        breakthroughHandlers.handleBreakthrough();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [player?.exp, player?.maxExp, player?.realm, player?.realmLevel]);
+  }, [player?.exp, player?.maxExp, player?.realm, player?.realmLevel, tribulationState?.isOpen]);
 
   // 初始化日常任务（只在游戏开始时执行一次，或日期变化时执行）
   useEffect(() => {
@@ -884,6 +947,8 @@ function App() {
       if (player.realm !== prevRealm || player.realmLevel !== prevLevel) {
         // 境界或等级变化，说明突破成功
         dailyQuestHandlers.updateQuestProgress('breakthrough', 1);
+        // 重置天劫触发标志
+        isTribulationTriggeredRef.current = false;
       }
     }
     if (player) {
@@ -1295,6 +1360,14 @@ function App() {
 
   return (
     <>
+      {/* 天劫弹窗 */}
+      {tribulationState && (
+        <TribulationModal
+          tribulationState={tribulationState}
+          onTribulationComplete={handleTribulationComplete}
+        />
+      )}
+
       {/* 死亡弹窗 - 无法关闭 */}
       {isDead && player && (
         <DeathModal

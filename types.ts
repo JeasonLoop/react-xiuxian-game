@@ -936,3 +936,41 @@ export interface GrottoConfig {
   realmRequirement?: RealmType; // 境界要求（可选）
   description: string; // 描述
 }
+
+// ==================== 天劫系统类型定义 ====================
+
+// 天劫等级
+export type TribulationLevel = '金丹天劫' | '元婴天劫' | '化神天劫' | '炼虚天劫';
+
+// 天劫阶段
+export type TribulationStage = '准备中' | '第一道雷劫' | '第二道雷劫' | '第三道雷劫' | '渡劫完成' | '渡劫失败';
+
+// 天劫状态
+export interface TribulationState {
+  isOpen: boolean; // 是否触发天劫弹窗
+  targetRealm: RealmType; // 目标境界（突破后的境界）
+  tribulationLevel: TribulationLevel; // 天劫等级
+  stage: TribulationStage; // 当前阶段
+  deathProbability: number; // 死亡概率（0-1）
+  attributeBonus: number; // 属性修正值（降低死亡概率）
+  equipmentBonus: number; // 装备修正值（降低死亡概率）
+  totalStats: {
+    attack: number;
+    defense: number;
+    spirit: number;
+    physique: number;
+    speed: number;
+    maxHp: number;
+  }; // 综合属性（用于显示）
+  equipmentQualityScore: number; // 装备品质评分
+  isCleared: boolean; // 是否已成功度过天劫
+}
+
+// 天劫结果
+export interface TribulationResult {
+  success: boolean; // 是否成功
+  deathProbability: number; // 最终死亡概率
+  roll: number; // 随机值
+  hpLoss?: number; // 如果成功，可能损耗气血
+  description: string; // 渡劫描述
+}
