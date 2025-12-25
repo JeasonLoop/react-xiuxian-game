@@ -1,6 +1,11 @@
 import React from 'react';
 import { PlayerStats, ItemRarity } from '../../types';
-import { PET_TEMPLATES, REALM_DATA, REALM_ORDER, RARITY_MULTIPLIERS } from '../../constants';
+import {
+  PET_TEMPLATES,
+  REALM_DATA,
+  REALM_ORDER,
+  RARITY_MULTIPLIERS,
+} from '../../constants';
 
 interface UsePetHandlersProps {
   player: PlayerStats;
@@ -37,7 +42,8 @@ export function usePetHandlers({
     if (!player) return;
     const activePet = player.pets.find((p) => p.id === player.activePetId);
     setPlayer((prev) => ({ ...prev, activePetId: null }));
-    if (activePet) addLog(`你取消了灵宠【${activePet.name}】的激活状态。`, 'normal');
+    if (activePet)
+      addLog(`你取消了灵宠【${activePet.name}】的激活状态。`, 'normal');
   };
 
   const handleFeedPet = (
@@ -99,36 +105,36 @@ export function usePetHandlers({
 
       // 先计算经验值（需要物品信息，在扣除之前计算）
       // 大幅增加基础经验值
-      let baseExp = 200; // 基础经验值从100提升到200
+      let baseExp = 300; // 基础经验值从200提升到300
 
       // 根据玩家境界计算基础经验值（境界越高，基础经验值越高）
       const realmIndex = REALM_ORDER.indexOf(prev.realm);
-      const realmMultiplier = 1 + realmIndex * 2.5; // 每个境界增加250%基础经验（从80%提升）
-      const levelMultiplier = 1 + prev.realmLevel * 0.5; // 每层增加50%（从15%提升）
+      const realmMultiplier = 1 + realmIndex * 3.0; // 每个境界增加300%基础经验（从250%提升）
+      const levelMultiplier = 1 + prev.realmLevel * 0.6; // 每层增加60%（从50%提升）
       baseExp = Math.floor(baseExp * realmMultiplier * levelMultiplier);
 
       // 根据喂养类型调整经验倍率
       let feedTypeMultiplier = 1;
       if (feedType === 'hp') {
-        feedTypeMultiplier = 1.2; // 气血喂养给1.2倍经验
+        feedTypeMultiplier = 1.5; // 气血喂养给1.5倍经验（从1.2提升）
       } else if (feedType === 'exp') {
-        feedTypeMultiplier = 1.5; // 修为喂养给1.5倍经验
+        feedTypeMultiplier = 2.0; // 修为喂养给2.0倍经验（从1.5提升）
       } else if (feedType === 'item') {
-        feedTypeMultiplier = 3; // 物品喂养基础倍率从1.0提升到3
+        feedTypeMultiplier = 3.5; // 物品喂养基础倍率从3提升到3.5
       }
 
       // 根据物品品级（稀有度）计算经验倍率
       // 按照品级分类：普通、稀有、传说、仙品
       let rarityMultiplier = 1;
       if (feedType === 'item' && itemId) {
-        const item = prev.inventory.find(i => i.id === itemId);
+        const item = prev.inventory.find((i) => i.id === itemId);
         if (item) {
           const rarity = item.rarity || '普通';
           // 根据品级设置基础经验倍率（更明显的差异）
           const rarityBaseMultipliers: Record<ItemRarity, number> = {
             普通: 1.0,
-            稀有: 2.5,  // 稀有是普通的2.5倍
-            传说: 5.0,  // 传说是普通的5倍
+            稀有: 2.5, // 稀有是普通的2.5倍
+            传说: 5.0, // 传说是普通的5倍
             仙品: 15.0, // 仙品是普通的15倍
           };
           rarityMultiplier = rarityBaseMultipliers[rarity] || 1.0;
@@ -144,10 +150,6 @@ export function usePetHandlers({
       let expGain = Math.floor(baseExp * feedTypeMultiplier * rarityMultiplier);
       const randomVariation = 0.85 + Math.random() * 0.3; // 0.85 到 1.15
       expGain = Math.floor(expGain * randomVariation);
-
-      // 确保不超过升级所需经验
-      const expToNextLevel = pet.maxExp - pet.exp;
-      expGain = Math.min(expGain, expToNextLevel);
 
       // 至少给1点经验
       expGain = Math.max(1, expGain);
@@ -187,7 +189,7 @@ export function usePetHandlers({
           while (petNewExp >= petNewMaxExp && petNewLevel < 100) {
             petNewExp -= petNewMaxExp;
             petNewLevel += 1;
-            petNewMaxExp = Math.floor(petNewMaxExp * 1.3); // 降低经验增长倍数，从1.5降到1.3
+            petNewMaxExp = Math.floor(petNewMaxExp * 1.2); // 降低经验增长倍数，从1.3降到1.2
             leveledUp = true;
             addLog(`【${p.name}】升级了！现在是 ${petNewLevel} 级`, 'gain');
           }
@@ -195,10 +197,10 @@ export function usePetHandlers({
           // 只有升级时才提升属性
           const newStats = leveledUp
             ? {
-                attack: Math.floor(p.stats.attack * 1.1),
-                defense: Math.floor(p.stats.defense * 1.1),
-                hp: Math.floor(p.stats.hp * 1.1),
-                speed: Math.floor(p.stats.speed * 1.05),
+                attack: Math.floor(p.stats.attack * 1.2), // 从1.1提升到1.2 (每级+20%)
+                defense: Math.floor(p.stats.defense * 1.2), // 从1.1提升到1.2 (每级+20%)
+                hp: Math.floor(p.stats.hp * 1.2), // 从1.1提升到1.2 (每级+20%)
+                speed: Math.floor(p.stats.speed * 1.1), // 从1.05提升到1.1 (每级+10%)
               }
             : p.stats;
 
@@ -264,18 +266,21 @@ export function usePetHandlers({
 
     // 确定当前进化阶段的需求
     const nextStage = pet.evolutionStage + 1; // 0->1 或 1->2
-    const requirements = nextStage === 1
-      ? (template.evolutionRequirements.stage1 || template.evolutionRequirements)
-      : (template.evolutionRequirements.stage2 || template.evolutionRequirements);
+    const requirements =
+      nextStage === 1
+        ? template.evolutionRequirements.stage1 ||
+          template.evolutionRequirements
+        : template.evolutionRequirements.stage2 ||
+          template.evolutionRequirements;
 
     // 检查等级要求
     if (pet.level < (requirements.level || 0)) {
       const message = `灵宠等级不足，需要 ${requirements.level} 级才能进化到${nextStage === 1 ? '成熟期' : '完全体'}`;
       addLog(message, 'danger');
       if (setItemActionLog) {
-          setItemActionLog({ text: message, type: 'danger' });
-          // 延迟清除由 App.tsx 中的 useDelayedState 自动处理
-        }
+        setItemActionLog({ text: message, type: 'danger' });
+        // 延迟清除由 App.tsx 中的 useDelayedState 自动处理
+      }
       return;
     }
 
@@ -324,8 +329,8 @@ export function usePetHandlers({
         if (p.id === petId) {
           const newStage = p.evolutionStage + 1;
           // 根据阶段提升属性（大幅提升以匹配境界）
-          const statMultiplier = newStage === 1 ? 3.0 : 3.0; // 成熟期3倍，完全体再3倍（总共9倍）
-          const speedMultiplier = newStage === 1 ? 1.5 : 1.5; // 速度提升1.5倍
+          const statMultiplier = newStage === 1 ? 4.5 : 5.0; // 成熟期4.5倍，完全体5倍（总共22.5倍）
+          const speedMultiplier = newStage === 1 ? 2.0 : 2.5; // 速度提升2.0倍和2.5倍
 
           // 更新名称（如果有进化名称）
           let newName = p.name;
@@ -338,13 +343,15 @@ export function usePetHandlers({
           }
 
           // 更新技能和图片
-          const stageSkills = newStage === 1
-            ? (template.stageSkills?.stage1 || [])
-            : (template.stageSkills?.stage2 || []);
+          const stageSkills =
+            newStage === 1
+              ? template.stageSkills?.stage1 || []
+              : template.stageSkills?.stage2 || [];
 
-          const stageImage = newStage === 1
-            ? (template.stageImages?.stage1 || template.image)
-            : (template.stageImages?.stage2 || template.image);
+          const stageImage =
+            newStage === 1
+              ? template.stageImages?.stage1 || template.image
+              : template.stageImages?.stage2 || template.image;
 
           const stageName = newStage === 1 ? '成熟期' : '完全体';
           addLog(
@@ -411,8 +418,8 @@ export function usePetHandlers({
           // 根据品级设置基础经验倍率（更明显的差异）
           const rarityBaseMultipliers: Record<ItemRarity, number> = {
             普通: 1.0,
-            稀有: 2.5,  // 稀有是普通的2.5倍
-            传说: 5.0,  // 传说是普通的5倍
+            稀有: 2.5, // 稀有是普通的2.5倍
+            传说: 5.0, // 传说是普通的5倍
             仙品: 15.0, // 仙品是普通的15倍
           };
           let rarityMultiplier = rarityBaseMultipliers[rarity] || 1.0;
@@ -426,7 +433,9 @@ export function usePetHandlers({
           baseExp = Math.floor(baseExp * feedTypeMultiplier);
 
           // 计算单个物品的经验值
-          const singleExpGain = Math.floor(baseExp * rarityMultiplier * (0.85 + Math.random() * 0.3));
+          const singleExpGain = Math.floor(
+            baseExp * rarityMultiplier * (0.85 + Math.random() * 0.3)
+          );
 
           // 根据数量累加经验值
           totalExpGain += singleExpGain * count;
@@ -459,17 +468,17 @@ export function usePetHandlers({
           while (petNewExp >= petNewMaxExp && petNewLevel < 100) {
             petNewExp -= petNewMaxExp;
             petNewLevel += 1;
-            petNewMaxExp = Math.floor(petNewMaxExp * 1.3); // 降低经验增长倍数，从1.5降到1.3
+            petNewMaxExp = Math.floor(petNewMaxExp * 1.2); // 降低经验增长倍数，从1.3降到1.2
             leveledUp = true;
             addLog(`【${p.name}】升级了！现在是 ${petNewLevel} 级`, 'gain');
           }
 
           const newStats = leveledUp
             ? {
-                attack: Math.floor(p.stats.attack * 1.1),
-                defense: Math.floor(p.stats.defense * 1.1),
-                hp: Math.floor(p.stats.hp * 1.1),
-                speed: Math.floor(p.stats.speed * 1.05),
+                attack: Math.floor(p.stats.attack * 1.2), // 从1.1提升到1.2 (每级+20%)
+                defense: Math.floor(p.stats.defense * 1.2), // 从1.1提升到1.2 (每级+20%)
+                hp: Math.floor(p.stats.hp * 1.2), // 从1.1提升到1.2 (每级+20%)
+                speed: Math.floor(p.stats.speed * 1.1), // 从1.05提升到1.1 (每级+10%)
               }
             : p.stats;
 
@@ -524,13 +533,16 @@ export function usePetHandlers({
       // 根据灵宠等级和稀有度给予补偿（灵石）
       const baseCompensation = 100;
       const levelMultiplier = 1 + pet.level * 0.1; // 每级增加10%
-      const rarityMultiplier = {
-        '普通': 1,
-        '稀有': 2,
-        '传说': 5,
-        '仙品': 10,
-      }[pet.rarity] || 1;
-      const compensation = Math.floor(baseCompensation * levelMultiplier * rarityMultiplier);
+      const rarityMultiplier =
+        {
+          普通: 1,
+          稀有: 2,
+          传说: 5,
+          仙品: 10,
+        }[pet.rarity] || 1;
+      const compensation = Math.floor(
+        baseCompensation * levelMultiplier * rarityMultiplier
+      );
 
       addLog(
         `你放生了灵宠【${pet.name}】，获得了 ${compensation} 灵石作为补偿。`,
@@ -562,13 +574,16 @@ export function usePetHandlers({
         if (pet) {
           const baseCompensation = 100;
           const levelMultiplier = 1 + pet.level * 0.1;
-          const rarityMultiplier = {
-            '普通': 1,
-            '稀有': 2,
-            '传说': 5,
-            '仙品': 10,
-          }[pet.rarity] || 1;
-          const compensation = Math.floor(baseCompensation * levelMultiplier * rarityMultiplier);
+          const rarityMultiplier =
+            {
+              普通: 1,
+              稀有: 2,
+              传说: 5,
+              仙品: 10,
+            }[pet.rarity] || 1;
+          const compensation = Math.floor(
+            baseCompensation * levelMultiplier * rarityMultiplier
+          );
           totalCompensation += compensation;
           releasedPetNames.push(pet.name);
         }
@@ -604,7 +619,10 @@ export function usePetHandlers({
     const maxFeeds = times || Math.floor(player.hp / hpCost);
 
     if (maxFeeds <= 0) {
-      addLog(`气血不足，无法喂养！需要 ${hpCost} 点气血，当前只有 ${player.hp} 点`, 'danger');
+      addLog(
+        `气血不足，无法喂养！需要 ${hpCost} 点气血，当前只有 ${player.hp} 点`,
+        'danger'
+      );
       return;
     }
 
@@ -620,14 +638,14 @@ export function usePetHandlers({
 
       for (let i = 0; i < actualFeeds; i++) {
         // 基础经验值
-        let baseExp = 200;
+        let baseExp = 300; // 从200提升到300
         const realmIndex = REALM_ORDER.indexOf(prev.realm);
-        const realmMultiplier = 1 + realmIndex * 2.5;
-        const levelMultiplier = 1 + prev.realmLevel * 0.5;
+        const realmMultiplier = 1 + realmIndex * 3.0; // 从2.5提升到3.0
+        const levelMultiplier = 1 + prev.realmLevel * 0.6; // 从0.5提升到0.6
         baseExp = Math.floor(baseExp * realmMultiplier * levelMultiplier);
 
-        // 气血喂养给1.2倍经验
-        const feedTypeMultiplier = 1.2;
+        // 气血喂养给1.5倍经验（从1.2提升）
+        const feedTypeMultiplier = 1.5;
         let expGain = Math.floor(baseExp * feedTypeMultiplier);
         const randomVariation = 0.85 + Math.random() * 0.3;
         expGain = Math.floor(expGain * randomVariation);
@@ -637,7 +655,7 @@ export function usePetHandlers({
       }
 
       // 扣除气血
-      const newHp = Math.max(0, prev.hp - (hpCost * actualFeeds));
+      const newHp = Math.max(0, prev.hp - hpCost * actualFeeds);
 
       // 更新灵宠
       const newPets = prev.pets.map((p) => {
@@ -651,17 +669,17 @@ export function usePetHandlers({
           while (petNewExp >= petNewMaxExp && petNewLevel < 100) {
             petNewExp -= petNewMaxExp;
             petNewLevel += 1;
-            petNewMaxExp = Math.floor(petNewMaxExp * 1.3);
+            petNewMaxExp = Math.floor(petNewMaxExp * 1.2); // 从1.3降到1.2
             leveledUp = true;
             addLog(`【${p.name}】升级了！现在是 ${petNewLevel} 级`, 'gain');
           }
 
           const newStats = leveledUp
             ? {
-                attack: Math.floor(p.stats.attack * 1.1),
-                defense: Math.floor(p.stats.defense * 1.1),
-                hp: Math.floor(p.stats.hp * 1.1),
-                speed: Math.floor(p.stats.speed * 1.05),
+                attack: Math.floor(p.stats.attack * 1.2), // 从1.1提升到1.2
+                defense: Math.floor(p.stats.defense * 1.2), // 从1.1提升到1.2
+                hp: Math.floor(p.stats.hp * 1.2), // 从1.1提升到1.2
+                speed: Math.floor(p.stats.speed * 1.1), // 从1.05提升到1.1
               }
             : p.stats;
 

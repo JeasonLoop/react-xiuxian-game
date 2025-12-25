@@ -11,9 +11,11 @@ import {
   Bug,
   Calendar,
   Home,
+  Users,
 } from 'lucide-react';
 import { PlayerStats } from '../types';
 import { STORAGE_KEYS } from '../constants/storageKeys';
+import { useParty } from '../hooks/useParty';
 
 /**
  * 游戏头部组件
@@ -64,10 +66,16 @@ function GameHeader({
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const appVersion = import.meta.env.VITE_APP_VERSION || '-';
 
+  // 使用PartyKit连接获取在线人数
+  const { onlineCount } = useParty('global');
+
   const newAchievements = useMemo(
     () =>
-      Array.isArray(player.achievements) && Array.isArray(player.viewedAchievements)
-        ? player.achievements.filter((a) => !player.viewedAchievements.includes(a))
+      Array.isArray(player.achievements) &&
+      Array.isArray(player.viewedAchievements)
+        ? player.achievements.filter(
+            (a) => !player.viewedAchievements.includes(a)
+          )
         : [],
     [player.achievements, player.viewedAchievements]
   );
@@ -77,7 +85,10 @@ function GameHeader({
     [newAchievements.length]
   );
 
-  const petsCount = useMemo(() => Array.isArray(player.pets) ? player.pets.length : 0, [player.pets]);
+  const petsCount = useMemo(
+    () => (Array.isArray(player.pets) ? player.pets.length : 0),
+    [player.pets]
+  );
 
   const lotteryTickets = useMemo(
     () => player.lotteryTickets,
@@ -134,12 +145,23 @@ function GameHeader({
         >
           云灵修仙
         </h1>
-        <span
-          className="text-xs md:text-sm text-stone-400 font-mono px-2 py-1 bg-stone-800 rounded border border-stone-700"
-          title="当前版本"
-        >
-          v{appVersion}
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className="text-xs md:text-sm text-stone-400 font-mono px-2 py-1 bg-stone-800 rounded border border-stone-700"
+            title="当前版本"
+          >
+            v{appVersion}
+          </span>
+          {onlineCount > 0 && (
+            <span
+              className="text-xs md:text-sm text-green-400 font-mono px-2 py-1 bg-green-900/30 rounded border border-green-700 flex items-center gap-1"
+              title="当前在线人数"
+            >
+              <Users size={12} />
+              {onlineCount}
+            </span>
+          )}
+        </div>
       </div>
       {/* Mobile Menu Button */}
       <button
@@ -214,11 +236,12 @@ function GameHeader({
           >
             <Calendar size={18} />
             <span>日常</span>
-            {dailyQuestCompletedCount > 0 && (player.dailyQuests || []).length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {dailyQuestCompletedCount}/{(player.dailyQuests || []).length}
-              </span>
-            )}
+            {dailyQuestCompletedCount > 0 &&
+              (player.dailyQuests || []).length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {dailyQuestCompletedCount}/{(player.dailyQuests || []).length}
+                </span>
+              )}
           </button>
         )}
         {onOpenGrotto && (
