@@ -287,7 +287,7 @@ const ShortcutsModal: React.FC<ShortcutsModalProps> = ({
           </div>
         </div>
 
-        <div className="p-6 space-y-6 overflow-y-auto flex-1">
+        <div className="modal-scroll-container modal-scroll-content p-6 space-y-6">
           {categories.map((category) => (
             <div key={category}>
               <h3 className="font-bold text-mystic-gold mb-3 text-lg">

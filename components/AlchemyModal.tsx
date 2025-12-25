@@ -53,7 +53,7 @@ const AlchemyModal: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="p-3 md:p-4 bg-paper-800 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
+        <div className="modal-scroll-container modal-scroll-content p-3 md:p-4 bg-paper-800 grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
           <div className="col-span-full mb-2 bg-ink-900/50 p-3 rounded border border-stone-700 text-sm text-stone-400 flex justify-between">
             <span>
               拥有灵石：

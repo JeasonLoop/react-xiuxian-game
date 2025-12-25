@@ -1,11 +1,13 @@
 import { PlayerStats, TribulationState, TribulationResult } from '../types';
 import {
   TRIBULATION_CONFIG,
+  CULTIVATION_ARTS,
   calculateTribulationDeathProbability,
   calculateEquipmentQualityScore,
   REALM_ORDER,
 } from '../constants';
 import { getPlayerTotalStats } from './statUtils';
+import { checkBreakthroughConditions } from './cultivationUtils';
 
 /**
  * 检查是否触发天劫
@@ -35,7 +37,18 @@ export const shouldTriggerTribulation = (player: PlayerStats): boolean => {
 
   // 检查目标境界是否需要渡劫
   const config = TRIBULATION_CONFIG[targetRealm];
-  return config.requiresTribulation;
+  if (!config.requiresTribulation) {
+    return false;
+  }
+
+  // 检查是否满足突破条件（所有境界都需要检查）
+  const conditionCheck = checkBreakthroughConditions(player, targetRealm);
+  if (!conditionCheck.canBreakthrough) {
+    // 不满足条件，不触发天劫
+    return false;
+  }
+
+  return true;
 };
 
 /**

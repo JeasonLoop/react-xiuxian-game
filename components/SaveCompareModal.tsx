@@ -111,7 +111,7 @@ const SaveCompareModal: React.FC<Props> = ({ isOpen, onClose, save1, save2 }) =>
           </button>
         </div>
 
-        <div className="p-4 md:p-6 overflow-y-auto flex-1">
+        <div className="modal-scroll-container modal-scroll-content p-4 md:p-6">
           {/* 基本信息对比 */}
           <div className="mb-6">
             <h3 className="text-md font-semibold text-stone-300 mb-3">

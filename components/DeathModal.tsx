@@ -36,7 +36,7 @@ const DeathModal: React.FC<DeathModalProps> = ({
     : null;
 
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100] p-2 md:p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100] p-2 md:p-4">
       <div className="bg-gradient-to-br from-red-900/95 via-stone-900 to-red-900/95 border-2 md:border-4 border-red-600 rounded-lg p-3 md:p-6 max-w-lg md:max-w-2xl w-full shadow-2xl my-auto">
         {/* 标题 */}
         <div className="text-center mb-3 md:mb-4">

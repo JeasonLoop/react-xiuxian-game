@@ -106,7 +106,7 @@ const AchievementModal: React.FC<Props> = ({ isOpen, onClose, player }) => {
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1 min-h-0">
+        <div className="modal-scroll-container modal-scroll-content p-6 min-h-0">
           <div className="mb-4 text-center">
             <p className="text-stone-400">
               已完成: {completedAchievements.length} / {ACHIEVEMENTS.length}

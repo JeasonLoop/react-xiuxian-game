@@ -5,6 +5,7 @@ import React, {
   useRef,
   useMemo,
 } from 'react';
+import { checkBreakthroughConditions } from './utils/cultivationUtils';
 import {
   Item,
   Shop,
@@ -24,6 +25,7 @@ import DebugModal from './components/DebugModal';
 import SaveManagerModal from './components/SaveManagerModal';
 import SaveCompareModal from './components/SaveCompareModal';
 import TribulationModal from './components/TribulationModal';
+import CultivationIntroModal from './components/CultivationIntroModal';
 import { SaveData, clearAllSlots } from './utils/saveManagerUtils';
 import { BattleReplay } from './services/battleService';
 import { useGameState } from './hooks/useGameState';
@@ -93,6 +95,9 @@ function App() {
 
   // 欢迎界面状态 - 总是显示欢迎界面，让用户选择继续或开始
   const [showWelcome, setShowWelcome] = useState(true);
+
+  // 修仙法门弹窗状态
+  const [showCultivationIntro, setShowCultivationIntro] = useState(false);
 
   // 使用自定义hooks管理游戏效果
   const { visualEffects, createAddLog, triggerVisual } = useGameEffects();
@@ -901,23 +906,36 @@ function App() {
       }
 
       // 检查是否需要渡劫
+      const isRealmUpgrade = player.realmLevel >= 9;
+      let targetRealm = player.realm;
+      if (isRealmUpgrade) {
+        const currentIndex = REALM_ORDER.indexOf(player.realm);
+        if (currentIndex < REALM_ORDER.length - 1) {
+          targetRealm = REALM_ORDER[currentIndex + 1];
+        }
+      }
+
+      // 如果是境界升级，先检查是否满足突破条件
+      if (isRealmUpgrade && targetRealm !== player.realm) {
+        const conditionCheck = checkBreakthroughConditions(player, targetRealm);
+        if (!conditionCheck.canBreakthrough) {
+          addLog(conditionCheck.message, 'danger');
+          // 锁定经验值，避免反复触发
+          setPlayer((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
+          return;
+        }
+      }
+
+      // 检查是否需要渡劫（只有在满足条件后才检查）
       if (shouldTriggerTribulation(player) && !tribulationState?.isOpen) {
         // 设置标志位，防止重复触发
         isTribulationTriggeredRef.current = true;
-        // 确定目标境界
-        let targetRealm = player.realm;
-        if (player.realmLevel >= 9) {
-          const currentIndex = REALM_ORDER.indexOf(player.realm);
-          if (currentIndex < REALM_ORDER.length - 1) {
-            targetRealm = REALM_ORDER[currentIndex + 1];
-          }
-        }
 
         // 创建天劫状态并触发弹窗
         const newTribulationState = createTribulationState(player, targetRealm);
         setTribulationState(newTribulationState);
       } else if (!tribulationState?.isOpen) {
-        // 不需要渡劫，直接突破
+        // 不需要渡劫，直接执行突破
         breakthroughHandlers.handleBreakthrough();
       }
     }
@@ -937,6 +955,20 @@ function App() {
     // 只依赖 gameStarted，避免 player 对象变化时重复执行
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameStarted]);
+
+  // 首次进入检测：显示修仙法门弹窗
+  useEffect(() => {
+    if (gameStarted && !showWelcome) {
+      const hasShown = localStorage.getItem(STORAGE_KEYS.CULTIVATION_INTRO_SHOWN);
+      if (!hasShown) {
+        // 延迟一点显示，让游戏界面先加载完成
+        const timer = setTimeout(() => {
+          setShowCultivationIntro(true);
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [gameStarted, showWelcome]);
 
   // 监听突破成功，更新任务进度
   const prevRealmRef = useRef<{ realm: string; level: number } | null>(null);
@@ -1365,6 +1397,7 @@ function App() {
         <TribulationModal
           tribulationState={tribulationState}
           onTribulationComplete={handleTribulationComplete}
+          player={player}
         />
       )}
 
@@ -1505,6 +1538,12 @@ function App() {
             // 设置声望事件并打开弹窗
             setReputationEvent(event);
             setIsReputationEventOpen(true);
+          }}
+          onChallengeDaoCombining={() => {
+            // 挑战天地之魄：使用executeAdventure执行特殊挑战
+            if (adventureHandlers) {
+              adventureHandlers.executeAdventure('dao_combining_challenge', undefined, '极度危险');
+            }
           }}
         />
       )}
@@ -1807,6 +1846,15 @@ function App() {
           </div>
         </>
       )}
+
+      {/* 修仙法门弹窗 */}
+      <CultivationIntroModal
+        isOpen={showCultivationIntro}
+        onClose={() => {
+          setShowCultivationIntro(false);
+          localStorage.setItem(STORAGE_KEYS.CULTIVATION_INTRO_SHOWN, 'true');
+        }}
+      />
     </>
   );
 }

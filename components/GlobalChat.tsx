@@ -81,7 +81,7 @@ export const GlobalChat: React.FC<Props> = ({ playerName }) => {
         {/* 消息区域 */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar"
+          className="modal-scroll-container modal-scroll-content flex-1 p-3 space-y-3"
           style={{ scrollBehavior: 'smooth' }}
         >
           {messages.map((msg, i) => (

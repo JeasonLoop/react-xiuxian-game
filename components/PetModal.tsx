@@ -107,7 +107,7 @@ const PetModal: React.FC<Props> = ({
       onClick={onClose}
     >
       <div
-        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[80vh] md:h-auto md:max-w-3xl md:max-h-[90vh] overflow-y-auto"
+        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[80vh] md:h-auto md:max-w-3xl md:max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="sticky top-0 bg-stone-800 border-b border-stone-700 p-3 md:p-4 flex justify-between items-center">

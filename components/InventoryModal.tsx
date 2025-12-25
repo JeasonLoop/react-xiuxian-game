@@ -729,7 +729,7 @@ const InventoryModal: React.FC<Props> = ({
           {/* 装备面板 */}
           {(showEquipment || mobileActiveTab === 'equipment') && (
             <div
-              className={`w-full md:w-1/2 border-b md:border-b-0 md:border-r border-stone-600 p-3 md:p-4 overflow-y-auto ${
+              className={`w-full md:w-1/2 border-b md:border-b-0 md:border-r border-stone-600 p-3 md:p-4 modal-scroll-container modal-scroll-content ${
                 mobileActiveTab !== 'equipment' ? 'hidden md:block' : ''
               }`}
             >
@@ -744,7 +744,7 @@ const InventoryModal: React.FC<Props> = ({
 
           {/* 物品列表 */}
           <div
-            className={`${showEquipment ? 'w-full md:w-1/2' : 'w-full'} p-4 overflow-y-auto flex flex-col ${
+            className={`${showEquipment ? 'w-full md:w-1/2' : 'w-full'} modal-scroll-container modal-scroll-content p-4 flex flex-col ${
               mobileActiveTab !== 'inventory' ? 'hidden md:flex' : ''
             }`}
           >

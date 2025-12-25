@@ -143,6 +143,13 @@ export function useBattleResultHandler({
         let finalSectMasterId = prev.sectMasterId;
         let finalSectContribution = prev.sectContribution;
 
+        // 特殊处理：天地之魄挑战结果
+        let newDaoCombiningChallenged = prev.daoCombiningChallenged;
+        if (result.adventureType === 'dao_combining_challenge' && result.victory) {
+          newDaoCombiningChallenged = true;
+          addLog('✨ 你成功挑战了天地之魄，获得了合道期的资格！', 'special');
+        }
+
         if (result.adventureType === 'sect_challenge') {
           if (result.victory && prev.sectRank === SectRank.Elder) {
             newSectRank = SectRank.Leader;
@@ -194,7 +201,8 @@ export function useBattleResultHandler({
           pets: newPets,
           sectRank: newSectRank,
           sectMasterId: finalSectMasterId,
-          sectContribution: finalSectContribution
+          sectContribution: finalSectContribution,
+          daoCombiningChallenged: newDaoCombiningChallenged
         };
       });
     }

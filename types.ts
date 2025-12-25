@@ -4,8 +4,8 @@ export enum RealmType {
   GoldenCore = '金丹期',
   NascentSoul = '元婴期',
   SpiritSevering = '化神期',
-  VoidRefining = '炼虚期',
-  ImmortalAscension = '渡劫飞升',
+  DaoCombining = '合道期',
+  LongevityRealm = '长生境',
 }
 
 export type ArtGrade = '天' | '地' | '玄' | '黄'; // 功法品级：天、地、玄、黄
@@ -58,7 +58,7 @@ export enum ItemType {
   Recipe = '丹方',
 }
 
-export type ItemRarity = '普通' | '稀有' | '传说' | '仙品';
+export type ItemRarity = '普通' | '稀有' | '传说' | '仙品' | '史诗';
 
 // 装备部位枚举
 export enum EquipmentSlot {
@@ -293,6 +293,17 @@ export interface PlayerStats {
   dailyQuestCompleted: string[]; // 今日已完成的任务ID
   lastDailyQuestResetDate: string; // 上次重置日常任务的日期（YYYY-MM-DD格式）
   gameDays: number; // 游戏内天数（从开始游戏起计算）
+
+  // 新增修炼系统字段
+  foundationTreasure?: string; // 筑基奇物ID
+  goldenCoreMethodCount?: number; // 金丹法数（几法金丹）
+  heavenEarthEssence?: string; // 天地精华ID
+  heavenEarthMarrow?: string; // 天地之髓ID
+  marrowRefiningProgress?: number; // 天地之髓炼化进度 (0-100)
+  marrowRefiningSpeed?: number; // 炼化速度（每日进度）
+  daoCombiningChallenged?: boolean; // 是否挑战过天地之魄
+  longevityRules?: string[]; // 长生境规则之力列表
+  maxLongevityRules?: number; // 最大规则之力数量（默认3）
   // 声望系统
   reputation: number; // 声望值（用于解锁声望商店等）
   // 洞府系统
@@ -323,6 +334,78 @@ export interface PlayerStats {
   };
 }
 
+// 筑基奇物接口
+export interface FoundationTreasure {
+  id: string;
+  name: string;
+  description: string;
+  rarity: ItemRarity;
+  effects: {
+    hpBonus?: number;
+    attackBonus?: number;
+    defenseBonus?: number;
+    spiritBonus?: number;
+    physiqueBonus?: number;
+    speedBonus?: number;
+    specialEffect?: string;
+  };
+  requiredLevel?: number;
+}
+
+// 天地精华接口
+export interface HeavenEarthEssence {
+  id: string;
+  name: string;
+  description: string;
+  rarity: ItemRarity;
+  quality: number; // 品质 (1-100)
+  effects: {
+    hpBonus?: number;
+    attackBonus?: number;
+    defenseBonus?: number;
+    spiritBonus?: number;
+    physiqueBonus?: number;
+    speedBonus?: number;
+    specialEffect?: string;
+  };
+}
+
+// 天地之髓接口
+export interface HeavenEarthMarrow {
+  id: string;
+  name: string;
+  description: string;
+  rarity: ItemRarity;
+  quality: number; // 品质 (1-100)
+  refiningTime: number; // 基础炼化时间（天）
+  effects: {
+    hpBonus?: number;
+    attackBonus?: number;
+    defenseBonus?: number;
+    spiritBonus?: number;
+    physiqueBonus?: number;
+    speedBonus?: number;
+    specialEffect?: string;
+  };
+}
+
+// 规则之力接口
+export interface LongevityRule {
+  id: string;
+  name: string;
+  description: string;
+  power: number; // 规则之力强度 (1-100)
+  effects: {
+    hpPercent?: number;
+    attackPercent?: number;
+    defensePercent?: number;
+    spiritPercent?: number;
+    physiquePercent?: number;
+    speedPercent?: number;
+    specialEffect?: string;
+  };
+}
+
 export interface LogEntry {
   id: string;
   text: string;
@@ -330,7 +413,7 @@ export interface LogEntry {
   timestamp: number;
 }
 
-export type AdventureType = 'normal' | 'lucky' | 'secret_realm' | 'sect_challenge';
+export type AdventureType = 'normal' | 'lucky' | 'secret_realm' | 'sect_challenge' | 'dao_combining_challenge';
 
 export interface AdventureResult {
   story: string;
@@ -940,7 +1023,7 @@ export interface GrottoConfig {
 // ==================== 天劫系统类型定义 ====================
 
 // 天劫等级
-export type TribulationLevel = '金丹天劫' | '元婴天劫' | '化神天劫' | '炼虚天劫';
+export type TribulationLevel = '金丹天劫' | '元婴天劫' | '化神天劫' | '合道天劫' | '长生天劫';
 
 // 天劫阶段
 export type TribulationStage = '准备中' | '第一道雷劫' | '第二道雷劫' | '第三道雷劫' | '渡劫完成' | '渡劫失败';
@@ -973,4 +1056,39 @@ export interface TribulationResult {
   roll: number; // 随机值
   hpLoss?: number; // 如果成功，可能损耗气血
   description: string; // 渡劫描述
+}
+
+// ==================== 合道期挑战系统类型定义 ====================
+
+// 天地之魄BOSS接口
+export interface HeavenEarthSoulBoss {
+  id: string;
+  name: string;
+  description: string;
+  realm: RealmType;
+  baseStats: {
+    attack: number;
+    defense: number;
+    hp: number;
+    spirit: number;
+    physique: number;
+    speed: number;
+  };
+  difficulty: 'easy' | 'normal' | 'hard' | 'extreme'; // 难度等级
+  strengthMultiplier: number; // 战斗力浮动倍数 (0.9-3.0)
+  specialSkills: BattleSkill[]; // 特殊技能
+  rewards: {
+    exp: number;
+    spiritStones: number;
+    items?: string[]; // 奖励物品ID列表
+    daoCombiningUnlocked?: boolean; // 是否解锁合道期
+  };
+}
+
+// 合道期挑战状态
+export interface DaoCombiningChallengeState {
+  isOpen: boolean; // 是否打开挑战界面
+  bossId: string | null; // 当前挑战的BOSS ID
+  bossStrengthMultiplier: number; // BOSS强度倍数
+  battleResult: BattleResult | null; // 战斗结果
 }

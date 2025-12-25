@@ -604,7 +604,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
         </div>
 
         {/* 战斗区域 */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        <div className="modal-scroll-container modal-scroll-content flex-1 px-6 py-4 space-y-4">
           {/* 敌人信息 */}
           <div className="bg-rose-900/20 border border-rose-700/40 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">

@@ -219,7 +219,7 @@ const SettingsModal: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="p-6 space-y-6 overflow-y-auto flex-1">
+        <div className="modal-scroll-container modal-scroll-content p-6 space-y-6">
           {/* 音效设置 */}
           <div>
             <div className="flex items-center gap-2 mb-3">

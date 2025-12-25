@@ -444,7 +444,7 @@ const ShopModal: React.FC<Props> = ({
         </div>
 
         {/* 内容区域 */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="modal-scroll-container modal-scroll-content flex-1 p-4">
           {activeTab === 'buy' ? (
             <div>
               <div className="mb-4 flex flex-col gap-3">

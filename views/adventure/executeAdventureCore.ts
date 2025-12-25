@@ -79,6 +79,7 @@ function ensureEquipmentAttributes(
     普通: { min: 0.08, max: 0.12 },
     稀有: { min: 0.20, max: 0.30 },
     传说: { min: 0.40, max: 0.60 },
+    史诗: { min: 0.80, max: 1.00 },
     仙品: { min: 1.20, max: 1.80 },
   };
 
@@ -86,6 +87,7 @@ function ensureEquipmentAttributes(
     普通: { attack: 1, defense: 1, hp: 5, spirit: 1, physique: 1, speed: 1 },
     稀有: { attack: 5, defense: 3, hp: 20, spirit: 3, physique: 3, speed: 3 },
     传说: { attack: 15, defense: 10, hp: 50, spirit: 10, physique: 10, speed: 10 },
+    史诗: { attack: 50, defense: 30, hp: 150, spirit: 30, physique: 30, speed: 25 },
     仙品: { attack: 200, defense: 150, hp: 500, spirit: 100, physique: 100, speed: 80 },
   };
 

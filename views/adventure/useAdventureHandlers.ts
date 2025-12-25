@@ -82,6 +82,8 @@ export function useAdventureHandlers({
       setTimeout(() => {
         addLog('正在探索秘境，寻找机缘...', 'normal');
       }, 100);
+    } else if (adventureType === 'dao_combining_challenge') {
+      addLog('你前往挑战天地之魄，这是合道期的终极考验...', 'special');
     } else {
       addLog('你走出洞府，前往荒野历练...', 'normal');
     }

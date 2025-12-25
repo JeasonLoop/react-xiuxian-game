@@ -20,7 +20,7 @@ import {
 import {
   REALM_ORDER,
   REALM_DATA,
-  DISCOVERABLE_RECIPES, 
+  DISCOVERABLE_RECIPES,
   CULTIVATION_ARTS,
   CULTIVATION_ART_BATTLE_SKILLS,
   ARTIFACT_BATTLE_SKILLS,
@@ -28,6 +28,7 @@ import {
   BATTLE_POTIONS,
   getPillDefinition,
   SECT_MASTER_CHALLENGE_REQUIREMENTS,
+  HEAVEN_EARTH_SOUL_BOSSES,
 } from '../constants';
 import { getPlayerTotalStats } from '../utils/statUtils';
 import { generateEnemyName } from './aiService';
@@ -189,6 +190,7 @@ const getBattleDifficulty = (
     lucky: 0.85,
     secret_realm: 1.25,
     sect_challenge: 1.5, // 宗主挑战难度稍微下调，从2.0降至1.8
+    dao_combining_challenge: 2.0, // 天地之魄挑战难度
   };
   return baseDifficulty[adventureType];
 };
@@ -198,6 +200,7 @@ const baseBattleChance: Record<AdventureType, number> = {
   lucky: 0.2, // 机缘历练基础概率从8%提高到20%
   secret_realm: 0.65, // 秘境基础概率从45%提高到65%
   sect_challenge: 1.0, // 挑战必然触发
+  dao_combining_challenge: 1.0, // 天地之魄挑战必然触发
 };
 
 const pickOne = <T>(list: T[]): T =>
@@ -1197,6 +1200,15 @@ const createEnemy = async (
 }> => {
   const currentRealmIndex = REALM_ORDER.indexOf(player.realm);
 
+  // 保存选中的BOSS用于后续属性计算（天地之魄挑战）
+  let selectedBossForStats: typeof HEAVEN_EARTH_SOUL_BOSSES[string] | null = null;
+  if (adventureType === 'dao_combining_challenge') {
+    // 天地之魄挑战：从HEAVEN_EARTH_SOUL_BOSSES中随机选择一个（只选择一次，确保一致性）
+    const bossIds = Object.keys(HEAVEN_EARTH_SOUL_BOSSES);
+    const randomBossId = bossIds[Math.floor(Math.random() * bossIds.length)];
+    selectedBossForStats = HEAVEN_EARTH_SOUL_BOSSES[randomBossId] || null;
+  }
+
   // 如果进入秘境且有秘境的最低境界要求，基于秘境境界计算敌人强度
   let targetRealmIndex: number;
   let realmLevelReduction = 1.0; // 境界压制倍率（玩家境界高于秘境要求时降低难度）
@@ -1216,13 +1228,16 @@ const createEnemy = async (
       // 每高1个境界，降低15%难度，最多降低60%
       realmLevelReduction = Math.max(0.4, 1.0 - realmDiff * 0.15);
     }
-  } else   if (adventureType === 'sect_challenge') {
+  } else if (adventureType === 'sect_challenge') {
     // 宗主挑战特殊逻辑：宗主境界通常高出玩家 1 个境界，少数高出 2 个
     const realmOffset = Math.random() < 0.85 ? 1 : 2; // 85% 概率高出 1 个境界，15% 概率高出 2 个
     targetRealmIndex = clampMin(
       Math.min(REALM_ORDER.length - 1, currentRealmIndex + realmOffset),
       3 // 至少元婴期
     );
+  } else if (adventureType === 'dao_combining_challenge') {
+    // 天地之魄挑战：固定为化神期
+    targetRealmIndex = REALM_ORDER.indexOf(RealmType.SpiritSevering);
   } else {
     // 普通历练和机缘历练，按原逻辑
     const realmOffset =
@@ -1276,6 +1291,15 @@ const createEnemy = async (
     } else {
       // 20% 概率：境界突破或感悟提升，实力处于顶峰
       strengthVariance = { min: 1.3, max: 1.6 };
+    }
+  } else if (adventureType === 'dao_combining_challenge') {
+    // 天地之魄挑战：使用已选中的BOSS的strengthMultiplier
+    if (selectedBossForStats) {
+      strengthMultiplier = selectedBossForStats.strengthMultiplier || 2.0;
+      strengthVariance = { min: 0.95, max: 1.05 }; // 天地之魄属性稳定
+    } else {
+      strengthMultiplier = 2.0;
+      strengthVariance = { min: 0.95, max: 1.05 };
     }
   } else if (adventureType === 'normal') {
     if (strengthRoll < 0.4) {
@@ -1372,9 +1396,15 @@ const createEnemy = async (
   if (adventureType === 'sect_challenge') {
     name = '上代宗主';
     title = '威震八方的';
+  } else if (adventureType === 'dao_combining_challenge') {
+    // 天地之魄挑战：使用已选中的BOSS
+    if (selectedBossForStats) {
+      name = selectedBossForStats.name;
+      title = '天地之魄-';
+    }
   }
 
-  if (Math.random() < 0.15 && adventureType !== 'sect_challenge') {
+  if (Math.random() < 0.15 && adventureType !== 'sect_challenge' && adventureType !== 'dao_combining_challenge') {
     try {
       // 添加超时处理，防止AI调用卡住战斗初始化
       const timeoutPromise = new Promise<{ name: string; title: string }>((_, reject) => {
@@ -1446,37 +1476,56 @@ const createEnemy = async (
   }
 
   // 平衡敌人的基础属性，提高攻击力系数使战斗更有挑战性
-  const baseAttack = basePlayerAttack * 0.85 + basePlayerRealmLevel * 3; // 从0.7提升到0.85
-  const baseDefense = basePlayerDefense * 0.7 + basePlayerRealmLevel * 2;
-  // 计算敌人神识：基于玩家神识和境界基础神识
-  const realmBaseSpirit = REALM_DATA[realm]?.baseSpirit || 0;
-  const baseSpirit = basePlayerSpirit * 0.3 + realmBaseSpirit * 0.5 + basePlayerRealmLevel * 1;
+  // 天地之魄挑战：直接使用BOSS的基础属性
+  let baseAttack: number;
+  let baseDefense: number;
+  let baseMaxHp: number;
+  let baseSpeed: number;
+  let baseSpirit: number;
 
+  if (adventureType === 'dao_combining_challenge' && selectedBossForStats) {
+    // 使用BOSS的基础属性
+    baseAttack = selectedBossForStats.baseStats.attack;
+    baseDefense = selectedBossForStats.baseStats.defense;
+    baseMaxHp = selectedBossForStats.baseStats.hp;
+    baseSpeed = selectedBossForStats.baseStats.speed;
+    baseSpirit = selectedBossForStats.baseStats.spirit;
+  } else {
+    // 普通敌人：基于玩家属性计算
+    baseAttack = basePlayerAttack * 0.85 + basePlayerRealmLevel * 3; // 从0.7提升到0.85
+    baseDefense = basePlayerDefense * 0.7 + basePlayerRealmLevel * 2;
+    // 计算敌人神识：基于玩家神识和境界基础神识
+    const realmBaseSpirit = REALM_DATA[realm]?.baseSpirit || 0;
+    baseSpirit = basePlayerSpirit * 0.3 + realmBaseSpirit * 0.5 + basePlayerRealmLevel * 1;
+    baseMaxHp = basePlayerMaxHp;
+    baseSpeed = basePlayerSpeed;
+  }
+
+  // 天地之魄挑战：直接使用BOSS的基础属性，不应用额外的难度调整
+  if (adventureType === 'dao_combining_challenge') {
+    return {
+      name,
+      title,
+      realm,
+      attack: baseAttack,
+      defense: baseDefense,
+      maxHp: baseMaxHp,
+      speed: baseSpeed,
+      spirit: baseSpirit,
+      strengthMultiplier, // 保存强度倍数用于生成奖励
+    };
+  }
+
+  // 普通敌人：应用难度调整和随机波动
   return {
     name,
     title,
     realm,
     attack: Math.max(8, Math.round(baseAttack * variance() * finalDifficulty)),
-    defense: Math.max(
-      6,
-      Math.round(baseDefense * variance() * finalDifficulty)
-    ),
-    maxHp: Math.max(
-      40,
-      Math.round(
-        basePlayerMaxHp * (0.5 + Math.random() * 0.4) * finalDifficulty
-      )
-    ),
-    speed: Math.max(
-      6,
-      Math.round(
-        basePlayerSpeed * (0.7 + Math.random() * 0.3) * strengthMultiplier
-      )
-    ),
-    spirit: Math.max(
-      5,
-      Math.round(baseSpirit * variance() * finalDifficulty)
-    ),
+    defense: Math.max(6, Math.round(baseDefense * variance() * finalDifficulty)),
+    maxHp: Math.max(40, Math.round(baseMaxHp * (0.5 + Math.random() * 0.4) * finalDifficulty)),
+    speed: Math.max(6, Math.round(baseSpeed * (0.7 + Math.random() * 0.3) * strengthMultiplier)),
+    spirit: Math.max(5, Math.round(baseSpirit * variance() * finalDifficulty)),
     strengthMultiplier, // 保存强度倍数用于生成奖励
   };
 };
@@ -1510,6 +1559,11 @@ export const shouldTriggerBattle = (
   player: PlayerStats,
   adventureType: AdventureType
 ): boolean => {
+  // 挑战类型（宗主挑战、天地之魄挑战）总是触发战斗
+  if (adventureType === 'sect_challenge' || adventureType === 'dao_combining_challenge') {
+    return true;
+  }
+
   const base = baseBattleChance[adventureType] ?? 0.4; // 基础战斗概率
   const realmBonus = REALM_ORDER.indexOf(player.realm) * 0.02; // 境界加成（从0.015提高到0.02）
   const speedBonus = (player.speed || 0) * 0.0005; // 速度加成（从0.0004提高到0.0005）
@@ -2510,9 +2564,15 @@ function executeSkill(
       }
     });
     const isCrit = Math.random() < critChance;
+
+    // 计算基础伤害
     damage = isCrit
       ? Math.round(baseDamage * (skill.damage.critMultiplier || 1.5))
       : Math.round(baseDamage);
+
+    // 添加随机伤害浮动（0.9-1.1倍）
+    const randomMultiplier = 0.9 + Math.random() * 0.2; // 0.9-1.1之间的随机数
+    damage = Math.round(damage * randomMultiplier);
 
     // 应用防御
     if (skill.damage.type === 'physical') {

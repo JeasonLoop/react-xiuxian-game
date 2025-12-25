@@ -1,9 +1,10 @@
 import React from 'react';
 import { PlayerStats } from '../../types';
-import { REALM_DATA, CULTIVATION_ARTS, TALENTS, TITLES, INHERITANCE_SKILLS, calculateSpiritualRootArtBonus, REALM_ORDER } from '../../constants';
+import { REALM_DATA, CULTIVATION_ARTS, TALENTS, TITLES, INHERITANCE_SKILLS, calculateSpiritualRootArtBonus, REALM_ORDER, FOUNDATION_TREASURES } from '../../constants';
 import { getItemStats } from '../../utils/itemUtils';
 import { generateBreakthroughFlavorText } from '../../services/aiService';
 import { getRealmIndex, calculateBreakthroughAttributePoints } from '../../utils/attributeUtils';
+import { checkBreakthroughConditions, calculateGoldenCoreMethodCount } from '../../utils/cultivationUtils';
 
 interface UseBreakthroughHandlersProps {
   player: PlayerStats;
@@ -35,6 +36,21 @@ export function useBreakthroughHandlers({
     if (loading || !player) return;
 
     const isRealmUpgrade = player.realmLevel >= 9;
+
+    // 如果是境界升级，检查晋升条件
+    if (isRealmUpgrade) {
+      const currentIndex = REALM_ORDER.indexOf(player.realm);
+      if (currentIndex < REALM_ORDER.length - 1) {
+        const targetRealm = REALM_ORDER[currentIndex + 1];
+        const conditionCheck = checkBreakthroughConditions(player, targetRealm);
+
+        if (!conditionCheck.canBreakthrough) {
+          addLog(conditionCheck.message, 'danger');
+          return;
+        }
+      }
+    }
+
     const successChance = isRealmUpgrade ? 0.6 : 0.9;
 
     // 如果跳过成功率检查（天劫成功后），直接执行突破
@@ -334,6 +350,12 @@ export function useBreakthroughHandlers({
           });
         }
 
+        // 计算金丹法数（如果晋升到金丹期）
+        let goldenCoreMethodCount = prev.goldenCoreMethodCount;
+        if (isRealmUpgrade && nextRealm === '金丹期') {
+          goldenCoreMethodCount = calculateGoldenCoreMethodCount(prev);
+        }
+
         return {
           ...prev,
           realm: nextRealm,
@@ -351,6 +373,7 @@ export function useBreakthroughHandlers({
           attributePoints: prev.attributePoints + attributePointsGained,
           maxLifespan: newMaxLifespan,
           lifespan: newLifespan,
+          goldenCoreMethodCount, // 设置金丹法数
           statistics: {
             ...playerStats,
             breakthroughCount: playerStats.breakthroughCount + 1,

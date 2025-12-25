@@ -62,7 +62,7 @@ const ReputationEventModal: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="p-4 md:p-6 overflow-y-auto flex-1">
+        <div className="modal-scroll-container modal-scroll-content p-4 md:p-6">
           <div className="mb-6">
             <p className="text-stone-300 leading-relaxed whitespace-pre-line">
               {description}

@@ -167,7 +167,7 @@ const SectModal: React.FC<Props> = ({
             </div>
           </div>
 
-          <div className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="modal-scroll-container modal-scroll-content p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
             {availableSects.map((sect) => {
               const canJoin =
                 getRealmIndex(player.realm) >= getRealmIndex(sect.reqRealm);
@@ -309,7 +309,7 @@ const SectModal: React.FC<Props> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-6 overflow-y-auto bg-paper-800 max-h-[68vh]">
+        <div className="modal-scroll-container modal-scroll-content flex-1 p-6 bg-paper-800 max-h-[68vh]">
           {/* Main Hall */}
           {activeTab === 'hall' && (
             <div className="space-y-6">
@@ -476,7 +476,7 @@ const SectModal: React.FC<Props> = ({
                   <span>刷新</span>
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto flex-1 min-h-0">
+              <div className="modal-scroll-container modal-scroll-content grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
                 {randomTasks.map((task) => {
                   // 检查任务是否可以完成（但不阻止点击）
                   const taskStatus = (() => {

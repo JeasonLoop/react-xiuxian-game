@@ -166,7 +166,7 @@ const SectTreasureVaultModal: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="modal-scroll-container modal-scroll-content p-6">
           <div className="mb-4 text-stone-300 text-sm">
             <p className="mb-2">✨ 这里是宗门历代积累的珍藏，你可以选择一件物品带走。</p>
             <p className="text-stone-400">宝库中的物品品质与你的境界相关，境界越高，获得高品质物品的概率越大。</p>
