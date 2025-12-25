@@ -7102,25 +7102,25 @@ export const TRIBULATION_CONFIG: Record<RealmType, {
   [RealmType.GoldenCore]: {
     requiresTribulation: true,
     tribulationLevel: '金丹天劫',
-    baseDeathProbability: 0.20, // 基础20%死亡概率
+    baseDeathProbability: 0.30, // 基础30%死亡概率（从20%提高到30%）
     description: '金丹大成，天劫将至！九九重劫，生死一线！'
   },
   [RealmType.NascentSoul]: {
     requiresTribulation: true,
     tribulationLevel: '元婴天劫',
-    baseDeathProbability: 0.30, // 基础30%死亡概率
+    baseDeathProbability: 0.45, // 基础45%死亡概率（从30%提高到45%）
     description: '元婴出窍，天劫降临！此劫比金丹之劫更加凶险！'
   },
   [RealmType.SpiritSevering]: {
     requiresTribulation: true,
     tribulationLevel: '化神天劫',
-    baseDeathProbability: 0.40, // 基础40%死亡概率
+    baseDeathProbability: 0.60, // 基础60%死亡概率（从40%提高到60%）
     description: '化神之劫，天地不容！若无绝世机缘，难逃此劫！'
   },
   [RealmType.VoidRefining]: {
     requiresTribulation: true,
     tribulationLevel: '炼虚天劫',
-    baseDeathProbability: 0.50, // 基础50%死亡概率
+    baseDeathProbability: 0.70, // 基础70%死亡概率（从50%提高到70%）
     description: '炼虚之劫，虚与实交织！此乃通往仙界之最后一劫！'
   },
   [RealmType.ImmortalAscension]: {
@@ -7134,13 +7134,13 @@ export const TRIBULATION_CONFIG: Record<RealmType, {
 // 装备品质倍率（用于天劫计算）
 export const TRIBULATION_RARITY_BONUS: Record<ItemRarity, number> = {
   '普通': 0,   // 普通装备不加成
-  '稀有': 0.05, // 稀有装备降低5%死亡概率
-  '传说': 0.10, // 传说装备降低10%死亡概率
-  '仙品': 0.20, // 仙品装备降低20%死亡概率
+  '稀有': 0.03, // 稀有装备降低3%死亡概率（从5%降低到3%）
+  '传说': 0.06, // 传说装备降低6%死亡概率（从10%降低到6%）
+  '仙品': 0.12, // 仙品装备降低12%死亡概率（从20%降低到12%）
 };
 
 // 本命法宝额外加成
-export const NATAL_ARTIFACT_BONUS = 0.05; // 本命法宝额外降低5%死亡概率
+export const NATAL_ARTIFACT_BONUS = 0.03; // 本命法宝额外降低3%死亡概率（从5%降低到3%）
 
 // 天劫阶段配置
 export const TRIBULATION_STAGES = [
@@ -7177,8 +7177,8 @@ export const calculateTribulationDeathProbability = (
      totalStats.physique + totalStats.speed + totalStats.maxHp / 10) / 6
   );
 
-  // 属性加成：每500点综合属性降低1%死亡概率，最多降低20%
-  const attributeBonus = Math.min(normalizedStats / 500 * 0.01, 0.20);
+  // 属性加成：每800点综合属性降低1%死亡概率，最多降低15%（难度提高：从500改为800，从20%改为15%）
+  const attributeBonus = Math.min(normalizedStats / 800 * 0.01, 0.15);
   deathProbability -= attributeBonus;
 
   // 装备加成
@@ -7189,8 +7189,8 @@ export const calculateTribulationDeathProbability = (
     deathProbability -= NATAL_ARTIFACT_BONUS;
   }
 
-  // 确保死亡概率在合理范围内
-  deathProbability = Math.max(0.05, Math.min(0.95, deathProbability));
+  // 确保死亡概率在合理范围内（最低死亡概率从5%提高到10%，增加挑战性）
+  deathProbability = Math.max(0.10, Math.min(0.95, deathProbability));
 
   return deathProbability;
 };
