@@ -13,10 +13,25 @@ export default class MainServer implements Party.Server {
 
   onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
     console.log(`Connected: ${conn.id}`);
+    
+    // 获取当前连接数
+    const connections = Array.from(this.room.getConnections());
+    const onlineCount = connections.length;
+    
+    // 发送欢迎消息给新连接的用户
     conn.send(
       JSON.stringify({
         type: 'welcome',
         message: '欢迎来到修仙世界！',
+        onlineCount: onlineCount
+      })
+    );
+    
+    // 广播给所有用户更新在线人数
+    this.room.broadcast(
+      JSON.stringify({
+        type: 'onlineCountUpdate',
+        onlineCount: onlineCount
       })
     );
   }
@@ -29,5 +44,17 @@ export default class MainServer implements Party.Server {
 
   onClose(conn: Party.Connection) {
     console.log(`Disconnected: ${conn.id}`);
+    
+    // 更新在线人数
+    const connections = Array.from(this.room.getConnections());
+    const onlineCount = connections.length;
+    
+    // 广播给所有用户更新在线人数
+    this.room.broadcast(
+      JSON.stringify({
+        type: 'onlineCountUpdate',
+        onlineCount: onlineCount
+      })
+    );
   }
 }

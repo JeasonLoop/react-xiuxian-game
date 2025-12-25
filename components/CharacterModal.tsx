@@ -1,6 +1,17 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { X, Star, Award, Info, Zap, BarChart3, TrendingUp, Sparkles, BookOpen, Users } from 'lucide-react';
-import { PlayerStats,  ItemRarity, RealmType, Title } from '../types';
+import {
+  X,
+  Star,
+  Award,
+  Info,
+  Zap,
+  BarChart3,
+  TrendingUp,
+  Sparkles,
+  BookOpen,
+  Users,
+} from 'lucide-react';
+import { PlayerStats, ItemRarity, RealmType, Title } from '../types';
 import {
   TALENTS,
   TITLES,
@@ -15,7 +26,10 @@ import { getItemStats } from '../utils/itemUtils';
 import { getRarityTextColor } from '../utils/rarityUtils';
 import { showConfirm, showError } from '../utils/toastUtils';
 import { STORAGE_KEYS } from '../constants/storageKeys';
-import { calculateTitleEffects, getActiveSetEffects } from '../utils/titleUtils';
+import {
+  calculateTitleEffects,
+  getActiveSetEffects,
+} from '../utils/titleUtils';
 import { useInheritanceHandlers } from '../views/inheritance';
 import { getPlayerTotalStats, getActiveMentalArt } from '../utils/statUtils';
 import { logger } from '../utils/logger';
@@ -65,96 +79,133 @@ const CharacterModal: React.FC<Props> = ({
     addLog,
   });
 
-  const [activeTab, setActiveTab] = useState<'character' | 'statistics'>('character');
+  const [activeTab, setActiveTab] = useState<'character' | 'statistics'>(
+    'character'
+  );
   const [showAttributeDetails, setShowAttributeDetails] = useState(false);
   const [showTitleDetails, setShowTitleDetails] = useState(false);
   const [showInheritanceDetails, setShowInheritanceDetails] = useState(false);
-  const [selectedInheritanceRoute, setSelectedInheritanceRoute] = useState<string | null>(null);
+  const [selectedInheritanceRoute, setSelectedInheritanceRoute] = useState<
+    string | null
+  >(null);
   const [gameStartTime, setGameStartTime] = useState<number | null>(null);
   const currentTalent = TALENTS.find((t) => t.id === player.talentId);
   const currentTitle = TITLES.find((t) => t.id === player.titleId);
 
   // 检查称号是否满足解锁条件
-  const checkTitleRequirement = useCallback((title: Title, player: PlayerStats): boolean => {
-    const requirement = title.requirement.toLowerCase();
-    const stats = player.statistics || {
-      killCount: 0,
-      meditateCount: 0,
-      adventureCount: 0,
-      equipCount: 0,
-      petCount: 0,
-      recipeCount: 0,
-      artCount: 0,
-      breakthroughCount: 0,
-      secretRealmCount: 0,
-    };
+  const checkTitleRequirement = useCallback(
+    (title: Title, player: PlayerStats): boolean => {
+      const requirement = title.requirement.toLowerCase();
+      const stats = player.statistics || {
+        killCount: 0,
+        meditateCount: 0,
+        adventureCount: 0,
+        equipCount: 0,
+        petCount: 0,
+        recipeCount: 0,
+        artCount: 0,
+        breakthroughCount: 0,
+        secretRealmCount: 0,
+      };
 
-    // 检查境界类称号
-    if (requirement.includes('筑基期') || requirement.includes('筑基')) {
-      return REALM_ORDER.indexOf(player.realm) >= REALM_ORDER.indexOf(RealmType.Foundation);
-    }
-    if (requirement.includes('金丹期') || requirement.includes('金丹')) {
-      return REALM_ORDER.indexOf(player.realm) >= REALM_ORDER.indexOf(RealmType.GoldenCore);
-    }
-    if (requirement.includes('元婴期') || requirement.includes('元婴')) {
-      return REALM_ORDER.indexOf(player.realm) >= REALM_ORDER.indexOf(RealmType.NascentSoul);
-    }
-    if (requirement.includes('渡劫飞升') || requirement.includes('飞升')) {
-      return REALM_ORDER.indexOf(player.realm) >= REALM_ORDER.indexOf(RealmType.ImmortalAscension);
-    }
-
-    // 检查战斗类称号
-    if (requirement.includes('击败10个敌人') || requirement.includes('击败10')) {
-      return stats.killCount >= 10;
-    }
-    if (requirement.includes('击败50个敌人') || requirement.includes('击败50')) {
-      return stats.killCount >= 50;
-    }
-    if (requirement.includes('击败100个敌人') || requirement.includes('击败100')) {
-      return stats.killCount >= 100;
-    }
-
-    // 检查探索类称号
-    if (requirement.includes('完成20次历练') || requirement.includes('20次历练')) {
-      return stats.adventureCount >= 20;
-    }
-    if (requirement.includes('完成50次历练') || requirement.includes('50次历练')) {
-      return stats.adventureCount >= 50;
-    }
-    if (requirement.includes('完成100次历练') || requirement.includes('100次历练')) {
-      return stats.adventureCount >= 100;
-    }
-
-    // 检查打坐类称号
-    if (requirement.includes('打坐') || requirement.includes('冥想')) {
-      const match = requirement.match(/(\d+)/);
-      if (match) {
-        const count = parseInt(match[1]);
-        return stats.meditateCount >= count;
+      // 检查境界类称号
+      if (requirement.includes('筑基期') || requirement.includes('筑基')) {
+        return (
+          REALM_ORDER.indexOf(player.realm) >=
+          REALM_ORDER.indexOf(RealmType.Foundation)
+        );
       }
-    }
-
-    // 检查收集类称号
-    if (requirement.includes('收集') || requirement.includes('物品')) {
-      const match = requirement.match(/(\d+)/);
-      if (match) {
-        const count = parseInt(match[1]);
-        const uniqueItems = new Set(player.inventory.map(i => i.name)).size;
-        return uniqueItems >= count;
+      if (requirement.includes('金丹期') || requirement.includes('金丹')) {
+        return (
+          REALM_ORDER.indexOf(player.realm) >=
+          REALM_ORDER.indexOf(RealmType.GoldenCore)
+        );
       }
-    }
+      if (requirement.includes('元婴期') || requirement.includes('元婴')) {
+        return (
+          REALM_ORDER.indexOf(player.realm) >=
+          REALM_ORDER.indexOf(RealmType.NascentSoul)
+        );
+      }
+      if (requirement.includes('渡劫飞升') || requirement.includes('飞升')) {
+        return (
+          REALM_ORDER.indexOf(player.realm) >=
+          REALM_ORDER.indexOf(RealmType.ImmortalAscension)
+        );
+      }
 
-    // 初始称号默认解锁
-    if (requirement.includes('初始称号')) {
-      return true;
-    }
+      // 检查战斗类称号
+      if (
+        requirement.includes('击败10个敌人') ||
+        requirement.includes('击败10')
+      ) {
+        return stats.killCount >= 10;
+      }
+      if (
+        requirement.includes('击败50个敌人') ||
+        requirement.includes('击败50')
+      ) {
+        return stats.killCount >= 50;
+      }
+      if (
+        requirement.includes('击败100个敌人') ||
+        requirement.includes('击败100')
+      ) {
+        return stats.killCount >= 100;
+      }
 
-    return false;
-  }, []);
+      // 检查探索类称号
+      if (
+        requirement.includes('完成20次历练') ||
+        requirement.includes('20次历练')
+      ) {
+        return stats.adventureCount >= 20;
+      }
+      if (
+        requirement.includes('完成50次历练') ||
+        requirement.includes('50次历练')
+      ) {
+        return stats.adventureCount >= 50;
+      }
+      if (
+        requirement.includes('完成100次历练') ||
+        requirement.includes('100次历练')
+      ) {
+        return stats.adventureCount >= 100;
+      }
+
+      // 检查打坐类称号
+      if (requirement.includes('打坐') || requirement.includes('冥想')) {
+        const match = requirement.match(/(\d+)/);
+        if (match) {
+          const count = parseInt(match[1]);
+          return stats.meditateCount >= count;
+        }
+      }
+
+      // 检查收集类称号
+      if (requirement.includes('收集') || requirement.includes('物品')) {
+        const match = requirement.match(/(\d+)/);
+        if (match) {
+          const count = parseInt(match[1]);
+          const uniqueItems = new Set(player.inventory.map((i) => i.name)).size;
+          return uniqueItems >= count;
+        }
+      }
+
+      // 初始称号默认解锁
+      if (requirement.includes('初始称号')) {
+        return true;
+      }
+
+      return false;
+    },
+    []
+  );
 
   // 获取已解锁的称号列表
   const unlockedTitles = useMemo(() => {
-    return TITLES.filter(t => (player.unlockedTitles || []).includes(t.id));
+    return TITLES.filter((t) => (player.unlockedTitles || []).includes(t.id));
   }, [player.unlockedTitles]);
 
   // 计算当前称号效果（包括套装效果）
@@ -205,7 +256,10 @@ const CharacterModal: React.FC<Props> = ({
     }
 
     // 称号加成（包括套装效果）
-    const titleEffects = calculateTitleEffects(player.titleId, player.unlockedTitles || []);
+    const titleEffects = calculateTitleEffects(
+      player.titleId,
+      player.unlockedTitles || []
+    );
     const titleStats = {
       attack: titleEffects.attack,
       defense: titleEffects.defense,
@@ -247,7 +301,8 @@ const CharacterModal: React.FC<Props> = ({
     };
     (player.inheritanceSkills || []).forEach((skillId) => {
       const skill = INHERITANCE_SKILLS.find((s) => s.id === skillId);
-      if (skill && !skill.effects.expRate) { // 只有体术类传承技能永久加成
+      if (skill && !skill.effects.expRate) {
+        // 只有体术类传承技能永久加成
         inheritanceStats.attack += skill.effects.attack || 0;
         inheritanceStats.defense += skill.effects.defense || 0;
         inheritanceStats.hp += skill.effects.hp || 0;
@@ -351,7 +406,10 @@ const CharacterModal: React.FC<Props> = ({
     };
 
     // 计算额外统计数据
-    const totalInventoryItems = player.inventory.reduce((sum, item) => sum + item.quantity, 0);
+    const totalInventoryItems = player.inventory.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
     const totalEquippedItems = Object.keys(player.equippedItems).filter(
       (key) => player.equippedItems[key as keyof typeof player.equippedItems]
     ).length;
@@ -359,7 +417,8 @@ const CharacterModal: React.FC<Props> = ({
     const totalExpEarned = player.exp; // 当前修为（简化，实际应该累计）
     const realmIndex = REALM_ORDER.indexOf(player.realm);
     const maxRealmIndex = REALM_ORDER.length - 1;
-    const realmProgress = ((realmIndex * 9 + player.realmLevel) / (maxRealmIndex * 9 + 9)) * 100;
+    const realmProgress =
+      ((realmIndex * 9 + player.realmLevel) / (maxRealmIndex * 9 + 9)) * 100;
 
     return {
       ...stats,
@@ -465,10 +524,10 @@ const CharacterModal: React.FC<Props> = ({
       onClick={onClose}
     >
       <div
-        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[80vh] md:h-auto md:max-w-2xl md:max-h-[90vh] overflow-y-auto"
+        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[80vh] md:max-w-2xl md:max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-stone-800 border-b border-stone-700">
+        <div className="sticky top-0 bg-stone-800 border-b border-stone-700 z-10">
           <div className="p-3 md:p-4 flex justify-between items-center">
             <h2 className="text-lg md:text-xl font-serif text-mystic-gold">
               角色系统
@@ -511,627 +570,778 @@ const CharacterModal: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {activeTab === 'character' ? (
             <>
-          {/* 传承系统 */}
-          <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded p-4 border-2 border-purple-500">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-bold flex items-center gap-2">
-                <Sparkles className="text-purple-400" size={20} />
-                传承系统
-              </h3>
-              <button
-                onClick={() => setShowInheritanceDetails(!showInheritanceDetails)}
-                className="text-xs text-purple-300 hover:text-purple-200"
-              >
-                {showInheritanceDetails ? '收起详情' : '展开详情'}
-              </button>
-            </div>
-
-            {player.inheritanceLevel > 0 ? (
-              <div>
-                <p className="text-sm text-stone-300 mb-2">
-                  传承等级: <span className="font-bold text-purple-300">{player.inheritanceLevel}</span> / 4
-                </p>
-                {player.inheritanceRoute && (
-                  <p className="text-sm text-stone-300 mb-2">
-                    传承路线: <span className="font-bold text-purple-300">
-                      {INHERITANCE_ROUTES.find(r => r.id === player.inheritanceRoute)?.name || '未知'}
-                    </span>
-                  </p>
-                )}
-                {player.inheritanceExp > 0 && (
-                  <p className="text-sm text-stone-300 mb-2">
-                    传承经验: {player.inheritanceExp}
-                  </p>
-                )}
-                <div className="flex gap-2 mb-3">
-                  {player.inheritanceLevel < 4 && (
-                    <button
-                      onClick={() => inheritanceHandlers.handleCultivateInheritance('level')}
-                      className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors"
-                    >
-                      提升等级 ({(player.inheritanceLevel + 1) * 5000} 灵石)
-                    </button>
-                  )}
+              {/* 传承系统 */}
+              <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded p-4 border-2 border-purple-500">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-lg font-bold flex items-center gap-2">
+                    <Sparkles className="text-purple-400" size={20} />
+                    传承系统
+                  </h3>
                   <button
-                    onClick={() => inheritanceHandlers.handleCultivateInheritance('exp')}
-                    className="flex-1 px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm rounded transition-colors"
+                    onClick={() =>
+                      setShowInheritanceDetails(!showInheritanceDetails)
+                    }
+                    className="text-xs text-purple-300 hover:text-purple-200"
                   >
-                    修炼经验 (1000 灵石)
+                    {showInheritanceDetails ? '收起详情' : '展开详情'}
                   </button>
                 </div>
-                {onUseInheritance && (
-                  <button
-                    onClick={onUseInheritance}
-                    className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded border border-purple-400 font-bold text-white transition-all"
-                  >
-                    使用传承突破境界
-                  </button>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-stone-400 mb-3">
-                尚未获得传承。传承可以通过历练获得。
-              </p>
-            )}
 
-            {showInheritanceDetails && (
-              <div className="mt-4 pt-4 border-t border-purple-700/50 space-y-4">
-                {/* 传承路线选择 */}
-                {!player.inheritanceRoute && (
+                {player.inheritanceLevel > 0 ? (
                   <div>
-                    <h4 className="text-sm font-bold text-purple-300 mb-2">选择传承路线</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {INHERITANCE_ROUTES.map((route) => {
-                        const canUnlock = !route.unlockRequirement?.realm ||
-                          REALM_ORDER.indexOf(player.realm) >= REALM_ORDER.indexOf(route.unlockRequirement.realm);
-                        return (
-                          <div
-                            key={route.id}
-                            className={`p-3 rounded border ${
-                              canUnlock
-                                ? 'border-purple-500 bg-purple-900/30 hover:bg-purple-900/50 cursor-pointer'
-                                : 'border-stone-700 bg-stone-900/50 opacity-50'
-                            }`}
-                            onClick={() => {
-                              if (canUnlock && !player.inheritanceRoute) {
-                                inheritanceHandlers.handleSelectInheritanceRoute(route.id);
-                              } else if (!canUnlock) {
-                                showError(`需要达到 ${route.unlockRequirement?.realm} 境界才能选择此传承。`);
-                              }
-                            }}
-                          >
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className={`font-bold ${getRarityColor(route.rarity)}`}>
-                                {route.name}
-                              </span>
-                              <span className="text-xs text-stone-500">({route.rarity})</span>
-                            </div>
-                            <p className="text-xs text-stone-400 mb-2">{route.description}</p>
-                            {route.unlockRequirement?.realm && !canUnlock && (
-                              <p className="text-xs text-red-400">
-                                需要: {route.unlockRequirement.realm}
-                              </p>
-                            )}
-                          </div>
-                        );
-                      })}
+                    <p className="text-sm text-stone-300 mb-2">
+                      传承等级:{' '}
+                      <span className="font-bold text-purple-300">
+                        {player.inheritanceLevel}
+                      </span>{' '}
+                      / 4
+                    </p>
+                    {player.inheritanceRoute && (
+                      <p className="text-sm text-stone-300 mb-2">
+                        传承路线:{' '}
+                        <span className="font-bold text-purple-300">
+                          {INHERITANCE_ROUTES.find(
+                            (r) => r.id === player.inheritanceRoute
+                          )?.name || '未知'}
+                        </span>
+                      </p>
+                    )}
+                    {player.inheritanceExp > 0 && (
+                      <p className="text-sm text-stone-300 mb-2">
+                        传承经验: {player.inheritanceExp}
+                      </p>
+                    )}
+                    <div className="flex gap-2 mb-3">
+                      {player.inheritanceLevel < 4 && (
+                        <button
+                          onClick={() =>
+                            inheritanceHandlers.handleCultivateInheritance(
+                              'level'
+                            )
+                          }
+                          className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors"
+                        >
+                          提升等级 ({(player.inheritanceLevel + 1) * 5000} 灵石)
+                        </button>
+                      )}
+                      <button
+                        onClick={() =>
+                          inheritanceHandlers.handleCultivateInheritance('exp')
+                        }
+                        className="flex-1 px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm rounded transition-colors"
+                      >
+                        修炼经验 (1000 灵石)
+                      </button>
                     </div>
+                    {onUseInheritance && (
+                      <button
+                        onClick={onUseInheritance}
+                        className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded border border-purple-400 font-bold text-white transition-all"
+                      >
+                        使用传承突破境界
+                      </button>
+                    )}
                   </div>
+                ) : (
+                  <p className="text-sm text-stone-400 mb-3">
+                    尚未获得传承。传承可以通过历练获得。
+                  </p>
                 )}
 
-                {/* 已选择的传承路线详情 */}
-                {player.inheritanceRoute && (
-                  <div>
-                    <h4 className="text-sm font-bold text-purple-300 mb-2">传承技能</h4>
-                    <div className="space-y-2">
-                      {INHERITANCE_SKILLS
-                        .filter(skill => skill.route === player.inheritanceRoute)
-                        .map((skill) => {
-                          const isLearned = player.inheritanceSkills?.includes(skill.id);
-                          const canLearn = player.inheritanceLevel >= skill.unlockLevel;
-                          return (
-                            <div
-                              key={skill.id}
-                              className={`p-2 rounded border ${
-                                isLearned
-                                  ? 'border-green-500 bg-green-900/30'
-                                  : canLearn
-                                  ? 'border-purple-500 bg-purple-900/30'
-                                  : 'border-stone-700 bg-stone-900/30 opacity-50'
-                              }`}
-                            >
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-bold text-sm">{skill.name}</span>
-                                    {isLearned && (
-                                      <span className="text-xs text-green-400">✓ 已学习</span>
-                                    )}
-                                    {!isLearned && canLearn && (
-                                      <span className="text-xs text-purple-400">可学习</span>
-                                    )}
-                                    {!canLearn && (
-                                      <span className="text-xs text-stone-500">
-                                        需要传承等级 {skill.unlockLevel}
-                                      </span>
-                                    )}
-                                  </div>
-                                  <p className="text-xs text-stone-400 mb-1">{skill.description}</p>
-                                  {skill.passiveEffect && (
-                                    <p className="text-xs text-yellow-400 italic">
-                                      {skill.passiveEffect.description}
+                {showInheritanceDetails && (
+                  <div className="mt-4 pt-4 border-t border-purple-700/50 space-y-4">
+                    {/* 传承路线选择 */}
+                    {!player.inheritanceRoute && (
+                      <div>
+                        <h4 className="text-sm font-bold text-purple-300 mb-2">
+                          选择传承路线
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {INHERITANCE_ROUTES.map((route) => {
+                            const canUnlock =
+                              !route.unlockRequirement?.realm ||
+                              REALM_ORDER.indexOf(player.realm) >=
+                                REALM_ORDER.indexOf(
+                                  route.unlockRequirement.realm
+                                );
+                            return (
+                              <div
+                                key={route.id}
+                                className={`p-3 rounded border ${
+                                  canUnlock
+                                    ? 'border-purple-500 bg-purple-900/30 hover:bg-purple-900/50 cursor-pointer'
+                                    : 'border-stone-700 bg-stone-900/50 opacity-50'
+                                }`}
+                                onClick={() => {
+                                  if (canUnlock && !player.inheritanceRoute) {
+                                    inheritanceHandlers.handleSelectInheritanceRoute(
+                                      route.id
+                                    );
+                                  } else if (!canUnlock) {
+                                    showError(
+                                      `需要达到 ${route.unlockRequirement?.realm} 境界才能选择此传承。`
+                                    );
+                                  }
+                                }}
+                              >
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span
+                                    className={`font-bold ${getRarityColor(route.rarity)}`}
+                                  >
+                                    {route.name}
+                                  </span>
+                                  <span className="text-xs text-stone-500">
+                                    ({route.rarity})
+                                  </span>
+                                </div>
+                                <p className="text-xs text-stone-400 mb-2">
+                                  {route.description}
+                                </p>
+                                {route.unlockRequirement?.realm &&
+                                  !canUnlock && (
+                                    <p className="text-xs text-red-400">
+                                      需要: {route.unlockRequirement.realm}
                                     </p>
                                   )}
-                                  {!isLearned && canLearn && (
-                                    <button
-                                      onClick={() => inheritanceHandlers.handleLearnInheritanceSkill(skill.id)}
-                                      className="mt-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
-                                    >
-                                      学习技能 (消耗 {skill.unlockLevel * 100} 经验)
-                                    </button>
-                                  )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 已选择的传承路线详情 */}
+                    {player.inheritanceRoute && (
+                      <div>
+                        <h4 className="text-sm font-bold text-purple-300 mb-2">
+                          传承技能
+                        </h4>
+                        <div className="space-y-2">
+                          {INHERITANCE_SKILLS.filter(
+                            (skill) => skill.route === player.inheritanceRoute
+                          ).map((skill) => {
+                            const isLearned =
+                              player.inheritanceSkills?.includes(skill.id);
+                            const canLearn =
+                              player.inheritanceLevel >= skill.unlockLevel;
+                            return (
+                              <div
+                                key={skill.id}
+                                className={`p-2 rounded border ${
+                                  isLearned
+                                    ? 'border-green-500 bg-green-900/30'
+                                    : canLearn
+                                      ? 'border-purple-500 bg-purple-900/30'
+                                      : 'border-stone-700 bg-stone-900/30 opacity-50'
+                                }`}
+                              >
+                                <div className="flex justify-between items-start">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span className="font-bold text-sm">
+                                        {skill.name}
+                                      </span>
+                                      {isLearned && (
+                                        <span className="text-xs text-green-400">
+                                          ✓ 已学习
+                                        </span>
+                                      )}
+                                      {!isLearned && canLearn && (
+                                        <span className="text-xs text-purple-400">
+                                          可学习
+                                        </span>
+                                      )}
+                                      {!canLearn && (
+                                        <span className="text-xs text-stone-500">
+                                          需要传承等级 {skill.unlockLevel}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-stone-400 mb-1">
+                                      {skill.description}
+                                    </p>
+                                    {skill.passiveEffect && (
+                                      <p className="text-xs text-yellow-400 italic">
+                                        {skill.passiveEffect.description}
+                                      </p>
+                                    )}
+                                    {!isLearned && canLearn && (
+                                      <button
+                                        onClick={() =>
+                                          inheritanceHandlers.handleLearnInheritanceSkill(
+                                            skill.id
+                                          )
+                                        }
+                                        className="mt-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
+                                      >
+                                        学习技能 (消耗 {skill.unlockLevel * 100}{' '}
+                                        经验)
+                                      </button>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          );
-                        })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* 属性详情面板 */}
-          <div className="bg-stone-900 rounded p-4 border border-stone-700">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-bold flex items-center gap-2">
-                <Info className="text-blue-400" size={20} />
-                角色属性
-              </h3>
-              <button
-                onClick={() => setShowAttributeDetails(!showAttributeDetails)}
-                className="text-xs text-stone-400 hover:text-stone-300"
-              >
-                {showAttributeDetails ? '隐藏详情' : '显示详情'}
-              </button>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
-              <div>
-                <span className="text-stone-400">攻击:</span>{' '}
-                <span className="text-red-400 font-bold">{totalStats.attack}</span>
-              </div>
-              <div>
-                <span className="text-stone-400">防御:</span>{' '}
-                <span className="text-blue-400 font-bold">{totalStats.defense}</span>
-              </div>
-              <div>
-                <span className="text-stone-400">气血:</span>{' '}
-                <span className="text-green-400 font-bold">
-                  {player.hp}/{totalStats.maxHp}
-                </span>
-              </div>
-              <div>
-                <span className="text-stone-400">神识:</span>{' '}
-                <span className="text-purple-400 font-bold">{totalStats.spirit}</span>
-              </div>
-              <div>
-                <span className="text-stone-400">体魄:</span>{' '}
-                <span className="text-orange-400 font-bold">
-                  {totalStats.physique}
-                </span>
-              </div>
-              <div>
-                <span className="text-stone-400">速度:</span>{' '}
-                <span className="text-yellow-400 font-bold">{totalStats.speed}</span>
-              </div>
-              <div>
-                <span className="text-stone-400">声望:</span>{' '}
-                <span className="text-mystic-gold font-bold">{player.reputation || 0}</span>
-              </div>
-            </div>
-            {showAttributeDetails && (
-              <div className="mt-3 pt-3 border-t border-stone-700 text-xs space-y-1">
-                <div className="text-stone-500 mb-2">属性来源分解:</div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <span className="text-stone-400">基础:</span> 攻击{' '}
-                    {attributeSources.base.attack}, 防御{' '}
-                    {attributeSources.base.defense}, 气血{' '}
-                    {attributeSources.base.hp}
-                  </div>
-                  <div>
-                    <span className="text-stone-400">天赋:</span> 攻击{' '}
-                    {currentTalent?.effects.attack || 0}, 防御{' '}
-                    {currentTalent?.effects.defense || 0}, 气血{' '}
-                    {currentTalent?.effects.hp || 0}
-                  </div>
-                  <div>
-                    <span className="text-stone-400">称号:</span> 攻击{' '}
-                    {attributeSources.title.attack}, 防御{' '}
-                    {attributeSources.title.defense}, 气血{' '}
-                    {attributeSources.title.hp}
-                  </div>
-                  <div>
-                    <span className="text-stone-400">功法:</span> 攻击{' '}
-                    {attributeSources.art.attack}, 防御{' '}
-                    {attributeSources.art.defense}, 气血 {attributeSources.art.hp}
-                  </div>
-                  <div>
-                    <span className="text-stone-400">传承:</span> 攻击{' '}
-                    {attributeSources.inheritance.attack}, 防御{' '}
-                    {attributeSources.inheritance.defense}, 气血 {attributeSources.inheritance.hp}
-                  </div>
-                  <div>
-                    <span className="text-stone-400">装备:</span> 攻击{' '}
-                    {attributeSources.equipment.attack}, 防御{' '}
-                    {attributeSources.equipment.defense}, 气血{' '}
-                    {attributeSources.equipment.hp}
-                  </div>
-                  <div className="col-span-2 text-blue-400">
-                    <span className="text-stone-400 text-xs">当前心法:</span> 攻击{' '}
-                    {attributeSources.activeArt.attack}, 防御{' '}
-                    {attributeSources.activeArt.defense}, 气血{' '}
-                    {attributeSources.activeArt.hp}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-
-          {/* 属性点分配 */}
-          {player.attributePoints > 0 && (
-            <div className="bg-stone-900 rounded p-4 border border-stone-700">
-              <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
-                <Star className="text-yellow-400" size={20} />
-                可分配属性点: {player.attributePoints}
-              </h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => onAllocateAttribute('attack')}
-                    className="flex-1 px-3 py-2 text-sm bg-red-900 hover:bg-red-800 rounded border border-red-700"
-                  >
-                    攻击 +{attributeGains.attack}
-                  </button>
-                  {onAllocateAllAttributes && (
-                    <button
-                      onClick={() => handleAllocateAllWithConfirm('attack')}
-                      className="px-2 py-2 text-sm bg-red-800 hover:bg-red-700 rounded border border-red-600 flex items-center justify-center"
-                      title={`一键分配所有 ${player.attributePoints} 点到攻击`}
-                    >
-                      <Zap size={16} />
-                    </button>
-                  )}
-                </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => onAllocateAttribute('defense')}
-                    className="flex-1 px-3 py-2 text-sm bg-blue-900 hover:bg-blue-800 rounded border border-blue-700"
-                  >
-                    防御 +{attributeGains.defense}
-                  </button>
-                  {onAllocateAllAttributes && (
-                    <button
-                      onClick={() => handleAllocateAllWithConfirm('defense')}
-                      className="px-2 py-2 text-sm bg-blue-800 hover:bg-blue-700 rounded border border-blue-600 flex items-center justify-center"
-                      title={`一键分配所有 ${player.attributePoints} 点到防御`}
-                    >
-                      <Zap size={16} />
-                    </button>
-                  )}
-                </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => onAllocateAttribute('hp')}
-                    className="flex-1 px-3 py-2 text-sm bg-green-900 hover:bg-green-800 rounded border border-green-700"
-                  >
-                    气血 +{attributeGains.hp}
-                  </button>
-                  {onAllocateAllAttributes && (
-                    <button
-                      onClick={() => handleAllocateAllWithConfirm('hp')}
-                      className="px-2 py-2 text-sm bg-green-800 hover:bg-green-700 rounded border border-green-600 flex items-center justify-center"
-                      title={`一键分配所有 ${player.attributePoints} 点到气血`}
-                    >
-                      <Zap size={16} />
-                    </button>
-                  )}
-                </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => onAllocateAttribute('spirit')}
-                    className="flex-1 px-3 py-2 text-sm bg-purple-900 hover:bg-purple-800 rounded border border-purple-700"
-                  >
-                    神识 +{attributeGains.spirit}
-                  </button>
-                  {onAllocateAllAttributes && (
-                    <button
-                      onClick={() => handleAllocateAllWithConfirm('spirit')}
-                      className="px-2 py-2 text-sm bg-purple-800 hover:bg-purple-700 rounded border border-purple-600 flex items-center justify-center"
-                      title={`一键分配所有 ${player.attributePoints} 点到神识`}
-                    >
-                      <Zap size={16} />
-                    </button>
-                  )}
-                </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => onAllocateAttribute('physique')}
-                    className="flex-1 px-3 py-2 text-sm bg-orange-900 hover:bg-orange-800 rounded border border-orange-700"
-                  >
-                    体魄 +{attributeGains.physique}
-                  </button>
-                  {onAllocateAllAttributes && (
-                    <button
-                      onClick={() => handleAllocateAllWithConfirm('physique')}
-                      className="px-2 py-2 text-sm bg-orange-800 hover:bg-orange-700 rounded border border-orange-600 flex items-center justify-center"
-                      title={`一键分配所有 ${player.attributePoints} 点到体魄`}
-                    >
-                      <Zap size={16} />
-                    </button>
-                  )}
-                </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => onAllocateAttribute('speed')}
-                    className="flex-1 px-3 py-2 text-sm bg-yellow-900 hover:bg-yellow-800 rounded border border-yellow-700"
-                  >
-                    速度 +{attributeGains.speed}
-                  </button>
-                  {onAllocateAllAttributes && (
-                    <button
-                      onClick={() => handleAllocateAllWithConfirm('speed')}
-                      className="px-2 py-2 text-sm bg-yellow-800 hover:bg-yellow-700 rounded border border-yellow-600 flex items-center justify-center"
-                      title={`一键分配所有 ${player.attributePoints} 点到速度`}
-                    >
-                      <Zap size={16} />
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 天赋显示（不可修改） */}
-          <div>
-            <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
-              <Star className="text-purple-400" size={20} />
-              天赋
-            </h3>
-            {currentTalent ? (
-              <div className="bg-stone-900 rounded p-4 border border-stone-700">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span
-                        className={`font-bold ${getRarityColor(currentTalent.rarity)}`}
-                      >
-                        {currentTalent.name}
-                      </span>
-                      <span className="text-xs text-stone-500">
-                        ({currentTalent.rarity})
-                      </span>
-                    </div>
-                    <p className="text-sm text-stone-400 mb-2">
-                      {currentTalent.description}
-                    </p>
-                    <div className="text-xs text-stone-500 italic">
-                      * 天赋在游戏开始时随机生成，之后不可修改
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-stone-900 rounded p-4 border border-stone-700">
-                <p className="text-stone-500">未选择天赋</p>
-              </div>
-            )}
-          </div>
-
-          {/* 称号系统 */}
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-lg font-bold flex items-center gap-2">
-                <Award className="text-yellow-400" size={20} />
-                称号系统
-                {unlockedTitles.length > 0 && (
-                  <span className="text-xs text-stone-500">
-                    ({unlockedTitles.length}/{TITLES.length})
-                  </span>
-                )}
-              </h3>
-              <button
-                onClick={() => setShowTitleDetails(!showTitleDetails)}
-                className="text-xs text-stone-400 hover:text-stone-300"
-              >
-                {showTitleDetails ? '收起' : '展开'}
-              </button>
-            </div>
-
-            {/* 当前装备的称号 */}
-            {currentTitle ? (
-              <div className="bg-stone-900 rounded p-4 border-2 border-yellow-500/50 mb-3">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`font-bold ${getRarityColor(currentTitle.rarity || '普通')}`}>
-                        {currentTitle.name}
-                      </span>
-                      {currentTitle.rarity && (
-                        <span className="text-xs text-stone-500">({currentTitle.rarity})</span>
-                      )}
-                      <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded">
-                        已装备
-                      </span>
-                    </div>
-                    <p className="text-sm text-stone-400 mb-1">
-                      {currentTitle.description}
-                    </p>
-                    <p className="text-xs text-stone-500 mb-2">
-                      获得条件: {currentTitle.requirement}
-                    </p>
-
-                    {/* 称号效果 */}
-                    <div className="text-xs text-stone-400 space-y-1 mb-2">
-                      {titleEffects.attack > 0 && <div>攻击 +{titleEffects.attack}</div>}
-                      {titleEffects.defense > 0 && <div>防御 +{titleEffects.defense}</div>}
-                      {titleEffects.hp > 0 && <div>气血 +{titleEffects.hp}</div>}
-                      {titleEffects.spirit > 0 && <div>神识 +{titleEffects.spirit}</div>}
-                      {titleEffects.physique > 0 && <div>体魄 +{titleEffects.physique}</div>}
-                      {titleEffects.speed > 0 && <div>速度 +{titleEffects.speed}</div>}
-                      {titleEffects.expRate > 0 && <div>修炼速度 +{(titleEffects.expRate * 100).toFixed(0)}%</div>}
-                      {titleEffects.luck > 0 && <div>幸运 +{titleEffects.luck}</div>}
-                    </div>
-
-                    {/* 套装效果 */}
-                    {activeSetEffects.length > 0 && (
-                      <div className="mt-2 pt-2 border-t border-yellow-500/30">
-                        {activeSetEffects.map((setEffect) => (
-                          <div key={setEffect.setName} className="text-xs">
-                            <div className="flex items-center gap-1 mb-1">
-                              <Sparkles size={12} className="text-yellow-400" />
-                              <span className="font-bold text-yellow-400">套装效果: {setEffect.setName}</span>
-                            </div>
-                            <p className="text-stone-400 mb-1">{setEffect.description}</p>
-                            <div className="text-stone-400 space-y-1">
-                              {setEffect.effects.attack > 0 && <div>攻击 +{setEffect.effects.attack}</div>}
-                              {setEffect.effects.defense > 0 && <div>防御 +{setEffect.effects.defense}</div>}
-                              {setEffect.effects.hp > 0 && <div>气血 +{setEffect.effects.hp}</div>}
-                              {setEffect.effects.spirit > 0 && <div>神识 +{setEffect.effects.spirit}</div>}
-                              {setEffect.effects.speed > 0 && <div>速度 +{setEffect.effects.speed}</div>}
-                              {setEffect.effects.expRate > 0 && <div>修炼速度 +{(setEffect.effects.expRate * 100).toFixed(0)}%</div>}
-                              {setEffect.effects.luck > 0 && <div>幸运 +{setEffect.effects.luck}</div>}
-                            </div>
-                          </div>
-                        ))}
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
                   </div>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-stone-900 rounded p-4 border border-stone-700 mb-3">
-                <p className="text-stone-500">未装备称号</p>
-              </div>
-            )}
-
-            {/* 已解锁的称号列表 */}
-            {showTitleDetails && (
-              <div className="space-y-2">
-                <h4 className="text-sm font-bold text-stone-400 mb-2">已解锁的称号</h4>
-                <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto">
-                  {unlockedTitles.map((title) => {
-                    const isEquipped = title.id === player.titleId;
-                    const isPartOfSet = title.setGroup && TITLE_SET_EFFECTS.some(se =>
-                      se.titles.includes(title.id) &&
-                      se.titles.every(tid => (player.unlockedTitles || []).includes(tid))
-                    );
-
-                    return (
-                      <button
-                        key={title.id}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          if (!isEquipped && onSelectTitle) {
-                            onSelectTitle(title.id);
-                          }
-                        }}
-                        disabled={isEquipped}
-                        className={`text-left rounded p-3 border transition-colors ${
-                          isEquipped
-                            ? 'bg-yellow-900/30 border-yellow-500 cursor-default opacity-60'
-                            : 'bg-stone-900 hover:bg-stone-700 border-stone-700 cursor-pointer'
-                        }`}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className={`font-bold ${getRarityColor(title.rarity || '普通')}`}>
-                                {title.name}
-                              </span>
-                              {title.rarity && (
-                                <span className="text-xs text-stone-500">({title.rarity})</span>
-                              )}
-                              {title.category && (
-                                <span className="text-xs text-stone-500">[{title.category}]</span>
-                              )}
-                              {isEquipped && (
-                                <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded">
-                                  已装备
-                                </span>
-                              )}
-                              {isPartOfSet && !isEquipped && (
-                                <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded">
-                                  套装可用
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-xs text-stone-400 mb-1">
-                              {title.description}
-                            </p>
-                            <p className="text-xs text-stone-500">
-                              {title.requirement}
-                            </p>
-                          </div>
-                          {!isEquipped && (
-                            <div className="ml-2 text-xs text-yellow-400">
-                              点击装备
-                            </div>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-
-                  {unlockedTitles.length === 0 && (
-                    <div className="text-center text-stone-500 py-4">
-                      尚未解锁任何称号
-                    </div>
-                  )}
-                </div>
-
-                {/* 未解锁的称号（可选显示） */}
-                {TITLES.filter(t => !(player.unlockedTitles || []).includes(t.id)).length > 0 && (
-                  <details className="mt-4">
-                    <summary className="text-sm font-bold text-stone-400 cursor-pointer mb-2">
-                      未解锁的称号 ({TITLES.filter(t => !(player.unlockedTitles || []).includes(t.id)).length})
-                    </summary>
-                    <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto mt-2">
-                      {TITLES.filter(t => !unlockedTitles.map(ut => ut.id).includes(t.id)).map((title) => {
-                        const isMet = checkTitleRequirement(title, player);
-                        return (
-                          <div
-                            key={title.id}
-                            className={`bg-stone-900/50 rounded p-3 border ${isMet ? 'border-green-600 opacity-100' : 'border-stone-800 opacity-60'}`}
-                          >
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className={`font-bold ${getRarityColor(title.rarity || '普通')}`}>
-                                {title.name}
-                              </span>
-                              {title.rarity && (
-                                <span className="text-xs text-stone-500">({title.rarity})</span>
-                              )}
-                              {isMet && (
-                                <span className="text-xs text-green-400 font-bold">✓ 可解锁</span>
-                              )}
-                            </div>
-                            <p className="text-xs text-stone-500">{title.requirement}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </details>
                 )}
               </div>
-            )}
-          </div>
-          </>
+
+              {/* 属性详情面板 */}
+              <div className="bg-stone-900 rounded p-4 border border-stone-700">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-lg font-bold flex items-center gap-2">
+                    <Info className="text-blue-400" size={20} />
+                    角色属性
+                  </h3>
+                  <button
+                    onClick={() =>
+                      setShowAttributeDetails(!showAttributeDetails)
+                    }
+                    className="text-xs text-stone-400 hover:text-stone-300"
+                  >
+                    {showAttributeDetails ? '隐藏详情' : '显示详情'}
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+                  <div>
+                    <span className="text-stone-400">攻击:</span>{' '}
+                    <span className="text-red-400 font-bold">
+                      {totalStats.attack}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-stone-400">防御:</span>{' '}
+                    <span className="text-blue-400 font-bold">
+                      {totalStats.defense}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-stone-400">气血:</span>{' '}
+                    <span className="text-green-400 font-bold">
+                      {player.hp}/{totalStats.maxHp}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-stone-400">神识:</span>{' '}
+                    <span className="text-purple-400 font-bold">
+                      {totalStats.spirit}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-stone-400">体魄:</span>{' '}
+                    <span className="text-orange-400 font-bold">
+                      {totalStats.physique}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-stone-400">速度:</span>{' '}
+                    <span className="text-yellow-400 font-bold">
+                      {totalStats.speed}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-stone-400">声望:</span>{' '}
+                    <span className="text-mystic-gold font-bold">
+                      {player.reputation || 0}
+                    </span>
+                  </div>
+                </div>
+                {showAttributeDetails && (
+                  <div className="mt-3 pt-3 border-t border-stone-700 text-xs space-y-1">
+                    <div className="text-stone-500 mb-2">属性来源分解:</div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <span className="text-stone-400">基础:</span> 攻击{' '}
+                        {attributeSources.base.attack}, 防御{' '}
+                        {attributeSources.base.defense}, 气血{' '}
+                        {attributeSources.base.hp}
+                      </div>
+                      <div>
+                        <span className="text-stone-400">天赋:</span> 攻击{' '}
+                        {currentTalent?.effects.attack || 0}, 防御{' '}
+                        {currentTalent?.effects.defense || 0}, 气血{' '}
+                        {currentTalent?.effects.hp || 0}
+                      </div>
+                      <div>
+                        <span className="text-stone-400">称号:</span> 攻击{' '}
+                        {attributeSources.title.attack}, 防御{' '}
+                        {attributeSources.title.defense}, 气血{' '}
+                        {attributeSources.title.hp}
+                      </div>
+                      <div>
+                        <span className="text-stone-400">功法:</span> 攻击{' '}
+                        {attributeSources.art.attack}, 防御{' '}
+                        {attributeSources.art.defense}, 气血{' '}
+                        {attributeSources.art.hp}
+                      </div>
+                      <div>
+                        <span className="text-stone-400">传承:</span> 攻击{' '}
+                        {attributeSources.inheritance.attack}, 防御{' '}
+                        {attributeSources.inheritance.defense}, 气血{' '}
+                        {attributeSources.inheritance.hp}
+                      </div>
+                      <div>
+                        <span className="text-stone-400">装备:</span> 攻击{' '}
+                        {attributeSources.equipment.attack}, 防御{' '}
+                        {attributeSources.equipment.defense}, 气血{' '}
+                        {attributeSources.equipment.hp}
+                      </div>
+                      <div className="col-span-2 text-blue-400">
+                        <span className="text-stone-400 text-xs">
+                          当前心法:
+                        </span>{' '}
+                        攻击 {attributeSources.activeArt.attack}, 防御{' '}
+                        {attributeSources.activeArt.defense}, 气血{' '}
+                        {attributeSources.activeArt.hp}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 属性点分配 */}
+              {player.attributePoints > 0 && (
+                <div className="bg-stone-900 rounded p-4 border border-stone-700">
+                  <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+                    <Star className="text-yellow-400" size={20} />
+                    可分配属性点: {player.attributePoints}
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => onAllocateAttribute('attack')}
+                        className="flex-1 px-3 py-2 text-sm bg-red-900 hover:bg-red-800 rounded border border-red-700"
+                      >
+                        攻击 +{attributeGains.attack}
+                      </button>
+                      {onAllocateAllAttributes && (
+                        <button
+                          onClick={() => handleAllocateAllWithConfirm('attack')}
+                          className="px-2 py-2 text-sm bg-red-800 hover:bg-red-700 rounded border border-red-600 flex items-center justify-center"
+                          title={`一键分配所有 ${player.attributePoints} 点到攻击`}
+                        >
+                          <Zap size={16} />
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => onAllocateAttribute('defense')}
+                        className="flex-1 px-3 py-2 text-sm bg-blue-900 hover:bg-blue-800 rounded border border-blue-700"
+                      >
+                        防御 +{attributeGains.defense}
+                      </button>
+                      {onAllocateAllAttributes && (
+                        <button
+                          onClick={() =>
+                            handleAllocateAllWithConfirm('defense')
+                          }
+                          className="px-2 py-2 text-sm bg-blue-800 hover:bg-blue-700 rounded border border-blue-600 flex items-center justify-center"
+                          title={`一键分配所有 ${player.attributePoints} 点到防御`}
+                        >
+                          <Zap size={16} />
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => onAllocateAttribute('hp')}
+                        className="flex-1 px-3 py-2 text-sm bg-green-900 hover:bg-green-800 rounded border border-green-700"
+                      >
+                        气血 +{attributeGains.hp}
+                      </button>
+                      {onAllocateAllAttributes && (
+                        <button
+                          onClick={() => handleAllocateAllWithConfirm('hp')}
+                          className="px-2 py-2 text-sm bg-green-800 hover:bg-green-700 rounded border border-green-600 flex items-center justify-center"
+                          title={`一键分配所有 ${player.attributePoints} 点到气血`}
+                        >
+                          <Zap size={16} />
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => onAllocateAttribute('spirit')}
+                        className="flex-1 px-3 py-2 text-sm bg-purple-900 hover:bg-purple-800 rounded border border-purple-700"
+                      >
+                        神识 +{attributeGains.spirit}
+                      </button>
+                      {onAllocateAllAttributes && (
+                        <button
+                          onClick={() => handleAllocateAllWithConfirm('spirit')}
+                          className="px-2 py-2 text-sm bg-purple-800 hover:bg-purple-700 rounded border border-purple-600 flex items-center justify-center"
+                          title={`一键分配所有 ${player.attributePoints} 点到神识`}
+                        >
+                          <Zap size={16} />
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => onAllocateAttribute('physique')}
+                        className="flex-1 px-3 py-2 text-sm bg-orange-900 hover:bg-orange-800 rounded border border-orange-700"
+                      >
+                        体魄 +{attributeGains.physique}
+                      </button>
+                      {onAllocateAllAttributes && (
+                        <button
+                          onClick={() =>
+                            handleAllocateAllWithConfirm('physique')
+                          }
+                          className="px-2 py-2 text-sm bg-orange-800 hover:bg-orange-700 rounded border border-orange-600 flex items-center justify-center"
+                          title={`一键分配所有 ${player.attributePoints} 点到体魄`}
+                        >
+                          <Zap size={16} />
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => onAllocateAttribute('speed')}
+                        className="flex-1 px-3 py-2 text-sm bg-yellow-900 hover:bg-yellow-800 rounded border border-yellow-700"
+                      >
+                        速度 +{attributeGains.speed}
+                      </button>
+                      {onAllocateAllAttributes && (
+                        <button
+                          onClick={() => handleAllocateAllWithConfirm('speed')}
+                          className="px-2 py-2 text-sm bg-yellow-800 hover:bg-yellow-700 rounded border border-yellow-600 flex items-center justify-center"
+                          title={`一键分配所有 ${player.attributePoints} 点到速度`}
+                        >
+                          <Zap size={16} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 天赋显示（不可修改） */}
+              <div>
+                <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
+                  <Star className="text-purple-400" size={20} />
+                  天赋
+                </h3>
+                {currentTalent ? (
+                  <div className="bg-stone-900 rounded p-4 border border-stone-700">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span
+                            className={`font-bold ${getRarityColor(currentTalent.rarity)}`}
+                          >
+                            {currentTalent.name}
+                          </span>
+                          <span className="text-xs text-stone-500">
+                            ({currentTalent.rarity})
+                          </span>
+                        </div>
+                        <p className="text-sm text-stone-400 mb-2">
+                          {currentTalent.description}
+                        </p>
+                        <div className="text-xs text-stone-500 italic">
+                          * 天赋在游戏开始时随机生成，之后不可修改
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-stone-900 rounded p-4 border border-stone-700">
+                    <p className="text-stone-500">未选择天赋</p>
+                  </div>
+                )}
+              </div>
+
+              {/* 称号系统 */}
+              <div>
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-lg font-bold flex items-center gap-2">
+                    <Award className="text-yellow-400" size={20} />
+                    称号系统
+                    {unlockedTitles.length > 0 && (
+                      <span className="text-xs text-stone-500">
+                        ({unlockedTitles.length}/{TITLES.length})
+                      </span>
+                    )}
+                  </h3>
+                  <button
+                    onClick={() => setShowTitleDetails(!showTitleDetails)}
+                    className="text-xs text-stone-400 hover:text-stone-300"
+                  >
+                    {showTitleDetails ? '收起' : '展开'}
+                  </button>
+                </div>
+
+                {/* 当前装备的称号 */}
+                {currentTitle ? (
+                  <div className="bg-stone-900 rounded p-4 border-2 border-yellow-500/50 mb-3">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span
+                            className={`font-bold ${getRarityColor(currentTitle.rarity || '普通')}`}
+                          >
+                            {currentTitle.name}
+                          </span>
+                          {currentTitle.rarity && (
+                            <span className="text-xs text-stone-500">
+                              ({currentTitle.rarity})
+                            </span>
+                          )}
+                          <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded">
+                            已装备
+                          </span>
+                        </div>
+                        <p className="text-sm text-stone-400 mb-1">
+                          {currentTitle.description}
+                        </p>
+                        <p className="text-xs text-stone-500 mb-2">
+                          获得条件: {currentTitle.requirement}
+                        </p>
+
+                        {/* 称号效果 */}
+                        <div className="text-xs text-stone-400 space-y-1 mb-2">
+                          {titleEffects.attack > 0 && (
+                            <div>攻击 +{titleEffects.attack}</div>
+                          )}
+                          {titleEffects.defense > 0 && (
+                            <div>防御 +{titleEffects.defense}</div>
+                          )}
+                          {titleEffects.hp > 0 && (
+                            <div>气血 +{titleEffects.hp}</div>
+                          )}
+                          {titleEffects.spirit > 0 && (
+                            <div>神识 +{titleEffects.spirit}</div>
+                          )}
+                          {titleEffects.physique > 0 && (
+                            <div>体魄 +{titleEffects.physique}</div>
+                          )}
+                          {titleEffects.speed > 0 && (
+                            <div>速度 +{titleEffects.speed}</div>
+                          )}
+                          {titleEffects.expRate > 0 && (
+                            <div>
+                              修炼速度 +
+                              {(titleEffects.expRate * 100).toFixed(0)}%
+                            </div>
+                          )}
+                          {titleEffects.luck > 0 && (
+                            <div>幸运 +{titleEffects.luck}</div>
+                          )}
+                        </div>
+
+                        {/* 套装效果 */}
+                        {activeSetEffects.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-yellow-500/30">
+                            {activeSetEffects.map((setEffect) => (
+                              <div key={setEffect.setName} className="text-xs">
+                                <div className="flex items-center gap-1 mb-1">
+                                  <Sparkles
+                                    size={12}
+                                    className="text-yellow-400"
+                                  />
+                                  <span className="font-bold text-yellow-400">
+                                    套装效果: {setEffect.setName}
+                                  </span>
+                                </div>
+                                <p className="text-stone-400 mb-1">
+                                  {setEffect.description}
+                                </p>
+                                <div className="text-stone-400 space-y-1">
+                                  {setEffect.effects.attack > 0 && (
+                                    <div>攻击 +{setEffect.effects.attack}</div>
+                                  )}
+                                  {setEffect.effects.defense > 0 && (
+                                    <div>防御 +{setEffect.effects.defense}</div>
+                                  )}
+                                  {setEffect.effects.hp > 0 && (
+                                    <div>气血 +{setEffect.effects.hp}</div>
+                                  )}
+                                  {setEffect.effects.spirit > 0 && (
+                                    <div>神识 +{setEffect.effects.spirit}</div>
+                                  )}
+                                  {setEffect.effects.speed > 0 && (
+                                    <div>速度 +{setEffect.effects.speed}</div>
+                                  )}
+                                  {setEffect.effects.expRate > 0 && (
+                                    <div>
+                                      修炼速度 +
+                                      {(
+                                        setEffect.effects.expRate * 100
+                                      ).toFixed(0)}
+                                      %
+                                    </div>
+                                  )}
+                                  {setEffect.effects.luck > 0 && (
+                                    <div>幸运 +{setEffect.effects.luck}</div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-stone-900 rounded p-4 border border-stone-700 mb-3">
+                    <p className="text-stone-500">未装备称号</p>
+                  </div>
+                )}
+
+                {/* 已解锁的称号列表 */}
+                {showTitleDetails && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-bold text-stone-400 mb-2">
+                      已解锁的称号
+                    </h4>
+                    <div className="grid grid-cols-1 gap-2 max-h-80 overflow-y-auto">
+                      {unlockedTitles.map((title) => {
+                        const isEquipped = title.id === player.titleId;
+                        const isPartOfSet =
+                          title.setGroup &&
+                          TITLE_SET_EFFECTS.some(
+                            (se) =>
+                              se.titles.includes(title.id) &&
+                              se.titles.every((tid) =>
+                                (player.unlockedTitles || []).includes(tid)
+                              )
+                          );
+
+                        return (
+                          <button
+                            key={title.id}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (!isEquipped && onSelectTitle) {
+                                onSelectTitle(title.id);
+                              }
+                            }}
+                            disabled={isEquipped}
+                            className={`text-left rounded p-3 border transition-colors ${
+                              isEquipped
+                                ? 'bg-yellow-900/30 border-yellow-500 cursor-default opacity-60'
+                                : 'bg-stone-900 hover:bg-stone-700 border-stone-700 cursor-pointer'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span
+                                    className={`font-bold ${getRarityColor(title.rarity || '普通')}`}
+                                  >
+                                    {title.name}
+                                  </span>
+                                  {title.rarity && (
+                                    <span className="text-xs text-stone-500">
+                                      ({title.rarity})
+                                    </span>
+                                  )}
+                                  {title.category && (
+                                    <span className="text-xs text-stone-500">
+                                      [{title.category}]
+                                    </span>
+                                  )}
+                                  {isEquipped && (
+                                    <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded">
+                                      已装备
+                                    </span>
+                                  )}
+                                  {isPartOfSet && !isEquipped && (
+                                    <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded">
+                                      套装可用
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-stone-400 mb-1">
+                                  {title.description}
+                                </p>
+                                <p className="text-xs text-stone-500">
+                                  {title.requirement}
+                                </p>
+                              </div>
+                              {!isEquipped && (
+                                <div className="ml-2 text-xs text-yellow-400">
+                                  点击装备
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        );
+                      })}
+
+                      {unlockedTitles.length === 0 && (
+                        <div className="text-center text-stone-500 py-4">
+                          尚未解锁任何称号
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 未解锁的称号（可选显示） */}
+                    {TITLES.filter(
+                      (t) => !(player.unlockedTitles || []).includes(t.id)
+                    ).length > 0 && (
+                      <details className="mt-4">
+                        <summary className="text-sm font-bold text-stone-400 cursor-pointer mb-2">
+                          未解锁的称号 (
+                          {
+                            TITLES.filter(
+                              (t) =>
+                                !(player.unlockedTitles || []).includes(t.id)
+                            ).length
+                          }
+                          )
+                        </summary>
+                        <div className="grid grid-cols-1 gap-2 max-h-60 overflow-y-auto mt-2">
+                          {TITLES.filter(
+                            (t) =>
+                              !unlockedTitles.map((ut) => ut.id).includes(t.id)
+                          ).map((title) => {
+                            const isMet = checkTitleRequirement(title, player);
+                            return (
+                              <div
+                                key={title.id}
+                                className={`bg-stone-900/50 rounded p-3 border ${isMet ? 'border-green-600 opacity-100' : 'border-stone-800 opacity-60'}`}
+                              >
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span
+                                    className={`font-bold ${getRarityColor(title.rarity || '普通')}`}
+                                  >
+                                    {title.name}
+                                  </span>
+                                  {title.rarity && (
+                                    <span className="text-xs text-stone-500">
+                                      ({title.rarity})
+                                    </span>
+                                  )}
+                                  {isMet && (
+                                    <span className="text-xs text-green-400 font-bold">
+                                      ✓ 可解锁
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-stone-500">
+                                  {title.requirement}
+                                </p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
           ) : (
             <>
               {/* 数据统计面板 */}
@@ -1144,27 +1354,35 @@ const CharacterModal: React.FC<Props> = ({
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                     <div className="bg-stone-800 rounded p-3 border border-stone-700">
-                      <div className="text-stone-400 text-xs mb-1">游戏天数</div>
+                      <div className="text-stone-400 text-xs mb-1">
+                        游戏天数
+                      </div>
                       <div className="text-xl font-bold text-mystic-gold">
                         {statistics.gameDays}
                       </div>
                     </div>
                     {gameDuration && (
                       <div className="bg-stone-800 rounded p-3 border border-stone-700">
-                        <div className="text-stone-400 text-xs mb-1">游戏时长</div>
+                        <div className="text-stone-400 text-xs mb-1">
+                          游戏时长
+                        </div>
                         <div className="text-xl font-bold text-blue-400">
                           {gameDuration}
                         </div>
                       </div>
                     )}
                     <div className="bg-stone-800 rounded p-3 border border-stone-700">
-                      <div className="text-stone-400 text-xs mb-1">当前境界</div>
+                      <div className="text-stone-400 text-xs mb-1">
+                        当前境界
+                      </div>
                       <div className="text-xl font-bold text-purple-400">
                         {player.realm} {player.realmLevel}
                       </div>
                     </div>
                     <div className="bg-stone-800 rounded p-3 border border-stone-700">
-                      <div className="text-stone-400 text-xs mb-1">境界进度</div>
+                      <div className="text-stone-400 text-xs mb-1">
+                        境界进度
+                      </div>
                       <div className="flex items-center gap-2">
                         <div className="flex-1 bg-stone-700 rounded-full h-2">
                           <div
@@ -1178,7 +1396,9 @@ const CharacterModal: React.FC<Props> = ({
                       </div>
                     </div>
                     <div className="bg-stone-800 rounded p-3 border border-stone-700">
-                      <div className="text-stone-400 text-xs mb-1">当前修为</div>
+                      <div className="text-stone-400 text-xs mb-1">
+                        当前修为
+                      </div>
                       <div className="text-xl font-bold text-green-400">
                         {player.exp.toLocaleString()}
                       </div>
@@ -1187,7 +1407,9 @@ const CharacterModal: React.FC<Props> = ({
                       </div>
                     </div>
                     <div className="bg-stone-800 rounded p-3 border border-stone-700">
-                      <div className="text-stone-400 text-xs mb-1">当前灵石</div>
+                      <div className="text-stone-400 text-xs mb-1">
+                        当前灵石
+                      </div>
                       <div className="text-xl font-bold text-yellow-400">
                         {player.spiritStones.toLocaleString()}
                       </div>
@@ -1203,19 +1425,25 @@ const CharacterModal: React.FC<Props> = ({
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                     <div className="bg-stone-800 rounded p-3 border border-stone-700">
-                      <div className="text-stone-400 text-xs mb-1">击杀敌人</div>
+                      <div className="text-stone-400 text-xs mb-1">
+                        击杀敌人
+                      </div>
                       <div className="text-xl font-bold text-red-400">
                         {statistics.killCount.toLocaleString()}
                       </div>
                     </div>
                     <div className="bg-stone-800 rounded p-3 border border-stone-700">
-                      <div className="text-stone-400 text-xs mb-1">历练次数</div>
+                      <div className="text-stone-400 text-xs mb-1">
+                        历练次数
+                      </div>
                       <div className="text-xl font-bold text-orange-400">
                         {statistics.adventureCount.toLocaleString()}
                       </div>
                     </div>
                     <div className="bg-stone-800 rounded p-3 border border-stone-700">
-                      <div className="text-stone-400 text-xs mb-1">秘境探索</div>
+                      <div className="text-stone-400 text-xs mb-1">
+                        秘境探索
+                      </div>
                       <div className="text-xl font-bold text-purple-400">
                         {statistics.secretRealmCount.toLocaleString()}
                       </div>
@@ -1231,21 +1459,28 @@ const CharacterModal: React.FC<Props> = ({
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                     <div className="bg-stone-800 rounded p-3 border border-stone-700">
-                      <div className="text-stone-400 text-xs mb-1">打坐次数</div>
+                      <div className="text-stone-400 text-xs mb-1">
+                        打坐次数
+                      </div>
                       <div className="text-xl font-bold text-blue-400">
                         {statistics.meditateCount.toLocaleString()}
                       </div>
                     </div>
                     <div className="bg-stone-800 rounded p-3 border border-stone-700">
-                      <div className="text-stone-400 text-xs mb-1">突破次数</div>
+                      <div className="text-stone-400 text-xs mb-1">
+                        突破次数
+                      </div>
                       <div className="text-xl font-bold text-purple-400">
                         {statistics.breakthroughCount.toLocaleString()}
                       </div>
                     </div>
                     <div className="bg-stone-800 rounded p-3 border border-stone-700">
-                      <div className="text-stone-400 text-xs mb-1">学习功法</div>
+                      <div className="text-stone-400 text-xs mb-1">
+                        学习功法
+                      </div>
                       <div className="text-xl font-bold text-green-400">
-                        {statistics.learnedArtsCount} / {statistics.unlockedArtsCount}
+                        {statistics.learnedArtsCount} /{' '}
+                        {statistics.unlockedArtsCount}
                       </div>
                       <div className="text-xs text-stone-500">
                         已学习 / 已解锁
@@ -1262,7 +1497,9 @@ const CharacterModal: React.FC<Props> = ({
                   </h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                     <div className="bg-stone-800 rounded p-3 border border-stone-700">
-                      <div className="text-stone-400 text-xs mb-1">获得灵宠</div>
+                      <div className="text-stone-400 text-xs mb-1">
+                        获得灵宠
+                      </div>
                       <div className="text-xl font-bold text-pink-400">
                         {statistics.petCount.toLocaleString()}
                       </div>
@@ -1271,7 +1508,9 @@ const CharacterModal: React.FC<Props> = ({
                       </div>
                     </div>
                     <div className="bg-stone-800 rounded p-3 border border-stone-700">
-                      <div className="text-stone-400 text-xs mb-1">装备物品</div>
+                      <div className="text-stone-400 text-xs mb-1">
+                        装备物品
+                      </div>
                       <div className="text-xl font-bold text-cyan-400">
                         {statistics.equipCount.toLocaleString()}
                       </div>
@@ -1280,7 +1519,9 @@ const CharacterModal: React.FC<Props> = ({
                       </div>
                     </div>
                     <div className="bg-stone-800 rounded p-3 border border-stone-700">
-                      <div className="text-stone-400 text-xs mb-1">解锁丹方</div>
+                      <div className="text-stone-400 text-xs mb-1">
+                        解锁丹方
+                      </div>
                       <div className="text-xl font-bold text-emerald-400">
                         {statistics.recipeCount.toLocaleString()}
                       </div>
@@ -1289,7 +1530,9 @@ const CharacterModal: React.FC<Props> = ({
                       </div>
                     </div>
                     <div className="bg-stone-800 rounded p-3 border border-stone-700">
-                      <div className="text-stone-400 text-xs mb-1">背包物品</div>
+                      <div className="text-stone-400 text-xs mb-1">
+                        背包物品
+                      </div>
                       <div className="text-xl font-bold text-stone-300">
                         {statistics.totalInventoryItems.toLocaleString()}
                       </div>
@@ -1298,12 +1541,18 @@ const CharacterModal: React.FC<Props> = ({
                       </div>
                     </div>
                     <div className="bg-stone-800 rounded p-3 border border-stone-700">
-                      <div className="text-stone-400 text-xs mb-1">完成成就</div>
+                      <div className="text-stone-400 text-xs mb-1">
+                        完成成就
+                      </div>
                       <div className="text-xl font-bold text-yellow-400">
                         {player.achievements.length} / {ACHIEVEMENTS.length}
                       </div>
                       <div className="text-xs text-stone-500">
-                        {((player.achievements.length / ACHIEVEMENTS.length) * 100).toFixed(1)}% 完成度
+                        {(
+                          (player.achievements.length / ACHIEVEMENTS.length) *
+                          100
+                        ).toFixed(1)}
+                        % 完成度
                       </div>
                     </div>
                   </div>
