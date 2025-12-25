@@ -302,90 +302,24 @@ const CharacterModal: React.FC<Props> = ({
         const count = parseInt(match[1]);
         return stats.meditateCount >= count;
       }
-      if (requirement.includes('金丹期') || requirement.includes('金丹')) {
-        return (
-          REALM_ORDER.indexOf(player.realm) >=
-          REALM_ORDER.indexOf(RealmType.GoldenCore)
-        );
-      }
-      if (requirement.includes('元婴期') || requirement.includes('元婴')) {
-        return (
-          REALM_ORDER.indexOf(player.realm) >=
-          REALM_ORDER.indexOf(RealmType.NascentSoul)
-        );
-      }
-      if (requirement.includes('渡劫飞升') || requirement.includes('飞升')) {
-        return (
-          REALM_ORDER.indexOf(player.realm) >=
-          REALM_ORDER.indexOf(RealmType.ImmortalAscension)
-        );
-      }
+    }
 
-      // 检查战斗类称号
-      if (
-        requirement.includes('击败10个敌人') ||
-        requirement.includes('击败10')
-      ) {
-        return stats.killCount >= 10;
+    // 检查收集类称号
+    if (requirement.includes('收集') || requirement.includes('物品')) {
+      const match = requirement.match(/(\d+)/);
+      if (match) {
+        const count = parseInt(match[1]);
+        const uniqueItems = new Set(player.inventory.map((i) => i.name)).size;
+        return uniqueItems >= count;
       }
-      if (
-        requirement.includes('击败50个敌人') ||
-        requirement.includes('击败50')
-      ) {
-        return stats.killCount >= 50;
-      }
-      if (
-        requirement.includes('击败100个敌人') ||
-        requirement.includes('击败100')
-      ) {
-        return stats.killCount >= 100;
-      }
+    }
 
-      // 检查探索类称号
-      if (
-        requirement.includes('完成20次历练') ||
-        requirement.includes('20次历练')
-      ) {
-        return stats.adventureCount >= 20;
-      }
-      if (
-        requirement.includes('完成50次历练') ||
-        requirement.includes('50次历练')
-      ) {
-        return stats.adventureCount >= 50;
-      }
-      if (
-        requirement.includes('完成100次历练') ||
-        requirement.includes('100次历练')
-      ) {
-        return stats.adventureCount >= 100;
-      }
+    // 初始称号默认解锁
+    if (requirement.includes('初始称号')) {
+      return true;
+    }
 
-      // 检查打坐类称号
-      if (requirement.includes('打坐') || requirement.includes('冥想')) {
-        const match = requirement.match(/(\d+)/);
-        if (match) {
-          const count = parseInt(match[1]);
-          return stats.meditateCount >= count;
-        }
-      }
-
-      // 检查收集类称号
-      if (requirement.includes('收集') || requirement.includes('物品')) {
-        const match = requirement.match(/(\d+)/);
-        if (match) {
-          const count = parseInt(match[1]);
-          const uniqueItems = new Set(player.inventory.map((i) => i.name)).size;
-          return uniqueItems >= count;
-        }
-      }
-
-      // 初始称号默认解锁
-      if (requirement.includes('初始称号')) {
-        return true;
-      }
-
-      return false;
+    return false;
     },
     []
   );
