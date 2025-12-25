@@ -119,15 +119,15 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 p-0 md:p-4 touch-manipulation"
+      className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm touch-manipulation"
       onClick={() => !isDrawing && onClose()}
     >
       {renderDrawingOverlay()}
       <div
-        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[80vh] md:h-auto md:max-w-2xl md:max-h-[90vh]"
+        className="bg-paper-800 w-full h-[80vh] md:h-auto md:max-w-2xl rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-600 shadow-2xl flex flex-col md:max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-stone-800 border-b border-stone-700 p-3 md:p-4 flex justify-between items-center">
+        <div className="p-3 md:p-4 border-b border-stone-600 flex justify-between items-center bg-ink-800 rounded-t-2xl z-10">
           <h2 className="text-lg md:text-xl font-serif text-mystic-gold flex items-center gap-2">
             <Gift className="text-yellow-400 w-5 h-5 md:w-6 md:h-6" />
             抽奖系统
@@ -143,7 +143,7 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="modal-scroll-container modal-scroll-content p-6 space-y-6 bg-paper-800">
           {/* 抽奖券信息 */}
           <div className="bg-stone-900 rounded p-4 border border-stone-700 text-center">
             <div className="text-2xl font-bold text-yellow-400 mb-2">

@@ -21,7 +21,10 @@ import {
   ItemRarity,
   DailyQuestType,
   GrottoConfig,
-  HeavenEarthSoulBoss
+  HeavenEarthSoulBoss,
+  HeavenEarthEssence,
+  HeavenEarthMarrow,
+  LongevityRule
 } from './types';
 
 
@@ -2433,7 +2436,7 @@ export const INHERITANCE_ROUTES: InheritanceRoute[] = [
     description: '虚空之力传承，神秘莫测，神识极强。',
     rarity: '仙品',
     unlockRequirement: {
-      realm: RealmType.VoidRefining,
+      realm: RealmType.QiRefining,
     },
     baseEffects: {
       spirit: 200,
@@ -5745,6 +5748,75 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     weight: 2,
     value: { tickets: 5 },
   },
+  // 进阶物品奖励（极稀有）
+  {
+    id: 'lottery-foundation-treasure',
+    name: '筑基奇物',
+    type: 'item',
+    rarity: '传说',
+    weight: 1,
+    value: {
+      item: {
+        name: '筑基奇物',
+        type: ItemType.Material,
+        description: '突破筑基期的关键物品，可在修炼系统中使用',
+        quantity: 1,
+        rarity: '传说',
+      },
+      foundationTreasure: true, // 标记为进阶物品，需要在抽奖处理中特殊处理
+    },
+  },
+  {
+    id: 'lottery-heaven-earth-essence',
+    name: '天地精华',
+    type: 'item',
+    rarity: '仙品',
+    weight: 0.5,
+    value: {
+      item: {
+        name: '天地精华',
+        type: ItemType.Material,
+        description: '突破元婴期的关键物品，可在修炼系统中使用',
+        quantity: 1,
+        rarity: '仙品',
+      },
+      heavenEarthEssence: true,
+    },
+  },
+  {
+    id: 'lottery-heaven-earth-marrow',
+    name: '天地之髓',
+    type: 'item',
+    rarity: '仙品',
+    weight: 0.3,
+    value: {
+      item: {
+        name: '天地之髓',
+        type: ItemType.Material,
+        description: '突破化神期的关键物品，可在修炼系统中使用',
+        quantity: 1,
+        rarity: '仙品',
+      },
+      heavenEarthMarrow: true,
+    },
+  },
+  {
+    id: 'lottery-longevity-rule',
+    name: '规则之力',
+    type: 'item',
+    rarity: '仙品',
+    weight: 0.1,
+    value: {
+      item: {
+        name: '规则之力',
+        type: ItemType.Material,
+        description: '掌控天地的规则之力，可在修炼系统中使用',
+        quantity: 1,
+        rarity: '仙品',
+      },
+      longevityRule: true,
+    },
+  },
 ];
 
 // --- 装备模板列表（从抽奖奖品中提取） ---
@@ -7138,6 +7210,7 @@ export const TRIBULATION_RARITY_BONUS: Record<ItemRarity, number> = {
   '普通': 0,   // 普通装备不加成
   '稀有': 0.03, // 稀有装备降低3%死亡概率（从5%降低到3%）
   '传说': 0.06, // 传说装备降低6%死亡概率（从10%降低到6%）
+  '史诗': 0.09, // 史诗装备降低9%死亡概率
   '仙品': 0.12, // 仙品装备降低12%死亡概率（从20%降低到12%）
 };
 
@@ -7569,7 +7642,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_001',
     name: '业火红莲',
     description: '蕴含业火之力的红莲，可净化因果',
-    rarity: 'common',
+    rarity: '普通',
     quality: 30,
     effects: { attackBonus: 200, spiritBonus: 100, specialEffect: '攻击附带业火灼烧，持续造成伤害' }
   },
@@ -7577,7 +7650,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_002',
     name: '太华千山',
     description: '太华山脉的精华，可增强防御',
-    rarity: 'common',
+    rarity: '普通',
     quality: 35,
     effects: { defenseBonus: 250, hpBonus: 500, specialEffect: '受到伤害时有一定几率触发山岳守护' }
   },
@@ -7585,7 +7658,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_003',
     name: '五行洞天',
     description: '蕴含五行之力的洞天精华',
-    rarity: 'common',
+    rarity: '普通',
     quality: 40,
     effects: { hpBonus: 400, attackBonus: 150, defenseBonus: 150, spiritBonus: 120, physiqueBonus: 80 }
   },
@@ -7593,7 +7666,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_004',
     name: '诡道红符',
     description: '蕴含诡道之力的神秘符箓',
-    rarity: 'common',
+    rarity: '普通',
     quality: 45,
     effects: { spiritBonus: 200, speedBonus: 30, specialEffect: '法术命中率提升，有一定几率迷惑敌人' }
   },
@@ -7601,7 +7674,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_005',
     name: '幽冥鬼火',
     description: '来自幽冥的诡异火焰',
-    rarity: 'common',
+    rarity: '普通',
     quality: 50,
     effects: { attackBonus: 180, spiritBonus: 150, specialEffect: '攻击附带幽冥效果，降低敌人防御' }
   },
@@ -7609,7 +7682,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_006',
     name: '血月精华',
     description: '血月之夜凝聚的精华',
-    rarity: 'common',
+    rarity: '普通',
     quality: 55,
     effects: { physiqueBonus: 100, hpBonus: 600, specialEffect: '生命恢复速度提升，夜晚战斗力增强' }
   },
@@ -7617,7 +7690,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_007',
     name: '星辰之泪',
     description: '星辰陨落时凝聚的精华',
-    rarity: 'common',
+    rarity: '普通',
     quality: 60,
     effects: { spiritBonus: 180, speedBonus: 25, specialEffect: '灵力上限提升，星辰法术威力增强' }
   },
@@ -7625,7 +7698,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_008',
     name: '九幽寒冰',
     description: '九幽之地的极寒精华',
-    rarity: 'common',
+    rarity: '普通',
     quality: 65,
     effects: { defenseBonus: 200, spiritBonus: 160, specialEffect: '冰系法术威力提升，有一定几率冻结敌人' }
   },
@@ -7633,7 +7706,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_009',
     name: '雷劫残片',
     description: '天劫后残留的雷劫之力',
-    rarity: 'common',
+    rarity: '普通',
     quality: 70,
     effects: { attackBonus: 220, speedBonus: 35, specialEffect: '雷系法术威力提升，暴击率增加' }
   },
@@ -7641,7 +7714,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_010',
     name: '混沌魔气',
     description: '混沌中诞生的魔气精华',
-    rarity: 'common',
+    rarity: '普通',
     quality: 75,
     effects: { physiqueBonus: 120, attackBonus: 190, specialEffect: '物理攻击附带魔气侵蚀效果' }
   },
@@ -7659,7 +7732,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_012',
     name: '时空碎片',
     description: '破碎的时空法则碎片',
-    rarity: 'rare',
+    rarity: '稀有',
     quality: 85,
     effects: { speedBonus: 50, spiritBonus: 250, specialEffect: '先手几率大幅提升，闪避率增加' }
   },
@@ -7667,7 +7740,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_013',
     name: '命运之线',
     description: '连接命运的神秘丝线',
-    rarity: 'rare',
+    rarity: '稀有',
     quality: 90,
     effects: { hpBonus: 1000, spiritBonus: 280, specialEffect: '气运提升，机缘获取几率增加' }
   },
@@ -7675,7 +7748,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_014',
     name: '因果之轮',
     description: '掌控因果的神秘轮盘',
-    rarity: 'rare',
+    rarity: '稀有',
     quality: 95,
     effects: { attackBonus: 350, defenseBonus: 200, specialEffect: '攻击附带因果反噬效果' }
   },
@@ -7683,7 +7756,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_015',
     name: '虚无之镜',
     description: '可看透虚实的镜子',
-    rarity: 'rare',
+    rarity: '稀有',
     quality: 100,
     effects: { defenseBonus: 300, spiritBonus: 320, specialEffect: '受到攻击时有几率完全闪避' }
   },
@@ -7691,7 +7764,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_016',
     name: '永恒之火',
     description: '永不熄灭的永恒火焰',
-    rarity: 'rare',
+    rarity: '稀有',
     quality: 105,
     effects: { attackBonus: 380, spiritBonus: 300, specialEffect: '攻击附带永恒灼烧，无法被熄灭' }
   },
@@ -7699,7 +7772,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_017',
     name: '不朽之木',
     description: '永恒不朽的神木精华',
-    rarity: 'rare',
+    rarity: '稀有',
     quality: 110,
     effects: { hpBonus: 1500, defenseBonus: 250, specialEffect: '生命恢复速度大幅提升' }
   },
@@ -7707,7 +7780,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_018',
     name: '天道碎片',
     description: '破碎的天道法则',
-    rarity: 'rare',
+    rarity: '稀有',
     quality: 115,
     effects: { spiritBonus: 400, attackBonus: 300, defenseBonus: 280, specialEffect: '所有法术威力提升' }
   },
@@ -7715,7 +7788,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_019',
     name: '混沌青莲',
     description: '混沌中诞生的青莲精华',
-    rarity: 'rare',
+    rarity: '稀有',
     quality: 120,
     effects: { hpBonus: 1200, spiritBonus: 450, specialEffect: '灵力上限大幅提升，修炼速度加快' }
   },
@@ -7723,7 +7796,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     id: 'hee_020',
     name: '盘古精血',
     description: '开天辟地盘古的精血',
-    rarity: 'rare',
+    rarity: '稀有',
     quality: 125,
     effects: { physiqueBonus: 200, hpBonus: 2000, attackBonus: 400, specialEffect: '物理伤害大幅提升' }
   },

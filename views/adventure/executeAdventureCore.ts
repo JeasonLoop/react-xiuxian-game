@@ -19,6 +19,10 @@ import {
   PET_EVOLUTION_MATERIALS,
   getRandomPetName,
   REALM_DATA,
+  FOUNDATION_TREASURES,
+  HEAVEN_EARTH_ESSENCES,
+  HEAVEN_EARTH_MARROWS,
+  LONGEVITY_RULES,
 } from '../../constants';
 import { BattleReplay } from '../../services/battleService';
 import { generateAdventureEvent } from '../../services/aiService';
@@ -415,6 +419,73 @@ const applyResultToPlayer = (
     addLog(`🎁 你获得了灵宠进阶材料【${m.name}】！`, 'gain');
   }
 
+  // 进阶物品获取逻辑
+  const currentRealmIndex = REALM_ORDER.indexOf(prev.realm);
+  let newFoundationTreasure = prev.foundationTreasure;
+  let newHeavenEarthEssence = prev.heavenEarthEssence;
+  let newHeavenEarthMarrow = prev.heavenEarthMarrow;
+  let newLongevityRules = [...(prev.longevityRules || [])];
+
+  // 筑基奇物：炼气期、筑基期历练/秘境有概率获得
+  if (!prev.foundationTreasure && (currentRealmIndex <= REALM_ORDER.indexOf(RealmType.Foundation))) {
+    const foundationChance = isSecretRealm ? 0.03 : (adventureType === 'lucky' ? 0.02 : 0.01);
+    if (Math.random() < foundationChance) {
+      const treasures = Object.values(FOUNDATION_TREASURES);
+      const availableTreasures = treasures.filter(t =>
+        !t.requiredLevel || prev.realmLevel >= t.requiredLevel
+      );
+      if (availableTreasures.length > 0) {
+        const selected = availableTreasures[Math.floor(Math.random() * availableTreasures.length)];
+        addLog(`✨ 你获得了筑基奇物【${selected.name}】！这是突破筑基期的关键物品！`, 'special');
+        newFoundationTreasure = selected.id;
+      }
+    }
+  }
+
+  // 天地精华：金丹期、元婴期历练/秘境有概率获得
+  if (!prev.heavenEarthEssence && (currentRealmIndex >= REALM_ORDER.indexOf(RealmType.GoldenCore) && currentRealmIndex <= REALM_ORDER.indexOf(RealmType.NascentSoul))) {
+    const essenceChance = isSecretRealm ? 0.02 : (adventureType === 'lucky' ? 0.015 : 0.008);
+    if (Math.random() < essenceChance) {
+      const essences = Object.values(HEAVEN_EARTH_ESSENCES);
+      if (essences.length > 0) {
+        const selected = essences[Math.floor(Math.random() * essences.length)];
+        addLog(`✨ 你获得了天地精华【${selected.name}】！这是突破元婴期的关键物品！`, 'special');
+        newHeavenEarthEssence = selected.id;
+      }
+    }
+  }
+
+  // 天地之髓：化神期历练/秘境有概率获得
+  if (!prev.heavenEarthMarrow && currentRealmIndex >= REALM_ORDER.indexOf(RealmType.SpiritSevering)) {
+    const marrowChance = isSecretRealm ? 0.015 : (adventureType === 'lucky' ? 0.01 : 0.005);
+    if (Math.random() < marrowChance) {
+      const marrows = Object.values(HEAVEN_EARTH_MARROWS);
+      if (marrows.length > 0) {
+        const selected = marrows[Math.floor(Math.random() * marrows.length)];
+        addLog(`✨ 你获得了天地之髓【${selected.name}】！这是突破化神期的关键物品！`, 'special');
+        newHeavenEarthMarrow = selected.id;
+      }
+    }
+  }
+
+  // 规则之力：长生境特殊挑战/终极奖励
+  if (currentRealmIndex >= REALM_ORDER.indexOf(RealmType.LongevityRealm)) {
+    const rulesChance = isSecretRealm && riskLevel === '极度危险' ? 0.05 : (adventureType === 'dao_combining_challenge' ? 0.3 : 0);
+    if (Math.random() < rulesChance) {
+      const rules = Object.values(LONGEVITY_RULES);
+      const currentRules = prev.longevityRules || [];
+      const availableRules = rules.filter(r => !currentRules.includes(r.id));
+      if (availableRules.length > 0) {
+        const selected = availableRules[Math.floor(Math.random() * availableRules.length)];
+        const maxRules = prev.maxLongevityRules || 3;
+        if (currentRules.length < maxRules) {
+          addLog(`✨ 你获得了规则之力【${selected.name}】！这是掌控天地的力量！`, 'special');
+          newLongevityRules.push(selected.id);
+        }
+      }
+    }
+  }
+
   // 抽奖券与传承（如果AI没有生成抽奖券变化，则使用随机逻辑）
   if (result.lotteryTicketsChange === undefined && Math.random() < 0.05) {
     const count = Math.floor(Math.random() * 10) + 1;
@@ -462,7 +533,10 @@ const applyResultToPlayer = (
   return {
     ...prev, hp: finalHp, exp: newExp, spiritStones: newStones, inventory: newInv, cultivationArts: newArts, unlockedArts: newUnlockedArts,
     talentId: newTalentId, attack: newAttack, defense: newDefense, maxHp: newMaxHp, spirit: newSpirit, physique: newPhysique, speed: newSpeed,
-    luck: newLuck, lotteryTickets: newLotteryTickets, inheritanceLevel: newInheritanceLevel, pets: newPets, statistics: newStats, lifespan: newLifespan, spiritualRoots: newSpiritualRoots, reputation: newReputation
+    luck: newLuck, lotteryTickets: newLotteryTickets, inheritanceLevel: newInheritanceLevel, pets: newPets, statistics: newStats, lifespan: newLifespan, spiritualRoots: newSpiritualRoots, reputation: newReputation,
+    foundationTreasure: newFoundationTreasure, heavenEarthEssence: newHeavenEarthEssence, heavenEarthMarrow: newHeavenEarthMarrow, longevityRules: newLongevityRules,
+    marrowRefiningProgress: newHeavenEarthMarrow && !prev.heavenEarthMarrow ? 0 : prev.marrowRefiningProgress,
+    marrowRefiningSpeed: newHeavenEarthMarrow && !prev.heavenEarthMarrow ? 1.0 : prev.marrowRefiningSpeed
   };
 };
 

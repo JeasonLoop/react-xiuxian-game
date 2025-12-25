@@ -718,6 +718,10 @@ export interface LotteryPrize {
     exp?: number;
     petId?: string;
     tickets?: number;
+    foundationTreasure?: boolean; // 标记为筑基奇物
+    heavenEarthEssence?: boolean; // 标记为天地精华
+    heavenEarthMarrow?: boolean; // 标记为天地之髓
+    longevityRule?: boolean; // 标记为规则之力
   };
 }
 
@@ -784,6 +788,8 @@ export interface ShopItem {
   isEquippable?: boolean;
   minRealm?: RealmType; // 最低境界要求
   reviveChances?: number; // 保命机会次数（1-3次），仅传说和仙品装备可能有
+  isAdvancedItem?: boolean; // 标记为进阶物品
+  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule'; // 进阶物品类型
 }
 
 export interface Shop {
