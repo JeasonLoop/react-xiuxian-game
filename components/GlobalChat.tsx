@@ -11,15 +11,26 @@ export const GlobalChat: React.FC<Props> = ({ playerName }) => {
   const [input, setInput] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [hasNew, setHasNew] = useState(false);
+  const [lastViewedTimestamp, setLastViewedTimestamp] = useState<number>(Date.now());
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // 检查是否有新消息（用户未查看过的）
+  useEffect(() => {
+    if (messages.length === 0) return;
+    
+    const lastMessage = messages[messages.length - 1];
+    const lastMessageTimestamp = lastMessage.timestamp || Date.now();
+    
+    // 如果聊天窗口关闭，且有新消息（时间戳大于最后查看时间），并且不是自己发的消息，则显示红点
+    if (!isOpen && lastMessageTimestamp > lastViewedTimestamp && lastMessage.user !== playerName) {
+      setHasNew(true);
+    }
+  }, [messages, isOpen, lastViewedTimestamp, playerName]);
 
   // 自动滚动到底部
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-    if (!isOpen && messages.length > 0) {
-      setHasNew(true);
     }
   }, [messages, isOpen]);
 
@@ -36,8 +47,14 @@ export const GlobalChat: React.FC<Props> = ({ playerName }) => {
   };
 
   const toggleOpen = () => {
-    setIsOpen(!isOpen);
-    if (!isOpen) setHasNew(false);
+    const newIsOpen = !isOpen;
+    setIsOpen(newIsOpen);
+    
+    if (newIsOpen) {
+      // 打开聊天窗口时，更新最后查看时间为当前时间，并清除红点
+      setLastViewedTimestamp(Date.now());
+      setHasNew(false);
+    }
   };
 
   return (

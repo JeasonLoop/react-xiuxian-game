@@ -1,5 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle2, Circle, Sparkles, Calendar, Filter, ArrowUpDown, Download } from 'lucide-react';
+import {
+  X,
+  CheckCircle2,
+  Circle,
+  Sparkles,
+  Calendar,
+  Filter,
+  ArrowUpDown,
+  Download,
+} from 'lucide-react';
 import { PlayerStats, DailyQuest, ItemRarity } from '../types';
 import { getRarityTextColor } from '../utils/rarityUtils';
 
@@ -17,7 +26,9 @@ const DailyQuestModal: React.FC<Props> = ({
   onClaimReward,
 }) => {
   const [filterRarity, setFilterRarity] = useState<ItemRarity | 'all'>('all');
-  const [sortBy, setSortBy] = useState<'default' | 'progress' | 'rarity' | 'reward'>('default');
+  const [sortBy, setSortBy] = useState<
+    'default' | 'progress' | 'rarity' | 'reward'
+  >('default');
   const [showCompleted, setShowCompleted] = useState<boolean>(true);
 
   if (!isOpen) return null;
@@ -25,7 +36,8 @@ const DailyQuestModal: React.FC<Props> = ({
   const dailyQuests = player.dailyQuests || [];
   const completedCount = dailyQuests.filter((q) => q.completed).length;
   const totalCount = dailyQuests.length;
-  const completionRate = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
+  const completionRate =
+    totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
   // 筛选任务
   const filteredQuests = dailyQuests.filter((quest) => {
@@ -43,12 +55,23 @@ const DailyQuestModal: React.FC<Props> = ({
         return b.progress - a.progress;
       case 'rarity':
         // 按稀有度排序
-        const rarityOrder: Record<ItemRarity, number> = { '普通': 1, '稀有': 2, '传说': 3, '仙品': 4 };
+        const rarityOrder: Record<ItemRarity, number> = {
+          普通: 1,
+          稀有: 2,
+          传说: 3,
+          仙品: 4,
+        };
         return rarityOrder[b.rarity] - rarityOrder[a.rarity];
       case 'reward':
         // 按奖励价值排序
-        const rewardA = (a.reward.exp || 0) + (a.reward.spiritStones || 0) * 0.1 + (a.reward.lotteryTickets || 0) * 10;
-        const rewardB = (b.reward.exp || 0) + (b.reward.spiritStones || 0) * 0.1 + (b.reward.lotteryTickets || 0) * 10;
+        const rewardA =
+          (a.reward.exp || 0) +
+          (a.reward.spiritStones || 0) * 0.1 +
+          (a.reward.lotteryTickets || 0) * 10;
+        const rewardB =
+          (b.reward.exp || 0) +
+          (b.reward.spiritStones || 0) * 0.1 +
+          (b.reward.lotteryTickets || 0) * 10;
         return rewardB - rewardA;
       default:
         return 0;
@@ -123,7 +146,9 @@ const DailyQuestModal: React.FC<Props> = ({
             <span className="text-stone-300 text-sm">筛选:</span>
             <select
               value={filterRarity}
-              onChange={(e) => setFilterRarity(e.target.value as ItemRarity | 'all')}
+              onChange={(e) =>
+                setFilterRarity(e.target.value as ItemRarity | 'all')
+              }
               className="px-2 py-1 bg-stone-900 border border-stone-700 rounded text-stone-200 text-sm"
             >
               <option value="all">全部稀有度</option>
@@ -171,7 +196,9 @@ const DailyQuestModal: React.FC<Props> = ({
                 key={quest.id}
                 quest={quest}
                 onClaimReward={onClaimReward}
-                isClaimed={player.dailyQuestCompleted?.includes(quest.id) || false}
+                isClaimed={
+                  player.dailyQuestCompleted?.includes(quest.id) || false
+                }
               />
             ))
           )}
@@ -187,7 +214,11 @@ interface QuestItemProps {
   isClaimed: boolean; // 是否已领取奖励
 }
 
-const QuestItem: React.FC<QuestItemProps> = ({ quest, onClaimReward, isClaimed }) => {
+const QuestItem: React.FC<QuestItemProps> = ({
+  quest,
+  onClaimReward,
+  isClaimed,
+}) => {
   const progressPercentage = Math.min(
     (quest.progress / quest.target) * 100,
     100
@@ -200,8 +231,8 @@ const QuestItem: React.FC<QuestItemProps> = ({ quest, onClaimReward, isClaimed }
         quest.completed && isClaimed
           ? 'border-stone-600 bg-stone-800/50'
           : quest.completed
-          ? 'border-mystic-jade bg-mystic-jade/10'
-          : 'border-stone-700 hover:border-stone-600'
+            ? 'border-mystic-jade bg-mystic-jade/10'
+            : 'border-stone-700 hover:border-stone-600'
       }`}
     >
       <div className="flex items-start justify-between mb-2">
@@ -246,19 +277,19 @@ const QuestItem: React.FC<QuestItemProps> = ({ quest, onClaimReward, isClaimed }
       {/* Rewards */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4 text-sm">
-          {quest.reward.exp && (
+          {!!quest.reward.exp && (
             <div className="flex items-center gap-1 text-mystic-jade">
               <Sparkles size={14} />
               <span>{quest.reward.exp} 修为</span>
             </div>
           )}
-          {quest.reward.spiritStones && (
+          {!!quest.reward.spiritStones && (
             <div className="flex items-center gap-1 text-mystic-gold">
               <Sparkles size={14} />
               <span>{quest.reward.spiritStones} 灵石</span>
             </div>
           )}
-          {quest.reward.lotteryTickets && (
+          {!!quest.reward.lotteryTickets && (
             <div className="flex items-center gap-1 text-yellow-400">
               <Sparkles size={14} />
               <span>{quest.reward.lotteryTickets} 抽奖券</span>
@@ -284,4 +315,3 @@ const QuestItem: React.FC<QuestItemProps> = ({ quest, onClaimReward, isClaimed }
 };
 
 export default DailyQuestModal;
-
