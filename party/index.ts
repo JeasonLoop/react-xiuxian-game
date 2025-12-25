@@ -1,6 +1,10 @@
 import type * as Party from 'partykit/server';
 
 export default class MainServer implements Party.Server {
+  // 存储历史消息（最多100条）
+  private messageHistory: any[] = [];
+  private readonly MAX_HISTORY = 100;
+
   constructor(readonly room: Party.Room) {}
 
   // 处理 HTTP 请求，访问 http://127.0.0.1:1999 时不再 404
@@ -18,7 +22,18 @@ export default class MainServer implements Party.Server {
     const connections = Array.from(this.room.getConnections());
     const onlineCount = connections.length;
     
-    // 发送欢迎消息给新连接的用户
+    // 先发送历史消息给新连接的用户（最近10条）
+    if (this.messageHistory.length > 0) {
+      const recentHistory = this.messageHistory.slice(-10);
+      conn.send(
+        JSON.stringify({
+          type: 'history',
+          messages: recentHistory
+        })
+      );
+    }
+    
+    // 然后发送欢迎消息
     conn.send(
       JSON.stringify({
         type: 'welcome',
@@ -38,6 +53,23 @@ export default class MainServer implements Party.Server {
 
   onMessage(message: string, sender: Party.Connection) {
     console.log(`Message from ${sender.id}: ${message}`);
+    
+    try {
+      const data = JSON.parse(message);
+      
+      // 如果是聊天消息，存储到历史记录
+      if (data.type === 'chat') {
+        this.messageHistory.push(data);
+        
+        // 保持历史记录不超过最大限制
+        if (this.messageHistory.length > this.MAX_HISTORY) {
+          this.messageHistory = this.messageHistory.slice(-this.MAX_HISTORY);
+        }
+      }
+    } catch (e) {
+      // 如果不是JSON格式的消息，忽略历史记录存储
+    }
+    
     // 广播给所有人（包括发送者），这样发送者能立即在自己的界面看到消息
     this.room.broadcast(message);
   }

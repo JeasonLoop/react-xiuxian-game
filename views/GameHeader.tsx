@@ -65,14 +65,17 @@ function GameHeader({
   const [clickCount, setClickCount] = useState(0);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const appVersion = import.meta.env.VITE_APP_VERSION || '-';
-  
+
   // 使用PartyKit连接获取在线人数
-  const { onlineCount } = useParty('main');
+  const { onlineCount } = useParty('global');
 
   const newAchievements = useMemo(
     () =>
-      Array.isArray(player.achievements) && Array.isArray(player.viewedAchievements)
-        ? player.achievements.filter((a) => !player.viewedAchievements.includes(a))
+      Array.isArray(player.achievements) &&
+      Array.isArray(player.viewedAchievements)
+        ? player.achievements.filter(
+            (a) => !player.viewedAchievements.includes(a)
+          )
         : [],
     [player.achievements, player.viewedAchievements]
   );
@@ -82,7 +85,10 @@ function GameHeader({
     [newAchievements.length]
   );
 
-  const petsCount = useMemo(() => Array.isArray(player.pets) ? player.pets.length : 0, [player.pets]);
+  const petsCount = useMemo(
+    () => (Array.isArray(player.pets) ? player.pets.length : 0),
+    [player.pets]
+  );
 
   const lotteryTickets = useMemo(
     () => player.lotteryTickets,
@@ -230,11 +236,12 @@ function GameHeader({
           >
             <Calendar size={18} />
             <span>日常</span>
-            {dailyQuestCompletedCount > 0 && (player.dailyQuests || []).length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {dailyQuestCompletedCount}/{(player.dailyQuests || []).length}
-              </span>
-            )}
+            {dailyQuestCompletedCount > 0 &&
+              (player.dailyQuests || []).length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {dailyQuestCompletedCount}/{(player.dailyQuests || []).length}
+                </span>
+              )}
           </button>
         )}
         {onOpenGrotto && (
