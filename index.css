@@ -132,6 +132,8 @@ body {
   background: inherit;
   z-index: 10;
   border-bottom: 1px solid rgba(203, 161, 53, 0.2);
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
 }
 
 .modal-scroll-content {

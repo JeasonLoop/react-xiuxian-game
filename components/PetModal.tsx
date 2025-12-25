@@ -103,14 +103,14 @@ const PetModal: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 p-0 md:p-4 touch-manipulation"
+      className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm touch-manipulation"
       onClick={onClose}
     >
       <div
-        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[80vh] md:h-auto md:max-w-3xl md:max-h-[90vh]"
+        className="bg-paper-800 w-full h-[80vh] md:h-auto md:max-w-3xl rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-600 shadow-2xl flex flex-col md:max-h-[90vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sticky top-0 bg-stone-800 border-b border-stone-700 p-3 md:p-4 flex justify-between items-center">
+        <div className="p-3 md:p-4 border-b border-stone-600 flex justify-between items-center bg-ink-800 rounded-t-2xl z-10">
           <h2 className="text-lg md:text-xl font-serif text-mystic-gold">
             灵宠系统
           </h2>
@@ -122,7 +122,7 @@ const PetModal: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="p-6 space-y-6">
+        <div className="modal-scroll-container modal-scroll-content p-6 space-y-6 bg-paper-800">
           {/* 当前激活的灵宠 */}
           {activePet && (
             <div className="bg-stone-900 rounded p-4 border-2 border-yellow-600">

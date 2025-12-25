@@ -1,5 +1,5 @@
 import { ShopItem, ShopType, ItemType, ItemRarity, EquipmentSlot, RealmType } from '../types';
-import { REALM_ORDER, getPillDefinition } from '../constants';
+import { REALM_ORDER, getPillDefinition, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES } from '../constants';
 import { uid } from '../utils/gameUtils';
 
 // 商店物品模板池

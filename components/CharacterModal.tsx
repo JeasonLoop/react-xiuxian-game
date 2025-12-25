@@ -641,27 +641,26 @@ const CharacterModal: React.FC<Props> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 p-0 md:p-4 touch-manipulation"
+      className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm touch-manipulation"
       onClick={onClose}
     >
       <div
-        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[80vh] md:h-auto md:max-w-2xl md:max-h-[90vh] flex flex-col"
+        className="bg-paper-800 rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-600 shadow-2xl w-full h-[80vh] md:h-auto md:max-w-2xl md:max-h-[90vh] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="modal-fixed-header sticky top-0 bg-stone-800 border-b border-stone-700">
-          <div className="p-3 md:p-4 flex justify-between items-center">
-            <h2 className="text-lg md:text-xl font-serif text-mystic-gold">
-              角色系统
-            </h2>
-            <button
-              onClick={onClose}
-              className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
-            >
-              <X size={24} />
-            </button>
-          </div>
-          {/* 标签页切换 */}
-          <div className="flex border-t border-stone-700">
+        <div className="p-3 md:p-4 border-b border-stone-600 bg-ink-800 md:rounded-t flex justify-between items-start">
+          <h2 className="text-lg md:text-xl font-serif text-mystic-gold">
+            角色系统
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+          >
+            <X size={24} />
+          </button>
+        </div>
+        {/* 标签页切换 */}
+        <div className="flex border-b border-stone-600 bg-ink-800">
             <button
               onClick={() => setActiveTab('character')}
               className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'character'
@@ -686,10 +685,9 @@ const CharacterModal: React.FC<Props> = ({
                 数据统计
               </div>
             </button>
-          </div>
         </div>
 
-        <div className="modal-scroll-container modal-scroll-content p-6 space-y-6 flex-1">
+        <div className="modal-scroll-container modal-scroll-content p-6 space-y-6 bg-paper-800">
           {activeTab === 'character' ? (
             <>
               {/* 修炼系统信息 */}
