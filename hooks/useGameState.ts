@@ -119,6 +119,11 @@ export function useGameState() {
             unlockedTitles: savedData.player.unlockedTitles || (savedData.player.titleId ? [savedData.player.titleId] : ['title-novice']),
             // 声望系统
             reputation: savedData.player.reputation || 0,
+            // 宗门追杀系统
+            betrayedSects: savedData.player.betrayedSects || [],
+            sectHuntEndTime: savedData.player.sectHuntEndTime || null,
+            sectHuntLevel: savedData.player.sectHuntLevel || 0,
+            sectHuntSectId: savedData.player.sectHuntSectId || null,
             // 洞府系统
             grotto: savedData.player.grotto ? {
               ...savedData.player.grotto,

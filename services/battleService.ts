@@ -16,6 +16,7 @@ import {
   Item,
   Pet,
   PetSkill,
+  SectRank,
 } from '../types';
 import {
   REALM_ORDER,
@@ -623,7 +624,9 @@ const createEnemy = async (
   adventureType: AdventureType,
   riskLevel?: '低' | '中' | '高' | '极度危险',
   realmMinRealm?: RealmType,
-  sectMasterId?: string | null
+  sectMasterId?: string | null,
+  huntSectId?: string | null,
+  huntLevel?: number
 ): Promise<{
   name: string;
   title: string;
@@ -656,13 +659,47 @@ const createEnemy = async (
       // 每高1个境界，降低15%难度，最多降低60%
       realmLevelReduction = Math.max(0.4, 1.0 - realmDiff * 0.15);
     }
-  } else   if (adventureType === 'sect_challenge') {
-    // 宗主挑战特殊逻辑：宗主境界通常高出玩家 1 个境界，少数高出 2 个
-    const realmOffset = Math.random() < 0.85 ? 1 : 2; // 85% 概率高出 1 个境界，15% 概率高出 2 个
-    targetRealmIndex = clampMin(
-      Math.min(REALM_ORDER.length - 1, currentRealmIndex + realmOffset),
-      3 // 至少元婴期
-    );
+  } else if (adventureType === 'sect_challenge') {
+    // 如果是追杀战斗，根据追杀强度生成敌人
+    if (huntSectId && huntLevel !== undefined) {
+      // 追杀强度：0=普通弟子，1=精英弟子，2=长老，3=宗主
+      if (huntLevel >= 3) {
+        // 宗主：高出玩家 1-2 个境界
+        const realmOffset = Math.random() < 0.85 ? 1 : 2;
+        targetRealmIndex = clampMin(
+          Math.min(REALM_ORDER.length - 1, currentRealmIndex + realmOffset),
+          3 // 至少元婴期
+        );
+      } else if (huntLevel >= 2) {
+        // 长老：与玩家相同或高出 1 个境界
+        const realmOffset = Math.random() < 0.7 ? 0 : 1;
+        targetRealmIndex = clampMin(
+          Math.min(REALM_ORDER.length - 1, currentRealmIndex + realmOffset),
+          currentRealmIndex
+        );
+      } else if (huntLevel >= 1) {
+        // 精英弟子：与玩家相同或低 1 个境界
+        const realmOffset = Math.random() < 0.6 ? 0 : -1;
+        targetRealmIndex = clampMin(
+          Math.min(REALM_ORDER.length - 1, currentRealmIndex + realmOffset),
+          0
+        );
+      } else {
+        // 普通弟子：低 1-2 个境界
+        const realmOffset = Math.random() < 0.7 ? -1 : -2;
+        targetRealmIndex = clampMin(
+          Math.min(REALM_ORDER.length - 1, currentRealmIndex + realmOffset),
+          0
+        );
+      }
+    } else {
+      // 宗主挑战特殊逻辑：宗主境界通常高出玩家 1 个境界，少数高出 2 个
+      const realmOffset = Math.random() < 0.85 ? 1 : 2; // 85% 概率高出 1 个境界，15% 概率高出 2 个
+      targetRealmIndex = clampMin(
+        Math.min(REALM_ORDER.length - 1, currentRealmIndex + realmOffset),
+        3 // 至少元婴期
+      );
+    }
   } else {
     // 普通历练和机缘历练，按原逻辑
     const realmOffset =
@@ -810,8 +847,25 @@ const createEnemy = async (
   let title = pickOne(ENEMY_TITLES);
 
   if (adventureType === 'sect_challenge') {
-    name = '上代宗主';
-    title = '威震八方的';
+    if (huntSectId && huntLevel !== undefined) {
+      // 根据追杀强度设置敌人名称和称号
+      if (huntLevel >= 3) {
+        name = '宗主';
+        title = '威震八方的';
+      } else if (huntLevel >= 2) {
+        name = pickOne(['执法长老', '传功长老', '护法长老']);
+        title = '实力强大的';
+      } else if (huntLevel >= 1) {
+        name = pickOne(['精英弟子', '核心弟子', '真传弟子']);
+        title = '宗门';
+      } else {
+        name = pickOne(['外门弟子', '内门弟子', '执法弟子']);
+        title = '宗门';
+      }
+    } else {
+      name = '上代宗主';
+      title = '威震八方的';
+    }
   }
 
   if (Math.random() < 0.15 && adventureType !== 'sect_challenge') {
@@ -957,12 +1011,17 @@ export const resolveBattleEncounter = async (
   riskLevel?: '低' | '中' | '高' | '极度危险',
   realmMinRealm?: RealmType,
   realmName?: string,
+  huntSectId?: string | null,
+  huntLevel?: number,
 ): Promise<BattleResolution> => {
   const enemy = await createEnemy(
     player,
     adventureType,
     riskLevel,
-    realmMinRealm
+    realmMinRealm,
+    undefined,
+    huntSectId,
+    huntLevel
   );
   const difficulty = getBattleDifficulty(adventureType, riskLevel);
   // 确保初始值为有效数字，防止NaN
@@ -1378,10 +1437,21 @@ export const calculateBattleRewards = (
     Math.round(baseStones * totalRewardMultiplier)
   );
 
-  // 宗门挑战特殊奖励
+  // 宗门挑战特殊奖励（只有战胜宗主才给特殊奖励）
   if (actualAdventureType === 'sect_challenge') {
-    if (victory) {
-      // 宗门挑战胜利奖励使用常量定义的数值
+    // 判断是否是宗主战斗：
+    // 1. 追杀战斗且 huntLevel >= 3（战胜宗主）
+    // 2. 正常挑战且是长老挑战宗主
+    const isHuntMasterBattle = player.sectId === null &&
+      player.sectHuntSectId &&
+      player.sectHuntLevel !== undefined &&
+      player.sectHuntLevel >= 3;
+    const isNormalMasterBattle = player.sectId !== null &&
+      player.sectRank === SectRank.Elder;
+    const isMasterBattle = isHuntMasterBattle || isNormalMasterBattle;
+
+    if (victory && isMasterBattle) {
+      // 战胜宗主，给予特殊奖励
       return {
         expChange: SECT_MASTER_CHALLENGE_REQUIREMENTS.victoryReward.exp,
         spiritChange: SECT_MASTER_CHALLENGE_REQUIREMENTS.victoryReward.spiritStones,
@@ -1400,13 +1470,14 @@ export const calculateBattleRewards = (
           }
         ]
       };
-    } else {
-      // 挑战失败，根据常量扣除修为
+    } else if (!victory && isMasterBattle) {
+      // 挑战宗主失败，根据常量扣除修为
       return {
         expChange: -SECT_MASTER_CHALLENGE_REQUIREMENTS.defeatPenalty.expLoss,
         spiritChange: 0,
       };
     }
+    // 如果不是宗主战斗，继续使用普通奖励计算逻辑
   }
 
   const expChange = victory
@@ -1440,8 +1511,10 @@ export const initializeTurnBasedBattle = async (
   realmMinRealm?: RealmType,
   sectMasterId?: string | null
 ): Promise<BattleState> => {
-  // 创建敌人
-  const enemyData = await createEnemy(player, adventureType, riskLevel, realmMinRealm, sectMasterId);
+  // 创建敌人（如果是追杀战斗，从 player 对象中获取追杀参数）
+  const huntSectId = adventureType === 'sect_challenge' && player.sectId === null ? player.sectHuntSectId : undefined;
+  const huntLevel = adventureType === 'sect_challenge' && player.sectId === null ? player.sectHuntLevel : undefined;
+  const enemyData = await createEnemy(player, adventureType, riskLevel, realmMinRealm, sectMasterId, huntSectId, huntLevel);
 
   // 创建玩家战斗单位
   const playerUnit = createBattleUnitFromPlayer(player);

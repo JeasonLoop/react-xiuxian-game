@@ -19,7 +19,9 @@ import {
   PET_EVOLUTION_MATERIALS,
   getRandomPetName,
   REALM_DATA,
+  SECTS,
 } from '../../constants';
+import { SectRank } from '../../types';
 import { BattleReplay } from '../../services/battleService';
 import { uid } from '../../utils/gameUtils';
 import {
@@ -78,10 +80,11 @@ const applyResultToPlayer = (
 
   let newInv = [...prev.inventory];
   let newArts = [...prev.cultivationArts];
-  let newUnlockedArts = [...(prev.unlockedArts || [])];
-
+  // 使用 Set 确保唯一性，然后转回数组
+  const unlockedArtsSet = new Set(prev.unlockedArts || []);
   // 同步已学习的功法到解锁列表（确保已学习的功法也在解锁列表中）
-  prev.cultivationArts.forEach(id => { if (!newUnlockedArts.includes(id)) newUnlockedArts.push(id); });
+  prev.cultivationArts.forEach(id => unlockedArtsSet.add(id));
+  let newUnlockedArts = Array.from(unlockedArtsSet);
 
   let newTalentId = prev.talentId;
   let newAttack = prev.attack;
@@ -307,13 +310,45 @@ const applyResultToPlayer = (
       if (!newUnlockedArts.includes(randomArt.id) &&
           !newArts.includes(randomArt.id) &&
           !unlockedInThisRun.has(randomArt.id)) {
-        newUnlockedArts.push(randomArt.id);
+        // 确保添加到解锁列表（使用数组展开，避免引用问题）
+        newUnlockedArts = [...newUnlockedArts, randomArt.id];
         unlockedInThisRun.add(randomArt.id);
         newStats.artCount += 1;
         artUnlocked = true;
         triggerVisual('special', `🎉 领悟功法【${randomArt.name}】`, 'special');
         // 始终输出日志，确保玩家知道获得了功法
         addLog(`🎉 你领悟了功法【${randomArt.name}】！现在可以在功法阁中学习它了。`, 'special');
+
+        // 开发环境调试信息
+        if (import.meta.env.DEV) {
+          console.log('【功法解锁】', {
+            artId: randomArt.id,
+            artName: randomArt.name,
+            newUnlockedArts: newUnlockedArts,
+            prevUnlockedArts: prev.unlockedArts,
+          });
+        }
+      } else {
+        // 如果已经解锁过，记录调试信息
+        if (import.meta.env.DEV) {
+          console.log('【功法解锁跳过】', {
+            artId: randomArt.id,
+            artName: randomArt.name,
+            reason: newUnlockedArts.includes(randomArt.id) ? '已在解锁列表' :
+                    newArts.includes(randomArt.id) ? '已学习' :
+                    unlockedInThisRun.has(randomArt.id) ? '本次运行已解锁' : '未知',
+          });
+        }
+      }
+    } else {
+      // 如果没有可用的功法，记录调试信息
+      if (import.meta.env.DEV) {
+        console.log('【功法解锁失败】', {
+          reason: '没有可用的功法',
+          availableArtsCount: availableArts.length,
+          prevUnlockedArtsCount: prev.unlockedArts?.length || 0,
+          prevCultivationArtsCount: prev.cultivationArts?.length || 0,
+        });
       }
     }
   }
@@ -464,7 +499,10 @@ const applyResultToPlayer = (
   const finalHp = isSecretRealm ? Math.max(0, Math.min(newMaxHp, newHp + (result.hpChange || 0))) : Math.min(newMaxHp, newHp + (result.hpChange || 0));
 
   // 同步新学习的功法到解锁列表（确保新学习的功法也在解锁列表中）
-  newArts.forEach(id => { if (!newUnlockedArts.includes(id)) newUnlockedArts.push(id); });
+  // 使用 Set 确保唯一性
+  const finalUnlockedArtsSet = new Set(newUnlockedArts);
+  newArts.forEach(id => finalUnlockedArtsSet.add(id));
+  newUnlockedArts = Array.from(finalUnlockedArtsSet);
 
   return {
     ...prev, hp: finalHp, exp: newExp, spiritStones: newStones, inventory: newInv, cultivationArts: newArts, unlockedArts: newUnlockedArts,
@@ -483,6 +521,51 @@ export async function executeAdventureCore({
     document.body?.classList.add('animate-shake'); setTimeout(() => document.body?.classList.remove('animate-shake'), 500);
   } else if (safeHpChange > 0) triggerVisual('heal', `+${safeHpChange}`, 'text-emerald-400');
   if (result.eventColor === 'danger' || adventureType === 'secret_realm') triggerVisual('slash');
+
+  // 处理追杀战斗结果（只有在追杀状态下才处理，正常挑战宗主不在这里处理）
+  const isHuntBattle = adventureType === 'sect_challenge' &&
+    player.sectHuntSectId &&
+    player.sectHuntEndTime &&
+    player.sectHuntEndTime > Date.now() &&
+    player.sectId === null; // 确保不是在宗门内正常挑战
+  if (isHuntBattle && battleContext && battleContext.victory) {
+    const huntLevel = player.sectHuntLevel || 0;
+    const huntSectId = player.sectHuntSectId;
+
+    setPlayer((prev) => {
+      if (huntLevel >= 3) {
+        // 战胜宗主，成为宗主
+        const sect = SECTS.find((s) => s.id === huntSectId);
+        const sectName = sect ? sect.name : huntSectId;
+
+        addLog(`🎉 你战胜了【${sectName}】的宗主！宗门上下无不震惊，你正式接管了宗门，成为新一代宗主！`, 'special');
+
+        return {
+          ...prev,
+          sectId: huntSectId,
+          sectRank: SectRank.Leader,
+          sectMasterId: prev.id || 'player-leader',
+          sectHuntEndTime: null, // 清除追杀状态
+          sectHuntLevel: 0,
+          sectHuntSectId: null,
+          sectContribution: 0,
+        };
+      } else {
+        // 击杀宗门弟子/长老，增加追杀强度
+        const newHuntLevel = Math.min(3, huntLevel + 1);
+        const levelNames = ['普通弟子', '精英弟子', '长老', '宗主'];
+        const sect = SECTS.find((s) => s.id === huntSectId);
+        const sectName = sect ? sect.name : huntSectId;
+
+        addLog(`⚠️ 你击杀了【${sectName}】的${levelNames[huntLevel]}！宗门震怒，将派出更强的追杀者！`, 'danger');
+
+        return {
+          ...prev,
+          sectHuntLevel: newHuntLevel,
+        };
+      }
+    });
+  }
 
   // Apply Main Result
   // 根据 adventureType 判断是否为秘境

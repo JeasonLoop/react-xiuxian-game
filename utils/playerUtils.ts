@@ -115,6 +115,8 @@ export const createInitialPlayer = (
     sectContribution: 0,
     betrayedSects: [], // 背叛过的宗门列表
     sectHuntEndTime: null, // 宗门追杀结束时间
+    sectHuntLevel: 0, // 追杀强度等级
+    sectHuntSectId: null, // 正在追杀玩家的宗门ID
     talentId: talentId,
     titleId: 'title-novice', // 初始称号：初入仙途
     unlockedTitles: ['title-novice'], // 初始已解锁的称号

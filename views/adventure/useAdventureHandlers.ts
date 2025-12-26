@@ -95,8 +95,41 @@ export function useAdventureHandlers({
 
       let battleResolution: Awaited<ReturnType<typeof resolveBattleEncounter>> | undefined;
 
-      // 执行历练逻辑（但不立即处理结果）
-      if (shouldTriggerBattle(player, adventureType)) {
+      // 检查是否被追杀
+      const isHunted = player.sectHuntEndTime && player.sectHuntEndTime > Date.now();
+      const huntSectId = player.sectHuntSectId;
+      const huntLevel = player.sectHuntLevel || 0;
+
+      // 如果被追杀，强制触发追杀战斗（30%概率）
+      if (isHunted && huntSectId && Math.random() < 0.11) {
+        addLog('⚠️ 你感受到了一股强烈的杀意！宗门追杀者出现了！', 'danger');
+
+        // 如果使用回合制战斗系统，打开回合制战斗界面
+        if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
+          setTimeout(() => {
+            onOpenTurnBasedBattle({
+              adventureType: 'sect_challenge',
+              riskLevel: huntLevel >= 3 ? '极度危险' : huntLevel >= 2 ? '高' : huntLevel >= 1 ? '中' : '低',
+              realmMinRealm: player.realm,
+            });
+          }, 2000);
+          setLoading(false);
+          return;
+        }
+
+        // 否则使用旧的自动战斗系统
+        battleResolution = await resolveBattleEncounter(
+          player,
+          'sect_challenge',
+          huntLevel >= 3 ? '极度危险' : huntLevel >= 2 ? '高' : huntLevel >= 1 ? '中' : '低',
+          player.realm,
+          undefined,
+          huntSectId,
+          huntLevel
+        );
+        result = battleResolution.adventureResult;
+        battleContext = battleResolution.replay;
+      } else if (shouldTriggerBattle(player, adventureType)) {
         // 如果使用回合制战斗系统，打开回合制战斗界面
         if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
           setTimeout(() => {

@@ -1680,6 +1680,11 @@ function App() {
               inheritanceRoute: loadedPlayer.inheritanceRoute || null,
               inheritanceSkills: loadedPlayer.inheritanceSkills || [],
               reputation: loadedPlayer.reputation || 0,
+              // 宗门追杀系统
+              betrayedSects: loadedPlayer.betrayedSects || [],
+              sectHuntEndTime: loadedPlayer.sectHuntEndTime || null,
+              sectHuntLevel: loadedPlayer.sectHuntLevel || 0,
+              sectHuntSectId: loadedPlayer.sectHuntSectId || null,
               grotto: loadedPlayer.grotto ? {
                 ...loadedPlayer.grotto,
                 autoHarvest: loadedPlayer.grotto.autoHarvest ?? false,

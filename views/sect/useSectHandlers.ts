@@ -128,6 +128,8 @@ export function useSectHandlers({
         currentSectInfo: undefined, // 清除保存的宗门信息
         betrayedSects,
         sectHuntEndTime: huntEndTime,
+        sectHuntLevel: 0, // 初始追杀强度为0（普通弟子）
+        sectHuntSectId: prev.sectId, // 记录正在追杀玩家的宗门ID
       };
     });
     logMessage(`你叛出了宗门，从此成为一名散修。宗门已发布追杀令，你需小心行事！`, 'danger');
