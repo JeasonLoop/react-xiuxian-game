@@ -983,7 +983,10 @@ function App() {
     cooldown,
     isShopOpen,
     isReputationEventOpen,
+    isTurnBasedBattleOpen,
     autoAdventurePausedByShop,
+    autoAdventurePausedByBattle,
+    autoAdventurePausedByReputationEvent,
     setAutoAdventurePausedByShop,
     handleMeditate,
     handleAdventure,
@@ -1104,6 +1107,11 @@ function App() {
 
   // 关闭当前打开的弹窗
   const handleCloseCurrentModal = useCallback(() => {
+    // 在自动历练模式下，不允许通过快捷键关闭回合制战斗弹窗
+    if (isTurnBasedBattleOpen && autoAdventure) {
+      return;
+    }
+
     if (isShopOpen) setIsShopOpen(false);
     else if (isInventoryOpen) setIsInventoryOpen(false);
     else if (isCultivationOpen) setIsCultivationOpen(false);
@@ -1119,7 +1127,15 @@ function App() {
     else if (isGrottoOpen) setIsGrottoOpen(false);
     else if (isUpgradeOpen) setIsUpgradeOpen(false);
     else if (isBattleModalOpen) setIsBattleModalOpen(false);
-    else if (isTurnBasedBattleOpen) setIsTurnBasedBattleOpen(false);
+    else if (isTurnBasedBattleOpen) {
+      // 非自动历练模式下，正确关闭回合制战斗弹窗
+      setIsTurnBasedBattleOpen(false);
+      setTurnBasedBattleParams(null);
+      // 清除暂停状态
+      if (autoAdventurePausedByBattle) {
+        setAutoAdventurePausedByBattle(false);
+      }
+    }
     else if (isReputationEventOpen) setIsReputationEventOpen(false);
     else if (isMobileSidebarOpen) setIsMobileSidebarOpen(false);
     else if (isMobileStatsOpen) setIsMobileStatsOpen(false);
@@ -1145,6 +1161,8 @@ function App() {
     isMobileSidebarOpen,
     isMobileStatsOpen,
     isDebugOpen,
+    autoAdventure,
+    autoAdventurePausedByBattle,
     setIsShopOpen,
     setIsInventoryOpen,
     setIsCultivationOpen,
@@ -1164,6 +1182,8 @@ function App() {
     setIsMobileSidebarOpen,
     setIsMobileStatsOpen,
     setIsDebugOpen,
+    setTurnBasedBattleParams,
+    setAutoAdventurePausedByBattle,
   ]);
 
   // 定义键盘快捷键（使用保存的配置）
@@ -1217,9 +1237,17 @@ function App() {
     const toggleAutoAdventureAction = () => {
       setAutoAdventure((prev) => {
         const newValue = !prev;
-        if (newValue && autoMeditate) {
-          setAutoMeditate(false);
-          addLog('已关闭自动打坐，开启自动历练。', 'normal');
+        // 如果关闭自动历练，清除所有暂停状态
+        if (!newValue) {
+          setAutoAdventurePausedByShop(false);
+          setAutoAdventurePausedByBattle(false);
+          setAutoAdventurePausedByReputationEvent(false);
+        } else {
+          // 如果开启自动历练，则关闭自动打坐
+          if (autoMeditate) {
+            setAutoMeditate(false);
+            addLog('已关闭自动打坐，开启自动历练。', 'normal');
+          }
         }
         return newValue;
       });
@@ -1574,10 +1602,17 @@ function App() {
           onToggleAutoAdventure: () => {
             setAutoAdventure((prev) => {
               const newValue = !prev;
-              // 如果开启自动历练，则关闭自动打坐
-              if (newValue && autoMeditate) {
-                setAutoMeditate(false);
-                addLog('已关闭自动打坐，开启自动历练。', 'normal');
+              // 如果关闭自动历练，清除所有暂停状态
+              if (!newValue) {
+                setAutoAdventurePausedByShop(false);
+                setAutoAdventurePausedByBattle(false);
+                setAutoAdventurePausedByReputationEvent(false);
+              } else {
+                // 如果开启自动历练，则关闭自动打坐
+                if (autoMeditate) {
+                  setAutoMeditate(false);
+                  addLog('已关闭自动打坐，开启自动历练。', 'normal');
+                }
               }
               return newValue;
             });

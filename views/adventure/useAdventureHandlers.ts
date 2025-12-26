@@ -114,6 +114,7 @@ export function useAdventureHandlers({
             });
           }, 2000);
           setLoading(false);
+          setCooldown(2); // 设置冷却时间，防止立即再次触发历练
           return;
         }
 
@@ -141,6 +142,7 @@ export function useAdventureHandlers({
           }, 2000);
 
           setLoading(false);
+          setCooldown(2); // 设置冷却时间，防止立即再次触发历练
           return; // 回合制战斗会在战斗结束后通过回调更新玩家状态
         }
 

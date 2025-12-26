@@ -14,7 +14,10 @@ interface UseAutoFeaturesParams {
   cooldown: number;
   isShopOpen: boolean;
   isReputationEventOpen: boolean;
+  isTurnBasedBattleOpen: boolean;
   autoAdventurePausedByShop: boolean;
+  autoAdventurePausedByBattle: boolean;
+  autoAdventurePausedByReputationEvent: boolean;
   setAutoAdventurePausedByShop: (paused: boolean) => void;
   handleMeditate: () => void;
   handleAdventure: () => void;
@@ -32,6 +35,10 @@ export function useAutoFeatures({
   cooldown,
   isShopOpen,
   isReputationEventOpen,
+  isTurnBasedBattleOpen,
+  autoAdventurePausedByShop,
+  autoAdventurePausedByBattle,
+  autoAdventurePausedByReputationEvent,
   handleMeditate,
   handleAdventure,
   setCooldown,
@@ -63,19 +70,23 @@ export function useAutoFeatures({
       cooldown > 0 ||
       isShopOpen ||
       isReputationEventOpen ||
+      isTurnBasedBattleOpen ||
+      autoAdventurePausedByShop ||
+      autoAdventurePausedByBattle ||
+      autoAdventurePausedByReputationEvent ||
       autoMeditate
     )
       return;
 
     const timer = setTimeout(() => {
       // 再次检查条件，防止状态在延迟期间发生变化
-      if (autoAdventure && !loading && cooldown === 0 && player && !autoMeditate && !isReputationEventOpen) {
+      if (autoAdventure && !loading && cooldown === 0 && player && !autoMeditate && !isReputationEventOpen && !isTurnBasedBattleOpen && !autoAdventurePausedByShop && !autoAdventurePausedByBattle && !autoAdventurePausedByReputationEvent) {
         handleAdventure();
       }
     }, 500);
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoAdventure, player, loading, cooldown, autoMeditate, isShopOpen, isReputationEventOpen]);
+  }, [autoAdventure, player, loading, cooldown, autoMeditate, isShopOpen, isReputationEventOpen, isTurnBasedBattleOpen, autoAdventurePausedByShop, autoAdventurePausedByBattle, autoAdventurePausedByReputationEvent]);
 }
 

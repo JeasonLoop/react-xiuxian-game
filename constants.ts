@@ -5666,11 +5666,11 @@ export const SHOPS: Shop[] = [
         type: ItemType.Weapon,
         description: '传说中的仙剑，一剑可诛仙，威力达到极致。',
         rarity: '仙品',
-        price: 20000,
+        price: 200000,
         sellPrice: 6000,
         isEquippable: true,
         equipmentSlot: EquipmentSlot.Weapon,
-        effect: { attack: 1000, defense: 200, hp: 500 },
+        effect: { attack: 10000, defense: 2000, hp: 5000 },
         minRealm: RealmType.SpiritSevering,
       },
       {
