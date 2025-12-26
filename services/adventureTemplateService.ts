@@ -159,7 +159,9 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
     'spiritSpring', // 灵泉
     'pet', // 灵宠（提高概率）
     'pet', // 灵宠（重复一次，提高概率）
+    'pet', // 灵宠（再次提高概率）
     'petOpportunity', // 灵宠机缘
+    'petOpportunity', // 灵宠机缘（重复一次，提高概率）
     'trap', // 陷阱
     'evilCultivator', // 邪修魔修
     'reputation', // 声望事件

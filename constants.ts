@@ -5390,7 +5390,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     name: '灵狐',
     type: 'pet',
     rarity: '普通',
-    weight: 12, // 从5提高到12，增加2.4倍概率
+    weight: 20, // 进一步提高权重，增加获得概率
     value: { petId: 'pet-spirit-fox' },
   },
   {
@@ -5398,7 +5398,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     name: '雷虎',
     type: 'pet',
     rarity: '稀有',
-    weight: 8, // 从3提高到8，增加约2.7倍概率
+    weight: 15, // 进一步提高权重，增加获得概率
     value: { petId: 'pet-thunder-tiger' },
   },
   {
@@ -5406,7 +5406,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     name: '凤凰',
     type: 'pet',
     rarity: '仙品',
-    weight: 3, // 从1提高到3，增加3倍概率
+    weight: 6, // 进一步提高权重，增加获得概率
     value: { petId: 'pet-phoenix' },
   },
 
