@@ -2052,8 +2052,8 @@ const DebugModal: React.FC<Props> = ({
                             </button>
                           </div>
                           <div className="text-xs text-stone-300">
-                            攻击: {pet.stats.attack} | 防御: {pet.stats.defense}{' '}
-                            | 气血: {pet.stats.hp} | 速度: {pet.stats.speed}
+                            攻击: {Math.floor(pet.stats.attack)} | 防御: {Math.floor(pet.stats.defense)}{' '}
+                            | 气血: {Math.floor(pet.stats.hp)} | 速度: {Math.floor(pet.stats.speed)}
                           </div>
                         </div>
                       ))}

@@ -56,81 +56,60 @@ export function useLotteryHandlers({
     // 计算保底：每10次必出稀有以上
     const currentCount = player.lotteryCount;
     // 找出本次抽奖中哪些位置会触发保底（每10次必出稀有以上）
-    const guaranteeIndices: number[] = [];
+    // 优化：使用Set替代数组，提高查找效率
+    const guaranteeIndices = new Set<number>();
     for (let i = 0; i < count; i++) {
       const totalCount = currentCount + i + 1;
       if (totalCount % 10 === 0) {
-        guaranteeIndices.push(i);
+        guaranteeIndices.add(i);
       }
     }
 
+    // 优化：预先计算稀有奖品列表和总权重，避免在循环中重复计算
+    const rarePrizes = LOTTERY_PRIZES.filter((p) => p.rarity !== '普通');
+    const totalWeight = LOTTERY_PRIZES.reduce((sum, p) => sum + p.weight, 0);
+    const rareTotalWeight = rarePrizes.reduce((sum, p) => sum + p.weight, 0);
+
+    // 辅助函数：根据权重随机选择奖品
+    const selectPrizeByWeight = (prizes: typeof LOTTERY_PRIZES, weight: number) => {
+      if (weight > 0) {
+        let random = Math.random() * weight;
+        for (const prize of prizes) {
+          random -= prize.weight;
+          if (random <= 0) {
+            return prize;
+          }
+        }
+      }
+      // 如果权重为0或没有找到，返回第一个奖品作为保底
+      return prizes.length > 0 ? prizes[0] : null;
+    };
+
     for (let i = 0; i < count; i++) {
       // 检查是否应该触发保底（每10次必出稀有以上）
-      const shouldGuarantee = guaranteeIndices.includes(i);
+      const shouldGuarantee = guaranteeIndices.has(i);
       if (shouldGuarantee) {
         // 保底稀有以上
-        const rarePrizes = LOTTERY_PRIZES.filter((p) => p.rarity !== '普通');
         if (rarePrizes.length === 0) {
           // 如果没有稀有以上奖品，降级使用所有奖品（防御性处理）
-          const totalWeight = LOTTERY_PRIZES.reduce(
-            (sum, p) => sum + p.weight,
-            0
-          );
-          if (totalWeight > 0) {
-            let random = Math.random() * totalWeight;
-            for (const prize of LOTTERY_PRIZES) {
-              random -= prize.weight;
-              if (random <= 0) {
-                results.push(prize);
-                break;
-              }
-            }
-          } else {
-            // 如果所有奖品权重都为0，使用第一个奖品作为保底
-            if (LOTTERY_PRIZES.length > 0) {
-              results.push(LOTTERY_PRIZES[0]);
-            }
+          const prize = selectPrizeByWeight(LOTTERY_PRIZES, totalWeight);
+          if (prize) {
+            results.push(prize);
           }
         } else {
-          const totalWeight = rarePrizes.reduce((sum, p) => sum + p.weight, 0);
-          if (totalWeight > 0) {
-            let random = Math.random() * totalWeight;
-            for (const prize of rarePrizes) {
-              random -= prize.weight;
-              if (random <= 0) {
-                results.push(prize);
-                break;
-              }
-            }
-          } else {
-            // 如果稀有以上奖品权重都为0，使用第一个稀有以上奖品作为保底
-            if (rarePrizes.length > 0) {
-              results.push(rarePrizes[0]);
-            } else if (LOTTERY_PRIZES.length > 0) {
-              // 如果连稀有以上奖品都没有，降级使用第一个奖品
-              results.push(LOTTERY_PRIZES[0]);
-            }
+          const prize = selectPrizeByWeight(rarePrizes, rareTotalWeight);
+          if (prize) {
+            results.push(prize);
+          } else if (LOTTERY_PRIZES.length > 0) {
+            // 如果连稀有以上奖品都没有，降级使用第一个奖品
+            results.push(LOTTERY_PRIZES[0]);
           }
         }
       } else {
-        const totalWeight = LOTTERY_PRIZES.reduce(
-          (sum, p) => sum + p.weight,
-          0
-        );
-        if (totalWeight > 0) {
-          let random = Math.random() * totalWeight;
-          for (const prize of LOTTERY_PRIZES) {
-            random -= prize.weight;
-            if (random <= 0) {
-              results.push(prize);
-              break;
-            }
-          }
-        } else {
-          // 如果所有奖品权重都为0，使用第一个奖品作为保底
-          if (LOTTERY_PRIZES.length > 0) {
-            results.push(LOTTERY_PRIZES[0]);
-          }
+        // 普通抽奖
+        const prize = selectPrizeByWeight(LOTTERY_PRIZES, totalWeight);
+        if (prize) {
+          results.push(prize);
         }
       }
     }
