@@ -158,10 +158,9 @@ export function useBattleResultHandler({
           if (huntLevel >= 3) {
             // 战胜宗主，成为宗主
             // 优先使用保存的宗门名称，否则从SECTS中查找，最后使用ID
-            let sectName = prev.sectHuntSectName;
+            let sectName = SECTS.find((s) => s.id === huntSectId)?.name || huntSectId || prev.sectHuntSectName;
             if (!sectName) {
-              const sect = SECTS.find((s) => s.id === huntSectId);
-              sectName = sect ? sect.name : huntSectId;
+              sectName = SECTS.find((s) => s.id === huntSectId)?.name || huntSectId;
             }
 
             addLog(`🎉 你战胜了【${sectName}】的宗主！宗门上下无不震惊，你正式接管了宗门，成为新一代宗主！`, 'special');
