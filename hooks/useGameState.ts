@@ -124,6 +124,7 @@ export function useGameState() {
             sectHuntEndTime: savedData.player.sectHuntEndTime || null,
             sectHuntLevel: savedData.player.sectHuntLevel || 0,
             sectHuntSectId: savedData.player.sectHuntSectId || null,
+            sectHuntSectName: savedData.player.sectHuntSectName || null,
             // 洞府系统
             grotto: savedData.player.grotto ? {
               ...savedData.player.grotto,

@@ -116,6 +116,17 @@ export function useSectHandlers({
         betrayedSects.push(prev.sectId);
       }
 
+      // 获取宗门名称
+      let sectName: string | null = null;
+      // 优先从保存的宗门信息中获取
+      if (prev.currentSectInfo) {
+        sectName = prev.currentSectInfo.name;
+      } else {
+        // 从SECTS常量中查找
+        const sect = SECTS.find((s) => s.id === prev.sectId);
+        sectName = sect ? sect.name : null;
+      }
+
       // 设置追杀时间（7天）
       const huntDuration = 7 * 24 * 60 * 60 * 1000; // 7天
       const huntEndTime = Date.now() + huntDuration;
@@ -130,6 +141,7 @@ export function useSectHandlers({
         sectHuntEndTime: huntEndTime,
         sectHuntLevel: 0, // 初始追杀强度为0（普通弟子）
         sectHuntSectId: prev.sectId, // 记录正在追杀玩家的宗门ID
+        sectHuntSectName: sectName, // 记录正在追杀玩家的宗门名称
       };
     });
     logMessage(`你叛出了宗门，从此成为一名散修。宗门已发布追杀令，你需小心行事！`, 'danger');

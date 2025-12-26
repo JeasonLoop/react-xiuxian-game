@@ -1685,6 +1685,7 @@ function App() {
               sectHuntEndTime: loadedPlayer.sectHuntEndTime || null,
               sectHuntLevel: loadedPlayer.sectHuntLevel || 0,
               sectHuntSectId: loadedPlayer.sectHuntSectId || null,
+              sectHuntSectName: loadedPlayer.sectHuntSectName || null,
               grotto: loadedPlayer.grotto ? {
                 ...loadedPlayer.grotto,
                 autoHarvest: loadedPlayer.grotto.autoHarvest ?? false,

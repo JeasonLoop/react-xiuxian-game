@@ -232,6 +232,7 @@ export interface PlayerStats {
   sectHuntEndTime: number | null; // 宗门追杀结束时间戳（毫秒），null表示未被追杀
   sectHuntLevel: number; // 追杀强度等级（0=普通弟子，1=精英弟子，2=长老，3=宗主），击杀敌人后递增
   sectHuntSectId: string | null; // 正在追杀玩家的宗门ID
+  sectHuntSectName: string | null; // 正在追杀玩家的宗门名称
   sectMasterId: string | null; // 当前宗门的宗主ID (如果玩家是宗主，则为玩家自己的ID)
   // 角色系统扩展
   talentId: string | null; // 天赋ID（游戏开始时随机生成，之后不可修改）

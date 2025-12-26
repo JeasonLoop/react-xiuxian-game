@@ -157,8 +157,12 @@ export function useBattleResultHandler({
 
           if (huntLevel >= 3) {
             // 战胜宗主，成为宗主
-            const sect = SECTS.find((s) => s.id === huntSectId);
-            const sectName = sect ? sect.name : huntSectId;
+            // 优先使用保存的宗门名称，否则从SECTS中查找，最后使用ID
+            let sectName = prev.sectHuntSectName;
+            if (!sectName) {
+              const sect = SECTS.find((s) => s.id === huntSectId);
+              sectName = sect ? sect.name : huntSectId;
+            }
 
             addLog(`🎉 你战胜了【${sectName}】的宗主！宗门上下无不震惊，你正式接管了宗门，成为新一代宗主！`, 'special');
 
@@ -181,13 +185,18 @@ export function useBattleResultHandler({
               sectHuntEndTime: null, // 清除追杀状态
               sectHuntLevel: 0,
               sectHuntSectId: null,
+              sectHuntSectName: null,
             };
           } else {
             // 击杀宗门弟子/长老，增加追杀强度
             const newHuntLevel = Math.min(3, huntLevel + 1);
             const levelNames = ['普通弟子', '精英弟子', '长老', '宗主'];
-            const sect = SECTS.find((s) => s.id === huntSectId);
-            const sectName = sect ? sect.name : huntSectId;
+            // 优先使用保存的宗门名称，否则从SECTS中查找，最后使用ID
+            let sectName = prev.sectHuntSectName;
+            if (!sectName) {
+              const sect = SECTS.find((s) => s.id === huntSectId);
+              sectName = sect ? sect.name : huntSectId;
+            }
 
             addLog(`⚠️ 你击杀了【${sectName}】的${levelNames[huntLevel]}！宗门震怒，将派出更强的追杀者！`, 'danger');
 
