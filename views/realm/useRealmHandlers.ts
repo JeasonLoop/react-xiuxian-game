@@ -5,6 +5,7 @@ interface UseRealmHandlersProps {
   player: PlayerStats;
   setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
   addLog: (message: string, type?: string) => void;
+  setItemActionLog?: (log: { text: string; type: string } | null) => void;
   setLoading: (loading: boolean) => void;
   setCooldown: (cooldown: number) => void;
   loading: boolean;
@@ -32,6 +33,7 @@ export function useRealmHandlers({
   player,
   setPlayer,
   addLog,
+  setItemActionLog,
   loading,
   cooldown,
   setIsRealmOpen,
@@ -41,7 +43,11 @@ export function useRealmHandlers({
     if (loading || cooldown > 0 || !player) return;
 
     if (player.hp < player.maxHp * 0.3) {
-      addLog('你气血不足，此时进入秘境无异于自寻死路！', 'danger');
+      const message = '你气血不足，此时进入秘境无异于自寻死路！';
+      addLog(message, 'danger');
+      if (setItemActionLog) {
+        setItemActionLog({ text: message, type: 'danger' });
+      }
       return;
     }
 

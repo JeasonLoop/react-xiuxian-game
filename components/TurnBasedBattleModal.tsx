@@ -27,9 +27,10 @@ import { BATTLE_POTIONS } from '../constants';
 interface TurnBasedBattleModalProps {
   isOpen: boolean;
   player: PlayerStats;
-  adventureType: 'normal' | 'lucky' | 'secret_realm' | 'sect_challenge';
+  adventureType: 'normal' | 'lucky' | 'secret_realm' | 'sect_challenge' | 'dao_combining_challenge';
   riskLevel?: '低' | '中' | '高' | '极度危险';
   realmMinRealm?: RealmType;
+  bossId?: string; // 指定的天地之魄BOSS ID（用于事件模板）
   autoAdventure?: boolean; // 是否在自动历练模式下
   onClose: (
     result?: {
@@ -60,6 +61,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   adventureType,
   riskLevel,
   realmMinRealm,
+  bossId,
   autoAdventure = false,
   onClose,
 }) => {
@@ -105,7 +107,9 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
         player,
         adventureType,
         riskLevel,
-        realmMinRealm as any
+        realmMinRealm as any,
+        undefined,
+        bossId
       )
         .then((state) => {
           if (hasInitTimedOutRef.current || !isInitializedRef.current) {
@@ -160,7 +164,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
       setShowPotions(false);
       setErrorMessage(null);
     }
-  }, [isOpen, player, adventureType, riskLevel, realmMinRealm]);
+  }, [isOpen, player, adventureType, riskLevel, realmMinRealm, bossId]);
 
   // 监控状态，确保操作栏能正确显示（防止 isProcessing 卡住）
   useEffect(() => {
@@ -604,7 +608,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
         </div>
 
         {/* 战斗区域 */}
-        <div className="modal-scroll-container modal-scroll-content flex-1 px-6 py-4 space-y-4">
+        <div className="modal-scroll-container modal-scroll-content px-6 py-4 space-y-4">
           {/* 敌人信息 */}
           <div className="bg-rose-900/20 border border-rose-700/40 rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">

@@ -117,12 +117,14 @@ export function useGameState() {
             },
             // 称号系统扩展
             unlockedTitles: savedData.player.unlockedTitles || (savedData.player.titleId ? [savedData.player.titleId] : ['title-novice']),
-            // 传承系统扩展
-            inheritanceRoute: savedData.player.inheritanceRoute || null,
-            inheritanceExp: savedData.player.inheritanceExp || 0,
-            inheritanceSkills: savedData.player.inheritanceSkills || [],
             // 声望系统
             reputation: savedData.player.reputation || 0,
+            // 宗门追杀系统
+            betrayedSects: savedData.player.betrayedSects || [],
+            sectHuntEndTime: savedData.player.sectHuntEndTime || null,
+            sectHuntLevel: savedData.player.sectHuntLevel || 0,
+            sectHuntSectId: savedData.player.sectHuntSectId || null,
+            sectHuntSectName: savedData.player.sectHuntSectName || null,
             // 洞府系统
             grotto: savedData.player.grotto ? {
               ...savedData.player.grotto,

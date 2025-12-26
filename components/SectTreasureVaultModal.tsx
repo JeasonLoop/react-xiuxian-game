@@ -151,7 +151,7 @@ const SectTreasureVaultModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[70] p-4 backdrop-blur-sm">
-      <div className="bg-paper-800 w-full max-w-4xl rounded border border-gold-500 shadow-2xl flex flex-col max-h-[85vh]">
+      <div className="bg-paper-800 w-full max-w-4xl rounded border border-gold-500 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
         <div className="p-4 border-b border-gold-500 flex justify-between items-center bg-ink-800 rounded-t">
           <h3 className="text-xl font-serif text-mystic-gold flex items-center gap-2">
             <Package size={20} />

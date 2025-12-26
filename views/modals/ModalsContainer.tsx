@@ -75,6 +75,7 @@ interface ModalsContainerProps {
       adventureType: AdventureType;
       riskLevel?: '低' | '中' | '高' | '极度危险';
       realmMinRealm?: RealmType;
+      bossId?: string; // 指定的天地之魄BOSS ID（用于事件模板）
     } | null;
     reputationEvent: any;
   };
@@ -162,7 +163,7 @@ interface ModalsContainerProps {
     handleReleasePet?: (petId: string) => void;
     handleBatchReleasePets?: (petIds: string[]) => void;
     // Lottery
-    handleDraw: (count: 1 | 10) => void;
+    handleDraw: (count: number) => void;
     // Settings
     handleUpdateSettings: (newSettings: Partial<GameSettings>) => void;
     handleRestartGame?: () => void;
@@ -235,6 +236,7 @@ export default function ModalsContainer({
           adventureType={modalState.turnBasedBattleParams.adventureType}
           riskLevel={modalState.turnBasedBattleParams.riskLevel}
           realmMinRealm={modalState.turnBasedBattleParams.realmMinRealm}
+          bossId={modalState.turnBasedBattleParams.bossId}
           autoAdventure={autoAdventure}
           onClose={(result, updatedInventory) => {
             if (handlers.setIsTurnBasedBattleOpen) {
@@ -312,6 +314,7 @@ export default function ModalsContainer({
           onPromote={handlers.handleSectPromote}
           onBuy={handlers.handleSectBuy}
           onChallengeLeader={handlers.handleChallengeLeader}
+          setItemActionLog={setItemActionLog}
         />
       )}
 

@@ -1,5 +1,21 @@
 import { Item, ItemType, ItemRarity, EquipmentSlot, RealmType } from '../types';
 import { RARITY_MULTIPLIERS, REALM_ORDER, REALM_DATA } from '../constants';
+import { getItemFromConstants } from './itemConstantsUtils';
+
+// 共享的装备数值配置（统一管理，避免重复定义）
+export const EQUIPMENT_RARITY_PERCENTAGES: Record<ItemRarity, { min: number; max: number }> = {
+  普通: { min: 0.15, max: 0.5 },
+  稀有: { min: 0.30, max: 1.0 },
+  传说: { min: 0.60, max: 2.0 },
+  仙品: { min: 1.50, max: 5.0 },
+};
+
+export const EQUIPMENT_MIN_STATS: Record<ItemRarity, { attack: number; defense: number; hp: number; spirit: number; physique: number; speed: number }> = {
+  普通: { attack: 50, defense: 50, hp: 50, spirit: 50, physique: 50, speed: 50 },
+  稀有: { attack: 200, defense: 200, hp: 200, spirit: 200, physique: 200, speed: 200 },
+  传说: { attack: 400, defense: 400, hp: 400, spirit: 400, physique: 400, speed: 400 },
+  仙品: { attack: 1000, defense: 1000, hp: 1000, spirit: 1000, physique: 1000, speed: 1000 },
+};
 
 // 定义物品效果类型（与 Item 接口中的类型保持一致）
 type ItemEffect = NonNullable<Item['effect']>;
@@ -47,33 +63,47 @@ const stablePickSlot = (name: string, slots: EquipmentSlot[]) => {
   return slots[hash % slots.length];
 };
 
-// 已知物品的效果映射表（确保描述和实际效果一致）
+// 已知物品的效果映射表（与常量池保持一致）
+// 注意：这些值必须与 constants.ts 中的定义完全一致
 export const KNOWN_ITEM_EFFECTS: Record<
   string,
   { effect?: ItemEffect; permanentEffect?: ItemPermanentEffect }
 > = {
-  止血草: { effect: { hp: 20 } },
-  聚灵草: { effect: {} },
-  回气草: { effect: { hp: 30 } },
-  凝神花: { effect: { hp: 50, spirit: 5 } },
-  血参: { effect: { hp: 80 } },
+  // 草药类 - 从 INITIAL_ITEMS 和战斗奖励中获取
+  止血草: { effect: { hp: 20 } }, // INITIAL_ITEMS: effect: { hp: 20 }
+  聚灵草: {}, // INITIAL_ITEMS: 无 effect（只是材料）
+  回气草: { effect: { hp: 30 } }, // 战斗奖励: effect: { hp: 30 }, permanentEffect: { maxHp: 5 } - 但这里只保留主要效果
+  凝神花: { effect: { hp: 50, spirit: 5 } }, // 战斗奖励: effect: { hp: 50, spirit: 5 }
+  血参: { effect: { hp: 80 } }, // 战斗奖励: effect: { hp: 80 }
   千年灵芝: {
-    effect: { hp: 1500 },
-    permanentEffect: { maxHp: 200, physique: 100 },
+    // 战斗奖励: effect: { hp: 150 }, permanentEffect: { maxHp: 40, spirit: 20, physique: 15, maxLifespan: 30 }
+    effect: { hp: 150 },
+    permanentEffect: { maxHp: 40, spirit: 20, physique: 15, maxLifespan: 30 },
   },
   万年仙草: {
-    effect: { hp: 10000 },
-    permanentEffect: { maxHp: 2000, spirit: 200 },
+    // 战斗奖励: effect: { hp: 300 }, permanentEffect: { maxHp: 100, spirit: 100, physique: 80, speed: 50, maxLifespan: 200 }
+    effect: { hp: 300 },
+    permanentEffect: { maxHp: 100, spirit: 100, physique: 80, speed: 50, maxLifespan: 200 },
   },
-  回血丹: { effect: { hp: 50 } },
-  聚气丹: { effect: { exp: 20 } },
-  强体丹: { permanentEffect: { physique: 5 } },
-  凝神丹: { permanentEffect: { spirit: 5 } },
-  筑基丹: { effect: { exp: 100 } },
-  破境丹: { effect: { exp: 200 } },
-  仙灵丹: {
+  // 丹药类 - 从 PILL_RECIPES 和 DISCOVERABLE_RECIPES 中获取
+  回血丹: { effect: { hp: 50 } }, // 常量中未找到，保留原值
+  聚气丹: { effect: { exp: 50 } }, // PILL_RECIPES: effect: { exp: 50 } (修正：从 20 改为 50)
+  强体丹: { permanentEffect: { physique: 20 } }, // DISCOVERABLE_RECIPES: permanentEffect: { physique: 20 } (修正：从 5 改为 20)
+  凝神丹: { permanentEffect: { spirit: 20 } }, // DISCOVERABLE_RECIPES: permanentEffect: { spirit: 20 } (修正：从 5 改为 20)
+  筑基丹: {
+    // PILL_RECIPES: effect: { exp: 500 }, permanentEffect: { spirit: 30, physique: 30, maxHp: 100 }
     effect: { exp: 500 },
-    permanentEffect: { maxHp: 100, physique: 70 },
+    permanentEffect: { spirit: 30, physique: 30, maxHp: 100 },
+  },
+  破境丹: {
+    // DISCOVERABLE_RECIPES: effect: { exp: 10000 }, permanentEffect: { spirit: 50, physique: 50, attack: 30, defense: 30 }
+    effect: { exp: 10000 },
+    permanentEffect: { spirit: 50, physique: 50, attack: 30, defense: 30 },
+  },
+  仙灵丹: {
+    // DISCOVERABLE_RECIPES: effect: { exp: 2000, spirit: 50, physique: 50 }, permanentEffect: { maxLifespan: 300, spirit: 300, attack: 300, defense: 300, physique: 300, speed: 300 }
+    effect: { exp: 2000, spirit: 50, physique: 50 },
+    permanentEffect: { maxLifespan: 300, spirit: 300, attack: 300, defense: 300, physique: 300, speed: 300 },
   },
 };
 
@@ -165,6 +195,7 @@ export const adjustPillEffectByRarity = (
 };
 
 // 规范化物品效果，确保已知物品的效果与描述一致
+// 完全使用常量池中的原始属性，不做任何调整
 export const normalizeItemEffect = (
   itemName: string,
   aiEffect?: ItemEffect,
@@ -172,24 +203,53 @@ export const normalizeItemEffect = (
   itemType?: ItemType,
   rarity?: ItemRarity
 ) => {
-  const knownItem = KNOWN_ITEM_EFFECTS[itemName];
-  if (knownItem) {
-    // 如果物品在已知列表中，使用预定义的效果（已知物品已经平衡过，不需要再调整）
+  // 优先从常量池获取物品定义（如果常量池中有，直接使用，不再调整）
+  const itemFromConstants = getItemFromConstants(itemName);
+  if (itemFromConstants) {
+    // 如果常量池中有该物品的定义，优先使用常量池中的效果
+    // 如果常量池中的 effect 或 permanentEffect 是 undefined 或空对象，则使用传入的值
+    // 如果传入的值也是 undefined，则返回 undefined（不返回空对象）
+    const constantsEffect = itemFromConstants.effect;
+    const constantsPermanentEffect = itemFromConstants.permanentEffect;
+
+    // 检查常量池中的 effect 是否有效（不是 undefined 且不是空对象）
+    const hasValidConstantsEffect = constantsEffect !== undefined &&
+      constantsEffect !== null &&
+      Object.keys(constantsEffect || {}).length > 0;
+
+    // 检查常量池中的 permanentEffect 是否有效（不是 undefined 且不是空对象）
+    const hasValidConstantsPermanentEffect = constantsPermanentEffect !== undefined &&
+      constantsPermanentEffect !== null &&
+      Object.keys(constantsPermanentEffect || {}).length > 0;
+
     return {
-      effect: knownItem.effect || aiEffect || {},
-      permanentEffect: knownItem.permanentEffect || aiPermanentEffect || {},
+      effect: hasValidConstantsEffect
+        ? constantsEffect
+        : aiEffect,
+      permanentEffect: hasValidConstantsPermanentEffect
+        ? constantsPermanentEffect
+        : aiPermanentEffect,
     };
   }
 
-  // 对于AI生成的丹药，根据稀有度调整效果
-  if (itemType === ItemType.Pill && rarity && rarity !== '普通') {
-    return adjustPillEffectByRarity(aiEffect, aiPermanentEffect, rarity);
+  const knownItem = KNOWN_ITEM_EFFECTS[itemName];
+  if (knownItem) {
+    // 如果物品在已知列表中，使用预定义的效果
+    // 如果已知列表中没有定义，则使用传入的值
+    return {
+      effect: knownItem.effect !== undefined
+        ? knownItem.effect
+        : aiEffect,
+      permanentEffect: knownItem.permanentEffect !== undefined
+        ? knownItem.permanentEffect
+        : aiPermanentEffect,
+    };
   }
 
-  // 否则使用AI生成的效果（其他类型物品）
+  // 直接使用提供的效果，不做任何调整
   return {
-    effect: aiEffect || {},
-    permanentEffect: aiPermanentEffect || {},
+    effect: aiEffect,
+    permanentEffect: aiPermanentEffect,
   };
 };
 
@@ -409,8 +469,8 @@ export const getRealmEquipmentMultiplier = (realm: RealmType, realmLevel: number
   const realmIndex = REALM_ORDER.indexOf(realm);
   // 如果境界索引无效，使用默认值（炼气期，索引0）
   const validRealmIndex = realmIndex >= 0 ? realmIndex : 0;
-  // 基础倍数：根据境界指数增长 [1, 2, 4, 8, 16, 32, 64]
-  const realmBaseMultipliers = [1, 2, 4, 8, 16, 32, 64];
+  // 基础倍数：根据境界指数增长 [1, 2, 4, 6, 10, 16, 32];
+  const realmBaseMultipliers = [1, 2, 4, 6, 10, 16, 32];
   const realmBaseMultiplier = realmBaseMultipliers[validRealmIndex] || 1;
   // 境界等级加成：每级增加10%（更温和的增长）
   const levelMultiplier = 1 + (realmLevel - 1) * 0.1;
@@ -420,9 +480,7 @@ export const getRealmEquipmentMultiplier = (realm: RealmType, realmLevel: number
 /**
  * 根据境界调整装备数值
  * 确保装备数值与玩家当前境界匹配，避免数值过高或过低
- *
- * AI生成的装备数值范围（普通10-30，稀有30-80，传说80-200，仙品200-500）
- * 已经考虑了稀有度，这里根据境界进行缩放，使装备数值与境界匹配
+ * 根据稀有度和境界基础属性计算合理的装备数值范围
  */
 export const adjustEquipmentStatsByRealm = (
   effect: Item['effect'],
@@ -451,56 +509,62 @@ export const adjustEquipmentStatsByRealm = (
   const basePhysique = realmData.basePhysique;
   const baseSpeed = realmData.baseSpeed;
 
-  // 根据稀有度确定装备数值占境界基础属性的百分比
-  // 普通：5-8%，稀有：8-12%，传说：12-18%，仙品：35-50%
-  const rarityPercentages: Record<ItemRarity, { min: number; max: number }> = {
-    普通: { min: 0.05, max: 0.08 },
-    稀有: { min: 0.08, max: 0.12 },
-    传说: { min: 0.12, max: 0.18 },
-    仙品: { min: 0.35, max: 0.50 },
-  };
-
-  const percentage = rarityPercentages[rarity] || rarityPercentages['普通'];
+  // 使用共享的装备数值配置
+  const percentage = EQUIPMENT_RARITY_PERCENTAGES[rarity] || EQUIPMENT_RARITY_PERCENTAGES['普通'];
   // 使用中值作为基准
   const targetPercentage = (percentage.min + percentage.max) / 2;
 
   // 境界等级加成：每级增加5%
   const levelMultiplier = 1 + (realmLevel - 1) * 0.05;
 
+  // 境界指数增长倍数：确保高境界装备数值显著提升
+  // 炼气期1倍、筑基期2倍、金丹期4倍、元婴期8倍、化神期16倍、炼虚期32倍、渡劫期64倍
+  const realmBaseMultipliers = [1, 2, 4, 8, 16, 32, 64];
+  const realmMultiplier = realmBaseMultipliers[realmIndex] || 1;
+
   const adjusted: Item['effect'] = {};
 
-  if (effect.attack) {
-    // 根据境界基础攻击力计算目标数值
-    const targetValue = Math.floor(baseAttack * targetPercentage * levelMultiplier);
-    // 如果AI生成的数值过高，进行缩放；如果合理，保持原值
-    const maxValue = Math.floor(baseAttack * percentage.max * levelMultiplier);
-    adjusted.attack = Math.min(Math.max(effect.attack, targetValue * 0.8), maxValue);
-  }
-  if (effect.defense) {
-    const targetValue = Math.floor(baseDefense * targetPercentage * levelMultiplier);
-    const maxValue = Math.floor(baseDefense * percentage.max * levelMultiplier);
-    adjusted.defense = Math.min(Math.max(effect.defense, targetValue * 0.8), maxValue);
-  }
-  if (effect.hp) {
-    const targetValue = Math.floor(baseMaxHp * targetPercentage * levelMultiplier);
-    const maxValue = Math.floor(baseMaxHp * percentage.max * levelMultiplier);
-    adjusted.hp = Math.min(Math.max(effect.hp, targetValue * 0.8), maxValue);
-  }
-  if (effect.spirit) {
-    const targetValue = Math.floor(baseSpirit * targetPercentage * levelMultiplier);
-    const maxValue = Math.floor(baseSpirit * percentage.max * levelMultiplier);
-    adjusted.spirit = Math.min(Math.max(effect.spirit, targetValue * 0.8), maxValue);
-  }
-  if (effect.physique) {
-    const targetValue = Math.floor(basePhysique * targetPercentage * levelMultiplier);
-    const maxValue = Math.floor(basePhysique * percentage.max * levelMultiplier);
-    adjusted.physique = Math.min(Math.max(effect.physique, targetValue * 0.8), maxValue);
-  }
-  if (effect.speed) {
-    const targetValue = Math.floor(baseSpeed * targetPercentage * levelMultiplier);
-    const maxValue = Math.floor(baseSpeed * percentage.max * levelMultiplier);
-    adjusted.speed = Math.min(Math.max(effect.speed, targetValue * 0.8), maxValue);
-  }
+  // 属性映射表，减少重复代码
+  const attributeMap: Array<{
+    key: keyof Item['effect'];
+    baseValue: number;
+  }> = [
+    { key: 'attack', baseValue: baseAttack },
+    { key: 'defense', baseValue: baseDefense },
+    { key: 'hp', baseValue: baseMaxHp },
+    { key: 'spirit', baseValue: baseSpirit },
+    { key: 'physique', baseValue: basePhysique },
+    { key: 'speed', baseValue: baseSpeed },
+  ];
+
+  // 获取该稀有度的最小属性保底值
+  const minStats = EQUIPMENT_MIN_STATS[rarity] || EQUIPMENT_MIN_STATS['普通'];
+
+  // 统一处理所有属性
+  attributeMap.forEach(({ key, baseValue }) => {
+    const value = effect[key];
+    if (value !== undefined && typeof value === 'number') {
+      // 目标值 = 基础属性 × 稀有度百分比 × 境界等级加成 × 境界倍数
+      const targetValue = Math.floor(baseValue * targetPercentage * levelMultiplier * realmMultiplier);
+      const maxValue = Math.floor(baseValue * percentage.max * levelMultiplier * realmMultiplier);
+
+      // 计算调整后的属性值
+      let adjustedValue = value * realmMultiplier;
+
+      // 确保装备属性至少达到目标值的80%
+      adjustedValue = Math.max(adjustedValue, targetValue * 0.8);
+
+      // 应用稀有度保底值：确保高品质装备至少有对应的最小属性值
+      // 这对于低境界玩家获得高品质装备时特别重要
+      const minStatValue = minStats[key as keyof typeof minStats];
+      if (minStatValue !== undefined) {
+        adjustedValue = Math.max(adjustedValue, minStatValue);
+      }
+
+      // 最高不超过最大值
+      adjusted[key] = Math.min(adjustedValue, maxValue);
+    }
+  });
   if (effect.exp !== undefined) {
     adjusted.exp = effect.exp; // exp不受境界调整影响
   }
@@ -513,7 +577,7 @@ export const adjustEquipmentStatsByRealm = (
 
 /**
  * Helper to calculate item stats
- * 注意：AI生成的装备数值已经考虑了稀有度，这里不再应用RARITY_MULTIPLIERS
+ * 注意：装备数值已经考虑了稀有度，这里不再应用RARITY_MULTIPLIERS
  * 只应用本命法宝的额外加成
  */
 export const getItemStats = (item: Item, isNatal: boolean = false) => {

@@ -114,14 +114,50 @@ export function useCultivationHandlers({
       }
     }
 
+    // 使用函数式更新，确保状态一致性
     setPlayer((prev) => {
       // 再次检查，防止重复学习（双重保险）
       if (prev.cultivationArts.includes(art.id)) {
-        showWarning(`你已经学习过功法【${art.name}】了！`, '无法学习');
-        addLog(`你已经学习过功法【${art.name}】了！`, 'danger');
+        // 如果已经学习过，不显示警告（可能是快速点击导致的）
         return prev;
       }
 
+      // 再次检查解锁状态（防止状态不同步）
+      const unlockedArts = prev.unlockedArts || [];
+      if (!unlockedArts.includes(art.id)) {
+        // 如果未解锁，不更新状态，但也不显示错误（可能状态还未同步）
+        return prev;
+      }
+
+      // 再次检查灵石（防止状态不同步）
+      if (prev.spiritStones < art.cost) {
+        return prev;
+      }
+
+      // 再次检查境界要求（防止状态不同步）
+      const getRealmIndex = (realm: RealmType) => REALM_ORDER.indexOf(realm);
+      if (getRealmIndex(prev.realm) < getRealmIndex(art.realmRequirement)) {
+        return prev;
+      }
+
+      // 再次检查宗门要求（防止状态不同步）
+      if (art.sectId !== null && art.sectId !== undefined) {
+        if (prev.sectId !== art.sectId) {
+          return prev;
+        }
+      }
+
+      // 再次检查属性要求（防止状态不同步）
+      if (art.attributeRequirements) {
+        const reqs = art.attributeRequirements;
+        if (reqs.attack && prev.attack < reqs.attack) return prev;
+        if (reqs.defense && prev.defense < reqs.defense) return prev;
+        if (reqs.spirit && prev.spirit < reqs.spirit) return prev;
+        if (reqs.physique && prev.physique < reqs.physique) return prev;
+        if (reqs.speed && prev.speed < reqs.speed) return prev;
+      }
+
+      // 所有检查通过，执行学习
       const newStones = prev.spiritStones - art.cost;
 
       // 计算灵根加成
@@ -146,10 +182,11 @@ export function useCultivationHandlers({
         newHp += Math.floor((art.effects.hp || 0) * spiritualRootBonus);
       }
 
-      // 确保不会重复添加
-      const newArts = prev.cultivationArts.includes(art.id)
-        ? prev.cultivationArts
-        : [...prev.cultivationArts, art.id];
+      // 确保不会重复添加（再次检查，防止竞态条件）
+      if (prev.cultivationArts.includes(art.id)) {
+        return prev;
+      }
+      const newArts = [...prev.cultivationArts, art.id];
 
       let newActiveId = prev.activeArtId;
       if (!newActiveId && art.type === 'mental') {

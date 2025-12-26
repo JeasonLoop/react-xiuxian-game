@@ -27,7 +27,7 @@ import {
   Filter,
   SlidersHorizontal,
 } from 'lucide-react';
-import {  REALM_ORDER } from '../constants';
+import { REALM_ORDER, SPIRITUAL_ROOT_NAMES } from '../constants';
 import EquipmentPanel from './EquipmentPanel';
 import BatchDiscardModal from './BatchDiscardModal';
 import BatchUseModal from './BatchUseModal';
@@ -262,6 +262,45 @@ const InventoryItem = memo<InventoryItemProps>(
                   {item.permanentEffect.maxLifespan && item.permanentEffect.maxLifespan > 0 && (
                     <span>✨ 寿命上限永久 +{item.permanentEffect.maxLifespan}</span>
                   )}
+                  {/* 灵根效果 */}
+                  {item.permanentEffect.spiritualRoots && (() => {
+                    const roots = item.permanentEffect.spiritualRoots;
+                    const rootEntries: string[] = [];
+
+                    if (roots.metal && roots.metal > 0) {
+                      rootEntries.push(`${SPIRITUAL_ROOT_NAMES.metal}灵根+${roots.metal}`);
+                    }
+                    if (roots.wood && roots.wood > 0) {
+                      rootEntries.push(`${SPIRITUAL_ROOT_NAMES.wood}灵根+${roots.wood}`);
+                    }
+                    if (roots.water && roots.water > 0) {
+                      rootEntries.push(`${SPIRITUAL_ROOT_NAMES.water}灵根+${roots.water}`);
+                    }
+                    if (roots.fire && roots.fire > 0) {
+                      rootEntries.push(`${SPIRITUAL_ROOT_NAMES.fire}灵根+${roots.fire}`);
+                    }
+                    if (roots.earth && roots.earth > 0) {
+                      rootEntries.push(`${SPIRITUAL_ROOT_NAMES.earth}灵根+${roots.earth}`);
+                    }
+
+                    // 如果所有灵根提升相同，合并显示
+                    if (rootEntries.length > 0) {
+                      const allSame = rootEntries.every(entry => {
+                        const match = entry.match(/\+(\d+)$/);
+                        return match && match[1] === rootEntries[0].match(/\+(\d+)$/)?.[1];
+                      });
+
+                      if (allSame && rootEntries.length === 5) {
+                        const value = rootEntries[0].match(/\+(\d+)$/)?.[1] || '0';
+                        return <span className="col-span-2">✨ 所有灵根永久 +{value}</span>;
+                      } else {
+                        return rootEntries.map((entry, idx) => (
+                          <span key={idx}>✨ {entry}永久</span>
+                        ));
+                      }
+                    }
+                    return null;
+                  })()}
                 </div>
               )}
             </div>

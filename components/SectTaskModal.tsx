@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { PlayerStats, AdventureResult } from '../types';
 import { RandomSectTask } from '../services/randomService';
-import { generateAdventureEvent } from '../services/aiService';
+import {
+  initializeEventTemplateLibrary,
+  getRandomEventTemplate,
+  templateToAdventureResult,
+} from '../services/adventureTemplateService';
 import { X, Loader2 } from 'lucide-react';
 import { logger } from '../utils/logger';
 
@@ -10,6 +14,7 @@ interface Props {
   onClose: () => void;
   task: RandomSectTask;
   player: PlayerStats;
+  setItemActionLog?: (log: { text: string; type: string } | null) => void;
   onTaskComplete: (task: RandomSectTask, encounterResult?: AdventureResult, isPerfectCompletion?: boolean) => void;
 }
 
@@ -18,6 +23,7 @@ const SectTaskModal: React.FC<Props> = ({
   onClose,
   task,
   player,
+  setItemActionLog,
   onTaskComplete,
 }) => {
   const [stage, setStage] = useState<'preparing' | 'executing' | 'encounter' | 'complete'>('preparing');
@@ -77,25 +83,65 @@ const SectTaskModal: React.FC<Props> = ({
       const steps = 20;
       const stepDuration = duration / steps;
 
+      // 根据难度设置触发概率
+      const encounterChance = {
+        '简单': 0.05,   // 5%
+        '普通': 0.10,   // 10%
+        '困难': 0.15,   // 15%
+        '极难': 0.20,   // 20%
+      }[task.difficulty] || 0.10;
+
       for (let i = 0; i <= steps; i++) {
         await new Promise((resolve) => setTimeout(resolve, stepDuration));
         setProgress((i / steps) * 100);
 
-        // 在任务执行过程中随机触发奇遇 (提高到 3% 概率)
-        if (i === Math.floor(steps / 2) && Math.random() < 0.03) {
+        // 在任务执行过程中根据难度随机触发事件
+        if (i === Math.floor(steps / 2) && Math.random() < encounterChance) {
           setLoading(false);
           setStage('encounter');
 
           try {
-            // 调用AI生成奇遇事件
-            const result = await generateAdventureEvent(
-              player,
-              'lucky',
-              '低',
-              undefined,
-              undefined
-            );
-            setEncounterResult(result);
+            // 使用事件模板库生成奇遇事件
+            initializeEventTemplateLibrary();
+            // 根据难度选择风险等级
+            const riskLevel = task.difficulty === '简单' ? '低' :
+                            task.difficulty === '普通' ? '低' :
+                            task.difficulty === '困难' ? '中' : '高';
+            const template = getRandomEventTemplate('lucky', riskLevel, player.realm, player.realmLevel);
+
+            if (template) {
+              const result = templateToAdventureResult(template, {
+                realm: player.realm,
+                realmLevel: player.realmLevel,
+                maxHp: player.maxHp,
+              });
+              setEncounterResult(result);
+
+              // 使用 setItemActionLog 提示
+              if (setItemActionLog && result.story) {
+                setItemActionLog({
+                  text: `✨ 任务途中遇到奇遇：${result.story.substring(0, 30)}${result.story.length > 30 ? '...' : ''}`,
+                  type: result.eventColor || 'special',
+                });
+              }
+            } else {
+              // 如果模板库为空，使用默认事件
+              const defaultResult = {
+                story: '你在执行任务时遇到了一些小机缘。',
+                hpChange: 0,
+                expChange: Math.floor(50 * (1 + 0.3)),
+                spiritStonesChange: Math.floor(30 * (1 + 0.3)),
+                eventColor: 'gain' as const,
+              };
+              setEncounterResult(defaultResult);
+
+              if (setItemActionLog) {
+                setItemActionLog({
+                  text: '✨ 任务途中遇到奇遇：你在执行任务时遇到了一些小机缘。',
+                  type: 'special',
+                });
+              }
+            }
           } catch (error) {
             console.error('生成奇遇失败:', error);
             const difficultyMultiplier = {
@@ -105,13 +151,21 @@ const SectTaskModal: React.FC<Props> = ({
               '极难': 2.5,
             }[task.difficulty] || 1;
 
-            setEncounterResult({
+            const fallbackResult = {
               story: '你在执行任务途中遇到了一位宗门前辈，他见你勤勉，随手赐下一番机缘。',
               hpChange: 0,
               expChange: Math.floor(50 * difficultyMultiplier),
               spiritStonesChange: Math.floor(100 * difficultyMultiplier),
-              eventColor: 'special',
-            });
+              eventColor: 'special' as const,
+            };
+            setEncounterResult(fallbackResult);
+
+            if (setItemActionLog) {
+              setItemActionLog({
+                text: '✨ 任务途中遇到奇遇：你在执行任务途中遇到了一位宗门前辈，他见你勤勉，随手赐下一番机缘。',
+                type: 'special',
+              });
+            }
           }
           return;
         }

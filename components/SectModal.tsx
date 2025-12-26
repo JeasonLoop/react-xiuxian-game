@@ -17,6 +17,7 @@ interface Props {
   onPromote: () => void;
   onBuy: (item: Partial<Item>, cost: number, quantity?: number) => void;
   onChallengeLeader: () => void;
+  setItemActionLog?: (log: { text: string; type: string } | null) => void;
 }
 
 const SectModal: React.FC<Props> = ({
@@ -30,6 +31,7 @@ const SectModal: React.FC<Props> = ({
   onPromote,
   onBuy,
   onChallengeLeader,
+  setItemActionLog,
 }) => {
   const [activeTab, setActiveTab] = useState<'hall' | 'mission' | 'shop'>(
     'hall'
@@ -144,7 +146,7 @@ const SectModal: React.FC<Props> = ({
   if (!player.sectId) {
     return (
       <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-        <div className="bg-paper-800 w-full max-w-4xl rounded border border-stone-600 shadow-2xl flex flex-col max-h-[85vh]">
+        <div className="bg-paper-800 w-full max-w-4xl rounded border border-stone-600 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
           <div className="p-4 border-b border-stone-600 flex justify-between items-center bg-ink-800 rounded-t">
             <h3 className="text-xl font-serif text-mystic-gold flex items-center gap-2">
               <Users size={20} /> 寻访仙门
@@ -309,7 +311,7 @@ const SectModal: React.FC<Props> = ({
         </div>
 
         {/* Content */}
-        <div className="modal-scroll-container modal-scroll-content flex-1 p-6 bg-paper-800 max-h-[68vh]">
+        <div className="modal-scroll-container modal-scroll-content p-6 bg-paper-800 max-h-[68vh]">
           {/* Main Hall */}
           {activeTab === 'hall' && (
             <div className="space-y-6">
@@ -871,6 +873,7 @@ const SectModal: React.FC<Props> = ({
           }}
           task={selectedTask}
           player={player}
+          setItemActionLog={setItemActionLog}
           onTaskComplete={(task, encounterResult, isPerfectCompletion) => {
             onTask(task, encounterResult, isPerfectCompletion);
             setSelectedTask(null);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Sparkles } from 'lucide-react';
+import { X } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -10,7 +10,7 @@ const CultivationIntroModal: React.FC<Props> = ({ isOpen, onClose }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(false);
 
-  const text = '我辈修士，夺天地造化，现传法如下，吸天地之灵以御其气；假天地之奇以筑道基；窥天地之法以炼金丹；夺天地之精以成元婴；抽天地之髓以得其神；祭天地之魄以身合道；逆天地之理以证长生';
+  const text = '我辈修士，夺天地造化，现传法如下；吸天地之灵以御其气；假天地之奇以筑道基；窥天地之法以炼金丹；夺天地之精以成元婴；抽天地之髓以得其神；祭天地之魄以身合道；逆天地之理以证长生；';
 
   // 将文本按分号分割成句子
   const sentences = text.split('；');
@@ -56,6 +56,7 @@ const CultivationIntroModal: React.FC<Props> = ({ isOpen, onClose }) => {
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-stone-400 hover:text-white transition-colors"
+          aria-label="关闭"
         >
           <X size={20} />
         </button>
@@ -102,6 +103,13 @@ const CultivationIntroModal: React.FC<Props> = ({ isOpen, onClose }) => {
             </p>
           </div>
         )}
+
+        {/* 引用信息 */}
+        <div className="mt-4 text-right">
+          <p className="text-stone-500 text-xs">
+            ---出自《我的模拟长生路》
+          </p>
+        </div>
       </div>
     </div>
   );

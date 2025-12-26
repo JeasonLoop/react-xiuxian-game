@@ -7,12 +7,13 @@ import React, {
 } from 'react';
 import { LogEntry } from '../types';
 import { GlobalChat } from './GlobalChat';
-import { ChevronsDown } from 'lucide-react';
+import { ChevronsDown, Trash2 } from 'lucide-react';
 
 interface Props {
   logs: LogEntry[];
   playerName: string;
   className?: string;
+  onClearLogs?: () => void;
 }
 
 // 限制日志数量，只显示最近500条，避免DOM过多导致卡顿
@@ -54,7 +55,7 @@ const LogItem = React.memo<{ log: LogEntry }>(({ log }) => {
 
 LogItem.displayName = 'LogItem';
 
-const LogPanel: React.FC<Props> = ({ logs, playerName, className }) => {
+const LogPanel: React.FC<Props> = ({ logs, playerName, className, onClearLogs }) => {
   const endRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
@@ -171,22 +172,52 @@ const LogPanel: React.FC<Props> = ({ logs, playerName, className }) => {
         ref={containerRef}
         className="h-full overflow-y-auto scrollbar-hide relative"
       >
-        <div className="p-3 md:p-6 space-y-2 md:space-y-4 pb-4">
-          {displayedLogs.map((log) => (
-            <LogItem key={log.id} log={log} />
-          ))}
-          <div ref={endRef} />
-        </div>
+        {displayedLogs.length === 0 ? (
+          // 空状态
+          <div className="h-full flex items-center justify-center p-6">
+            <div className="text-center text-stone-500">
+              <div className="text-4xl md:text-5xl mb-4 opacity-50">📜</div>
+              <p className="text-sm md:text-base font-serif">暂无日志</p>
+              <p className="text-xs md:text-sm mt-2 opacity-70">游戏中的事件会显示在这里</p>
+            </div>
+          </div>
+        ) : (
+          <div className="p-3 md:p-6 space-y-2 md:space-y-4 pb-4">
+            {displayedLogs.map((log) => (
+              <LogItem key={log.id} log={log} />
+            ))}
+            <div ref={endRef} />
+          </div>
+        )}
       </div>
 
       {/* 底部遮罩 */}
       <div className="absolute bottom-0 left-0 w-full h-8 md:h-12 bg-gradient-to-t from-ink-900 to-transparent pointer-events-none z-10" />
 
-      {/* 滚动到底部按钮 - 固定在日志窗口右下角，不随内容滚动 */}
+      {/* 清除日志按钮 - 固定在日志窗口右下角，聊天按钮左边 */}
+      {onClearLogs && displayedLogs.length > 0 && (
+        <button
+          onClick={onClearLogs}
+          className="absolute bottom-3 right-14 md:bottom-4 md:right-16 z-[100]
+                     w-9 h-9 md:w-11 md:h-11
+                     bg-stone-900/90 border border-stone-700 text-stone-400
+                     hover:border-red-500/50 hover:text-red-500
+                     rounded-full flex items-center justify-center
+                     shadow-xl hover:shadow-2xl hover:scale-110 active:scale-95
+                     transition-all duration-200
+                     cursor-pointer pointer-events-auto"
+          title="清空日志"
+          aria-label="清空日志"
+        >
+          <Trash2 size={18} strokeWidth={2.5} />
+        </button>
+      )}
+
+      {/* 滚动到底部按钮 - 固定在日志窗口右下角，清除按钮左边 */}
       {showScrollButton && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-3 right-14 md:bottom-4 md:right-16 z-[100]
+          className="absolute bottom-3 right-[6.5rem] md:bottom-4 md:right-[7.5rem] z-[100]
                      w-9 h-9 md:w-11 md:h-11
                      bg-stone-900/90 border border-stone-700 text-stone-400
                      hover:border-amber-500/50 hover:text-amber-500

@@ -137,9 +137,20 @@ body {
 }
 
 .modal-scroll-content {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* 当同时使用两个类时，确保滚动正常工作 */
+.modal-scroll-container.modal-scroll-content {
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  position: relative;
 }
 
 /* 移动端弹窗滚动优化 */

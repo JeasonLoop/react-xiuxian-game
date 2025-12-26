@@ -29,8 +29,9 @@ export function useLotteryHandlers({
   setLotteryRewards,
 }: UseLotteryHandlersProps) {
   const isDrawingRef = useRef(false); // 防止重复调用
+  const rewardTimeoutRef = useRef<NodeJS.Timeout | null>(null); // 存储奖励显示定时器
 
-  const handleDraw = (count: 1 | 10) => {
+  const handleDraw = (count: number) => {
     if (isDrawingRef.current) {
       return; // 如果正在抽奖，忽略重复调用
     }
@@ -38,68 +39,87 @@ export function useLotteryHandlers({
       addLog('抽奖券不足！', 'danger');
       return;
     }
+    if (count <= 0 || !Number.isInteger(count)) {
+      addLog('抽奖次数必须为正整数！', 'danger');
+      return;
+    }
+
+    // 检查奖品池是否为空
+    if (LOTTERY_PRIZES.length === 0) {
+      addLog('奖品池为空，无法抽奖！', 'danger');
+      return;
+    }
 
     isDrawingRef.current = true;
 
     const results: typeof LOTTERY_PRIZES = [];
-    let guaranteedRare = count === 10 && (player.lotteryCount + 1) % 10 === 0;
-
+    // 计算保底：每10次必出稀有以上
+    const currentCount = player.lotteryCount;
+    // 找出本次抽奖中哪些位置会触发保底（每10次必出稀有以上）
+    // 优化：使用Set替代数组，提高查找效率
+    const guaranteeIndices = new Set<number>();
     for (let i = 0; i < count; i++) {
-      if (guaranteedRare && i === count - 1) {
-        // 保底稀有以上
-        const rarePrizes = LOTTERY_PRIZES.filter((p) => p.rarity !== '普通');
-        if (rarePrizes.length === 0) {
-          // 如果没有稀有以上奖品，降级使用所有奖品（防御性处理）
-          const totalWeight = LOTTERY_PRIZES.reduce(
-            (sum, p) => sum + p.weight,
-            0
-          );
-          if (totalWeight > 0) {
-            let random = Math.random() * totalWeight;
-            for (const prize of LOTTERY_PRIZES) {
-              random -= prize.weight;
-              if (random <= 0) {
-                results.push(prize);
-                break;
-              }
-            }
-          } else {
-            // 如果所有奖品权重都为0，使用第一个奖品作为保底
-            if (LOTTERY_PRIZES.length > 0) {
-              results.push(LOTTERY_PRIZES[0]);
-            }
-          }
-        } else {
-          const totalWeight = rarePrizes.reduce((sum, p) => sum + p.weight, 0);
-          let random = Math.random() * totalWeight;
-          for (const prize of rarePrizes) {
-            random -= prize.weight;
-            if (random <= 0) {
-              results.push(prize);
-              break;
-            }
+      const totalCount = currentCount + i + 1;
+      if (totalCount % 10 === 0) {
+        guaranteeIndices.add(i);
+      }
+    }
+
+    // 优化：预先计算稀有奖品列表和总权重，避免在循环中重复计算
+    const rarePrizes = LOTTERY_PRIZES.filter((p) => p.rarity !== '普通');
+    const totalWeight = LOTTERY_PRIZES.reduce((sum, p) => sum + p.weight, 0);
+    const rareTotalWeight = rarePrizes.reduce((sum, p) => sum + p.weight, 0);
+
+    // 辅助函数：根据权重随机选择奖品
+    const selectPrizeByWeight = (prizes: typeof LOTTERY_PRIZES, weight: number) => {
+      if (weight > 0) {
+        let random = Math.random() * weight;
+        for (const prize of prizes) {
+          random -= prize.weight;
+          if (random <= 0) {
+            return prize;
           }
         }
-      } else {
-        const totalWeight = LOTTERY_PRIZES.reduce(
-          (sum, p) => sum + p.weight,
-          0
-        );
-        if (totalWeight > 0) {
-          let random = Math.random() * totalWeight;
-          for (const prize of LOTTERY_PRIZES) {
-            random -= prize.weight;
-            if (random <= 0) {
-              results.push(prize);
-              break;
-            }
+      }
+      // 如果权重为0或没有找到，返回第一个奖品作为保底
+      return prizes.length > 0 ? prizes[0] : null;
+    };
+
+    for (let i = 0; i < count; i++) {
+      // 检查是否应该触发保底（每10次必出稀有以上）
+      const shouldGuarantee = guaranteeIndices.has(i);
+      if (shouldGuarantee) {
+        // 保底稀有以上
+        if (rarePrizes.length === 0) {
+          // 如果没有稀有以上奖品，降级使用所有奖品（防御性处理）
+          const prize = selectPrizeByWeight(LOTTERY_PRIZES, totalWeight);
+          if (prize) {
+            results.push(prize);
           }
         } else {
-          // 如果所有奖品权重都为0，使用第一个奖品作为保底
-          if (LOTTERY_PRIZES.length > 0) {
+          const prize = selectPrizeByWeight(rarePrizes, rareTotalWeight);
+          if (prize) {
+            results.push(prize);
+          } else if (LOTTERY_PRIZES.length > 0) {
+            // 如果连稀有以上奖品都没有，降级使用第一个奖品
             results.push(LOTTERY_PRIZES[0]);
           }
         }
+      } else {
+        // 普通抽奖
+        const prize = selectPrizeByWeight(LOTTERY_PRIZES, totalWeight);
+        if (prize) {
+          results.push(prize);
+        }
+      }
+    }
+
+    // 检查是否成功生成了所有奖品（防御性检查）
+    if (results.length !== count) {
+      console.error(`抽奖结果数量不匹配：期望 ${count} 个，实际 ${results.length} 个`);
+      // 如果结果数量不足，使用第一个奖品填充（确保每次抽奖都有结果）
+      while (results.length < count && LOTTERY_PRIZES.length > 0) {
+        results.push(LOTTERY_PRIZES[0]);
       }
     }
 
@@ -287,15 +307,26 @@ export function useLotteryHandlers({
       };
     });
 
+    // 清理之前的定时器
+    if (rewardTimeoutRef.current) {
+      clearTimeout(rewardTimeoutRef.current);
+      rewardTimeoutRef.current = null;
+    }
+
     // 显示抽奖结果弹窗
     setLotteryRewards([]);
     if (rewards.length > 0) {
+      // 延迟显示奖励，确保状态更新后显示
       setTimeout(() => {
         setLotteryRewards([...rewards]); // 使用展开运算符创建新数组
-        setTimeout(() => {
+        // 3秒后隐藏奖励并重置状态
+        const hideTimeout = setTimeout(() => {
           setLotteryRewards([]);
           isDrawingRef.current = false; // 重置抽奖状态
+          rewardTimeoutRef.current = null;
         }, 3000);
+        // 跟踪第二个定时器（持续时间最长，需要能够清理）
+        rewardTimeoutRef.current = hideTimeout;
       }, 0);
     } else {
       isDrawingRef.current = false; // 如果没有奖励，立即重置状态

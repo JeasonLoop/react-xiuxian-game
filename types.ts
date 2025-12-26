@@ -230,6 +230,9 @@ export interface PlayerStats {
   };
   betrayedSects: string[]; // 背叛过的宗门ID列表
   sectHuntEndTime: number | null; // 宗门追杀结束时间戳（毫秒），null表示未被追杀
+  sectHuntLevel: number; // 追杀强度等级（0=普通弟子，1=精英弟子，2=长老，3=宗主），击杀敌人后递增
+  sectHuntSectId: string | null; // 正在追杀玩家的宗门ID
+  sectHuntSectName: string | null; // 正在追杀玩家的宗门名称
   sectMasterId: string | null; // 当前宗门的宗主ID (如果玩家是宗主，则为玩家自己的ID)
   // 角色系统扩展
   talentId: string | null; // 天赋ID（游戏开始时随机生成，之后不可修改）
@@ -245,11 +248,8 @@ export interface PlayerStats {
   // 抽奖系统
   lotteryTickets: number; // 抽奖券
   lotteryCount: number; // 累计抽奖次数（用于保底）
-  // 传承系统
+  // 传承系统（仅保留突破境界功能）
   inheritanceLevel: number; // 传承等级（0-4，每次传承可突破1-4个境界）
-  inheritanceRoute?: string | null; // 传承路线ID（如 "dragon", "phoenix", "void" 等）
-  inheritanceExp: number; // 传承经验值（用于提升传承等级）
-  inheritanceSkills: string[]; // 已学习的传承技能ID列表
   // 每日任务系统
   dailyTaskCount: Record<string, number>; // 按任务ID记录每日完成次数，每个任务每天最多3次
   lastTaskResetDate: string; // 上次重置任务计数的日期（YYYY-MM-DD格式）
@@ -456,6 +456,9 @@ export interface AdventureResult {
     earth?: number;
   };
   triggerSecretRealm?: boolean; // 是否触发随机秘境
+  longevityRuleObtained?: string; // 获得的规则之力ID
+  heavenEarthSoulEncounter?: string; // 遇到的天地之魄BOSS ID
+  adventureType?: AdventureType; // 历练类型（用于判断是否需要触发战斗等）
   itemObtained?: {
     name: string;
     type: string; // "草药" | "材料" | "法宝" | "武器" | "护甲" | "首饰" | "戒指"

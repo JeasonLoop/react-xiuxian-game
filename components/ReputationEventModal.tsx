@@ -15,7 +15,10 @@ const ReputationEventModal: React.FC<Props> = ({
   event,
   onChoice,
 }) => {
-  if (!isOpen || !event) return null;
+
+  if (!isOpen || !event) {
+    return null;
+  }
 
   // 防御性检查：确保必要字段存在
   const title = event.title || event.text || '神秘事件';

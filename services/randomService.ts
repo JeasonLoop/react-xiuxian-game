@@ -1,5 +1,6 @@
 import { SecretRealm, RealmType, Item, ItemType, EquipmentSlot } from '../types';
 import { REALM_ORDER, SectInfo, SectGrade, getPillDefinition } from '../constants';
+import { getItemFromConstants } from '../utils/itemConstantsUtils';
 
 const randomId = () => Math.random().toString(36).slice(2, 9);
 
@@ -1003,12 +1004,8 @@ export const generateRandomSectTasks = (
     const realmMultiplier = getRealmMultiplier(playerRealm, recommendedRealm);
 
     let cost: RandomSectTask['cost'] = {};
-    let baseContribution = Math.floor(
-      (10 + Math.random() * 40) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-    );
-
     let reward: RandomSectTask['reward'] = {
-      contribution: baseContribution + qualityConfig.contributionBonus,
+      contribution: 0,
     };
 
     const timeCosts: Array<'instant' | 'short' | 'medium' | 'long'> = [
@@ -1019,351 +1016,38 @@ export const generateRandomSectTasks = (
     ];
     const timeCost = timeCosts[Math.floor(Math.random() * timeCosts.length)];
 
-    // 根据任务类型设置具体奖励和消耗
-    switch (type) {
-      case 'patrol':
-        reward.contribution = Math.floor(
-          (10 + Math.random() * 20) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        break;
-      case 'donate_stone':
-        cost.spiritStones = Math.floor((50 + Math.random() * 150) * difficultyMultiplier);
-        reward.contribution = Math.floor(
-          (20 + Math.random() * 30) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.spiritStones = Math.floor(cost.spiritStones * 0.3);
-        break;
-      case 'donate_herb':
-        const herbNames = ['聚灵草', '紫猴花', '天灵草', '血参', '灵芝'];
-        cost.items = [
-          {
-            name: herbNames[Math.floor(Math.random() * herbNames.length)],
-            quantity: Math.floor((1 + Math.random() * 3) * difficultyMultiplier),
-          },
-        ];
-        reward.contribution = Math.floor(
-          (15 + Math.random() * 25) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        break;
-      case 'collect':
-        const materialNames = ['炼器石', '妖兽内丹', '灵矿', '符纸'];
-        cost.items = [
-          {
-            name: materialNames[Math.floor(Math.random() * materialNames.length)],
-            quantity: Math.floor((1 + Math.random() * 2) * difficultyMultiplier),
-          },
-        ];
-        reward.contribution = Math.floor(
-          (25 + Math.random() * 35) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.items = [
-          {
-            name: '聚气丹',
-            quantity: Math.floor(difficultyMultiplier * qualityConfig.rewardMultiplier),
-          },
-        ];
-        break;
-      case 'hunt':
-        reward.contribution = Math.floor(
-          (30 + Math.random() * 40) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (50 + Math.random() * 100) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+    // 使用 TASK_TYPE_CONFIGS 配置来生成奖励和消耗，避免重复代码
+    const taskConfig = TASK_TYPE_CONFIGS[type];
+    if (taskConfig) {
+      // 使用配置中的 getCost 函数生成消耗
+      if (taskConfig.getCost) {
+        const configCost = taskConfig.getCost(difficultyMultiplier);
+        cost = { ...cost, ...configCost };
+      }
+
+      // 使用配置中的 getReward 函数生成奖励
+      if (taskConfig.getReward) {
+        const configReward = taskConfig.getReward(
+          rankMultiplier,
+          difficultyMultiplier,
+          qualityConfig.rewardMultiplier,
+          realmMultiplier,
+          quality
         );
-        break;
-      case 'alchemy':
-        const alchemyMaterials = ['聚灵草', '紫猴花', '天灵草', '血参'];
-        cost.items = [
-          {
-            name: alchemyMaterials[Math.floor(Math.random() * alchemyMaterials.length)],
-            quantity: Math.floor((2 + Math.random() * 3) * difficultyMultiplier),
-          },
-        ];
-        reward.contribution = Math.floor(
-          (30 + Math.random() * 40) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.items = [
-          {
-            name: '聚气丹',
-            quantity: Math.floor((2 + Math.random() * 3) * difficultyMultiplier * qualityConfig.rewardMultiplier),
-          },
-        ];
-        break;
-      case 'forge':
-        const forgeMaterials = ['炼器石', '精铁', '灵矿', '妖兽内丹'];
-        cost.items = [
-          {
-            name: forgeMaterials[Math.floor(Math.random() * forgeMaterials.length)],
-            quantity: Math.floor((2 + Math.random() * 3) * difficultyMultiplier),
-          },
-        ];
-        reward.contribution = Math.floor(
-          (35 + Math.random() * 45) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.spiritStones = Math.floor(
-          (50 + Math.random() * 100) * difficultyMultiplier * qualityConfig.rewardMultiplier
-        );
-        break;
-      case 'teach':
-        reward.contribution = Math.floor(
-          (25 + Math.random() * 35) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (30 + Math.random() * 60) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        break;
-      case 'defend':
-        reward.contribution = Math.floor(
-          (40 + Math.random() * 50) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (60 + Math.random() * 120) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        break;
-      case 'explore':
-        reward.contribution = Math.floor(
-          (35 + Math.random() * 45) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.items = [
-          {
-            name: '炼器石',
-            quantity: Math.floor((1 + Math.random() * 2) * difficultyMultiplier * qualityConfig.rewardMultiplier),
-          },
-        ];
-        // 传说/仙品探索任务可能获得稀有物品
-        if (quality === '传说' || quality === '仙品') {
-          if (!reward.items) reward.items = [];
-          reward.items.push({
-            name: quality === '仙品' ? '仙品材料' : '传说材料',
-            quantity: 1,
-          });
-        }
-        break;
-      case 'trade':
-        reward.contribution = Math.floor(
-          (30 + Math.random() * 40) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.spiritStones = Math.floor(
-          (100 + Math.random() * 200) * difficultyMultiplier * qualityConfig.rewardMultiplier
-        );
-        break;
-      case 'research':
-        reward.contribution = Math.floor(
-          (20 + Math.random() * 30) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (80 + Math.random() * 150) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        break;
-      case 'cultivate':
-        reward.contribution = Math.floor(
-          (15 + Math.random() * 25) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.items = [
-          {
-            name: '聚灵草',
-            quantity: Math.floor((3 + Math.random() * 5) * difficultyMultiplier * qualityConfig.rewardMultiplier),
-          },
-        ];
-        break;
-      case 'maintain':
-        const maintainMaterials = ['炼器石', '符纸', '灵矿'];
-        cost.items = [
-          {
-            name: maintainMaterials[Math.floor(Math.random() * maintainMaterials.length)],
-            quantity: Math.floor((1 + Math.random() * 2) * difficultyMultiplier),
-          },
-        ];
-        reward.contribution = Math.floor(
-          (25 + Math.random() * 35) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        break;
-      case 'diplomacy':
-        reward.contribution = Math.floor(
-          (50 + Math.random() * 70) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.spiritStones = Math.floor(
-          (200 + Math.random() * 300) * difficultyMultiplier * qualityConfig.rewardMultiplier
-        );
-        // 外交任务可能获得特殊奖励
-        if (quality === '传说' || quality === '仙品') {
-          reward.items = [
-            {
-              name: '外交信物',
-              quantity: 1,
-            },
-          ];
-        }
-        break;
-      case 'trial':
-        reward.contribution = Math.floor(
-          (45 + Math.random() * 55) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (100 + Math.random() * 200) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        reward.spiritStones = Math.floor(
-          (150 + Math.random() * 250) * difficultyMultiplier * qualityConfig.rewardMultiplier
-        );
-        break;
-      case 'rescue':
-        reward.contribution = Math.floor(
-          (40 + Math.random() * 50) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (70 + Math.random() * 130) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        break;
-      case 'investigate':
-        reward.contribution = Math.floor(
-          (30 + Math.random() * 40) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (40 + Math.random() * 80) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        break;
-      case 'battle':
-        reward.contribution = Math.floor(
-          (35 + Math.random() * 45) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (60 + Math.random() * 120) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        break;
-      case 'treasure_hunt':
-        reward.contribution = Math.floor(
-          (40 + Math.random() * 50) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.items = [
-          {
-            name: '炼器石',
-            quantity: Math.floor((2 + Math.random() * 3) * difficultyMultiplier * qualityConfig.rewardMultiplier),
-          },
-        ];
-        // 高品质寻宝任务可能获得稀有物品
-        if (quality === '传说' || quality === '仙品') {
-          if (!reward.items) reward.items = [];
-          reward.items.push({
-            name: quality === '仙品' ? '仙品法宝碎片' : '传说法宝碎片',
-            quantity: 1,
-          });
-        }
-        break;
-      case 'escort':
-        reward.contribution = Math.floor(
-          (45 + Math.random() * 55) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.spiritStones = Math.floor(
-          (150 + Math.random() * 250) * difficultyMultiplier * qualityConfig.rewardMultiplier
-        );
-        break;
-      case 'assassination':
-        reward.contribution = Math.floor(
-          (50 + Math.random() * 70) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (80 + Math.random() * 150) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        reward.spiritStones = Math.floor(
-          (200 + Math.random() * 300) * difficultyMultiplier * qualityConfig.rewardMultiplier
-        );
-        break;
-      case 'artifact_repair':
-        const repairMaterials = ['炼器石', '精铁', '玄铁', '星辰石'];
-        cost.items = [
-          {
-            name: repairMaterials[Math.floor(Math.random() * repairMaterials.length)],
-            quantity: Math.floor((2 + Math.random() * 3) * difficultyMultiplier),
-          },
-        ];
-        reward.contribution = Math.floor(
-          (30 + Math.random() * 40) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.items = [
-          {
-            name: '强化石',
-            quantity: Math.floor((1 + Math.random() * 2) * difficultyMultiplier * qualityConfig.rewardMultiplier),
-          },
-        ];
-        break;
-      case 'spirit_beast':
-        reward.contribution = Math.floor(
-          (40 + Math.random() * 50) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (70 + Math.random() * 130) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        // 高品质灵兽任务可能获得灵宠相关物品
-        if (quality === '传说' || quality === '仙品') {
-          reward.items = [
-            {
-              name: quality === '仙品' ? '仙品灵兽内丹' : '传说灵兽内丹',
-              quantity: 1,
-            },
-          ];
-        }
-        break;
-      case 'sect_war':
-        reward.contribution = Math.floor(
-          (60 + Math.random() * 80) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (100 + Math.random() * 200) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        reward.spiritStones = Math.floor(
-          (300 + Math.random() * 500) * difficultyMultiplier * qualityConfig.rewardMultiplier
-        );
-        break;
-      case 'inheritance':
-        reward.contribution = Math.floor(
-          (50 + Math.random() * 70) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (150 + Math.random() * 300) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        // 传承任务可能获得功法相关物品
-        if (quality === '传说' || quality === '仙品') {
-          reward.items = [
-            {
-              name: '传承玉简',
-              quantity: 1,
-            },
-          ];
-        }
-        break;
-      case 'tribulation':
-        reward.contribution = Math.floor(
-          (55 + Math.random() * 75) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (200 + Math.random() * 400) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        reward.spiritStones = Math.floor(
-          (250 + Math.random() * 450) * difficultyMultiplier * qualityConfig.rewardMultiplier
-        );
-        break;
-      case 'alchemy_master':
-        const masterMaterials = ['万年灵乳', '九叶芝草', '龙鳞果', '仙晶'];
-        cost.items = [
-          {
-            name: masterMaterials[Math.floor(Math.random() * masterMaterials.length)],
-            quantity: Math.floor((1 + Math.random() * 2) * difficultyMultiplier),
-          },
-        ];
-        reward.contribution = Math.floor(
-          (40 + Math.random() * 60) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.items = [
-          {
-            name: quality === '仙品' ? '九转金丹' : quality === '传说' ? '天元丹' : '筑基丹',
-            quantity: Math.floor((1 + Math.random() * 2) * difficultyMultiplier * qualityConfig.rewardMultiplier),
-          },
-        ];
-        break;
+        reward = {
+          ...configReward,
+          contribution: (configReward.contribution || 0) + qualityConfig.contributionBonus,
+        };
+      }
+    } else {
+      // 如果没有配置，使用默认值（防御性处理）
+      reward.contribution = Math.floor(
+        (10 + Math.random() * 40) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+      ) + qualityConfig.contributionBonus;
     }
 
-    // 确定是否需要战斗
-    const requiresCombat = ['hunt', 'defend', 'battle', 'escort', 'assassination', 'sect_war', 'spirit_beast'].includes(type);
+    // 确定是否需要战斗（使用配置中的信息）
+    const requiresCombat = taskConfig?.requiresCombat ?? false;
 
     // 计算成功率（基于难度和品质）
     const baseSuccessRate = {
@@ -1416,20 +1100,8 @@ export const generateRandomSectTasks = (
       name = `【每日特殊】${name}`;
     }
 
-    // 任务推荐系统（根据玩家属性推荐）
-    const recommendedFor: RandomSectTask['recommendedFor'] = {};
-    if (type === 'battle' || type === 'hunt' || type === 'defend') {
-      recommendedFor.highAttack = true;
-    }
-    if (type === 'defend' || type === 'escort') {
-      recommendedFor.highDefense = true;
-    }
-    if (type === 'research' || type === 'alchemy' || type === 'forge') {
-      recommendedFor.highSpirit = true;
-    }
-    if (type === 'patrol' || type === 'investigate' || type === 'assassination') {
-      recommendedFor.highSpeed = true;
-    }
+    // 任务推荐系统（使用配置中的信息）
+    const recommendedFor: RandomSectTask['recommendedFor'] = taskConfig?.recommendedFor || {};
 
     // 任务类型连续完成加成（根据任务类型计算）
     const typeBonus = Math.floor(Math.random() * 20) + 5; // 5-25%加成
@@ -1459,76 +1131,126 @@ export const generateRandomSectTasks = (
   return tasks;
 };
 
-// 从常量中获取丹药定义的辅助函数
 const createPillItem = (pillName: string, cost: number, defaultItem?: Partial<Item>): { name: string; cost: number; item: Omit<Item, 'id'> } => {
-  const pillDef = getPillDefinition(pillName);
-  if (!pillDef) {
-    // 如果常量中没有，使用默认值（如回血丹）
-    if (defaultItem) {
-      return { name: pillName, cost, item: { ...defaultItem, name: pillName, quantity: 1 } as Omit<Item, 'id'> };
-    }
-    throw new Error(`丹药定义未找到: ${pillName}`);
+  // 优先从常量池获取
+  const itemFromConstants = getItemFromConstants(pillName);
+  if (itemFromConstants) {
+    return {
+      name: pillName,
+      cost,
+      item: {
+        name: itemFromConstants.name,
+        type: itemFromConstants.type,
+        description: itemFromConstants.description,
+        rarity: itemFromConstants.rarity,
+        quantity: 1,
+        effect: itemFromConstants.effect,
+        permanentEffect: itemFromConstants.permanentEffect,
+        isEquippable: itemFromConstants.isEquippable,
+        equipmentSlot: itemFromConstants.equipmentSlot as EquipmentSlot | undefined,
+      },
+    };
   }
+
+  // 如果常量池中没有，尝试从丹药定义获取
+  const pillDef = getPillDefinition(pillName);
+  if (pillDef) {
+    return {
+      name: pillName,
+      cost,
+      item: {
+        name: pillDef.name,
+        type: pillDef.type,
+        description: pillDef.description,
+        rarity: pillDef.rarity,
+        quantity: 1,
+        effect: pillDef.effect,
+        permanentEffect: pillDef.permanentEffect,
+      },
+    };
+  }
+
+  // 如果常量中没有，使用默认值（如回血丹）
+  if (defaultItem) {
+    return { name: pillName, cost, item: { ...defaultItem, name: pillName, quantity: 1 } as Omit<Item, 'id'> };
+  }
+  throw new Error(`物品定义未找到: ${pillName}`);
+};
+
+/**
+ * 从常量池创建物品项（用于商店）
+ */
+const createItemFromConstants = (itemName: string, cost: number): { name: string; cost: number; item: Omit<Item, 'id'> } | null => {
+  const itemFromConstants = getItemFromConstants(itemName);
+  if (!itemFromConstants) {
+    return null;
+  }
+
   return {
-    name: pillName,
+    name: itemName,
     cost,
     item: {
-      name: pillDef.name,
-      type: pillDef.type,
-      description: pillDef.description,
-      rarity: pillDef.rarity,
+      name: itemFromConstants.name,
+      type: itemFromConstants.type,
+      description: itemFromConstants.description,
+      rarity: itemFromConstants.rarity,
       quantity: 1,
-      effect: pillDef.effect,
-      permanentEffect: pillDef.permanentEffect,
+      effect: itemFromConstants.effect,
+      permanentEffect: itemFromConstants.permanentEffect,
+      isEquippable: itemFromConstants.isEquippable,
+      equipmentSlot: itemFromConstants.equipmentSlot as EquipmentSlot | undefined,
     },
   };
 };
 
-// 宗门商店物品池（用于生成藏宝阁物品）
+// 宗门商店物品池（用于生成藏宝阁物品）- 从常量池获取
 const SECT_SHOP_ITEM_POOL: Array<{ name: string; cost: number; item: Omit<Item, 'id'> }> = [
-  { name: '炼器石', cost: 10, item: { name: '炼器石', type: ItemType.Material, description: '用于强化法宝的基础材料。', quantity: 1, rarity: '普通' } },
+  // 从常量池获取的物品
+  createItemFromConstants('炼器石', 10) || { name: '炼器石', cost: 10, item: { name: '炼器石', type: ItemType.Material, description: '用于强化法宝的基础材料。', quantity: 1, rarity: '普通' } },
   createPillItem('聚气丹', 20),
-  { name: '紫猴花', cost: 50, item: { name: '紫猴花', type: ItemType.Herb, description: '炼制洗髓丹的材料，生长在悬崖峭壁。', quantity: 1, rarity: '稀有' } },
+  createItemFromConstants('紫猴花', 50) || { name: '紫猴花', cost: 50, item: { name: '紫猴花', type: ItemType.Herb, description: '炼制洗髓丹的材料，生长在悬崖峭壁。', quantity: 1, rarity: '稀有' } },
   createPillItem('洗髓丹', 100),
   createPillItem('筑基丹', 1000),
-  { name: '高阶妖丹', cost: 500, item: { name: '高阶妖丹', type: ItemType.Material, description: '强大妖兽的内丹，灵气逼人。', quantity: 1, rarity: '稀有' } },
-  { name: '强化石', cost: 30, item: { name: '强化石', type: ItemType.Material, description: '用于强化法宝的珍贵材料。', quantity: 1, rarity: '稀有' } },
+  createItemFromConstants('高阶妖丹', 500) || { name: '高阶妖丹', cost: 500, item: { name: '高阶妖丹', type: ItemType.Material, description: '强大妖兽的内丹，灵气逼人。', quantity: 1, rarity: '稀有' } },
+  createItemFromConstants('聚灵草', 25) || { name: '聚灵草', cost: 25, item: { name: '聚灵草', type: ItemType.Herb, description: '吸收天地灵气的草药。', quantity: 1, rarity: '普通' } },
+  createItemFromConstants('玄铁', 40) || { name: '玄铁', cost: 40, item: { name: '玄铁', type: ItemType.Material, description: '珍贵的炼器材料。', quantity: 1, rarity: '稀有' } },
+  createItemFromConstants('星辰石', 60) || { name: '星辰石', cost: 60, item: { name: '星辰石', type: ItemType.Material, description: '蕴含星辰之力的稀有矿石。', quantity: 1, rarity: '稀有' } },
+  createItemFromConstants('精铁', 20) || { name: '精铁', cost: 20, item: { name: '精铁', type: ItemType.Material, description: '优质的炼器材料。', quantity: 1, rarity: '普通' } },
+  createItemFromConstants('天灵草', 35) || { name: '天灵草', cost: 35, item: { name: '天灵草', type: ItemType.Herb, description: '珍贵的灵草，可用于炼制高级丹药。', quantity: 1, rarity: '稀有' } },
   createPillItem('凝神丹', 80),
   createPillItem('强体丹', 80),
-  { name: '回血丹', cost: 15, item: { name: '回血丹', type: ItemType.Pill, description: '快速恢复气血。', quantity: 1, rarity: '普通', effect: { hp: 50 } } },
-  { name: '聚灵草', cost: 25, item: { name: '聚灵草', type: ItemType.Herb, description: '吸收天地灵气的草药。', quantity: 1, rarity: '普通' } },
-  { name: '玄铁', cost: 40, item: { name: '玄铁', type: ItemType.Material, description: '珍贵的炼器材料。', quantity: 1, rarity: '稀有' } },
-  { name: '星辰石', cost: 60, item: { name: '星辰石', type: ItemType.Material, description: '蕴含星辰之力的稀有矿石。', quantity: 1, rarity: '稀有' } },
-  { name: '精铁', cost: 20, item: { name: '精铁', type: ItemType.Material, description: '优质的炼器材料。', quantity: 1, rarity: '普通' } },
-  { name: '天灵草', cost: 35, item: { name: '天灵草', type: ItemType.Herb, description: '珍贵的灵草，可用于炼制高级丹药。', quantity: 1, rarity: '稀有' } },
-  // 新增装备类物品
+  // 回血丹可能不在常量池，使用默认值
+  createPillItem('回血丹', 15, { type: ItemType.Pill, description: '快速恢复气血。', rarity: '普通', effect: { hp: 50 } }),
+  // 装备类物品 - 尝试从常量池获取，如果不存在则使用默认值
+  createItemFromConstants('青钢剑', 300) || { name: '青钢剑', cost: 300, item: { name: '青钢剑', type: ItemType.Weapon, description: '青钢锻造的利剑，攻击力不俗。', quantity: 1, rarity: '稀有', isEquippable: true, equipmentSlot: EquipmentSlot.Weapon, effect: { attack: 35, speed: 5 } } },
+  // 其他不在常量池的物品保留原样（这些可能是特殊物品，需要后续添加到常量池）
+  { name: '强化石', cost: 30, item: { name: '强化石', type: ItemType.Material, description: '用于强化法宝的珍贵材料。', quantity: 1, rarity: '稀有' } },
   { name: '宗门制式剑', cost: 150, item: { name: '宗门制式剑', type: ItemType.Weapon, description: '宗门统一配发的制式武器，基础攻击力。', quantity: 1, rarity: '普通', isEquippable: true, equipmentSlot: EquipmentSlot.Weapon, effect: { attack: 15 } } },
   { name: '宗门制式甲', cost: 120, item: { name: '宗门制式甲', type: ItemType.Armor, description: '宗门统一配发的制式护甲，基础防御力。', quantity: 1, rarity: '普通', isEquippable: true, equipmentSlot: EquipmentSlot.Chest, effect: { defense: 12, hp: 30 } } },
-  { name: '青钢剑', cost: 300, item: { name: '青钢剑', type: ItemType.Weapon, description: '青钢锻造的利剑，攻击力不俗。', quantity: 1, rarity: '稀有', isEquippable: true, equipmentSlot: EquipmentSlot.Weapon, effect: { attack: 35, speed: 5 } } },
   { name: '玄铁甲', cost: 400, item: { name: '玄铁甲', type: ItemType.Armor, description: '玄铁打造的护甲，防御力强劲。', quantity: 1, rarity: '稀有', isEquippable: true, equipmentSlot: EquipmentSlot.Chest, effect: { defense: 40, hp: 80 } } },
   { name: '灵玉护符', cost: 250, item: { name: '灵玉护符', type: ItemType.Accessory, description: '蕴含灵气的护符，可提升神识。', quantity: 1, rarity: '稀有', isEquippable: true, equipmentSlot: EquipmentSlot.Accessory1, effect: { spirit: 20, hp: 50 } } },
-  // 新增特殊消耗品
   { name: '经验符', cost: 200, item: { name: '经验符', type: ItemType.Material, description: '使用后下次修炼获得双倍经验。', quantity: 1, rarity: '稀有' } },
   { name: '幸运符', cost: 180, item: { name: '幸运符', type: ItemType.Material, description: '使用后短时间内提升幸运值，增加奇遇概率。', quantity: 1, rarity: '稀有' } },
   { name: '护体符', cost: 150, item: { name: '护体符', type: ItemType.Material, description: '使用后短时间内提升防御力。', quantity: 1, rarity: '普通' } },
   { name: '聚灵符', cost: 220, item: { name: '聚灵符', type: ItemType.Material, description: '使用后短时间内提升修炼速度。', quantity: 1, rarity: '稀有' } },
-  // 新增材料
-  { name: '妖兽内丹', cost: 80, item: { name: '妖兽内丹', type: ItemType.Material, description: '妖兽的内丹，可用于炼丹或炼器。', quantity: 1, rarity: '普通' } },
-  { name: '符纸', cost: 30, item: { name: '符纸', type: ItemType.Material, description: '制作符箓的基础材料。', quantity: 1, rarity: '普通' } },
-  { name: '灵矿', cost: 45, item: { name: '灵矿', type: ItemType.Material, description: '蕴含灵气的矿石，炼器材料。', quantity: 1, rarity: '普通' } },
-];
+  createItemFromConstants('妖兽内丹', 80) || { name: '妖兽内丹', cost: 80, item: { name: '妖兽内丹', type: ItemType.Material, description: '妖兽的内丹，可用于炼丹或炼器。', quantity: 1, rarity: '普通' } },
+  createItemFromConstants('符纸', 30) || { name: '符纸', cost: 30, item: { name: '符纸', type: ItemType.Material, description: '制作符箓的基础材料。', quantity: 1, rarity: '普通' } },
+  createItemFromConstants('灵矿', 45) || { name: '灵矿', cost: 45, item: { name: '灵矿', type: ItemType.Material, description: '蕴含灵气的矿石，炼器材料。', quantity: 1, rarity: '普通' } },
+].filter((item): item is { name: string; cost: number; item: Omit<Item, 'id'> } => item !== null);
 
-// 二楼高级物品池
+// 二楼高级物品池 - 从常量池获取
 const SECT_SHOP_ITEM_POOL_FLOOR2: Array<{ name: string; cost: number; item: Omit<Item, 'id'> }> = [
-  { name: '天外陨铁', cost: 800, item: { name: '天外陨铁', type: ItemType.Material, description: '来自天外的神秘金属，炼制仙器的材料。', quantity: 1, rarity: '传说' } },
-  { name: '仙晶', cost: 1500, item: { name: '仙晶', type: ItemType.Material, description: '蕴含仙气的晶石，极其珍贵。', quantity: 1, rarity: '仙品' } },
+  // 从常量池获取的物品
+  createItemFromConstants('天外陨铁', 800) || { name: '天外陨铁', cost: 800, item: { name: '天外陨铁', type: ItemType.Material, description: '来自天外的神秘金属，炼制仙器的材料。', quantity: 1, rarity: '传说' } },
+  createItemFromConstants('仙晶', 1500) || { name: '仙晶', cost: 1500, item: { name: '仙晶', type: ItemType.Material, description: '蕴含仙气的晶石，极其珍贵。', quantity: 1, rarity: '仙品' } },
   createPillItem('九转金丹', 3000),
   createPillItem('天元丹', 2000),
-  { name: '万年灵乳', cost: 1200, item: { name: '万年灵乳', type: ItemType.Material, description: '万年灵脉中凝聚的精华，炼制仙丹的珍贵材料。', quantity: 1, rarity: '传说' } },
-  { name: '九叶芝草', cost: 1000, item: { name: '九叶芝草', type: ItemType.Herb, description: '九叶灵芝，炼制仙丹的顶级材料。', quantity: 1, rarity: '传说' } },
-  { name: '龙鳞果', cost: 900, item: { name: '龙鳞果', type: ItemType.Herb, description: '龙族栖息地生长的灵果，蕴含龙族血脉之力。', quantity: 1, rarity: '传说' } },
-  // 新增高级装备
-  { name: '星辰剑', cost: 2000, item: { name: '星辰剑', type: ItemType.Weapon, description: '蕴含星辰之力的宝剑，威力强大。', quantity: 1, rarity: '传说', isEquippable: true, equipmentSlot: EquipmentSlot.Weapon, effect: { attack: 80, spirit: 30, speed: 15 } } },
+  createItemFromConstants('万年灵乳', 1200) || { name: '万年灵乳', cost: 1200, item: { name: '万年灵乳', type: ItemType.Material, description: '万年灵脉中凝聚的精华，炼制仙丹的珍贵材料。', quantity: 1, rarity: '传说' } },
+  createItemFromConstants('九叶芝草', 1000) || { name: '九叶芝草', cost: 1000, item: { name: '九叶芝草', type: ItemType.Herb, description: '九叶灵芝，炼制仙丹的顶级材料。', quantity: 1, rarity: '传说' } },
+  createItemFromConstants('龙鳞果', 900) || { name: '龙鳞果', cost: 900, item: { name: '龙鳞果', type: ItemType.Herb, description: '龙族栖息地生长的灵果，蕴含龙族血脉之力。', quantity: 1, rarity: '传说' } },
+  // 装备类物品 - 尝试从常量池获取
+  createItemFromConstants('星辰剑', 2000) || { name: '星辰剑', cost: 2000, item: { name: '星辰剑', type: ItemType.Weapon, description: '蕴含星辰之力的宝剑，威力强大。', quantity: 1, rarity: '传说', isEquippable: true, equipmentSlot: EquipmentSlot.Weapon, effect: { attack: 80, spirit: 30, speed: 15 } } },
+  // 其他不在常量池的物品保留原样（这些可能是特殊物品，需要后续添加到常量池）
   { name: '龙鳞甲', cost: 2500, item: { name: '龙鳞甲', type: ItemType.Armor, description: '龙鳞制成的护甲，防御力极强。', quantity: 1, rarity: '传说', isEquippable: true, equipmentSlot: EquipmentSlot.Chest, effect: { defense: 90, hp: 200, physique: 25 } } },
   { name: '仙灵护符', cost: 1800, item: { name: '仙灵护符', type: ItemType.Accessory, description: '仙气缭绕的护符，可大幅提升属性。', quantity: 1, rarity: '传说', isEquippable: true, equipmentSlot: EquipmentSlot.Accessory1, effect: { spirit: 50, hp: 150, exp: 100 } } },
   { name: '天阶功法残卷', cost: 3500, item: { name: '天阶功法残卷', type: ItemType.Material, description: '天阶功法的残卷，可用于学习或研究。', quantity: 1, rarity: '传说' } },
@@ -1537,7 +1259,7 @@ const SECT_SHOP_ITEM_POOL_FLOOR2: Array<{ name: string; cost: number; item: Omit
   { name: '仙品丹药材料包', cost: 2500, item: { name: '仙品丹药材料包', type: ItemType.Material, description: '包含多种仙品丹药材料的礼包。', quantity: 1, rarity: '仙品' } },
   { name: '灵兽契约符', cost: 2200, item: { name: '灵兽契约符', type: ItemType.Material, description: '用于与灵兽建立契约的符箓。', quantity: 1, rarity: '传说' } },
   { name: '天劫护符', cost: 2800, item: { name: '天劫护符', type: ItemType.Accessory, description: '可抵御天劫的护符，渡劫时使用。', quantity: 1, rarity: '传说', isEquippable: true, equipmentSlot: EquipmentSlot.Accessory2, effect: { defense: 60, hp: 300 } } },
-];
+].filter((item): item is { name: string; cost: number; item: Omit<Item, 'id'> } => item !== null);
 
 // 生成宗门商店物品（藏宝阁物品，每次刷新4-8个）
 export const generateSectShopItems = (floor: 1 | 2 = 1): Array<{ name: string; cost: number; item: Omit<Item, 'id'> }> => {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlayerStats, Item, Pet, ItemType, ItemRarity, EquipmentSlot, RealmType } from '../../types';
-import { PET_TEMPLATES, DISCOVERABLE_RECIPES, getRandomPetName, INHERITANCE_ROUTES, REALM_ORDER } from '../../constants';
+import { PET_TEMPLATES, DISCOVERABLE_RECIPES, getRandomPetName, REALM_ORDER } from '../../constants';
 import { uid } from '../../utils/gameUtils';
 import { showConfirm } from '../../utils/toastUtils';
 import { LOOT_ITEMS } from '../../services/battleService';
@@ -40,83 +40,15 @@ const applyItemEffect = (
   let newPets = [...prev.pets];
   const effectLogs: string[] = [];
 
-  // 1. 处理传承石（特殊物品）
+  // 1. 处理传承石（特殊物品）- 已删除传承路线功能，仅提升传承等级
   const isInheritanceStone = item.name === '传承石';
   if (isInheritanceStone) {
-    // 如果已经有传承，提示
-    if (prev.inheritanceRoute) {
-      addLog('你已经获得了传承，无法再次使用传承石。', 'danger');
-      return { ...prev, inventory: newInv, pets: newPets };
-    }
-
-    // 找到所有可用的传承路线（根据境界要求）
-    const getRealmIndex = (realm: RealmType) => REALM_ORDER.indexOf(realm);
-    const playerRealmIndex = getRealmIndex(prev.realm);
-
-    const availableRoutes = INHERITANCE_ROUTES.filter(route => {
-      if (route.unlockRequirement?.realm) {
-        const requiredRealmIndex = getRealmIndex(route.unlockRequirement.realm);
-        return playerRealmIndex >= requiredRealmIndex;
-      }
-      return true; // 没有境界要求的传承路线
-    });
-
-    if (availableRoutes.length === 0) {
-      addLog('你的境界不足以使用传承石，需要达到更高境界。', 'danger');
-      return { ...prev, inventory: newInv, pets: newPets };
-    }
-
-    // 随机选择一个可用的传承路线
-    const randomRoute = availableRoutes[Math.floor(Math.random() * availableRoutes.length)];
-    const routeEffects = randomRoute.baseEffects;
-
-    // 应用传承效果
-    let newAttack = prev.attack + (routeEffects.attack || 0);
-    let newDefense = prev.defense + (routeEffects.defense || 0);
-    let newMaxHp = prev.maxHp + (routeEffects.hp || 0);
-    let newHp = prev.hp + (routeEffects.hp || 0);
-    let newSpirit = prev.spirit + (routeEffects.spirit || 0);
-    let newPhysique = prev.physique + (routeEffects.physique || 0);
-    let newSpeed = prev.speed + (routeEffects.speed || 0);
-
-    addLog(`✨ 你使用了传承石，获得了【${randomRoute.name}】传承！`, 'special');
-    if (routeEffects.attack) {
-      addLog(`攻击力 +${routeEffects.attack}`, 'gain');
-    }
-    if (routeEffects.defense) {
-      addLog(`防御力 +${routeEffects.defense}`, 'gain');
-    }
-    if (routeEffects.hp) {
-      addLog(`气血 +${routeEffects.hp}`, 'gain');
-    }
-    if (routeEffects.spirit) {
-      addLog(`神识 +${routeEffects.spirit}`, 'gain');
-    }
-    if (routeEffects.physique) {
-      addLog(`体魄 +${routeEffects.physique}`, 'gain');
-    }
-    if (routeEffects.speed) {
-      addLog(`速度 +${routeEffects.speed}`, 'gain');
-    }
-    if (routeEffects.expRate) {
-      addLog(`修炼速度 +${(routeEffects.expRate * 100).toFixed(0)}%`, 'gain');
-    }
-
+    addLog(`✨ 你使用了传承石，传承等级 +1！`, 'special');
     return {
       ...newStats,
       inventory: newInv,
       pets: newPets,
-      inheritanceRoute: randomRoute.id,
-      inheritanceSkills: [],
-      inheritanceLevel: 1, // 初始传承等级为1
-      inheritanceExp: 0, // 初始传承经验为0
-      attack: newAttack,
-      defense: newDefense,
-      maxHp: newMaxHp,
-      hp: Math.min(newHp, newMaxHp),
-      spirit: newSpirit,
-      physique: newPhysique,
-      speed: newSpeed,
+      inheritanceLevel: (prev.inheritanceLevel || 0) + 1,
     };
   }
 

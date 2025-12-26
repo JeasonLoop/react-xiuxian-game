@@ -38,7 +38,7 @@ const SecretRealmModal: React.FC<Props> = ({
       onClick={onClose}
     >
       <div
-        className="bg-ink-900 w-full h-[80vh] md:h-auto md:max-w-4xl md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-purple-900 shadow-[0_0_30px_rgba(147,51,234,0.3)] flex flex-col md:max-h-[85vh]"
+        className="bg-ink-900 w-full h-[80vh] md:h-auto md:max-w-4xl md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-purple-900 shadow-[0_0_30px_rgba(147,51,234,0.3)] flex flex-col md:max-h-[85vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-3 md:p-4 border-b border-purple-900 flex justify-between items-center bg-purple-900/20 md:rounded-t">

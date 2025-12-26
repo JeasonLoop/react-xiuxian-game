@@ -9,6 +9,7 @@ import {
   SECT_PROMOTION_BASE_REWARDS,
   SECT_SPECIAL_REWARDS,
   SECT_MASTER_CHALLENGE_REQUIREMENTS,
+  SECTS,
 } from '../constants';
 
 // 战斗结果类型（可能不包含所有字段）
@@ -150,8 +151,82 @@ export function useBattleResultHandler({
           addLog('✨ 你成功挑战了天地之魄，获得了合道期的资格！', 'special');
         }
 
-        if (result.adventureType === 'sect_challenge') {
-          if (result.victory && prev.sectRank === SectRank.Elder) {
+        // 处理追杀战斗结果（只有在追杀状态下才处理，正常挑战宗主不在这里处理）
+        const isHuntBattle = result.adventureType === 'sect_challenge' &&
+          prev.sectHuntSectId &&
+          prev.sectHuntEndTime &&
+          prev.sectHuntEndTime > Date.now() &&
+          prev.sectId === null; // 确保不是在宗门内正常挑战
+
+        if (isHuntBattle && result.victory) {
+          const huntLevel = prev.sectHuntLevel || 0;
+          const huntSectId = prev.sectHuntSectId;
+
+          if (huntLevel >= 3) {
+            // 战胜宗主，成为宗主
+            // 优先使用保存的宗门名称，否则从SECTS中查找，最后使用ID
+            let sectName = SECTS.find((s) => s.id === huntSectId)?.name || huntSectId || prev.sectHuntSectName;
+            if (!sectName) {
+              sectName = SECTS.find((s) => s.id === huntSectId)?.name || huntSectId;
+            }
+
+            addLog(`🎉 你战胜了【${sectName}】的宗主！宗门上下无不震惊，你正式接管了宗门，成为新一代宗主！`, 'special');
+
+            newSectRank = SectRank.Leader;
+            finalSectMasterId = prev.id || 'player-leader';
+            finalSectContribution = 0;
+
+            return {
+              ...prev,
+              hp: newHp,
+              exp: newExp,
+              spiritStones: newSpiritStones,
+              statistics: newStatistics,
+              inventory: newInventory,
+              pets: newPets,
+              sectId: huntSectId,
+              sectRank: newSectRank,
+              sectMasterId: finalSectMasterId,
+              sectContribution: finalSectContribution,
+              sectHuntEndTime: null, // 清除追杀状态
+              sectHuntLevel: 0,
+              sectHuntSectId: null,
+              sectHuntSectName: null,
+              daoCombiningChallenged: newDaoCombiningChallenged,
+            };
+          } else {
+            // 击杀宗门弟子/长老，增加追杀强度
+            const newHuntLevel = Math.min(3, huntLevel + 1);
+            const levelNames = ['普通弟子', '精英弟子', '长老', '宗主'];
+            // 优先使用保存的宗门名称，否则从SECTS中查找，最后使用ID
+            let sectName = prev.sectHuntSectName;
+            if (!sectName) {
+              const sect = SECTS.find((s) => s.id === huntSectId);
+              sectName = sect ? sect.name : huntSectId;
+            }
+
+            addLog(`⚠️ 你击杀了【${sectName}】的${levelNames[huntLevel]}！宗门震怒，将派出更强的追杀者！`, 'danger');
+
+            return {
+              ...prev,
+              hp: newHp,
+              exp: newExp,
+              spiritStones: newSpiritStones,
+              statistics: newStatistics,
+              inventory: newInventory,
+              pets: newPets,
+              sectRank: newSectRank,
+              sectMasterId: finalSectMasterId,
+              sectContribution: finalSectContribution,
+              sectHuntLevel: newHuntLevel,
+              daoCombiningChallenged: newDaoCombiningChallenged,
+            };
+          }
+        }
+
+        // 正常挑战宗主的逻辑（只有在宗门内且是长老时才处理）
+        if (result.adventureType === 'sect_challenge' && prev.sectId && prev.sectRank === SectRank.Elder) {
+          if (result.victory) {
             newSectRank = SectRank.Leader;
             finalSectMasterId = prev.id || 'player-leader';
             finalSectContribution += SECT_PROMOTION_BASE_REWARDS[SectRank.Leader].contribution;

@@ -47,7 +47,10 @@ export function useKeyboardShortcuts({
 
       // 遍历所有快捷键配置
       for (const shortcut of shortcuts) {
-        const keyMatches = event.key.toLowerCase() === shortcut.key.toLowerCase();
+        // 处理空格键的特殊情况
+        const eventKey = event.key === ' ' ? ' ' : event.key.toLowerCase();
+        const shortcutKey = shortcut.key === ' ' ? ' ' : shortcut.key.toLowerCase();
+        const keyMatches = eventKey === shortcutKey;
         const ctrlMatches = shortcut.ctrl ? event.ctrlKey : !event.ctrlKey;
         const shiftMatches = shortcut.shift ? event.shiftKey : !event.shiftKey;
         const altMatches = shortcut.alt ? event.altKey : !event.altKey;
