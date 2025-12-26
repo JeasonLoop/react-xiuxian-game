@@ -1004,12 +1004,8 @@ export const generateRandomSectTasks = (
     const realmMultiplier = getRealmMultiplier(playerRealm, recommendedRealm);
 
     let cost: RandomSectTask['cost'] = {};
-    let baseContribution = Math.floor(
-      (10 + Math.random() * 40) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-    );
-
     let reward: RandomSectTask['reward'] = {
-      contribution: baseContribution + qualityConfig.contributionBonus,
+      contribution: 0,
     };
 
     const timeCosts: Array<'instant' | 'short' | 'medium' | 'long'> = [
@@ -1020,351 +1016,38 @@ export const generateRandomSectTasks = (
     ];
     const timeCost = timeCosts[Math.floor(Math.random() * timeCosts.length)];
 
-    // 根据任务类型设置具体奖励和消耗
-    switch (type) {
-      case 'patrol':
-        reward.contribution = Math.floor(
-          (10 + Math.random() * 20) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        break;
-      case 'donate_stone':
-        cost.spiritStones = Math.floor((50 + Math.random() * 150) * difficultyMultiplier);
-        reward.contribution = Math.floor(
-          (20 + Math.random() * 30) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.spiritStones = Math.floor(cost.spiritStones * 0.3);
-        break;
-      case 'donate_herb':
-        const herbNames = ['聚灵草', '紫猴花', '天灵草', '血参', '灵芝'];
-        cost.items = [
-          {
-            name: herbNames[Math.floor(Math.random() * herbNames.length)],
-            quantity: Math.floor((1 + Math.random() * 3) * difficultyMultiplier),
-          },
-        ];
-        reward.contribution = Math.floor(
-          (15 + Math.random() * 25) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        break;
-      case 'collect':
-        const materialNames = ['炼器石', '妖兽内丹', '灵矿', '符纸'];
-        cost.items = [
-          {
-            name: materialNames[Math.floor(Math.random() * materialNames.length)],
-            quantity: Math.floor((1 + Math.random() * 2) * difficultyMultiplier),
-          },
-        ];
-        reward.contribution = Math.floor(
-          (25 + Math.random() * 35) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.items = [
-          {
-            name: '聚气丹',
-            quantity: Math.floor(difficultyMultiplier * qualityConfig.rewardMultiplier),
-          },
-        ];
-        break;
-      case 'hunt':
-        reward.contribution = Math.floor(
-          (30 + Math.random() * 40) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (50 + Math.random() * 100) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+    // 使用 TASK_TYPE_CONFIGS 配置来生成奖励和消耗，避免重复代码
+    const taskConfig = TASK_TYPE_CONFIGS[type];
+    if (taskConfig) {
+      // 使用配置中的 getCost 函数生成消耗
+      if (taskConfig.getCost) {
+        const configCost = taskConfig.getCost(difficultyMultiplier);
+        cost = { ...cost, ...configCost };
+      }
+
+      // 使用配置中的 getReward 函数生成奖励
+      if (taskConfig.getReward) {
+        const configReward = taskConfig.getReward(
+          rankMultiplier,
+          difficultyMultiplier,
+          qualityConfig.rewardMultiplier,
+          realmMultiplier,
+          quality
         );
-        break;
-      case 'alchemy':
-        const alchemyMaterials = ['聚灵草', '紫猴花', '天灵草', '血参'];
-        cost.items = [
-          {
-            name: alchemyMaterials[Math.floor(Math.random() * alchemyMaterials.length)],
-            quantity: Math.floor((2 + Math.random() * 3) * difficultyMultiplier),
-          },
-        ];
-        reward.contribution = Math.floor(
-          (30 + Math.random() * 40) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.items = [
-          {
-            name: '聚气丹',
-            quantity: Math.floor((2 + Math.random() * 3) * difficultyMultiplier * qualityConfig.rewardMultiplier),
-          },
-        ];
-        break;
-      case 'forge':
-        const forgeMaterials = ['炼器石', '精铁', '灵矿', '妖兽内丹'];
-        cost.items = [
-          {
-            name: forgeMaterials[Math.floor(Math.random() * forgeMaterials.length)],
-            quantity: Math.floor((2 + Math.random() * 3) * difficultyMultiplier),
-          },
-        ];
-        reward.contribution = Math.floor(
-          (35 + Math.random() * 45) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.spiritStones = Math.floor(
-          (50 + Math.random() * 100) * difficultyMultiplier * qualityConfig.rewardMultiplier
-        );
-        break;
-      case 'teach':
-        reward.contribution = Math.floor(
-          (25 + Math.random() * 35) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (30 + Math.random() * 60) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        break;
-      case 'defend':
-        reward.contribution = Math.floor(
-          (40 + Math.random() * 50) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (60 + Math.random() * 120) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        break;
-      case 'explore':
-        reward.contribution = Math.floor(
-          (35 + Math.random() * 45) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.items = [
-          {
-            name: '炼器石',
-            quantity: Math.floor((1 + Math.random() * 2) * difficultyMultiplier * qualityConfig.rewardMultiplier),
-          },
-        ];
-        // 传说/仙品探索任务可能获得稀有物品
-        if (quality === '传说' || quality === '仙品') {
-          if (!reward.items) reward.items = [];
-          reward.items.push({
-            name: quality === '仙品' ? '仙品材料' : '传说材料',
-            quantity: 1,
-          });
-        }
-        break;
-      case 'trade':
-        reward.contribution = Math.floor(
-          (30 + Math.random() * 40) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.spiritStones = Math.floor(
-          (100 + Math.random() * 200) * difficultyMultiplier * qualityConfig.rewardMultiplier
-        );
-        break;
-      case 'research':
-        reward.contribution = Math.floor(
-          (20 + Math.random() * 30) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (80 + Math.random() * 150) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        break;
-      case 'cultivate':
-        reward.contribution = Math.floor(
-          (15 + Math.random() * 25) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.items = [
-          {
-            name: '聚灵草',
-            quantity: Math.floor((3 + Math.random() * 5) * difficultyMultiplier * qualityConfig.rewardMultiplier),
-          },
-        ];
-        break;
-      case 'maintain':
-        const maintainMaterials = ['炼器石', '符纸', '灵矿'];
-        cost.items = [
-          {
-            name: maintainMaterials[Math.floor(Math.random() * maintainMaterials.length)],
-            quantity: Math.floor((1 + Math.random() * 2) * difficultyMultiplier),
-          },
-        ];
-        reward.contribution = Math.floor(
-          (25 + Math.random() * 35) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        break;
-      case 'diplomacy':
-        reward.contribution = Math.floor(
-          (50 + Math.random() * 70) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.spiritStones = Math.floor(
-          (200 + Math.random() * 300) * difficultyMultiplier * qualityConfig.rewardMultiplier
-        );
-        // 外交任务可能获得特殊奖励
-        if (quality === '传说' || quality === '仙品') {
-          reward.items = [
-            {
-              name: '外交信物',
-              quantity: 1,
-            },
-          ];
-        }
-        break;
-      case 'trial':
-        reward.contribution = Math.floor(
-          (45 + Math.random() * 55) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (100 + Math.random() * 200) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        reward.spiritStones = Math.floor(
-          (150 + Math.random() * 250) * difficultyMultiplier * qualityConfig.rewardMultiplier
-        );
-        break;
-      case 'rescue':
-        reward.contribution = Math.floor(
-          (40 + Math.random() * 50) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (70 + Math.random() * 130) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        break;
-      case 'investigate':
-        reward.contribution = Math.floor(
-          (30 + Math.random() * 40) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (40 + Math.random() * 80) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        break;
-      case 'battle':
-        reward.contribution = Math.floor(
-          (35 + Math.random() * 45) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (60 + Math.random() * 120) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        break;
-      case 'treasure_hunt':
-        reward.contribution = Math.floor(
-          (40 + Math.random() * 50) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.items = [
-          {
-            name: '炼器石',
-            quantity: Math.floor((2 + Math.random() * 3) * difficultyMultiplier * qualityConfig.rewardMultiplier),
-          },
-        ];
-        // 高品质寻宝任务可能获得稀有物品
-        if (quality === '传说' || quality === '仙品') {
-          if (!reward.items) reward.items = [];
-          reward.items.push({
-            name: quality === '仙品' ? '仙品法宝碎片' : '传说法宝碎片',
-            quantity: 1,
-          });
-        }
-        break;
-      case 'escort':
-        reward.contribution = Math.floor(
-          (45 + Math.random() * 55) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.spiritStones = Math.floor(
-          (150 + Math.random() * 250) * difficultyMultiplier * qualityConfig.rewardMultiplier
-        );
-        break;
-      case 'assassination':
-        reward.contribution = Math.floor(
-          (50 + Math.random() * 70) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (80 + Math.random() * 150) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        reward.spiritStones = Math.floor(
-          (200 + Math.random() * 300) * difficultyMultiplier * qualityConfig.rewardMultiplier
-        );
-        break;
-      case 'artifact_repair':
-        const repairMaterials = ['炼器石', '精铁', '玄铁', '星辰石'];
-        cost.items = [
-          {
-            name: repairMaterials[Math.floor(Math.random() * repairMaterials.length)],
-            quantity: Math.floor((2 + Math.random() * 3) * difficultyMultiplier),
-          },
-        ];
-        reward.contribution = Math.floor(
-          (30 + Math.random() * 40) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.items = [
-          {
-            name: '强化石',
-            quantity: Math.floor((1 + Math.random() * 2) * difficultyMultiplier * qualityConfig.rewardMultiplier),
-          },
-        ];
-        break;
-      case 'spirit_beast':
-        reward.contribution = Math.floor(
-          (40 + Math.random() * 50) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (70 + Math.random() * 130) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        // 高品质灵兽任务可能获得灵宠相关物品
-        if (quality === '传说' || quality === '仙品') {
-          reward.items = [
-            {
-              name: quality === '仙品' ? '仙品灵兽内丹' : '传说灵兽内丹',
-              quantity: 1,
-            },
-          ];
-        }
-        break;
-      case 'sect_war':
-        reward.contribution = Math.floor(
-          (60 + Math.random() * 80) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (100 + Math.random() * 200) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        reward.spiritStones = Math.floor(
-          (300 + Math.random() * 500) * difficultyMultiplier * qualityConfig.rewardMultiplier
-        );
-        break;
-      case 'inheritance':
-        reward.contribution = Math.floor(
-          (50 + Math.random() * 70) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (150 + Math.random() * 300) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        // 传承任务可能获得功法相关物品
-        if (quality === '传说' || quality === '仙品') {
-          reward.items = [
-            {
-              name: '传承玉简',
-              quantity: 1,
-            },
-          ];
-        }
-        break;
-      case 'tribulation':
-        reward.contribution = Math.floor(
-          (55 + Math.random() * 75) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.exp = Math.floor(
-          (200 + Math.random() * 400) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        );
-        reward.spiritStones = Math.floor(
-          (250 + Math.random() * 450) * difficultyMultiplier * qualityConfig.rewardMultiplier
-        );
-        break;
-      case 'alchemy_master':
-        const masterMaterials = ['万年灵乳', '九叶芝草', '龙鳞果', '仙晶'];
-        cost.items = [
-          {
-            name: masterMaterials[Math.floor(Math.random() * masterMaterials.length)],
-            quantity: Math.floor((1 + Math.random() * 2) * difficultyMultiplier),
-          },
-        ];
-        reward.contribution = Math.floor(
-          (40 + Math.random() * 60) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
-        ) + qualityConfig.contributionBonus;
-        reward.items = [
-          {
-            name: quality === '仙品' ? '九转金丹' : quality === '传说' ? '天元丹' : '筑基丹',
-            quantity: Math.floor((1 + Math.random() * 2) * difficultyMultiplier * qualityConfig.rewardMultiplier),
-          },
-        ];
-        break;
+        reward = {
+          ...configReward,
+          contribution: (configReward.contribution || 0) + qualityConfig.contributionBonus,
+        };
+      }
+    } else {
+      // 如果没有配置，使用默认值（防御性处理）
+      reward.contribution = Math.floor(
+        (10 + Math.random() * 40) * rankMultiplier * difficultyMultiplier * qualityConfig.rewardMultiplier * realmMultiplier
+      ) + qualityConfig.contributionBonus;
     }
 
-    // 确定是否需要战斗
-    const requiresCombat = ['hunt', 'defend', 'battle', 'escort', 'assassination', 'sect_war', 'spirit_beast'].includes(type);
+    // 确定是否需要战斗（使用配置中的信息）
+    const requiresCombat = taskConfig?.requiresCombat ?? false;
 
     // 计算成功率（基于难度和品质）
     const baseSuccessRate = {
@@ -1417,20 +1100,8 @@ export const generateRandomSectTasks = (
       name = `【每日特殊】${name}`;
     }
 
-    // 任务推荐系统（根据玩家属性推荐）
-    const recommendedFor: RandomSectTask['recommendedFor'] = {};
-    if (type === 'battle' || type === 'hunt' || type === 'defend') {
-      recommendedFor.highAttack = true;
-    }
-    if (type === 'defend' || type === 'escort') {
-      recommendedFor.highDefense = true;
-    }
-    if (type === 'research' || type === 'alchemy' || type === 'forge') {
-      recommendedFor.highSpirit = true;
-    }
-    if (type === 'patrol' || type === 'investigate' || type === 'assassination') {
-      recommendedFor.highSpeed = true;
-    }
+    // 任务推荐系统（使用配置中的信息）
+    const recommendedFor: RandomSectTask['recommendedFor'] = taskConfig?.recommendedFor || {};
 
     // 任务类型连续完成加成（根据任务类型计算）
     const typeBonus = Math.floor(Math.random() * 20) + 5; // 5-25%加成
@@ -1459,9 +1130,6 @@ export const generateRandomSectTasks = (
 
   return tasks;
 };
-
-// 从常量中获取丹药定义的辅助函数
-import { getItemFromConstants } from '../utils/itemConstantsUtils';
 
 const createPillItem = (pillName: string, cost: number, defaultItem?: Partial<Item>): { name: string; cost: number; item: Omit<Item, 'id'> } => {
   // 优先从常量池获取

@@ -160,22 +160,22 @@ const PetModal: React.FC<Props> = ({
                 <div className="flex items-center gap-2">
                   <Swords className="text-red-400" size={16} />
                   <span className="text-sm">
-                    攻击: {activePet.stats.attack}
+                    攻击: {Math.floor(activePet.stats.attack)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Shield className="text-blue-400" size={16} />
                   <span className="text-sm">
-                    防御: {activePet.stats.defense}
+                    防御: {Math.floor(activePet.stats.defense)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Heart className="text-green-400" size={16} />
-                  <span className="text-sm">气血: {activePet.stats.hp}</span>
+                  <span className="text-sm">气血: {Math.floor(activePet.stats.hp)}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Zap className="text-yellow-400" size={16} />
-                  <span className="text-sm">速度: {activePet.stats.speed}</span>
+                  <span className="text-sm">速度: {Math.floor(activePet.stats.speed)}</span>
                 </div>
               </div>
               <div className="mb-3">
@@ -443,10 +443,10 @@ const PetModal: React.FC<Props> = ({
                       {pet.species}
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-xs mb-2">
-                      <div>攻击: {pet.stats.attack}</div>
-                      <div>防御: {pet.stats.defense}</div>
-                      <div>气血: {pet.stats.hp}</div>
-                      <div>速度: {pet.stats.speed}</div>
+                      <div>攻击: {Math.floor(pet.stats.attack)}</div>
+                      <div>防御: {Math.floor(pet.stats.defense)}</div>
+                      <div>气血: {Math.floor(pet.stats.hp)}</div>
+                      <div>速度: {Math.floor(pet.stats.speed)}</div>
                     </div>
                     <div className="text-xs text-stone-500 mb-2">
                       经验: {pet.exp} / {pet.maxExp}

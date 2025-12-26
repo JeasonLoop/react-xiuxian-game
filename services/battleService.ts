@@ -260,17 +260,24 @@ const generateLoot = (
   // 用于追踪已选择的物品类型，避免连续获得相同类型
   const selectedTypes: string[] = [];
 
-  // 根据敌人强度决定奖励数量（1-3个物品）
+  // 根据敌人强度决定奖励数量（1-4个物品）
   const numItems =
     enemyStrength < 0.7
-      ? 1
+      ? 1 // 弱敌：1个物品
       : enemyStrength < 1.0
-        ? 1 + Math.floor(Math.random() * 2)
-        : 2 + Math.floor(Math.random() * 2);
+        ? 1 + Math.floor(Math.random() * 2) // 普通：1-2个物品
+        : 2 + Math.floor(Math.random() * 3); // 强敌：2-4个物品
 
   // 根据玩家境界调整稀有度概率（高境界更容易获得高级物品）
   const realmIndex = REALM_ORDER.indexOf(playerRealm);
-  const realmRarityBonus = realmIndex * 0.05; // 每个境界增加5%高级物品概率
+  // 境界加成：每个境界增加稀有度概率，高境界加成更明显
+  // 基础加成：每个境界增加2%仙品、3%传说、5%稀有概率
+  // 高境界（第4个境界及以上）额外获得50%加成
+  const isHighRealm = realmIndex >= 3; // 元婴期及以上
+  const realmMultiplier = isHighRealm ? 1.5 : 1.0;
+  const realmBonusImmortal = Math.min(0.15, realmIndex * 0.02 * realmMultiplier); // 仙品加成，最高15%
+  const realmBonusLegend = Math.min(0.20, realmIndex * 0.03 * realmMultiplier); // 传说加成，最高20%
+  const realmBonusRare = Math.min(0.25, realmIndex * 0.05 * realmMultiplier); // 稀有加成，最高25%
 
   // 根据敌人强度和类型决定稀有度分布
   const getRarityChance = (): ItemRarity => {
@@ -278,39 +285,41 @@ const generateLoot = (
     if (adventureType === 'secret_realm') {
       // 秘境：根据风险等级调整稀有度概率
       if (riskLevel === '极度危险') {
-        // 极度危险：更高概率获得顶级物品（降低仙品概率以平衡）
-        if (roll < 0.15 + realmRarityBonus) return '仙品'; // 从20%降低到15%
-        if (roll < 0.5 + realmRarityBonus * 0.5) return '传说';
-        if (roll < 0.85 + realmRarityBonus * 0.3) return '稀有';
+        // 极度危险：更高概率获得顶级物品
+        if (roll < 0.15 + realmBonusImmortal) return '仙品';
+        if (roll < 0.5 + realmBonusLegend) return '传说';
+        if (roll < 0.85 + realmBonusRare) return '稀有';
         return '普通';
       } else if (riskLevel === '高') {
         // 高风险：较高概率
-        if (roll < 0.12 + realmRarityBonus) return '仙品';
-        if (roll < 0.4 + realmRarityBonus * 0.5) return '传说';
-        if (roll < 0.75 + realmRarityBonus * 0.3) return '稀有';
+        if (roll < 0.12 + realmBonusImmortal) return '仙品';
+        if (roll < 0.4 + realmBonusLegend) return '传说';
+        if (roll < 0.75 + realmBonusRare) return '稀有';
         return '普通';
       } else if (riskLevel === '中') {
         // 中风险：中等概率
-        if (roll < 0.08 + realmRarityBonus) return '仙品';
-        if (roll < 0.3 + realmRarityBonus * 0.5) return '传说';
-        if (roll < 0.65 + realmRarityBonus * 0.3) return '稀有';
+        if (roll < 0.08 + realmBonusImmortal) return '仙品';
+        if (roll < 0.3 + realmBonusLegend) return '传说';
+        if (roll < 0.65 + realmBonusRare) return '稀有';
         return '普通';
       } else {
         // 低风险：较低概率（但比普通历练高）
-        if (roll < 0.05 + realmRarityBonus) return '仙品';
-        if (roll < 0.2 + realmRarityBonus * 0.5) return '传说';
-        if (roll < 0.55 + realmRarityBonus * 0.3) return '稀有';
+        if (roll < 0.05 + realmBonusImmortal) return '仙品';
+        if (roll < 0.2 + realmBonusLegend) return '传说';
+        if (roll < 0.55 + realmBonusRare) return '稀有';
         return '普通';
       }
     } else if (adventureType === 'lucky') {
-      // 机缘：中等概率
-      if (roll < 0.05 + realmRarityBonus * 0.5) return '传说';
-      if (roll < 0.25 + realmRarityBonus * 0.3) return '稀有';
+      // 机缘：中等概率，境界加成更明显
+      if (roll < 0.02 + realmBonusImmortal * 0.8) return '仙品'; // 机缘历练也可能获得仙品
+      if (roll < 0.05 + realmBonusLegend) return '传说';
+      if (roll < 0.25 + realmBonusRare) return '稀有';
       return '普通';
     } else {
-      // 普通历练：较低概率（提高传说装备概率）
-      if (roll < 0.05 + realmRarityBonus * 0.5) return '传说'; // 从3%提高到5%
-      if (roll < 0.2 + realmRarityBonus * 0.3) return '稀有';
+      // 普通历练：较低概率，但境界加成明显
+      if (roll < 0.01 + realmBonusImmortal * 0.5) return '仙品'; // 普通历练极低概率获得仙品
+      if (roll < 0.05 + realmBonusLegend) return '传说';
+      if (roll < 0.2 + realmBonusRare) return '稀有';
       return '普通';
     }
   };
@@ -323,13 +332,6 @@ const generateLoot = (
     attempts++;
     const targetRarity = getRarityChance();
 
-    // 根据稀有度选择物品类型，避免连续获得相同类型
-    let itemTypeRoll = Math.random();
-    // 如果上一个物品是装备类，降低再次获得装备的概率
-    if (selectedTypes.length > 0 && selectedTypes[selectedTypes.length - 1] !== '草药' && selectedTypes[selectedTypes.length - 1] !== '丹药' && selectedTypes[selectedTypes.length - 1] !== '材料') {
-      itemTypeRoll = Math.random() * 0.7; // 降低装备类概率
-    }
-
     let itemPool: Array<{
       name: string;
       type: ItemType;
@@ -340,8 +342,7 @@ const generateLoot = (
     }>;
     let itemType: string;
 
-    // 使用加权随机选择物品类型，增加随机性
-    // 每次选择时都重新计算权重，避免固定模式
+    // 使用加权随机选择物品类型，每次选择时都重新计算权重，增加随机性
     const typeWeights = [
       { type: 'herbs', weight: 25, name: '草药' },
       { type: 'pills', weight: 25, name: '丹药' },
@@ -354,11 +355,11 @@ const generateLoot = (
       { type: 'recipe', weight: 8, name: '丹方' },
     ];
 
-    // 如果上一个物品是装备类，降低装备类权重
+    // 如果上一个物品是装备类，轻微降低装备类权重（但不过度限制，保持随机性）
     if (selectedTypes.length > 0 && selectedTypes[selectedTypes.length - 1] !== '草药' && selectedTypes[selectedTypes.length - 1] !== '丹药' && selectedTypes[selectedTypes.length - 1] !== '材料') {
       typeWeights.forEach(w => {
         if (['weapons', 'armors', 'accessories', 'rings', 'artifacts'].includes(w.type)) {
-          w.weight *= 0.7; // 降低装备类权重
+          w.weight *= 0.85; // 从0.7提高到0.85，减少限制，增加随机性
         }
       });
     }
@@ -367,7 +368,7 @@ const generateLoot = (
     const totalWeight = typeWeights.reduce((sum, w) => sum + w.weight, 0);
     let randomWeight = Math.random() * totalWeight;
 
-    // 根据权重选择类型
+    // 根据权重选择类型（完全随机）
     let selectedType = typeWeights[0];
     for (const type of typeWeights) {
       randomWeight -= type.weight;
@@ -379,18 +380,32 @@ const generateLoot = (
 
     itemType = selectedType.name;
 
-    // 根据选择的类型设置物品池
+    // 根据选择的类型设置物品池，多次打乱增加随机性
     if (selectedType.type === 'herbs') {
-      itemPool = shuffle([...LOOT_ITEMS.herbs]) as any; // 每次选择前都打乱
+      let pool = [...LOOT_ITEMS.herbs];
+      pool = shuffle(pool);
+      pool = shuffle(pool); // 二次打乱
+      itemPool = pool as any;
     } else if (selectedType.type === 'pills') {
-      itemPool = shuffle([...LOOT_ITEMS.pills]) as any;
+      let pool = [...LOOT_ITEMS.pills];
+      pool = shuffle(pool);
+      pool = shuffle(pool);
+      itemPool = pool as any;
     } else if (selectedType.type === 'materials') {
-      itemPool = shuffle([...LOOT_ITEMS.materials]) as any;
+      let pool = [...LOOT_ITEMS.materials];
+      pool = shuffle(pool);
+      pool = shuffle(pool);
+      itemPool = pool as any;
     } else if (selectedType.type === 'weapons') {
-      itemPool = shuffle([...LOOT_ITEMS.weapons]) as any;
+      let pool = [...LOOT_ITEMS.weapons];
+      pool = shuffle(pool);
+      pool = shuffle(pool);
+      itemPool = pool as any;
     } else if (selectedType.type === 'armors') {
       // 护甲：先打乱所有护甲，然后随机选择部位
-      const allArmors = shuffle([...LOOT_ITEMS.armors]);
+      let allArmors = [...LOOT_ITEMS.armors];
+      allArmors = shuffle(allArmors);
+      allArmors = shuffle(allArmors); // 二次打乱
       const armorSlots = [
         EquipmentSlot.Head,
         EquipmentSlot.Shoulder,
@@ -399,15 +414,26 @@ const generateLoot = (
         EquipmentSlot.Legs,
         EquipmentSlot.Boots,
       ];
-      const selectedSlot = armorSlots[Math.floor(Math.random() * armorSlots.length)];
+      // 打乱槽位顺序，增加随机性
+      const shuffledSlots = shuffle(armorSlots);
+      const selectedSlot = shuffledSlots[Math.floor(Math.random() * shuffledSlots.length)];
       const slotFilteredArmors = allArmors.filter((item: any) => item.equipmentSlot === selectedSlot);
       itemPool = slotFilteredArmors.length > 0 ? slotFilteredArmors : allArmors;
     } else if (selectedType.type === 'accessories') {
-      itemPool = shuffle([...LOOT_ITEMS.accessories]) as any;
+      let pool = [...LOOT_ITEMS.accessories];
+      pool = shuffle(pool);
+      pool = shuffle(pool);
+      itemPool = pool as any;
     } else if (selectedType.type === 'rings') {
-      itemPool = shuffle([...LOOT_ITEMS.rings]) as any;
+      let pool = [...LOOT_ITEMS.rings];
+      pool = shuffle(pool);
+      pool = shuffle(pool);
+      itemPool = pool as any;
     } else if (selectedType.type === 'artifacts') {
-      itemPool = shuffle([...LOOT_ITEMS.artifacts]) as any;
+      let pool = [...LOOT_ITEMS.artifacts];
+      pool = shuffle(pool);
+      pool = shuffle(pool);
+      itemPool = pool as any;
     } else {
       // 丹方
       itemType = '丹方';
@@ -428,8 +454,9 @@ const generateLoot = (
         // 多次打乱可用丹方列表，增加随机性
         let shuffledRecipes = shuffle(availableRecipes);
         shuffledRecipes = shuffle(shuffledRecipes); // 二次打乱
-        // 使用加权随机选择
-        const randomIndex = Math.floor(Math.pow(Math.random(), 0.8) * shuffledRecipes.length);
+        shuffledRecipes = shuffle(shuffledRecipes); // 三次打乱，确保完全随机
+        // 使用完全随机选择，确保每个丹方被选中的概率相等
+        const randomIndex = Math.floor(Math.random() * shuffledRecipes.length);
         const selectedRecipe = shuffledRecipes[randomIndex];
         const recipeKey = `${selectedRecipe.name}丹方-${selectedRecipe.result.rarity}`;
         selectedItems.add(recipeKey);
@@ -485,8 +512,9 @@ const generateLoot = (
       // 多次打乱可用物品列表，增加随机性
       let shuffledItems = shuffle(availableItems);
       shuffledItems = shuffle(shuffledItems); // 二次打乱
-      // 使用加权随机：前面的物品权重稍低，后面的物品权重稍高，但整体保持随机
-      const randomIndex = Math.floor(Math.pow(Math.random(), 0.8) * shuffledItems.length); // 使用幂函数增加随机性
+      shuffledItems = shuffle(shuffledItems); // 三次打乱，确保完全随机
+      // 使用完全随机选择，确保每个物品被选中的概率相等
+      const randomIndex = Math.floor(Math.random() * shuffledItems.length);
       const selected = shuffledItems[randomIndex];
 
       // 标记为已选择
@@ -931,12 +959,30 @@ const createEnemy = async (
     basePlayerRealmLevel = player.realmLevel;
   }
 
-  // 平衡敌人的基础属性，提高攻击力系数使战斗更有挑战性
-  const baseAttack = basePlayerAttack * 0.85 + basePlayerRealmLevel * 3; // 从0.7提升到0.85
-  const baseDefense = basePlayerDefense * 0.7 + basePlayerRealmLevel * 2;
+  // 平衡敌人的基础属性（优化：统一攻击和防御系数，使战斗更平衡）
+  // 攻击和防御系数都设为0.75，境界加成也统一为+2.5，避免敌人攻击力过强
+  const baseAttack = basePlayerAttack * 0.75 + basePlayerRealmLevel * 2.5;
+  const baseDefense = basePlayerDefense * 0.75 + basePlayerRealmLevel * 2.5;
   // 计算敌人神识：基于玩家神识和境界基础神识
   const realmBaseSpirit = REALM_DATA[realm]?.baseSpirit || 0;
   const baseSpirit = basePlayerSpirit * 0.3 + realmBaseSpirit * 0.5 + basePlayerRealmLevel * 1;
+
+  // 动态调整敌人血量：根据攻击力和防御力计算，确保战斗有足够的回合数（至少3-5回合）
+  // 基础血量 = 玩家血量 * (0.6 + 随机0.3) = 60%-90%
+  // 然后根据敌人攻击力调整，确保玩家需要至少3回合才能击败敌人
+  const baseHpMultiplier = 0.6 + Math.random() * 0.3; // 60%-90%
+  let calculatedHp = Math.round(basePlayerMaxHp * baseHpMultiplier * finalDifficulty);
+
+  // 根据敌人攻击力动态调整：如果敌人攻击力高，血量适当降低；如果攻击力低，血量适当提高
+  // 目标：确保战斗回合数在3-8回合之间
+  const attackRatio = baseAttack / Math.max(1, basePlayerAttack);
+  if (attackRatio > 1.2) {
+    // 敌人攻击力很强，血量降低10%，避免战斗过长
+    calculatedHp = Math.round(calculatedHp * 0.9);
+  } else if (attackRatio < 0.8) {
+    // 敌人攻击力较弱，血量提高10%，确保有挑战性
+    calculatedHp = Math.round(calculatedHp * 1.1);
+  }
 
   return {
     name,
@@ -949,9 +995,7 @@ const createEnemy = async (
     ),
     maxHp: Math.max(
       40,
-      Math.round(
-        basePlayerMaxHp * (0.5 + Math.random() * 0.4) * finalDifficulty
-      )
+      calculatedHp
     ),
     speed: Math.max(
       6,
@@ -972,17 +1016,19 @@ const calcDamage = (attack: number, defense: number) => {
   const validAttack = Number(attack) || 0;
   const validDefense = Number(defense) || 0;
 
-  // 伤害计算：如果攻击力大于防御力，造成伤害；否则伤害很小或为0
+  // 优化后的伤害计算：提高防御收益，使防御属性更有价值
+  // 使用更平滑的公式，防御力越高，减伤效果越明显
   let baseDamage: number;
 
   if (validAttack > validDefense) {
     // 攻击力大于防御力：造成有效伤害
-    // 伤害 = (攻击力 - 防御力) * 系数 + 基础伤害
+    // 使用改进公式：80%差值伤害 + 15%攻击力（降低基础伤害比例，提高防御收益）
     const damageDiff = validAttack - validDefense;
-    baseDamage = damageDiff * 0.6 + validAttack * 0.3; // 60%差值伤害 + 30%攻击力
+    baseDamage = damageDiff * 0.8 + validAttack * 0.15; // 80%差值伤害 + 15%攻击力
   } else {
     // 攻击力小于等于防御力：造成很少的伤害（穿透伤害）
-    const penetration = Math.max(0, validAttack * 0.1 - validDefense * 0.05);
+    // 优化穿透伤害计算，防御力越高，穿透伤害越低
+    const penetration = Math.max(0, validAttack * 0.08 - validDefense * 0.06);
     baseDamage = Math.max(1, penetration); // 至少1点伤害
   }
 
@@ -1057,9 +1103,11 @@ export const resolveBattleEncounter = async (
     const enemySpeed = Number(enemy.speed) || 0;
     const speedSum = Math.max(1, playerSpeed + enemySpeed); // 确保至少为1，避免除零
     const critSpeed = isPlayerTurn ? playerSpeed : enemySpeed;
-    const critChanceBase = 0.08 + (critSpeed / speedSum) * 0.2;
-    // 确保暴击率在合理范围内
-    const validCritChance = Math.max(0, Math.min(1, critChanceBase));
+    // 优化暴击率计算：降低速度对暴击率的影响，设置上限为20%
+    // 基础8% + 速度加成最高12% = 最高20%暴击率
+    const critChanceBase = 0.08 + (critSpeed / speedSum) * 0.12;
+    // 确保暴击率在合理范围内（最高20%）
+    const validCritChance = Math.max(0, Math.min(0.2, critChanceBase));
     const crit = Math.random() < validCritChance;
     const finalDamage = crit ? Math.round(damage * 1.5) : damage;
 
@@ -1736,6 +1784,11 @@ function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
   // 收集所有可用技能
   const skills: BattleSkill[] = [];
 
+  // 优化：预先建立功法映射，避免在循环中重复查找
+  const artsMap = new Map(
+    CULTIVATION_ARTS.map(art => [art.id, art])
+  );
+
   // 1. 功法技能
   player.cultivationArts.forEach((artId) => {
     const artSkills = CULTIVATION_ART_BATTLE_SKILLS[artId];
@@ -1744,7 +1797,7 @@ function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
       skills.push(...artSkills.map((s) => ({ ...s, cooldown: 0 })));
     } else {
       // 如果功法没有配置技能，自动生成默认技能
-      const art = CULTIVATION_ARTS.find(a => a.id === artId);
+      const art = artsMap.get(artId);
       if (art) {
         const defaultSkill = generateDefaultSkillForArt(art);
         if (defaultSkill) {
@@ -1755,6 +1808,33 @@ function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
   });
 
   // 2. 法宝/武器技能
+  // 优化：预先建立技能查找映射，避免在循环中重复调用 Object.values()
+  const artifactSkillsBySourceId = new Map<string, BattleSkill[]>();
+  const weaponSkillsBySourceId = new Map<string, BattleSkill[]>();
+
+  // 建立 sourceId 到技能的映射（用于 fallback 查找）
+  Object.entries(ARTIFACT_BATTLE_SKILLS).forEach(([key, skillArray]) => {
+    // 支持直接通过 key 查找
+    artifactSkillsBySourceId.set(key, skillArray);
+    // 建立 sourceId 到技能的映射
+    skillArray.forEach((skill) => {
+      if (skill.sourceId && !artifactSkillsBySourceId.has(skill.sourceId)) {
+        artifactSkillsBySourceId.set(skill.sourceId, skillArray);
+      }
+    });
+  });
+
+  Object.entries(WEAPON_BATTLE_SKILLS).forEach(([key, skillArray]) => {
+    // 支持直接通过 key 查找
+    weaponSkillsBySourceId.set(key, skillArray);
+    // 建立 sourceId 到技能的映射
+    skillArray.forEach((skill) => {
+      if (skill.sourceId && !weaponSkillsBySourceId.has(skill.sourceId)) {
+        weaponSkillsBySourceId.set(skill.sourceId, skillArray);
+      }
+    });
+  });
+
   equippedItems.forEach((item) => {
     // 优先使用物品自带的battleSkills
     if (item.battleSkills && item.battleSkills.length > 0) {
@@ -1762,19 +1842,15 @@ function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
     } else {
       // 如果没有，尝试从配置中获取
       if (item.type === ItemType.Artifact) {
-        // 通过物品名称匹配法宝技能（简化处理，实际应该用ID）
+        // 优化：先尝试直接通过 item.id 查找，再通过 sourceId 查找
         const artifactSkills = ARTIFACT_BATTLE_SKILLS[item.id] ||
-          Object.values(ARTIFACT_BATTLE_SKILLS).find((skills) =>
-            skills.some((s) => s.sourceId === item.id)
-          );
+          artifactSkillsBySourceId.get(item.id);
         if (artifactSkills) {
           skills.push(...artifactSkills.map((s) => ({ ...s, cooldown: 0 })));
         }
       } else if (item.type === ItemType.Weapon) {
         const weaponSkills = WEAPON_BATTLE_SKILLS[item.id] ||
-          Object.values(WEAPON_BATTLE_SKILLS).find((skills) =>
-            skills.some((s) => s.sourceId === item.id)
-          );
+          weaponSkillsBySourceId.get(item.id);
         if (weaponSkills) {
           skills.push(...weaponSkills.map((s) => ({ ...s, cooldown: 0 })));
         }
@@ -1785,7 +1861,7 @@ function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
   // 应用被动效果（心法）
   const buffs: Buff[] = [];
   if (player.activeArtId) {
-    const activeArt = CULTIVATION_ARTS.find((a) => a.id === player.activeArtId);
+    const activeArt = artsMap.get(player.activeArtId);
     if (activeArt && activeArt.type === 'mental') {
       const artSkills = CULTIVATION_ART_BATTLE_SKILLS[player.activeArtId];
       if (artSkills) {
@@ -2034,21 +2110,46 @@ function executeNormalAttack(
   // 计算基础伤害
   const baseDamage = calcDamage(attacker.attack, target.defense);
 
-  // 计算暴击
+  // 计算暴击（优化：统一暴击率计算，设置上限）
   let critChance = 0.08; // 基础暴击率
+  // 根据速度差计算速度加成（与自动战斗保持一致）
+  const attackerSpeed = Number(attacker.speed) || 0;
+  const targetSpeed = Number(target.speed) || 0;
+  const speedSum = Math.max(1, attackerSpeed + targetSpeed);
+  const speedBonus = (attackerSpeed / speedSum) * 0.12; // 速度加成最高12%
+  critChance += speedBonus;
   // 应用Buff/Debuff
   attacker.buffs.forEach((buff) => {
     if (buff.type === 'crit') {
       critChance += buff.value;
     }
   });
+  // 设置暴击率上限为20%（除非Buff超过）
+  critChance = Math.min(0.2, Math.max(0, critChance));
   const isCrit = Math.random() < critChance;
   const finalDamage = isCrit ? Math.round(baseDamage * 1.5) : baseDamage;
 
-  // 应用防御状态
+  // 应用防御状态（优化：根据攻击力和防御力比例动态调整减伤效果）
   let actualDamage = finalDamage;
   if (target.isDefending) {
-    actualDamage = Math.round(actualDamage * 0.5); // 防御状态减伤50%
+    // 基础减伤50%，如果攻击力远高于防御力，减伤效果降低
+    const attackDefenseRatio = attacker.attack / Math.max(1, target.defense);
+    let defenseReduction = 0.5; // 基础减伤50%
+
+    // 如果攻击力是防御力的2倍以上，减伤效果降低到40%
+    if (attackDefenseRatio > 2.0) {
+      defenseReduction = 0.4;
+    }
+    // 如果攻击力是防御力的3倍以上，减伤效果降低到35%
+    else if (attackDefenseRatio > 3.0) {
+      defenseReduction = 0.35;
+    }
+    // 如果防御力高于攻击力，减伤效果提高到60%
+    else if (attackDefenseRatio < 1.0) {
+      defenseReduction = 0.6;
+    }
+
+    actualDamage = Math.round(actualDamage * (1 - defenseReduction));
   }
 
   // 更新目标血量（确保是整数）
@@ -2110,14 +2211,22 @@ function executeSkill(
   const buffs: Buff[] = [];
   const debuffs: Debuff[] = [];
 
-  // 伤害计算
+  // 伤害计算（统一使用calcDamage函数，确保与普通攻击一致）
   if (skill.damage) {
     const base = skill.damage.base;
     const multiplier = skill.damage.multiplier;
     const statValue =
       skill.damage.type === 'magical' ? caster.spirit : caster.attack;
-    const baseDamage = base + statValue * multiplier;
+    // 计算技能的基础攻击力（用于伤害计算）
+    const skillAttack = base + statValue * multiplier;
 
+    // 根据伤害类型选择对应的防御属性
+    const targetDefense = skill.damage.type === 'magical' ? target.spirit : target.defense;
+
+    // 使用统一的伤害计算函数
+    let baseDamage = calcDamage(skillAttack, targetDefense);
+
+    // 计算暴击
     let critChance = skill.damage.critChance || 0;
     // 应用Buff
     caster.buffs.forEach((buff) => {
@@ -2128,32 +2237,33 @@ function executeSkill(
     const isCrit = Math.random() < critChance;
     damage = isCrit
       ? Math.round(baseDamage * (skill.damage.critMultiplier || 1.5))
-      : Math.round(baseDamage);
-
-    // 应用防御
-    if (skill.damage.type === 'physical') {
-      // 物理伤害：如果伤害值大于目标防御，造成伤害；否则造成很少的穿透伤害
-      if (damage > target.defense) {
-        damage = damage - target.defense * 0.5; // 正常减伤
-      } else {
-        // 伤害小于防御，造成少量穿透伤害
-        damage = Math.max(1, Math.round(damage * 0.1));
-      }
-    } else {
-      // 法术伤害：如果伤害值大于目标神识，造成伤害；否则造成很少的穿透伤害
-      if (damage > target.spirit) {
-        damage = damage - target.spirit * 0.3; // 正常减伤
-      } else {
-        // 伤害小于神识，造成少量穿透伤害
-        damage = Math.max(1, Math.round(damage * 0.1));
-      }
-    }
+      : baseDamage;
 
     // 确保伤害至少为1（除非完全免疫）
     damage = Math.max(1, Math.round(damage));
 
+    // 应用防御状态减伤（优化：与普通攻击保持一致，动态调整减伤效果）
     if (target.isDefending) {
-      damage = Math.round(damage * 0.5);
+      // 基础减伤50%，如果攻击力远高于防御力，减伤效果降低
+      const skillAttackValue = skill.damage.type === 'magical' ? caster.spirit : caster.attack;
+      const targetDefenseValue = skill.damage.type === 'magical' ? target.spirit : target.defense;
+      const attackDefenseRatio = skillAttackValue / Math.max(1, targetDefenseValue);
+      let defenseReduction = 0.5; // 基础减伤50%
+
+      // 如果攻击力是防御力的2倍以上，减伤效果降低到40%
+      if (attackDefenseRatio > 2.0) {
+        defenseReduction = 0.4;
+      }
+      // 如果攻击力是防御力的3倍以上，减伤效果降低到35%
+      else if (attackDefenseRatio > 3.0) {
+        defenseReduction = 0.35;
+      }
+      // 如果防御力高于攻击力，减伤效果提高到60%
+      else if (attackDefenseRatio < 1.0) {
+        defenseReduction = 0.6;
+      }
+
+      damage = Math.round(damage * (1 - defenseReduction));
     }
 
     target.hp = Math.max(0, Math.floor(target.hp - damage));

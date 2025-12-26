@@ -57,8 +57,7 @@ export function useAutoFeatures({
     }, 100);
 
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoMeditate, player, loading, cooldown, autoAdventure]);
+  }, [autoMeditate, player, loading, cooldown, autoAdventure, handleMeditate, setCooldown]);
 
   // 自动历练逻辑
   useEffect(() => {
@@ -86,7 +85,19 @@ export function useAutoFeatures({
     }, 500);
 
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoAdventure, player, loading, cooldown, autoMeditate, isShopOpen, isReputationEventOpen, isTurnBasedBattleOpen, autoAdventurePausedByShop, autoAdventurePausedByBattle, autoAdventurePausedByReputationEvent]);
+  }, [
+    autoAdventure,
+    player,
+    loading,
+    cooldown,
+    autoMeditate,
+    isShopOpen,
+    isReputationEventOpen,
+    isTurnBasedBattleOpen,
+    autoAdventurePausedByShop,
+    autoAdventurePausedByBattle,
+    autoAdventurePausedByReputationEvent,
+    handleAdventure,
+  ]);
 }
 
