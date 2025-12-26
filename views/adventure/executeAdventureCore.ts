@@ -21,8 +21,13 @@ import {
   REALM_DATA,
 } from '../../constants';
 import { BattleReplay } from '../../services/battleService';
-import { generateAdventureEvent } from '../../services/aiService';
 import { uid } from '../../utils/gameUtils';
+import {
+  initializeEventTemplateLibrary,
+  getRandomEventTemplate,
+  templateToAdventureResult,
+} from '../../services/adventureTemplateService';
+import { getAllArtifacts, getItemFromConstants } from '../../utils/itemConstantsUtils';
 import {
   normalizeItemEffect,
   inferItemTypeAndSlot,
@@ -45,100 +50,8 @@ interface ExecuteAdventureCoreProps {
   onReputationEvent?: (event: AdventureResult['reputationEvent']) => void;
 }
 
-/**
- * 为装备添加属性（如果装备没有属性，根据品阶自动生成）
- */
-function ensureEquipmentAttributes(
-  itemType: ItemType,
-  effect: AdventureResult['itemObtained']['effect'] | undefined,
-  rarity: ItemRarity,
-  realm?: RealmType,
-  realmLevel?: number
-): AdventureResult['itemObtained']['effect'] | undefined {
-  const equipmentTypes = [
-    ItemType.Artifact,
-    ItemType.Weapon,
-    ItemType.Armor,
-    ItemType.Accessory,
-    ItemType.Ring,
-  ];
-
-  if (!equipmentTypes.includes(itemType)) return effect;
-
-  let processedEffect = effect;
-  if (processedEffect?.exp) {
-    const { exp, ...restEffect } = processedEffect;
-    processedEffect = restEffect;
-  }
-
-  let realmData = (realm && REALM_DATA[realm]) || REALM_DATA[RealmType.QiRefining];
-  const level = realmLevel || 1;
-  const levelMultiplier = 1 + (level - 1) * 0.05;
-
-  const rarityPercentages: Record<ItemRarity, { min: number; max: number }> = {
-    普通: { min: 0.08, max: 0.12 },
-    稀有: { min: 0.20, max: 0.30 },
-    传说: { min: 0.40, max: 0.60 },
-    仙品: { min: 1.20, max: 1.80 },
-  };
-
-  const rarityMinStats: Record<ItemRarity, { attack: number; defense: number; hp: number; spirit: number; physique: number; speed: number }> = {
-    普通: { attack: 1, defense: 1, hp: 5, spirit: 1, physique: 1, speed: 1 },
-    稀有: { attack: 5, defense: 3, hp: 20, spirit: 3, physique: 3, speed: 3 },
-    传说: { attack: 15, defense: 10, hp: 50, spirit: 10, physique: 10, speed: 10 },
-    仙品: { attack: 200, defense: 150, hp: 500, spirit: 100, physique: 100, speed: 80 },
-  };
-
-  const percentage = rarityPercentages[rarity] || rarityPercentages['普通'];
-  const targetPercentage = percentage.min + (percentage.max - percentage.min) * Math.random();
-  const minStats = rarityMinStats[rarity] || rarityMinStats['普通'];
-
-  const hasAnyAttribute = processedEffect && (
-    processedEffect.attack || processedEffect.defense || processedEffect.hp ||
-    processedEffect.spirit || processedEffect.physique || processedEffect.speed
-  );
-
-  if (!hasAnyAttribute || (processedEffect && (
-    (processedEffect.attack && processedEffect.attack < minStats.attack) ||
-    (processedEffect.defense && processedEffect.defense < minStats.defense) ||
-    (processedEffect.hp && processedEffect.hp < minStats.hp) ||
-    (processedEffect.spirit && processedEffect.spirit < minStats.spirit) ||
-    (processedEffect.physique && processedEffect.physique < minStats.physique) ||
-    (processedEffect.speed && processedEffect.speed < minStats.speed)
-  ))) {
-    const attributeTypes = ['attack', 'defense', 'hp', 'spirit', 'physique', 'speed'];
-    const numAttributes = Math.floor(Math.random() * 3) + 1;
-    const selectedAttributes = attributeTypes.sort(() => Math.random() - 0.5).slice(0, numAttributes);
-
-    const newEffect: any = {};
-    if (processedEffect) {
-      if (processedEffect.attack >= minStats.attack) newEffect.attack = processedEffect.attack;
-      if (processedEffect.defense >= minStats.defense) newEffect.defense = processedEffect.defense;
-      if (processedEffect.hp >= minStats.hp) newEffect.hp = processedEffect.hp;
-      if (processedEffect.spirit >= minStats.spirit) newEffect.spirit = processedEffect.spirit;
-      if (processedEffect.physique >= minStats.physique) newEffect.physique = processedEffect.physique;
-      if (processedEffect.speed >= minStats.speed) newEffect.speed = processedEffect.speed;
-    }
-
-    selectedAttributes.forEach((attr) => {
-      if (newEffect[attr] !== undefined) return;
-      let baseValue = 0;
-      if (attr === 'attack') baseValue = realmData.baseAttack;
-      else if (attr === 'defense') baseValue = realmData.baseDefense;
-      else if (attr === 'hp') baseValue = realmData.baseMaxHp;
-      else if (attr === 'spirit') baseValue = realmData.baseSpirit;
-      else if (attr === 'physique') baseValue = realmData.basePhysique;
-      else if (attr === 'speed') baseValue = realmData.baseSpeed;
-
-      const value = Math.floor(baseValue * targetPercentage * levelMultiplier);
-      newEffect[attr] = Math.max(minStats[attr as keyof typeof minStats], value);
-    });
-
-    return newEffect;
-  }
-
-  return processedEffect;
-}
+// 已移除 ensureEquipmentAttributes 函数
+// 不再调整装备属性，直接使用常量池中的原始属性
 
 /**
  * 核心玩家状态更新逻辑 (Refactored)
@@ -167,7 +80,7 @@ const applyResultToPlayer = (
   let newArts = [...prev.cultivationArts];
   let newUnlockedArts = [...(prev.unlockedArts || [])];
 
-  // 修复同步解锁功法
+  // 同步已学习的功法到解锁列表（确保已学习的功法也在解锁列表中）
   prev.cultivationArts.forEach(id => { if (!newUnlockedArts.includes(id)) newUnlockedArts.push(id); });
 
   let newTalentId = prev.talentId;
@@ -220,34 +133,62 @@ const applyResultToPlayer = (
       let isEquippable = !!itemData.isEquippable;
       let equipmentSlot = itemData.equipmentSlot as EquipmentSlot | undefined;
 
-      // 神秘法宝处理
-      if (itemName.includes('神秘') || itemName.includes('法宝')) {
-        const artifactNames = ['青莲剑', '紫霄钟', '玄天镜', '九幽塔', '太虚鼎', '阴阳扇', '星辰珠', '混沌印', '天机盘', '轮回笔'];
-        itemName = artifactNames[Math.floor(Math.random() * artifactNames.length)];
-        itemType = ItemType.Artifact; isEquippable = true;
-        equipmentSlot = Math.random() < 0.5 ? EquipmentSlot.Artifact1 : EquipmentSlot.Artifact2;
-      }
-
-      // 类型推断
-      const inferred = inferItemTypeAndSlot(itemName, itemType, itemData.description || '', isEquippable);
-      if (inferred.type !== itemType || (!equipmentSlot && inferred.equipmentSlot)) {
-        itemType = inferred.type; isEquippable = inferred.isEquippable; equipmentSlot = inferred.equipmentSlot || equipmentSlot;
-      }
-
-      // 效果规范化
-      // 对于高级丹药，根据名称推断稀有度（如果未设置或设置为普通）
-      let itemRarity = (itemData.rarity as ItemRarity) || '普通';
-      if (itemType === ItemType.Pill && itemRarity === '普通') {
-        // 根据丹药名称推断稀有度
-        const name = itemName.toLowerCase();
-        if (name.includes('真仙') || name.includes('仙丹') || name.includes('九转') || name.includes('天元') || name.includes('不死')) {
-          itemRarity = '仙品';
-        } else if (name.includes('仙灵') || name.includes('破境') || name.includes('龙血') || name.includes('五行') || name.includes('天灵根')) {
-          itemRarity = '传说';
-        } else if (name.includes('筑基') || name.includes('洗髓') || name.includes('凝神') || name.includes('强体')) {
-          itemRarity = '稀有';
+      // 神秘法宝处理 - 从常量池获取随机法宝
+      if (itemName.includes('法宝')) {
+        const artifacts = getAllArtifacts();
+        if (artifacts.length > 0) {
+          const randomArtifact = artifacts[Math.floor(Math.random() * artifacts.length)];
+          itemName = randomArtifact.name;
+          itemType = randomArtifact.type;
+          isEquippable = randomArtifact.isEquippable || true;
+          equipmentSlot = (randomArtifact.equipmentSlot as EquipmentSlot) || (Math.random() < 0.5 ? EquipmentSlot.Artifact1 : EquipmentSlot.Artifact2);
+          // 使用常量池中的描述和效果
+          if (randomArtifact.description) {
+            itemData.description = randomArtifact.description;
+          }
+          if (randomArtifact.effect) {
+            itemData.effect = randomArtifact.effect;
+          }
+          if (randomArtifact.permanentEffect) {
+            itemData.permanentEffect = randomArtifact.permanentEffect;
+          }
+          if (randomArtifact.rarity) {
+            itemData.rarity = randomArtifact.rarity;
+          }
+        } else {
+          // 如果常量池中没有法宝，使用默认处理
+          itemName = '神秘法宝';
+          itemType = ItemType.Artifact;
+          isEquippable = true;
+          equipmentSlot = Math.random() < 0.5 ? EquipmentSlot.Artifact1 : EquipmentSlot.Artifact2;
         }
       }
+
+      // 优先从常量池获取物品完整信息（如果常量池中有，直接使用，避免类型推断）
+      let itemRarity = (itemData.rarity as ItemRarity) || '普通';
+      const itemFromConstants = getItemFromConstants(itemName);
+      if (itemFromConstants) {
+        // 常量池中有完整定义，优先使用常量池的数据
+        itemType = itemFromConstants.type as ItemType;
+        itemRarity = itemFromConstants.rarity;
+        // 如果常量池中有装备槽位信息，使用常量池的
+        if (itemFromConstants.equipmentSlot) {
+          equipmentSlot = itemFromConstants.equipmentSlot as EquipmentSlot;
+          isEquippable = itemFromConstants.isEquippable || true;
+        }
+        // 如果常量池中有描述，使用常量池的描述
+        if (itemFromConstants.description && !itemData.description) {
+          itemData.description = itemFromConstants.description;
+        }
+      } else {
+        // 常量池中没有，才进行类型推断
+        const inferred = inferItemTypeAndSlot(itemName, itemType, itemData.description || '', isEquippable);
+        itemType = inferred.type;
+        isEquippable = inferred.isEquippable;
+        equipmentSlot = inferred.equipmentSlot || equipmentSlot;
+      }
+
+      // 效果规范化（完全使用常量池中的原始属性）
       const normalized = normalizeItemEffect(itemName, itemData.effect, itemData.permanentEffect, itemType, itemRarity);
       let finalEffect = normalized.effect;
       let finalPermanentEffect = normalized.permanentEffect;
@@ -258,19 +199,31 @@ const applyResultToPlayer = (
         if (!finalEffect) {
           finalEffect = {};
         }
-        if (finalPermanentEffect.attack) finalEffect.attack = (finalEffect.attack || 0) + finalPermanentEffect.attack;
-        if (finalPermanentEffect.defense) finalEffect.defense = (finalEffect.defense || 0) + finalPermanentEffect.defense;
-        if (finalPermanentEffect.spirit) finalEffect.spirit = (finalEffect.spirit || 0) + finalPermanentEffect.spirit;
-        if (finalPermanentEffect.physique) finalEffect.physique = (finalEffect.physique || 0) + finalPermanentEffect.physique;
-        if (finalPermanentEffect.speed) finalEffect.speed = (finalEffect.speed || 0) + finalPermanentEffect.speed;
-        if (finalPermanentEffect.maxHp) finalEffect.hp = (finalEffect.hp || 0) + finalPermanentEffect.maxHp;
+        // 属性映射表，减少重复代码
+        const permEffectMap: Array<{ permKey: keyof typeof finalPermanentEffect; effectKey: keyof typeof finalEffect }> = [
+          { permKey: 'attack', effectKey: 'attack' },
+          { permKey: 'defense', effectKey: 'defense' },
+          { permKey: 'spirit', effectKey: 'spirit' },
+          { permKey: 'physique', effectKey: 'physique' },
+          { permKey: 'speed', effectKey: 'speed' },
+        ];
+        permEffectMap.forEach(({ permKey, effectKey }) => {
+          const permValue = finalPermanentEffect?.[permKey];
+          if (permValue !== undefined && typeof permValue === 'number') {
+            finalEffect[effectKey] = (finalEffect[effectKey] || 0) + permValue;
+          }
+        });
+        // maxHp 特殊处理，转换为 hp
+        if (finalPermanentEffect.maxHp !== undefined) {
+          finalEffect.hp = (finalEffect.hp || 0) + finalPermanentEffect.maxHp;
+        }
         // 装备不应该有永久效果
         finalPermanentEffect = undefined;
       }
 
-      if (isEquippable) {
-        finalEffect = ensureEquipmentAttributes(itemType, finalEffect, itemRarity, prev.realm, prev.realmLevel);
-        if (finalEffect) finalEffect = adjustEquipmentStatsByRealm(finalEffect, prev.realm, prev.realmLevel, itemRarity);
+      // 装备属性根据境界进行调整，确保属性跟上角色成长
+      if (isEquippable && finalEffect) {
+        finalEffect = adjustEquipmentStatsByRealm(finalEffect, prev.realm, prev.realmLevel, itemRarity);
       }
 
       // 重名装备处理
@@ -307,27 +260,59 @@ const applyResultToPlayer = (
     } catch (e) { console.error('Item processing error:', e); }
   });
 
-  // 功法概率
-  const artChance = isSecretRealm ? 0.10 : (adventureType === 'lucky' ? 0.15 : 0.05);
+  // 功法解锁逻辑
+  // 检查事件描述是否包含功法相关关键词（确保 cultivationArt 类型事件能正确解锁）
+  const storyHasArtKeywords = result.story && (
+    result.story.includes('功法') ||
+    result.story.includes('残卷') ||
+    result.story.includes('秘籍') ||
+    result.story.includes('领悟') ||
+    result.story.includes('传授') ||
+    result.story.includes('传承')
+  );
+
+  // 如果事件描述包含功法关键词，保证解锁；否则按概率解锁
+  const artChance = storyHasArtKeywords ? 1.0 : (isSecretRealm ? 0.15 : (adventureType === 'lucky' ? 0.20 : 0.08));
   let artUnlocked = false;
-  if (Math.random() < artChance) {
+
+  // 使用确定性随机数，基于事件描述和玩家状态的哈希值
+  // 避免重复调用时产生不同的随机结果
+  // 使用事件描述的字符码总和作为种子，确保相同事件产生相同结果
+  const storyHash = result.story ? result.story.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) : 0;
+  const artRandomSeed = storyHash + (prev.exp || 0) + (prev.spiritStones || 0) + (prev.realm?.length || 0);
+  const artRandom = Math.abs(Math.sin(artRandomSeed)) % 1;
+  const shouldUnlock = artRandom < artChance;
+
+  // 使用 Set 跟踪本次处理中已解锁的功法，避免重复
+  const unlockedInThisRun = new Set<string>();
+
+  if (shouldUnlock) {
     const availableArts = CULTIVATION_ARTS.filter(art => {
       // 排除已学习的功法
       if (newArts.includes(art.id)) return false;
       // 排除已解锁的功法（避免重复解锁）
       if (newUnlockedArts.includes(art.id)) return false;
+      // 排除本次运行中已解锁的功法
+      if (unlockedInThisRun.has(art.id)) return false;
       const artRealmIdx = REALM_ORDER.indexOf(art.realmRequirement);
       const playerRealmIdx = REALM_ORDER.indexOf(prev.realm);
       return artRealmIdx >= 0 && playerRealmIdx >= artRealmIdx && (!art.sectId || art.sectId === prev.sectId);
     });
     if (availableArts.length > 0) {
-      const randomArt = availableArts[Math.floor(Math.random() * availableArts.length)];
+      // 使用确定性随机数选择功法
+      const artIndex = Math.floor(artRandom * availableArts.length);
+      const randomArt = availableArts[artIndex];
       // 领悟功法只解锁，不直接学习（需要花费灵石学习）
-      if (!newUnlockedArts.includes(randomArt.id)) {
+      // 多重检查，确保不会重复添加
+      if (!newUnlockedArts.includes(randomArt.id) &&
+          !newArts.includes(randomArt.id) &&
+          !unlockedInThisRun.has(randomArt.id)) {
         newUnlockedArts.push(randomArt.id);
+        unlockedInThisRun.add(randomArt.id);
         newStats.artCount += 1;
         artUnlocked = true;
         triggerVisual('special', `🎉 领悟功法【${randomArt.name}】`, 'special');
+        // 始终输出日志，确保玩家知道获得了功法
         addLog(`🎉 你领悟了功法【${randomArt.name}】！现在可以在功法阁中学习它了。`, 'special');
       }
     }
@@ -336,10 +321,29 @@ const applyResultToPlayer = (
   // 灵宠奖励
   if (result.petObtained) {
     const template = PET_TEMPLATES.find(t => t.id === result.petObtained);
-    if (template && !newPets.some(p => p.species === template.species)) {
-      const newPet: Pet = { id: uid(), name: getRandomPetName(template), species: template.species, level: 1, exp: 0, maxExp: 60, rarity: template.rarity, stats: { ...template.baseStats }, skills: [...template.skills], evolutionStage: 0, affection: 50 };
-      newPets.push(newPet); newStats.petCount += 1;
-      addLog(`✨ 你获得了灵宠【${newPet.name}】！`, 'special');
+    if (template) {
+      // 检查是否已拥有该种类的灵宠
+      const hasPet = newPets.some(p => p.species === template.species);
+      if (!hasPet) {
+        const newPet: Pet = { id: uid(), name: getRandomPetName(template), species: template.species, level: 1, exp: 0, maxExp: 60, rarity: template.rarity, stats: { ...template.baseStats }, skills: [...template.skills], evolutionStage: 0, affection: 50 };
+        newPets.push(newPet);
+        newStats.petCount += 1;
+        // 事件描述中已经提到了灵宠（如"你与它建立了联系"），这里不再重复提示
+        // 只在事件描述中没有提到灵宠相关词汇时才添加提示
+        const storyHasPet = result.story && (
+          result.story.includes('灵兽') ||
+          result.story.includes('灵宠') ||
+          result.story.includes('建立了联系') ||
+          result.story.includes('愿意跟随')
+        );
+        if (!storyHasPet) {
+          addLog(`✨ 你获得了灵宠【${newPet.name}】！`, 'special');
+        }
+      } else {
+        // 如果已拥有该种类的灵宠，不添加新灵宠，也不提示
+        // 可以添加一个提示说明遇到了但已有同类灵宠
+        addLog(`你遇到了一只${template.species}，但你已经有同类灵宠了。`, 'normal');
+      }
     }
   }
 
@@ -419,10 +423,15 @@ const applyResultToPlayer = (
     newLotteryTickets += count;
     addLog(`🎫 捡到了 ${count} 张抽奖券！`, 'gain');
   }
-  const inheritanceChance = isSecretRealm ? 0.005 : (adventureType === 'lucky' ? 0.01 : 0.001);
-  if (Math.random() < inheritanceChance || (result.inheritanceLevelChange || 0) > 0) {
-    const oldLevel = newInheritanceLevel; newInheritanceLevel = Math.min(4, newInheritanceLevel + (Math.floor(Math.random() * 4) + 1));
-    if (newInheritanceLevel > oldLevel) addLog(`🌟 你获得了上古传承！`, 'special');
+  // 传承等级获取（只能通过事件模板获得，不能随机获得）
+  // 如果事件模板中指定了传承等级变化，则应用
+  if ((result.inheritanceLevelChange || 0) > 0) {
+    const oldLevel = newInheritanceLevel;
+    // 传承等级每次只能增加1级，最多到4级
+    newInheritanceLevel = Math.min(4, newInheritanceLevel + 1);
+    if (newInheritanceLevel > oldLevel) {
+      addLog(`🌟 你获得了上古传承！传承等级提升至 ${newInheritanceLevel}！`, 'special');
+    }
   }
 
   // 寿命流逝
@@ -454,7 +463,7 @@ const applyResultToPlayer = (
   newStones = Math.max(0, newStones + (result.spiritStonesChange || 0));
   const finalHp = isSecretRealm ? Math.max(0, Math.min(newMaxHp, newHp + (result.hpChange || 0))) : Math.min(newMaxHp, newHp + (result.hpChange || 0));
 
-  // 同步新领悟的功法
+  // 同步新学习的功法到解锁列表（确保新学习的功法也在解锁列表中）
   newArts.forEach(id => { if (!newUnlockedArts.includes(id)) newUnlockedArts.push(id); });
 
   return {
@@ -476,15 +485,51 @@ export async function executeAdventureCore({
   if (result.eventColor === 'danger' || adventureType === 'secret_realm') triggerVisual('slash');
 
   // Apply Main Result
-  setPlayer(prev => applyResultToPlayer(prev, result, { isSecretRealm: false, adventureType, realmName, riskLevel, battleContext, petSkillCooldowns, addLog, triggerVisual }));
+  // 根据 adventureType 判断是否为秘境
+  const isSecretRealm = adventureType === 'secret_realm';
+  setPlayer(prev => applyResultToPlayer(prev, result, { isSecretRealm, adventureType, realmName, riskLevel, battleContext, petSkillCooldowns, addLog, triggerVisual }));
 
   // Events & Logs
   if (result.reputationEvent && onReputationEvent) {
     const eventTitle = result.reputationEvent.title || result.reputationEvent.text || '神秘事件';
     addLog(`📜 遇到了事件：${eventTitle}`, 'special');
+
+    // 测试环境打印调试信息
+    if (import.meta.env.DEV) {
+      console.log('【声望事件触发】', {
+        hasEvent: !!result.reputationEvent,
+        hasCallback: !!onReputationEvent,
+        event: result.reputationEvent,
+        choicesCount: result.reputationEvent.choices?.length || 0,
+      });
+    }
+
     onReputationEvent(result.reputationEvent);
+  } else if (result.reputationEvent && !onReputationEvent) {
+    // 如果有声望事件但没有回调，记录警告
+    if (import.meta.env.DEV) {
+      console.warn('【声望事件警告】有声望事件但没有回调函数', result.reputationEvent);
+    }
   }
-  addLog(result.story, result.eventColor);
+
+  // 确保事件描述被添加到日志
+  if (result.story && result.story.trim()) {
+    addLog(result.story, result.eventColor || 'normal');
+  } else {
+    // 如果事件描述为空，添加默认日志
+    addLog('你在历练途中没有遇到什么特别的事情。', 'normal');
+  }
+
+  // 添加数值变化日志（如果测试环境需要）
+  if (import.meta.env.DEV && (result.expChange || result.spiritStonesChange || result.hpChange)) {
+    const changes: string[] = [];
+    if (result.expChange) changes.push(`修为 ${result.expChange > 0 ? '+' : ''}${result.expChange}`);
+    if (result.spiritStonesChange) changes.push(`灵石 ${result.spiritStonesChange > 0 ? '+' : ''}${result.spiritStonesChange}`);
+    if (result.hpChange) changes.push(`气血 ${result.hpChange > 0 ? '+' : ''}${result.hpChange}`);
+    if (changes.length > 0) {
+      addLog(`📊 ${changes.join(' | ')}`, result.eventColor || 'normal');
+    }
+  }
 
   if (result.lifespanChange) addLog(result.lifespanChange > 0 ? `✨ 寿命增加 ${result.lifespanChange.toFixed(1)} 年` : `⚠️ 寿命减少 ${Math.abs(result.lifespanChange).toFixed(1)} 年`, result.lifespanChange > 0 ? 'gain' : 'danger');
   if (result.spiritualRootsChange) {
@@ -495,17 +540,43 @@ export async function executeAdventureCore({
   const items = [...(result.itemsObtained || [])]; if (result.itemObtained) items.push(result.itemObtained);
   items.forEach(i => { if (i?.name) addLog(`获得物品: ${normalizeRarityValue(i.rarity) ? `【${normalizeRarityValue(i.rarity)}】` : ''}${i.name}`, 'gain'); });
 
-  if (battleContext) onOpenBattleModal(battleContext);
+  // 战斗弹窗延迟2秒后打开
+  if (battleContext) {
+    setTimeout(() => {
+      onOpenBattleModal(battleContext);
+    }, 2000);
+  }
 
   // Trigger Secret Realm
   if (result.triggerSecretRealm) {
-    setTimeout(async () => {
+    setTimeout(() => {
       addLog(`你进入了秘境深处...`, 'special');
-      const srResult = await generateAdventureEvent(player, 'secret_realm');
-      setPlayer(prev => applyResultToPlayer(prev, srResult, { isSecretRealm: true, adventureType: 'secret_realm', addLog, triggerVisual }));
-      addLog(srResult.story, srResult.eventColor);
-      const srItems = [...(srResult.itemsObtained || [])]; if (srResult.itemObtained) srItems.push(srResult.itemObtained);
-      srItems.forEach(i => { if (i?.name) addLog(`获得物品: ${normalizeRarityValue(i.rarity) ? `【${normalizeRarityValue(i.rarity)}】` : ''}${i.name}`, 'gain'); });
+      // 使用事件模板库生成秘境事件
+      initializeEventTemplateLibrary();
+      const srTemplate = getRandomEventTemplate('secret_realm', undefined, player.realm, player.realmLevel);
+
+      if (srTemplate) {
+        const srResult = templateToAdventureResult(srTemplate, {
+          realm: player.realm,
+          realmLevel: player.realmLevel,
+          maxHp: player.maxHp,
+        });
+        setPlayer(prev => applyResultToPlayer(prev, srResult, { isSecretRealm: true, adventureType: 'secret_realm', addLog, triggerVisual }));
+        addLog(srResult.story, srResult.eventColor);
+        const srItems = [...(srResult.itemsObtained || [])]; if (srResult.itemObtained) srItems.push(srResult.itemObtained);
+        srItems.forEach(i => { if (i?.name) addLog(`获得物品: ${normalizeRarityValue(i.rarity) ? `【${normalizeRarityValue(i.rarity)}】` : ''}${i.name}`, 'gain'); });
+      } else {
+        // 如果模板库为空，使用默认事件
+        const defaultSrResult: AdventureResult = {
+          story: '你在秘境深处探索，但没有发现什么特别的东西。',
+          hpChange: 0,
+          expChange: Math.floor(50 * (1 + REALM_ORDER.indexOf(player.realm) * 0.3)),
+          spiritStonesChange: Math.floor(100 * (1 + REALM_ORDER.indexOf(player.realm) * 0.3)),
+          eventColor: 'normal',
+        };
+        setPlayer(prev => applyResultToPlayer(prev, defaultSrResult, { isSecretRealm: true, adventureType: 'secret_realm', addLog, triggerVisual }));
+        addLog(defaultSrResult.story, defaultSrResult.eventColor);
+      }
     }, 1000);
   }
 }

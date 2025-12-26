@@ -19,8 +19,6 @@ import {
   ACHIEVEMENTS,
   CULTIVATION_ARTS,
   REALM_ORDER,
-  INHERITANCE_ROUTES,
-  INHERITANCE_SKILLS,
 } from '../constants';
 import { getItemStats } from '../utils/itemUtils';
 import { getRarityTextColor } from '../utils/rarityUtils';
@@ -84,10 +82,6 @@ const CharacterModal: React.FC<Props> = ({
   );
   const [showAttributeDetails, setShowAttributeDetails] = useState(false);
   const [showTitleDetails, setShowTitleDetails] = useState(false);
-  const [showInheritanceDetails, setShowInheritanceDetails] = useState(false);
-  const [selectedInheritanceRoute, setSelectedInheritanceRoute] = useState<
-    string | null
-  >(null);
   const [gameStartTime, setGameStartTime] = useState<number | null>(null);
   const currentTalent = TALENTS.find((t) => t.id === player.talentId);
   const currentTitle = TITLES.find((t) => t.id === player.titleId);
@@ -290,7 +284,7 @@ const CharacterModal: React.FC<Props> = ({
       }
     });
 
-    // 传承加成 (体术类)
+    // 传承加成 (体术类) - 已删除，传承路线和技能功能已移除
     let inheritanceStats = {
       attack: 0,
       defense: 0,
@@ -299,18 +293,6 @@ const CharacterModal: React.FC<Props> = ({
       physique: 0,
       speed: 0,
     };
-    (player.inheritanceSkills || []).forEach((skillId) => {
-      const skill = INHERITANCE_SKILLS.find((s) => s.id === skillId);
-      if (skill && !skill.effects.expRate) {
-        // 只有体术类传承技能永久加成
-        inheritanceStats.attack += skill.effects.attack || 0;
-        inheritanceStats.defense += skill.effects.defense || 0;
-        inheritanceStats.hp += skill.effects.hp || 0;
-        inheritanceStats.spirit += skill.effects.spirit || 0;
-        inheritanceStats.physique += skill.effects.physique || 0;
-        inheritanceStats.speed += skill.effects.speed || 0;
-      }
-    });
 
     // 装备加成
     let equipmentStats = {
@@ -510,7 +492,11 @@ const CharacterModal: React.FC<Props> = ({
         : `+${totalGain}`;
 
     showConfirm(
-      `确定要将所有 ${points} 点属性点一键分配给【${attributeName}】吗？\n\n预计增加: ${gainText}\n\n此操作不可撤销！`,
+      `确定要将所有 ${points} 点属性点一键分配给【${attributeName}】吗？
+
+预计增加: ${gainText}
+
+此操作不可撤销！`,
       '确认分配',
       () => {
         onAllocateAllAttributes(type);
@@ -580,62 +566,20 @@ const CharacterModal: React.FC<Props> = ({
                     <Sparkles className="text-purple-400" size={20} />
                     传承系统
                   </h3>
-                  <button
-                    onClick={() =>
-                      setShowInheritanceDetails(!showInheritanceDetails)
-                    }
-                    className="text-xs text-purple-300 hover:text-purple-200"
-                  >
-                    {showInheritanceDetails ? '收起详情' : '展开详情'}
-                  </button>
                 </div>
 
                 {player.inheritanceLevel > 0 ? (
                   <div>
-                    <p className="text-sm text-stone-300 mb-2">
+                    <p className="text-sm text-stone-300 mb-3">
                       传承等级:{' '}
                       <span className="font-bold text-purple-300">
                         {player.inheritanceLevel}
                       </span>{' '}
                       / 4
                     </p>
-                    {player.inheritanceRoute && (
-                      <p className="text-sm text-stone-300 mb-2">
-                        传承路线:{' '}
-                        <span className="font-bold text-purple-300">
-                          {INHERITANCE_ROUTES.find(
-                            (r) => r.id === player.inheritanceRoute
-                          )?.name || '未知'}
-                        </span>
-                      </p>
-                    )}
-                    {player.inheritanceExp > 0 && (
-                      <p className="text-sm text-stone-300 mb-2">
-                        传承经验: {player.inheritanceExp}
-                      </p>
-                    )}
-                    <div className="flex gap-2 mb-3">
-                      {player.inheritanceLevel < 4 && (
-                        <button
-                          onClick={() =>
-                            inheritanceHandlers.handleCultivateInheritance(
-                              'level'
-                            )
-                          }
-                          className="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition-colors"
-                        >
-                          提升等级 ({(player.inheritanceLevel + 1) * 5000} 灵石)
-                        </button>
-                      )}
-                      <button
-                        onClick={() =>
-                          inheritanceHandlers.handleCultivateInheritance('exp')
-                        }
-                        className="flex-1 px-3 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm rounded transition-colors"
-                      >
-                        修炼经验 (1000 灵石)
-                      </button>
-                    </div>
+                    <p className="text-xs text-stone-400 mb-3">
+                      传承等级可以通过历练获得，用于突破境界。
+                    </p>
                     {onUseInheritance && (
                       <button
                         onClick={onUseInheritance}
@@ -649,147 +593,6 @@ const CharacterModal: React.FC<Props> = ({
                   <p className="text-sm text-stone-400 mb-3">
                     尚未获得传承。传承可以通过历练获得。
                   </p>
-                )}
-
-                {showInheritanceDetails && (
-                  <div className="mt-4 pt-4 border-t border-purple-700/50 space-y-4">
-                    {/* 传承路线选择 */}
-                    {!player.inheritanceRoute && (
-                      <div>
-                        <h4 className="text-sm font-bold text-purple-300 mb-2">
-                          选择传承路线
-                        </h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {INHERITANCE_ROUTES.map((route) => {
-                            const canUnlock =
-                              !route.unlockRequirement?.realm ||
-                              REALM_ORDER.indexOf(player.realm) >=
-                                REALM_ORDER.indexOf(
-                                  route.unlockRequirement.realm
-                                );
-                            return (
-                              <div
-                                key={route.id}
-                                className={`p-3 rounded border ${
-                                  canUnlock
-                                    ? 'border-purple-500 bg-purple-900/30 hover:bg-purple-900/50 cursor-pointer'
-                                    : 'border-stone-700 bg-stone-900/50 opacity-50'
-                                }`}
-                                onClick={() => {
-                                  if (canUnlock && !player.inheritanceRoute) {
-                                    inheritanceHandlers.handleSelectInheritanceRoute(
-                                      route.id
-                                    );
-                                  } else if (!canUnlock) {
-                                    showError(
-                                      `需要达到 ${route.unlockRequirement?.realm} 境界才能选择此传承。`
-                                    );
-                                  }
-                                }}
-                              >
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span
-                                    className={`font-bold ${getRarityColor(route.rarity)}`}
-                                  >
-                                    {route.name}
-                                  </span>
-                                  <span className="text-xs text-stone-500">
-                                    ({route.rarity})
-                                  </span>
-                                </div>
-                                <p className="text-xs text-stone-400 mb-2">
-                                  {route.description}
-                                </p>
-                                {route.unlockRequirement?.realm &&
-                                  !canUnlock && (
-                                    <p className="text-xs text-red-400">
-                                      需要: {route.unlockRequirement.realm}
-                                    </p>
-                                  )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* 已选择的传承路线详情 */}
-                    {player.inheritanceRoute && (
-                      <div>
-                        <h4 className="text-sm font-bold text-purple-300 mb-2">
-                          传承技能
-                        </h4>
-                        <div className="space-y-2">
-                          {INHERITANCE_SKILLS.filter(
-                            (skill) => skill.route === player.inheritanceRoute
-                          ).map((skill) => {
-                            const isLearned =
-                              player.inheritanceSkills?.includes(skill.id);
-                            const canLearn =
-                              player.inheritanceLevel >= skill.unlockLevel;
-                            return (
-                              <div
-                                key={skill.id}
-                                className={`p-2 rounded border ${
-                                  isLearned
-                                    ? 'border-green-500 bg-green-900/30'
-                                    : canLearn
-                                      ? 'border-purple-500 bg-purple-900/30'
-                                      : 'border-stone-700 bg-stone-900/30 opacity-50'
-                                }`}
-                              >
-                                <div className="flex justify-between items-start">
-                                  <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="font-bold text-sm">
-                                        {skill.name}
-                                      </span>
-                                      {isLearned && (
-                                        <span className="text-xs text-green-400">
-                                          ✓ 已学习
-                                        </span>
-                                      )}
-                                      {!isLearned && canLearn && (
-                                        <span className="text-xs text-purple-400">
-                                          可学习
-                                        </span>
-                                      )}
-                                      {!canLearn && (
-                                        <span className="text-xs text-stone-500">
-                                          需要传承等级 {skill.unlockLevel}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <p className="text-xs text-stone-400 mb-1">
-                                      {skill.description}
-                                    </p>
-                                    {skill.passiveEffect && (
-                                      <p className="text-xs text-yellow-400 italic">
-                                        {skill.passiveEffect.description}
-                                      </p>
-                                    )}
-                                    {!isLearned && canLearn && (
-                                      <button
-                                        onClick={() =>
-                                          inheritanceHandlers.handleLearnInheritanceSkill(
-                                            skill.id
-                                          )
-                                        }
-                                        className="mt-2 px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-xs rounded transition-colors"
-                                      >
-                                        学习技能 (消耗 {skill.unlockLevel * 100}{' '}
-                                        经验)
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
                 )}
               </div>
 

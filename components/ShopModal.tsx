@@ -106,14 +106,10 @@ const ShopModal: React.FC<Props> = ({
     }
   };
 
-  // 过滤可购买的物品（根据境界和类型）
+  // 过滤物品（根据类型，但不根据境界过滤，让所有物品都显示）
+  // 声望商店应该显示所有物品，即使当前境界无法购买
   const availableItems = useMemo(() => {
-    let filtered = shop.items.filter((item) => {
-      if (!item.minRealm) return true;
-      const itemRealmIndex = REALM_ORDER.indexOf(item.minRealm);
-      const playerRealmIndex = REALM_ORDER.indexOf(player.realm);
-      return playerRealmIndex >= itemRealmIndex;
-    });
+    let filtered = shop.items;
 
     // 按类型筛选
     if (selectedTypeFilter !== 'all') {
@@ -121,7 +117,7 @@ const ShopModal: React.FC<Props> = ({
     }
 
     return filtered;
-  }, [shop.items, player.realm, selectedTypeFilter]);
+  }, [shop.items, selectedTypeFilter]);
 
   // 计算物品出售价格（与 App.tsx 中的逻辑保持一致）
   const calculateItemSellPrice = (item: Item): number => {
@@ -244,15 +240,8 @@ const ShopModal: React.FC<Props> = ({
   const availableTypes = useMemo(() => {
     if (activeTab === 'buy') {
       const types = new Set<ItemType>();
-      // 使用原始商店物品列表，只根据境界过滤
-      shop.items
-        .filter((item) => {
-          if (!item.minRealm) return true;
-          const itemRealmIndex = REALM_ORDER.indexOf(item.minRealm);
-          const playerRealmIndex = REALM_ORDER.indexOf(player.realm);
-          return playerRealmIndex >= itemRealmIndex;
-        })
-        .forEach((item) => types.add(item.type));
+      // 使用原始商店物品列表，不根据境界过滤（显示所有物品类型）
+      shop.items.forEach((item) => types.add(item.type));
       return Array.from(types);
     } else {
       const types = new Set<ItemType>();
@@ -270,7 +259,6 @@ const ShopModal: React.FC<Props> = ({
   }, [
     activeTab,
     shop.items,
-    player.realm,
     player.inventory,
     player.equippedItems,
   ]);
@@ -635,8 +623,30 @@ const ShopModal: React.FC<Props> = ({
                                   ? 'bg-mystic-gold/20 hover:bg-mystic-gold/30 text-mystic-gold border border-mystic-gold/50'
                                   : 'bg-stone-700 text-stone-500 cursor-not-allowed'
                               }`}
+                              title={
+                                !canBuy
+                                  ? shop.reputationRequired && (player.reputation || 0) < shop.reputationRequired
+                                    ? '声望不足'
+                                    : shopItem.minRealm
+                                      ? `需要境界: ${shopItem.minRealm}`
+                                      : '无法购买'
+                                  : shopItem.price * (buyQuantities[shopItem.id] || 1) > player.spiritStones
+                                    ? '灵石不足'
+                                    : ''
+                              }
                             >
-                              购买
+                              {canBuy &&
+                              shopItem.price *
+                                (buyQuantities[shopItem.id] || 1) <=
+                                player.spiritStones
+                                ? '购买'
+                                : !canBuy
+                                  ? shop.reputationRequired && (player.reputation || 0) < shop.reputationRequired
+                                    ? '声望不足'
+                                    : shopItem.minRealm
+                                      ? '境界不足'
+                                      : '无法购买'
+                                  : '灵石不足'}
                             </button>
                           </div>
                         </div>

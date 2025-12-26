@@ -245,11 +245,8 @@ export interface PlayerStats {
   // 抽奖系统
   lotteryTickets: number; // 抽奖券
   lotteryCount: number; // 累计抽奖次数（用于保底）
-  // 传承系统
+  // 传承系统（仅保留突破境界功能）
   inheritanceLevel: number; // 传承等级（0-4，每次传承可突破1-4个境界）
-  inheritanceRoute?: string | null; // 传承路线ID（如 "dragon", "phoenix", "void" 等）
-  inheritanceExp: number; // 传承经验值（用于提升传承等级）
-  inheritanceSkills: string[]; // 已学习的传承技能ID列表
   // 每日任务系统
   dailyTaskCount: Record<string, number>; // 按任务ID记录每日完成次数，每个任务每天最多3次
   lastTaskResetDate: string; // 上次重置任务计数的日期（YYYY-MM-DD格式）

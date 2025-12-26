@@ -1,13 +1,17 @@
 import React from 'react';
 import { PlayerStats, AdventureType, ShopType, RealmType, AdventureResult } from '../../types';
 import { REALM_ORDER } from '../../constants';
-import { generateAdventureEvent } from '../../services/aiService';
 import {
   shouldTriggerBattle,
   resolveBattleEncounter,
   BattleReplay,
 } from '../../services/battleService';
 import { executeAdventureCore } from './executeAdventureCore';
+import {
+  initializeEventTemplateLibrary,
+  getRandomEventTemplate,
+  templateToAdventureResult,
+} from '../../services/adventureTemplateService';
 
 /**
  * 历练处理函数
@@ -68,7 +72,6 @@ export function useAdventureHandlers({
     realmName?: string,
     riskLevel?: '低' | '中' | '高' | '极度危险',
     realmMinRealm?: RealmType,
-    realmDescription?: string
   ) => {
     if (!player) {
       setLoading(false);
@@ -92,14 +95,18 @@ export function useAdventureHandlers({
 
       let battleResolution: Awaited<ReturnType<typeof resolveBattleEncounter>> | undefined;
 
+      // 执行历练逻辑（但不立即处理结果）
       if (shouldTriggerBattle(player, adventureType)) {
         // 如果使用回合制战斗系统，打开回合制战斗界面
         if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
+          setTimeout(() => {
           onOpenTurnBasedBattle({
             adventureType,
             riskLevel,
             realmMinRealm,
           });
+          }, 2000);
+
           setLoading(false);
           return; // 回合制战斗会在战斗结束后通过回调更新玩家状态
         }
@@ -114,9 +121,36 @@ export function useAdventureHandlers({
         result = battleResolution.adventureResult;
         battleContext = battleResolution.replay;
       } else {
-        result = await generateAdventureEvent(player, adventureType, riskLevel, realmName, realmDescription);
+        // 100%使用模板库
+        initializeEventTemplateLibrary();
+        const template = getRandomEventTemplate(adventureType, riskLevel, player.realm, player.realmLevel);
+
+        if (template) {
+          result = templateToAdventureResult(template, {
+            realm: player.realm,
+            realmLevel: player.realmLevel,
+            maxHp: player.maxHp,
+          });
+        } else {
+          // 如果模板库为空，使用默认事件
+          result = {
+            story: '你在历练途中没有遇到什么特别的事情。',
+            hpChange: 0,
+            expChange: Math.floor(10 * (1 + REALM_ORDER.indexOf(player.realm) * 0.3)),
+            spiritStonesChange: 0,
+            eventColor: 'normal',
+          };
+        }
       }
 
+      // 等待2秒后再处理结果
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      if(import.meta.env.DEV) {
+        console.log('result', result);
+      }
+
+      // 3秒后执行结果处理
       await executeAdventureCore({
         result,
         battleContext,
@@ -160,10 +194,18 @@ export function useAdventureHandlers({
     // 15% Chance to encounter a shop
     const shopChance = Math.random();
     if (shopChance < 0.15) {
-      const shopTypes = [ShopType.Village, ShopType.City, ShopType.Sect, ShopType.LimitedTime, ShopType.BlackMarket, ShopType.Reputation];
-      const randomShopType =
-        shopTypes[Math.floor(Math.random() * shopTypes.length)];
-      onOpenShop(randomShopType);
+      setLoading(true);
+      addLog('你在路上发现了一处商铺...', 'normal');
+
+      // 等待3秒后再打开商店
+      setTimeout(() => {
+        const shopTypes = [ShopType.Village, ShopType.City, ShopType.Sect, ShopType.LimitedTime, ShopType.BlackMarket, ShopType.Reputation];
+        const randomShopType =
+          shopTypes[Math.floor(Math.random() * shopTypes.length)];
+        onOpenShop(randomShopType);
+        setLoading(false);
+        setCooldown(2);
+      }, 3000);
       return;
     }
 

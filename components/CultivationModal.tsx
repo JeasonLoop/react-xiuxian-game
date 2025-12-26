@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { CultivationArt, RealmType, PlayerStats, ArtGrade } from '../types';
-import { CULTIVATION_ARTS, REALM_ORDER, INHERITANCE_SKILLS } from '../constants';
+import { CULTIVATION_ARTS, REALM_ORDER } from '../constants';
 import { X, BookOpen, Check, Lock, Search } from 'lucide-react';
 
 interface Props {
@@ -61,35 +61,17 @@ const CultivationModal: React.FC<Props> = ({
       });
     });
 
-    // 500ms 后重置，允许再次点击（如果需要）
+    // 1000ms 后重置，允许再次点击（给状态更新足够的时间）
     setTimeout(() => {
       learningArtIdRef.current = null;
       setLearningArtId(null);
-    }, 500);
+    }, 1000);
   };
 
-  // 将传承技能转换为CultivationArt
+  // 传承技能系统尚未实现，暂时返回空数组
   const inheritanceArts = useMemo(() => {
-    if (!player.inheritanceRoute || !player.inheritanceSkills) return [];
-
-    return INHERITANCE_SKILLS
-      .filter(skill =>
-        skill.route === player.inheritanceRoute &&
-        player.inheritanceSkills.includes(skill.id)
-      )
-      .map(skill => ({
-        id: skill.id,
-        name: skill.name,
-        type: (skill.effects.expRate ? 'mental' : 'body') as 'mental' | 'body',
-        description: skill.description,
-        grade: '天' as ArtGrade, // 传承技能都是天阶
-        realmRequirement: RealmType.QiRefining,
-        cost: 0, // 传承技能无需学习费用
-        effects: {
-          ...skill.effects,
-        },
-      } as CultivationArt));
-  }, [player.inheritanceRoute, player.inheritanceSkills]);
+    return [];
+  }, []);
 
   // 合并普通功法和传承功法
   const allArts = useMemo(() => {

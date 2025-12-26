@@ -47,9 +47,7 @@ import {
   EQUIPMENT_TEMPLATES,
   LOTTERY_PRIZES,
   SECT_SHOP_ITEMS,
-  INHERITANCE_ROUTES,
   getPillDefinition,
-  INHERITANCE_SKILLS,
 } from '../constants';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import { LOOT_ITEMS } from '../services/battleService';
@@ -125,7 +123,7 @@ const DebugModal: React.FC<Props> = ({
           name: weapon.name,
           type: weapon.type,
           rarity: weapon.rarity,
-          slot: weapon.slot,
+          slot: weapon.equipmentSlot as EquipmentSlot,
           effect: weapon.effect,
           description: `${weapon.name}，${weapon.rarity}品质装备`,
         });
@@ -139,7 +137,7 @@ const DebugModal: React.FC<Props> = ({
           name: armor.name,
           type: armor.type,
           rarity: armor.rarity,
-          slot: armor.slot,
+          slot: armor.equipmentSlot as EquipmentSlot,
           effect: armor.effect,
           description: `${armor.name}，${armor.rarity}品质装备`,
         });
@@ -153,7 +151,7 @@ const DebugModal: React.FC<Props> = ({
           name: accessory.name,
           type: accessory.type,
           rarity: accessory.rarity,
-          slot: accessory.slot,
+          slot: accessory.equipmentSlot as EquipmentSlot,
           effect: accessory.effect,
           description: `${accessory.name}，${accessory.rarity}品质装备`,
         });
@@ -167,7 +165,7 @@ const DebugModal: React.FC<Props> = ({
           name: ring.name,
           type: ring.type,
           rarity: ring.rarity,
-          slot: ring.slot,
+          slot: ring.equipmentSlot as EquipmentSlot,
           effect: ring.effect,
           description: `${ring.name}，${ring.rarity}品质装备`,
         });
@@ -181,7 +179,7 @@ const DebugModal: React.FC<Props> = ({
           name: artifact.name,
           type: artifact.type,
           rarity: artifact.rarity,
-          slot: artifact.slot,
+          slot: artifact.equipmentSlot as EquipmentSlot,
           effect: artifact.effect,
           description: `${artifact.name}，${artifact.rarity}品质装备`,
         });
@@ -189,7 +187,17 @@ const DebugModal: React.FC<Props> = ({
     }
 
     // 合并并去重（按名称去重，保留第一个）
-    const allEquipment = [...EQUIPMENT_TEMPLATES, ...equipmentFromLoot];
+    const allEquipment = [
+      ...EQUIPMENT_TEMPLATES.map(eq => ({
+        name: eq.name,
+        type: eq.type,
+        rarity: eq.rarity,
+        slot: eq.slot,
+        effect: eq.effect,
+        description: eq.description,
+      })),
+      ...equipmentFromLoot
+    ];
     const equipmentMap = new Map<string, typeof allEquipment[0]>();
     allEquipment.forEach((eq) => {
       if (!equipmentMap.has(eq.name)) {
@@ -2631,133 +2639,51 @@ const DebugModal: React.FC<Props> = ({
                   <div className="text-sm text-stone-400 mb-2">
                     当前路线：
                     <span className="text-stone-200 ml-2">
-                      {localPlayer.inheritanceRoute
-                        ? INHERITANCE_ROUTES.find(r => r.id === localPlayer.inheritanceRoute)?.name || '未知'
-                        : '未选择'}
+                      {localPlayer.inheritanceRoute || '未选择'}
                     </span>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {INHERITANCE_ROUTES.map((route) => {
-                      const isSelected = localPlayer.inheritanceRoute === route.id;
-                      return (
-                        <div
-                          key={route.id}
-                          className={`border-2 rounded-lg p-3 ${
-                            isSelected
-                              ? 'border-red-500 bg-red-900/20'
-                              : 'border-stone-600 bg-stone-800/50'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-bold text-sm">{route.name}</h4>
-                            {isSelected && (
-                              <span className="text-xs px-2 py-0.5 rounded bg-red-700 text-white">
-                                已选择
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-stone-400 mb-2">
-                            {route.description}
-                          </p>
-                          <button
-                            className={`w-full text-xs py-1 rounded transition-colors ${
-                              isSelected
-                                ? 'bg-stone-700 text-stone-400 cursor-not-allowed'
-                                : 'bg-red-700 hover:bg-red-600 text-white'
-                            }`}
-                            onClick={() => {
-                              if (!isSelected) {
-                                const updated = {
-                                  ...localPlayer,
-                                  inheritanceRoute: route.id,
-                                  inheritanceLevel: localPlayer.inheritanceLevel || 0,
-                                  inheritanceExp: localPlayer.inheritanceExp || 0,
-                                  inheritanceSkills: localPlayer.inheritanceSkills || [],
-                                };
-                                setLocalPlayer(updated);
-                                onUpdatePlayer({
-                                  inheritanceRoute: route.id,
-                                  inheritanceLevel: updated.inheritanceLevel,
-                                  inheritanceExp: updated.inheritanceExp,
-                                  inheritanceSkills: updated.inheritanceSkills,
-                                });
-                                showSuccess(`已选择传承路线：${route.name}`);
-                              }
-                            }}
-                            disabled={isSelected}
-                          >
-                            {isSelected ? '已选择' : '选择路线'}
-                          </button>
-                        </div>
-                      );
-                    })}
+                  <div className="text-xs text-yellow-500 bg-yellow-900/20 border border-yellow-700 rounded p-2">
+                    ⚠️ 传承路线系统尚未完全实现，传承路线数据暂不可用
                   </div>
                 </div>
 
-                {/* 传承等级和经验 */}
-                {localPlayer.inheritanceRoute && (
-                  <div className="mb-4">
-                    <h3 className="font-bold text-stone-200 mb-2">传承等级和经验</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm text-stone-400">传承等级 (0-4)</label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <button
-                            onClick={() => adjustNumber('inheritanceLevel', -1, 0)}
-                            className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
-                          >
-                            -1
-                          </button>
-                          <input
-                            type="number"
-                            min="0"
-                            max="4"
-                            className="flex-1 bg-stone-800 border border-stone-700 rounded px-2 py-1 text-stone-200 text-sm"
-                            value={localPlayer.inheritanceLevel || 0}
-                            onChange={(e) =>
-                              updateField(
-                                'inheritanceLevel',
-                                Math.max(0, Math.min(4, parseInt(e.target.value) || 0))
-                              )
-                            }
-                          />
-                          <button
-                            onClick={() => adjustNumber('inheritanceLevel', 1, 0)}
-                            className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
-                          >
-                            +1
-                          </button>
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-sm text-stone-400">传承经验</label>
-                        <div className="flex items-center gap-2 mt-1">
-                          <button
-                            onClick={() => adjustNumber('inheritanceExp', -1000, 0)}
-                            className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
-                          >
-                            -1K
-                          </button>
-                          <input
-                            type="number"
-                            min="0"
-                            className="flex-1 bg-stone-800 border border-stone-700 rounded px-2 py-1 text-stone-200 text-sm"
-                            value={localPlayer.inheritanceExp || 0}
-                            onChange={(e) =>
-                              updateField('inheritanceExp', Math.max(0, parseInt(e.target.value) || 0))
-                            }
-                          />
-                          <button
-                            onClick={() => adjustNumber('inheritanceExp', 1000, 0)}
-                            className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
-                          >
-                            +1K
-                          </button>
-                        </div>
-                      </div>
+                {/* 传承等级 */}
+                <div className="mb-4">
+                  <h3 className="font-bold text-stone-200 mb-2">传承等级</h3>
+                  <div>
+                    <label className="text-sm text-stone-400">传承等级 (0-4)</label>
+                    <div className="flex items-center gap-2 mt-1">
+                      <button
+                        onClick={() => adjustNumber('inheritanceLevel', -1, 0)}
+                        className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
+                      >
+                        -1
+                      </button>
+                      <input
+                        type="number"
+                        min="0"
+                        max="4"
+                        className="flex-1 bg-stone-800 border border-stone-700 rounded px-2 py-1 text-stone-200 text-sm"
+                        value={localPlayer.inheritanceLevel || 0}
+                        onChange={(e) =>
+                          updateField(
+                            'inheritanceLevel',
+                            Math.max(0, Math.min(4, parseInt(e.target.value) || 0))
+                          )
+                        }
+                      />
+                      <button
+                        onClick={() => adjustNumber('inheritanceLevel', 1, 0)}
+                        className="bg-stone-700 hover:bg-stone-600 text-stone-200 rounded px-2 py-1 text-xs"
+                      >
+                        +1
+                      </button>
                     </div>
+                    <p className="text-xs text-stone-500 mt-1">
+                      传承等级只能通过历练获得，用于突破境界
+                    </p>
                   </div>
-                )}
+                </div>
 
                 {/* 传承技能 */}
                 {localPlayer.inheritanceRoute && (
@@ -2766,90 +2692,8 @@ const DebugModal: React.FC<Props> = ({
                     <div className="text-sm text-stone-400 mb-2">
                       已学技能：{(localPlayer.inheritanceSkills || []).length} 个
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-96 overflow-y-auto">
-                      {INHERITANCE_SKILLS.filter(skill =>
-                        skill.route === localPlayer.inheritanceRoute
-                      ).map((skill) => {
-                        const isLearned = (localPlayer.inheritanceSkills || []).includes(skill.id);
-                        const canLearn = (localPlayer.inheritanceLevel || 0) >= skill.unlockLevel;
-                        return (
-                          <div
-                            key={skill.id}
-                            className={`border-2 rounded-lg p-3 ${
-                              isLearned
-                                ? 'border-green-500 bg-green-900/20'
-                                : canLearn
-                                  ? 'border-stone-600 bg-stone-800/50'
-                                  : 'border-stone-700 bg-stone-900/50 opacity-50'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between mb-2">
-                              <h4 className="font-bold text-sm">{skill.name}</h4>
-                              <div className="flex items-center gap-1">
-                                {isLearned && (
-                                  <span className="text-xs px-2 py-0.5 rounded bg-green-700 text-white">
-                                    已学习
-                                  </span>
-                                )}
-                                <span className="text-xs px-2 py-0.5 rounded bg-stone-700">
-                                  等级{skill.unlockLevel}
-                                </span>
-                              </div>
-                            </div>
-                            <p className="text-xs text-stone-400 mb-2">
-                              {skill.description}
-                            </p>
-                            {skill.passiveEffect && (
-                              <div className="text-xs text-stone-300 mb-2">
-                                <span className="text-stone-500">效果：</span>
-                                {Object.entries(skill.passiveEffect)
-                                  .filter(([key]) => key !== 'description')
-                                  .map(([key, value]) => {
-                                    const keyMap: Record<string, string> = {
-                                      attack: '攻击',
-                                      defense: '防御',
-                                      hp: '气血',
-                                      spirit: '神识',
-                                      physique: '体魄',
-                                      speed: '速度',
-                                      expRate: '修炼速度',
-                                    };
-                                    if (key === 'expRate' && typeof value === 'number') {
-                                      return `${keyMap[key] || key}+${(value * 100).toFixed(0)}%`;
-                                    }
-                                    return `${keyMap[key] || key}+${value}`;
-                                  })
-                                  .join(', ')}
-                              </div>
-                            )}
-                            <button
-                              className={`w-full text-xs py-1 rounded transition-colors ${
-                                isLearned
-                                  ? 'bg-stone-700 text-stone-400 cursor-not-allowed'
-                                  : canLearn
-                                    ? 'bg-red-700 hover:bg-red-600 text-white'
-                                    : 'bg-stone-700 text-stone-500 cursor-not-allowed'
-                              }`}
-                              onClick={() => {
-                                if (!isLearned && canLearn) {
-                                  const updated = {
-                                    ...localPlayer,
-                                    inheritanceSkills: [...(localPlayer.inheritanceSkills || []), skill.id],
-                                  };
-                                  setLocalPlayer(updated);
-                                  onUpdatePlayer({
-                                    inheritanceSkills: updated.inheritanceSkills,
-                                  });
-                                  showSuccess(`已学习传承技能：${skill.name}`);
-                                }
-                              }}
-                              disabled={isLearned || !canLearn}
-                            >
-                              {isLearned ? '已学习' : canLearn ? '学习技能' : `需要等级${skill.unlockLevel}`}
-                            </button>
-                          </div>
-                        );
-                      })}
+                    <div className="text-xs text-yellow-500 bg-yellow-900/20 border border-yellow-700 rounded p-2">
+                      ⚠️ 传承技能系统尚未完全实现，传承技能数据暂不可用
                     </div>
                   </div>
                 )}

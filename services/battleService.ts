@@ -20,7 +20,7 @@ import {
 import {
   REALM_ORDER,
   REALM_DATA,
-  DISCOVERABLE_RECIPES, 
+  DISCOVERABLE_RECIPES,
   CULTIVATION_ARTS,
   CULTIVATION_ART_BATTLE_SKILLS,
   ARTIFACT_BATTLE_SKILLS,
@@ -30,8 +30,9 @@ import {
   SECT_MASTER_CHALLENGE_REQUIREMENTS,
 } from '../constants';
 import { getPlayerTotalStats } from '../utils/statUtils';
-import { generateEnemyName } from './aiService';
+import { getRandomEnemyName } from './templateService';
 import { logger } from '../utils/logger';
+import { getItemsByType, getItemFromConstants } from '../utils/itemConstantsUtils';
 
 
 const randomId = () => Math.random().toString(36).slice(2, 9);
@@ -200,639 +201,46 @@ const baseBattleChance: Record<AdventureType, number> = {
   sect_challenge: 1.0, // 挑战必然触发
 };
 
-const pickOne = <T>(list: T[]): T =>
-  list[Math.floor(Math.random() * list.length)];
+// Fisher-Yates 洗牌算法，用于打乱数组顺序
+const shuffle = <T>(array: T[]): T[] => {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
 
-// 搜刮奖励物品名称库
+// 改进的随机选择函数，先打乱数组再选择，增加随机性
+const pickOne = <T>(list: T[]): T => {
+  if (list.length === 0) throw new Error('Cannot pick from empty list');
+  // 对于小数组，直接随机选择；对于大数组，先打乱再选择
+  if (list.length <= 10) {
+    return list[Math.floor(Math.random() * list.length)];
+  }
+  // 对于大数组，打乱后选择，增加随机性
+  const shuffled = shuffle(list);
+  return shuffled[Math.floor(Math.random() * shuffled.length)];
+};
+
+// 搜刮奖励物品名称库（全部从常量池获取，确保数据一致性）
 export const LOOT_ITEMS = {
   // 草药类
-  herbs: [
-    {
-      name: '止血草',
-      type: ItemType.Herb,
-      rarity: '普通' as ItemRarity,
-      effect: { hp: 20 },
-      permanentEffect: { physique: 1 },
-    },
-    {
-      name: '聚灵草',
-      type: ItemType.Herb,
-      rarity: '普通' as ItemRarity,
-      permanentEffect: { spirit: 2 },
-    },
-    {
-      name: '回气草',
-      type: ItemType.Herb,
-      rarity: '普通' as ItemRarity,
-      effect: { hp: 30 },
-      permanentEffect: { maxHp: 5 },
-    },
-    {
-      name: '青草',
-      type: ItemType.Herb,
-      rarity: '普通' as ItemRarity,
-      effect: { hp: 15 },
-      permanentEffect: { speed: 1 },
-    },
-    {
-      name: '白花',
-      type: ItemType.Herb,
-      rarity: '普通' as ItemRarity,
-      effect: { hp: 25 },
-      permanentEffect: { spirit: 1, physique: 1 },
-    },
-    {
-      name: '黄精',
-      type: ItemType.Herb,
-      rarity: '普通' as ItemRarity,
-      effect: { hp: 35 },
-      permanentEffect: { maxHp: 8, physique: 2 },
-    },
-    {
-      name: '凝神花',
-      type: ItemType.Herb,
-      rarity: '稀有' as ItemRarity,
-      effect: { hp: 50, spirit: 5 },
-      permanentEffect: { spirit: 8, maxHp: 10 },
-    },
-    {
-      name: '血参',
-      type: ItemType.Herb,
-      rarity: '稀有' as ItemRarity,
-      effect: { hp: 80 },
-      permanentEffect: { maxHp: 15, physique: 5 },
-    },
-    {
-      name: '紫猴花',
-      type: ItemType.Herb,
-      rarity: '稀有' as ItemRarity,
-      effect: { hp: 60, exp: 10 },
-      permanentEffect: { spirit: 6, speed: 4 },
-    },
-    {
-      name: '天灵果',
-      type: ItemType.Herb,
-      rarity: '稀有' as ItemRarity,
-      effect: { hp: 70, spirit: 10 },
-      permanentEffect: { spirit: 10, maxHp: 12 },
-    },
-    {
-      name: '龙鳞果',
-      type: ItemType.Herb,
-      rarity: '稀有' as ItemRarity,
-      effect: { hp: 90, maxHp: 10 },
-      permanentEffect: { maxHp: 20, defense: 3, physique: 6 },
-    },
-    {
-      name: '千年人参',
-      type: ItemType.Herb,
-      rarity: '稀有' as ItemRarity,
-      effect: { hp: 100, maxHp: 15 },
-      permanentEffect: { maxHp: 25, physique: 8, maxLifespan: 10 },
-    },
-    {
-      name: '千年灵芝',
-      type: ItemType.Herb,
-      rarity: '传说' as ItemRarity,
-      effect: { hp: 150, maxHp: 20 },
-      permanentEffect: { maxHp: 40, spirit: 20, physique: 15, maxLifespan: 30 },
-    },
-    {
-      name: '九叶芝草',
-      type: ItemType.Herb,
-      rarity: '传说' as ItemRarity,
-      effect: { hp: 180, maxHp: 25, spirit: 15 },
-      permanentEffect: { maxHp: 50, spirit: 30, speed: 15, maxLifespan: 50 },
-    },
-    {
-      name: '万年灵乳',
-      type: ItemType.Herb,
-      rarity: '传说' as ItemRarity,
-      effect: { hp: 200, maxHp: 30, exp: 50 },
-      permanentEffect: { maxHp: 60, spirit: 40, physique: 25, speed: 20, maxLifespan: 100 },
-    },
-    {
-      name: '万年仙草',
-      type: ItemType.Herb,
-      rarity: '仙品' as ItemRarity,
-      effect: { hp: 300, maxHp: 50 },
-      permanentEffect: { maxHp: 100, spirit: 100, physique: 80, speed: 50, maxLifespan: 200 },
-    },
-    {
-      name: '九转还魂草',
-      type: ItemType.Herb,
-      rarity: '仙品' as ItemRarity,
-      effect: { exp: 10000 },
-      permanentEffect: { maxLifespan: 1000, spirit: 2000 },
-    },
-    {
-      name: '太虚仙草',
-      type: ItemType.Herb,
-      rarity: '仙品' as ItemRarity,
-      effect: { hp: 350, maxHp: 70, exp: 100 },
-      permanentEffect: { attack: 1000, defense: 1000, spirit: 2000 },
-    },
-    {
-      name: '混沌青莲',
-      type: ItemType.Herb,
-      rarity: '仙品' as ItemRarity,
-      effect: { hp: 500, maxHp: 100, spirit: 50, exp: 150 },
-      permanentEffect: { attack: 1000, defense: 1000, spirit: 2000, physique: 2000, speed: 2000 },
-    },
-    {
-      name: '造化仙草',
-      type: ItemType.Herb,
-      rarity: '仙品' as ItemRarity,
-      effect: { hp: 450, maxHp: 90, physique: 20, spirit: 40 },
-      permanentEffect: { attack: 1000, defense: 1000, spirit: 7000, physique: 2000, speed: 2000 },
-    },
-  ],
-  // 丹药类（从常量中获取定义）
-  pills: (() => {
-    const createPillFromDef = (pillName: string, fallback?: Partial<Item>) => {
-      const pillDef = getPillDefinition(pillName);
-      if (pillDef) {
-        return {
-          name: pillDef.name,
-          type: pillDef.type,
-          rarity: pillDef.rarity as ItemRarity,
-          effect: pillDef.effect,
-          permanentEffect: pillDef.permanentEffect,
-        };
-      }
-      // 如果常量中没有（如回血丹），使用fallback
-      if (fallback) {
-        return {
-          name: pillName,
-          type: ItemType.Pill,
-          rarity: (fallback.rarity || '普通') as ItemRarity,
-          effect: fallback.effect,
-          permanentEffect: fallback.permanentEffect,
-        };
-      }
-      return null;
-    };
-
-    const pills = [
-      createPillFromDef('回血丹', { rarity: '普通', effect: { hp: 50 } }),
-      createPillFromDef('聚气丹'),
-      createPillFromDef('强体丹'),
-      createPillFromDef('凝神丹'),
-      createPillFromDef('筑基丹'),
-      createPillFromDef('破境丹'),
-      createPillFromDef('仙灵丹'),
-    ].filter((p): p is NonNullable<typeof p> => p !== null);
-
-    return pills;
-  })(),
+  herbs: (() => getItemsByType(ItemType.Herb))(),
+  // 丹药类
+  pills: (() => getItemsByType(ItemType.Pill))(),
   // 材料类
-  materials: [
-    // 普通材料
-    { name: '灵石碎片', type: ItemType.Material, rarity: '普通' as ItemRarity },
-    { name: '炼器石', type: ItemType.Material, rarity: '普通' as ItemRarity },
-    { name: '精铁', type: ItemType.Material, rarity: '普通' as ItemRarity },
-    { name: '铜矿', type: ItemType.Material, rarity: '普通' as ItemRarity },
-    { name: '银矿', type: ItemType.Material, rarity: '普通' as ItemRarity },
-    { name: '铁矿', type: ItemType.Material, rarity: '普通' as ItemRarity },
-    { name: '木材', type: ItemType.Material, rarity: '普通' as ItemRarity },
-    { name: '兽皮', type: ItemType.Material, rarity: '普通' as ItemRarity },
-    { name: '骨粉', type: ItemType.Material, rarity: '普通' as ItemRarity },
-    { name: '聚灵草', type: ItemType.Material, rarity: '普通' as ItemRarity },
-    { name: '妖兽内丹', type: ItemType.Material, rarity: '普通' as ItemRarity },
-    { name: '普通妖核', type: ItemType.Material, rarity: '普通' as ItemRarity },
-    { name: '灵土', type: ItemType.Material, rarity: '普通' as ItemRarity },
-    { name: '灵水', type: ItemType.Material, rarity: '普通' as ItemRarity },
-    { name: '灵木', type: ItemType.Material, rarity: '普通' as ItemRarity },
-    // 稀有材料
-    { name: '强化石', type: ItemType.Material, rarity: '稀有' as ItemRarity },
-    { name: '玄铁', type: ItemType.Material, rarity: '稀有' as ItemRarity },
-    { name: '星辰石', type: ItemType.Material, rarity: '稀有' as ItemRarity },
-    { name: '灵兽精血', type: ItemType.Material, rarity: '稀有' as ItemRarity },
-    { name: '月华石', type: ItemType.Material, rarity: '稀有' as ItemRarity },
-    { name: '星辰碎片', type: ItemType.Material, rarity: '稀有' as ItemRarity },
-    { name: '仙灵果', type: ItemType.Material, rarity: '稀有' as ItemRarity },
-    { name: '紫晶石', type: ItemType.Material, rarity: '稀有' as ItemRarity },
-    { name: '黑曜石', type: ItemType.Material, rarity: '稀有' as ItemRarity },
-    { name: '寒铁', type: ItemType.Material, rarity: '稀有' as ItemRarity },
-    { name: '火晶石', type: ItemType.Material, rarity: '稀有' as ItemRarity },
-    { name: '风灵石', type: ItemType.Material, rarity: '稀有' as ItemRarity },
-    { name: '土灵石', type: ItemType.Material, rarity: '稀有' as ItemRarity },
-    { name: '水灵石', type: ItemType.Material, rarity: '稀有' as ItemRarity },
-    { name: '木灵石', type: ItemType.Material, rarity: '稀有' as ItemRarity },
-    { name: '金灵石', type: ItemType.Material, rarity: '稀有' as ItemRarity },
-    { name: '中阶妖核', type: ItemType.Material, rarity: '稀有' as ItemRarity },
-    { name: '灵晶', type: ItemType.Material, rarity: '稀有' as ItemRarity },
-    // 传说材料
-    { name: '天外陨铁', type: ItemType.Material, rarity: '传说' as ItemRarity },
-    { name: '龙鳞片', type: ItemType.Material, rarity: '传说' as ItemRarity },
-    { name: '凤凰羽', type: ItemType.Material, rarity: '传说' as ItemRarity },
-    { name: '麒麟角', type: ItemType.Material, rarity: '传说' as ItemRarity },
-    { name: '九转金丹', type: ItemType.Material, rarity: '传说' as ItemRarity },
-    { name: '天材地宝', type: ItemType.Material, rarity: '传说' as ItemRarity },
-    { name: '神兽精魄', type: ItemType.Material, rarity: '传说' as ItemRarity },
-    { name: '高阶妖丹', type: ItemType.Material, rarity: '传说' as ItemRarity },
-    { name: '太虚石', type: ItemType.Material, rarity: '传说' as ItemRarity },
-    { name: '混沌石', type: ItemType.Material, rarity: '传说' as ItemRarity },
-    { name: '星核', type: ItemType.Material, rarity: '传说' as ItemRarity },
-    { name: '龙珠', type: ItemType.Material, rarity: '传说' as ItemRarity },
-    { name: '凤凰之心', type: ItemType.Material, rarity: '传说' as ItemRarity },
-    { name: '麒麟血', type: ItemType.Material, rarity: '传说' as ItemRarity },
-    // 仙品材料
-    { name: '仙晶', type: ItemType.Material, rarity: '仙品' as ItemRarity },
-    { name: '混沌本源石', type: ItemType.Material, rarity: '仙品' as ItemRarity },
-    { name: '大道碎片', type: ItemType.Material, rarity: '仙品' as ItemRarity },
-    { name: '仙灵本源', type: ItemType.Material, rarity: '仙品' as ItemRarity },
-    { name: '造化神液', type: ItemType.Material, rarity: '仙品' as ItemRarity },
-    { name: '太虚本源', type: ItemType.Material, rarity: '仙品' as ItemRarity },
-    { name: '混沌本源', type: ItemType.Material, rarity: '仙品' as ItemRarity },
-    { name: '先天神物', type: ItemType.Material, rarity: '仙品' as ItemRarity },
-    { name: '鸿蒙紫气', type: ItemType.Material, rarity: '仙品' as ItemRarity },
-    { name: '先天至宝', type: ItemType.Material, rarity: '仙品' as ItemRarity },
-    { name: '大道之种', type: ItemType.Material, rarity: '仙品' as ItemRarity },
-    { name: '造化神石', type: ItemType.Material, rarity: '仙品' as ItemRarity },
-    { name: '太初之晶', type: ItemType.Material, rarity: '仙品' as ItemRarity },
-  ],
+  materials: (() => getItemsByType(ItemType.Material))(),
   // 装备类（武器）
-  weapons: [
-    {
-      name: '精铁剑',
-      type: ItemType.Weapon,
-      rarity: '普通' as ItemRarity,
-      slot: EquipmentSlot.Weapon,
-      effect: { attack: 10 },
-    },
-    {
-      name: '玄铁刀',
-      type: ItemType.Weapon,
-      rarity: '稀有' as ItemRarity,
-      slot: EquipmentSlot.Weapon,
-      effect: { attack: 30 },
-    },
-    {
-      name: '星辰剑',
-      type: ItemType.Weapon,
-      rarity: '传说' as ItemRarity,
-      slot: EquipmentSlot.Weapon,
-      effect: { attack: 80, speed: 10 },
-    },
-    {
-      name: '仙灵剑',
-      type: ItemType.Weapon,
-      rarity: '仙品' as ItemRarity,
-      slot: EquipmentSlot.Weapon,
-      effect: { attack: 500, spirit: 150 },
-    },
-  ],
-  // 装备类（护甲）- 包含所有部位
-  armors: [
-    // 普通 - 头部
-    {
-      name: '布帽',
-      type: ItemType.Armor,
-      rarity: '普通' as ItemRarity,
-      slot: EquipmentSlot.Head,
-      effect: { defense: 3, hp: 15 },
-    },
-    // 普通 - 肩部
-    {
-      name: '布肩',
-      type: ItemType.Armor,
-      rarity: '普通' as ItemRarity,
-      slot: EquipmentSlot.Shoulder,
-      effect: { defense: 3, hp: 15 },
-    },
-    // 普通 - 胸甲
-    {
-      name: '布甲',
-      type: ItemType.Armor,
-      rarity: '普通' as ItemRarity,
-      slot: EquipmentSlot.Chest,
-      effect: { defense: 5, hp: 20 },
-    },
-    // 普通 - 手套
-    {
-      name: '布手套',
-      type: ItemType.Armor,
-      rarity: '普通' as ItemRarity,
-      slot: EquipmentSlot.Gloves,
-      effect: { defense: 3, hp: 15 },
-    },
-    // 普通 - 裤腿
-    {
-      name: '布裤',
-      type: ItemType.Armor,
-      rarity: '普通' as ItemRarity,
-      slot: EquipmentSlot.Legs,
-      effect: { defense: 4, hp: 18 },
-    },
-    // 普通 - 鞋子
-    {
-      name: '布鞋',
-      type: ItemType.Armor,
-      rarity: '普通' as ItemRarity,
-      slot: EquipmentSlot.Boots,
-      effect: { defense: 3, speed: 2 },
-    },
-
-    // 普通 - 铁制装备
-    {
-      name: '铁头盔',
-      type: ItemType.Armor,
-      rarity: '普通' as ItemRarity,
-      slot: EquipmentSlot.Head,
-      effect: { defense: 8, hp: 30 },
-    },
-    {
-      name: '铁肩甲',
-      type: ItemType.Armor,
-      rarity: '普通' as ItemRarity,
-      slot: EquipmentSlot.Shoulder,
-      effect: { defense: 8, hp: 30 },
-    },
-    {
-      name: '铁甲',
-      type: ItemType.Armor,
-      rarity: '普通' as ItemRarity,
-      slot: EquipmentSlot.Chest,
-      effect: { defense: 15, hp: 50 },
-    },
-    {
-      name: '铁护手',
-      type: ItemType.Armor,
-      rarity: '普通' as ItemRarity,
-      slot: EquipmentSlot.Gloves,
-      effect: { defense: 8, hp: 30 },
-    },
-    {
-      name: '铁护腿',
-      type: ItemType.Armor,
-      rarity: '普通' as ItemRarity,
-      slot: EquipmentSlot.Legs,
-      effect: { defense: 10, hp: 40 },
-    },
-    {
-      name: '铁战靴',
-      type: ItemType.Armor,
-      rarity: '普通' as ItemRarity,
-      slot: EquipmentSlot.Boots,
-      effect: { defense: 8, speed: 5 },
-    },
-
-    // 稀有 - 头部
-    {
-      name: '玄铁头盔',
-      type: ItemType.Armor,
-      rarity: '稀有' as ItemRarity,
-      slot: EquipmentSlot.Head,
-      effect: { defense: 25, hp: 60, spirit: 10 },
-    },
-    // 稀有 - 肩部
-    {
-      name: '玄铁肩甲',
-      type: ItemType.Armor,
-      rarity: '稀有' as ItemRarity,
-      slot: EquipmentSlot.Shoulder,
-      effect: { defense: 25, hp: 60, spirit: 10 },
-    },
-    // 稀有 - 胸甲
-    {
-      name: '玄铁甲',
-      type: ItemType.Armor,
-      rarity: '稀有' as ItemRarity,
-      slot: EquipmentSlot.Chest,
-      effect: { defense: 40, hp: 100 },
-    },
-    // 稀有 - 手套
-    {
-      name: '玄铁护手',
-      type: ItemType.Armor,
-      rarity: '稀有' as ItemRarity,
-      slot: EquipmentSlot.Gloves,
-      effect: { defense: 25, hp: 60, spirit: 10 },
-    },
-    // 稀有 - 裤腿
-    {
-      name: '玄铁护腿',
-      type: ItemType.Armor,
-      rarity: '稀有' as ItemRarity,
-      slot: EquipmentSlot.Legs,
-      effect: { defense: 30, hp: 80 },
-    },
-    // 稀有 - 鞋子
-    {
-      name: '玄铁战靴',
-      type: ItemType.Armor,
-      rarity: '稀有' as ItemRarity,
-      slot: EquipmentSlot.Boots,
-      effect: { defense: 25, speed: 12 },
-    },
-
-    // 传说 - 头部
-    {
-      name: '星辰头冠',
-      type: ItemType.Armor,
-      rarity: '传说' as ItemRarity,
-      slot: EquipmentSlot.Head,
-      effect: { defense: 60, hp: 150, spirit: 20, attack: 10 },
-    },
-    // 传说 - 肩部
-    {
-      name: '星辰云肩',
-      type: ItemType.Armor,
-      rarity: '传说' as ItemRarity,
-      slot: EquipmentSlot.Shoulder,
-      effect: { defense: 60, hp: 150, spirit: 20, attack: 10 },
-    },
-    // 传说 - 胸甲
-    {
-      name: '星辰战甲',
-      type: ItemType.Armor,
-      rarity: '传说' as ItemRarity,
-      slot: EquipmentSlot.Chest,
-      effect: { defense: 100, hp: 300, attack: 20 },
-    },
-    // 传说 - 手套
-    {
-      name: '星辰法手',
-      type: ItemType.Armor,
-      rarity: '传说' as ItemRarity,
-      slot: EquipmentSlot.Gloves,
-      effect: { defense: 60, hp: 150, spirit: 20, attack: 10 },
-    },
-    // 传说 - 裤腿
-    {
-      name: '星辰护腿',
-      type: ItemType.Armor,
-      rarity: '传说' as ItemRarity,
-      slot: EquipmentSlot.Legs,
-      effect: { defense: 75, hp: 200, attack: 15 },
-    },
-    // 传说 - 鞋子
-    {
-      name: '星辰战靴',
-      type: ItemType.Armor,
-      rarity: '传说' as ItemRarity,
-      slot: EquipmentSlot.Boots,
-      effect: { defense: 60, hp: 150, speed: 25 },
-    },
-
-    // 仙品 - 头部
-    {
-      name: '仙灵道冠',
-      type: ItemType.Armor,
-      rarity: '仙品' as ItemRarity,
-      slot: EquipmentSlot.Head,
-      effect: { defense: 350, hp: 1200, spirit: 150, attack: 100 },
-    },
-    // 仙品 - 肩部
-    {
-      name: '仙灵云肩',
-      type: ItemType.Armor,
-      rarity: '仙品' as ItemRarity,
-      slot: EquipmentSlot.Shoulder,
-      effect: { defense: 350, hp: 1200, spirit: 150, attack: 100 },
-    },
-    // 仙品 - 胸甲
-    {
-      name: '仙灵法袍',
-      type: ItemType.Armor,
-      rarity: '仙品' as ItemRarity,
-      slot: EquipmentSlot.Chest,
-      effect: { defense: 600, hp: 3000, spirit: 300 },
-    },
-    // 仙品 - 手套
-    {
-      name: '仙灵法手',
-      type: ItemType.Armor,
-      rarity: '仙品' as ItemRarity,
-      slot: EquipmentSlot.Gloves,
-      effect: { defense: 350, hp: 1200, spirit: 150, attack: 100 },
-    },
-    // 仙品 - 裤腿
-    {
-      name: '仙灵法裤',
-      type: ItemType.Armor,
-      rarity: '仙品' as ItemRarity,
-      slot: EquipmentSlot.Legs,
-      effect: { defense: 450, hp: 1800, spirit: 200 },
-    },
-    // 仙品 - 鞋子
-    {
-      name: '仙灵仙履',
-      type: ItemType.Armor,
-      rarity: '仙品' as ItemRarity,
-      slot: EquipmentSlot.Boots,
-      effect: { defense: 350, hp: 1200, speed: 150 },
-    },
-  ],
-  // 装备类（首饰）
-  accessories: [
-    {
-      name: '护身符',
-      type: ItemType.Accessory,
-      rarity: '普通' as ItemRarity,
-      slot: EquipmentSlot.Accessory1,
-      effect: { defense: 3, hp: 15 },
-    },
-    {
-      name: '聚灵玉佩',
-      type: ItemType.Accessory,
-      rarity: '稀有' as ItemRarity,
-      slot: EquipmentSlot.Accessory1,
-      effect: { spirit: 20, exp: 10 },
-    },
-    {
-      name: '星辰项链',
-      type: ItemType.Accessory,
-      rarity: '传说' as ItemRarity,
-      slot: EquipmentSlot.Accessory1,
-      effect: { attack: 30, defense: 30, speed: 15 },
-    },
-    {
-      name: '仙灵手镯',
-      type: ItemType.Accessory,
-      rarity: '仙品' as ItemRarity,
-      slot: EquipmentSlot.Accessory1,
-      effect: { attack: 250, defense: 250, hp: 800 },
-    },
-  ],
-  // 装备类（戒指）
-  rings: [
-    // ...
-    {
-      name: '铁戒指',
-      type: ItemType.Ring,
-      rarity: '普通' as ItemRarity,
-      slot: EquipmentSlot.Ring1,
-      effect: { attack: 5 },
-    },
-    {
-      name: '银戒指',
-      type: ItemType.Ring,
-      rarity: '普通' as ItemRarity,
-      slot: EquipmentSlot.Ring1,
-      effect: { defense: 5 },
-    },
-    {
-      name: '金戒指',
-      type: ItemType.Ring,
-      rarity: '稀有' as ItemRarity,
-      slot: EquipmentSlot.Ring1,
-      effect: { attack: 15, defense: 15 },
-    },
-    {
-      name: '星辰戒指',
-      type: ItemType.Ring,
-      rarity: '传说' as ItemRarity,
-      slot: EquipmentSlot.Ring1,
-      effect: { attack: 40, defense: 40, speed: 20 },
-    },
-    {
-      name: '仙灵戒指',
-      type: ItemType.Ring,
-      rarity: '仙品' as ItemRarity,
-      slot: EquipmentSlot.Ring1,
-      effect: { attack: 300, defense: 300, spirit: 150 },
-    },
-  ],
+  weapons: (() => getItemsByType(ItemType.Weapon))(),
+  // 装备类（护甲）
+  armors: (() => getItemsByType(ItemType.Armor))(),
+  // 首饰类
+  accessories: (() => getItemsByType(ItemType.Accessory))(),
+  // 戒指类
+  rings: (() => getItemsByType(ItemType.Ring))(),
   // 法宝类
-  artifacts: [
-    {
-      name: '聚灵珠',
-      type: ItemType.Artifact,
-      rarity: '普通' as ItemRarity,
-      slot: EquipmentSlot.Artifact1,
-      effect: { spirit: 10, exp: 5 },
-    },
-    {
-      name: '护体符',
-      type: ItemType.Artifact,
-      rarity: '普通' as ItemRarity,
-      slot: EquipmentSlot.Artifact1,
-      effect: { defense: 10, hp: 30 },
-    },
-    {
-      name: '玄灵镜',
-      type: ItemType.Artifact,
-      rarity: '稀有' as ItemRarity,
-      slot: EquipmentSlot.Artifact1,
-      effect: { spirit: 30, defense: 20 },
-    },
-    {
-      name: '星辰盘',
-      type: ItemType.Artifact,
-      rarity: '传说' as ItemRarity,
-      slot: EquipmentSlot.Artifact1,
-      effect: { attack: 50, defense: 50, spirit: 50 },
-    },
-    {
-      name: '仙灵宝珠',
-      type: ItemType.Artifact,
-      rarity: '仙品' as ItemRarity,
-      slot: EquipmentSlot.Artifact1,
-      effect: { attack: 450, defense: 450, spirit: 450, hp: 2000 },
-    },
-  ],
+  artifacts: (() => getItemsByType(ItemType.Artifact))(),
 };
 
 // 稀有度等级顺序（缓存，避免重复创建）
@@ -931,54 +339,76 @@ const generateLoot = (
     }>;
     let itemType: string;
 
-    if (itemTypeRoll < 0.25) {
-      // 25% 草药（从30%降低）
-      itemPool = LOOT_ITEMS.herbs as any;
-      itemType = '草药';
-    } else if (itemTypeRoll < 0.5) {
-      // 25% 丹药
-      itemPool = LOOT_ITEMS.pills as any;
-      itemType = '丹药';
-    } else if (itemTypeRoll < 0.65) {
-      // 15% 材料
-      itemPool = LOOT_ITEMS.materials as any;
-      itemType = '材料';
-    } else if (itemTypeRoll < 0.85) {
-      // 20% 装备（武器/护甲/首饰/戒指）（从15%提高）
-      const equipRoll = Math.random();
-      if (equipRoll < 0.3) {
-        itemPool = LOOT_ITEMS.weapons as any;
-        itemType = '武器';
-      } else if (equipRoll < 0.7) {
-        // 护甲概率40%，因为护甲有6个部位需要覆盖
-        // 先随机选择一个部位，确保每个部位有相等的概率
-        const armorSlots = [
-          EquipmentSlot.Head,
-          EquipmentSlot.Shoulder,
-          EquipmentSlot.Chest,
-          EquipmentSlot.Gloves,
-          EquipmentSlot.Legs,
-          EquipmentSlot.Boots,
-        ];
-        const selectedSlot = armorSlots[Math.floor(Math.random() * armorSlots.length)];
-        // 从护甲池中筛选出该部位的装备
-        const slotFilteredArmors = (LOOT_ITEMS.armors as any).filter((item: any) => item.slot === selectedSlot);
-        // 如果该部位没有装备，则使用全部护甲池（降级处理）
-        itemPool = slotFilteredArmors.length > 0 ? slotFilteredArmors : (LOOT_ITEMS.armors as any);
-        itemType = '护甲';
-      } else if (equipRoll < 0.85) {
-        itemPool = LOOT_ITEMS.accessories as any;
-        itemType = '首饰';
-      } else {
-        itemPool = LOOT_ITEMS.rings as any;
-        itemType = '戒指';
+    // 使用加权随机选择物品类型，增加随机性
+    // 每次选择时都重新计算权重，避免固定模式
+    const typeWeights = [
+      { type: 'herbs', weight: 25, name: '草药' },
+      { type: 'pills', weight: 25, name: '丹药' },
+      { type: 'materials', weight: 15, name: '材料' },
+      { type: 'weapons', weight: 6, name: '武器' },
+      { type: 'armors', weight: 8, name: '护甲' },
+      { type: 'accessories', weight: 3, name: '首饰' },
+      { type: 'rings', weight: 3, name: '戒指' },
+      { type: 'artifacts', weight: 7, name: '法宝' },
+      { type: 'recipe', weight: 8, name: '丹方' },
+    ];
+
+    // 如果上一个物品是装备类，降低装备类权重
+    if (selectedTypes.length > 0 && selectedTypes[selectedTypes.length - 1] !== '草药' && selectedTypes[selectedTypes.length - 1] !== '丹药' && selectedTypes[selectedTypes.length - 1] !== '材料') {
+      typeWeights.forEach(w => {
+        if (['weapons', 'armors', 'accessories', 'rings', 'artifacts'].includes(w.type)) {
+          w.weight *= 0.7; // 降低装备类权重
+        }
+      });
+    }
+
+    // 计算总权重
+    const totalWeight = typeWeights.reduce((sum, w) => sum + w.weight, 0);
+    let randomWeight = Math.random() * totalWeight;
+
+    // 根据权重选择类型
+    let selectedType = typeWeights[0];
+    for (const type of typeWeights) {
+      randomWeight -= type.weight;
+      if (randomWeight <= 0) {
+        selectedType = type;
+        break;
       }
-    } else if (itemTypeRoll < 0.92) {
-      // 7% 法宝（从10%略微降低以平衡）
-      itemPool = LOOT_ITEMS.artifacts as any;
-      itemType = '法宝';
+    }
+
+    itemType = selectedType.name;
+
+    // 根据选择的类型设置物品池
+    if (selectedType.type === 'herbs') {
+      itemPool = shuffle([...LOOT_ITEMS.herbs]) as any; // 每次选择前都打乱
+    } else if (selectedType.type === 'pills') {
+      itemPool = shuffle([...LOOT_ITEMS.pills]) as any;
+    } else if (selectedType.type === 'materials') {
+      itemPool = shuffle([...LOOT_ITEMS.materials]) as any;
+    } else if (selectedType.type === 'weapons') {
+      itemPool = shuffle([...LOOT_ITEMS.weapons]) as any;
+    } else if (selectedType.type === 'armors') {
+      // 护甲：先打乱所有护甲，然后随机选择部位
+      const allArmors = shuffle([...LOOT_ITEMS.armors]);
+      const armorSlots = [
+        EquipmentSlot.Head,
+        EquipmentSlot.Shoulder,
+        EquipmentSlot.Chest,
+        EquipmentSlot.Gloves,
+        EquipmentSlot.Legs,
+        EquipmentSlot.Boots,
+      ];
+      const selectedSlot = armorSlots[Math.floor(Math.random() * armorSlots.length)];
+      const slotFilteredArmors = allArmors.filter((item: any) => item.equipmentSlot === selectedSlot);
+      itemPool = slotFilteredArmors.length > 0 ? slotFilteredArmors : allArmors;
+    } else if (selectedType.type === 'accessories') {
+      itemPool = shuffle([...LOOT_ITEMS.accessories]) as any;
+    } else if (selectedType.type === 'rings') {
+      itemPool = shuffle([...LOOT_ITEMS.rings]) as any;
+    } else if (selectedType.type === 'artifacts') {
+      itemPool = shuffle([...LOOT_ITEMS.artifacts]) as any;
     } else {
-      // 8% 丹方（稀有奖励）（从5%提高）
+      // 丹方
       itemType = '丹方';
       itemPool = []; // 丹方不使用常规物品池
     }
@@ -994,7 +424,12 @@ const generateLoot = (
       });
 
       if (availableRecipes.length > 0) {
-        const selectedRecipe = pickOne(availableRecipes);
+        // 多次打乱可用丹方列表，增加随机性
+        let shuffledRecipes = shuffle(availableRecipes);
+        shuffledRecipes = shuffle(shuffledRecipes); // 二次打乱
+        // 使用加权随机选择
+        const randomIndex = Math.floor(Math.pow(Math.random(), 0.8) * shuffledRecipes.length);
+        const selectedRecipe = shuffledRecipes[randomIndex];
         const recipeKey = `${selectedRecipe.name}丹方-${selectedRecipe.result.rarity}`;
         selectedItems.add(recipeKey);
         selectedTypes.push(itemType);
@@ -1046,7 +481,12 @@ const generateLoot = (
     }
 
     if (availableItems.length > 0) {
-      const selected = pickOne(availableItems);
+      // 多次打乱可用物品列表，增加随机性
+      let shuffledItems = shuffle(availableItems);
+      shuffledItems = shuffle(shuffledItems); // 二次打乱
+      // 使用加权随机：前面的物品权重稍低，后面的物品权重稍高，但整体保持随机
+      const randomIndex = Math.floor(Math.pow(Math.random(), 0.8) * shuffledItems.length); // 使用幂函数增加随机性
+      const selected = shuffledItems[randomIndex];
 
       // 标记为已选择
       if (selected.slot !== undefined) {
@@ -1085,7 +525,7 @@ const generateLoot = (
           rarity: selected.rarity,
           isEquippable: selected.slot !== undefined,
           equipmentSlot: selected.slot as string | undefined,
-          effect: selected.effect,
+          effect: selected.effect, // 装备属性会在executeAdventureCore中根据玩家境界调整
           permanentEffect: selected.permanentEffect,
           reviveChances: reviveChances,
         };
@@ -1376,23 +816,15 @@ const createEnemy = async (
 
   if (Math.random() < 0.15 && adventureType !== 'sect_challenge') {
     try {
-      // 添加超时处理，防止AI调用卡住战斗初始化
-      const timeoutPromise = new Promise<{ name: string; title: string }>((_, reject) => {
-        setTimeout(() => reject(new Error('AI生成敌人名称超时')), 3000); // 3秒超时
-      });
-
-      const aiGenerated = await Promise.race([
-        generateEnemyName(realm, adventureType),
-        timeoutPromise
-      ]);
-
-      if (aiGenerated.name && aiGenerated.title) {
-        name = aiGenerated.name;
-        title = aiGenerated.title;
+      // 使用模板库生成敌人名称
+      const generated = getRandomEnemyName(realm, adventureType);
+      if (generated.name && generated.title) {
+        name = generated.name;
+        title = generated.title;
       }
     } catch (e) {
-      // AI生成失败或超时，使用预设列表
-      logger.warn('AI生成敌人名字失败或超时，使用预设列表:', e);
+      // 模板生成失败，使用预设列表
+      logger.warn('模板生成敌人名字失败，使用预设列表:', e);
     }
   }
 
@@ -1510,11 +942,11 @@ export const shouldTriggerBattle = (
   player: PlayerStats,
   adventureType: AdventureType
 ): boolean => {
-  const base = baseBattleChance[adventureType] ?? 0.4; // 基础战斗概率
+  const base = baseBattleChance[adventureType] ?? 0.2; // 基础战斗概率
   const realmBonus = REALM_ORDER.indexOf(player.realm) * 0.02; // 境界加成（从0.015提高到0.02）
   const speedBonus = (player.speed || 0) * 0.0005; // 速度加成（从0.0004提高到0.0005）
   const luckMitigation = (player.luck || 0) * 0.00015; // 幸运减成（从0.0002降低到0.00015，减少影响）
-  const chance = Math.min(0.75, base + realmBonus + speedBonus - luckMitigation); // 保持上限适中
+  const chance = Math.min(0.6, base + realmBonus + speedBonus - luckMitigation); // 保持上限适中
   return Math.random() < Math.max(0.1, chance); // 确保不会过低也不过高
   // return true; // 调试战斗打开
 };
@@ -2111,6 +1543,107 @@ export const initializeTurnBasedBattle = async (
 };
 
 /**
+ * 为没有配置技能的功法生成默认技能
+ */
+function generateDefaultSkillForArt(art: { id: string; name: string; type: string; grade: string; effects: any }): BattleSkill | null {
+  // 根据功法类型和品级生成不同的技能
+  const gradeMultipliers: Record<string, number> = {
+    '黄': 1.0,
+    '玄': 1.5,
+    '地': 2.5,
+    '天': 4.0,
+  };
+  const multiplier = gradeMultipliers[art.grade] || 1.0;
+
+  // 根据功法类型决定技能类型
+  if (art.type === 'body') {
+    // 体术类功法 -> 攻击技能
+    const baseDamage = Math.round(30 * multiplier);
+    const damageMultiplier = 0.8 + (multiplier - 1) * 0.3;
+
+    return {
+      id: `skill-${art.id}`,
+      name: art.name,
+      description: `施展${art.name}，对敌人造成伤害。`,
+      type: 'attack',
+      source: 'cultivation_art',
+      sourceId: art.id,
+      effects: [],
+      cost: { mana: Math.round(20 * multiplier) },
+      cooldown: 0,
+      maxCooldown: Math.max(2, Math.round(multiplier)),
+      target: 'enemy',
+      damage: {
+        base: baseDamage,
+        multiplier: damageMultiplier,
+        type: 'physical',
+        critChance: 0.1 + (multiplier - 1) * 0.05,
+        critMultiplier: 1.5 + (multiplier - 1) * 0.2,
+      },
+    };
+  } else if (art.type === 'mental') {
+    // 心法类功法 -> 根据效果决定技能类型
+    if (art.effects?.expRate) {
+      // 如果有修炼速度加成，生成Buff技能（提升属性）
+      return {
+        id: `skill-${art.id}`,
+        name: art.name,
+        description: `运转${art.name}，提升自身属性。`,
+        type: 'buff',
+        source: 'cultivation_art',
+        sourceId: art.id,
+        effects: [
+          {
+            type: 'buff',
+            target: 'self',
+            buff: {
+              id: `${art.id}-buff`,
+              name: art.name,
+              type: 'attack',
+              value: 0.1 * multiplier, // 10% * 品级倍数
+              duration: 3,
+              source: art.id,
+              description: `攻击力提升${Math.round(10 * multiplier)}%`,
+            },
+          },
+        ],
+        cost: { mana: Math.round(25 * multiplier) },
+        cooldown: 0,
+        maxCooldown: Math.max(3, Math.round(multiplier * 1.5)),
+        target: 'self',
+      };
+    } else {
+      // 其他心法 -> 法术攻击
+      const baseDamage = Math.round(40 * multiplier);
+      const damageMultiplier = 1.0 + (multiplier - 1) * 0.4;
+
+      return {
+        id: `skill-${art.id}`,
+        name: art.name,
+        description: `施展${art.name}，对敌人造成法术伤害。`,
+        type: 'attack',
+        source: 'cultivation_art',
+        sourceId: art.id,
+        effects: [],
+        cost: { mana: Math.round(30 * multiplier) },
+        cooldown: 0,
+        maxCooldown: Math.max(2, Math.round(multiplier)),
+        target: 'enemy',
+        damage: {
+          base: baseDamage,
+          multiplier: damageMultiplier,
+          type: 'magical',
+          critChance: 0.15 + (multiplier - 1) * 0.05,
+          critMultiplier: 2.0 + (multiplier - 1) * 0.3,
+        },
+      };
+    }
+  }
+
+  return null;
+}
+
+/**
  * 从玩家数据创建战斗单位
  */
 function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
@@ -2134,7 +1667,17 @@ function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
   player.cultivationArts.forEach((artId) => {
     const artSkills = CULTIVATION_ART_BATTLE_SKILLS[artId];
     if (artSkills) {
+      // 如果功法有配置的技能，使用配置的技能
       skills.push(...artSkills.map((s) => ({ ...s, cooldown: 0 })));
+    } else {
+      // 如果功法没有配置技能，自动生成默认技能
+      const art = CULTIVATION_ARTS.find(a => a.id === artId);
+      if (art) {
+        const defaultSkill = generateDefaultSkillForArt(art);
+        if (defaultSkill) {
+          skills.push({ ...defaultSkill, cooldown: 0 });
+        }
+      }
     }
   });
 

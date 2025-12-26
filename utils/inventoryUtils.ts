@@ -1,6 +1,7 @@
 import { Item, ItemType, ItemRarity, EquipmentSlot } from '../types';
 import { uid } from './gameUtils';
 import { inferItemTypeAndSlot, normalizeItemEffect } from './itemUtils';
+import { getItemFromConstants } from './itemConstantsUtils';
 
 /**
  * 将物品添加到物品栏
@@ -23,17 +24,33 @@ export function addItemToInventory(
   const rawIsEquippable = !!itemData.isEquippable;
   const rawRarity = (itemData.rarity as ItemRarity) || '普通';
 
-  // 1. 类型和槽位推断
-  const inferred = inferItemTypeAndSlot(
-    itemName,
-    rawType,
-    itemData.description || '',
-    rawIsEquippable
-  );
+  // 1. 优先从常量池获取物品信息（如果常量池中有，直接使用，避免类型推断）
+  const itemFromConstants = getItemFromConstants(itemName);
+  let itemType: ItemType;
+  let isEquippable: boolean;
+  let equipmentSlot: EquipmentSlot | undefined;
 
-  const itemType = inferred.type;
-  const isEquippable = inferred.isEquippable;
-  const equipmentSlot = itemData.equipmentSlot || inferred.equipmentSlot;
+  if (itemFromConstants) {
+    // 常量池中有完整定义，优先使用常量池的数据
+    itemType = itemFromConstants.type as ItemType;
+    isEquippable = itemFromConstants.isEquippable || false;
+    equipmentSlot = itemFromConstants.equipmentSlot as EquipmentSlot | undefined;
+    // 如果传入的数据中有装备槽位，优先使用传入的（可能是动态生成的）
+    if (itemData.equipmentSlot) {
+      equipmentSlot = itemData.equipmentSlot as EquipmentSlot;
+    }
+  } else {
+    // 常量池中没有，才进行类型推断
+    const inferred = inferItemTypeAndSlot(
+      itemName,
+      rawType,
+      itemData.description || '',
+      rawIsEquippable
+    );
+    itemType = inferred.type;
+    isEquippable = inferred.isEquippable;
+    equipmentSlot = itemData.equipmentSlot || inferred.equipmentSlot;
+  }
 
   // 2. 效果规范化
   const normalized = normalizeItemEffect(

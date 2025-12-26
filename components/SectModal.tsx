@@ -17,6 +17,7 @@ interface Props {
   onPromote: () => void;
   onBuy: (item: Partial<Item>, cost: number, quantity?: number) => void;
   onChallengeLeader: () => void;
+  setItemActionLog?: (log: { text: string; type: string } | null) => void;
 }
 
 const SectModal: React.FC<Props> = ({
@@ -30,6 +31,7 @@ const SectModal: React.FC<Props> = ({
   onPromote,
   onBuy,
   onChallengeLeader,
+  setItemActionLog,
 }) => {
   const [activeTab, setActiveTab] = useState<'hall' | 'mission' | 'shop'>(
     'hall'
@@ -871,6 +873,7 @@ const SectModal: React.FC<Props> = ({
           }}
           task={selectedTask}
           player={player}
+          setItemActionLog={setItemActionLog}
           onTaskComplete={(task, encounterResult, isPerfectCompletion) => {
             onTask(task, encounterResult, isPerfectCompletion);
             setSelectedTask(null);

@@ -162,7 +162,7 @@ interface ModalsContainerProps {
     handleReleasePet?: (petId: string) => void;
     handleBatchReleasePets?: (petIds: string[]) => void;
     // Lottery
-    handleDraw: (count: 1 | 10) => void;
+    handleDraw: (count: number) => void;
     // Settings
     handleUpdateSettings: (newSettings: Partial<GameSettings>) => void;
     handleRestartGame?: () => void;
@@ -312,6 +312,7 @@ export default function ModalsContainer({
           onPromote={handlers.handleSectPromote}
           onBuy={handlers.handleSectBuy}
           onChallengeLeader={handlers.handleChallengeLeader}
+          setItemActionLog={setItemActionLog}
         />
       )}
 

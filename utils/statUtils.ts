@@ -1,35 +1,15 @@
 import { PlayerStats, CultivationArt, ArtGrade } from '../types';
-import { CULTIVATION_ARTS, INHERITANCE_SKILLS, calculateSpiritualRootArtBonus } from '../constants';
+import { CULTIVATION_ARTS, calculateSpiritualRootArtBonus } from '../constants';
 
 /**
- * 获取玩家激活的心法（包括普通功法和传承功法）
+ * 获取玩家激活的心法
  */
 export function getActiveMentalArt(player: PlayerStats): CultivationArt | null {
   if (!player.activeArtId) return null;
 
-  // 1. 在普通功法中查找
+  // 在功法中查找
   const art = CULTIVATION_ARTS.find((a) => a.id === player.activeArtId);
-  if (art) return art;
-
-  // 2. 在传承技能中查找
-  const skill = INHERITANCE_SKILLS.find((s) => s.id === player.activeArtId);
-  if (skill) {
-    // 将传承技能转换为 CultivationArt 格式
-    return {
-      id: skill.id,
-      name: skill.name,
-      type: (skill.effects.expRate ? 'mental' : 'body') as 'mental' | 'body',
-      description: skill.description,
-      grade: '天' as ArtGrade,
-      realmRequirement: player.realm, // 传承技能通常无境界要求
-      cost: 0,
-      effects: {
-        ...skill.effects,
-      },
-    } as CultivationArt;
-  }
-
-  return null;
+  return art || null;
 }
 
 /**

@@ -32,6 +32,7 @@ import {
 interface GameViewProps {
   player: PlayerStats;
   logs: LogEntry[];
+  setLogs: React.Dispatch<React.SetStateAction<LogEntry[]>>;
   visualEffects: any[];
   loading: boolean;
   cooldown: number;
@@ -95,6 +96,7 @@ interface GameViewProps {
 function GameView({
   player,
   logs,
+  setLogs,
   visualEffects,
   loading,
   cooldown,
@@ -153,6 +155,7 @@ function GameView({
           logs={logs}
           playerName={player.name}
           className="pb-[23rem] md:pb-0"
+          onClearLogs={() => setLogs([])}
         />
 
         <ActionBar
@@ -169,6 +172,17 @@ function GameView({
           onToggleAutoAdventure={handlers.onToggleAutoAdventure}
         />
       </main>
+
+      {/* 自动历练提示 */}
+      {handlers.autoAdventure && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-[9999] pointer-events-none">
+          <div className="bg-stone-800/90 backdrop-blur-sm border border-stone-600/50 rounded-lg px-6 py-3 shadow-lg">
+            <p className="text-stone-300 text-lg md:text-xl font-serif">
+              自动历练中 <span className="text-stone-500">按下空格取消...</span>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Notifications */}
       {purchaseSuccess && (

@@ -221,20 +221,35 @@ export function useGrottoHandlers({
       let targetHerbName = herbIdOrName;
       if (herbConfig) {
         targetHerbName = herbConfig.name;
+      } else {
+        // 如果传入的是 ID 格式（如 herb-雪莲花），尝试提取名称部分
+        // 或者如果传入的就是名称，直接使用
+        if (herbIdOrName.startsWith('herb-')) {
+          // 尝试从 ID 中提取名称（herb-雪莲花 -> 雪莲花）
+          // 但更安全的方式是直接使用传入的值，然后在背包中查找
+          targetHerbName = herbIdOrName;
+        }
       }
 
-      // 从背包中查找草药（优先通过名称匹配，因为名称是唯一确定的）
+      // 从背包中查找草药（多种匹配方式）
       // 严格过滤：只包含草药类型，排除丹药等其他类型
       let seedItem = prev.inventory.find(
-        (item) => item.name === targetHerbName && item.type === ItemType.Herb
+        (item) => {
+          if (item.type !== ItemType.Herb) return false;
+          // 1. 精确名称匹配
+          if (item.name === targetHerbName) return true;
+          // 2. 如果传入的是 ID，尝试匹配名称
+          if (herbConfig && item.name === herbConfig.name) return true;
+          // 3. 如果传入的是 ID 格式，尝试从 ID 中提取名称匹配
+          if (herbIdOrName.startsWith('herb-')) {
+            const possibleName = herbIdOrName.replace(/^herb-/, '');
+            if (item.name === possibleName) return true;
+          }
+          // 4. 通过物品 ID 匹配（兼容旧数据）
+          if (item.id === herbIdOrName) return true;
+          return false;
+        }
       );
-
-      // 如果通过名称找不到，尝试通过 ID 查找（兼容旧数据）
-      if (!seedItem) {
-        seedItem = prev.inventory.find(
-          (item) => (item.id === herbIdOrName || item.name === herbIdOrName) && item.type === ItemType.Herb
-        );
-      }
 
       if (!seedItem || seedItem.quantity < 1) {
         const herbName = herbConfig?.name || herbIdOrName;

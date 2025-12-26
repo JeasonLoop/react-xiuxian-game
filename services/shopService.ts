@@ -1,184 +1,66 @@
 import { ShopItem, ShopType, ItemType, ItemRarity, EquipmentSlot, RealmType } from '../types';
 import { REALM_ORDER, getPillDefinition } from '../constants';
 import { uid } from '../utils/gameUtils';
+import { getItemFromConstants } from '../utils/itemConstantsUtils';
 
-// 商店物品模板池
+/**
+ * 从常量池获取物品并添加商店价格信息
+ */
+function createShopItemFromConstants(
+  itemName: string,
+  price: number,
+  sellPrice: number,
+  minRealm?: RealmType
+): Omit<ShopItem, 'id'> {
+  const itemFromConstants = getItemFromConstants(itemName);
+  if (!itemFromConstants) {
+    throw new Error(`物品 ${itemName} 在常量池中未找到`);
+  }
+  return {
+    name: itemFromConstants.name,
+    type: itemFromConstants.type,
+    description: itemFromConstants.description,
+    rarity: itemFromConstants.rarity,
+    price,
+    sellPrice,
+    effect: itemFromConstants.effect,
+    permanentEffect: itemFromConstants.permanentEffect,
+    isEquippable: itemFromConstants.isEquippable,
+    equipmentSlot: itemFromConstants.equipmentSlot as EquipmentSlot | undefined,
+    minRealm,
+  };
+}
+
+// 商店物品模板池（所有物品都从常量池获取）
 const SHOP_ITEM_TEMPLATES: Record<ShopType, Array<Omit<ShopItem, 'id'>>> = {
   [ShopType.Village]: [
-    {
-      name: '止血草',
-      type: ItemType.Herb,
-      description: '常见的草药，用于治疗轻微外伤。',
-      rarity: '普通',
-      price: 10,
-      sellPrice: 3,
-      effect: { hp: 20 },
-    },
-    {
-      name: '炼器石',
-      type: ItemType.Material,
-      description: '用于强化法宝的基础材料。',
-      rarity: '普通',
-      price: 15,
-      sellPrice: 5,
-    },
+    createShopItemFromConstants('止血草', 10, 3),
+    createShopItemFromConstants('炼器石', 15, 5),
     (() => {
-      const pillDef = getPillDefinition('聚气丹');
-      if (!pillDef) throw new Error('聚气丹定义未找到');
-      return {
-        name: '聚气丹',
-        type: ItemType.Pill,
-        description: pillDef.description,
-        rarity: pillDef.rarity as ItemRarity,
-        price: 30,
-        sellPrice: 10,
-        effect: pillDef.effect,
-        permanentEffect: pillDef.permanentEffect,
-      };
+      const item = createShopItemFromConstants('聚气丹', 30, 10);
+      return item;
     })(),
-    {
-      name: '木剑',
-      type: ItemType.Weapon,
-      description: '普通的木制剑，适合初学者。',
-      rarity: '普通',
-      price: 50,
-      sellPrice: 15,
-      isEquippable: true,
-      equipmentSlot: EquipmentSlot.Weapon,
-      effect: { attack: 3 },
-    },
-    {
-      name: '回血丹',
-      type: ItemType.Pill,
-      description: '恢复少量气血。',
-      rarity: '普通',
-      price: 20,
-      sellPrice: 7,
-      effect: { hp: 30 },
-    }, // 回血丹不在丹方中，保留硬编码
+    createShopItemFromConstants('凡铁剑', 50, 15), // 使用常量池中的名称
+    // 回血丹不在常量池中，如果常量池中没有则跳过
+    ...(getItemFromConstants('回血丹') ? [createShopItemFromConstants('回血丹', 20, 7)] : []),
   ],
   [ShopType.City]: [
-    {
-      name: '紫猴花',
-      type: ItemType.Herb,
-      description: '炼制洗髓丹的材料，生长在悬崖峭壁。',
-      rarity: '稀有',
-      price: 80,
-      sellPrice: 25,
-    },
-    (() => {
-      const pillDef = getPillDefinition('洗髓丹');
-      if (!pillDef) throw new Error('洗髓丹定义未找到');
-      return {
-        name: '洗髓丹',
-        type: ItemType.Pill,
-        description: pillDef.description,
-        rarity: pillDef.rarity as ItemRarity,
-        price: 150,
-        sellPrice: 50,
-        effect: pillDef.effect,
-        permanentEffect: pillDef.permanentEffect,
-      };
-    })(),
-    {
-      name: '青钢剑',
-      type: ItemType.Weapon,
-      description: '精钢打造的剑，锋利无比。',
-      rarity: '稀有',
-      price: 200,
-      sellPrice: 60,
-      isEquippable: true,
-      equipmentSlot: EquipmentSlot.Weapon,
-      effect: { attack: 15 },
-    },
-    (() => {
-      const pillDef = getPillDefinition('凝神丹');
-      if (!pillDef) throw new Error('凝神丹定义未找到');
-      return {
-        name: '凝神丹',
-        type: ItemType.Pill,
-        description: pillDef.description,
-        rarity: pillDef.rarity as ItemRarity,
-        price: 120,
-        sellPrice: 40,
-        effect: pillDef.effect,
-        permanentEffect: pillDef.permanentEffect,
-      };
-    })(),
-    (() => {
-      const pillDef = getPillDefinition('强体丹');
-      if (!pillDef) throw new Error('强体丹定义未找到');
-      return {
-        name: '强体丹',
-        type: ItemType.Pill,
-        description: pillDef.description,
-        rarity: pillDef.rarity as ItemRarity,
-        price: 120,
-        sellPrice: 40,
-        effect: pillDef.effect,
-        permanentEffect: pillDef.permanentEffect,
-      };
-    })(),
-    {
-      name: '强化石',
-      type: ItemType.Material,
-      description: '用于强化法宝的珍贵材料。',
-      rarity: '稀有',
-      price: 50,
-      sellPrice: 15,
-    },
+    // 只添加常量池中存在的物品
+    ...(getItemFromConstants('紫猴花') ? [createShopItemFromConstants('紫猴花', 80, 25)] : []),
+    ...(getItemFromConstants('洗髓丹') ? [createShopItemFromConstants('洗髓丹', 150, 50)] : []),
+    // 青钢剑可能不在常量池中，如果不在则跳过
+    ...(getItemFromConstants('青钢剑') ? [createShopItemFromConstants('青钢剑', 200, 60)] : []),
+    ...(getItemFromConstants('凝神丹') ? [createShopItemFromConstants('凝神丹', 120, 40)] : []),
+    ...(getItemFromConstants('强体丹') ? [createShopItemFromConstants('强体丹', 120, 40)] : []),
+    // 强化石可能不在常量池中，如果不在则跳过
+    ...(getItemFromConstants('强化石') ? [createShopItemFromConstants('强化石', 50, 15)] : []),
   ],
   [ShopType.Sect]: [
-    (() => {
-      const pillDef = getPillDefinition('筑基丹');
-      if (!pillDef) throw new Error('筑基丹定义未找到');
-      return {
-        name: '筑基丹',
-        type: ItemType.Pill,
-        description: pillDef.description,
-        rarity: pillDef.rarity as ItemRarity,
-        price: 1000,
-        sellPrice: 300,
-        effect: pillDef.effect,
-        permanentEffect: pillDef.permanentEffect,
-      };
-    })(),
-    {
-      name: '高阶妖丹',
-      type: ItemType.Material,
-      description: '强大妖兽的内丹，灵气逼人。',
-      rarity: '稀有',
-      price: 500,
-      sellPrice: 150,
-    },
-    (() => {
-      const pillDef = getPillDefinition('凝神丹');
-      if (!pillDef) throw new Error('凝神丹定义未找到');
-      return {
-        name: '凝神丹',
-        type: ItemType.Pill,
-        description: pillDef.description,
-        rarity: pillDef.rarity as ItemRarity,
-        price: 200,
-        sellPrice: 60,
-        effect: pillDef.effect,
-        permanentEffect: pillDef.permanentEffect,
-      };
-    })(),
-    (() => {
-      const pillDef = getPillDefinition('强体丹');
-      if (!pillDef) throw new Error('强体丹定义未找到');
-      return {
-        name: '强体丹',
-        type: ItemType.Pill,
-        description: pillDef.description,
-        rarity: pillDef.rarity as ItemRarity,
-        price: 200,
-        sellPrice: 60,
-        effect: pillDef.effect,
-        permanentEffect: pillDef.permanentEffect,
-      };
-    })(),
+    ...(getItemFromConstants('筑基丹') ? [createShopItemFromConstants('筑基丹', 1000, 300)] : []),
+    // 高阶妖丹可能不在常量池中，如果不在则跳过
+    ...(getItemFromConstants('高阶妖丹') ? [createShopItemFromConstants('高阶妖丹', 500, 150)] : []),
+    ...(getItemFromConstants('凝神丹') ? [createShopItemFromConstants('凝神丹', 200, 60)] : []),
+    ...(getItemFromConstants('强体丹') ? [createShopItemFromConstants('强体丹', 200, 60)] : []),
   ],
   [ShopType.BlackMarket]: [], // 黑市物品从高级物品池中随机生成
   [ShopType.LimitedTime]: [], // 限时商店物品从所有物品池中随机生成，带折扣
@@ -186,34 +68,21 @@ const SHOP_ITEM_TEMPLATES: Record<ShopType, Array<Omit<ShopItem, 'id'>>> = {
 };
 
 // 高级物品模板（刷新时小概率出现，黑市也会使用）
+// 只包含常量池中存在的物品，特殊物品（如"村里最好的剑"）可以保留硬编码
 const PREMIUM_ITEM_TEMPLATES: Array<Omit<ShopItem, 'id'>> = [
-  {
-    name: '千年灵芝',
-    type: ItemType.Herb,
-    description: '千年灵草，蕴含浓郁灵气。',
-    rarity: '传说',
-    price: 2000,
-    sellPrice: 600,
-    effect: { hp: 200, exp: 200 },
-    permanentEffect: { maxLifespan: 1000, spirit: 200 },
-  },
-  {
-    name: '紫霄剑',
-    type: ItemType.Weapon,
-    description: '传说中的仙剑，剑气逼人。',
-    rarity: '传说',
-    price: 5000,
-    sellPrice: 1500,
-    isEquippable: true,
-    equipmentSlot: EquipmentSlot.Weapon,
-    effect: { attack: 80, speed: 20 },
-    minRealm: RealmType.QiRefining,
-  },
+  // 从常量池获取的物品
+  ...(getItemFromConstants('千年灵芝') ? [createShopItemFromConstants('千年灵芝', 2000, 600)] : []),
+  ...(getItemFromConstants('紫霄剑') ? [createShopItemFromConstants('紫霄剑', 5000, 1500, RealmType.QiRefining)] : []),
+  ...(getItemFromConstants('九转金丹') ? [createShopItemFromConstants('九转金丹', 3000, 900)] : []),
+  ...(getItemFromConstants('龙鳞甲') ? [createShopItemFromConstants('龙鳞甲', 4000, 1200, RealmType.QiRefining)] : []),
+  ...(getItemFromConstants('仙灵草') ? [createShopItemFromConstants('仙灵草', 10000, 3000)] : []),
+  ...(getItemFromConstants('天元丹') ? [createShopItemFromConstants('天元丹', 15000, 4500)] : []),
+  // 特殊物品（不在常量池中，保留硬编码）
   {
     name: '村里最好的剑',
     type: ItemType.Weapon,
     description: '村里最好的剑，听老板说刷出来的一般是大富大贵之人，关键时刻可以保命（这玩意被人动过手脚）',
-    rarity: '仙品',
+    rarity: '仙品' as ItemRarity,
     price: 999999,
     sellPrice: 999999,
     isEquippable: true,
@@ -222,100 +91,17 @@ const PREMIUM_ITEM_TEMPLATES: Array<Omit<ShopItem, 'id'>> = [
     reviveChances: 5,
     minRealm: RealmType.QiRefining,
   },
-  (() => {
-    const pillDef = getPillDefinition('九转金丹');
-    if (!pillDef) throw new Error('九转金丹定义未找到');
-    return {
-      name: '九转金丹',
-      type: ItemType.Pill,
-      description: pillDef.description,
-      rarity: pillDef.rarity as ItemRarity,
-      price: 3000,
-      sellPrice: 900,
-      effect: pillDef.effect,
-      permanentEffect: pillDef.permanentEffect,
-    };
-  })(),
-  {
-    name: '龙鳞甲',
-    type: ItemType.Armor,
-    description: '龙鳞制成的护甲，防御力极强。',
-    rarity: '传说',
-    price: 4000,
-    sellPrice: 1200,
-    isEquippable: true,
-    equipmentSlot: EquipmentSlot.Chest,
-      effect: { defense: 60, hp: 100 },
-    minRealm: RealmType.QiRefining,
-  },
-  {
-    name: '仙灵草',
-    type: ItemType.Herb,
-    description: '仙气缭绕的灵草，极为罕见。',
-    rarity: '仙品',
-    price: 10000,
-    sellPrice: 3000,
-    effect: { hp: 500, exp: 500 },
-  },
-  (() => {
-    const pillDef = getPillDefinition('天元丹');
-    if (!pillDef) throw new Error('天元丹定义未找到');
-    return {
-      name: '天元丹',
-      type: ItemType.Pill,
-      description: pillDef.description,
-      rarity: pillDef.rarity as ItemRarity,
-      price: 15000,
-      sellPrice: 4500,
-      effect: pillDef.effect,
-      permanentEffect: pillDef.permanentEffect,
-    };
-  })(),
-];
+].filter(Boolean); // 过滤掉 undefined 项
 
 // 声望商店物品模板（需要声望值解锁）
+// 只包含常量池中存在的物品
 const REPUTATION_SHOP_TEMPLATES: Array<Omit<ShopItem, 'id'>> = [
-  {
-    name: '传承石',
-    type: ItemType.Material,
-    description: '蕴含传承之力的神秘石头，使用后可直接获得传承。',
-    rarity: '仙品',
-    price: 50000,
-    sellPrice: 50000,
-  },
-  {
-    name: '仙品功法残卷',
-    type: ItemType.Material,
-    description: '仙品功法的残卷，极其珍贵。',
-    rarity: '仙品',
-    price: 20000,
-    sellPrice: 6000,
-  },
-  {
-    name: '真龙之血',
-    type: ItemType.Material,
-    description: '真龙血脉的精血，可激活真龙传承。',
-    rarity: '仙品',
-    price: 30000,
-    sellPrice: 9000,
-  },
-  {
-    name: '凤凰羽毛',
-    type: ItemType.Material,
-    description: '凤凰羽毛，可激活凤凰传承。',
-    rarity: '仙品',
-    price: 30000,
-    sellPrice: 9000,
-  },
-  {
-    name: '虚空碎片',
-    type: ItemType.Material,
-    description: '虚空碎片，可激活虚空传承。',
-    rarity: '仙品',
-    price: 30000,
-    sellPrice: 9000,
-  },
-];
+  ...(getItemFromConstants('传承石') ? [createShopItemFromConstants('传承石', 50000, 50000)] : []),
+  ...(getItemFromConstants('仙品功法残卷') ? [createShopItemFromConstants('仙品功法残卷', 20000, 6000)] : []),
+  ...(getItemFromConstants('真龙之血') ? [createShopItemFromConstants('真龙之血', 30000, 9000)] : []),
+  ...(getItemFromConstants('凤凰羽毛') ? [createShopItemFromConstants('凤凰羽毛', 30000, 9000)] : []),
+  ...(getItemFromConstants('虚空碎片') ? [createShopItemFromConstants('虚空碎片', 30000, 9000)] : []),
+].filter(Boolean); // 过滤掉 undefined 项
 
 /**
  * 生成商店物品
@@ -335,11 +121,16 @@ export function generateShopItems(
 
   // 黑市商店：只生成高级物品，3-5个，稀有度更高
   if (shopType === ShopType.BlackMarket) {
+    // 检查高级物品模板是否为空
+    if (PREMIUM_ITEM_TEMPLATES.length === 0) {
+      return items; // 如果没有可用模板，返回空数组
+    }
+
     const itemCount = 3 + Math.floor(Math.random() * 3); // 3-5个
 
     // 70%概率出现高级物品，30%概率出现传说/仙品物品
     for (let i = 0; i < itemCount; i++) {
-      let template: Omit<ShopItem, 'id'>;
+      let template: Omit<ShopItem, 'id'> | undefined;
 
       if (Math.random() < 0.3) {
         // 30%概率从高级物品池中选择
@@ -352,7 +143,7 @@ export function generateShopItems(
           ...SHOP_ITEM_TEMPLATES[ShopType.Village],
           ...SHOP_ITEM_TEMPLATES[ShopType.City],
           ...SHOP_ITEM_TEMPLATES[ShopType.Sect],
-        ].filter(t => t.rarity === '稀有' || t.rarity === '传说');
+        ].filter(t => t && (t.rarity === '稀有' || t.rarity === '传说'));
 
         if (allTemplates.length === 0) {
           template = PREMIUM_ITEM_TEMPLATES[
@@ -361,6 +152,11 @@ export function generateShopItems(
         } else {
           template = allTemplates[Math.floor(Math.random() * allTemplates.length)];
         }
+      }
+
+      // 确保 template 存在
+      if (!template) {
+        continue;
       }
 
       // 检查境界要求
@@ -383,15 +179,35 @@ export function generateShopItems(
       ...SHOP_ITEM_TEMPLATES[ShopType.City],
       ...SHOP_ITEM_TEMPLATES[ShopType.Sect],
       ...PREMIUM_ITEM_TEMPLATES,
-    ];
+    ].filter(Boolean); // 过滤掉 undefined 项
+
+    // 检查模板数组是否为空
+    if (allTemplates.length === 0) {
+      return items; // 如果没有可用模板，返回空数组
+    }
 
     for (let i = 0; i < itemCount; i++) {
+      // 如果所有物品都已使用，提前结束
+      if (usedNames.size >= allTemplates.length) {
+        break;
+      }
+
       let attempts = 0;
       let template = allTemplates[Math.floor(Math.random() * allTemplates.length)];
 
-      while (usedNames.has(template.name) && attempts < 20 && usedNames.size < allTemplates.length) {
+      // 确保 template 存在
+      if (!template) {
+        continue;
+      }
+
+      while (template && usedNames.has(template.name) && attempts < 20 && usedNames.size < allTemplates.length) {
         template = allTemplates[Math.floor(Math.random() * allTemplates.length)];
         attempts++;
+      }
+
+      // 再次检查 template 是否存在
+      if (!template) {
+        continue;
       }
 
       usedNames.add(template.name);
@@ -410,19 +226,39 @@ export function generateShopItems(
 
   // 声望商店：从声望商店模板中生成
   if (shopType === ShopType.Reputation) {
+    // 检查模板数组是否为空
+    if (REPUTATION_SHOP_TEMPLATES.length === 0) {
+      return items; // 如果没有可用模板，返回空数组
+    }
+
     const itemCount = 4 + Math.floor(Math.random() * 3); // 4-6个
 
     for (let i = 0; i < itemCount; i++) {
+      // 如果所有物品都已使用，提前结束
+      if (usedNames.size >= REPUTATION_SHOP_TEMPLATES.length) {
+        break;
+      }
+
       let attempts = 0;
       let template = REPUTATION_SHOP_TEMPLATES[
         Math.floor(Math.random() * REPUTATION_SHOP_TEMPLATES.length)
       ];
 
-      while (usedNames.has(template.name) && attempts < 10 && usedNames.size < REPUTATION_SHOP_TEMPLATES.length) {
+      // 确保 template 存在
+      if (!template) {
+        continue;
+      }
+
+      while (template && usedNames.has(template.name) && attempts < 10 && usedNames.size < REPUTATION_SHOP_TEMPLATES.length) {
         template = REPUTATION_SHOP_TEMPLATES[
           Math.floor(Math.random() * REPUTATION_SHOP_TEMPLATES.length)
         ];
         attempts++;
+      }
+
+      // 再次检查 template 是否存在
+      if (!template) {
+        continue;
       }
 
       usedNames.add(template.name);
@@ -440,20 +276,41 @@ export function generateShopItems(
   }
 
   // 普通商店（村庄、城市、仙门）
-  const templates = SHOP_ITEM_TEMPLATES[shopType];
+  const templates = SHOP_ITEM_TEMPLATES[shopType].filter(Boolean); // 过滤掉 undefined 项
+
+  // 检查模板数组是否为空
+  if (templates.length === 0) {
+    return items; // 如果没有可用模板，返回空数组
+  }
+
   const baseCount = shopType === ShopType.Village ? 3 : shopType === ShopType.City ? 4 : 5;
   const maxCount = shopType === ShopType.Village ? 5 : shopType === ShopType.City ? 6 : 7;
   const itemCount = baseCount + Math.floor(Math.random() * (maxCount - baseCount + 1));
 
   // 生成基础物品
   for (let i = 0; i < itemCount; i++) {
+    // 如果所有物品都已使用，提前结束
+    if (usedNames.size >= templates.length) {
+      break;
+    }
+
     let attempts = 0;
     let template = templates[Math.floor(Math.random() * templates.length)];
 
+    // 确保 template 存在
+    if (!template) {
+      continue;
+    }
+
     // 避免重复，最多尝试10次
-    while (usedNames.has(template.name) && attempts < 10 && usedNames.size < templates.length) {
+    while (template && usedNames.has(template.name) && attempts < 10 && usedNames.size < templates.length) {
       template = templates[Math.floor(Math.random() * templates.length)];
       attempts++;
+    }
+
+    // 再次检查 template 是否存在
+    if (!template) {
+      continue;
     }
 
     usedNames.add(template.name);
@@ -473,18 +330,21 @@ export function generateShopItems(
   }
 
   // 如果启用高级物品且随机成功（10%概率），添加一个高级物品
-  if (includePremium && Math.random() < 0.1) {
+  if (includePremium && Math.random() < 0.1 && PREMIUM_ITEM_TEMPLATES.length > 0) {
     const premiumTemplate = PREMIUM_ITEM_TEMPLATES[
       Math.floor(Math.random() * PREMIUM_ITEM_TEMPLATES.length)
     ];
 
-    // 检查境界要求
-    if (!premiumTemplate.minRealm ||
-        playerRealmIndex >= REALM_ORDER.indexOf(premiumTemplate.minRealm)) {
-      items.push({
-        ...premiumTemplate,
-        id: `shop-premium-${uid()}`,
-      });
+    // 确保 premiumTemplate 存在
+    if (premiumTemplate) {
+      // 检查境界要求
+      if (!premiumTemplate.minRealm ||
+          playerRealmIndex >= REALM_ORDER.indexOf(premiumTemplate.minRealm)) {
+        items.push({
+          ...premiumTemplate,
+          id: `shop-premium-${uid()}`,
+        });
+      }
     }
   }
 

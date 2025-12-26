@@ -126,9 +126,6 @@ export const createInitialPlayer = (
     lotteryTickets: 10, // 开局十连抽
     lotteryCount: 0,
     inheritanceLevel: 0,
-    inheritanceRoute: null,
-    inheritanceExp: 0,
-    inheritanceSkills: [],
     dailyTaskCount: {},
     lastTaskResetDate: new Date().toISOString().split('T')[0],
     viewedAchievements: [],

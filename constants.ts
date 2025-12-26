@@ -955,7 +955,7 @@ export const INITIAL_ITEMS: Item[] = [
     id: 'spirit-stone-shard',
     name: '灵石碎片',
     type: ItemType.Material,
-    description: '含有少量灵气的碎裂灵石。',
+    description: '含有少量灵气的碎裂灵石，虽然已经破碎，但依然散发着淡淡的光芒，是炼制低阶法宝的基础材料。',
     quantity: 5,
     rarity: '普通',
   },
@@ -963,7 +963,7 @@ export const INITIAL_ITEMS: Item[] = [
     id: 'refining-stone',
     name: '炼器石',
     type: ItemType.Material,
-    description: '用于强化法宝的基础材料。',
+    description: '经过特殊处理的炼器石，质地坚硬，蕴含着微弱的灵气，是强化法宝的基础材料，能够提升法宝的强度和威力。',
     quantity: 10,
     rarity: '普通',
   },
@@ -971,7 +971,7 @@ export const INITIAL_ITEMS: Item[] = [
     id: 'healing-herb',
     name: '止血草',
     type: ItemType.Herb,
-    description: '常见的草药，用于治疗轻微外伤。',
+    description: '常见的止血草药，叶片翠绿，散发着淡淡的药香，能够快速止血并恢复轻微的外伤，是修士们常备的疗伤草药。',
     quantity: 2,
     rarity: '普通',
     effect: { hp: 20 },
@@ -980,7 +980,7 @@ export const INITIAL_ITEMS: Item[] = [
     id: 'spirit-gathering-grass',
     name: '聚灵草',
     type: ItemType.Herb,
-    description: '吸收天地灵气的草药，炼制聚气丹的主材。',
+    description: '能够吸收天地灵气的珍贵草药，叶片上闪烁着淡淡的灵光，是炼制聚气丹的主要材料，蕴含着浓郁的灵气。',
     quantity: 5,
     rarity: '普通',
   },
@@ -988,7 +988,7 @@ export const INITIAL_ITEMS: Item[] = [
     id: 'iron-sword',
     name: '凡铁剑',
     type: ItemType.Weapon,
-    description: '普通的铁剑，聊胜于无。',
+    description: '普通的铁制长剑，虽然材质普通，但经过精心锻造，剑身锋利，剑柄握感舒适，是初入修炼之路的修士常用的武器。',
     quantity: 1,
     rarity: '普通',
     level: 0,
@@ -1000,7 +1000,7 @@ export const INITIAL_ITEMS: Item[] = [
     id: 'cloth-robe',
     name: '粗布道袍',
     type: ItemType.Armor,
-    description: '云灵宗外门弟子制式道袍。',
+    description: '云灵宗外门弟子制式道袍，虽然材质普通，但经过特殊处理，具有一定的防护能力，是初入宗门的弟子常用的护身衣物。',
     quantity: 1,
     rarity: '普通',
     level: 0,
@@ -1018,7 +1018,7 @@ export const PILL_RECIPES: Recipe[] = [
     result: {
       name: '聚气丹',
       type: ItemType.Pill,
-      description: '短时间内大幅提升修炼速度（瞬间获得修为）。',
+      description: '能够短时间内大幅提升修炼速度的珍贵丹药，服用后能够瞬间获得大量修为，是修士们快速提升实力的常用丹药。',
       rarity: '普通',
       effect: { exp: 50 },
     },
@@ -1033,7 +1033,7 @@ export const PILL_RECIPES: Recipe[] = [
     result: {
       name: '回春丹',
       type: ItemType.Pill,
-      description: '疗伤圣药，大幅恢复气血。',
+      description: '疗伤圣药，由多种珍贵草药炼制而成，服用后能够大幅恢复气血，是修士们在战斗中保命的珍贵丹药。',
       rarity: '稀有',
       effect: { hp: 200 },
     },
@@ -1048,7 +1048,7 @@ export const PILL_RECIPES: Recipe[] = [
     result: {
       name: '洗髓丹',
       type: ItemType.Pill,
-      description: '易筋洗髓，脱胎换骨。永久增加少量最大生命值。',
+      description: '易筋洗髓的珍贵丹药，服用后能够脱胎换骨，改善体质，永久增加最大生命值，是修士们提升根基的珍贵丹药。',
       rarity: '稀有',
       permanentEffect: { maxHp: 50 },
     },
@@ -1063,7 +1063,7 @@ export const PILL_RECIPES: Recipe[] = [
     result: {
       name: '筑基丹',
       type: ItemType.Pill,
-      description: '增加突破到筑基期的几率。服用后获得海量修为，并永久提升基础属性。',
+      description: '突破筑基期的珍贵丹药，由千年人参和妖兽内丹炼制而成，服用后能够增加突破几率，获得海量修为，并永久提升基础属性，是修士们突破境界的必备丹药。',
       rarity: '传说',
       effect: { exp: 500 },
       permanentEffect: { spirit: 30, physique: 30, maxHp: 100 },
@@ -1094,7 +1094,7 @@ export const PILL_RECIPES: Recipe[] = [
     result: {
       name: '九转金丹',
       type: ItemType.Pill,
-      description: '传说中的仙丹，服用后甚至能让凡人立地飞升。',
+      description: '传说中的九转金丹，由万年灵乳和九叶芝草炼制而成，服用后甚至能让凡人立地飞升，是修士们梦寐以求的仙丹，能够大幅提升修为和各项属性。',
       rarity: '仙品',
       effect: { exp: 50000 },
       permanentEffect: { maxLifespan: 1000, spirit: 1000, attack: 1000, defense: 1000, physique: 1000, speed: 1000},
@@ -1110,7 +1110,7 @@ export const PILL_RECIPES: Recipe[] = [
     result: {
       name: '延寿丹',
       type: ItemType.Pill,
-      description: '增加寿命的珍贵丹药，可延长10年寿命。',
+      description: '增加寿命的珍贵丹药，由千年人参和血参炼制而成，服用后能够延长10年寿命，是修士们延长寿元的珍贵丹药。',
       rarity: '稀有',
       effect: { lifespan: 10 },
     },
@@ -1125,7 +1125,7 @@ export const PILL_RECIPES: Recipe[] = [
     result: {
       name: '长生丹',
       type: ItemType.Pill,
-      description: '增加寿命的极品丹药，可延长50年寿命并增加最大寿命。',
+      description: '增加寿命的极品丹药，由万年仙草和千年灵芝炼制而成，服用后能够延长50年寿命并增加最大寿命，是修士们延长寿元的珍贵丹药。',
       rarity: '传说',
       permanentEffect: { maxLifespan: 50 },
     },
@@ -1141,7 +1141,7 @@ export const PILL_RECIPES: Recipe[] = [
     result: {
       name: '不死仙丹',
       type: ItemType.Pill,
-      description: '传说中的不死仙丹，可延长200年寿命并大幅增加最大寿命500年。',
+      description: '传说中的不死仙丹，由万年灵乳、九叶芝草和龙鳞果炼制而成，服用后能够延长200年寿命并大幅增加最大寿命500年，是修士们梦寐以求的仙丹。',
       rarity: '仙品',
       effect: { lifespan: 200 },
       permanentEffect: { maxLifespan: 500 },
@@ -1157,7 +1157,7 @@ export const PILL_RECIPES: Recipe[] = [
     result: {
       name: '洗灵丹',
       type: ItemType.Pill,
-      description: '洗涤灵根，所有灵根各提升5点。',
+      description: '洗涤灵根的珍贵丹药，由天灵果和紫猴花炼制而成，服用后能够洗涤灵根，所有灵根各提升5点，是修士们改善资质的珍贵丹药。',
       rarity: '稀有',
       permanentEffect: {
         spiritualRoots: {
@@ -2337,315 +2337,7 @@ export const TITLE_SET_EFFECTS: TitleSetEffect[] = [
 ];
 
 // --- 传承系统 ---
-
-// 传承路线
-export interface InheritanceRoute {
-  id: string;
-  name: string;
-  description: string;
-  rarity: ItemRarity;
-  unlockRequirement?: {
-    realm?: RealmType;
-    achievement?: string;
-    item?: string;
-  };
-  baseEffects: {
-    attack?: number;
-    defense?: number;
-    hp?: number;
-    spirit?: number;
-    physique?: number;
-    speed?: number;
-    expRate?: number;
-  };
-  skills: string[]; // 传承技能ID列表
-}
-
-// 传承技能
-export interface InheritanceSkill {
-  id: string;
-  name: string;
-  description: string;
-  route: string; // 所属传承路线ID
-  unlockLevel: number; // 解锁所需传承等级
-  effects: {
-    attack?: number;
-    defense?: number;
-    hp?: number;
-    spirit?: number;
-    physique?: number;
-    speed?: number;
-    expRate?: number;
-    luck?: number;
-    // 百分比效果（0.15 表示提升15%）
-    attackPercent?: number;
-    defensePercent?: number;
-    hpPercent?: number;
-    spiritPercent?: number;
-    physiquePercent?: number;
-    speedPercent?: number;
-  };
-  passiveEffect?: {
-    type: 'combat' | 'cultivation' | 'exploration' | 'general';
-    description: string;
-    // 可以添加更多被动效果定义
-  };
-}
-
-export const INHERITANCE_ROUTES: InheritanceRoute[] = [
-  {
-    id: 'dragon',
-    name: '真龙传承',
-    description: '真龙血脉传承，威震天地，攻击力极强。',
-    rarity: '仙品',
-    unlockRequirement: {
-      realm: RealmType.NascentSoul,
-    },
-    baseEffects: {
-      attack: 200,
-      defense: 100,
-      hp: 500,
-      physique: 50,
-    },
-    skills: ['dragon-roar', 'dragon-scale', 'dragon-rage'],
-  },
-  {
-    id: 'phoenix',
-    name: '凤凰传承',
-    description: '凤凰血脉传承，涅槃重生，恢复力极强。',
-    rarity: '仙品',
-    unlockRequirement: {
-      realm: RealmType.NascentSoul,
-    },
-    baseEffects: {
-      hp: 800,
-      defense: 150,
-      spirit: 80,
-      expRate: 0.15,
-    },
-    skills: ['phoenix-rebirth', 'phoenix-fire', 'phoenix-blessing'],
-  },
-  {
-    id: 'void',
-    name: '虚空传承',
-    description: '虚空之力传承，神秘莫测，神识极强。',
-    rarity: '仙品',
-    unlockRequirement: {
-      realm: RealmType.VoidRefining,
-    },
-    baseEffects: {
-      spirit: 200,
-      speed: 50,
-      expRate: 0.2,
-    },
-    skills: ['void-step', 'void-mind', 'void-break'],
-  },
-  {
-    id: 'thunder',
-    name: '雷霆传承',
-    description: '雷霆之力传承，速度极快，攻击迅猛。',
-    rarity: '传说',
-    unlockRequirement: {
-      realm: RealmType.GoldenCore,
-    },
-    baseEffects: {
-      attack: 100,
-      speed: 80,
-      spirit: 40,
-    },
-    skills: ['thunder-bolt', 'thunder-speed'],
-  },
-];
-
-export const INHERITANCE_SKILLS: InheritanceSkill[] = [
-  // 真龙传承技能
-  {
-    id: 'dragon-roar',
-    name: '龙吟',
-    description: '真龙之吼，震慑敌人，攻击力大幅提升。',
-    route: 'dragon',
-    unlockLevel: 1,
-    effects: {
-      attackPercent: 0.25, // 攻击力提升25%
-      attack: 200, // 基础攻击力加成
-    },
-    passiveEffect: {
-      type: 'combat',
-      description: '战斗时攻击力额外提升15%，造成伤害时有一定概率触发龙威，造成额外30%伤害',
-    },
-  },
-  {
-    id: 'dragon-scale',
-    name: '龙鳞护体',
-    description: '龙鳞般的防御，防御力和气血大幅提升。',
-    route: 'dragon',
-    unlockLevel: 2,
-    effects: {
-      defensePercent: 0.30, // 防御力提升30%
-      hpPercent: 0.25, // 气血提升25%
-      defense: 300,
-      hp: 500,
-    },
-    passiveEffect: {
-      type: 'combat',
-      description: '受到伤害减少20%，受到致命伤害时有30%概率免疫',
-    },
-  },
-  {
-    id: 'dragon-rage',
-    name: '龙怒',
-    description: '真龙之怒，所有属性大幅提升，攻击力额外增强。',
-    route: 'dragon',
-    unlockLevel: 3,
-    effects: {
-      attackPercent: 0.35, // 攻击力提升35%
-      defensePercent: 0.20, // 防御力提升20%
-      hpPercent: 0.30, // 气血提升30%
-      speedPercent: 0.25, // 速度提升25%
-      attack: 500,
-      defense: 300,
-      hp: 1000,
-      speed: 100,
-    },
-  },
-  // 凤凰传承技能
-  {
-    id: 'phoenix-rebirth',
-    name: '涅槃重生',
-    description: '凤凰涅槃之力，气血和修炼速度大幅提升。',
-    route: 'phoenix',
-    unlockLevel: 1,
-    effects: {
-      hpPercent: 0.40, // 气血提升40%
-      expRate: 0.30, // 修炼速度提升30%
-      hp: 800,
-    },
-    passiveEffect: {
-      type: 'cultivation',
-      description: '修炼速度提升30%，死亡时有50%概率涅槃重生，恢复50%气血',
-    },
-  },
-  {
-    id: 'phoenix-fire',
-    name: '凤凰真火',
-    description: '凤凰真火之力，攻击力和神识大幅提升。',
-    route: 'phoenix',
-    unlockLevel: 2,
-    effects: {
-      attackPercent: 0.30, // 攻击力提升30%
-      spiritPercent: 0.35, // 神识提升35%
-      attack: 400,
-      spirit: 300,
-    },
-    passiveEffect: {
-      type: 'combat',
-      description: '攻击时附加真火伤害，造成额外25%火焰伤害',
-    },
-  },
-  {
-    id: 'phoenix-blessing',
-    name: '凤凰祝福',
-    description: '凤凰的祝福，所有属性全面提升。',
-    route: 'phoenix',
-    unlockLevel: 3,
-    effects: {
-      attackPercent: 0.25, // 攻击力提升25%
-      defensePercent: 0.25, // 防御力提升25%
-      hpPercent: 0.35, // 气血提升35%
-      spiritPercent: 0.30, // 神识提升30%
-      expRate: 0.25, // 修炼速度提升25%
-      attack: 600,
-      defense: 400,
-      hp: 1500,
-      spirit: 500,
-    },
-  },
-  // 虚空传承技能
-  {
-    id: 'void-step',
-    name: '虚空步',
-    description: '虚空之力，速度大幅提升，行动如影随形。',
-    route: 'void',
-    unlockLevel: 1,
-    effects: {
-      speedPercent: 0.50, // 速度提升50%
-      speed: 200,
-    },
-    passiveEffect: {
-      type: 'exploration',
-      description: '历练时获得的奖励提升40%，有概率触发虚空穿梭，直接获得奖励',
-    },
-  },
-  {
-    id: 'void-mind',
-    name: '虚空心法',
-    description: '虚空心法，神识和修炼速度大幅提升。',
-    route: 'void',
-    unlockLevel: 2,
-    effects: {
-      spiritPercent: 0.45, // 神识提升45%
-      expRate: 0.30, // 修炼速度提升30%
-      spirit: 400,
-    },
-    passiveEffect: {
-      type: 'cultivation',
-      description: '修炼时进入虚空状态，修炼速度额外提升20%',
-    },
-  },
-  {
-    id: 'void-break',
-    name: '破虚',
-    description: '破除虚空，所有属性大幅提升，神识额外增强。',
-    route: 'void',
-    unlockLevel: 3,
-    effects: {
-      attackPercent: 0.30, // 攻击力提升30%
-      defensePercent: 0.25, // 防御力提升25%
-      spiritPercent: 0.50, // 神识提升50%
-      speedPercent: 0.40, // 速度提升40%
-      expRate: 0.35, // 修炼速度提升35%
-      attack: 700,
-      defense: 500,
-      spirit: 800,
-      speed: 300,
-    },
-  },
-  // 雷霆传承技能
-  {
-    id: 'thunder-bolt',
-    name: '雷霆一击',
-    description: '雷霆之力，攻击力和速度大幅提升。',
-    route: 'thunder',
-    unlockLevel: 1,
-    effects: {
-      attackPercent: 0.35, // 攻击力提升35%
-      speedPercent: 0.40, // 速度提升40%
-      attack: 400,
-      speed: 250,
-    },
-    passiveEffect: {
-      type: 'combat',
-      description: '攻击时有30%概率触发雷霆，造成额外50%伤害并麻痹敌人',
-    },
-  },
-  {
-    id: 'thunder-speed',
-    name: '雷霆之速',
-    description: '雷霆般的速度，速度和神识大幅提升。',
-    route: 'thunder',
-    unlockLevel: 2,
-    effects: {
-      speedPercent: 0.60, // 速度提升60%
-      spiritPercent: 0.30, // 神识提升30%
-      speed: 400,
-      spirit: 300,
-    },
-    passiveEffect: {
-      type: 'general',
-      description: '移动和行动速度提升40%，战斗时先手概率大幅提升',
-    },
-  },
-];
+// 注意: 传承路线和传承技能相关功能已删除，仅保留传承等级突破功能
 
 // --- 奇遇系统 ---
 export const ENCOUNTER_EVENTS: EncounterEvent[] = [

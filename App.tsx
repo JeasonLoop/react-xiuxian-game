@@ -46,6 +46,21 @@ import {
   configToShortcut,
 } from './utils/shortcutUtils';
 import { compareItemEffects } from './utils/objectUtils';
+import {
+  initializeEventTemplateLibrary,
+  setEventTemplateLibrary,
+  isEventTemplateLibraryInitialized,
+  generateEventTemplateLibrary,
+} from './services/adventureTemplateService';
+import {
+  generateBreakthroughDescriptionLibrary,
+  setBreakthroughDescriptionLibrary,
+  isBreakthroughDescriptionLibraryInitialized,
+  generateEnemyNameLibrary,
+  setEnemyNameLibrary,
+  isEnemyNameLibraryInitialized,
+} from './services/templateService';
+import { useIndexedDB } from './hooks/useIndexedDB';
 
 // 导入模块化的 handlers
 import {
@@ -221,6 +236,139 @@ function App() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // IndexedDB Hook
+  const {
+    isReady,
+    saveTemplates,
+    loadTemplates,
+    hasTemplates,
+    saveBreakthroughDescriptions,
+    loadBreakthroughDescriptions,
+    hasBreakthroughDescriptions,
+    saveEnemyNames,
+    loadEnemyNames,
+    hasEnemyNames,
+  } = useIndexedDB();
+
+  // 初始化事件模板库（从 IndexedDB 加载或生成）
+  useEffect(() => {
+    if (!isReady) return;
+
+    const initTemplates = async () => {
+      try {
+        // 检查 IndexedDB 中是否有模板
+        const hasStoredTemplates = await hasTemplates();
+
+        if (hasStoredTemplates) {
+          // 从 IndexedDB 加载
+          const templates = await loadTemplates();
+          if (templates && templates.length > 0) {
+            setEventTemplateLibrary(templates);
+            console.log('从 IndexedDB 加载事件模板库成功');
+            return;
+          }
+        }
+
+        // 如果没有存储的模板，生成新的
+        if (!isEventTemplateLibraryInitialized()) {
+          console.log('生成新的事件模板库...');
+          const newTemplates = generateEventTemplateLibrary();
+          setEventTemplateLibrary(newTemplates);
+
+          // 保存到 IndexedDB
+          try {
+            await saveTemplates(newTemplates);
+            console.log('事件模板库已保存到 IndexedDB');
+          } catch (error) {
+            console.error('保存事件模板库到 IndexedDB 失败:', error);
+          }
+        }
+      } catch (error) {
+        console.error('初始化事件模板库失败:', error);
+        // 如果出错，使用同步初始化作为后备
+        if (!isEventTemplateLibraryInitialized()) {
+          initializeEventTemplateLibrary();
+        }
+      }
+    };
+
+    initTemplates();
+  }, [isReady, saveTemplates, loadTemplates, hasTemplates]);
+
+  // 初始化突破描述模板库（从 IndexedDB 加载或生成）
+  useEffect(() => {
+    if (!isReady) return;
+
+    const initBreakthroughDescriptions = async () => {
+      try {
+        const hasStored = await hasBreakthroughDescriptions();
+
+        if (hasStored) {
+          const descriptions = await loadBreakthroughDescriptions();
+          if (descriptions && descriptions.length > 0) {
+            setBreakthroughDescriptionLibrary(descriptions);
+            console.log('从 IndexedDB 加载突破描述模板库成功');
+            return;
+          }
+        }
+
+        if (!isBreakthroughDescriptionLibraryInitialized()) {
+          console.log('生成新的突破描述模板库...');
+          const newDescriptions = generateBreakthroughDescriptionLibrary();
+          setBreakthroughDescriptionLibrary(newDescriptions);
+
+          try {
+            await saveBreakthroughDescriptions(newDescriptions);
+            console.log('突破描述模板库已保存到 IndexedDB');
+          } catch (error) {
+            console.error('保存突破描述模板库到 IndexedDB 失败:', error);
+          }
+        }
+      } catch (error) {
+        console.error('初始化突破描述模板库失败:', error);
+      }
+    };
+
+    initBreakthroughDescriptions();
+  }, [isReady, saveBreakthroughDescriptions, loadBreakthroughDescriptions, hasBreakthroughDescriptions]);
+
+  // 初始化敌人名称模板库（从 IndexedDB 加载或生成）
+  useEffect(() => {
+    if (!isReady) return;
+
+    const initEnemyNames = async () => {
+      try {
+        const hasStored = await hasEnemyNames();
+
+        if (hasStored) {
+          const names = await loadEnemyNames();
+          if (names && names.length > 0) {
+            setEnemyNameLibrary(names);
+            console.log('从 IndexedDB 加载敌人名称模板库成功');
+            return;
+          }
+        }
+
+        if (!isEnemyNameLibraryInitialized()) {
+          console.log('生成新的敌人名称模板库...');
+          const newNames = generateEnemyNameLibrary();
+          setEnemyNameLibrary(newNames);
+
+          try {
+            await saveEnemyNames(newNames);
+            console.log('敌人名称模板库已保存到 IndexedDB');
+          } catch (error) {
+            console.error('保存敌人名称模板库到 IndexedDB 失败:', error);
+          }
+        }
+      } catch (error) {
+        console.error('初始化敌人名称模板库失败:', error);
+      }
+    };
+
+    initEnemyNames();
+  }, [isReady, saveEnemyNames, loadEnemyNames, hasEnemyNames]);
   // 自动功能和死亡状态
   const [autoMeditate, setAutoMeditate] = useState(false);
   const [autoAdventure, setAutoAdventure] = useState(false);
@@ -398,6 +546,16 @@ function App() {
       battleHandlers.openBattleModal(replay);
     },
     onReputationEvent: (event) => {
+      // 测试环境打印调试信息
+      if (import.meta.env.DEV) {
+        console.log('【声望事件回调触发】', {
+          event,
+          hasChoices: !!event?.choices,
+          choicesCount: event?.choices?.length || 0,
+          autoAdventure,
+        });
+      }
+
       // 如果正在自动历练，暂停自动历练
       if (autoAdventure) {
         setAutoAdventurePausedByReputationEvent(true);
@@ -406,6 +564,14 @@ function App() {
       // 打开声望事件弹窗
       setReputationEvent(event);
       setIsReputationEventOpen(true);
+
+      // 测试环境确认状态设置
+      if (import.meta.env.DEV) {
+        console.log('【声望事件状态设置】', {
+          eventSet: !!event,
+          shouldOpen: true,
+        });
+      }
     },
     onOpenTurnBasedBattle: handleOpenTurnBasedBattle,
     skipBattle: false, // 不再跳过战斗，自动模式下也会弹出战斗弹窗
@@ -829,6 +995,7 @@ function App() {
     player,
     setPlayer,
     addLog,
+    setItemActionLog,
     setLoading,
     setCooldown,
     loading,
@@ -1047,23 +1214,32 @@ function App() {
       'toggleAutoAdventure',
       customShortcuts
     );
+    const toggleAutoAdventureAction = () => {
+      setAutoAdventure((prev) => {
+        const newValue = !prev;
+        if (newValue && autoMeditate) {
+          setAutoMeditate(false);
+          addLog('已关闭自动打坐，开启自动历练。', 'normal');
+        }
+        return newValue;
+      });
+    };
     shortcuts.push(
       configToShortcut(
         toggleAutoAdventureConfig,
-        () => {
-          setAutoAdventure((prev) => {
-            const newValue = !prev;
-            if (newValue && autoMeditate) {
-              setAutoMeditate(false);
-              addLog('已关闭自动打坐，开启自动历练。', 'normal');
-            }
-            return newValue;
-          });
-        },
+        toggleAutoAdventureAction,
         '切换自动历练',
         '基础操作'
       )
     );
+
+    // 空格键切换自动历练（优先级高于配置的快捷键）
+    shortcuts.push({
+      key: ' ',
+      action: toggleAutoAdventureAction,
+      description: '切换自动历练',
+      category: '基础操作',
+    });
 
     // 打开储物袋
     const openInventoryConfig = getShortcutConfig(
@@ -1318,6 +1494,7 @@ function App() {
       <GameView
         player={player}
         logs={logs}
+        setLogs={setLogs}
         visualEffects={visualEffects}
         loading={loading}
         cooldown={cooldown}
@@ -1501,7 +1678,6 @@ function App() {
               },
               unlockedTitles: loadedPlayer.unlockedTitles || (loadedPlayer.titleId ? [loadedPlayer.titleId] : ['title-novice']),
               inheritanceRoute: loadedPlayer.inheritanceRoute || null,
-              inheritanceExp: loadedPlayer.inheritanceExp || 0,
               inheritanceSkills: loadedPlayer.inheritanceSkills || [],
               reputation: loadedPlayer.reputation || 0,
               grotto: loadedPlayer.grotto ? {

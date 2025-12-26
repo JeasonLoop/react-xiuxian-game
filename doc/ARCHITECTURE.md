@@ -158,11 +158,18 @@ export function useShopHandlers({ player, setPlayer, addLog }) {
 
 **核心服务**:
 
-#### services/aiService.ts
+#### services/adventureTemplateService.ts
 
-- `generateAdventureEvent()` - 生成历练事件
-- `generateBreakthroughFlavorText()` - 生成突破描述
-- `generateEnemyName()` - 生成敌人名称
+- `generateEventTemplateLibrary()` - 生成事件模板库
+- `getRandomEventTemplate()` - 获取随机事件模板
+- `templateToAdventureResult()` - 将模板转换为历练结果
+
+#### services/templateService.ts
+
+- `generateBreakthroughDescriptionLibrary()` - 生成突破描述模板库
+- `getRandomBreakthroughDescription()` - 获取随机突破描述
+- `generateEnemyNameLibrary()` - 生成敌人名称模板库
+- `getRandomEnemyName()` - 获取随机敌人名称
 
 #### services/battleService.ts
 
