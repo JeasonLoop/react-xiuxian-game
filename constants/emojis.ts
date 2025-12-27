@@ -1,3 +1,4 @@
+// -*- coding: utf-8 -*-
 // 常用表情包配置
 export const EMOJI_CATEGORIES = [
   {

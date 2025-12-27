@@ -191,22 +191,22 @@ export const GlobalChat: React.FC<Props> = ({ playerName }) => {
                     {/* 消息内容 */}
                     <div className="bg-stone-800/80 backdrop-blur-sm rounded-lg p-2 border border-stone-700/50 shadow-lg">
                       <div className="text-sm text-stone-100 leading-relaxed whitespace-pre-wrap break-words">
-                        {msg.text
-                          .split('')
-                          .map((char: string, index: number) =>
-                            /[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F1E6}-\u{1F1FF}]/u.test(
+                        {Array.from(msg.text).map(
+                          (char: string, index: number) =>
+                            // 使用更全面的Emoji正则范围，包含修仙类表情(U+1F9xx)
+                            /[\u{1F300}-\u{1F9FF}\u{1F1E0}-\u{1F1FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u.test(
                               char
                             ) ? (
                               <span
                                 key={index}
-                                className="inline-block text-xl align-middle mx-0.5 animate-pulse"
+                                className="inline-block text-xl align-middle mx-0.5"
                               >
                                 {char}
                               </span>
                             ) : (
                               char
                             )
-                          )}
+                        )}
                       </div>
                     </div>
                   </div>
