@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { PlayerStats, Recipe } from '../types';
-import { PILL_RECIPES, DISCOVERABLE_RECIPES } from '../constants';
+import { PILL_RECIPES, DISCOVERABLE_RECIPES } from '../constants/index';
 import { X, Sparkles, FlaskConical, CircleOff } from 'lucide-react';
 
 interface Props {

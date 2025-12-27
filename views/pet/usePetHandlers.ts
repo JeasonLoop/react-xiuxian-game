@@ -2,10 +2,8 @@ import React from 'react';
 import { PlayerStats, ItemRarity } from '../../types';
 import {
   PET_TEMPLATES,
-  REALM_DATA,
   REALM_ORDER,
-  RARITY_MULTIPLIERS,
-} from '../../constants';
+} from '../../constants/index';
 
 interface UsePetHandlersProps {
   player: PlayerStats;

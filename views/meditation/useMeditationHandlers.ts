@@ -1,12 +1,11 @@
 import React from 'react';
 import { PlayerStats } from '../../types';
 import {
-  CULTIVATION_ARTS,
   TALENTS,
   ACHIEVEMENTS,
   REALM_ORDER,
   calculateSpiritualRootArtBonus,
-} from '../../constants';
+} from '../../constants/index';
 import { getActiveMentalArt } from '../../utils/statUtils';
 
 interface UseMeditationHandlersProps {

@@ -37,11 +37,11 @@ import { usePassiveRegeneration } from './hooks/usePassiveRegeneration';
 import { useAutoGrottoHarvest } from './hooks/useAutoGrottoHarvest';
 import { useBattleResultHandler } from './hooks/useBattleResultHandler';
 import { STORAGE_KEYS } from './constants/storageKeys';
-import { setGlobalAlertSetter } from './utils/toastUtils';
+import { setGlobalAlertSetter, showConfirm } from './utils/toastUtils';
 import AlertModal from './components/AlertModal';
 import { AlertType } from './components/AlertModal';
 import { useItemActionLog } from './hooks/useItemActionLog';
-import { REALM_ORDER, TRIBULATION_CONFIG } from './constants';
+import { REALM_ORDER, TRIBULATION_CONFIG } from './constants/index';
 import {
   useKeyboardShortcuts,
   KeyboardShortcut,
@@ -412,6 +412,8 @@ function App() {
 
     initEnemyNames();
   }, [isReady, saveEnemyNames, loadEnemyNames, hasEnemyNames]);
+
+
   // 自动功能和死亡状态
   const [autoMeditate, setAutoMeditate] = useState(false);
   const [autoAdventure, setAutoAdventure] = useState(false);
@@ -740,6 +742,7 @@ function App() {
   const handleUseItem = itemHandlers.handleUseItem;
   const handleOrganizeInventory = itemHandlers.handleOrganizeInventory;
   const handleDiscardItem = itemHandlers.handleDiscardItem;
+  const handleRefineAdvancedItem = itemHandlers.handleRefineAdvancedItem;
   const handleBatchUse = (itemIds: string[]) => {
     itemHandlers.handleBatchUseItems(itemIds);
   };
@@ -1102,9 +1105,25 @@ function App() {
         // 设置标志位，防止重复触发
         isTribulationTriggeredRef.current = true;
 
-        // 创建天劫状态并触发弹窗
-        const newTribulationState = createTribulationState(player, targetRealm);
-        setTribulationState(newTribulationState);
+        // 获取天劫名称
+        const config = TRIBULATION_CONFIG[targetRealm];
+        const tribulationName = config?.tribulationLevel || `${targetRealm}天劫`;
+
+        // 显示确认弹窗
+        showConfirm(
+          `你的${tribulationName}来了，是否现在渡劫？`,
+          '确认渡劫',
+          () => {
+            // 用户确认后，创建天劫状态并触发弹窗
+            const newTribulationState = createTribulationState(player, targetRealm);
+            setTribulationState(newTribulationState);
+          },
+          () => {
+            // 用户取消，重置标志位并锁定经验值，防止立即再次触发
+            isTribulationTriggeredRef.current = false;
+            setPlayer((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
+          }
+        );
       } else if (!tribulationState?.isOpen) {
         // 不需要渡劫，直接执行突破
         breakthroughHandlers.handleBreakthrough();
@@ -1961,6 +1980,7 @@ function App() {
           handleOrganizeInventory,
           handleRefineNatalArtifact,
           handleUnrefineNatalArtifact,
+          handleRefineAdvancedItem,
           handleUpgradeItem,
           handleLearnArt,
           handleActivateArt,

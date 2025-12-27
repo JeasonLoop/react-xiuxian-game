@@ -15,8 +15,9 @@ import {
   HEAVEN_EARTH_MARROWS,
   HEAVEN_EARTH_SOUL_BOSSES,
   LONGEVITY_RULES,
-} from '../constants';
+} from '../constants/index';
 import { logger } from '../utils/logger';
+import { ITEM_TEMPLATES } from '../constants/itemTemplates';
 
 /**
  * 事件模板接口
@@ -568,10 +569,12 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
         eventColor: 'special',
         itemObtained: {
           name: selectedTreasure.name,
-          type: ItemType.Material,
+          type: ItemType.AdvancedItem,
           description: selectedTreasure.description,
           rarity: selectedTreasure.rarity,
           permanentEffect: Object.keys(permanentEffect).length > 0 ? permanentEffect : undefined,
+          advancedItemType: 'foundationTreasure',
+          advancedItemId: selectedTreasure.id,
         },
       };
     }
@@ -606,10 +609,12 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
         eventColor: 'special',
         itemObtained: {
           name: selectedEssence.name,
-          type: ItemType.Material,
+          type: ItemType.AdvancedItem,
           description: selectedEssence.description,
           rarity: selectedEssence.rarity,
           permanentEffect: Object.keys(permanentEffect).length > 0 ? permanentEffect : undefined,
+          advancedItemType: 'heavenEarthEssence',
+          advancedItemId: selectedEssence.id,
         },
       };
     }
@@ -644,10 +649,12 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
         eventColor: 'special',
         itemObtained: {
           name: selectedMarrow.name,
-          type: ItemType.Material,
+          type: ItemType.AdvancedItem,
           description: selectedMarrow.description,
           rarity: selectedMarrow.rarity,
           permanentEffect: Object.keys(permanentEffect).length > 0 ? permanentEffect : undefined,
+          advancedItemType: 'heavenEarthMarrow',
+          advancedItemId: selectedMarrow.id,
         },
       };
     }
@@ -859,6 +866,8 @@ let cachedItems: Array<{
   permanentEffect?: any;
   isEquippable?: boolean;
   equipmentSlot?: EquipmentSlot | string;
+  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
+  advancedItemId?: string;
 }> | null = null;
 
 function getAllItemsFromConstants(): Array<{
@@ -870,6 +879,8 @@ function getAllItemsFromConstants(): Array<{
   permanentEffect?: any;
   isEquippable?: boolean;
   equipmentSlot?: EquipmentSlot | string;
+  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
+  advancedItemId?: string;
 }> {
   // 使用缓存
   if (cachedItems) {
@@ -885,6 +896,8 @@ function getAllItemsFromConstants(): Array<{
     permanentEffect?: any;
     isEquippable?: boolean;
     equipmentSlot?: EquipmentSlot | string;
+    advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
+    advancedItemId?: string;
   }> = [];
   const itemNames = new Set<string>();
 
@@ -897,6 +910,22 @@ function getAllItemsFromConstants(): Array<{
       type: item.type,
       description: item.description,
       rarity: (item.rarity || '普通') as ItemRarity,
+      effect: item.effect,
+      permanentEffect: item.permanentEffect,
+      isEquippable: item.isEquippable,
+      equipmentSlot: item.equipmentSlot,
+    });
+  });
+
+  // 从ITEM_TEMPLATES中提取生成的物品
+  ITEM_TEMPLATES.forEach(item => {
+    if (itemNames.has(item.name)) return;
+    itemNames.add(item.name);
+    items.push({
+      name: item.name,
+      type: item.type,
+      description: item.description,
+      rarity: item.rarity,
       effect: item.effect,
       permanentEffect: item.permanentEffect,
       isEquippable: item.isEquippable,
@@ -1006,10 +1035,12 @@ function getAllItemsFromConstants(): Array<{
 
     items.push({
       name: treasure.name,
-      type: ItemType.Material,
+      type: ItemType.AdvancedItem,
       description: treasure.description,
       rarity: treasure.rarity,
       permanentEffect: Object.keys(permanentEffect).length > 0 ? permanentEffect : undefined,
+      advancedItemType: 'foundationTreasure',
+      advancedItemId: treasure.id,
     });
   });
 
@@ -1029,10 +1060,12 @@ function getAllItemsFromConstants(): Array<{
 
     items.push({
       name: essence.name,
-      type: ItemType.Material,
+      type: ItemType.AdvancedItem,
       description: essence.description,
       rarity: essence.rarity,
       permanentEffect: Object.keys(permanentEffect).length > 0 ? permanentEffect : undefined,
+      advancedItemType: 'heavenEarthEssence',
+      advancedItemId: essence.id,
     });
   });
 
@@ -1052,10 +1085,12 @@ function getAllItemsFromConstants(): Array<{
 
     items.push({
       name: marrow.name,
-      type: ItemType.Material,
+      type: ItemType.AdvancedItem,
       description: marrow.description,
       rarity: marrow.rarity,
       permanentEffect: Object.keys(permanentEffect).length > 0 ? permanentEffect : undefined,
+      advancedItemType: 'heavenEarthMarrow',
+      advancedItemId: marrow.id,
     });
   });
 
@@ -1209,6 +1244,16 @@ function generateRandomItem(rarity: ItemRarity, index: number): AdventureResult[
       if (validSlots.includes(selectedItem.equipmentSlot as EquipmentSlot)) {
         result.equipmentSlot = selectedItem.equipmentSlot as EquipmentSlot;
       }
+    }
+  }
+
+  // 添加进阶物品相关属性（如果物品是进阶物品）
+  if (itemType === ItemType.AdvancedItem) {
+    if ((selectedItem as any).advancedItemType) {
+      result.advancedItemType = (selectedItem as any).advancedItemType;
+    }
+    if ((selectedItem as any).advancedItemId) {
+      result.advancedItemId = (selectedItem as any).advancedItemId;
     }
   }
 

@@ -1,5 +1,5 @@
 import { RealmType, AdventureType } from '../types';
-import { REALM_ORDER } from '../constants';
+import { REALM_ORDER } from '../constants/index';
 
 /**
  * 突破描述模板接口

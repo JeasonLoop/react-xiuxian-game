@@ -11,7 +11,7 @@ import {
   PILL_RECIPES,
   DISCOVERABLE_RECIPES,
   getPillDefinition,
-} from '../constants';
+} from '../constants/index';
 
 // 缓存所有物品
 let cachedAllItems: Array<{
@@ -175,6 +175,8 @@ export function getItemFromConstants(itemName: string): {
   permanentEffect?: any;
   isEquippable?: boolean;
   equipmentSlot?: EquipmentSlot | string;
+  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
+  advancedItemId?: string;
 } | null {
   const allItems = getAllItemsFromConstants();
   const item = allItems.find(i => i.name === itemName);
@@ -188,7 +190,7 @@ export function getItemFromConstants(itemName: string): {
     ? (item.type as ItemType)
     : ItemType.Material;
 
-  return {
+  const result: any = {
     name: item.name,
     type: itemType,
     description: item.description,
@@ -198,6 +200,14 @@ export function getItemFromConstants(itemName: string): {
     isEquippable: item.isEquippable,
     equipmentSlot: item.equipmentSlot,
   };
+
+  // 如果物品是进阶物品，添加进阶物品信息
+  if (itemType === ItemType.AdvancedItem && (item as any).advancedItemType) {
+    result.advancedItemType = (item as any).advancedItemType;
+    result.advancedItemId = (item as any).advancedItemId;
+  }
+
+  return result;
 }
 
 /**

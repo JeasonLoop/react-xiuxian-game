@@ -1,6 +1,6 @@
 import React from 'react';
-import { PlayerStats, ShopType, ShopItem, Item, Shop } from '../../types';
-import { SHOPS, REALM_ORDER, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES } from '../../constants';
+import { PlayerStats, ShopType, ShopItem, Item, Shop, ItemType, ItemRarity } from '../../types';
+import { SHOPS, REALM_ORDER, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES } from '../../constants/index';
 import { uid } from '../../utils/gameUtils';
 import { calculateItemSellPrice } from '../../utils/itemUtils';
 import { generateShopItems } from '../../services/shopService';
@@ -95,86 +95,59 @@ export function useShopHandlers({
 
       // 检查是否是进阶物品
       if (shopItem.isAdvancedItem && shopItem.advancedItemType) {
-        // 进阶物品：从常量池随机选择，直接设置到玩家状态
-        let selectedItem: { id: string; name: string } | null = null;
-        let newFoundationTreasure = prev.foundationTreasure;
-        let newHeavenEarthEssence = prev.heavenEarthEssence;
-        let newHeavenEarthMarrow = prev.heavenEarthMarrow;
-        let newLongevityRules = [...(prev.longevityRules || [])];
-        let marrowRefiningProgress = prev.marrowRefiningProgress;
-        let marrowRefiningSpeed = prev.marrowRefiningSpeed;
+        // 进阶物品：添加到背包
+        let selectedItem: { id: string; name: string; description: string; rarity: string } | null = null;
+        let advancedItemType: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule' | null = null;
 
         if (shopItem.advancedItemType === 'foundationTreasure') {
-          if (!prev.foundationTreasure) {
-            const treasures = Object.values(FOUNDATION_TREASURES);
-            const availableTreasures = treasures.filter(t =>
-              !t.requiredLevel || prev.realmLevel >= t.requiredLevel
-            );
-            if (availableTreasures.length > 0) {
-              const selected = availableTreasures[Math.floor(Math.random() * availableTreasures.length)];
-              selectedItem = { id: selected.id, name: selected.name };
-              newFoundationTreasure = selected.id;
-            } else {
-              addLog('没有可用的筑基奇物！', 'danger');
-              return prev;
-            }
+          const treasures = Object.values(FOUNDATION_TREASURES);
+          const availableTreasures = treasures.filter(t =>
+            !t.requiredLevel || prev.realmLevel >= t.requiredLevel
+          );
+          if (availableTreasures.length > 0) {
+            const selected = availableTreasures[Math.floor(Math.random() * availableTreasures.length)];
+            selectedItem = { id: selected.id, name: selected.name, description: selected.description, rarity: selected.rarity };
+            advancedItemType = 'foundationTreasure';
           } else {
-            addLog('你已经拥有筑基奇物，无法重复购买！', 'danger');
+            addLog('没有可用的筑基奇物！', 'danger');
             return prev;
           }
         } else if (shopItem.advancedItemType === 'heavenEarthEssence') {
-          if (!prev.heavenEarthEssence) {
-            const essences = Object.values(HEAVEN_EARTH_ESSENCES);
-            if (essences.length > 0) {
-              const selected = essences[Math.floor(Math.random() * essences.length)];
-              selectedItem = { id: selected.id, name: selected.name };
-              newHeavenEarthEssence = selected.id;
-            } else {
-              addLog('没有可用的天地精华！', 'danger');
-              return prev;
-            }
+          const essences = Object.values(HEAVEN_EARTH_ESSENCES);
+          if (essences.length > 0) {
+            const selected = essences[Math.floor(Math.random() * essences.length)];
+            selectedItem = { id: selected.id, name: selected.name, description: selected.description, rarity: selected.rarity };
+            advancedItemType = 'heavenEarthEssence';
           } else {
-            addLog('你已经拥有天地精华，无法重复购买！', 'danger');
+            addLog('没有可用的天地精华！', 'danger');
             return prev;
           }
         } else if (shopItem.advancedItemType === 'heavenEarthMarrow') {
-          if (!prev.heavenEarthMarrow) {
-            const marrows = Object.values(HEAVEN_EARTH_MARROWS);
-            if (marrows.length > 0) {
-              const selected = marrows[Math.floor(Math.random() * marrows.length)];
-              selectedItem = { id: selected.id, name: selected.name };
-              newHeavenEarthMarrow = selected.id;
-              marrowRefiningProgress = 0;
-              marrowRefiningSpeed = 1.0;
-            } else {
-              addLog('没有可用的天地之髓！', 'danger');
-              return prev;
-            }
+          const marrows = Object.values(HEAVEN_EARTH_MARROWS);
+          if (marrows.length > 0) {
+            const selected = marrows[Math.floor(Math.random() * marrows.length)];
+            selectedItem = { id: selected.id, name: selected.name, description: selected.description, rarity: selected.rarity };
+            advancedItemType = 'heavenEarthMarrow';
           } else {
-            addLog('你已经拥有天地之髓，无法重复购买！', 'danger');
+            addLog('没有可用的天地之髓！', 'danger');
             return prev;
           }
         } else if (shopItem.advancedItemType === 'longevityRule') {
+          const rules = Object.values(LONGEVITY_RULES);
+          const currentRules = prev.longevityRules || [];
+          const availableRules = rules.filter(r => !currentRules.includes(r.id));
           const maxRules = prev.maxLongevityRules || 3;
-          if ((prev.longevityRules || []).length < maxRules) {
-            const rules = Object.values(LONGEVITY_RULES);
-            const currentRules = prev.longevityRules || [];
-            const availableRules = rules.filter(r => !currentRules.includes(r.id));
-            if (availableRules.length > 0) {
-              const selected = availableRules[Math.floor(Math.random() * availableRules.length)];
-              selectedItem = { id: selected.id, name: selected.name };
-              newLongevityRules.push(selected.id);
-            } else {
-              addLog('你已经拥有所有可用的规则之力！', 'danger');
-              return prev;
-            }
+          if (availableRules.length > 0 && currentRules.length < maxRules) {
+            const selected = availableRules[Math.floor(Math.random() * availableRules.length)];
+            selectedItem = { id: selected.id, name: selected.name, description: selected.description, rarity: '仙品' };
+            advancedItemType = 'longevityRule';
           } else {
-            addLog('你已经拥有最大数量的规则之力，无法继续购买！', 'danger');
+            addLog('你已经拥有所有可用的规则之力！', 'danger');
             return prev;
           }
         }
 
-        if (selectedItem) {
+        if (selectedItem && advancedItemType) {
           addLog(
             `✨ 你花费 ${totalPrice} 灵石购买了【${selectedItem.name}】！这是突破的关键物品！`,
             'special'
@@ -182,15 +155,22 @@ export function useShopHandlers({
           setPurchaseSuccess({ item: selectedItem.name, quantity: 1 });
           setTimeout(() => setPurchaseSuccess(null), 2000);
 
+          const newInventory = [...prev.inventory];
+          newInventory.push({
+            id: uid(),
+            name: selectedItem.name,
+            type: ItemType.AdvancedItem,
+            description: selectedItem.description,
+            quantity: 1,
+            rarity: selectedItem.rarity as ItemRarity,
+            advancedItemType,
+            advancedItemId: selectedItem.id,
+          });
+
           return {
             ...prev,
             spiritStones: prev.spiritStones - totalPrice,
-            foundationTreasure: newFoundationTreasure,
-            heavenEarthEssence: newHeavenEarthEssence,
-            heavenEarthMarrow: newHeavenEarthMarrow,
-            longevityRules: newLongevityRules,
-            marrowRefiningProgress,
-            marrowRefiningSpeed,
+            inventory: newInventory,
           };
         }
       }

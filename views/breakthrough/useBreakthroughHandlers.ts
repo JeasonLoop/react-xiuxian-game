@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlayerStats } from '../../types';
-import { REALM_DATA, CULTIVATION_ARTS, TALENTS, TITLES, calculateSpiritualRootArtBonus, REALM_ORDER, FOUNDATION_TREASURES } from '../../constants';
+import { REALM_DATA, CULTIVATION_ARTS, TALENTS, TITLES, calculateSpiritualRootArtBonus, REALM_ORDER } from '../../constants/index';
 import { getItemStats } from '../../utils/itemUtils';
 import { getRandomBreakthroughDescription } from '../../services/templateService';
 import { getRealmIndex, calculateBreakthroughAttributePoints } from '../../utils/attributeUtils';

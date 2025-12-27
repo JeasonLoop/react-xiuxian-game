@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { PlayerStats, RealmType, SecretRealm } from '../types';
-import { REALM_ORDER } from '../constants';
+import { REALM_ORDER } from '../constants/index';
 import { generateRandomRealms } from '../services/randomService';
 import { X, Mountain, Gem, Ticket, RefreshCw } from 'lucide-react';
 

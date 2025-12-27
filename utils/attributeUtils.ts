@@ -1,5 +1,5 @@
 import { RealmType } from '../types';
-import { REALM_ORDER } from '../constants';
+import { REALM_ORDER, MAX_ATTRIBUTE_POINTS_PER_REALM } from '../constants/index';
 
 /**
  * 基础属性常量
@@ -68,24 +68,24 @@ export const calculateAttributeValue = (
 };
 
 /**
- * 突破时获得的属性点数量（指数级别增长）
- * 境界升级：2^(境界索引+1)
- * 层数升级：2^境界索引/9 + 1（至少1点）
+ * 突破时获得的属性点数量（带上限保护）
+ * 境界升级：根据境界线性增长，不超过当前境界上限
+ * 层数升级：较小幅度增长，不超过当前境界上限
  * @param isRealmUpgrade 是否为境界升级
  * @param realm 境界
+ * @param currentPoints 当前已分配的属性点数（可选）
  * @returns 属性点数量
  */
 export const calculateBreakthroughAttributePoints = (
   isRealmUpgrade: boolean,
-  realm: RealmType
+  realm: RealmType,
+  currentPoints: number = 0
 ): number => {
   const validRealmIndex = getRealmIndex(realm);
+  const maxPoints = MAX_ATTRIBUTE_POINTS_PER_REALM[realm];
+  const pointsGain = isRealmUpgrade ? 2 : 1; // 简化为线性增长
 
-  if (isRealmUpgrade) {
-    // 境界升级：2^(新境界索引+1)
-    return Math.floor(Math.pow(2, validRealmIndex + 1));
-  } else {
-    // 层数升级：2^境界索引/9 + 1（至少1点）
-    return Math.max(1, Math.floor(Math.pow(2, validRealmIndex) / 9) + 1);
-  }
+  // 计算实际获得的点数（不超过上限）
+  const actualGain = Math.min(pointsGain, maxPoints - currentPoints);
+  return Math.max(0, actualGain);
 };

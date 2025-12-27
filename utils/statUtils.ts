@@ -1,5 +1,5 @@
 import { PlayerStats, CultivationArt, ArtGrade } from '../types';
-import { CULTIVATION_ARTS, calculateSpiritualRootArtBonus } from '../constants';
+import { CULTIVATION_ARTS, calculateSpiritualRootArtBonus } from '../constants/index';
 
 /**
  * 获取玩家激活的心法

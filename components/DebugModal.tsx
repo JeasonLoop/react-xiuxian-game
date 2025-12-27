@@ -15,6 +15,7 @@ import {
   Scroll,
   Power,
   Skull,
+  Search,
 } from 'lucide-react';
 import {
   PlayerStats,
@@ -52,7 +53,7 @@ import {
   HEAVEN_EARTH_ESSENCES,
   HEAVEN_EARTH_MARROWS,
   LONGEVITY_RULES,
-} from '../constants';
+} from '../constants/index';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import { LOOT_ITEMS } from '../services/battleService';
 import { showSuccess, showError, showInfo, showConfirm } from '../utils/toastUtils';
@@ -111,6 +112,7 @@ const DebugModal: React.FC<Props> = ({
   const [editingPetId, setEditingPetId] = useState<string | null>(null);
   const [editingPet, setEditingPet] = useState<Pet | null>(null);
   const [itemQuantities, setItemQuantities] = useState<Record<string, number>>({});
+  const [globalSearchQuery, setGlobalSearchQuery] = useState<string>('');
 
   // 合并所有装备（包括LOOT_ITEMS中的套装装备）
   const allEquipmentTemplates = useMemo(() => {
@@ -894,6 +896,28 @@ const DebugModal: React.FC<Props> = ({
 
         {/* Content */}
         <div className="modal-scroll-container modal-scroll-content p-4 md:p-6 space-y-6">
+          {/* 全局搜索 */}
+          <div className="bg-stone-900/50 border border-stone-700 rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <Search size={18} className="text-stone-400" />
+              <input
+                type="text"
+                placeholder="全局搜索所有内容..."
+                value={globalSearchQuery}
+                onChange={(e) => setGlobalSearchQuery(e.target.value)}
+                className="flex-1 bg-stone-800 border border-stone-700 rounded px-3 py-2 text-sm text-stone-200 placeholder-stone-500 focus:outline-none focus:border-red-500"
+              />
+              {globalSearchQuery && (
+                <button
+                  onClick={() => setGlobalSearchQuery('')}
+                  className="text-stone-400 hover:text-stone-200 px-2"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* 警告提示 */}
           <div className="bg-red-900/30 border border-red-700 rounded p-3 text-sm text-red-200">
             ⚠️ 调试模式：修改数据可能导致游戏异常，请谨慎操作！
@@ -1280,7 +1304,7 @@ const DebugModal: React.FC<Props> = ({
             <div className="mb-3 border-b border-stone-700 pb-2">
               <h3 className="font-bold text-stone-200 mb-2">游戏内容</h3>
               {/* 第一行：主要功能 */}
-              <div className="flex gap-2 flex-wrap mb-2">
+              <div className="flex gap-2 flex-wrap mb-2 justify-start">
                 <button
                   onClick={() => setActiveTab('equipment')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
@@ -1343,7 +1367,7 @@ const DebugModal: React.FC<Props> = ({
                 </button>
               </div>
               {/* 第二行：角色相关 */}
-              <div className="flex gap-2 flex-wrap mb-2">
+              <div className="flex gap-2 flex-wrap mb-2 justify-start">
                 <button
                   onClick={() => setActiveTab('talent')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
@@ -2897,17 +2921,44 @@ const DebugModal: React.FC<Props> = ({
                       )}
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
-                      {Object.values(FOUNDATION_TREASURES).map((treasure) => (
+                      {Object.values(FOUNDATION_TREASURES)
+                        .filter((treasure) => {
+                          if (!globalSearchQuery.trim()) return true;
+                          const query = globalSearchQuery.toLowerCase();
+                          return (
+                            treasure.name.toLowerCase().includes(query) ||
+                            treasure.description.toLowerCase().includes(query) ||
+                            treasure.rarity.toLowerCase().includes(query) ||
+                            treasure.id.toLowerCase().includes(query)
+                          );
+                        })
+                        .map((treasure) => (
                         <div
                           key={treasure.id}
                           className={`border-2 rounded-lg p-3 cursor-pointer transition-all hover:scale-105 ${
                             localPlayer.foundationTreasure === treasure.id
                               ? 'border-green-500 bg-green-900/20'
-                              : 'border-stone-700 bg-stone-800/50'
+                              : `${getRarityColor(treasure.rarity)} ${getRarityBgColor(treasure.rarity)}`
                           }`}
                           onClick={() => {
-                            updateField('foundationTreasure', treasure.id);
-                            showSuccess(`已设置筑基奇物: ${treasure.name}`);
+                            // 添加到背包
+                            const newItem: Item = {
+                              id: uid(),
+                              name: treasure.name,
+                              type: ItemType.AdvancedItem,
+                              description: treasure.description,
+                              quantity: 1,
+                              rarity: treasure.rarity,
+                              advancedItemType: 'foundationTreasure',
+                              advancedItemId: treasure.id,
+                            };
+                            const updated = {
+                              ...localPlayer,
+                              inventory: [...localPlayer.inventory, newItem],
+                            };
+                            setLocalPlayer(updated);
+                            onUpdatePlayer({ inventory: updated.inventory });
+                            showSuccess(`已添加筑基奇物到背包: ${treasure.name}`);
                           }}
                         >
                           <div className="flex items-start justify-between mb-2">
@@ -2928,7 +2979,7 @@ const DebugModal: React.FC<Props> = ({
                               .join(', ')}
                           </div>
                         </div>
-                      ))}
+                        ))}
                     </div>
                     {localPlayer.foundationTreasure && (
                       <button
@@ -2954,17 +3005,45 @@ const DebugModal: React.FC<Props> = ({
                       )}
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
-                      {Object.values(HEAVEN_EARTH_ESSENCES).map((essence) => (
+                      {Object.values(HEAVEN_EARTH_ESSENCES)
+                        .filter((essence) => {
+                          if (!globalSearchQuery.trim()) return true;
+                          const query = globalSearchQuery.toLowerCase();
+                          return (
+                            essence.name.toLowerCase().includes(query) ||
+                            essence.description.toLowerCase().includes(query) ||
+                            essence.rarity.toLowerCase().includes(query) ||
+                            String(essence.quality).toLowerCase().includes(query) ||
+                            essence.id.toLowerCase().includes(query)
+                          );
+                        })
+                        .map((essence) => (
                         <div
                           key={essence.id}
                           className={`border-2 rounded-lg p-3 cursor-pointer transition-all hover:scale-105 ${
                             localPlayer.heavenEarthEssence === essence.id
                               ? 'border-blue-500 bg-blue-900/20'
-                              : 'border-stone-700 bg-stone-800/50'
+                              : `${getRarityColor(essence.rarity)} ${getRarityBgColor(essence.rarity)}`
                           }`}
                           onClick={() => {
-                            updateField('heavenEarthEssence', essence.id);
-                            showSuccess(`已设置天地精华: ${essence.name}`);
+                            // 添加到背包
+                            const newItem: Item = {
+                              id: uid(),
+                              name: essence.name,
+                              type: ItemType.AdvancedItem,
+                              description: essence.description,
+                              quantity: 1,
+                              rarity: essence.rarity,
+                              advancedItemType: 'heavenEarthEssence',
+                              advancedItemId: essence.id,
+                            };
+                            const updated = {
+                              ...localPlayer,
+                              inventory: [...localPlayer.inventory, newItem],
+                            };
+                            setLocalPlayer(updated);
+                            onUpdatePlayer({ inventory: updated.inventory });
+                            showSuccess(`已添加天地精华到背包: ${essence.name}`);
                           }}
                         >
                           <div className="flex items-start justify-between mb-2">
@@ -2986,7 +3065,7 @@ const DebugModal: React.FC<Props> = ({
                               .join(', ')}
                           </div>
                         </div>
-                      ))}
+                        ))}
                     </div>
                     {localPlayer.heavenEarthEssence && (
                       <button
@@ -3012,18 +3091,45 @@ const DebugModal: React.FC<Props> = ({
                       )}
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
-                      {Object.values(HEAVEN_EARTH_MARROWS).map((marrow) => (
+                      {Object.values(HEAVEN_EARTH_MARROWS)
+                        .filter((marrow) => {
+                          if (!globalSearchQuery.trim()) return true;
+                          const query = globalSearchQuery.toLowerCase();
+                          return (
+                            marrow.name.toLowerCase().includes(query) ||
+                            marrow.description.toLowerCase().includes(query) ||
+                            marrow.rarity.toLowerCase().includes(query) ||
+                            String(marrow.quality).toLowerCase().includes(query) ||
+                            marrow.id.toLowerCase().includes(query)
+                          );
+                        })
+                        .map((marrow) => (
                         <div
                           key={marrow.id}
                           className={`border-2 rounded-lg p-3 cursor-pointer transition-all hover:scale-105 ${
                             localPlayer.heavenEarthMarrow === marrow.id
                               ? 'border-yellow-500 bg-yellow-900/20'
-                              : 'border-stone-700 bg-stone-800/50'
+                              : `${getRarityColor(marrow.rarity)} ${getRarityBgColor(marrow.rarity)}`
                           }`}
                           onClick={() => {
-                            updateField('heavenEarthMarrow', marrow.id);
-                            updateField('marrowRefiningProgress', 100);
-                            showSuccess(`已设置天地之髓: ${marrow.name} (炼化进度100%)`);
+                            // 添加到背包
+                            const newItem: Item = {
+                              id: uid(),
+                              name: marrow.name,
+                              type: ItemType.AdvancedItem,
+                              description: marrow.description,
+                              quantity: 1,
+                              rarity: marrow.rarity,
+                              advancedItemType: 'heavenEarthMarrow',
+                              advancedItemId: marrow.id,
+                            };
+                            const updated = {
+                              ...localPlayer,
+                              inventory: [...localPlayer.inventory, newItem],
+                            };
+                            setLocalPlayer(updated);
+                            onUpdatePlayer({ inventory: updated.inventory });
+                            showSuccess(`已添加天地之髓到背包: ${marrow.name}`);
                           }}
                         >
                           <div className="flex items-start justify-between mb-2">
@@ -3045,7 +3151,7 @@ const DebugModal: React.FC<Props> = ({
                               .join(', ')}
                           </div>
                         </div>
-                      ))}
+                        ))}
                     </div>
                     {localPlayer.heavenEarthMarrow && (
                       <div className="mt-2 space-y-2">
@@ -3132,7 +3238,18 @@ const DebugModal: React.FC<Props> = ({
                       </span>
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
-                      {Object.values(LONGEVITY_RULES).map((rule) => {
+                      {Object.values(LONGEVITY_RULES)
+                        .filter((rule) => {
+                          if (!globalSearchQuery.trim()) return true;
+                          const query = globalSearchQuery.toLowerCase();
+                          return (
+                            rule.name.toLowerCase().includes(query) ||
+                            rule.description.toLowerCase().includes(query) ||
+                            rule.id.toLowerCase().includes(query) ||
+                            String(rule.power).includes(query)
+                          );
+                        })
+                        .map((rule) => {
                         const hasRule = localPlayer.longevityRules?.includes(rule.id) || false;
                         return (
                           <div
@@ -3140,17 +3257,27 @@ const DebugModal: React.FC<Props> = ({
                             className={`border-2 rounded-lg p-3 cursor-pointer transition-all hover:scale-105 ${
                               hasRule
                                 ? 'border-purple-500 bg-purple-900/20'
-                                : 'border-stone-700 bg-stone-800/50'
+                                : `${getRarityColor('仙品')} ${getRarityBgColor('仙品')}`
                             }`}
                             onClick={() => {
-                              const currentRules = localPlayer.longevityRules || [];
-                              if (hasRule) {
-                                updateField('longevityRules', currentRules.filter(id => id !== rule.id));
-                                showInfo(`已移除规则之力: ${rule.name}`);
-                              } else {
-                                updateField('longevityRules', [...currentRules, rule.id]);
-                                showSuccess(`已添加规则之力: ${rule.name}`);
-                              }
+                              // 添加到背包
+                              const newItem: Item = {
+                                id: uid(),
+                                name: rule.name,
+                                type: ItemType.AdvancedItem,
+                                description: rule.description,
+                                quantity: 1,
+                                rarity: '仙品',
+                                advancedItemType: 'longevityRule',
+                                advancedItemId: rule.id,
+                              };
+                              const updated = {
+                                ...localPlayer,
+                                inventory: [...localPlayer.inventory, newItem],
+                              };
+                              setLocalPlayer(updated);
+                              onUpdatePlayer({ inventory: updated.inventory });
+                              showSuccess(`已添加规则之力到背包: ${rule.name}`);
                             }}
                           >
                             <div className="flex items-start justify-between mb-2">
@@ -3172,7 +3299,7 @@ const DebugModal: React.FC<Props> = ({
                             </div>
                           </div>
                         );
-                      })}
+                        })}
                     </div>
                     {localPlayer.longevityRules && localPlayer.longevityRules.length > 0 && (
                       <button

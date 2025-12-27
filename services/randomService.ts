@@ -1,5 +1,5 @@
 import { SecretRealm, RealmType, Item, ItemType, EquipmentSlot } from '../types';
-import { REALM_ORDER, SectInfo, SectGrade, getPillDefinition } from '../constants';
+import { REALM_ORDER, SectInfo, SectGrade, getPillDefinition } from '../constants/index';
 import { getItemFromConstants } from '../utils/itemConstantsUtils';
 
 const randomId = () => Math.random().toString(36).slice(2, 9);

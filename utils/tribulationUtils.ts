@@ -1,11 +1,10 @@
 import { PlayerStats, TribulationState, TribulationResult } from '../types';
 import {
   TRIBULATION_CONFIG,
-  CULTIVATION_ARTS,
   calculateTribulationDeathProbability,
   calculateEquipmentQualityScore,
   REALM_ORDER,
-} from '../constants';
+} from '../constants/index';
 import { getPlayerTotalStats } from './statUtils';
 import { checkBreakthroughConditions } from './cultivationUtils';
 

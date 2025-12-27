@@ -15,7 +15,7 @@ import {
   getUpgradeMultiplier,
   RARITY_MULTIPLIERS,
   REALM_ORDER,
-} from '../../constants';
+} from '../../constants/index';
 
 interface UseEquipmentHandlersProps {
   player: PlayerStats;

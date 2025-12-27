@@ -22,7 +22,7 @@ import {
   initializeTurnBasedBattle,
   calculateBattleRewards,
 } from '../services/battleService';
-import { BATTLE_POTIONS } from '../constants';
+import { BATTLE_POTIONS, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES } from '../constants/index';
 
 interface TurnBasedBattleModalProps {
   isOpen: boolean;
@@ -68,6 +68,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   const [battleState, setBattleState] = useState<BattleState | null>(null);
   const [showSkills, setShowSkills] = useState(false);
   const [showPotions, setShowPotions] = useState(false);
+  const [showAdvancedItems, setShowAdvancedItems] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   // 使用 ref 来创建一个更可靠的锁，防止在状态更新期间重复点击（同步检查）
@@ -162,6 +163,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
       isActionLockedRef.current = false;
       setShowSkills(false);
       setShowPotions(false);
+      setShowAdvancedItems(false);
       setErrorMessage(null);
     }
   }, [isOpen, player, adventureType, riskLevel, realmMinRealm, bossId]);
@@ -335,6 +337,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
     setIsProcessing(true);
     setShowSkills(false);
     setShowPotions(false);
+    setShowAdvancedItems(false);
 
     try {
       // 执行玩家行动
@@ -750,6 +753,18 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                 丹药 ({availablePotions.length})
               </button>
               <button
+                onClick={() => setShowAdvancedItems(!showAdvancedItems)}
+                disabled={isProcessing}
+                className={`flex items-center gap-2 px-4 py-2 rounded border ${
+                  isProcessing
+                    ? 'border-stone-700 text-stone-600 cursor-not-allowed opacity-50'
+                    : 'border-yellow-500 text-yellow-300 hover:bg-yellow-500/10'
+                }`}
+              >
+                <Zap size={16} />
+                进阶物品
+              </button>
+              <button
                 onClick={() => handlePlayerAction({ type: 'defend' })}
                 disabled={isProcessing || battleState.playerActionsRemaining <= 0}
                 className={`flex items-center gap-2 px-4 py-2 rounded border ${
@@ -902,6 +917,207 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                 </div>
               </div>
             )}
+
+            {/* 进阶物品列表 */}
+            {showAdvancedItems && (() => {
+              const availableAdvancedItems: Array<{
+                type: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
+                id: string;
+                name: string;
+                rarity: string;
+                battleEffect: any;
+                cooldown?: number;
+              }> = [];
+
+              // 检查筑基奇物
+              if (player?.foundationTreasure) {
+                const treasure = FOUNDATION_TREASURES[player.foundationTreasure];
+                if (treasure) {
+                  if (treasure.battleEffect) {
+                  const cooldownKey = `advanced_foundationTreasure_${treasure.id}`;
+                  const cooldown = battleState?.player.cooldowns[cooldownKey] || 0;
+                  availableAdvancedItems.push({
+                    type: 'foundationTreasure',
+                    id: treasure.id,
+                    name: treasure.name,
+                    rarity: treasure.rarity,
+                    battleEffect: treasure.battleEffect,
+                    cooldown,
+                  });
+                  } else {
+                    // 如果没有battleEffect，也显示但标记为不可用
+                    availableAdvancedItems.push({
+                      type: 'foundationTreasure',
+                      id: treasure.id,
+                      name: treasure.name,
+                      rarity: treasure.rarity,
+                      battleEffect: null as any, // 标记为null表示没有战斗效果
+                      cooldown: 0,
+                    });
+                  }
+                }
+              }
+
+              // 检查天地精华
+              if (player?.heavenEarthEssence) {
+                const essence = HEAVEN_EARTH_ESSENCES[player.heavenEarthEssence];
+                if (essence) {
+                  if (essence.battleEffect) {
+                  const cooldownKey = `advanced_heavenEarthEssence_${essence.id}`;
+                  const cooldown = battleState?.player.cooldowns[cooldownKey] || 0;
+                  availableAdvancedItems.push({
+                    type: 'heavenEarthEssence',
+                    id: essence.id,
+                    name: essence.name,
+                    rarity: essence.rarity,
+                    battleEffect: essence.battleEffect,
+                    cooldown,
+                  });
+                  } else {
+                    availableAdvancedItems.push({
+                      type: 'heavenEarthEssence',
+                      id: essence.id,
+                      name: essence.name,
+                      rarity: essence.rarity,
+                      battleEffect: null as any,
+                      cooldown: 0,
+                    });
+                  }
+                }
+              }
+
+              // 检查天地之髓
+              if (player?.heavenEarthMarrow) {
+                const marrow = HEAVEN_EARTH_MARROWS[player.heavenEarthMarrow];
+                if (marrow) {
+                  if (marrow.battleEffect) {
+                  const cooldownKey = `advanced_heavenEarthMarrow_${marrow.id}`;
+                  const cooldown = battleState?.player.cooldowns[cooldownKey] || 0;
+                  availableAdvancedItems.push({
+                    type: 'heavenEarthMarrow',
+                    id: marrow.id,
+                    name: marrow.name,
+                    rarity: marrow.rarity,
+                    battleEffect: marrow.battleEffect,
+                    cooldown,
+                  });
+                  } else {
+                    availableAdvancedItems.push({
+                      type: 'heavenEarthMarrow',
+                      id: marrow.id,
+                      name: marrow.name,
+                      rarity: marrow.rarity,
+                      battleEffect: null as any,
+                      cooldown: 0,
+                    });
+                  }
+                }
+              }
+
+              // 检查规则之力
+              if (player?.longevityRules && Array.isArray(player.longevityRules)) {
+                player.longevityRules.forEach((ruleId) => {
+                  const rule = LONGEVITY_RULES[ruleId];
+                  if (rule) {
+                    if (rule.battleEffect) {
+                    const cooldownKey = `advanced_longevityRule_${rule.id}`;
+                    const cooldown = battleState?.player.cooldowns[cooldownKey] || 0;
+                    availableAdvancedItems.push({
+                      type: 'longevityRule',
+                      id: rule.id,
+                      name: rule.name,
+                      rarity: '仙品',
+                      battleEffect: rule.battleEffect,
+                      cooldown,
+                    });
+                    } else {
+                      availableAdvancedItems.push({
+                        type: 'longevityRule',
+                        id: rule.id,
+                        name: rule.name,
+                        rarity: '仙品',
+                        battleEffect: null as any,
+                        cooldown: 0,
+                      });
+                    }
+                  }
+                });
+              }
+
+              return (
+                <div className="mt-3 p-3 bg-ink-800 rounded border border-stone-700 max-h-[300px] overflow-y-auto">
+                  <div className="text-xs text-stone-400 mb-2">进阶物品</div>
+                  <div className="space-y-2">
+                    {availableAdvancedItems.length === 0 ? (
+                      <div className="text-sm text-stone-500">没有可用的进阶物品</div>
+                    ) : (
+                      availableAdvancedItems.map((item) => {
+                        const isOnCooldown = (item.cooldown || 0) > 0;
+                        const hasBattleEffect = item.battleEffect !== null;
+                        const canUse = !isProcessing && battleState.playerActionsRemaining > 0 && !isOnCooldown && hasBattleEffect;
+
+                        return (
+                          <button
+                            key={`${item.type}_${item.id}`}
+                            onClick={() => {
+                              if (canUse) {
+                                handlePlayerAction({
+                                  type: 'advancedItem',
+                                  itemType: item.type,
+                                  itemId: item.id,
+                                });
+                              }
+                            }}
+                            disabled={!canUse}
+                            className={`w-full text-left p-2 rounded border text-sm ${
+                              !canUse
+                                ? 'border-stone-700 bg-stone-900/40 text-stone-600 cursor-not-allowed opacity-50'
+                                : 'border-yellow-700/50 bg-yellow-900/20 hover:bg-yellow-900/40'
+                            }`}
+                          >
+                            <div className="flex justify-between items-center">
+                              <span className="text-yellow-300 font-semibold">
+                                {item.name}
+                              </span>
+                              <span className={`text-xs ${
+                                item.rarity === '仙品' ? 'text-purple-400' :
+                                item.rarity === '传说' ? 'text-orange-400' :
+                                item.rarity === '稀有' ? 'text-blue-400' :
+                                'text-stone-400'
+                              }`}>
+                                {item.rarity}
+                              </span>
+                            </div>
+                            {hasBattleEffect ? (
+                              <>
+                                <div className="text-xs text-stone-400 mt-1">
+                                  {item.battleEffect.description}
+                                </div>
+                                <div className="text-xs text-stone-500 mt-1">
+                                  {item.battleEffect.cost?.lifespan && `消耗寿命: ${item.battleEffect.cost.lifespan}年`}
+                                  {item.battleEffect.cost?.maxHp && `消耗气血上限: ${typeof item.battleEffect.cost.maxHp === 'number' && item.battleEffect.cost.maxHp < 1 ? `${(item.battleEffect.cost.maxHp * 100).toFixed(0)}%` : item.battleEffect.cost.maxHp}`}
+                                  {item.battleEffect.cost?.hp && `消耗气血: ${item.battleEffect.cost.hp}`}
+                                  {item.battleEffect.cost?.spirit && `消耗神识: ${item.battleEffect.cost.spirit}`}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="text-xs text-stone-500 mt-1">
+                                该进阶物品没有战斗效果
+                              </div>
+                            )}
+                            {isOnCooldown && (
+                              <div className="text-xs text-red-400 mt-1">
+                                冷却中: {item.cooldown} 回合
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 

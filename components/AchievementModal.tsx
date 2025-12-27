@@ -1,8 +1,8 @@
 import React from 'react';
 import { X, Trophy, Star } from 'lucide-react';
 import { PlayerStats, Achievement, ItemRarity } from '../types';
-import { ACHIEVEMENTS } from '../constants';
-import { getRarityTextColor } from '../utils/rarityUtils';
+import { ACHIEVEMENTS } from '../constants/index';
+import { getRarityTextColor, getRarityBorder } from '../utils/rarityUtils';
 
 interface Props {
   isOpen: boolean;
@@ -12,23 +12,6 @@ interface Props {
 
 const AchievementModal: React.FC<Props> = ({ isOpen, onClose, player }) => {
   if (!isOpen) return null;
-
-  // 使用统一的工具函数获取稀有度颜色（带边框）
-  const getRarityColor = (rarity: string) => {
-    const baseColor = getRarityTextColor(rarity as ItemRarity);
-    switch (rarity) {
-      case '普通':
-        return `${baseColor} border-gray-600`;
-      case '稀有':
-        return `${baseColor} border-blue-600`;
-      case '传说':
-        return `${baseColor} border-purple-600`;
-      case '仙品':
-        return `${baseColor} border-yellow-600`;
-      default:
-        return `${baseColor} border-gray-600`;
-    }
-  };
 
   const getRequirementTypeText = (type: string) => {
     const typeMap: Record<string, string> = {
@@ -121,7 +104,7 @@ const AchievementModal: React.FC<Props> = ({ isOpen, onClose, player }) => {
                 {completedAchievements.map((achievement) => (
                   <div
                     key={achievement.id}
-                    className={`bg-stone-900 rounded p-4 border-2 ${getRarityColor(achievement.rarity)}`}
+                    className={`bg-stone-900 rounded p-4 border-2 ${getRarityBorder(achievement.rarity as ItemRarity)}`}
                   >
                     <div className="flex items-start gap-3">
                       <Trophy
@@ -132,7 +115,7 @@ const AchievementModal: React.FC<Props> = ({ isOpen, onClose, player }) => {
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-bold">{achievement.name}</span>
                           <span
-                            className={`text-xs ${getRarityColor(achievement.rarity).split(' ')[0]}`}
+                            className={`text-xs ${getRarityTextColor(achievement.rarity as ItemRarity)}`}
                           >
                             ({achievement.rarity})
                           </span>

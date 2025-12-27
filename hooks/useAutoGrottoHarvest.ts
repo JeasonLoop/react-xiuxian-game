@@ -5,7 +5,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { PlayerStats } from '../types';
-import { PLANTABLE_HERBS } from '../constants';
+import { PLANTABLE_HERBS } from '../constants/index';
 import { addItemToInventory } from '../utils/inventoryUtils';
 import { ItemType } from '../types';
 

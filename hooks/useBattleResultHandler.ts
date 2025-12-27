@@ -3,14 +3,14 @@
  * 处理回合制战斗结果，更新玩家状态、处理物品奖励等
  */
 import React from 'react';
-import { Item, ItemType, PlayerStats, ItemRarity, SectRank} from '../types';
+import { Item, ItemType, PlayerStats, SectRank} from '../types';
 import { addItemToInventory } from '../utils/inventoryUtils';
 import {
   SECT_PROMOTION_BASE_REWARDS,
   SECT_SPECIAL_REWARDS,
   SECT_MASTER_CHALLENGE_REQUIREMENTS,
   SECTS,
-} from '../constants';
+} from '../constants/index';
 
 // 战斗结果类型（可能不包含所有字段）
 interface BattleResultData {

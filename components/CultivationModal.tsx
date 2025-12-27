@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef,  } from 'react';
 import { CultivationArt, RealmType, PlayerStats, ArtGrade } from '../types';
-import { CULTIVATION_ARTS, REALM_ORDER } from '../constants';
+import { CULTIVATION_ARTS, REALM_ORDER } from '../constants/index';
 import { X, BookOpen, Check, Lock, Search } from 'lucide-react';
 
 interface Props {

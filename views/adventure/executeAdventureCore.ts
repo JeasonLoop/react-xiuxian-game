@@ -25,7 +25,7 @@ import {
   HEAVEN_EARTH_SOUL_BOSSES,
   LONGEVITY_RULES,
   SECTS,
-} from '../../constants';
+} from '../../constants/index';
 import { SectRank } from '../../types';
 import { BattleReplay } from '../../services/battleService';
 import { uid } from '../../utils/gameUtils';
@@ -86,9 +86,8 @@ const applyResultToPlayer = (
   let newInv = [...prev.inventory];
   let newArts = [...prev.cultivationArts];
   // 使用 Set 确保唯一性，然后转回数组
-  const unlockedArtsSet = new Set(prev.unlockedArts || []);
-  // 同步已学习的功法到解锁列表（确保已学习的功法也在解锁列表中）
-  prev.cultivationArts.forEach(id => unlockedArtsSet.add(id));
+  // 修复：初始化 Set 时应包含 prev.unlockedArts，确保之前已解锁的功法不被丢失
+  const unlockedArtsSet = new Set([...(prev.unlockedArts || []), ...prev.cultivationArts]);
   let newUnlockedArts = Array.from(unlockedArtsSet);
 
   let newTalentId = prev.talentId;
@@ -134,15 +133,34 @@ const applyResultToPlayer = (
 
   const currentBatchNames = new Set<string>();
   itemsToProcess.forEach(itemData => {
-    try {
-      if (!itemData?.name) return;
-      let itemName = itemData.name.trim();
-      let itemType = (itemData.type as ItemType) || ItemType.Material;
-      let isEquippable = !!itemData.isEquippable;
-      let equipmentSlot = itemData.equipmentSlot as EquipmentSlot | undefined;
+    // 修复：提前检查 itemData 是否有效，避免无效数据导致处理失败
+    if (!itemData || !itemData.name) {
+      console.error('Item data is null/undefined or has no name, skipping:', itemData);
+      return;
+    }
 
-      // 神秘法宝处理 - 从常量池获取随机法宝
-      if (itemName.includes('法宝')) {
+    // 将变量声明移到 try 块外部，以便 catch 块也能访问
+    let itemName = '';
+    let itemType = ItemType.Material;
+    let itemRarity: ItemRarity = '普通';
+    let isEquippable = false;
+    let equipmentSlot: EquipmentSlot | undefined = undefined;
+    let finalEffect: any = undefined;
+    let finalPermanentEffect: any = undefined;
+
+    try {
+      itemName = itemData.name.trim();
+      itemType = (itemData.type as ItemType) || ItemType.Material;
+      isEquippable = !!itemData.isEquippable;
+      equipmentSlot = itemData.equipmentSlot as EquipmentSlot | undefined;
+
+      // 修复：神神秘法宝处理只对普通物品生效，避免高级物品被替换
+      const isBasicItem = !(itemData as any).advancedItemType &&
+                           !(itemData as any).advancedItemId &&
+                           !(itemData as any).recipeData;
+
+      if (isBasicItem && itemName.includes('法宝')) {
+        // 从常量池获取随机法宝
         const artifacts = getAllArtifacts();
         if (artifacts.length > 0) {
           const randomArtifact = artifacts[Math.floor(Math.random() * artifacts.length)];
@@ -170,10 +188,12 @@ const applyResultToPlayer = (
           isEquippable = true;
           equipmentSlot = Math.random() < 0.5 ? EquipmentSlot.Artifact1 : EquipmentSlot.Artifact2;
         }
+      } else {
+        // 非基础物品（已包含高级物品信息），直接跳过法宝处理逻辑
       }
 
       // 优先从常量池获取物品完整信息（如果常量池中有，直接使用，避免类型推断）
-      let itemRarity = (itemData.rarity as ItemRarity) || '普通';
+      itemRarity = (itemData.rarity as ItemRarity) || '普通';
       const itemFromConstants = getItemFromConstants(itemName);
       if (itemFromConstants) {
         // 常量池中有完整定义，优先使用常量池的数据
@@ -188,6 +208,13 @@ const applyResultToPlayer = (
         if (itemFromConstants.description && !itemData.description) {
           itemData.description = itemFromConstants.description;
         }
+        // 如果常量池中有进阶物品信息，使用常量池的（优先使用常量池的数据）
+        if ((itemFromConstants as any).advancedItemType && !(itemData as any).advancedItemType) {
+          (itemData as any).advancedItemType = (itemFromConstants as any).advancedItemType;
+        }
+        if ((itemFromConstants as any).advancedItemId && !(itemData as any).advancedItemId) {
+          (itemData as any).advancedItemId = (itemFromConstants as any).advancedItemId;
+        }
       } else {
         // 常量池中没有，才进行类型推断
         const inferred = inferItemTypeAndSlot(itemName, itemType, itemData.description || '', isEquippable);
@@ -198,8 +225,8 @@ const applyResultToPlayer = (
 
       // 效果规范化（完全使用常量池中的原始属性）
       const normalized = normalizeItemEffect(itemName, itemData.effect, itemData.permanentEffect, itemType, itemRarity);
-      let finalEffect = normalized.effect;
-      let finalPermanentEffect = normalized.permanentEffect;
+      finalEffect = normalized.effect;
+      finalPermanentEffect = normalized.permanentEffect;
 
       // 装备不应该有永久效果，如果有则转换为临时效果（effect）
       if (isEquippable && finalPermanentEffect) {
@@ -239,9 +266,12 @@ const applyResultToPlayer = (
         let baseName = itemName;
         const suffixes = ['·改', '·变', '·异', '·新', '·复', '·二', '·三'];
         let attempts = 0;
-        while ((newInv.some(i => i.name === itemName) || currentBatchNames.has(itemName)) && attempts < suffixes.length) {
+        while (attempts < suffixes.length && (newInv.some(i => i.name === itemName) || currentBatchNames.has(itemName))) {
           itemName = baseName + suffixes[attempts++];
+          // 添加到 currentBatchNames，确保当前批次中的物品不会重复
+          currentBatchNames.add(itemName);
         }
+        // 修复：检查条件调整顺序，确保先检查 attempts，避免跳过添加
         if (attempts >= suffixes.length && (newInv.some(i => i.name === itemName) || currentBatchNames.has(itemName))) return;
       }
       currentBatchNames.add(itemName);
@@ -263,9 +293,34 @@ const applyResultToPlayer = (
         }
         // 确保装备不会有 permanentEffect
         const equipmentPermanentEffect = isEquippable ? undefined : finalPermanentEffect;
-        newInv.push({ id: uid(), name: itemName, type: itemType, description: itemData.description, quantity: 1, rarity: itemRarity, level: 0, isEquippable, equipmentSlot, effect: finalEffect, permanentEffect: equipmentPermanentEffect, recipeData, reviveChances });
+        // 传递进阶物品相关字段
+        const advancedItemType = (itemData as any).advancedItemType;
+        const advancedItemId = (itemData as any).advancedItemId;
+        newInv.push({ id: uid(), name: itemName, type: itemType, description: itemData.description, quantity: 1, rarity: itemRarity, level: 0, isEquippable, equipmentSlot, effect: finalEffect, permanentEffect: equipmentPermanentEffect, recipeData, reviveChances, advancedItemType, advancedItemId });
       }
-    } catch (e) { console.error('Item processing error:', e); }
+    } catch (e) {
+      console.error('Item processing error:', e);
+      // 确保即使出错也添加物品（使用默认值）
+      const fallbackItem = {
+        id: uid(),
+        name: itemName,
+        type: itemType,
+        description: itemData?.description || '未描述物品',
+        quantity: 1,
+        rarity: itemRarity,
+        level: (itemData as any)?.level || 0,
+        isEquippable: false,
+        effect: finalEffect || {},
+        permanentEffect: undefined,
+        // 添加缺失的装备属性
+        equipmentSlot: equipmentSlot || undefined,
+        recipeData: (itemData as any)?.recipeData,
+        reviveChances: (itemData as any)?.reviveChances,
+        advancedItemType: (itemData as any)?.advancedItemType,
+        advancedItemId: (itemData as any)?.advancedItemId
+      };
+      newInv.push(fallbackItem);
+    }
   });
 
   // 功法解锁逻辑
@@ -457,16 +512,12 @@ const applyResultToPlayer = (
     addLog(`🎁 你获得了灵宠进阶材料【${m.name}】！`, 'gain');
   }
 
-  // 进阶物品获取逻辑
+  // 进阶物品获取逻辑（改为添加到背包）
   const currentRealmIndex = REALM_ORDER.indexOf(prev.realm);
-  let newFoundationTreasure = prev.foundationTreasure;
-  let newHeavenEarthEssence = prev.heavenEarthEssence;
-  let newHeavenEarthMarrow = prev.heavenEarthMarrow;
-  let newLongevityRules = [...(prev.longevityRules || [])];
 
-  // 筑基奇物：炼气期、筑基期历练/秘境有概率获得
-  if (!prev.foundationTreasure && (currentRealmIndex <= REALM_ORDER.indexOf(RealmType.Foundation))) {
-    const foundationChance = isSecretRealm ? 0.03 : (adventureType === 'lucky' ? 0.02 : 0.01);
+  // 筑基奇物：炼气期、筑基期历练/秘境有概率获得（提高概率）
+  if (currentRealmIndex <= REALM_ORDER.indexOf(RealmType.Foundation)) {
+    const foundationChance = isSecretRealm ? 0.08 : (adventureType === 'lucky' ? 0.06 : 0.03); // 从1-3%提高到3-8%
     if (Math.random() < foundationChance) {
       const treasures = Object.values(FOUNDATION_TREASURES);
       const availableTreasures = treasures.filter(t =>
@@ -475,33 +526,63 @@ const applyResultToPlayer = (
       if (availableTreasures.length > 0) {
         const selected = availableTreasures[Math.floor(Math.random() * availableTreasures.length)];
         addLog(`✨ 你获得了筑基奇物【${selected.name}】！这是突破筑基期的关键物品！`, 'special');
-        newFoundationTreasure = selected.id;
+        // 添加到背包
+        newInv.push({
+          id: uid(),
+          name: selected.name,
+          type: ItemType.AdvancedItem,
+          description: selected.description,
+          quantity: 1,
+          rarity: selected.rarity,
+          advancedItemType: 'foundationTreasure',
+          advancedItemId: selected.id,
+        });
       }
     }
   }
 
-  // 天地精华：金丹期、元婴期历练/秘境有概率获得
-  if (!prev.heavenEarthEssence && (currentRealmIndex >= REALM_ORDER.indexOf(RealmType.GoldenCore) && currentRealmIndex <= REALM_ORDER.indexOf(RealmType.NascentSoul))) {
-    const essenceChance = isSecretRealm ? 0.02 : (adventureType === 'lucky' ? 0.015 : 0.008);
+  // 天地精华：金丹期、元婴期历练/秘境有概率获得（提高概率）
+  if (currentRealmIndex >= REALM_ORDER.indexOf(RealmType.GoldenCore) && currentRealmIndex <= REALM_ORDER.indexOf(RealmType.NascentSoul)) {
+    const essenceChance = isSecretRealm ? 0.06 : (adventureType === 'lucky' ? 0.05 : 0.025); // 从0.8-2%提高到2.5-6%
     if (Math.random() < essenceChance) {
       const essences = Object.values(HEAVEN_EARTH_ESSENCES);
       if (essences.length > 0) {
         const selected = essences[Math.floor(Math.random() * essences.length)];
         addLog(`✨ 你获得了天地精华【${selected.name}】！这是突破元婴期的关键物品！`, 'special');
-        newHeavenEarthEssence = selected.id;
+        // 添加到背包
+        newInv.push({
+          id: uid(),
+          name: selected.name,
+          type: ItemType.AdvancedItem,
+          description: selected.description,
+          quantity: 1,
+          rarity: selected.rarity,
+          advancedItemType: 'heavenEarthEssence',
+          advancedItemId: selected.id,
+        });
       }
     }
   }
 
-  // 天地之髓：化神期历练/秘境有概率获得
-  if (!prev.heavenEarthMarrow && currentRealmIndex >= REALM_ORDER.indexOf(RealmType.SpiritSevering)) {
-    const marrowChance = isSecretRealm ? 0.015 : (adventureType === 'lucky' ? 0.01 : 0.005);
+  // 天地之髓：化神期历练/秘境有概率获得（提高概率）
+  if (currentRealmIndex >= REALM_ORDER.indexOf(RealmType.SpiritSevering)) {
+    const marrowChance = isSecretRealm ? 0.05 : (adventureType === 'lucky' ? 0.04 : 0.02); // 从0.5-1.5%提高到2-5%
     if (Math.random() < marrowChance) {
       const marrows = Object.values(HEAVEN_EARTH_MARROWS);
       if (marrows.length > 0) {
         const selected = marrows[Math.floor(Math.random() * marrows.length)];
         addLog(`✨ 你获得了天地之髓【${selected.name}】！这是突破化神期的关键物品！`, 'special');
-        newHeavenEarthMarrow = selected.id;
+        // 添加到背包
+        newInv.push({
+          id: uid(),
+          name: selected.name,
+          type: ItemType.AdvancedItem,
+          description: selected.description,
+          quantity: 1,
+          rarity: selected.rarity,
+          advancedItemType: 'heavenEarthMarrow',
+          advancedItemId: selected.id,
+        });
       }
     }
   }
@@ -515,7 +596,17 @@ const applyResultToPlayer = (
       const maxRules = prev.maxLongevityRules || 3;
       if (!currentRules.includes(ruleId) && currentRules.length < maxRules) {
         addLog(`✨ 你获得了规则之力【${rule.name}】！这是掌控天地的力量！`, 'special');
-        newLongevityRules.push(ruleId);
+        // 添加到背包
+        newInv.push({
+          id: uid(),
+          name: rule.name,
+          type: ItemType.AdvancedItem,
+          description: rule.description,
+          quantity: 1,
+          rarity: '仙品',
+          advancedItemType: 'longevityRule',
+          advancedItemId: rule.id,
+        });
       } else if (currentRules.includes(ruleId)) {
         addLog(`你已经拥有规则之力【${rule.name}】。`, 'normal');
       } else if (currentRules.length >= maxRules) {
@@ -523,8 +614,8 @@ const applyResultToPlayer = (
       }
     }
   } else if (currentRealmIndex >= REALM_ORDER.indexOf(RealmType.LongevityRealm)) {
-    // 原有的规则之力获取逻辑（作为备用，如果事件模板没有提供）
-    const rulesChance = isSecretRealm && riskLevel === '极度危险' ? 0.05 : (adventureType === 'dao_combining_challenge' ? 0.3 : 0);
+    // 原有的规则之力获取逻辑（作为备用，如果事件模板没有提供，提高概率）
+    const rulesChance = isSecretRealm && riskLevel === '极度危险' ? 0.12 : (adventureType === 'dao_combining_challenge' ? 0.4 : 0.02); // 提高概率
     if (Math.random() < rulesChance) {
       const rules = Object.values(LONGEVITY_RULES);
       const currentRules = prev.longevityRules || [];
@@ -534,7 +625,17 @@ const applyResultToPlayer = (
         const maxRules = prev.maxLongevityRules || 3;
         if (currentRules.length < maxRules) {
           addLog(`✨ 你获得了规则之力【${selected.name}】！这是掌控天地的力量！`, 'special');
-          newLongevityRules.push(selected.id);
+          // 添加到背包
+          newInv.push({
+            id: uid(),
+            name: selected.name,
+            type: ItemType.AdvancedItem,
+            description: selected.description,
+            quantity: 1,
+            rarity: '仙品',
+            advancedItemType: 'longevityRule',
+            advancedItemId: selected.id,
+          });
         }
       }
     }
@@ -546,6 +647,62 @@ const applyResultToPlayer = (
     addLog(`你遇到了天地之魄【${HEAVEN_EARTH_SOUL_BOSSES[bossId]?.name || '未知'}】！这是合道期的考验，只有击败它才能获得合道期的资格！`, 'danger');
     // 注意：实际战斗会在后续的战斗逻辑中处理，这里只是标记遇到了
     // 由于adventureType已经设置为'dao_combining_challenge'，战斗系统会自动识别
+  }
+
+  // 天地之魄挑战胜利：给予对应天地之魄功法（作为进阶物品显示）
+  if (adventureType === 'dao_combining_challenge' && battleContext?.victory && battleContext?.bossId) {
+    const bossId = battleContext.bossId;
+    const boss = HEAVEN_EARTH_SOUL_BOSSES[bossId];
+
+    if (boss) {
+      // 根据bossId查找对应的天地之魄功法
+      const soulArt = CULTIVATION_ARTS.find(art =>
+        (art as any).isHeavenEarthSoulArt && (art as any).bossId === bossId
+      );
+
+      if (soulArt && !newUnlockedArts.includes(soulArt.id)) {
+        // 添加到功法解锁列表
+        newUnlockedArts.push(soulArt.id);
+
+        // 同时作为进阶物品添加到背包（用于在进阶物品中显示）
+        // 注意：功法的 hp 属性需要转换为 permanentEffect 的 maxHp
+        const permanentEffect: any = {
+          attack: soulArt.effects.attack,
+          defense: soulArt.effects.defense,
+          hp: soulArt.effects.hp,
+          spirit: soulArt.effects.spirit,
+          physique: soulArt.effects.physique,
+          speed: soulArt.effects.speed,
+          expRate: soulArt.effects.expRate,
+          maxHp: soulArt.effects.hp || 0,
+        };
+
+        const soulArtItem: Item = {
+          id: uid(),
+          name: soulArt.name,
+          type: ItemType.AdvancedItem,
+          description: soulArt.description,
+          quantity: 1,
+          rarity: '仙品',
+          isEquippable: false,
+          effect: {},
+          permanentEffect: permanentEffect,
+          advancedItemType: 'heavenEarthEssence' as const,
+          advancedItemId: soulArt.id,
+        };
+
+        // 检查是否已存在同名物品
+        const existingIdx = newInv.findIndex(i => i.name === soulArt.name);
+        if (existingIdx >= 0) {
+          newInv[existingIdx] = { ...newInv[existingIdx], quantity: newInv[existingIdx].quantity + 1 };
+        } else {
+          newInv.push(soulArtItem);
+        }
+
+        addLog(`🌟 你领悟了天地之魄【${boss.name}】传授的功法【${soulArt.name}】！此功法蕴含天地之力，威力无穷！`, 'special');
+        addLog(`✨ 功法已添加到进阶物品中，可以在进阶物品界面查看详情。`, 'gain');
+      }
+    }
   }
 
   // 抽奖券与传承（如果AI没有生成抽奖券变化，则使用随机逻辑）
@@ -603,10 +760,7 @@ const applyResultToPlayer = (
   return {
     ...prev, hp: finalHp, exp: newExp, spiritStones: newStones, inventory: newInv, cultivationArts: newArts, unlockedArts: newUnlockedArts,
     talentId: newTalentId, attack: newAttack, defense: newDefense, maxHp: newMaxHp, spirit: newSpirit, physique: newPhysique, speed: newSpeed,
-    luck: newLuck, lotteryTickets: newLotteryTickets, inheritanceLevel: newInheritanceLevel, pets: newPets, statistics: newStats, lifespan: newLifespan, spiritualRoots: newSpiritualRoots, reputation: newReputation,
-    foundationTreasure: newFoundationTreasure, heavenEarthEssence: newHeavenEarthEssence, heavenEarthMarrow: newHeavenEarthMarrow, longevityRules: newLongevityRules,
-    marrowRefiningProgress: newHeavenEarthMarrow && !prev.heavenEarthMarrow ? 0 : prev.marrowRefiningProgress,
-    marrowRefiningSpeed: newHeavenEarthMarrow && !prev.heavenEarthMarrow ? 1.0 : prev.marrowRefiningSpeed
+    luck: newLuck, lotteryTickets: newLotteryTickets, inheritanceLevel: newInheritanceLevel, pets: newPets, statistics: newStats, lifespan: newLifespan, spiritualRoots: newSpiritualRoots, reputation: newReputation
   };
 };
 

@@ -8,7 +8,7 @@ import {
   getUpgradeMultiplier,
   RARITY_MULTIPLIERS,
   UPGRADE_STONE_SUCCESS_BONUS,
-} from '../constants';
+} from '../constants/index';
 import {
   X,
   Hammer,

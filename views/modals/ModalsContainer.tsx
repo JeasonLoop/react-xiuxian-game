@@ -116,6 +116,7 @@ interface ModalsContainerProps {
     handleOrganizeInventory?: () => void;
     handleRefineNatalArtifact: (item: Item) => void;
     handleUnrefineNatalArtifact: () => void;
+    handleRefineAdvancedItem?: (item: Item) => void;
     handleUpgradeItem: (item: Item, costStones: number, costMats: number, upgradeStones?: number) => Promise<'success' | 'failure' | 'error'>;
     // Cultivation
     handleLearnArt: (art: CultivationArt) => void;
@@ -266,6 +267,7 @@ export default function ModalsContainer({
           onOrganizeInventory={handlers.handleOrganizeInventory}
           onRefineNatalArtifact={handlers.handleRefineNatalArtifact}
           onUnrefineNatalArtifact={handlers.handleUnrefineNatalArtifact}
+          onRefineAdvancedItem={handlers.handleRefineAdvancedItem}
         />
       )}
 

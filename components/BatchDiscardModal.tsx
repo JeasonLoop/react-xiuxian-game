@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { X, Trash2, Filter } from 'lucide-react';
 import { Item, ItemType, ItemRarity, EquipmentSlot } from '../types';
-import { getRarityTextColor } from '../utils/rarityUtils';
+import { getRarityTextColor, getRarityBorder } from '../utils/rarityUtils';
 import { showConfirm } from '../utils/toastUtils';
 
 interface Props {
@@ -102,21 +102,6 @@ const BatchDiscardModal: React.FC<Props> = ({
   };
 
   if (!isOpen) return null;
-
-  // 使用统一的工具函数获取稀有度颜色（带边框）
-  const getRarityColor = (rarity: ItemRarity | undefined) => {
-    const baseColor = getRarityTextColor(rarity);
-    switch (rarity) {
-      case '稀有':
-        return `${baseColor} border-blue-600`;
-      case '传说':
-        return `${baseColor} border-purple-600`;
-      case '仙品':
-        return `${baseColor} border-yellow-600`;
-      default:
-        return `${baseColor} border-gray-600`;
-    }
-  };
 
   return (
     <div
@@ -255,9 +240,7 @@ const BatchDiscardModal: React.FC<Props> = ({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <h4
-                          className={`font-bold text-sm ${
-                            getRarityColor(rarity).split(' ')[0]
-                          }`}
+                          className={`font-bold text-sm ${getRarityTextColor(rarity)}`}
                         >
                           {item.name}
                         </h4>
@@ -267,9 +250,7 @@ const BatchDiscardModal: React.FC<Props> = ({
                       </div>
                       <div className="flex gap-2 mb-1">
                         <span
-                          className={`text-[10px] px-1.5 py-0.5 rounded border ${getRarityColor(
-                            rarity
-                          )}`}
+                          className={`text-[10px] px-1.5 py-0.5 rounded border ${getRarityBorder(rarity)}`}
                         >
                           {rarity}
                         </span>

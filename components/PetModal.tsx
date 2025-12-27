@@ -13,7 +13,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { PlayerStats, Pet, ItemRarity } from '../types';
-import { PET_TEMPLATES, RARITY_MULTIPLIERS, REALM_ORDER } from '../constants';
+import { PET_TEMPLATES, RARITY_MULTIPLIERS, REALM_ORDER } from '../constants/index';
 import BatchFeedModal from './BatchFeedModal';
 import BatchReleaseModal from './BatchReleaseModal';
 import { getRarityTextColor } from '../utils/rarityUtils';
@@ -59,11 +59,6 @@ const PetModal: React.FC<Props> = ({
   const [releaseConfirmPetId, setReleaseConfirmPetId] = useState<string | null>(null);
 
   if (!isOpen) return null;
-
-  // 使用统一的工具函数获取稀有度颜色（PetModal 需要特殊的灰色处理）
-  const getRarityColor = (rarity: string) => {
-    return getRarityTextColor(rarity as ItemRarity);
-  };
 
   const activePet = player.pets.find((p) => p.id === player.activePetId);
 
@@ -406,7 +401,7 @@ const PetModal: React.FC<Props> = ({
                         <div className="flex items-center justify-between">
                           <div>
                             <span
-                              className={`font-bold ${getRarityColor(pet.rarity)}`}
+                              className={`font-bold ${getRarityTextColor(pet.rarity as ItemRarity)}`}
                             >
                               {pet.name}
                             </span>
@@ -748,7 +743,7 @@ const PetModal: React.FC<Props> = ({
                           >
                             <div className="flex items-center justify-between">
                               <div className="font-bold text-sm">{item.name}</div>
-                              <div className={`text-xs px-1.5 py-0.5 rounded ${getRarityColor(rarity)}`}>
+                              <div className={`text-xs px-1.5 py-0.5 rounded ${getRarityTextColor(rarity as ItemRarity)}`}>
                                 {rarity}
                               </div>
                             </div>

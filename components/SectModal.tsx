@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { PlayerStats, SectRank, RealmType, Item, AdventureResult } from '../types';
-import { SECTS, SECT_RANK_REQUIREMENTS, REALM_ORDER, SECT_RANK_DATA } from '../constants';
+import { SECTS, SECT_RANK_REQUIREMENTS, REALM_ORDER, SECT_RANK_DATA } from '../constants/index';
 import { generateRandomSects, generateRandomSectTasks, generateSectShopItems, RandomSectTask } from '../services/randomService';
 import { X, Users, ShoppingBag, Shield, Scroll, ArrowUp, RefreshCw } from 'lucide-react';
 import SectTaskModal from './SectTaskModal';

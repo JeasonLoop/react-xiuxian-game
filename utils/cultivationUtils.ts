@@ -1,5 +1,5 @@
 import { PlayerStats } from '../types';
-import { FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES, GOLDEN_CORE_METHOD_CONFIG, CULTIVATION_ARTS } from '../constants';
+import { FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES, GOLDEN_CORE_METHOD_CONFIG, CULTIVATION_ARTS } from '../constants/index';
 
 /**
  * 获取筑基奇物效果
@@ -68,37 +68,126 @@ export function getLongevityRuleEffects(ruleIds: string[] = []) {
 }
 
 /**
- * 计算金丹法数
+ * 数字转中文数字（支持1-999）
+ */
+export function numberToChinese(num: number): string {
+  const chineseNums = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
+  const chineseUnits = ['', '十', '百', '千'];
+
+  if (num === 0) return '零';
+  if (num < 0) return '';
+  if (num > 999) return String(num); // 超过999直接返回阿拉伯数字
+
+  if (num < 10) {
+    return chineseNums[num];
+  }
+
+  if (num < 20) {
+    return num === 10 ? '十' : `十${chineseNums[num % 10]}`;
+  }
+
+  if (num < 100) {
+    const tens = Math.floor(num / 10);
+    const ones = num % 10;
+    return `${chineseNums[tens]}十${ones > 0 ? chineseNums[ones] : ''}`;
+  }
+
+  if (num < 1000) {
+    const hundreds = Math.floor(num / 100);
+    const remainder = num % 100;
+    const tens = Math.floor(remainder / 10);
+    const ones = remainder % 10;
+
+    let result = `${chineseNums[hundreds]}百`;
+    if (remainder > 0) {
+      if (tens === 0) {
+        result += `零${chineseNums[ones]}`;
+      } else {
+        result += `${chineseNums[tens]}十${ones > 0 ? chineseNums[ones] : ''}`;
+      }
+    }
+    return result;
+  }
+
+  return String(num);
+}
+
+/**
+ * 计算金丹法数（只统计玄级及以上功法）
  */
 export function calculateGoldenCoreMethodCount(player: PlayerStats): number {
-  // 功法数量决定金丹法数（最多9法金丹）
+  // 只统计玄级及以上的功法（玄、地、天）
   // 兼容旧存档：如果cultivationArts不存在或为空，返回0
-  const artCount = player.cultivationArts?.length || 0;
-  return Math.min(artCount, 9);
+  if (!player.cultivationArts || player.cultivationArts.length === 0) {
+    return 0;
+  }
+
+  let count = 0;
+  player.cultivationArts.forEach((artId) => {
+    const art = CULTIVATION_ARTS.find((a) => a.id === artId);
+    if (art && (art.grade === '玄' || art.grade === '地' || art.grade === '天')) {
+      count++;
+    }
+  });
+
+  return count; // 不设上限
 }
 
 /**
- * 获取金丹法数称号
+ * 获取金丹法数称号（使用中文数字）
  */
 export function getGoldenCoreMethodTitle(methodCount: number): string {
-  const cappedCount = Math.min(methodCount, 9); // 九法以上统一算九法
-  return GOLDEN_CORE_METHOD_CONFIG.methodTitles[cappedCount] || '一法金丹';
+  if (methodCount <= 0) return '未结丹';
+  const chineseNum = numberToChinese(methodCount);
+  return `${chineseNum}法金丹`;
 }
 
 /**
- * 计算金丹天劫难度倍数
+ * 计算金丹天劫难度倍数（支持任意法数）
  */
 export function getGoldenCoreTribulationDifficulty(methodCount: number): number {
-  const cappedCount = Math.min(methodCount, 9); // 九法以上统一算九法
-  return GOLDEN_CORE_METHOD_CONFIG.methodDifficultyMultiplier[cappedCount] || 1.0;
+  if (methodCount <= 0) return 1.0;
+
+  // 如果配置中有，直接使用
+  if (methodCount <= 9 && GOLDEN_CORE_METHOD_CONFIG.methodDifficultyMultiplier[methodCount]) {
+    return GOLDEN_CORE_METHOD_CONFIG.methodDifficultyMultiplier[methodCount];
+  }
+
+  // 大于9法金丹，使用公式计算：基础难度 + (法数-1) * 0.5
+  // 9法金丹是5.0，10法开始是 5.0 + (10-9) * 0.5 = 5.5，以此类推
+  if (methodCount > 9) {
+    const base9Difficulty = GOLDEN_CORE_METHOD_CONFIG.methodDifficultyMultiplier[9] || 5.0;
+    return base9Difficulty + (methodCount - 9) * 0.5;
+  }
+
+  return 1.0;
 }
 
 /**
- * 计算金丹属性加成倍数
+ * 计算金丹属性加成倍数（支持任意法数）
  */
 export function getGoldenCoreBonusMultiplier(methodCount: number): number {
-  const cappedCount = Math.min(methodCount, 9); // 九法以上统一算九法
-  return GOLDEN_CORE_METHOD_CONFIG.methodBonusMultiplier[cappedCount] || 1.0;
+  if (methodCount <= 0) return 1.0;
+
+  // 如果配置中有，直接使用
+  if (methodCount <= 9 && GOLDEN_CORE_METHOD_CONFIG.methodBonusMultiplier[methodCount]) {
+    return GOLDEN_CORE_METHOD_CONFIG.methodBonusMultiplier[methodCount];
+  }
+
+  // 大于9法金丹，使用公式计算：9法金丹是4.6，10法开始是 4.6 + (10-9) * 0.1 = 4.7，但增长速度递减
+  // 使用对数增长模式，让加成增长速度逐渐放缓
+  if (methodCount > 9) {
+    const base9Multiplier = GOLDEN_CORE_METHOD_CONFIG.methodBonusMultiplier[9] || 4.6;
+    // 超过9法后，每增加1法，加成增加量递减：第10法+0.1，第11法+0.09，第12法+0.08...
+    const extraMethods = methodCount - 9;
+    let additionalBonus = 0;
+    for (let i = 1; i <= extraMethods; i++) {
+      additionalBonus += Math.max(0.05, 0.1 - (i - 1) * 0.01); // 最小增长0.05
+    }
+    return base9Multiplier + additionalBonus;
+  }
+
+  return 1.0;
 }
 
 /**
@@ -284,43 +373,24 @@ export function generateGoldenCorePuzzle(methodCount: number): {
 }
 
 /**
- * 生成元婴天劫解密游戏（星轨连通）
+ * 生成元婴天劫解密游戏（2048）
  */
 export function generateNascentSoulPuzzle(essenceQuality: number): {
-  puzzleType: '星轨连通';
+  puzzleType: '天地棋局';
   difficulty: number;
   description: string;
-  connections: number[][];
-  startPoint: number;
-  endPoint: number;
-  maxMoves: number;
+  targetScore: number;
 } {
   const difficulty = essenceQuality / 100;
-  const gridSize = Math.min(5 + Math.floor(difficulty * 3), 10);
 
-  // 生成星轨连接图
-  const connections: number[][] = [];
-  const startPoint = 0;
-  const endPoint = gridSize - 1;
-
-  // 生成随机连接
-  for (let i = 0; i < gridSize; i++) {
-    connections[i] = [];
-    for (let j = i + 1; j < gridSize; j++) {
-      if (Math.random() < 0.6) { // 60%的几率有连接
-        connections[i].push(j);
-      }
-    }
-  }
+  // 固定目标分数为1000（元婴天劫）
+  const targetScore = 1000;
 
   return {
-    puzzleType: '星轨连通',
+    puzzleType: '天地棋局',
     difficulty,
-    description: '请连通星辰轨迹，从起点到达终点。每个星辰只能连接相邻的星辰。',
-    connections,
-    startPoint,
-    endPoint,
-    maxMoves: Math.max(10, 20 - Math.floor(difficulty * 5))
+    description: `通过移动方块合成更大的数字，达到目标分数 ${targetScore} 即可通过天劫。使用方向键或点击按钮移动。`,
+    targetScore
   };
 }
 
@@ -370,13 +440,13 @@ export function generateLongevityPuzzle(ruleCount: number): {
   puzzleType: '五重考验';
   description: string;
   challenges: Array<{
-    type: '八卦阵' | '星轨连通' | '符文序列' | '心魔考验' | '天道问答';
+    type: '八卦阵' | '天地棋局' | '符文序列' | '心魔考验' | '天道问答';
     difficulty: number;
     data: any;
   }>;
 } {
   const challenges: Array<{
-    type: '八卦阵' | '星轨连通' | '符文序列' | '心魔考验' | '天道问答';
+    type: '八卦阵' | '天地棋局' | '符文序列' | '心魔考验' | '天道问答';
     difficulty: number;
     data: any;
   }> = [
@@ -386,9 +456,12 @@ export function generateLongevityPuzzle(ruleCount: number): {
       data: generateGoldenCorePuzzle(Math.min(ruleCount + 3, 9))
     },
     {
-      type: '星轨连通' as const,
+      type: '天地棋局' as const,
       difficulty: 0.9 + ruleCount * 0.1,
-      data: generateNascentSoulPuzzle(80 + ruleCount * 10)
+      data: {
+        ...generateNascentSoulPuzzle(80 + ruleCount * 10),
+        targetScore: 2000  // 长生天劫2048游戏目标分数为2000
+      }
     },
     {
       type: '符文序列' as const,

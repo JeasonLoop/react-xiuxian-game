@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Gift, Sparkles } from 'lucide-react';
 import { PlayerStats, LotteryPrize, ItemRarity } from '../types';
-import { LOTTERY_PRIZES } from '../constants';
+import { LOTTERY_PRIZES } from '../constants/index';
 import { showError } from '../utils/toastUtils';
-import { getRarityTextColor } from '../utils/rarityUtils';
+import { getRarityTextColor,getRarityBorder } from '../utils/rarityUtils';
 
 interface Props {
   isOpen: boolean;
@@ -131,23 +131,6 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
         </div>
       </div>
     );
-  };
-
-  // 使用统一的工具函数获取稀有度颜色（带边框）
-  const getRarityColor = (rarity: string) => {
-    const baseColor = getRarityTextColor(rarity as ItemRarity);
-    switch (rarity) {
-      case '普通':
-        return `${baseColor} border-gray-600`;
-      case '稀有':
-        return `${baseColor} border-blue-600`;
-      case '传说':
-        return `${baseColor} border-purple-600`;
-      case '仙品':
-        return `${baseColor} border-yellow-600`;
-      default:
-        return 'text-gray-400 border-gray-600';
-    }
   };
 
   return (
@@ -309,11 +292,11 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
                 return (
                   <div
                     key={rarity}
-                    className={`bg-stone-900 rounded p-3 border ${getRarityColor(rarity).split(' ')[1]}`}
+                    className={`bg-stone-900 rounded p-3 border ${getRarityBorder(rarity as ItemRarity)}`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className={`text-sm font-bold ${getRarityColor(rarity).split(' ')[0]}`}>
+                        <div className={`text-sm font-bold ${getRarityTextColor(rarity as ItemRarity)}`}>
                           {rarity}
                         </div>
                         <div className="text-xs text-stone-500">

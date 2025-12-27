@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { compareSaves, SaveData, SaveComparison } from '../utils/saveManagerUtils';
+import { formatNumber } from '../utils/formatUtils';
 import dayjs from 'dayjs';
 
 interface Props {
@@ -14,16 +15,6 @@ const SaveCompareModal: React.FC<Props> = ({ isOpen, onClose, save1, save2 }) =>
   if (!isOpen) return null;
 
   const comparison: SaveComparison = compareSaves(save1, save2);
-
-  const formatNumber = (num: number): string => {
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(2) + 'M';
-    }
-    if (num >= 1000) {
-      return (num / 1000).toFixed(2) + 'K';
-    }
-    return num.toString();
-  };
 
   const getDiff = (oldVal: number, newVal: number) => {
     const diff = newVal - oldVal;

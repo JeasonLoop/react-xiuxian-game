@@ -1,5 +1,6 @@
 import { PlayerStats, RealmType, SectRank } from '../types';
-import { REALM_DATA, INITIAL_ITEMS, TALENTS, CULTIVATION_ARTS } from '../constants';
+import { REALM_DATA, INITIAL_ITEMS, TALENTS } from '../constants/index';
+import { clampSpiritualRoot } from './numberUtils';
 
 // 创建初始玩家数据
 export const createInitialPlayer = (
@@ -87,7 +88,14 @@ export const createInitialPlayer = (
     return roots;
   };
 
-  const initialSpiritualRoots = generateInitialSpiritualRoots();
+  const generatedRoots = generateInitialSpiritualRoots();
+  const initialSpiritualRoots = {
+    metal: clampSpiritualRoot(generatedRoots.metal),
+    wood: clampSpiritualRoot(generatedRoots.wood),
+    water: clampSpiritualRoot(generatedRoots.water),
+    fire: clampSpiritualRoot(generatedRoots.fire),
+    earth: clampSpiritualRoot(generatedRoots.earth),
+  };
   const initialMaxLifespan = realmData.baseMaxLifespan;
   const initialLifespan = initialMaxLifespan; // 初始寿命等于最大寿命
 

@@ -1,13 +1,14 @@
 import { Item, ItemType, ItemRarity, EquipmentSlot, RealmType } from '../types';
-import { RARITY_MULTIPLIERS, REALM_ORDER, REALM_DATA } from '../constants';
+import { RARITY_MULTIPLIERS, REALM_ORDER, REALM_DATA } from '../constants/index';
 import { getItemFromConstants } from './itemConstantsUtils';
 
 // 共享的装备数值配置（统一管理，避免重复定义）
+// 调整属性浮动范围，缩小差距，使装备属性更稳定
 export const EQUIPMENT_RARITY_PERCENTAGES: Record<ItemRarity, { min: number; max: number }> = {
-  普通: { min: 0.15, max: 0.5 },
-  稀有: { min: 0.30, max: 1.0 },
-  传说: { min: 0.60, max: 2.0 },
-  仙品: { min: 1.50, max: 5.0 },
+  普通: { min: 0.20, max: 0.35 },  // 从0.15-0.5调整为0.20-0.35，差距从0.35缩小到0.15
+  稀有: { min: 0.40, max: 0.70 },  // 从0.30-1.0调整为0.40-0.70，差距从0.7缩小到0.3
+  传说: { min: 0.80, max: 1.30 },  // 从0.60-2.0调整为0.80-1.30，差距从1.4缩小到0.5
+  仙品: { min: 2.00, max: 3.00 },  // 从1.50-5.0调整为2.00-3.00，差距从3.5缩小到1.0
 };
 
 export const EQUIPMENT_MIN_STATS: Record<ItemRarity, { attack: number; defense: number; hp: number; spirit: number; physique: number; speed: number }> = {
@@ -22,7 +23,7 @@ type ItemEffect = NonNullable<Item['effect']>;
 type ItemPermanentEffect = NonNullable<Item['permanentEffect']>;
 
 // 将常见的类型别称规范化，避免多处硬编码
-const normalizeTypeHint = (type?: ItemType | string): ItemType | undefined => {
+export const normalizeTypeHint = (type?: ItemType | string): ItemType | undefined => {
   if (!type) return undefined;
   const t = String(type).toLowerCase();
   const map: Record<string, ItemType> = {
@@ -55,6 +56,25 @@ const normalizeTypeHint = (type?: ItemType | string): ItemType | undefined => {
     recipe: ItemType.Recipe,
   };
   return map[t] || (Object.values(ItemType).includes(type as ItemType) ? (type as ItemType) : undefined);
+};
+
+// 将类型别称规范化为中文字符串标签（用于显示）
+export const normalizeTypeLabel = (type: ItemType | string): string => {
+  if (!type) return '未知';
+  const t = String(type).toLowerCase();
+  const map: Record<string, string> = {
+    herb: '草药',
+    pill: '丹药',
+    material: '材料',
+    artifact: '法宝',
+    weapon: '武器',
+    armor: '护甲',
+    accessory: '首饰',
+    ring: '戒指',
+    recipe: '丹方',
+    advanceditem: '进阶物品',
+  };
+  return map[t] || (type as string);
 };
 
 // 稳定的槽位选择：同名物品在任意流程都会落在同一个槽位

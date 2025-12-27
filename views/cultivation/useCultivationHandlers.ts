@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlayerStats, CultivationArt, RealmType } from '../../types';
-import { SECTS, REALM_ORDER, calculateSpiritualRootArtBonus } from '../../constants';
+import { SECTS, REALM_ORDER, calculateSpiritualRootArtBonus } from '../../constants/index';
 import { showError, showWarning } from '../../utils/toastUtils';
 
 interface UseCultivationHandlersProps {

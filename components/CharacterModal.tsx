@@ -13,10 +13,9 @@ import {
   HEAVEN_EARTH_ESSENCES,
   HEAVEN_EARTH_MARROWS,
   LONGEVITY_RULES,
-  GOLDEN_CORE_METHOD_CONFIG,
   RARITY_MULTIPLIERS,
-} from '../constants';
-import { getGoldenCoreBonusMultiplier } from '../utils/cultivationUtils';
+} from '../constants/index';
+import { getGoldenCoreBonusMultiplier, getGoldenCoreMethodTitle, calculateGoldenCoreMethodCount, getGoldenCoreTribulationDifficulty } from '../utils/cultivationUtils';
 import { getItemStats } from '../utils/itemUtils';
 import { getRarityTextColor } from '../utils/rarityUtils';
 import { showConfirm, showError } from '../utils/toastUtils';
@@ -28,6 +27,7 @@ import {
 import { useInheritanceHandlers } from '../views/inheritance';
 import { getPlayerTotalStats, getActiveMentalArt } from '../utils/statUtils';
 import { logger } from '../utils/logger';
+import { formatValueChange, formatNumber } from '../utils/formatUtils';
 
 interface Props {
   isOpen: boolean;
@@ -470,11 +470,6 @@ const CharacterModal: React.FC<Props> = ({
 
   const attributeSources = calculateAttributeSources();
 
-  // 使用统一的工具函数获取稀有度颜色
-  const getRarityColor = (rarity: string) => {
-    return getRarityTextColor(rarity as ItemRarity);
-  };
-
   // 计算游戏时长
   const gameDuration = useMemo(() => {
     if (!gameStartTime) return null;
@@ -765,18 +760,17 @@ const CharacterModal: React.FC<Props> = ({
                     const wasGoldenCore = currentRealmIndex > goldenCoreRealmIndex;
                     const isGoldenCore = currentRealmIndex === goldenCoreRealmIndex;
 
-                    // 如果当前是金丹期或曾经是金丹期，但没有法数，尝试从功法数量计算
+                    // 如果当前是金丹期或曾经是金丹期，但没有法数，尝试重新计算（只统计玄级及以上功法）
                     if (!methodCount && (isGoldenCore || wasGoldenCore)) {
-                      const artCount = player.cultivationArts?.length || 0;
-                      methodCount = Math.min(artCount, 9);
+                      methodCount = calculateGoldenCoreMethodCount(player);
                     }
 
                     // 如果有法数，显示金丹法数
                     if (methodCount && methodCount > 0) {
-                      const cappedCount = Math.min(methodCount, 9);
                       const bonusMultiplier = getGoldenCoreBonusMultiplier(methodCount);
                       const bonusPercent = ((bonusMultiplier - 1) * 100).toFixed(0);
-                      const difficulty = GOLDEN_CORE_METHOD_CONFIG.methodDifficultyMultiplier[cappedCount] || 1;
+                      const difficulty = getGoldenCoreTribulationDifficulty(methodCount);
+                      const methodTitle = getGoldenCoreMethodTitle(methodCount);
 
                       return (
                         <HoverableCard
@@ -784,9 +778,9 @@ const CharacterModal: React.FC<Props> = ({
                           className="bg-gradient-to-br from-yellow-900/40 to-orange-900/40 rounded-xl p-4 border-2 border-yellow-600 shadow-md hover:shadow-lg transition-all duration-300 relative cursor-pointer"
                           tooltipContent={
                             <>
-                              <div className="text-sm font-bold text-yellow-300 mb-2">{cappedCount}法金丹详情</div>
+                              <div className="text-sm font-bold text-yellow-300 mb-2">{methodTitle}详情</div>
                               <div className="text-xs text-stone-300 space-y-1">
-                                <div className="text-yellow-300">天劫难度: {difficulty}x</div>
+                                <div className="text-yellow-300">天劫难度: {difficulty.toFixed(1)}x</div>
                                 <div className="text-green-300">属性加成倍数: {bonusMultiplier.toFixed(1)}x</div>
                                 <div className="text-green-300">属性加成: +{bonusPercent}%</div>
                                 <div className="text-stone-400 mt-2 pt-2 border-t border-stone-700">
@@ -801,10 +795,10 @@ const CharacterModal: React.FC<Props> = ({
                             <h4 className="text-base font-bold text-yellow-300">金丹法数</h4>
                           </div>
                           <div className="text-2xl font-bold text-yellow-400 mb-1">
-                            {cappedCount}法金丹
+                            {methodTitle}
                           </div>
                           <div className="text-xs text-yellow-500 bg-yellow-900/30 px-2 py-1 rounded-full inline-block mb-2">
-                            难度: {difficulty}x
+                            难度: {difficulty.toFixed(1)}x
                           </div>
                           {bonusMultiplier > 1 && (
                             <div className="text-xs text-green-300 space-y-0.5">
@@ -1236,7 +1230,9 @@ const CharacterModal: React.FC<Props> = ({
                         onClick={() => onAllocateAttribute('attack')}
                         className="flex-1 px-3 py-2 text-sm bg-red-900 hover:bg-red-800 rounded border border-red-700"
                       >
-                        攻击 +{attributeGains.attack}
+                        <div className="text-xs text-stone-400">攻击</div>
+                        <div className="text-sm">{formatValueChange(totalStats.attack, totalStats.attack + attributeGains.attack)}</div>
+                        <div className="text-xs text-yellow-300">+{attributeGains.attack}</div>
                       </button>
                       {onAllocateAllAttributes && (
                         <button
@@ -1253,7 +1249,9 @@ const CharacterModal: React.FC<Props> = ({
                         onClick={() => onAllocateAttribute('defense')}
                         className="flex-1 px-3 py-2 text-sm bg-blue-900 hover:bg-blue-800 rounded border border-blue-700"
                       >
-                        防御 +{attributeGains.defense}
+                        <div className="text-xs text-stone-400">防御</div>
+                        <div className="text-sm">{formatValueChange(totalStats.defense, totalStats.defense + attributeGains.defense)}</div>
+                        <div className="text-xs text-yellow-300">+{attributeGains.defense}</div>
                       </button>
                       {onAllocateAllAttributes && (
                         <button
@@ -1270,7 +1268,9 @@ const CharacterModal: React.FC<Props> = ({
                         onClick={() => onAllocateAttribute('hp')}
                         className="flex-1 px-3 py-2 text-sm bg-green-900 hover:bg-green-800 rounded border border-green-700"
                       >
-                        气血 +{attributeGains.hp}
+                        <div className="text-xs text-stone-400">气血</div>
+                        <div className="text-sm">{formatValueChange(totalStats.maxHp, totalStats.maxHp + attributeGains.hp)}</div>
+                        <div className="text-xs text-yellow-300">+{attributeGains.hp}</div>
                       </button>
                       {onAllocateAllAttributes && (
                         <button
@@ -1287,7 +1287,9 @@ const CharacterModal: React.FC<Props> = ({
                         onClick={() => onAllocateAttribute('spirit')}
                         className="flex-1 px-3 py-2 text-sm bg-purple-900 hover:bg-purple-800 rounded border border-purple-700"
                       >
-                        神识 +{attributeGains.spirit}
+                        <div className="text-xs text-stone-400">神识</div>
+                        <div className="text-sm">{formatValueChange(totalStats.spirit, totalStats.spirit + attributeGains.spirit)}</div>
+                        <div className="text-xs text-yellow-300">+{attributeGains.spirit}</div>
                       </button>
                       {onAllocateAllAttributes && (
                         <button
@@ -1304,7 +1306,9 @@ const CharacterModal: React.FC<Props> = ({
                         onClick={() => onAllocateAttribute('physique')}
                         className="flex-1 px-3 py-2 text-sm bg-orange-900 hover:bg-orange-800 rounded border border-orange-700"
                       >
-                        体魄 +{attributeGains.physique}
+                        <div className="text-xs text-stone-400">体魄</div>
+                        <div className="text-sm">{formatValueChange(totalStats.physique, totalStats.physique + attributeGains.physique)}</div>
+                        <div className="text-xs text-yellow-300">+{attributeGains.physique}</div>
                       </button>
                       {onAllocateAllAttributes && (
                         <button
@@ -1321,7 +1325,9 @@ const CharacterModal: React.FC<Props> = ({
                         onClick={() => onAllocateAttribute('speed')}
                         className="flex-1 px-3 py-2 text-sm bg-yellow-900 hover:bg-yellow-800 rounded border border-yellow-700"
                       >
-                        速度 +{attributeGains.speed}
+                        <div className="text-xs text-stone-400">速度</div>
+                        <div className="text-sm">{formatValueChange(totalStats.speed, totalStats.speed + attributeGains.speed)}</div>
+                        <div className="text-xs text-yellow-300">+{attributeGains.speed}</div>
                       </button>
                       {onAllocateAllAttributes && (
                         <button
@@ -1349,7 +1355,7 @@ const CharacterModal: React.FC<Props> = ({
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <span
-                            className={`font-bold ${getRarityColor(currentTalent.rarity)}`}
+                            className={`font-bold ${getRarityTextColor(currentTalent.rarity as ItemRarity)}`}
                           >
                             {currentTalent.name}
                           </span>
@@ -1399,7 +1405,7 @@ const CharacterModal: React.FC<Props> = ({
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className={`font-bold ${getRarityColor(currentTitle.rarity || '普通')}`}>
+                          <span className={`font-bold ${getRarityTextColor((currentTitle.rarity || '普通') as ItemRarity)}`}>
                             {currentTitle.name}
                           </span>
                           {currentTitle.rarity && (
@@ -1491,7 +1497,7 @@ const CharacterModal: React.FC<Props> = ({
                             <div className="flex justify-between items-start">
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className={`font-bold ${getRarityColor(title.rarity || '普通')}`}>
+                                  <span className={`font-bold ${getRarityTextColor((title.rarity || '普通') as ItemRarity)}`}>
                                     {title.name}
                                   </span>
                                   {title.rarity && (
@@ -1550,7 +1556,7 @@ const CharacterModal: React.FC<Props> = ({
                                 className={`bg-stone-900/50 rounded p-3 border ${isMet ? 'border-green-600 opacity-100' : 'border-stone-800 opacity-60'}`}
                               >
                                 <div className="flex items-center gap-2 mb-1">
-                                  <span className={`font-bold ${getRarityColor(title.rarity || '普通')}`}>
+                                  <span className={`font-bold ${getRarityTextColor((title.rarity || '普通') as ItemRarity)}`}>
                                     {title.name}
                                   </span>
                                   {title.rarity && (
@@ -1605,7 +1611,14 @@ const CharacterModal: React.FC<Props> = ({
                         当前境界
                       </div>
                       <div className="text-xl font-bold text-purple-400">
-                        {player.realm} {player.realmLevel}
+                        {(() => {
+                          // 如果是金丹期，显示几法金丹
+                          if (player.realm === '金丹期' && player.goldenCoreMethodCount) {
+                            const methodTitle = getGoldenCoreMethodTitle(player.goldenCoreMethodCount);
+                            return `${methodTitle} ${player.realmLevel}`;
+                          }
+                          return `${player.realm} ${player.realmLevel}`;
+                        })()}
                       </div>
                     </div>
                     <div className="bg-stone-800 rounded p-3 border border-stone-700">

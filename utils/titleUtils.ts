@@ -1,5 +1,5 @@
-import { Title, TitleSetEffect, PlayerStats } from '../types';
-import { TITLES, TITLE_SET_EFFECTS } from '../constants';
+import { TitleSetEffect } from '../types';
+import { TITLES, TITLE_SET_EFFECTS } from '../constants/index';
 
 /**
  * 计算称号效果（包括套装效果）
