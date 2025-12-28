@@ -39,6 +39,7 @@ import {
   normalizeItemEffect,
   inferItemTypeAndSlot,
   adjustEquipmentStatsByRealm,
+  adjustItemStatsByRealm,
 } from '../../utils/itemUtils';
 import { normalizeRarityValue } from '../../utils/rarityUtils';
 
@@ -256,9 +257,19 @@ const applyResultToPlayer = (
         finalPermanentEffect = undefined;
       }
 
-      // 装备属性根据境界进行调整，确保属性跟上角色成长
-      if (isEquippable && finalEffect) {
-        finalEffect = adjustEquipmentStatsByRealm(finalEffect, prev.realm, prev.realmLevel, itemRarity);
+      // 所有物品属性根据境界进行调整，确保属性跟上角色成长
+      // 对于装备，使用专门的adjustEquipmentStatsByRealm；对于其他物品，使用通用的adjustItemStatsByRealm
+      if (finalEffect || finalPermanentEffect) {
+        const adjusted = adjustItemStatsByRealm(
+          finalEffect,
+          finalPermanentEffect,
+          prev.realm,
+          prev.realmLevel,
+          itemType,
+          itemRarity
+        );
+        finalEffect = adjusted.effect;
+        finalPermanentEffect = adjusted.permanentEffect;
       }
 
       // 重名装备处理
@@ -564,9 +575,15 @@ const applyResultToPlayer = (
     }
   }
 
-  // 天地之髓：化神期历练/秘境有概率获得（提高概率）
-  if (currentRealmIndex >= REALM_ORDER.indexOf(RealmType.SpiritSevering)) {
-    const marrowChance = isSecretRealm ? 0.05 : (adventureType === 'lucky' ? 0.04 : 0.02); // 从0.5-1.5%提高到2-5%
+  // 天地之髓：元婴期、化神期历练/秘境有概率获得（元婴期概率稍低，化神期概率更高）
+  const nascentSoulIndex = REALM_ORDER.indexOf(RealmType.NascentSoul);
+  const spiritSeveringIndex = REALM_ORDER.indexOf(RealmType.SpiritSevering);
+  if (currentRealmIndex >= nascentSoulIndex) {
+    // 元婴期：概率较低；化神期及以上：概率较高
+    const isNascentSoul = currentRealmIndex === nascentSoulIndex;
+    const marrowChance = isNascentSoul
+      ? (isSecretRealm ? 0.06 : (adventureType === 'lucky' ? 0.07 : 0.03)) // 元婴期：1.5-3%
+      : (isSecretRealm ? 0.06 : (adventureType === 'lucky' ? 0.07 : 0.03)); // 化神期及以上：2.5-6%
     if (Math.random() < marrowChance) {
       const marrows = Object.values(HEAVEN_EARTH_MARROWS);
       if (marrows.length > 0) {
@@ -705,12 +722,21 @@ const applyResultToPlayer = (
     }
   }
 
-  // 抽奖券与传承（如果AI没有生成抽奖券变化，则使用随机逻辑）
-  if (result.lotteryTicketsChange === undefined && Math.random() < 0.05) {
-    const count = Math.floor(Math.random() * 10) + 1;
-    newLotteryTickets += count;
-    addLog(`🎫 捡到了 ${count} 张抽奖券！`, 'gain');
+  // 抽奖券结算（优先处理事件模板中的抽奖券变化）
+  if (result.lotteryTicketsChange !== undefined) {
+    newLotteryTickets = Math.max(0, newLotteryTickets + result.lotteryTicketsChange);
+    if (result.lotteryTicketsChange > 0) {
+      addLog(`🎫 捡到了 ${result.lotteryTicketsChange} 张抽奖券！`, 'gain');
+    }
+  } else {
+    // 如果事件模板没有抽奖券变化，则使用随机逻辑（5%概率）
+    if (Math.random() < 0.05) {
+      const count = Math.floor(Math.random() * 10) + 1;
+      newLotteryTickets = Math.max(0, newLotteryTickets + count);
+      addLog(`🎫 捡到了 ${count} 张抽奖券！`, 'gain');
+    }
   }
+
   // 传承等级获取（只能通过事件模板获得，不能随机获得）
   // 如果事件模板中指定了传承等级变化，则应用
   if ((result.inheritanceLevelChange || 0) > 0) {
@@ -736,14 +762,6 @@ const applyResultToPlayer = (
       fire: Math.min(100, Math.max(0, (newSpiritualRoots.fire || 0) + (src.fire || 0))),
       earth: Math.min(100, Math.max(0, (newSpiritualRoots.earth || 0) + (src.earth || 0))),
     };
-  }
-
-  // 抽奖券结算（处理AI生成的lotteryTicketsChange）
-  if (result.lotteryTicketsChange !== undefined) {
-    newLotteryTickets = Math.max(0, newLotteryTickets + result.lotteryTicketsChange);
-    if (result.lotteryTicketsChange > 0) {
-      addLog(`🎫 捡到了 ${result.lotteryTicketsChange} 张抽奖券！`, 'gain');
-    }
   }
 
   // 修为灵石结算

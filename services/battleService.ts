@@ -202,9 +202,9 @@ const getBattleDifficulty = (
 };
 
 const baseBattleChance: Record<AdventureType, number> = {
-  normal: 0.4, // 历练基础概率从22%提高到40%
-  lucky: 0.2, // 机缘历练基础概率从8%提高到20%
-  secret_realm: 0.65, // 秘境基础概率从45%提高到65%
+  normal: 0.25, // 历练基础概率降低到25%
+  lucky: 0.12, // 机缘历练基础概率降低到12%
+  secret_realm: 0.45, // 秘境基础概率降低到45%
   sect_challenge: 1.0, // 挑战必然触发
   dao_combining_challenge: 1.0, // 天地之魄挑战必然触发
 };

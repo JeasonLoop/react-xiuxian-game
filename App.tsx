@@ -2055,6 +2055,12 @@ function App() {
             setTurnBasedBattleParams(null);
             handleBattleResult(result, updatedInventory);
 
+            // 如果自动历练状态是 false，清除暂停状态但不恢复自动历练
+            if (!autoAdventure) {
+              setAutoAdventurePausedByBattle(false);
+              return;
+            }
+
             // 如果玩家死亡，清除自动历练暂停状态（死亡检测会处理）
             if (result && player) {
               const playerHpAfter = Math.max(
@@ -2068,7 +2074,7 @@ function App() {
               // 如果没有战斗结果或玩家不存在，也清除暂停状态
               setAutoAdventurePausedByBattle(false);
             }
-            // 如果玩家还活着，useEffect 会自动恢复自动历练
+            // 如果玩家还活着且 autoAdventure 为 true，useEffect 会自动恢复自动历练
           },
         }}
       />

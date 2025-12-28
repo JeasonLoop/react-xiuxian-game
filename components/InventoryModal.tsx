@@ -919,6 +919,7 @@ const InventoryModal: React.FC<Props> = ({
                 />
                 {searchQuery && (
                   <button
+                    title="清除搜索"
                     onClick={() => setSearchQuery('')}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-stone-400 hover:text-stone-200"
                   >
@@ -992,6 +993,7 @@ const InventoryModal: React.FC<Props> = ({
                       <div>
                         <div className="flex gap-2 mb-2">
                           <select
+                            title="属性筛选"
                             value={statFilter}
                             onChange={(e) => {
                               setStatFilter(e.target.value as typeof statFilter);

@@ -596,6 +596,84 @@ export const adjustEquipmentStatsByRealm = (
 };
 
 /**
+ * 根据境界调整物品效果（通用函数，适用于所有物品类型）
+ * 对于装备，使用专门的 adjustEquipmentStatsByRealm
+ * 对于其他物品（丹药、草药等），根据境界进行倍数调整
+ */
+export const adjustItemStatsByRealm = (
+  effect: Item['effect'],
+  permanentEffect: Item['permanentEffect'],
+  realm: RealmType,
+  realmLevel: number,
+  itemType: ItemType,
+  rarity: ItemRarity = '普通'
+): { effect?: Item['effect']; permanentEffect?: Item['permanentEffect'] } => {
+  // 装备类型使用专门的调整函数
+  const isEquipment = itemType === ItemType.Weapon ||
+                      itemType === ItemType.Armor ||
+                      itemType === ItemType.Accessory ||
+                      itemType === ItemType.Ring ||
+                      itemType === ItemType.Artifact;
+
+  if (isEquipment && effect) {
+    const adjustedEffect = adjustEquipmentStatsByRealm(effect, realm, realmLevel, rarity);
+    return { effect: adjustedEffect, permanentEffect: undefined };
+  }
+
+  // 非装备物品：根据境界进行倍数调整
+  const realmIndex = REALM_ORDER.indexOf(realm);
+  // 境界倍数：炼气期1倍、筑基期2倍、金丹期4倍、元婴期8倍、化神期16倍、合道期20倍、长生境25倍
+  const realmBaseMultipliers = [1, 2, 4, 8, 16, 20, 25];
+  const realmMultiplier = realmBaseMultipliers[realmIndex] || 1;
+  // 境界等级加成：每级增加10%
+  const levelMultiplier = 1 + (realmLevel - 1) * 0.1;
+  const totalMultiplier = realmMultiplier * levelMultiplier;
+
+  const adjustedEffect: Item['effect'] = {};
+  const adjustedPermanentEffect: Item['permanentEffect'] = {};
+
+  // 调整临时效果
+  if (effect) {
+    if (effect.attack !== undefined) adjustedEffect.attack = Math.floor(effect.attack * totalMultiplier);
+    if (effect.defense !== undefined) adjustedEffect.defense = Math.floor(effect.defense * totalMultiplier);
+    if (effect.hp !== undefined) adjustedEffect.hp = Math.floor(effect.hp * totalMultiplier);
+    if (effect.spirit !== undefined) adjustedEffect.spirit = Math.floor(effect.spirit * totalMultiplier);
+    if (effect.physique !== undefined) adjustedEffect.physique = Math.floor(effect.physique * totalMultiplier);
+    if (effect.speed !== undefined) adjustedEffect.speed = Math.floor(effect.speed * totalMultiplier);
+    if (effect.exp !== undefined) adjustedEffect.exp = Math.floor(effect.exp * totalMultiplier);
+    // 寿命不受境界调整影响
+    if (effect.lifespan !== undefined) adjustedEffect.lifespan = effect.lifespan;
+  }
+
+  // 调整永久效果
+  if (permanentEffect) {
+    if (permanentEffect.attack !== undefined) adjustedPermanentEffect.attack = Math.floor(permanentEffect.attack * totalMultiplier);
+    if (permanentEffect.defense !== undefined) adjustedPermanentEffect.defense = Math.floor(permanentEffect.defense * totalMultiplier);
+    if (permanentEffect.spirit !== undefined) adjustedPermanentEffect.spirit = Math.floor(permanentEffect.spirit * totalMultiplier);
+    if (permanentEffect.physique !== undefined) adjustedPermanentEffect.physique = Math.floor(permanentEffect.physique * totalMultiplier);
+    if (permanentEffect.speed !== undefined) adjustedPermanentEffect.speed = Math.floor(permanentEffect.speed * totalMultiplier);
+    if (permanentEffect.maxHp !== undefined) adjustedPermanentEffect.maxHp = Math.floor(permanentEffect.maxHp * totalMultiplier);
+    // 最大寿命不受境界调整影响
+    if (permanentEffect.maxLifespan !== undefined) adjustedPermanentEffect.maxLifespan = permanentEffect.maxLifespan;
+
+    if (permanentEffect.spiritualRoots) {
+      adjustedPermanentEffect.spiritualRoots = {};
+      const roots = permanentEffect.spiritualRoots;
+      if (roots.metal !== undefined) adjustedPermanentEffect.spiritualRoots.metal = Math.floor(roots.metal * totalMultiplier);
+      if (roots.wood !== undefined) adjustedPermanentEffect.spiritualRoots.wood = Math.floor(roots.wood * totalMultiplier);
+      if (roots.water !== undefined) adjustedPermanentEffect.spiritualRoots.water = Math.floor(roots.water * totalMultiplier);
+      if (roots.fire !== undefined) adjustedPermanentEffect.spiritualRoots.fire = Math.floor(roots.fire * totalMultiplier);
+      if (roots.earth !== undefined) adjustedPermanentEffect.spiritualRoots.earth = Math.floor(roots.earth * totalMultiplier);
+    }
+  }
+
+  return {
+    effect: Object.keys(adjustedEffect).length > 0 ? adjustedEffect : effect,
+    permanentEffect: Object.keys(adjustedPermanentEffect).length > 0 ? adjustedPermanentEffect : permanentEffect,
+  };
+};
+
+/**
  * Helper to calculate item stats
  * 注意：装备数值已经考虑了稀有度，这里不再应用RARITY_MULTIPLIERS
  * 只应用本命法宝的额外加成

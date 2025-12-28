@@ -23,6 +23,7 @@ import {
   calculateBattleRewards,
 } from '../services/battleService';
 import { BATTLE_POTIONS, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES } from '../constants/index';
+import { showConfirm } from '../utils/toastUtils';
 
 interface TurnBasedBattleModalProps {
   isOpen: boolean;
@@ -452,63 +453,74 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   const handleSkipBattle = () => {
     if (!battleState || isProcessing) return;
 
-    setIsProcessing(true);
-    let currentState = { ...battleState };
-    let isBattleEnded = false;
-    let loopCount = 0;
-    const MAX_LOOPS = 200; // 防止死循环
+    // 二次确认提示
+    showConfirm(
+      '跳过战斗等同小觑对手，请谨慎选择',
+      '确认跳过战斗',
+      () => {
+        // 用户确认后执行跳过战斗逻辑
+        setIsProcessing(true);
+        let currentState = { ...battleState };
+        let isBattleEnded = false;
+        let loopCount = 0;
+        const MAX_LOOPS = 200; // 防止死循环
 
-    try {
-      while (!isBattleEnded && loopCount < MAX_LOOPS) {
-        loopCount++;
+        try {
+          while (!isBattleEnded && loopCount < MAX_LOOPS) {
+            loopCount++;
 
-        // 玩家回合
-        if (
-          currentState.waitingForPlayerAction &&
-          currentState.playerActionsRemaining > 0
-        ) {
-          currentState = executePlayerAction(currentState, { type: 'attack' });
-          isBattleEnded = checkBattleEnd(currentState);
-          if (isBattleEnded) break;
+            // 玩家回合
+            if (
+              currentState.waitingForPlayerAction &&
+              currentState.playerActionsRemaining > 0
+            ) {
+              currentState = executePlayerAction(currentState, { type: 'attack' });
+              isBattleEnded = checkBattleEnd(currentState);
+              if (isBattleEnded) break;
+            }
+
+            // 敌人回合 (如果玩家行动耗尽或不是玩家回合)
+            if (
+              !isBattleEnded &&
+              (!currentState.waitingForPlayerAction ||
+                currentState.playerActionsRemaining <= 0)
+            ) {
+              currentState = executeEnemyTurn(currentState);
+              isBattleEnded = checkBattleEnd(currentState);
+            }
+          }
+
+          // 战斗结束结算
+          const victory = currentState.enemy.hp <= 0;
+          const hpLoss = player.hp - currentState.player.hp;
+          const rewards = calculateBattleRewards(
+            currentState,
+            player,
+            adventureType,
+            riskLevel
+          );
+
+          onClose(
+            {
+              victory,
+              hpLoss,
+              expChange: rewards.expChange,
+              spiritChange: rewards.spiritChange,
+              adventureType,
+              items: rewards.items,
+            },
+            currentState.playerInventory
+          );
+        } catch (error) {
+          console.error('跳过战斗出错:', error);
+          setErrorMessage('跳过战斗出错');
+          setIsProcessing(false);
         }
-
-        // 敌人回合 (如果玩家行动耗尽或不是玩家回合)
-        if (
-          !isBattleEnded &&
-          (!currentState.waitingForPlayerAction ||
-            currentState.playerActionsRemaining <= 0)
-        ) {
-          currentState = executeEnemyTurn(currentState);
-          isBattleEnded = checkBattleEnd(currentState);
-        }
+      },
+      () => {
+        // 用户取消，不做任何操作
       }
-
-      // 战斗结束结算
-      const victory = currentState.enemy.hp <= 0;
-      const hpLoss = player.hp - currentState.player.hp;
-      const rewards = calculateBattleRewards(
-        currentState,
-        player,
-        adventureType,
-        riskLevel
-      );
-
-      onClose(
-        {
-          victory,
-          hpLoss,
-          expChange: rewards.expChange,
-          spiritChange: rewards.spiritChange,
-          adventureType,
-          items: rewards.items,
-        },
-        currentState.playerInventory
-      );
-    } catch (error) {
-      console.error('跳过战斗出错:', error);
-      setErrorMessage('跳过战斗出错');
-      setIsProcessing(false);
-    }
+    );
   };
 
   // 获取可用技能（检查冷却和MP）

@@ -229,6 +229,291 @@ export const HEAVEN_EARTH_SOUL_BOSSES: Record<string, HeavenEarthSoulBoss> = {
       items: ['item_007', 'item_008'],
       daoCombiningUnlocked: true
     }
+  },
+  'boss_005': {
+    id: 'boss_005',
+    name: '星辰之魄',
+    description: '九天星辰之力凝聚而成的强大存在，掌控星宿运转',
+    realm: RealmType.SpiritSevering,
+    baseStats: {
+      attack: 120000,
+      defense: 70000,
+      hp: 1000000,
+      spirit: 60000,
+      physique: 50000,
+      speed: 1100
+    },
+    difficulty: 'extreme',
+    strengthMultiplier: 3.5,
+    specialSkills: [
+      {
+        id: 'skill_005',
+        name: '星宿轮转',
+        description: '引动星辰之力，对敌人造成持续伤害并降低其速度',
+        type: 'debuff',
+        source: 'innate',
+        sourceId: 'boss_005',
+        effects: [
+          {
+            type: 'damage',
+            target: 'enemy',
+            value: 0.5
+          },
+          {
+            type: 'debuff',
+            target: 'enemy',
+            value: 0.25,
+            duration: 3,
+            debuffId: 'speed_down'
+          }
+        ],
+        cost: { mana: 2500 },
+        cooldown: 0,
+        maxCooldown: 5,
+        target: 'enemy',
+        damage: {
+          base: 12000,
+          multiplier: 2.8,
+          type: 'magical',
+          critChance: 0.35,
+          critMultiplier: 2.8
+        }
+      }
+    ],
+    rewards: {
+      exp: 2500000,
+      spiritStones: 600000,
+      items: ['item_009', 'item_010'],
+      daoCombiningUnlocked: true
+    }
+  },
+  'boss_006': {
+    id: 'boss_006',
+    name: '雷电之魄',
+    description: '九天雷霆之力凝聚而成的强大存在，掌控雷电法则',
+    realm: RealmType.SpiritSevering,
+    baseStats: {
+      attack: 90000,
+      defense: 55000,
+      hp: 700000,
+      spirit: 45000,
+      physique: 40000,
+      speed: 1200
+    },
+    difficulty: 'hard',
+    strengthMultiplier: 2.5,
+    specialSkills: [
+      {
+        id: 'skill_006',
+        name: '九天雷劫',
+        description: '召唤九天雷劫，对敌人造成巨大伤害并有概率麻痹',
+        type: 'attack',
+        source: 'innate',
+        sourceId: 'boss_006',
+        effects: [
+          {
+            type: 'damage',
+            target: 'enemy',
+            value: 0.55
+          },
+          {
+            type: 'debuff',
+            target: 'enemy',
+            value: 0.15,
+            duration: 2,
+            debuffId: 'stun'
+          }
+        ],
+        cost: { mana: 1800 },
+        cooldown: 0,
+        maxCooldown: 4,
+        target: 'enemy',
+        damage: {
+          base: 9000,
+          multiplier: 2.4,
+          type: 'magical',
+          critChance: 0.3,
+          critMultiplier: 2.6
+        }
+      }
+    ],
+    rewards: {
+      exp: 1500000,
+      spiritStones: 350000,
+      items: ['item_011', 'item_012'],
+      daoCombiningUnlocked: true
+    }
+  },
+  'boss_007': {
+    id: 'boss_007',
+    name: '冰霜之魄',
+    description: '极地寒冰之力凝聚而成的强大存在，掌控冰雪法则',
+    realm: RealmType.SpiritSevering,
+    baseStats: {
+      attack: 85000,
+      defense: 65000,
+      hp: 900000,
+      spirit: 48000,
+      physique: 42000,
+      speed: 750
+    },
+    difficulty: 'hard',
+    strengthMultiplier: 2.6,
+    specialSkills: [
+      {
+        id: 'skill_007',
+        name: '冰封万里',
+        description: '释放极寒之力，对敌人造成伤害并大幅降低其行动速度',
+        type: 'debuff',
+        source: 'innate',
+        sourceId: 'boss_007',
+        effects: [
+          {
+            type: 'damage',
+            target: 'enemy',
+            value: 0.4
+          },
+          {
+            type: 'debuff',
+            target: 'enemy',
+            value: 0.4,
+            duration: 4,
+            debuffId: 'speed_down'
+          }
+        ],
+        cost: { mana: 1600 },
+        cooldown: 0,
+        maxCooldown: 5,
+        target: 'enemy',
+        damage: {
+          base: 8000,
+          multiplier: 2.2,
+          type: 'magical',
+          critChance: 0.25,
+          critMultiplier: 2.4
+        }
+      }
+    ],
+    rewards: {
+      exp: 1800000,
+      spiritStones: 400000,
+      items: ['item_013', 'item_014'],
+      daoCombiningUnlocked: true
+    }
+  },
+  'boss_008': {
+    id: 'boss_008',
+    name: '烈焰之魄',
+    description: '地心熔岩之力凝聚而成的强大存在，掌控火焰法则',
+    realm: RealmType.SpiritSevering,
+    baseStats: {
+      attack: 110000,
+      defense: 50000,
+      hp: 750000,
+      spirit: 55000,
+      physique: 48000,
+      speed: 950
+    },
+    difficulty: 'extreme',
+    strengthMultiplier: 3.2,
+    specialSkills: [
+      {
+        id: 'skill_008',
+        name: '熔岩爆发',
+        description: '引动地心熔岩，对敌人造成毁灭性火焰伤害',
+        type: 'attack',
+        source: 'innate',
+        sourceId: 'boss_008',
+        effects: [
+          {
+            type: 'damage',
+            target: 'enemy',
+            value: 0.65
+          },
+          {
+            type: 'debuff',
+            target: 'enemy',
+            value: 0.2,
+            duration: 3,
+            debuffId: 'burn'
+          }
+        ],
+        cost: { mana: 2200 },
+        cooldown: 0,
+        maxCooldown: 4,
+        target: 'enemy',
+        damage: {
+          base: 11000,
+          multiplier: 2.7,
+          type: 'magical',
+          critChance: 0.32,
+          critMultiplier: 2.7
+        }
+      }
+    ],
+    rewards: {
+      exp: 2200000,
+      spiritStones: 550000,
+      items: ['item_015', 'item_016'],
+      daoCombiningUnlocked: true
+    }
+  },
+  'boss_009': {
+    id: 'boss_009',
+    name: '风暴之魄',
+    description: '天地风暴之力凝聚而成的强大存在，掌控狂风法则',
+    realm: RealmType.SpiritSevering,
+    baseStats: {
+      attack: 95000,
+      defense: 58000,
+      hp: 850000,
+      spirit: 52000,
+      physique: 46000,
+      speed: 1300
+    },
+    difficulty: 'extreme',
+    strengthMultiplier: 3.1,
+    specialSkills: [
+      {
+        id: 'skill_009',
+        name: '狂风怒号',
+        description: '召唤天地风暴，对敌人造成连续伤害并提升自身速度',
+        type: 'attack',
+        source: 'innate',
+        sourceId: 'boss_009',
+        effects: [
+          {
+            type: 'damage',
+            target: 'enemy',
+            value: 0.5
+          },
+          {
+            type: 'buff',
+            target: 'self',
+            value: 0.3,
+            duration: 3,
+            buffId: 'speed_boost'
+          }
+        ],
+        cost: { mana: 2000 },
+        cooldown: 0,
+        maxCooldown: 4,
+        target: 'enemy',
+        damage: {
+          base: 9500,
+          multiplier: 2.5,
+          type: 'magical',
+          critChance: 0.28,
+          critMultiplier: 2.6
+        }
+      }
+    ],
+    rewards: {
+      exp: 2100000,
+      spiritStones: 520000,
+      items: ['item_017', 'item_018'],
+      daoCombiningUnlocked: true
+    }
   }
 };
 

@@ -274,7 +274,7 @@ function generateEquipmentTemplates(): Item[] {
     slots: EquipmentSlot[];
   }> = [
     { type: 'weapon', itemType: ItemType.Weapon, slots: [EquipmentSlot.Weapon] },
-    { type: 'armor', itemType: ItemType.Armor, slots: [EquipmentSlot.Chest] },
+    { type: 'armor', itemType: ItemType.Armor, slots: [EquipmentSlot.Head, EquipmentSlot.Shoulder, EquipmentSlot.Chest, EquipmentSlot.Gloves, EquipmentSlot.Legs, EquipmentSlot.Boots] },
     { type: 'accessory', itemType: ItemType.Accessory, slots: [EquipmentSlot.Accessory1, EquipmentSlot.Accessory2] },
     { type: 'ring', itemType: ItemType.Ring, slots: [EquipmentSlot.Ring1, EquipmentSlot.Ring2, EquipmentSlot.Ring3, EquipmentSlot.Ring4] },
     { type: 'artifact', itemType: ItemType.Artifact, slots: [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2] },

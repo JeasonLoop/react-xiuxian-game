@@ -2,7 +2,7 @@
  * 物品系统相关常量
  */
 
-import { Item, ItemType, Recipe, ItemRarity } from '../types';
+import { Item, ItemType, Recipe, ItemRarity, EquipmentSlot } from '../types';
 
 export const RARITY_MULTIPLIERS: Record<ItemRarity, number> = {
   普通: 1,
@@ -58,7 +58,7 @@ export const INITIAL_ITEMS: Item[] = [
     rarity: '普通',
     level: 0,
     isEquippable: true,
-    equipmentSlot: 'chest' as any,
+    equipmentSlot: EquipmentSlot.Chest,
     effect: { defense: 3, hp: 10 },
   },
 ];
