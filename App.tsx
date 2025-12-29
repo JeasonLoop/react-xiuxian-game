@@ -232,6 +232,17 @@ function App() {
   // 使用自定义 hook 处理游戏初始化
   useGameInitialization();
 
+  // 检查是否需要显示修仙法门弹窗（新游戏时显示，已显示过则不显示）
+  useEffect(() => {
+    if (gameStarted && player && !localStorage.getItem(STORAGE_KEYS.CULTIVATION_INTRO_SHOWN)) {
+      // 延迟一小段时间显示，确保游戏界面已加载完成
+      const timer = setTimeout(() => {
+        setShowCultivationIntro(true);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [gameStarted, player]);
+
   const { loading, setLoading, cooldown, setCooldown } = appState.global;
 
   // 使用自定义 hook 处理游戏时长和保存
