@@ -1021,10 +1021,6 @@ function App() {
     player?.realm,
     player?.realmLevel,
     tribulationState?.isOpen,
-    breakthroughHandlers.handleBreakthrough,
-    addLog,
-    setPlayer,
-    setTribulationState,
   ]);
 
   // 监听突破成功，更新任务进度

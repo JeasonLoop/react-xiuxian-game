@@ -52,7 +52,7 @@ export function useLevelUp({
       }
 
       // 检查是否需要渡劫
-      const isRealmUpgrade = player.realmLevel >= 9;
+      const isRealmUpgrade = player.realmLevel >= 9 && player.exp > player.maxExp;
       let targetRealm = player.realm;
       if (isRealmUpgrade) {
         const currentIndex = REALM_ORDER.indexOf(player.realm);
@@ -99,7 +99,7 @@ export function useLevelUp({
         handleBreakthrough();
       }
     }
-  }, [player?.exp, player?.maxExp, player?.realm, player?.realmLevel, !!tribulationState, setPlayer, setTribulationState, handleBreakthrough, addLog]);
+  }, [player?.exp, player?.maxExp, player?.realm, player?.realmLevel, !!tribulationState]);
 
   // 监听突破成功，重置天劫标志
   const prevRealmRef = useRef<{ realm: string; level: number } | null>(null);
