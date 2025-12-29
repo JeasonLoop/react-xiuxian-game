@@ -18,11 +18,11 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastResult, setLastResult] = useState<LotteryPrize[] | null>(null);
   const [displayTickets, setDisplayTickets] = useState(player.lotteryTickets);
-  const [customCountInput, setCustomCountInput] = useState<string>('1');
+  const [customCountInput, setCustomCountInput] = useState<string>('');
   const drawTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 将输入值转换为数字
-  const customCount = parseInt(customCountInput, 10) || 1;
+  // 将输入值转换为数字，空字符串时返回0
+  const customCount = customCountInput === '' ? 0 : parseInt(customCountInput, 10) || 0;
 
   // 监听抽奖券数量变化，确保及时更新显示并自动调整自定义抽奖次数
   useEffect(() => {
@@ -50,9 +50,7 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
   const handleDraw = async (count: number) => {
     const currentTickets = player.lotteryTickets;
     if (currentTickets < count) {
-      showError(
-        `抽奖券不足！需要 ${count} 张，当前拥有 ${currentTickets} 张`
-      );
+      showError(`抽奖券不足！需要 ${count} 张，当前拥有 ${currentTickets} 张`);
       return;
     }
     if (count <= 0 || !Number.isInteger(count)) {
@@ -101,17 +99,27 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
             <div
               key={i}
               className="spirit-particle"
-              style={{
-                '--rotation': `${i * 30}deg`,
-                animationDelay: `${i * 0.1}s`,
-                color: i % 3 === 0 ? '#fbbf24' : i % 3 === 1 ? '#a78bfa' : '#60a5fa'
-              } as React.CSSProperties}
+              style={
+                {
+                  '--rotation': `${i * 30}deg`,
+                  animationDelay: `${i * 0.1}s`,
+                  color:
+                    i % 3 === 0
+                      ? '#fbbf24'
+                      : i % 3 === 1
+                        ? '#a78bfa'
+                        : '#60a5fa',
+                } as React.CSSProperties
+              }
             />
           ))}
 
           {/* 中心光点 */}
           <div className="relative z-10 w-16 h-16 bg-mystic-gold rounded-full shadow-[0_0_50px_rgba(203,161,53,0.8)] flex items-center justify-center animate-pulse">
-            <Sparkles className="text-white w-8 h-8 animate-spin" style={{ animationDuration: '3s' }} />
+            <Sparkles
+              className="text-white w-8 h-8 animate-spin"
+              style={{ animationDuration: '3s' }}
+            />
           </div>
         </div>
 
@@ -119,9 +127,7 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
           <div className="text-2xl font-serif text-mystic-gold tracking-[0.5em] animate-pulse">
             天机演化中...
           </div>
-          <div className="mt-2 text-stone-500 text-sm">
-            正在窥探大道先机
-          </div>
+          <div className="mt-2 text-stone-500 text-sm">正在窥探大道先机</div>
         </div>
 
         {/* 氛围装饰 */}
@@ -169,7 +175,9 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
             onClick={onClose}
             disabled={isDrawing}
             className={`text-stone-400 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation transition-colors ${
-              isDrawing ? 'opacity-20 cursor-not-allowed' : 'active:text-white hover:text-stone-300'
+              isDrawing
+                ? 'opacity-20 cursor-not-allowed'
+                : 'active:text-white hover:text-stone-300'
             }`}
           >
             <X size={24} />
@@ -213,7 +221,10 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-2 relative z-10">
-                    <Gift size={32} className="text-purple-400 group-hover:scale-110 transition-transform" />
+                    <Gift
+                      size={32}
+                      className="text-purple-400 group-hover:scale-110 transition-transform"
+                    />
                     <span className="font-bold text-stone-200">单抽</span>
                     <span className="text-xs text-stone-500">消耗 1 张</span>
                   </div>
@@ -237,7 +248,10 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center gap-2 relative z-10">
-                    <Sparkles size={32} className="text-yellow-400 group-hover:scale-110 transition-transform" />
+                    <Sparkles
+                      size={32}
+                      className="text-yellow-400 group-hover:scale-110 transition-transform"
+                    />
                     <span className="font-bold text-stone-200">十连抽</span>
                     <span className="text-xs text-stone-500">消耗 10 张</span>
                   </div>
@@ -247,7 +261,9 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
 
             {/* 自定义连抽 */}
             <div className="bg-stone-900 rounded-lg p-4 border border-stone-700">
-              <div className="text-sm font-bold text-stone-300 mb-3">自定义连抽</div>
+              <div className="text-sm font-bold text-stone-300 mb-3">
+                自定义连抽
+              </div>
               <div className="flex items-center gap-3">
                 <input
                   type="number"
@@ -263,16 +279,26 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
                     }
                     const value = parseInt(inputValue, 10);
                     if (!isNaN(value) && value > 0) {
-                      const maxValue = displayTickets > 0 ? displayTickets : 1;
-                      setCustomCountInput(String(Math.min(value, maxValue)));
+                      // 输入时只验证最小值，允许用户输入超过当前抽奖券数量的值
+                      // 最大值限制在失去焦点时处理
+                      setCustomCountInput(String(Math.max(1, value)));
                     }
                   }}
                   onBlur={(e) => {
-                    const value = parseInt(e.target.value, 10);
+                    const inputValue = e.target.value;
+                    // 如果为空，保持空值
+                    if (inputValue === '') {
+                      return;
+                    }
+                    const value = parseInt(inputValue, 10);
                     if (isNaN(value) || value < 1) {
-                      setCustomCountInput('1');
-                    } else if (value > displayTickets) {
-                      setCustomCountInput(String(displayTickets));
+                      // 无效值时设为空而不是1
+                      setCustomCountInput('');
+                    } else {
+                      // 失去焦点时，确保值在有效范围内
+                      const maxValue = displayTickets > 0 ? displayTickets : 1;
+                      const validValue = Math.min(Math.max(1, value), maxValue);
+                      setCustomCountInput(String(validValue));
                     }
                   }}
                   disabled={isDrawing}
@@ -281,15 +307,17 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
                 />
                 <button
                   onClick={() => handleDraw(customCount)}
-                  disabled={isDrawing || displayTickets < customCount || customCount < 1}
+                  disabled={
+                    isDrawing || displayTickets < customCount || customCount < 1
+                  }
                   className="px-6 py-2 bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed rounded text-white font-bold transition-colors"
                 >
-                  抽 {customCount} 次
+                  {customCount > 0 ? `抽 ${customCount} 次` : '输入抽奖次数'}
                 </button>
               </div>
               <div className="text-xs text-stone-500 mt-2">
-                消耗 {customCount} 张抽奖券
-                {displayTickets < customCount && (
+                {customCount > 0 ? `消耗 ${customCount} 张抽奖券` : '请输入抽奖次数'}
+                {customCount > 0 && displayTickets < customCount && (
                   <span className="text-red-400 ml-2">（抽奖券不足）</span>
                 )}
               </div>
@@ -301,10 +329,21 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
             <h3 className="text-lg font-bold mb-3">奖品稀有度分布</h3>
             <div className="space-y-3">
               {(['普通', '稀有', '传说', '仙品'] as const).map((rarity) => {
-                const prizesOfRarity = LOTTERY_PRIZES.filter((p) => p.rarity === rarity);
-                const totalWeight = LOTTERY_PRIZES.reduce((sum, p) => sum + p.weight, 0);
-                const rarityWeight = prizesOfRarity.reduce((sum, p) => sum + p.weight, 0);
-                const probability = ((rarityWeight / totalWeight) * 100).toFixed(1);
+                const prizesOfRarity = LOTTERY_PRIZES.filter(
+                  (p) => p.rarity === rarity
+                );
+                const totalWeight = LOTTERY_PRIZES.reduce(
+                  (sum, p) => sum + p.weight,
+                  0
+                );
+                const rarityWeight = prizesOfRarity.reduce(
+                  (sum, p) => sum + p.weight,
+                  0
+                );
+                const probability = (
+                  (rarityWeight / totalWeight) *
+                  100
+                ).toFixed(1);
 
                 return (
                   <div
@@ -313,7 +352,9 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className={`text-sm font-bold ${getRarityColor(rarity).split(' ')[0]}`}>
+                        <div
+                          className={`text-sm font-bold ${getRarityColor(rarity).split(' ')[0]}`}
+                        >
                           {rarity}
                         </div>
                         <div className="text-xs text-stone-500">
