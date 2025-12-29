@@ -545,19 +545,30 @@ const ShopModal: React.FC<Props> = ({
                             境界要求: {shopItem.minRealm}
                           </div>
                         )}
-                        <div className="flex items-center justify-between mt-3">
-                          <div className="flex items-center gap-1 text-mystic-gold">
-                            <Coins size={16} />
-                            <span className="font-bold">{formatNumber(shopItem.price)}</span>
-                            {buyQuantities[shopItem.id] > 1 && (
-                              <span className="text-xs text-stone-400 ml-1">
-                                x{buyQuantities[shopItem.id]} ={' '}
-                                {formatNumber(shopItem.price * buyQuantities[shopItem.id])}
-                              </span>
+                        <div className="mt-4 flex flex-col justify-between space-y-2">
+                          {/* 价格和描述 */}
+                          <div className="flex flex-col space-y-1">
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-1 text-mystic-gold">
+                                <Coins size={14} />
+                                <span className="font-bold">{formatNumber(shopItem.price)}</span>
+                              </div>
+                              {buyQuantities[shopItem.id] > 1 && (
+                                <div className="text-xs text-stone-400">
+                                  总计: {formatNumber(shopItem.price * buyQuantities[shopItem.id])}
+                                </div>
+                              )}
+                            </div>
+                            {shopItem.minRealm && (
+                              <div className="text-xs text-stone-500 self-end">
+                                境界: {shopItem.minRealm}
+                              </div>
                             )}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1 border border-stone-600 rounded">
+                          
+                          {/* 数量控制和购买按钮 */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1 border border-stone-600 rounded bg-stone-800">
                               <button
                                 onClick={() =>
                                   setBuyQuantities((prev) => ({
@@ -568,7 +579,7 @@ const ShopModal: React.FC<Props> = ({
                                     ),
                                   }))
                                 }
-                                className="px-2 py-1 text-stone-400 hover:text-white"
+                                className="px-2 py-1 text-stone-400 hover:text-white hover:bg-stone-700 transition-colors"
                               >
                                 -
                               </button>
@@ -595,7 +606,7 @@ const ShopModal: React.FC<Props> = ({
                                     [shopItem.id]: (prev[shopItem.id] || 1) + 1,
                                   }))
                                 }
-                                className="px-2 py-1 text-stone-400 hover:text-white"
+                                className="px-2 py-1 text-stone-400 hover:text-white hover:bg-stone-700 transition-colors"
                               >
                                 +
                               </button>
@@ -615,7 +626,7 @@ const ShopModal: React.FC<Props> = ({
                                   (buyQuantities[shopItem.id] || 1) >
                                   player.spiritStones
                               }
-                              className={`px-4 py-2 rounded text-sm font-bold transition-colors ${
+                              className={`px-3 py-1.5 rounded text-sm font-bold transition-colors flex-1 min-w-[70px] ${
                                 canBuy &&
                                 shopItem.price *
                                   (buyQuantities[shopItem.id] || 1) <=
@@ -635,18 +646,7 @@ const ShopModal: React.FC<Props> = ({
                                     : ''
                               }
                             >
-                              {canBuy &&
-                              shopItem.price *
-                                (buyQuantities[shopItem.id] || 1) <=
-                                player.spiritStones
-                                ? '购买'
-                                : !canBuy
-                                  ? shop.reputationRequired && (player.reputation || 0) < shop.reputationRequired
-                                    ? '声望不足'
-                                    : shopItem.minRealm
-                                      ? '境界不足'
-                                      : '无法购买'
-                                  : '灵石不足'}
+                              购买
                             </button>
                           </div>
                         </div>
