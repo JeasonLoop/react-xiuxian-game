@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
-import { PlayerStats, Item, Pet, ItemType, EquipmentSlot } from '../../types';
-import { LOTTERY_PRIZES, PET_TEMPLATES } from '../../constants';
+import { PlayerStats, Pet, ItemType} from '../../types';
+import { LOTTERY_PRIZES, PET_TEMPLATES, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES } from '../../constants/index';
 import { uid } from '../../utils/gameUtils';
 import { addItemToInventory } from '../../utils/inventoryUtils';
 
@@ -199,9 +199,81 @@ export function useLotteryHandlers({
           newExp += amount;
           addLog(`获得 ${amount} 修为`, 'gain');
         } else if (prize.type === 'item' && prize.value.item) {
-          const item = prize.value.item;
-          newInv = addItemToInventory(newInv, item);
-          addLog(`获得 ${item.name}！`, 'gain');
+          // 检查是否是进阶物品
+          if (prize.value.foundationTreasure) {
+            // 筑基奇物 - 添加到背包
+            const treasures = Object.values(FOUNDATION_TREASURES);
+            const selected = treasures[Math.floor(Math.random() * treasures.length)];
+            newInv.push({
+              id: uid(),
+              name: selected.name,
+              type: ItemType.AdvancedItem,
+              description: selected.description,
+              quantity: 1,
+              rarity: selected.rarity,
+              advancedItemType: 'foundationTreasure',
+              advancedItemId: selected.id,
+            });
+            addLog(`✨ 获得筑基奇物【${selected.name}】！这是突破筑基期的关键物品！`, 'special');
+          } else if (prize.value.heavenEarthEssence) {
+            // 天地精华 - 添加到背包
+            const essences = Object.values(HEAVEN_EARTH_ESSENCES);
+            const selected = essences[Math.floor(Math.random() * essences.length)];
+            newInv.push({
+              id: uid(),
+              name: selected.name,
+              type: ItemType.AdvancedItem,
+              description: selected.description,
+              quantity: 1,
+              rarity: selected.rarity,
+              advancedItemType: 'heavenEarthEssence',
+              advancedItemId: selected.id,
+            });
+            addLog(`✨ 获得天地精华【${selected.name}】！这是突破元婴期的关键物品！`, 'special');
+          } else if (prize.value.heavenEarthMarrow) {
+            // 天地之髓 - 添加到背包
+            const marrows = Object.values(HEAVEN_EARTH_MARROWS);
+            const selected = marrows[Math.floor(Math.random() * marrows.length)];
+            newInv.push({
+              id: uid(),
+              name: selected.name,
+              type: ItemType.AdvancedItem,
+              description: selected.description,
+              quantity: 1,
+              rarity: selected.rarity,
+              advancedItemType: 'heavenEarthMarrow',
+              advancedItemId: selected.id,
+            });
+            addLog(`✨ 获得天地之髓【${selected.name}】！这是突破化神期的关键物品！`, 'special');
+          } else if (prize.value.longevityRule) {
+            // 规则之力 - 添加到背包
+            const rules = Object.values(LONGEVITY_RULES);
+            const currentRules = prev.longevityRules || [];
+            const availableRules = rules.filter(r => !currentRules.includes(r.id));
+            const maxRules = prev.maxLongevityRules || 3;
+            if (availableRules.length > 0 && currentRules.length < maxRules) {
+              const selected = availableRules[Math.floor(Math.random() * availableRules.length)];
+              newInv.push({
+                id: uid(),
+                name: selected.name,
+                type: ItemType.AdvancedItem,
+                description: selected.description,
+                quantity: 1,
+                rarity: '仙品',
+                advancedItemType: 'longevityRule',
+                advancedItemId: selected.id,
+              });
+              addLog(`✨ 获得规则之力【${selected.name}】！这是掌控天地的力量！`, 'special');
+            } else {
+              addLog(`你已经拥有所有规则之力，本次奖励转换为灵石`, 'gain');
+              newStones += 20000;
+            }
+          } else {
+            // 普通物品
+            const item = prize.value.item;
+            newInv = addItemToInventory(newInv, item);
+            addLog(`获得 ${item.name}！`, 'gain');
+          }
         } else if (prize.type === 'pet' && prize.value.petId) {
           const template = PET_TEMPLATES.find(
             (t) => t.id === prize.value.petId

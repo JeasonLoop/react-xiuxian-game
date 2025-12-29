@@ -3,14 +3,14 @@
  * 处理回合制战斗结果，更新玩家状态、处理物品奖励等
  */
 import React from 'react';
-import { Item, ItemType, PlayerStats, ItemRarity, SectRank} from '../types';
+import { Item, ItemType, PlayerStats, SectRank} from '../types';
 import { addItemToInventory } from '../utils/inventoryUtils';
 import {
   SECT_PROMOTION_BASE_REWARDS,
   SECT_SPECIAL_REWARDS,
   SECT_MASTER_CHALLENGE_REQUIREMENTS,
   SECTS,
-} from '../constants';
+} from '../constants/index';
 
 // 战斗结果类型（可能不包含所有字段）
 interface BattleResultData {
@@ -144,6 +144,13 @@ export function useBattleResultHandler({
         let finalSectMasterId = prev.sectMasterId;
         let finalSectContribution = prev.sectContribution;
 
+        // 特殊处理：天地之魄挑战结果
+        let newDaoCombiningChallenged = prev.daoCombiningChallenged;
+        if (result.adventureType === 'dao_combining_challenge' && result.victory) {
+          newDaoCombiningChallenged = true;
+          addLog('✨ 你成功挑战了天地之魄，获得了合道期的资格！', 'special');
+        }
+
         // 处理追杀战斗结果（只有在追杀状态下才处理，正常挑战宗主不在这里处理）
         const isHuntBattle = result.adventureType === 'sect_challenge' &&
           prev.sectHuntSectId &&
@@ -185,6 +192,7 @@ export function useBattleResultHandler({
               sectHuntLevel: 0,
               sectHuntSectId: null,
               sectHuntSectName: null,
+              daoCombiningChallenged: newDaoCombiningChallenged,
             };
           } else {
             // 击杀宗门弟子/长老，增加追杀强度
@@ -211,6 +219,7 @@ export function useBattleResultHandler({
               sectMasterId: finalSectMasterId,
               sectContribution: finalSectContribution,
               sectHuntLevel: newHuntLevel,
+              daoCombiningChallenged: newDaoCombiningChallenged,
             };
           }
         }
@@ -267,7 +276,8 @@ export function useBattleResultHandler({
           pets: newPets,
           sectRank: newSectRank,
           sectMasterId: finalSectMasterId,
-          sectContribution: finalSectContribution
+          sectContribution: finalSectContribution,
+          daoCombiningChallenged: newDaoCombiningChallenged
         };
       });
     }

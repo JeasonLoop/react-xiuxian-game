@@ -46,16 +46,11 @@ export const findEmptyEquipmentSlot = (
       // 有空槽位，返回第一个空槽位
       return emptySlot;
     }
-    // 如果没有空槽位
-    if (item.type === ItemType.Ring) {
-      // 戒指：4个栏位都满时，替换第一个（Ring1）
-      return EquipmentSlot.Ring1;
-    }
-    // 其他类型（首饰、法宝）：返回第一个槽位
-    return slots[0];
+    // 如果没有空槽位，返回 null（不替换已有装备）
+    return null;
   }
 
-  // 其他装备类型直接使用默认槽位
+  // 其他装备类型直接使用默认槽位（如果已装备，则替换）
   return item.equipmentSlot;
 };
 

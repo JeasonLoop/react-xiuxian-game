@@ -15,6 +15,7 @@ import {
   Scroll,
   Power,
   Skull,
+  Search,
 } from 'lucide-react';
 import {
   PlayerStats,
@@ -48,7 +49,11 @@ import {
   LOTTERY_PRIZES,
   SECT_SHOP_ITEMS,
   getPillDefinition,
-} from '../constants';
+  FOUNDATION_TREASURES,
+  HEAVEN_EARTH_ESSENCES,
+  HEAVEN_EARTH_MARROWS,
+  LONGEVITY_RULES,
+} from '../constants/index';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import { LOOT_ITEMS } from '../services/battleService';
 import { showSuccess, showError, showInfo, showConfirm } from '../utils/toastUtils';
@@ -65,6 +70,7 @@ interface Props {
   onUpdatePlayer: (updates: Partial<PlayerStats>) => void;
   onTriggerDeath?: () => void; // 触发死亡测试
   onTriggerReputationEvent?: (event: AdventureResult['reputationEvent']) => void; // 触发声望事件
+  onChallengeDaoCombining?: () => void; // 挑战天地之魄
 }
 
 const DebugModal: React.FC<Props> = ({
@@ -74,6 +80,7 @@ const DebugModal: React.FC<Props> = ({
   onUpdatePlayer,
   onTriggerDeath,
   onTriggerReputationEvent,
+  onChallengeDaoCombining,
 }) => {
   const [localPlayer, setLocalPlayer] = useState<PlayerStats>(player);
   const [activeTab, setActiveTab] = useState<
@@ -89,6 +96,7 @@ const DebugModal: React.FC<Props> = ({
     | 'death'
     | 'inheritance'
     | 'reputation'
+    | 'breakthrough'
   >('equipment');
 
   // 当 player 更新时同步 localPlayer
@@ -104,6 +112,7 @@ const DebugModal: React.FC<Props> = ({
   const [editingPetId, setEditingPetId] = useState<string | null>(null);
   const [editingPet, setEditingPet] = useState<Pet | null>(null);
   const [itemQuantities, setItemQuantities] = useState<Record<string, number>>({});
+  const [globalSearchQuery, setGlobalSearchQuery] = useState<string>('');
 
   // 合并所有装备（包括LOOT_ITEMS中的套装装备）
   const allEquipmentTemplates = useMemo(() => {
@@ -886,7 +895,29 @@ const DebugModal: React.FC<Props> = ({
         </div>
 
         {/* Content */}
-        <div className="p-4 md:p-6 space-y-6 overflow-y-auto flex-1">
+        <div className="modal-scroll-container modal-scroll-content p-4 md:p-6 space-y-6">
+          {/* 全局搜索 */}
+          <div className="bg-stone-900/50 border border-stone-700 rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <Search size={18} className="text-stone-400" />
+              <input
+                type="text"
+                placeholder="全局搜索所有内容..."
+                value={globalSearchQuery}
+                onChange={(e) => setGlobalSearchQuery(e.target.value)}
+                className="flex-1 bg-stone-800 border border-stone-700 rounded px-3 py-2 text-sm text-stone-200 placeholder-stone-500 focus:outline-none focus:border-red-500"
+              />
+              {globalSearchQuery && (
+                <button
+                  onClick={() => setGlobalSearchQuery('')}
+                  className="text-stone-400 hover:text-stone-200 px-2"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* 警告提示 */}
           <div className="bg-red-900/30 border border-red-700 rounded p-3 text-sm text-red-200">
             ⚠️ 调试模式：修改数据可能导致游戏异常，请谨慎操作！
@@ -1270,15 +1301,16 @@ const DebugModal: React.FC<Props> = ({
 
           {/* 游戏内容选择 */}
           <div>
-            <div className="flex items-center justify-between mb-3 border-b border-stone-700 pb-2">
-              <h3 className="font-bold text-stone-200">游戏内容</h3>
-              <div className="flex gap-2 flex-wrap">
+            <div className="mb-3 border-b border-stone-700 pb-2">
+              <h3 className="font-bold text-stone-200 mb-2">游戏内容</h3>
+              {/* 第一行：主要功能 */}
+              <div className="flex gap-2 flex-wrap mb-2 justify-start">
                 <button
                   onClick={() => setActiveTab('equipment')}
-                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                     activeTab === 'equipment'
-                      ? 'bg-red-700 text-white'
-                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
                   }`}
                   title="装备"
                 >
@@ -1286,83 +1318,11 @@ const DebugModal: React.FC<Props> = ({
                   装备
                 </button>
                 <button
-                  onClick={() => setActiveTab('talent')}
-                  className={`px-2 py-1 rounded text-xs transition-colors ${
-                    activeTab === 'talent'
-                      ? 'bg-red-700 text-white'
-                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
-                  }`}
-                  title="天赋"
-                >
-                  <Sparkles size={14} className="inline mr-1" />
-                  天赋
-                </button>
-                <button
-                  onClick={() => setActiveTab('title')}
-                  className={`px-2 py-1 rounded text-xs transition-colors ${
-                    activeTab === 'title'
-                      ? 'bg-red-700 text-white'
-                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
-                  }`}
-                  title="称号"
-                >
-                  <Award size={14} className="inline mr-1" />
-                  称号
-                </button>
-                <button
-                  onClick={() => setActiveTab('cultivation')}
-                  className={`px-2 py-1 rounded text-xs transition-colors ${
-                    activeTab === 'cultivation'
-                      ? 'bg-red-700 text-white'
-                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
-                  }`}
-                  title="功法"
-                >
-                  <BookOpen size={14} className="inline mr-1" />
-                  功法
-                </button>
-                <button
-                  onClick={() => setActiveTab('sect')}
-                  className={`px-2 py-1 rounded text-xs transition-colors ${
-                    activeTab === 'sect'
-                      ? 'bg-red-700 text-white'
-                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
-                  }`}
-                  title="宗门"
-                >
-                  <Building2 size={14} className="inline mr-1" />
-                  宗门
-                </button>
-                <button
-                  onClick={() => setActiveTab('achievement')}
-                  className={`px-2 py-1 rounded text-xs transition-colors ${
-                    activeTab === 'achievement'
-                      ? 'bg-red-700 text-white'
-                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
-                  }`}
-                  title="成就"
-                >
-                  <Trophy size={14} className="inline mr-1" />
-                  成就
-                </button>
-                <button
-                  onClick={() => setActiveTab('pet')}
-                  className={`px-2 py-1 rounded text-xs transition-colors ${
-                    activeTab === 'pet'
-                      ? 'bg-red-700 text-white'
-                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
-                  }`}
-                  title="灵宠"
-                >
-                  <Heart size={14} className="inline mr-1" />
-                  灵宠
-                </button>
-                <button
                   onClick={() => setActiveTab('item')}
-                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                     activeTab === 'item'
-                      ? 'bg-red-700 text-white'
-                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
                   }`}
                   title="物品"
                 >
@@ -1371,10 +1331,10 @@ const DebugModal: React.FC<Props> = ({
                 </button>
                 <button
                   onClick={() => setActiveTab('recipe')}
-                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                     activeTab === 'recipe'
-                      ? 'bg-red-700 text-white'
-                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
                   }`}
                   title="丹方"
                 >
@@ -1382,28 +1342,130 @@ const DebugModal: React.FC<Props> = ({
                   丹方
                 </button>
                 <button
-                  onClick={() => setActiveTab('death')}
-                  className={`px-2 py-1 rounded text-xs transition-colors ${
-                    activeTab === 'death'
-                      ? 'bg-red-700 text-white'
-                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                  onClick={() => setActiveTab('cultivation')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                    activeTab === 'cultivation'
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
                   }`}
-                  title="死亡测试"
+                  title="功法"
                 >
-                  <Skull size={14} className="inline mr-1" />
-                  死亡测试
+                  <BookOpen size={14} className="inline mr-1" />
+                  功法
+                </button>
+                <button
+                  onClick={() => setActiveTab('breakthrough')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                    activeTab === 'breakthrough'
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
+                  }`}
+                  title="进阶物品"
+                >
+                  <Power size={14} className="inline mr-1" />
+                  进阶物品
+                </button>
+              </div>
+              {/* 第二行：角色相关 */}
+              <div className="flex gap-2 flex-wrap mb-2 justify-start">
+                <button
+                  onClick={() => setActiveTab('talent')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                    activeTab === 'talent'
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
+                  }`}
+                  title="天赋"
+                >
+                  <Sparkles size={14} className="inline mr-1" />
+                  天赋
+                </button>
+                <button
+                  onClick={() => setActiveTab('title')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                    activeTab === 'title'
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
+                  }`}
+                  title="称号"
+                >
+                  <Award size={14} className="inline mr-1" />
+                  称号
+                </button>
+                <button
+                  onClick={() => setActiveTab('inheritance')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                    activeTab === 'inheritance'
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
+                  }`}
+                  title="传承"
+                >
+                  <Sparkles size={14} className="inline mr-1" />
+                  传承
+                </button>
+              </div>
+              {/* 第三行：其他功能 */}
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={() => setActiveTab('sect')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                    activeTab === 'sect'
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
+                  }`}
+                  title="宗门"
+                >
+                  <Building2 size={14} className="inline mr-1" />
+                  宗门
+                </button>
+                <button
+                  onClick={() => setActiveTab('pet')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                    activeTab === 'pet'
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
+                  }`}
+                  title="灵宠"
+                >
+                  <Heart size={14} className="inline mr-1" />
+                  灵宠
+                </button>
+                <button
+                  onClick={() => setActiveTab('achievement')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                    activeTab === 'achievement'
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
+                  }`}
+                  title="成就"
+                >
+                  <Trophy size={14} className="inline mr-1" />
+                  成就
                 </button>
                 <button
                   onClick={() => setActiveTab('reputation')}
-                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                     activeTab === 'reputation'
-                      ? 'bg-red-700 text-white'
-                      : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
                   }`}
                   title="声望事件"
                 >
                   <Award size={14} className="inline mr-1" />
                   声望事件
+                </button>
+                <button
+                  onClick={() => setActiveTab('death')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
+                    activeTab === 'death'
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
+                  }`}
+                  title="死亡测试"
+                >
+                  <Skull size={14} className="inline mr-1" />
+                  死亡测试
                 </button>
               </div>
             </div>
@@ -1429,11 +1491,11 @@ const DebugModal: React.FC<Props> = ({
                       <button
                         key={rarity}
                         onClick={() => setEquipmentFilter(rarity)}
-                        className={`px-3 py-1 rounded text-sm transition-colors ${
-                          equipmentFilter === rarity
-                            ? 'bg-red-700 text-white'
-                            : 'bg-stone-700 text-stone-300 hover:bg-stone-600'
-                        }`}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                      equipmentFilter === rarity
+                        ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-500/50'
+                        : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-sm'
+                    }`}
                       >
                         {rarity === 'all' ? '全部' : rarity}
                       </button>
@@ -1449,7 +1511,7 @@ const DebugModal: React.FC<Props> = ({
                 )}
 
                 {/* 装备卡片列表 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                <div className="modal-scroll-container modal-scroll-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96">
                   {filteredEquipment.map((equipment, index) => (
                     <div
                       key={`${equipment.name}-${index}`}
@@ -1517,7 +1579,7 @@ const DebugModal: React.FC<Props> = ({
                       '无'}
                   </span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                <div className="modal-scroll-container modal-scroll-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96">
                   {TALENTS.map((talent) => {
                     const isSelected = localPlayer.talentId === talent.id;
                     return (
@@ -1602,7 +1664,7 @@ const DebugModal: React.FC<Props> = ({
                       '无'}
                   </span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                <div className="modal-scroll-container modal-scroll-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96">
                   {TITLES.map((title) => {
                     const isSelected = localPlayer.titleId === title.id;
                     return (
@@ -1696,7 +1758,7 @@ const DebugModal: React.FC<Props> = ({
                 <div className="text-sm text-stone-400 mb-3">
                   已学功法：{localPlayer.cultivationArts.length} 种
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                <div className="modal-scroll-container modal-scroll-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96">
                   {CULTIVATION_ARTS.map((art) => {
                     const isLearned = localPlayer.cultivationArts.includes(
                       art.id
@@ -1838,7 +1900,7 @@ const DebugModal: React.FC<Props> = ({
                     </div>
                   </div>
                 )}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                <div className="modal-scroll-container modal-scroll-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96">
                   {SECTS.map((sect) => {
                     const isJoined = localPlayer.sectId === sect.id;
                     return (
@@ -1905,7 +1967,7 @@ const DebugModal: React.FC<Props> = ({
                   已完成成就：{localPlayer.achievements.length} /{' '}
                   {ACHIEVEMENTS.length}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                <div className="modal-scroll-container modal-scroll-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96">
                   {ACHIEVEMENTS.map((achievement) => {
                     const isCompleted = localPlayer.achievements.includes(
                       achievement.id
@@ -2304,7 +2366,7 @@ const DebugModal: React.FC<Props> = ({
                   <h4 className="font-bold text-stone-200 mb-2 border-b border-stone-700 pb-1">
                     添加新灵宠
                   </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                  <div className="modal-scroll-container modal-scroll-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96">
                     {PET_TEMPLATES.map((template) => {
                       const hasPet = localPlayer.pets.some(
                         (p) => p.species === template.species
@@ -2404,7 +2466,7 @@ const DebugModal: React.FC<Props> = ({
                 )}
 
                 {/* 物品卡片列表 */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                <div className="modal-scroll-container modal-scroll-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96">
                   {filteredItems.map((item, index) => (
                     <div
                       key={`${item.name}-${index}`}
@@ -2538,7 +2600,7 @@ const DebugModal: React.FC<Props> = ({
                 <div className="text-sm text-stone-400 mb-3">
                   已解锁丹方：{localPlayer.unlockedRecipes.length} 个
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+                <div className="modal-scroll-container modal-scroll-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96">
                   {[...PILL_RECIPES, ...DISCOVERABLE_RECIPES].map((recipe) => {
                     const isUnlocked = localPlayer.unlockedRecipes.includes(
                       recipe.name
@@ -2634,19 +2696,6 @@ const DebugModal: React.FC<Props> = ({
                 </div>
 
                 {/* 传承路线选择 */}
-                <div className="mb-4">
-                  <h3 className="font-bold text-stone-200 mb-2">传承路线</h3>
-                  <div className="text-sm text-stone-400 mb-2">
-                    当前路线：
-                    <span className="text-stone-200 ml-2">
-                      {localPlayer.inheritanceRoute || '未选择'}
-                    </span>
-                  </div>
-                  <div className="text-xs text-yellow-500 bg-yellow-900/20 border border-yellow-700 rounded p-2">
-                    ⚠️ 传承路线系统尚未完全实现，传承路线数据暂不可用
-                  </div>
-                </div>
-
                 {/* 传承等级 */}
                 <div className="mb-4">
                   <h3 className="font-bold text-stone-200 mb-2">传承等级</h3>
@@ -2684,25 +2733,6 @@ const DebugModal: React.FC<Props> = ({
                     </p>
                   </div>
                 </div>
-
-                {/* 传承技能 */}
-                {localPlayer.inheritanceRoute && (
-                  <div>
-                    <h3 className="font-bold text-stone-200 mb-2">传承技能</h3>
-                    <div className="text-sm text-stone-400 mb-2">
-                      已学技能：{(localPlayer.inheritanceSkills || []).length} 个
-                    </div>
-                    <div className="text-xs text-yellow-500 bg-yellow-900/20 border border-yellow-700 rounded p-2">
-                      ⚠️ 传承技能系统尚未完全实现，传承技能数据暂不可用
-                    </div>
-                  </div>
-                )}
-
-                {!localPlayer.inheritanceRoute && (
-                  <div className="text-sm text-stone-400 text-center py-8">
-                    请先选择传承路线
-                  </div>
-                )}
               </div>
             )}
 
@@ -2865,6 +2895,428 @@ const DebugModal: React.FC<Props> = ({
             )}
 
             {/* 声望事件调试 */}
+            {activeTab === 'breakthrough' && (
+              <div>
+                <div className="bg-purple-900/30 border border-purple-700 rounded p-4 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Power size={20} className="text-purple-400" />
+                    <h3 className="text-lg font-bold text-purple-400">
+                      进阶物品管理
+                    </h3>
+                  </div>
+                  <p className="text-xs text-stone-400">
+                    管理突破境界所需的各种物品和条件
+                  </p>
+                </div>
+
+                <div className="space-y-6">
+                  {/* 筑基奇物 */}
+                  <div>
+                    <h4 className="font-semibold text-stone-200 mb-3 flex items-center gap-2">
+                      <span className="text-green-400">筑基奇物</span>
+                      {localPlayer.foundationTreasure && (
+                        <span className="text-xs text-green-400">
+                          (已拥有: {FOUNDATION_TREASURES[localPlayer.foundationTreasure]?.name || localPlayer.foundationTreasure})
+                        </span>
+                      )}
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
+                      {Object.values(FOUNDATION_TREASURES)
+                        .filter((treasure) => {
+                          if (!globalSearchQuery.trim()) return true;
+                          const query = globalSearchQuery.toLowerCase();
+                          return (
+                            treasure.name.toLowerCase().includes(query) ||
+                            treasure.description.toLowerCase().includes(query) ||
+                            treasure.rarity.toLowerCase().includes(query) ||
+                            treasure.id.toLowerCase().includes(query)
+                          );
+                        })
+                        .map((treasure) => (
+                        <div
+                          key={treasure.id}
+                          className={`border-2 rounded-lg p-3 cursor-pointer transition-all hover:scale-105 ${
+                            localPlayer.foundationTreasure === treasure.id
+                              ? 'border-green-500 bg-green-900/20'
+                              : `${getRarityColor(treasure.rarity)} ${getRarityBgColor(treasure.rarity)}`
+                          }`}
+                          onClick={() => {
+                            // 添加到背包
+                            const newItem: Item = {
+                              id: uid(),
+                              name: treasure.name,
+                              type: ItemType.AdvancedItem,
+                              description: treasure.description,
+                              quantity: 1,
+                              rarity: treasure.rarity,
+                              advancedItemType: 'foundationTreasure',
+                              advancedItemId: treasure.id,
+                            };
+                            const updated = {
+                              ...localPlayer,
+                              inventory: [...localPlayer.inventory, newItem],
+                            };
+                            setLocalPlayer(updated);
+                            onUpdatePlayer({ inventory: updated.inventory });
+                            showSuccess(`已添加筑基奇物到背包: ${treasure.name}`);
+                          }}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <h5 className="font-bold text-sm text-stone-200">
+                              {treasure.name}
+                            </h5>
+                            <span className="text-xs px-2 py-0.5 rounded bg-stone-700">
+                              {treasure.rarity}
+                            </span>
+                          </div>
+                          <p className="text-xs text-stone-400 mb-2">
+                            {treasure.description}
+                          </p>
+                          <div className="text-xs text-stone-500">
+                            {Object.entries(treasure.effects)
+                              .filter(([_, value]) => value !== undefined && typeof value === 'number')
+                              .map(([key, value]) => `${key.replace('Bonus', '')}+${value}`)
+                              .join(', ')}
+                          </div>
+                        </div>
+                        ))}
+                    </div>
+                    {localPlayer.foundationTreasure && (
+                      <button
+                        onClick={() => {
+                          updateField('foundationTreasure', undefined);
+                          showInfo('已清除筑基奇物');
+                        }}
+                        className="mt-2 px-3 py-1 bg-red-700 hover:bg-red-600 text-white text-sm rounded"
+                      >
+                        清除筑基奇物
+                      </button>
+                    )}
+                  </div>
+
+                  {/* 天地精华 */}
+                  <div>
+                    <h4 className="font-semibold text-stone-200 mb-3 flex items-center gap-2">
+                      <span className="text-blue-400">天地精华</span>
+                      {localPlayer.heavenEarthEssence && (
+                        <span className="text-xs text-blue-400">
+                          (已拥有: {HEAVEN_EARTH_ESSENCES[localPlayer.heavenEarthEssence]?.name || localPlayer.heavenEarthEssence})
+                        </span>
+                      )}
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
+                      {Object.values(HEAVEN_EARTH_ESSENCES)
+                        .filter((essence) => {
+                          if (!globalSearchQuery.trim()) return true;
+                          const query = globalSearchQuery.toLowerCase();
+                          return (
+                            essence.name.toLowerCase().includes(query) ||
+                            essence.description.toLowerCase().includes(query) ||
+                            essence.rarity.toLowerCase().includes(query) ||
+                            String(essence.quality).toLowerCase().includes(query) ||
+                            essence.id.toLowerCase().includes(query)
+                          );
+                        })
+                        .map((essence) => (
+                        <div
+                          key={essence.id}
+                          className={`border-2 rounded-lg p-3 cursor-pointer transition-all hover:scale-105 ${
+                            localPlayer.heavenEarthEssence === essence.id
+                              ? 'border-blue-500 bg-blue-900/20'
+                              : `${getRarityColor(essence.rarity)} ${getRarityBgColor(essence.rarity)}`
+                          }`}
+                          onClick={() => {
+                            // 添加到背包
+                            const newItem: Item = {
+                              id: uid(),
+                              name: essence.name,
+                              type: ItemType.AdvancedItem,
+                              description: essence.description,
+                              quantity: 1,
+                              rarity: essence.rarity,
+                              advancedItemType: 'heavenEarthEssence',
+                              advancedItemId: essence.id,
+                            };
+                            const updated = {
+                              ...localPlayer,
+                              inventory: [...localPlayer.inventory, newItem],
+                            };
+                            setLocalPlayer(updated);
+                            onUpdatePlayer({ inventory: updated.inventory });
+                            showSuccess(`已添加天地精华到背包: ${essence.name}`);
+                          }}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <h5 className="font-bold text-sm text-stone-200">
+                              {essence.name}
+                            </h5>
+                            <span className="text-xs px-2 py-0.5 rounded bg-stone-700">
+                              {essence.rarity}
+                            </span>
+                          </div>
+                          <p className="text-xs text-stone-400 mb-2">
+                            {essence.description}
+                          </p>
+                          <div className="text-xs text-stone-500">
+                            品质: {essence.quality} |{' '}
+                            {Object.entries(essence.effects)
+                              .filter(([key, value]) => key !== 'specialEffect' && value !== undefined && typeof value === 'number')
+                              .map(([key, value]) => `${key.replace('Bonus', '')}+${value}`)
+                              .join(', ')}
+                          </div>
+                        </div>
+                        ))}
+                    </div>
+                    {localPlayer.heavenEarthEssence && (
+                      <button
+                        onClick={() => {
+                          updateField('heavenEarthEssence', undefined);
+                          showInfo('已清除天地精华');
+                        }}
+                        className="mt-2 px-3 py-1 bg-red-700 hover:bg-red-600 text-white text-sm rounded"
+                      >
+                        清除天地精华
+                      </button>
+                    )}
+                  </div>
+
+                  {/* 天地之髓 */}
+                  <div>
+                    <h4 className="font-semibold text-stone-200 mb-3 flex items-center gap-2">
+                      <span className="text-yellow-400">天地之髓</span>
+                      {localPlayer.heavenEarthMarrow && (
+                        <span className="text-xs text-yellow-400">
+                          (已拥有: {HEAVEN_EARTH_MARROWS[localPlayer.heavenEarthMarrow]?.name || localPlayer.heavenEarthMarrow}, 炼化进度: {localPlayer.marrowRefiningProgress || 0}%)
+                        </span>
+                      )}
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
+                      {Object.values(HEAVEN_EARTH_MARROWS)
+                        .filter((marrow) => {
+                          if (!globalSearchQuery.trim()) return true;
+                          const query = globalSearchQuery.toLowerCase();
+                          return (
+                            marrow.name.toLowerCase().includes(query) ||
+                            marrow.description.toLowerCase().includes(query) ||
+                            marrow.rarity.toLowerCase().includes(query) ||
+                            String(marrow.quality).toLowerCase().includes(query) ||
+                            marrow.id.toLowerCase().includes(query)
+                          );
+                        })
+                        .map((marrow) => (
+                        <div
+                          key={marrow.id}
+                          className={`border-2 rounded-lg p-3 cursor-pointer transition-all hover:scale-105 ${
+                            localPlayer.heavenEarthMarrow === marrow.id
+                              ? 'border-yellow-500 bg-yellow-900/20'
+                              : `${getRarityColor(marrow.rarity)} ${getRarityBgColor(marrow.rarity)}`
+                          }`}
+                          onClick={() => {
+                            // 添加到背包
+                            const newItem: Item = {
+                              id: uid(),
+                              name: marrow.name,
+                              type: ItemType.AdvancedItem,
+                              description: marrow.description,
+                              quantity: 1,
+                              rarity: marrow.rarity,
+                              advancedItemType: 'heavenEarthMarrow',
+                              advancedItemId: marrow.id,
+                            };
+                            const updated = {
+                              ...localPlayer,
+                              inventory: [...localPlayer.inventory, newItem],
+                            };
+                            setLocalPlayer(updated);
+                            onUpdatePlayer({ inventory: updated.inventory });
+                            showSuccess(`已添加天地之髓到背包: ${marrow.name}`);
+                          }}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <h5 className="font-bold text-sm text-stone-200">
+                              {marrow.name}
+                            </h5>
+                            <span className="text-xs px-2 py-0.5 rounded bg-stone-700">
+                              {marrow.rarity}
+                            </span>
+                          </div>
+                          <p className="text-xs text-stone-400 mb-2">
+                            {marrow.description}
+                          </p>
+                          <div className="text-xs text-stone-500">
+                            品质: {marrow.quality} | 炼化时间: {marrow.refiningTime}天 |{' '}
+                            {Object.entries(marrow.effects)
+                              .filter(([key, value]) => key !== 'specialEffect' && value !== undefined && typeof value === 'number')
+                              .map(([key, value]) => `${key.replace('Bonus', '')}+${value}`)
+                              .join(', ')}
+                          </div>
+                        </div>
+                        ))}
+                    </div>
+                    {localPlayer.heavenEarthMarrow && (
+                      <div className="mt-2 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <label className="text-sm text-stone-300">炼化进度:</label>
+                          <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={localPlayer.marrowRefiningProgress || 0}
+                            onChange={(e) => {
+                              const progress = Math.min(100, Math.max(0, parseInt(e.target.value) || 0));
+                              updateField('marrowRefiningProgress', progress);
+                            }}
+                            className="w-20 bg-stone-900 border border-stone-700 rounded px-2 py-1 text-sm text-stone-200"
+                          />
+                          <span className="text-sm text-stone-400">%</span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            updateField('heavenEarthMarrow', undefined);
+                            updateField('marrowRefiningProgress', 0);
+                            showInfo('已清除天地之髓');
+                          }}
+                          className="px-3 py-1 bg-red-700 hover:bg-red-600 text-white text-sm rounded"
+                        >
+                          清除天地之髓
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 合道挑战 */}
+                  <div>
+                    <h4 className="font-semibold text-stone-200 mb-3 flex items-center gap-2">
+                      <span className="text-orange-400">合道挑战</span>
+                      {localPlayer.daoCombiningChallenged && (
+                        <span className="text-xs text-green-400">(已完成)</span>
+                      )}
+                    </h4>
+                    <div className="bg-stone-800/50 border border-stone-700 rounded p-4">
+                      <p className="text-sm text-stone-300 mb-3">
+                        合道期需要挑战天地之魄才能突破
+                      </p>
+                      <div className="flex gap-2 flex-wrap">
+                        {onChallengeDaoCombining && (
+                          <button
+                            onClick={() => {
+                              onChallengeDaoCombining();
+                              showSuccess('开始挑战天地之魄...');
+                            }}
+                            className="px-4 py-2 rounded text-sm font-semibold bg-orange-600 hover:bg-orange-500 text-white transition-colors"
+                          >
+                            ⚔️ 挑战天地之魄
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            updateField('daoCombiningChallenged', !localPlayer.daoCombiningChallenged);
+                            showSuccess(
+                              localPlayer.daoCombiningChallenged
+                                ? '已取消合道挑战标记'
+                                : '已标记完成合道挑战'
+                            );
+                          }}
+                          className={`px-4 py-2 rounded text-sm font-semibold ${
+                            localPlayer.daoCombiningChallenged
+                              ? 'bg-green-700 hover:bg-green-600 text-white'
+                              : 'bg-stone-700 hover:bg-stone-600 text-stone-300'
+                          }`}
+                        >
+                          {localPlayer.daoCombiningChallenged ? '已完成挑战' : '标记为已完成'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 规则之力 */}
+                  <div>
+                    <h4 className="font-semibold text-stone-200 mb-3 flex items-center gap-2">
+                      <span className="text-purple-400">规则之力</span>
+                      <span className="text-xs text-stone-400">
+                        (已拥有: {localPlayer.longevityRules?.length || 0} 个)
+                      </span>
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
+                      {Object.values(LONGEVITY_RULES)
+                        .filter((rule) => {
+                          if (!globalSearchQuery.trim()) return true;
+                          const query = globalSearchQuery.toLowerCase();
+                          return (
+                            rule.name.toLowerCase().includes(query) ||
+                            rule.description.toLowerCase().includes(query) ||
+                            rule.id.toLowerCase().includes(query) ||
+                            String(rule.power).includes(query)
+                          );
+                        })
+                        .map((rule) => {
+                        const hasRule = localPlayer.longevityRules?.includes(rule.id) || false;
+                        return (
+                          <div
+                            key={rule.id}
+                            className={`border-2 rounded-lg p-3 cursor-pointer transition-all hover:scale-105 ${
+                              hasRule
+                                ? 'border-purple-500 bg-purple-900/20'
+                                : `${getRarityColor('仙品')} ${getRarityBgColor('仙品')}`
+                            }`}
+                            onClick={() => {
+                              // 添加到背包
+                              const newItem: Item = {
+                                id: uid(),
+                                name: rule.name,
+                                type: ItemType.AdvancedItem,
+                                description: rule.description,
+                                quantity: 1,
+                                rarity: '仙品',
+                                advancedItemType: 'longevityRule',
+                                advancedItemId: rule.id,
+                              };
+                              const updated = {
+                                ...localPlayer,
+                                inventory: [...localPlayer.inventory, newItem],
+                              };
+                              setLocalPlayer(updated);
+                              onUpdatePlayer({ inventory: updated.inventory });
+                              showSuccess(`已添加规则之力到背包: ${rule.name}`);
+                            }}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <h5 className="font-bold text-sm text-stone-200">
+                                {rule.name}
+                              </h5>
+                              <span className="text-xs px-2 py-0.5 rounded bg-stone-700">
+                                力量: {rule.power}
+                              </span>
+                            </div>
+                            <p className="text-xs text-stone-400 mb-2">
+                              {rule.description}
+                            </p>
+                            <div className="text-xs text-stone-500">
+                              {Object.entries(rule.effects)
+                                .filter(([key, value]) => key !== 'specialEffect' && value !== undefined && typeof value === 'number')
+                                .map(([key, value]) => `${key.replace('Percent', '')}+${((value as number) * 100).toFixed(0)}%`)
+                                .join(', ')}
+                            </div>
+                          </div>
+                        );
+                        })}
+                    </div>
+                    {localPlayer.longevityRules && localPlayer.longevityRules.length > 0 && (
+                      <button
+                        onClick={() => {
+                          updateField('longevityRules', []);
+                          showInfo('已清除所有规则之力');
+                        }}
+                        className="mt-2 px-3 py-1 bg-red-700 hover:bg-red-600 text-white text-sm rounded"
+                      >
+                        清除所有规则之力
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {activeTab === 'reputation' && (
               <div>
                 <div className="bg-yellow-900/30 border border-yellow-700 rounded p-4 mb-4">

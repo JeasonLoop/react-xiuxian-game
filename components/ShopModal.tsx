@@ -17,10 +17,12 @@ import {
   ItemRarity,
   ItemType,
 } from '../types';
-import { REALM_ORDER, RARITY_MULTIPLIERS } from '../constants';
+import { REALM_ORDER, RARITY_MULTIPLIERS } from '../constants/index';
 import { generateShopItems } from '../services/shopService';
 import { showError, showConfirm } from '../utils/toastUtils';
-import { getRarityTextColor } from '../utils/rarityUtils';
+import { getRarityTextColor, getRarityBorder } from '../utils/rarityUtils';
+import { calculateItemSellPrice } from '../utils/itemUtils';
+import { formatNumber } from '../utils/formatUtils';
 
 interface Props {
   isOpen: boolean;
@@ -34,12 +36,6 @@ interface Props {
 }
 
 type ItemTypeFilter = 'all' | ItemType;
-
-// 格式化数值显示（四舍五入为整数，避免浮点数精度问题）
-const formatNumber = (value: number | undefined): string => {
-  if (value === undefined || value === null) return '0';
-  return Math.round(value).toString();
-};
 
 const ShopModal: React.FC<Props> = ({
   isOpen,
@@ -63,21 +59,6 @@ const ShopModal: React.FC<Props> = ({
   );
 
   if (!isOpen) return null;
-
-  // 使用统一的工具函数获取稀有度颜色（ShopModal 需要额外的边框样式）
-  const getRarityColorWithBorder = (rarity: ItemRarity | undefined) => {
-    const baseColor = getRarityTextColor(rarity);
-    switch (rarity) {
-      case '稀有':
-        return `${baseColor} border-blue-600`;
-      case '传说':
-        return `${baseColor} border-purple-600`;
-      case '仙品':
-        return `${baseColor} border-yellow-600`;
-      default:
-        return `${baseColor} border-gray-600`;
-    }
-  };
 
   const canBuyItem = (shopItem: ShopItem): boolean => {
     // 检查声望要求（声望商店）
@@ -118,94 +99,6 @@ const ShopModal: React.FC<Props> = ({
 
     return filtered;
   }, [shop.items, selectedTypeFilter]);
-
-  // 计算物品出售价格（与 App.tsx 中的逻辑保持一致）
-  const calculateItemSellPrice = (item: Item): number => {
-    const rarity = item.rarity || '普通';
-    const level = item.level || 0;
-
-    // 基础价格（根据稀有度）
-    const basePrices: Record<ItemRarity, number> = {
-      普通: 10,
-      稀有: 50,
-      传说: 300,
-      仙品: 2000,
-    };
-    // 确保 basePrice 有默认值，防止 undefined
-    let basePrice = basePrices[rarity] || 10;
-
-    // 计算属性价值
-    let attributeValue = 0;
-    // 确保 rarityMultiplier 有默认值，防止 undefined
-    const rarityMultiplier = RARITY_MULTIPLIERS[rarity] || 1;
-
-    // 临时效果价值（effect）
-    if (item.effect) {
-      const effect = item.effect;
-      attributeValue += (effect.attack || 0) * 2; // 攻击力每点值2灵石
-      attributeValue += (effect.defense || 0) * 1.5; // 防御力每点值1.5灵石
-      attributeValue += (effect.hp || 0) * 0.5; // 气血每点值0.5灵石
-      attributeValue += (effect.spirit || 0) * 1.5; // 神识每点值1.5灵石
-      attributeValue += (effect.physique || 0) * 1.5; // 体魄每点值1.5灵石
-      attributeValue += (effect.speed || 0) * 2; // 速度每点值2灵石
-      attributeValue += (effect.exp || 0) * 0.1; // 修为每点值0.1灵石（临时效果）
-    }
-
-    // 永久效果价值（permanentEffect，更值钱）
-    if (item.permanentEffect) {
-      const permEffect = item.permanentEffect;
-      attributeValue += (permEffect.attack || 0) * 10; // 永久攻击每点值10灵石
-      attributeValue += (permEffect.defense || 0) * 8; // 永久防御每点值8灵石
-      attributeValue += (permEffect.maxHp || 0) * 3; // 永久气血上限每点值3灵石
-      attributeValue += (permEffect.spirit || 0) * 8; // 永久神识每点值8灵石
-      attributeValue += (permEffect.physique || 0) * 8; // 永久体魄每点值8灵石
-      attributeValue += (permEffect.speed || 0) * 10; // 永久速度每点值10灵石
-    }
-
-    // 应用稀有度倍率到属性价值（确保不是 NaN）
-    attributeValue = Math.floor((attributeValue || 0) * (rarityMultiplier || 1));
-
-    // 装备类物品额外价值加成
-    let equipmentBonus = 0;
-    if (item.isEquippable) {
-      // 装备类物品根据类型有不同的基础价值
-      switch (item.type) {
-        case ItemType.Weapon:
-          equipmentBonus = (basePrice || 0) * 1.5; // 武器额外50%价值
-          break;
-        case ItemType.Armor:
-          equipmentBonus = (basePrice || 0) * 1.2; // 护甲额外20%价值
-          break;
-        case ItemType.Artifact:
-          equipmentBonus = (basePrice || 0) * 2; // 法宝额外100%价值
-          break;
-        case ItemType.Ring:
-        case ItemType.Accessory:
-          equipmentBonus = (basePrice || 0) * 1.3; // 戒指和首饰额外30%价值
-          break;
-      }
-    }
-
-    // 强化等级加成（每级增加20%价值）
-    const levelMultiplier = 1 + (level || 0) * 0.2;
-
-    // 计算最终价格（确保所有值都是数字）
-    const totalValue =
-      ((basePrice || 0) + (attributeValue || 0) + (equipmentBonus || 0)) * (levelMultiplier || 1);
-
-    // 根据物品类型调整（消耗品价值较低）
-    let typeMultiplier = 1;
-    if (item.type === ItemType.Herb || item.type === ItemType.Pill) {
-      typeMultiplier = 0.5; // 消耗品价值减半
-    } else if (item.type === ItemType.Material) {
-      typeMultiplier = 0.3; // 材料价值更低
-    }
-
-    // 最终价格（取整，最低为1，确保不是 NaN）
-    const finalPrice = Math.max(1, Math.floor((totalValue || 0) * (typeMultiplier || 1)));
-    // 如果计算结果仍然是 NaN，返回默认值
-    return isNaN(finalPrice) ? 1 : finalPrice;
-  };
 
   // 可出售的物品（排除已装备的，并根据类型和品质筛选）
   const sellableItems = useMemo(() => {
@@ -432,7 +325,7 @@ const ShopModal: React.FC<Props> = ({
         </div>
 
         {/* 内容区域 */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="modal-scroll-container modal-scroll-content p-4">
           {activeTab === 'buy' ? (
             <div>
               <div className="mb-4 flex flex-col gap-3">
@@ -491,14 +384,14 @@ const ShopModal: React.FC<Props> = ({
                         key={shopItem.id}
                         className={`bg-stone-900 rounded-lg p-4 border-2 ${
                           canBuy
-                            ? getRarityColorWithBorder(shopItem.rarity).split(' ')[1]
+                            ? getRarityBorder(shopItem.rarity)
                             : 'border-stone-700 opacity-60'
                         }`}
                       >
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <h4
-                              className={`font-bold ${getRarityColorWithBorder(shopItem.rarity).split(' ')[0]}`}
+                              className={`font-bold ${getRarityTextColor(shopItem.rarity)}`}
                             >
                               {shopItem.name}
                             </h4>
@@ -507,7 +400,7 @@ const ShopModal: React.FC<Props> = ({
                             </span>
                           </div>
                           <span
-                            className={`text-xs px-2 py-1 rounded ${getRarityColorWithBorder(shopItem.rarity).split(' ')[1]} ${getRarityColorWithBorder(shopItem.rarity).split(' ')[0]}`}
+                            className={`text-xs px-2 py-1 rounded ${getRarityBorder(shopItem.rarity)} ${getRarityTextColor(shopItem.rarity)}`}
                           >
                             {shopItem.rarity}
                           </span>
@@ -784,7 +677,7 @@ const ShopModal: React.FC<Props> = ({
                         className={`bg-stone-900 rounded-lg p-4 border-2 cursor-pointer transition-colors ${
                           isSelected
                             ? 'bg-green-900/30 border-green-600'
-                            : getRarityColorWithBorder(rarity).split(' ')[1]
+                            : getRarityBorder(rarity)
                         }`}
                         onClick={() => handleToggleItem(item.id)}
                       >
@@ -798,7 +691,7 @@ const ShopModal: React.FC<Props> = ({
                           />
                           <div className="flex-1">
                             <h4
-                              className={`font-bold ${getRarityColorWithBorder(rarity).split(' ')[0]}`}
+                              className={`font-bold ${getRarityTextColor(rarity)}`}
                             >
                               {item.name}
                               {item.level && item.level > 0 && (

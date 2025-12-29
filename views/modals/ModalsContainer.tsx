@@ -75,6 +75,7 @@ interface ModalsContainerProps {
       adventureType: AdventureType;
       riskLevel?: '低' | '中' | '高' | '极度危险';
       realmMinRealm?: RealmType;
+      bossId?: string; // 指定的天地之魄BOSS ID（用于事件模板）
     } | null;
     reputationEvent: any;
   };
@@ -115,6 +116,7 @@ interface ModalsContainerProps {
     handleOrganizeInventory?: () => void;
     handleRefineNatalArtifact: (item: Item) => void;
     handleUnrefineNatalArtifact: () => void;
+    handleRefineAdvancedItem?: (item: Item) => void;
     handleUpgradeItem: (item: Item, costStones: number, costMats: number, upgradeStones?: number) => Promise<'success' | 'failure' | 'error'>;
     // Cultivation
     handleLearnArt: (art: CultivationArt) => void;
@@ -235,6 +237,7 @@ export default function ModalsContainer({
           adventureType={modalState.turnBasedBattleParams.adventureType}
           riskLevel={modalState.turnBasedBattleParams.riskLevel}
           realmMinRealm={modalState.turnBasedBattleParams.realmMinRealm}
+          bossId={modalState.turnBasedBattleParams.bossId}
           autoAdventure={autoAdventure}
           onClose={(result, updatedInventory) => {
             if (handlers.setIsTurnBasedBattleOpen) {
@@ -264,6 +267,7 @@ export default function ModalsContainer({
           onOrganizeInventory={handlers.handleOrganizeInventory}
           onRefineNatalArtifact={handlers.handleRefineNatalArtifact}
           onUnrefineNatalArtifact={handlers.handleUnrefineNatalArtifact}
+          onRefineAdvancedItem={handlers.handleRefineAdvancedItem}
         />
       )}
 

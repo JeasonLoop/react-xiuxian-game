@@ -30,7 +30,7 @@ export const getRarityNameClasses = (rarity: ItemRarity | undefined): string => 
     case '稀有':
       return base + 'text-stone-300 hover:text-blue-400';
     case '传说':
-      return base + 'text-stone-300 hover:text-purple-400';
+       return base + 'text-stone-300 hover:text-purple-400';
     case '仙品':
       return (
         base +
@@ -94,10 +94,10 @@ export const getRarityBadge = (rarity: ItemRarity | undefined): string => {
  */
 export const getRarityOrder = (rarity: ItemRarity | undefined): number => {
   const rarityOrder: Record<ItemRarity, number> = {
-    仙品: 4,
-    传说: 3,
-    稀有: 2,
-    普通: 1,
+    仙品: 5,
+    传说: 4,
+    稀有: 3,
+    普通: 2,
   };
   return rarityOrder[rarity || '普通'];
 };
@@ -118,7 +118,6 @@ const rarityAliasMap: Record<string, ItemRarity> = {
   normal: '普通',
   legend: '传说',
   legendary: '传说',
-  epic: '传说',
   mythic: '仙品',
   immortal: '仙品',
 };

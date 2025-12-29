@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { PlayerStats, LogEntry, GameSettings } from '../types';
 import { createInitialPlayer } from '../utils/playerUtils';
 import { STORAGE_KEYS } from '../constants/storageKeys';
-import { TALENTS } from '../constants';
+import { TALENTS } from '../constants/index';
 import {
   getCurrentSlotId,
   loadFromSlot,

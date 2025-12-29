@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlayerStats } from '../../types';
-import { TITLES, TITLE_SET_EFFECTS } from '../../constants';
+import { TITLES, TITLE_SET_EFFECTS } from '../../constants/index';
 import { calculateTitleEffects } from '../../utils/titleUtils';
 import {
   getAttributeMultiplier,

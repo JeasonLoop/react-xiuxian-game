@@ -10,8 +10,14 @@ import {
   PILL_RECIPES,
   INITIAL_ITEMS,
   SECT_SHOP_ITEMS,
-} from '../constants';
+  FOUNDATION_TREASURES,
+  HEAVEN_EARTH_ESSENCES,
+  HEAVEN_EARTH_MARROWS,
+  HEAVEN_EARTH_SOUL_BOSSES,
+  LONGEVITY_RULES,
+} from '../constants/index';
 import { logger } from '../utils/logger';
+import { ITEM_TEMPLATES } from '../constants/itemTemplates';
 
 /**
  * 事件模板接口
@@ -37,6 +43,8 @@ interface AdventureEventTemplate {
   spiritualRootsChange?: AdventureResult['spiritualRootsChange'];
   lifespanChange?: number;
   lotteryTicketsChange?: number;
+  longevityRuleObtained?: string; // 获得的规则之力ID
+  heavenEarthSoulEncounter?: string; // 遇到的天地之魄BOSS ID
 }
 
 /**
@@ -162,9 +170,18 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
     'pet', // 灵宠（再次提高概率）
     'petOpportunity', // 灵宠机缘
     'petOpportunity', // 灵宠机缘（重复一次，提高概率）
+    'foundationTreasure', // 筑基奇物
+    'heavenEarthEssence', // 天地精华
+    'heavenEarthMarrow', // 天地之髓
+    'heavenEarthSoul', // 天地之魄（化神期及以上，提高概率）
+    'heavenEarthSoul', // 天地之魄（重复，提高概率）
+    'heavenEarthSoul', // 天地之魄（再次重复，进一步提高概率）
+    'longevityRule', // 规则之力（长生境）
     'trap', // 陷阱
     'evilCultivator', // 邪修魔修
-    'reputation', // 声望事件
+    'reputation', // 声望事件（提高概率）
+    'reputation', // 声望事件（重复，提高概率）
+    'reputation', // 声望事件（再次重复，进一步提高概率）
     'lottery', // 抽奖券
   ];
 
@@ -526,6 +543,175 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
       };
     }
 
+    case 'foundationTreasure': {
+      // 从筑基奇物中随机选择一个
+      const allTreasures = Object.values(FOUNDATION_TREASURES);
+      const selectedTreasure = selectFromArray(allTreasures, index);
+
+      const stories = [
+        `你在一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}中探索时，突然感到一股奇异的波动。你循着波动寻找，发现了一处${['隐蔽', '神秘', '古老', '珍贵', '稀有'][index % 5]}的所在，那里摆放着一个${['玉盒', '石盒', '木盒', '金盒', '宝盒'][index % 5]}。你小心地打开，发现里面竟然是一份${selectedTreasure.name}！这正是筑基所需的奇物，你心中大喜，将其小心收好。`,
+        `你在${['探索', '修炼', '游历', '冒险', '寻宝'][index % 5]}时，偶然遇到了一位${['隐世高人', '前辈修士', '神秘老者', '仙门长老', '散修大能'][index % 5]}。对方见你资质不错，又正好处于筑基关口，便赠与了你一份${selectedTreasure.name}。你感激不尽，知道这正是筑基所需的重要奇物。`,
+        `你在一处${['古墓', '遗迹', '洞府', '秘境', '禁地'][index % 5]}的深处，发现了一处${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的祭坛。祭坛上摆放着几件物品，其中一件正是${selectedTreasure.name}。你感受到其中蕴含的强大力量，知道这正是筑基所需的奇物，便将其取走。`,
+        `你在探索时，偶然发现了一处${['隐蔽', '神秘', '古老', '珍贵', '稀有'][index % 5]}的灵地。那里灵气浓郁，似乎有什么宝物。你仔细搜索，在一个${['石缝', '树洞', '洞穴', '水潭', '灵泉'][index % 5]}中发现了一份${selectedTreasure.name}。你感受到其中蕴含的筑基之力，心中充满了喜悦。`,
+        `你在一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}中，意外触发了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的机关。机关启动后，一个${['玉盒', '石盒', '木盒', '金盒', '宝盒'][index % 5]}从暗格中弹出。你打开一看，里面竟然是一份${selectedTreasure.name}！这正是你筑基所需的奇物。`,
+      ];
+
+      // 将筑基奇物转换为Item格式
+      const permanentEffect: any = {};
+      if (selectedTreasure.effects.hpBonus) permanentEffect.maxHp = selectedTreasure.effects.hpBonus;
+      if (selectedTreasure.effects.attackBonus) permanentEffect.attack = selectedTreasure.effects.attackBonus;
+      if (selectedTreasure.effects.defenseBonus) permanentEffect.defense = selectedTreasure.effects.defenseBonus;
+      if (selectedTreasure.effects.spiritBonus) permanentEffect.spirit = selectedTreasure.effects.spiritBonus;
+      if (selectedTreasure.effects.physiqueBonus) permanentEffect.physique = selectedTreasure.effects.physiqueBonus;
+      if (selectedTreasure.effects.speedBonus) permanentEffect.speed = selectedTreasure.effects.speedBonus;
+
+      return {
+        ...baseTemplate,
+        story: selectFromArray(stories, index),
+        hpChange: randomInt(index, 10, 30, 460),
+        expChange: randomInt(index, 30, 80, 470),
+        eventColor: 'special',
+        itemObtained: {
+          name: selectedTreasure.name,
+          type: ItemType.AdvancedItem,
+          description: selectedTreasure.description,
+          rarity: selectedTreasure.rarity,
+          permanentEffect: Object.keys(permanentEffect).length > 0 ? permanentEffect : undefined,
+          advancedItemType: 'foundationTreasure',
+          advancedItemId: selectedTreasure.id,
+        },
+      };
+    }
+
+    case 'heavenEarthEssence': {
+      // 从天地精华中随机选择一个
+      const allEssences = Object.values(HEAVEN_EARTH_ESSENCES);
+      const selectedEssence = selectFromArray(allEssences, index);
+
+      const stories = [
+        `你在${['探索', '修炼', '游历', '冒险', '寻宝'][index % 5]}时，突然感受到一股强大的天地之力。你循着这股力量寻找，在一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}中发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['祭坛', '石台', '玉座', '法阵', '灵池'][index % 5]}。祭坛中央悬浮着一团${selectedEssence.name}，散发着强大的道韵。你小心地将其收集，知道这正是晋升元婴所需的重要精华。`,
+        `你在一处${['古墓', '遗迹', '洞府', '秘境', '禁地'][index % 5]}的深处，发现了一处${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的天地精华汇聚之地。那里灵气浓郁得几乎要凝成实质，中央悬浮着一团${selectedEssence.name}。你感受到其中蕴含的强大力量，知道这正是晋升元婴所需的天地精华，便将其小心收集。`,
+        `你偶然遇到了一位${['隐世高人', '前辈修士', '神秘老者', '仙门长老', '散修大能'][index % 5]}，对方见你即将突破元婴，便告诉了你一处天地精华的所在。你按照指引前往，果然发现了一团${selectedEssence.name}。你将其收集，心中充满了感激和喜悦。`,
+        `你在探索一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}时，突然感受到天地间传来的强烈波动。你循着波动寻找，发现了一处${['隐蔽', '神秘', '古老', '珍贵', '稀有'][index % 5]}的所在，那里汇聚着强大的天地精华，中央悬浮着一团${selectedEssence.name}。你将其收集，知道这正是晋升元婴所需的重要精华。`,
+        `你在一处${['古墓', '遗迹', '洞府', '秘境', '禁地'][index % 5]}中，意外发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['法阵', '祭坛', '石台', '玉座', '灵池'][index % 5]}。法阵中央汇聚着强大的天地之力，凝聚成${selectedEssence.name}。你感受到其中蕴含的强大道韵，将其小心收集，知道这正是晋升元婴所需的重要精华。`,
+      ];
+
+      // 将天地精华转换为Item格式
+      const permanentEffect: any = {};
+      if (selectedEssence.effects.hpBonus) permanentEffect.maxHp = selectedEssence.effects.hpBonus;
+      if (selectedEssence.effects.attackBonus) permanentEffect.attack = selectedEssence.effects.attackBonus;
+      if (selectedEssence.effects.defenseBonus) permanentEffect.defense = selectedEssence.effects.defenseBonus;
+      if (selectedEssence.effects.spiritBonus) permanentEffect.spirit = selectedEssence.effects.spiritBonus;
+      if (selectedEssence.effects.physiqueBonus) permanentEffect.physique = selectedEssence.effects.physiqueBonus;
+      if (selectedEssence.effects.speedBonus) permanentEffect.speed = selectedEssence.effects.speedBonus;
+
+      return {
+        ...baseTemplate,
+        story: selectFromArray(stories, index),
+        hpChange: randomInt(index, 20, 50, 480),
+        expChange: randomInt(index, 50, 120, 490),
+        eventColor: 'special',
+        itemObtained: {
+          name: selectedEssence.name,
+          type: ItemType.AdvancedItem,
+          description: selectedEssence.description,
+          rarity: selectedEssence.rarity,
+          permanentEffect: Object.keys(permanentEffect).length > 0 ? permanentEffect : undefined,
+          advancedItemType: 'heavenEarthEssence',
+          advancedItemId: selectedEssence.id,
+        },
+      };
+    }
+
+    case 'heavenEarthMarrow': {
+      // 从天地之髓中随机选择一个
+      const allMarrows = Object.values(HEAVEN_EARTH_MARROWS);
+      const selectedMarrow = selectFromArray(allMarrows, index);
+
+      const stories = [
+        `你在${['探索', '修炼', '游历', '冒险', '寻宝'][index % 5]}时，突然感受到一股极其强大的天地之力。你循着这股力量寻找，在一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}的最深处，发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['祭坛', '石台', '玉座', '法阵', '灵池'][index % 5]}。祭坛中央凝聚着一团${selectedMarrow.name}，散发着极其强大的道韵。你小心地将其收集，知道这正是晋升化神所需的珍贵之髓。`,
+        `你在一处${['古墓', '遗迹', '洞府', '秘境', '禁地'][index % 5]}的最深处，发现了一处${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的天地之髓汇聚之地。那里灵气浓郁得几乎要凝成实质，中央凝聚着一团${selectedMarrow.name}，散发着极其强大的力量。你感受到其中蕴含的化神之力，知道这正是晋升化神所需的天地之髓，便将其小心收集。`,
+        `你偶然遇到了一位${['隐世高人', '前辈修士', '神秘老者', '仙门长老', '散修大能'][index % 5]}，对方见你即将突破化神，便告诉了你一处天地之髓的所在。你按照指引前往，果然发现了一团${selectedMarrow.name}。你将其收集，心中充满了感激和喜悦，知道这需要经过炼化才能使用。`,
+        `你在探索一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}时，突然感受到天地间传来的极其强烈的波动。你循着波动寻找，发现了一处${['隐蔽', '神秘', '古老', '珍贵', '稀有'][index % 5]}的所在，那里汇聚着极其强大的天地之髓，中央凝聚着一团${selectedMarrow.name}。你将其收集，知道这正是晋升化神所需的重要之髓，需要经过炼化才能使用。`,
+        `你在一处${['古墓', '遗迹', '洞府', '秘境', '禁地'][index % 5]}的最深处，意外发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['法阵', '祭坛', '石台', '玉座', '灵池'][index % 5]}。法阵中央汇聚着极其强大的天地之力，经过数万年的凝聚，形成了${selectedMarrow.name}。你感受到其中蕴含的强大道韵，将其小心收集，知道这正是晋升化神所需的珍贵之髓。`,
+      ];
+
+      // 将天地之髓转换为Item格式
+      const permanentEffect: any = {};
+      if (selectedMarrow.effects.hpBonus) permanentEffect.maxHp = selectedMarrow.effects.hpBonus;
+      if (selectedMarrow.effects.attackBonus) permanentEffect.attack = selectedMarrow.effects.attackBonus;
+      if (selectedMarrow.effects.defenseBonus) permanentEffect.defense = selectedMarrow.effects.defenseBonus;
+      if (selectedMarrow.effects.spiritBonus) permanentEffect.spirit = selectedMarrow.effects.spiritBonus;
+      if (selectedMarrow.effects.physiqueBonus) permanentEffect.physique = selectedMarrow.effects.physiqueBonus;
+      if (selectedMarrow.effects.speedBonus) permanentEffect.speed = selectedMarrow.effects.speedBonus;
+
+      return {
+        ...baseTemplate,
+        story: selectFromArray(stories, index),
+        hpChange: randomInt(index, 30, 70, 500),
+        expChange: randomInt(index, 80, 150, 510),
+        eventColor: 'special',
+        itemObtained: {
+          name: selectedMarrow.name,
+          type: ItemType.AdvancedItem,
+          description: selectedMarrow.description,
+          rarity: selectedMarrow.rarity,
+          permanentEffect: Object.keys(permanentEffect).length > 0 ? permanentEffect : undefined,
+          advancedItemType: 'heavenEarthMarrow',
+          advancedItemId: selectedMarrow.id,
+        },
+      };
+    }
+
+    case 'heavenEarthSoul': {
+      // 从天地之魄BOSS中随机选择一个
+      const allBosses = Object.values(HEAVEN_EARTH_SOUL_BOSSES);
+      const selectedBoss = selectFromArray(allBosses, index);
+
+      const stories = [
+        `你在探索一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}时，突然感受到一股极其强大的威压。你循着威压寻找，在一处${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['祭坛', '石台', '玉座', '法阵', '灵池'][index % 5]}前，你看到了一个强大的存在——${selectedBoss.name}！这是天地之魄的化身，只有击败它，才能获得合道期的资格。你决定挑战这个强大的存在。`,
+        `你在一处${['古墓', '遗迹', '洞府', '秘境', '禁地'][index % 5]}的最深处，突然感受到一股极其强大的天地之力。你循着这股力量寻找，发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['法阵', '祭坛', '石台', '玉座', '灵池'][index % 5]}。法阵中央，${selectedBoss.name}缓缓显现，这是天地之魄的化身。你感受到其中蕴含的强大力量，知道只有击败它，才能获得合道期的资格。`,
+        `你在一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}的深处，突然天地变色，强大的威压从天而降。你抬头望去，${selectedBoss.name}出现在你的面前，这是天地之魄的化身。${selectedBoss.description}。你感受到这是合道期的考验，只有击败它，才能获得合道期的资格。`,
+        `你在一处${['古墓', '遗迹', '洞府', '秘境', '禁地'][index % 5]}中探索时，突然感受到天地间传来的极其强烈的波动。你循着波动寻找，发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['法阵', '祭坛', '石台', '玉座', '灵池'][index % 5]}。法阵启动，${selectedBoss.name}从法阵中显现。这是天地之魄的化身，只有击败它，才能获得合道期的资格。`,
+        `你在一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}的最深处，突然感受到一股极其强大的气息。你循着气息寻找，发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['祭坛', '石台', '玉座', '法阵', '灵池'][index % 5]}。祭坛上，${selectedBoss.name}缓缓凝聚成形。${selectedBoss.description}。这是天地之魄的化身，只有击败它，才能获得合道期的资格。你决定迎接这个挑战。`,
+      ];
+
+      return {
+        ...baseTemplate,
+        story: selectFromArray(stories, index),
+        hpChange: 0,
+        expChange: 0,
+        spiritStonesChange: 0,
+        eventColor: 'danger',
+        adventureType: 'dao_combining_challenge', // 标记为合道挑战类型
+        heavenEarthSoulEncounter: selectedBoss.id, // 标记遇到的BOSS ID
+      };
+    }
+
+    case 'longevityRule': {
+      // 从规则之力中随机选择一个
+      const allRules = Object.values(LONGEVITY_RULES);
+      const selectedRule = selectFromArray(allRules, index);
+
+      const stories = [
+        `你在${['探索', '修炼', '游历', '冒险', '寻宝'][index % 5]}时，突然感受到一股极其强大的规则之力。你循着这股力量寻找，在一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}的${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}所在，你发现了${selectedRule.name}的痕迹。这是掌控天地的规则之力，你尝试与之沟通，最终成功获得了它的认可。`,
+        `你在一处${['古墓', '遗迹', '洞府', '秘境', '禁地'][index % 5]}的最深处，突然感受到天地间传来的极其强烈的规则波动。你循着波动寻找，发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['法阵', '祭坛', '石台', '玉座', '灵池'][index % 5]}。法阵中央，${selectedRule.name}的法则显现。${selectedRule.description}。你感受到其中蕴含的强大力量，经过一番参悟，成功掌握了这道规则之力。`,
+        `你在一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}的深处，突然天地变色，强大的规则之力从虚空中显现。你抬头望去，${selectedRule.name}的法则在你面前展开。${selectedRule.description}。你沉浸在对规则的参悟中，最终成功掌握了这道规则之力，这是掌控天地的力量！`,
+        `你在一处${['古墓', '遗迹', '洞府', '秘境', '禁地'][index % 5]}中探索时，突然感受到天地间传来的极其强烈的规则波动。你循着波动寻找，发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['法阵', '祭坛', '石台', '玉座', '灵池'][index % 5]}。法阵启动，${selectedRule.name}的法则从法阵中显现。你感受到这是掌控天地的力量，经过一番参悟，成功掌握了这道规则之力。`,
+        `你在一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}的最深处，突然感受到一股极其强大的规则气息。你循着气息寻找，发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['祭坛', '石台', '玉座', '法阵', '灵池'][index % 5]}。祭坛上，${selectedRule.name}的法则缓缓凝聚成形。${selectedRule.description}。你沉浸在对规则的参悟中，最终成功掌握了这道规则之力，这是掌控天地的力量！`,
+      ];
+
+      return {
+        ...baseTemplate,
+        story: selectFromArray(stories, index),
+        hpChange: randomInt(index, 50, 100, 520),
+        expChange: randomInt(index, 200, 400, 530),
+        spiritStonesChange: randomInt(index, 500, 1000, 540),
+        eventColor: 'special',
+        longevityRuleObtained: selectedRule.id, // 标记获得的规则之力ID
+      };
+    }
+
     case 'lottery': {
       const stories = [
         `你在${['路上', '山洞', '遗迹', '洞府', '秘境'][index % 5]}中探索时，突然发现地上散落着一些抽奖券，这些抽奖券看起来有些年头了，但依然保存完好。你将其收集起来，心中充满了期待，不知道这些抽奖券能带来什么好运。`,
@@ -684,6 +870,8 @@ let cachedItems: Array<{
   permanentEffect?: any;
   isEquippable?: boolean;
   equipmentSlot?: EquipmentSlot | string;
+  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
+  advancedItemId?: string;
 }> | null = null;
 
 function getAllItemsFromConstants(): Array<{
@@ -695,6 +883,8 @@ function getAllItemsFromConstants(): Array<{
   permanentEffect?: any;
   isEquippable?: boolean;
   equipmentSlot?: EquipmentSlot | string;
+  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
+  advancedItemId?: string;
 }> {
   // 使用缓存
   if (cachedItems) {
@@ -710,6 +900,8 @@ function getAllItemsFromConstants(): Array<{
     permanentEffect?: any;
     isEquippable?: boolean;
     equipmentSlot?: EquipmentSlot | string;
+    advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
+    advancedItemId?: string;
   }> = [];
   const itemNames = new Set<string>();
 
@@ -722,6 +914,22 @@ function getAllItemsFromConstants(): Array<{
       type: item.type,
       description: item.description,
       rarity: (item.rarity || '普通') as ItemRarity,
+      effect: item.effect,
+      permanentEffect: item.permanentEffect,
+      isEquippable: item.isEquippable,
+      equipmentSlot: item.equipmentSlot,
+    });
+  });
+
+  // 从ITEM_TEMPLATES中提取生成的物品
+  ITEM_TEMPLATES.forEach(item => {
+    if (itemNames.has(item.name)) return;
+    itemNames.add(item.name);
+    items.push({
+      name: item.name,
+      type: item.type,
+      description: item.description,
+      rarity: item.rarity,
       effect: item.effect,
       permanentEffect: item.permanentEffect,
       isEquippable: item.isEquippable,
@@ -812,6 +1020,81 @@ function getAllItemsFromConstants(): Array<{
       permanentEffect: item.permanentEffect,
       isEquippable: item.isEquippable,
       equipmentSlot: item.equipmentSlot,
+    });
+  });
+
+  // 从筑基奇物中提取物品
+  Object.values(FOUNDATION_TREASURES).forEach(treasure => {
+    if (itemNames.has(treasure.name)) return;
+    itemNames.add(treasure.name);
+
+    // 将effects转换为Item格式的permanentEffect
+    const permanentEffect: any = {};
+    if (treasure.effects.hpBonus) permanentEffect.maxHp = treasure.effects.hpBonus;
+    if (treasure.effects.attackBonus) permanentEffect.attack = treasure.effects.attackBonus;
+    if (treasure.effects.defenseBonus) permanentEffect.defense = treasure.effects.defenseBonus;
+    if (treasure.effects.spiritBonus) permanentEffect.spirit = treasure.effects.spiritBonus;
+    if (treasure.effects.physiqueBonus) permanentEffect.physique = treasure.effects.physiqueBonus;
+    if (treasure.effects.speedBonus) permanentEffect.speed = treasure.effects.speedBonus;
+
+    items.push({
+      name: treasure.name,
+      type: ItemType.AdvancedItem,
+      description: treasure.description,
+      rarity: treasure.rarity,
+      permanentEffect: Object.keys(permanentEffect).length > 0 ? permanentEffect : undefined,
+      advancedItemType: 'foundationTreasure',
+      advancedItemId: treasure.id,
+    });
+  });
+
+  // 从天地精华中提取物品
+  Object.values(HEAVEN_EARTH_ESSENCES).forEach(essence => {
+    if (itemNames.has(essence.name)) return;
+    itemNames.add(essence.name);
+
+    // 将effects转换为Item格式的permanentEffect
+    const permanentEffect: any = {};
+    if (essence.effects.hpBonus) permanentEffect.maxHp = essence.effects.hpBonus;
+    if (essence.effects.attackBonus) permanentEffect.attack = essence.effects.attackBonus;
+    if (essence.effects.defenseBonus) permanentEffect.defense = essence.effects.defenseBonus;
+    if (essence.effects.spiritBonus) permanentEffect.spirit = essence.effects.spiritBonus;
+    if (essence.effects.physiqueBonus) permanentEffect.physique = essence.effects.physiqueBonus;
+    if (essence.effects.speedBonus) permanentEffect.speed = essence.effects.speedBonus;
+
+    items.push({
+      name: essence.name,
+      type: ItemType.AdvancedItem,
+      description: essence.description,
+      rarity: essence.rarity,
+      permanentEffect: Object.keys(permanentEffect).length > 0 ? permanentEffect : undefined,
+      advancedItemType: 'heavenEarthEssence',
+      advancedItemId: essence.id,
+    });
+  });
+
+  // 从天地之髓中提取物品
+  Object.values(HEAVEN_EARTH_MARROWS).forEach(marrow => {
+    if (itemNames.has(marrow.name)) return;
+    itemNames.add(marrow.name);
+
+    // 将effects转换为Item格式的permanentEffect
+    const permanentEffect: any = {};
+    if (marrow.effects.hpBonus) permanentEffect.maxHp = marrow.effects.hpBonus;
+    if (marrow.effects.attackBonus) permanentEffect.attack = marrow.effects.attackBonus;
+    if (marrow.effects.defenseBonus) permanentEffect.defense = marrow.effects.defenseBonus;
+    if (marrow.effects.spiritBonus) permanentEffect.spirit = marrow.effects.spiritBonus;
+    if (marrow.effects.physiqueBonus) permanentEffect.physique = marrow.effects.physiqueBonus;
+    if (marrow.effects.speedBonus) permanentEffect.speed = marrow.effects.speedBonus;
+
+    items.push({
+      name: marrow.name,
+      type: ItemType.AdvancedItem,
+      description: marrow.description,
+      rarity: marrow.rarity,
+      permanentEffect: Object.keys(permanentEffect).length > 0 ? permanentEffect : undefined,
+      advancedItemType: 'heavenEarthMarrow',
+      advancedItemId: marrow.id,
     });
   });
 
@@ -968,6 +1251,16 @@ function generateRandomItem(rarity: ItemRarity, index: number): AdventureResult[
     }
   }
 
+  // 添加进阶物品相关属性（如果物品是进阶物品）
+  if (itemType === ItemType.AdvancedItem) {
+    if ((selectedItem as any).advancedItemType) {
+      result.advancedItemType = (selectedItem as any).advancedItemType;
+    }
+    if ((selectedItem as any).advancedItemId) {
+      result.advancedItemId = (selectedItem as any).advancedItemId;
+    }
+  }
+
   // 测试环境验证物品数据
   if (import.meta.env.DEV) {
     // 验证物品类型和稀有度的匹配
@@ -1071,6 +1364,28 @@ export function getRandomEventTemplate(
 
   // 根据类型和风险等级筛选
   let filtered = eventTemplateLibrary.filter(t => t.adventureType === adventureType);
+
+  // 根据玩家境界过滤特殊事件
+  if (playerRealm) {
+    const spiritSeveringIndex = REALM_ORDER.indexOf(RealmType.SpiritSevering);
+    const longevityRealmIndex = REALM_ORDER.indexOf(RealmType.LongevityRealm);
+    const currentRealmIndex = REALM_ORDER.indexOf(playerRealm);
+
+    filtered = filtered.filter(template => {
+      // 天地之魄事件：只允许化神期及以上遇到
+      if (template.heavenEarthSoulEncounter) {
+        return currentRealmIndex >= spiritSeveringIndex;
+      }
+
+      // 规则之力事件：只允许长生境遇到
+      if (template.longevityRuleObtained) {
+        return currentRealmIndex >= longevityRealmIndex;
+      }
+
+      // 其他事件不受限制
+      return true;
+    });
+  }
 
   // 如果指定了风险等级（秘境探索），根据境界调整风险等级分布
   if (riskLevel && adventureType === 'secret_realm') {
@@ -1251,6 +1566,7 @@ export function templateToAdventureResult(
     expChange: Math.floor(template.expChange * realmMultiplier),
     spiritStonesChange: Math.floor(template.spiritStonesChange * realmMultiplier),
     eventColor: template.eventColor,
+    adventureType: template.adventureType, // 传递adventureType，用于判断是否需要触发战斗
   };
 
   // 确保hpChange不超过maxHp的50%
@@ -1302,6 +1618,41 @@ export function templateToAdventureResult(
     } else {
       result.itemObtained = template.itemObtained;
     }
+
+    // 对丹药和草药的效果根据境界倍数进行调整（提高属性值）
+    if (result.itemObtained && (result.itemObtained.type === ItemType.Pill || result.itemObtained.type === ItemType.Herb)) {
+      const adjustedEffect = result.itemObtained.effect ? { ...result.itemObtained.effect } : undefined;
+      const adjustedPermanentEffect = result.itemObtained.permanentEffect ? { ...result.itemObtained.permanentEffect } : undefined;
+
+      // 调整临时效果（effect）
+      if (adjustedEffect) {
+        // 使用较大的倍数调整（境界倍数 * 2，使丹药效果更明显）
+        const pillEffectMultiplier = realmMultiplier * 2;
+        if (adjustedEffect.exp !== undefined) adjustedEffect.exp = Math.floor(adjustedEffect.exp * pillEffectMultiplier);
+        if (adjustedEffect.hp !== undefined) adjustedEffect.hp = Math.floor(adjustedEffect.hp * pillEffectMultiplier);
+        if (adjustedEffect.attack !== undefined) adjustedEffect.attack = Math.floor(adjustedEffect.attack * pillEffectMultiplier);
+        if (adjustedEffect.defense !== undefined) adjustedEffect.defense = Math.floor(adjustedEffect.defense * pillEffectMultiplier);
+        if (adjustedEffect.spirit !== undefined) adjustedEffect.spirit = Math.floor(adjustedEffect.spirit * pillEffectMultiplier);
+        if (adjustedEffect.physique !== undefined) adjustedEffect.physique = Math.floor(adjustedEffect.physique * pillEffectMultiplier);
+        if (adjustedEffect.speed !== undefined) adjustedEffect.speed = Math.floor(adjustedEffect.speed * pillEffectMultiplier);
+      }
+
+      // 调整永久效果（permanentEffect）
+      if (adjustedPermanentEffect) {
+        // 使用较大的倍数调整（境界倍数 * 1.5，永久效果略小一些）
+        const pillPermanentMultiplier = realmMultiplier * 1.5;
+        if (adjustedPermanentEffect.maxHp !== undefined) adjustedPermanentEffect.maxHp = Math.floor(adjustedPermanentEffect.maxHp * pillPermanentMultiplier);
+        if (adjustedPermanentEffect.attack !== undefined) adjustedPermanentEffect.attack = Math.floor(adjustedPermanentEffect.attack * pillPermanentMultiplier);
+        if (adjustedPermanentEffect.defense !== undefined) adjustedPermanentEffect.defense = Math.floor(adjustedPermanentEffect.defense * pillPermanentMultiplier);
+        if (adjustedPermanentEffect.spirit !== undefined) adjustedPermanentEffect.spirit = Math.floor(adjustedPermanentEffect.spirit * pillPermanentMultiplier);
+        if (adjustedPermanentEffect.physique !== undefined) adjustedPermanentEffect.physique = Math.floor(adjustedPermanentEffect.physique * pillPermanentMultiplier);
+        if (adjustedPermanentEffect.speed !== undefined) adjustedPermanentEffect.speed = Math.floor(adjustedPermanentEffect.speed * pillPermanentMultiplier);
+        if ((adjustedPermanentEffect as any).maxLifespan !== undefined) (adjustedPermanentEffect as any).maxLifespan = Math.floor((adjustedPermanentEffect as any).maxLifespan * pillPermanentMultiplier);
+      }
+
+      result.itemObtained.effect = adjustedEffect;
+      result.itemObtained.permanentEffect = adjustedPermanentEffect;
+    }
   }
 
   if (template.itemsObtained !== undefined) {
@@ -1324,7 +1675,7 @@ export function templateToAdventureResult(
 
         if (sameTypeItems.length > 0) {
           const selectedItem = selectFromArray(sameTypeItems, itemSeed);
-          return {
+          const adjustedItem = {
             name: selectedItem.name,
             type: selectedItem.type as ItemType,
             description: selectedItem.description,
@@ -1334,13 +1685,113 @@ export function templateToAdventureResult(
             isEquippable: selectedItem.isEquippable,
             equipmentSlot: selectedItem.equipmentSlot as EquipmentSlot | undefined,
           };
+
+          // 对丹药和草药的效果根据境界倍数进行调整
+          if (adjustedItem.type === ItemType.Pill || adjustedItem.type === ItemType.Herb) {
+            const adjustedEffect = adjustedItem.effect ? { ...adjustedItem.effect } : undefined;
+            const adjustedPermanentEffect = adjustedItem.permanentEffect ? { ...adjustedItem.permanentEffect } : undefined;
+
+            if (adjustedEffect) {
+              const pillEffectMultiplier = realmMultiplier * 2;
+              if (adjustedEffect.exp !== undefined) adjustedEffect.exp = Math.floor(adjustedEffect.exp * pillEffectMultiplier);
+              if (adjustedEffect.hp !== undefined) adjustedEffect.hp = Math.floor(adjustedEffect.hp * pillEffectMultiplier);
+              if (adjustedEffect.attack !== undefined) adjustedEffect.attack = Math.floor(adjustedEffect.attack * pillEffectMultiplier);
+              if (adjustedEffect.defense !== undefined) adjustedEffect.defense = Math.floor(adjustedEffect.defense * pillEffectMultiplier);
+              if (adjustedEffect.spirit !== undefined) adjustedEffect.spirit = Math.floor(adjustedEffect.spirit * pillEffectMultiplier);
+              if (adjustedEffect.physique !== undefined) adjustedEffect.physique = Math.floor(adjustedEffect.physique * pillEffectMultiplier);
+              if (adjustedEffect.speed !== undefined) adjustedEffect.speed = Math.floor(adjustedEffect.speed * pillEffectMultiplier);
+            }
+
+            if (adjustedPermanentEffect) {
+              const pillPermanentMultiplier = realmMultiplier * 1.5;
+              if (adjustedPermanentEffect.maxHp !== undefined) adjustedPermanentEffect.maxHp = Math.floor(adjustedPermanentEffect.maxHp * pillPermanentMultiplier);
+              if (adjustedPermanentEffect.attack !== undefined) adjustedPermanentEffect.attack = Math.floor(adjustedPermanentEffect.attack * pillPermanentMultiplier);
+              if (adjustedPermanentEffect.defense !== undefined) adjustedPermanentEffect.defense = Math.floor(adjustedPermanentEffect.defense * pillPermanentMultiplier);
+              if (adjustedPermanentEffect.spirit !== undefined) adjustedPermanentEffect.spirit = Math.floor(adjustedPermanentEffect.spirit * pillPermanentMultiplier);
+              if (adjustedPermanentEffect.physique !== undefined) adjustedPermanentEffect.physique = Math.floor(adjustedPermanentEffect.physique * pillPermanentMultiplier);
+              if (adjustedPermanentEffect.speed !== undefined) adjustedPermanentEffect.speed = Math.floor(adjustedPermanentEffect.speed * pillPermanentMultiplier);
+              if ((adjustedPermanentEffect as any).maxLifespan !== undefined) (adjustedPermanentEffect as any).maxLifespan = Math.floor((adjustedPermanentEffect as any).maxLifespan * pillPermanentMultiplier);
+            }
+
+            adjustedItem.effect = adjustedEffect;
+            adjustedItem.permanentEffect = adjustedPermanentEffect;
+          }
+
+          return adjustedItem;
         } else {
           // 保持原物品但提升稀有度
-          return {
+          const adjustedItem = {
             ...item,
             rarity: adjustedRarity,
           };
+
+          // 对丹药和草药的效果根据境界倍数进行调整
+          if (adjustedItem.type === ItemType.Pill || adjustedItem.type === ItemType.Herb) {
+            const adjustedEffect = adjustedItem.effect ? { ...adjustedItem.effect } : undefined;
+            const adjustedPermanentEffect = adjustedItem.permanentEffect ? { ...adjustedItem.permanentEffect } : undefined;
+
+            if (adjustedEffect) {
+              const pillEffectMultiplier = realmMultiplier * 2;
+              if (adjustedEffect.exp !== undefined) adjustedEffect.exp = Math.floor(adjustedEffect.exp * pillEffectMultiplier);
+              if (adjustedEffect.hp !== undefined) adjustedEffect.hp = Math.floor(adjustedEffect.hp * pillEffectMultiplier);
+              if (adjustedEffect.attack !== undefined) adjustedEffect.attack = Math.floor(adjustedEffect.attack * pillEffectMultiplier);
+              if (adjustedEffect.defense !== undefined) adjustedEffect.defense = Math.floor(adjustedEffect.defense * pillEffectMultiplier);
+              if (adjustedEffect.spirit !== undefined) adjustedEffect.spirit = Math.floor(adjustedEffect.spirit * pillEffectMultiplier);
+              if (adjustedEffect.physique !== undefined) adjustedEffect.physique = Math.floor(adjustedEffect.physique * pillEffectMultiplier);
+              if (adjustedEffect.speed !== undefined) adjustedEffect.speed = Math.floor(adjustedEffect.speed * pillEffectMultiplier);
+            }
+
+            if (adjustedPermanentEffect) {
+              const pillPermanentMultiplier = realmMultiplier * 1.5;
+              if (adjustedPermanentEffect.maxHp !== undefined) adjustedPermanentEffect.maxHp = Math.floor(adjustedPermanentEffect.maxHp * pillPermanentMultiplier);
+              if (adjustedPermanentEffect.attack !== undefined) adjustedPermanentEffect.attack = Math.floor(adjustedPermanentEffect.attack * pillPermanentMultiplier);
+              if (adjustedPermanentEffect.defense !== undefined) adjustedPermanentEffect.defense = Math.floor(adjustedPermanentEffect.defense * pillPermanentMultiplier);
+              if (adjustedPermanentEffect.spirit !== undefined) adjustedPermanentEffect.spirit = Math.floor(adjustedPermanentEffect.spirit * pillPermanentMultiplier);
+              if (adjustedPermanentEffect.physique !== undefined) adjustedPermanentEffect.physique = Math.floor(adjustedPermanentEffect.physique * pillPermanentMultiplier);
+              if (adjustedPermanentEffect.speed !== undefined) adjustedPermanentEffect.speed = Math.floor(adjustedPermanentEffect.speed * pillPermanentMultiplier);
+              if ((adjustedPermanentEffect as any).maxLifespan !== undefined) (adjustedPermanentEffect as any).maxLifespan = Math.floor((adjustedPermanentEffect as any).maxLifespan * pillPermanentMultiplier);
+            }
+
+            adjustedItem.effect = adjustedEffect;
+            adjustedItem.permanentEffect = adjustedPermanentEffect;
+          }
+
+          return adjustedItem;
         }
+      }
+
+      // 对原始物品也应用倍数调整（如果是丹药或草药）
+      if (item.type === ItemType.Pill || item.type === ItemType.Herb) {
+        const adjustedEffect = item.effect ? { ...item.effect } : undefined;
+        const adjustedPermanentEffect = item.permanentEffect ? { ...item.permanentEffect } : undefined;
+
+        if (adjustedEffect) {
+          const pillEffectMultiplier = realmMultiplier * 2;
+          if (adjustedEffect.exp !== undefined) adjustedEffect.exp = Math.floor(adjustedEffect.exp * pillEffectMultiplier);
+          if (adjustedEffect.hp !== undefined) adjustedEffect.hp = Math.floor(adjustedEffect.hp * pillEffectMultiplier);
+          if (adjustedEffect.attack !== undefined) adjustedEffect.attack = Math.floor(adjustedEffect.attack * pillEffectMultiplier);
+          if (adjustedEffect.defense !== undefined) adjustedEffect.defense = Math.floor(adjustedEffect.defense * pillEffectMultiplier);
+          if (adjustedEffect.spirit !== undefined) adjustedEffect.spirit = Math.floor(adjustedEffect.spirit * pillEffectMultiplier);
+          if (adjustedEffect.physique !== undefined) adjustedEffect.physique = Math.floor(adjustedEffect.physique * pillEffectMultiplier);
+          if (adjustedEffect.speed !== undefined) adjustedEffect.speed = Math.floor(adjustedEffect.speed * pillEffectMultiplier);
+        }
+
+        if (adjustedPermanentEffect) {
+          const pillPermanentMultiplier = realmMultiplier * 1.5;
+          if (adjustedPermanentEffect.maxHp !== undefined) adjustedPermanentEffect.maxHp = Math.floor(adjustedPermanentEffect.maxHp * pillPermanentMultiplier);
+          if (adjustedPermanentEffect.attack !== undefined) adjustedPermanentEffect.attack = Math.floor(adjustedPermanentEffect.attack * pillPermanentMultiplier);
+          if (adjustedPermanentEffect.defense !== undefined) adjustedPermanentEffect.defense = Math.floor(adjustedPermanentEffect.defense * pillPermanentMultiplier);
+          if (adjustedPermanentEffect.spirit !== undefined) adjustedPermanentEffect.spirit = Math.floor(adjustedPermanentEffect.spirit * pillPermanentMultiplier);
+          if (adjustedPermanentEffect.physique !== undefined) adjustedPermanentEffect.physique = Math.floor(adjustedPermanentEffect.physique * pillPermanentMultiplier);
+          if (adjustedPermanentEffect.speed !== undefined) adjustedPermanentEffect.speed = Math.floor(adjustedPermanentEffect.speed * pillPermanentMultiplier);
+          if ((adjustedPermanentEffect as any).maxLifespan !== undefined) (adjustedPermanentEffect as any).maxLifespan = Math.floor((adjustedPermanentEffect as any).maxLifespan * pillPermanentMultiplier);
+        }
+
+        return {
+          ...item,
+          effect: adjustedEffect,
+          permanentEffect: adjustedPermanentEffect,
+        };
       }
 
       return item;
@@ -1356,6 +1807,9 @@ export function templateToAdventureResult(
   if (template.spiritualRootsChange !== undefined) result.spiritualRootsChange = template.spiritualRootsChange;
   if (template.lifespanChange !== undefined) result.lifespanChange = template.lifespanChange;
   if (template.lotteryTicketsChange !== undefined) result.lotteryTicketsChange = template.lotteryTicketsChange;
+  if (template.longevityRuleObtained !== undefined) result.longevityRuleObtained = template.longevityRuleObtained;
+  if (template.heavenEarthSoulEncounter !== undefined) result.heavenEarthSoulEncounter = template.heavenEarthSoulEncounter;
+  if (template.adventureType !== undefined) result.adventureType = template.adventureType;
 
   // 测试环境打印事件模板返回结果
   if (import.meta.env.DEV) {

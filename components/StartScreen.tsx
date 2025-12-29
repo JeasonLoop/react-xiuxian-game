@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { DifficultyMode, ItemRarity } from '../types';
-import { TALENTS } from '../constants';
+import { TALENTS } from '../constants/index';
 import { Sparkles, Sword, Shield, Heart, Zap, User, Upload, TriangleAlert } from 'lucide-react';
 import { showError, showSuccess, showConfirm } from '../utils/toastUtils';
 import { STORAGE_KEYS } from '../constants/storageKeys';

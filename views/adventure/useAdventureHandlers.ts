@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlayerStats, AdventureType, ShopType, RealmType, AdventureResult } from '../../types';
-import { REALM_ORDER } from '../../constants';
+import { REALM_ORDER, HEAVEN_EARTH_SOUL_BOSSES } from '../../constants/index';
 import {
   shouldTriggerBattle,
   resolveBattleEncounter,
@@ -12,6 +12,8 @@ import {
   getRandomEventTemplate,
   templateToAdventureResult,
 } from '../../services/adventureTemplateService';
+import { showConfirm } from '../../utils/toastUtils';
+import { getPlayerTotalStats } from '../../utils/statUtils';
 
 /**
  * 历练处理函数
@@ -45,6 +47,7 @@ interface UseAdventureHandlersProps {
     adventureType: AdventureType;
     riskLevel?: '低' | '中' | '高' | '极度危险';
     realmMinRealm?: RealmType;
+    bossId?: string; // 指定的天地之魄BOSS ID（用于事件模板）
   }) => void; // 打开回合制战斗
   skipBattle?: boolean; // 是否跳过战斗（自动模式下）
   useTurnBasedBattle?: boolean; // 是否使用回合制战斗系统
@@ -85,6 +88,8 @@ export function useAdventureHandlers({
       setTimeout(() => {
         addLog('正在探索秘境，寻找机缘...', 'normal');
       }, 100);
+    } else if (adventureType === 'dao_combining_challenge') {
+      addLog('你前往挑战天地之魄，这是合道期的终极考验...', 'special');
     } else {
       addLog('你走出洞府，前往荒野历练...', 'normal');
     }
@@ -166,6 +171,144 @@ export function useAdventureHandlers({
             realmLevel: player.realmLevel,
             maxHp: player.maxHp,
           });
+
+          // 如果事件模板返回的是天地之魄事件，需要触发战斗
+          if (result.adventureType === 'dao_combining_challenge' || result.heavenEarthSoulEncounter) {
+            const actualAdventureType = result.adventureType || 'dao_combining_challenge';
+            const bossId = result.heavenEarthSoulEncounter;
+
+            // 获取天地之魄BOSS信息
+            const boss = bossId ? HEAVEN_EARTH_SOUL_BOSSES[bossId] : null;
+            if (boss) {
+              // 计算玩家实力
+              const playerStats = getPlayerTotalStats(player);
+              const playerPower = playerStats.attack + playerStats.defense + playerStats.maxHp / 10 + playerStats.speed;
+
+              // 计算BOSS实力（应用强度倍率）
+              const bossStats = boss.baseStats;
+              const bossPower = (bossStats.attack + bossStats.defense + bossStats.hp / 10 + bossStats.speed) * (boss.strengthMultiplier || 1);
+
+              // 计算实力对比
+              const powerRatio = playerPower / bossPower;
+              let strengthComparison = '';
+              if (powerRatio >= 1.2) {
+                strengthComparison = '你的实力明显强于对方';
+              } else if (powerRatio >= 1.0) {
+                strengthComparison = '你的实力略强于对方';
+              } else if (powerRatio >= 0.8) {
+                strengthComparison = '你的实力与对方相当';
+              } else if (powerRatio >= 0.6) {
+                strengthComparison = '你的实力略弱于对方';
+              } else {
+                strengthComparison = '你的实力明显弱于对方，建议谨慎挑战';
+              }
+
+              // 构建提示信息
+              const message = `你遭遇了天地之魄【${boss.name}】！\n\n` +
+                `描述：${boss.description}\n\n` +
+                `境界：${boss.realm}\n` +
+                `难度：${boss.difficulty === 'easy' ? '简单' : boss.difficulty === 'normal' ? '普通' : boss.difficulty === 'hard' ? '困难' : '极难'}\n\n` +
+                `实力对比：\n` +
+                `  攻击：${playerStats.attack.toLocaleString()} vs ${Math.floor(bossStats.attack * (boss.strengthMultiplier || 1)).toLocaleString()}\n` +
+                `  防御：${playerStats.defense.toLocaleString()} vs ${Math.floor(bossStats.defense * (boss.strengthMultiplier || 1)).toLocaleString()}\n` +
+                `  气血：${playerStats.maxHp.toLocaleString()} vs ${Math.floor(bossStats.hp * (boss.strengthMultiplier || 1)).toLocaleString()}\n` +
+                `  速度：${playerStats.speed.toLocaleString()} vs ${Math.floor(bossStats.speed * (boss.strengthMultiplier || 1)).toLocaleString()}\n\n` +
+                `${strengthComparison}\n\n` +
+                `是否挑战？`;
+
+              // 显示确认对话框
+              showConfirm(
+                message,
+                `遭遇天地之魄：${boss.name}`,
+                () => {
+                  // 玩家选择挑战
+                  addLog(`你决定挑战${boss.name}！`, 'warning');
+
+                  // 如果使用回合制战斗系统，打开回合制战斗界面
+                  if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
+                    setTimeout(() => {
+                      onOpenTurnBasedBattle({
+                        adventureType: actualAdventureType,
+                        riskLevel,
+                        realmMinRealm: player.realm,
+                        bossId,
+                      });
+                    }, 1000);
+                    setLoading(false);
+                    setCooldown(2);
+                    return;
+                  }
+
+                  // 否则使用旧的自动战斗系统
+                  resolveBattleEncounter(
+                    player,
+                    actualAdventureType,
+                    riskLevel,
+                    player.realm,
+                    undefined,
+                    undefined,
+                    undefined,
+                    bossId
+                  ).then((battleResolution) => {
+                    const battleResult = battleResolution.adventureResult;
+                    const battleCtx = battleResolution.replay;
+                    executeAdventureCore({
+                      result: battleResult,
+                      battleContext: battleCtx,
+                      player,
+                      setPlayer,
+                      addLog,
+                      triggerVisual,
+                      onOpenBattleModal,
+                      adventureType: actualAdventureType,
+                      realmName,
+                    });
+                    setLoading(false);
+                    setCooldown(2);
+                  });
+                },
+                () => {
+                  // 玩家选择放弃
+                  addLog(`你选择暂时避开${boss.name}，继续探索...`, 'normal');
+                  setLoading(false);
+                  setCooldown(1);
+                }
+              );
+
+              setLoading(false);
+              return; // 等待玩家选择
+            }
+
+            // 如果没有BOSS信息，使用默认流程
+            // 如果使用回合制战斗系统，打开回合制战斗界面
+            if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
+              setTimeout(() => {
+                onOpenTurnBasedBattle({
+                  adventureType: actualAdventureType,
+                  riskLevel,
+                  realmMinRealm: player.realm,
+                  bossId,
+                });
+              }, 2000);
+              setLoading(false);
+              setCooldown(2);
+              return;
+            }
+
+            // 否则使用旧的自动战斗系统
+            battleResolution = await resolveBattleEncounter(
+              player,
+              actualAdventureType,
+              riskLevel,
+              player.realm,
+              undefined,
+              undefined,
+              undefined,
+              bossId
+            );
+            result = battleResolution.adventureResult;
+            battleContext = battleResolution.replay;
+          }
         } else {
           // 如果模板库为空，使用默认事件
           result = {

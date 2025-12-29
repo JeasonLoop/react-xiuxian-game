@@ -1,6 +1,6 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useRef,  } from 'react';
 import { CultivationArt, RealmType, PlayerStats, ArtGrade } from '../types';
-import { CULTIVATION_ARTS, REALM_ORDER } from '../constants';
+import { CULTIVATION_ARTS, REALM_ORDER } from '../constants/index';
 import { X, BookOpen, Check, Lock, Search } from 'lucide-react';
 
 interface Props {
@@ -38,9 +38,8 @@ const CultivationModal: React.FC<Props> = ({
       return;
     }
 
-    // 检查是否已经学习过（包括传承技能）
-    const isInheritanceArt = player.inheritanceSkills?.includes(art.id) || false;
-    if (player.cultivationArts.includes(art.id) || isInheritanceArt) {
+    // 检查是否已经学习过
+    if (player.cultivationArts.includes(art.id)) {
       return;
     }
 
@@ -179,7 +178,7 @@ const CultivationModal: React.FC<Props> = ({
           </button>
         </div>
 
-        <div ref={scrollContainerRef} className="p-3 md:p-4 bg-paper-800 overflow-y-auto flex-1">
+        <div ref={scrollContainerRef} className="modal-scroll-container modal-scroll-content p-3 md:p-4 bg-paper-800">
           <div className="mb-3 md:mb-4 text-xs md:text-sm text-stone-400 bg-ink-900/50 p-2 md:p-3 rounded border border-stone-700">
             <p>心法：主修功法，激活后提升修炼效率。</p>
             <p>体术：辅修功法，习得后永久提升身体属性。</p>

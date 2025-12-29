@@ -3,7 +3,6 @@ import {
   PlayerStats,
   Item,
   ItemType,
-  ItemRarity,
   RealmType,
   SectRank,
 } from '../../types';
@@ -14,7 +13,11 @@ import {
   SECT_SPECIAL_REWARDS,
   SECT_MASTER_CHALLENGE_REQUIREMENTS,
   REALM_ORDER,
-} from '../../constants';
+  FOUNDATION_TREASURES,
+  HEAVEN_EARTH_ESSENCES,
+  HEAVEN_EARTH_MARROWS,
+  LONGEVITY_RULES,
+} from '../../constants/index';
 import { RandomSectTask } from '../../services/randomService';
 import { AdventureResult } from '../../types';
 import { uid } from '../../utils/gameUtils';
@@ -370,6 +373,94 @@ export function useSectHandlers({
             si.quantity || 1
           );
           specialMsg = ` 额外获得特殊奖励：${si.name}！`;
+        }
+      }
+
+      // 进阶物品奖励（高难度任务有概率获得）- 添加到背包
+      const currentRealmIndex = REALM_ORDER.indexOf(prev.realm);
+
+      // 只有极难任务才有概率获得进阶物品
+      if (task.difficulty === '极难' && task.quality === '仙品') {
+        const advancedItemChance = 0.08; // 8%概率
+
+        // 筑基奇物（炼气期、筑基期）
+        if (currentRealmIndex <= REALM_ORDER.indexOf(RealmType.Foundation) && Math.random() < advancedItemChance) {
+          const treasures = Object.values(FOUNDATION_TREASURES);
+          const availableTreasures = treasures.filter(t => !t.requiredLevel || prev.realmLevel >= t.requiredLevel);
+          if (availableTreasures.length > 0) {
+            const selected = availableTreasures[Math.floor(Math.random() * availableTreasures.length)];
+            updatedInventory.push({
+              id: uid(),
+              name: selected.name,
+              type: ItemType.AdvancedItem,
+              description: selected.description,
+              quantity: 1,
+              rarity: selected.rarity,
+              advancedItemType: 'foundationTreasure',
+              advancedItemId: selected.id,
+            });
+            specialMsg += ` ✨ 获得筑基奇物【${selected.name}】！`;
+          }
+        }
+
+        // 天地精华（金丹期、元婴期）
+        if (currentRealmIndex >= REALM_ORDER.indexOf(RealmType.GoldenCore) && currentRealmIndex <= REALM_ORDER.indexOf(RealmType.NascentSoul) && Math.random() < advancedItemChance) {
+          const essences = Object.values(HEAVEN_EARTH_ESSENCES);
+          if (essences.length > 0) {
+            const selected = essences[Math.floor(Math.random() * essences.length)];
+            updatedInventory.push({
+              id: uid(),
+              name: selected.name,
+              type: ItemType.AdvancedItem,
+              description: selected.description,
+              quantity: 1,
+              rarity: selected.rarity,
+              advancedItemType: 'heavenEarthEssence',
+              advancedItemId: selected.id,
+            });
+            specialMsg += ` ✨ 获得天地精华【${selected.name}】！`;
+          }
+        }
+
+        // 天地之髓（化神期及以上）
+        if (currentRealmIndex >= REALM_ORDER.indexOf(RealmType.SpiritSevering) && Math.random() < advancedItemChance * 0.7) {
+          const marrows = Object.values(HEAVEN_EARTH_MARROWS);
+          if (marrows.length > 0) {
+            const selected = marrows[Math.floor(Math.random() * marrows.length)];
+            updatedInventory.push({
+              id: uid(),
+              name: selected.name,
+              type: ItemType.AdvancedItem,
+              description: selected.description,
+              quantity: 1,
+              rarity: selected.rarity,
+              advancedItemType: 'heavenEarthMarrow',
+              advancedItemId: selected.id,
+            });
+            specialMsg += ` ✨ 获得天地之髓【${selected.name}】！`;
+          }
+        }
+
+        // 规则之力（长生境）
+        if (currentRealmIndex >= REALM_ORDER.indexOf(RealmType.LongevityRealm) && Math.random() < advancedItemChance * 0.5) {
+          const rules = Object.values(LONGEVITY_RULES);
+          const currentRules = prev.longevityRules || [];
+          const availableRules = rules.filter(r => !currentRules.includes(r.id));
+          const maxRules = prev.maxLongevityRules || 3;
+          if (availableRules.length > 0 && currentRules.length < maxRules) {
+            const selected = availableRules[Math.floor(Math.random() * availableRules.length)];
+            updatedInventory.push({
+              id: uid(),
+              name: selected.name,
+              type: ItemType.AdvancedItem,
+              description: selected.description,
+              quantity: 1,
+              rarity: '仙品',
+              advancedItemType: 'longevityRule',
+              advancedItemId: selected.id,
+            });
+            specialMsg += ` ✨ 获得规则之力【${selected.name}】！`;
+          }
         }
       }
 

@@ -195,7 +195,7 @@ const ChangelogModal: React.FC<Props> = ({ isOpen, onClose }) => {
         </div>
 
         {/* 内容区域 */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6">
+        <div className="modal-scroll-container modal-scroll-content p-4 md:p-6">
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="text-stone-400">加载中...</div>

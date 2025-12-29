@@ -4,8 +4,8 @@ export enum RealmType {
   GoldenCore = '金丹期',
   NascentSoul = '元婴期',
   SpiritSevering = '化神期',
-  VoidRefining = '炼虚期',
-  ImmortalAscension = '渡劫飞升',
+  DaoCombining = '合道期',
+  LongevityRealm = '长生境',
 }
 
 export type ArtGrade = '天' | '地' | '玄' | '黄'; // 功法品级：天、地、玄、黄
@@ -20,6 +20,8 @@ export interface CultivationArt {
   cost: number;
   sectId?: string | null; // 所属宗门ID，null表示通用功法
   spiritualRoot?: 'metal' | 'wood' | 'water' | 'fire' | 'earth'; // 功法对应的灵根属性（可选）
+  isHeavenEarthSoulArt?: boolean; // 是否为天地之魄功法
+  bossId?: string; // 对应的天地之魄BOSS ID
   attributeRequirements?: {
     // 属性要求
     attack?: number;
@@ -56,9 +58,10 @@ export enum ItemType {
   Accessory = '首饰',
   Ring = '戒指',
   Recipe = '丹方',
+  AdvancedItem = '进阶物品', // 进阶物品类型
 }
 
-export type ItemRarity = '普通' | '稀有' | '传说' | '仙品';
+export type ItemRarity = '普通' | '稀有' | '传说' | '仙品' ;
 
 // 装备部位枚举
 export enum EquipmentSlot {
@@ -93,6 +96,8 @@ export interface Item {
   recipeData?: Recipe; // 丹方数据（仅当 type 为 Recipe 时使用）
   reviveChances?: number; // 保命机会次数（1-3次），仅传说和仙品装备可能有
   battleSkills?: BattleSkill[]; // 战斗技能（法宝/武器）
+  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule'; // 进阶物品类型（仅当type为AdvancedItem时使用）
+  advancedItemId?: string; // 进阶物品ID（用于炼化）
   effect?: {
     hp?: number;
     exp?: number;
@@ -293,6 +298,17 @@ export interface PlayerStats {
   dailyQuestCompleted: string[]; // 今日已完成的任务ID
   lastDailyQuestResetDate: string; // 上次重置日常任务的日期（YYYY-MM-DD格式）
   gameDays: number; // 游戏内天数（从开始游戏起计算）
+
+  // 新增修炼系统字段
+  foundationTreasure?: string; // 筑基奇物ID
+  goldenCoreMethodCount?: number; // 金丹法数（几法金丹）
+  heavenEarthEssence?: string; // 天地精华ID
+  heavenEarthMarrow?: string; // 天地之髓ID
+  marrowRefiningProgress?: number; // 天地之髓炼化进度 (0-100)
+  marrowRefiningSpeed?: number; // 炼化速度（每日进度）
+  daoCombiningChallenged?: boolean; // 是否挑战过天地之魄
+  longevityRules?: string[]; // 长生境规则之力列表
+  maxLongevityRules?: number; // 最大规则之力数量（默认3）
   // 声望系统
   reputation: number; // 声望值（用于解锁声望商店等）
   // 洞府系统
@@ -323,6 +339,150 @@ export interface PlayerStats {
   };
 }
 
+// 筑基奇物接口
+export interface FoundationTreasure {
+  id: string;
+  name: string;
+  description: string;
+  rarity: ItemRarity;
+  effects: {
+    hpBonus?: number;
+    attackBonus?: number;
+    defenseBonus?: number;
+    spiritBonus?: number;
+    physiqueBonus?: number;
+    speedBonus?: number;
+    specialEffect?: string;
+  };
+  requiredLevel?: number;
+  battleEffect?: AdvancedItemBattleEffect; // 战斗效果
+}
+
+// 天地精华接口
+export interface HeavenEarthEssence {
+  id: string;
+  name: string;
+  description: string;
+  rarity: ItemRarity;
+  quality: number; // 品质 (1-100)
+  effects: {
+    hpBonus?: number;
+    attackBonus?: number;
+    defenseBonus?: number;
+    spiritBonus?: number;
+    physiqueBonus?: number;
+    speedBonus?: number;
+    specialEffect?: string;
+  };
+  battleEffect?: AdvancedItemBattleEffect; // 战斗效果
+}
+
+// 天地之髓接口
+export interface HeavenEarthMarrow {
+  id: string;
+  name: string;
+  description: string;
+  rarity: ItemRarity;
+  quality: number; // 品质 (1-100)
+  refiningTime: number; // 基础炼化时间（天）
+  effects: {
+    hpBonus?: number;
+    attackBonus?: number;
+    defenseBonus?: number;
+    spiritBonus?: number;
+    physiqueBonus?: number;
+    speedBonus?: number;
+    specialEffect?: string;
+  };
+  battleEffect?: AdvancedItemBattleEffect; // 战斗效果
+}
+
+// 规则之力接口
+export interface LongevityRule {
+  id: string;
+  name: string;
+  description: string;
+  power: number; // 规则之力强度 (1-100)
+  effects: {
+    hpPercent?: number;
+    attackPercent?: number;
+    defensePercent?: number;
+    spiritPercent?: number;
+    physiquePercent?: number;
+    speedPercent?: number;
+    specialEffect?: string;
+  };
+  battleEffect?: AdvancedItemBattleEffect; // 战斗效果
+}
+
+// 进阶物品战斗效果类型
+export interface AdvancedItemBattleEffect {
+  type: 'damage' | 'heal' | 'buff' | 'debuff' | 'special';
+  name: string; // 效果名称
+  description: string; // 效果描述
+  cost: {
+    lifespan?: number; // 消耗寿命（年）
+    maxHp?: number; // 消耗气血上限
+    hp?: number; // 消耗当前气血
+    spirit?: number; // 消耗神识
+  };
+  effect: {
+    // 伤害效果
+    damage?: {
+      base?: number; // 基础伤害
+      multiplier?: number; // 伤害倍率（基于攻击力）
+      percentOfMaxHp?: number; // 基于最大气血的百分比伤害
+      percentOfLifespan?: number; // 基于寿命的百分比伤害
+      ignoreDefense?: number | boolean; // 无视防御比例（0-1之间的数字，或true表示完全无视）
+      guaranteedCrit?: boolean; // 必定暴击
+      guaranteedHit?: boolean; // 必定命中（无视闪避）
+      demonMultiplier?: number; // 对邪魔的伤害倍率
+    };
+    // 治疗效果
+    heal?: {
+      base?: number; // 基础治疗
+      percentOfMaxHp?: number; // 基于最大气血的百分比治疗
+    };
+    // Buff效果
+    buff?: {
+      attack?: number; // 攻击力加成
+      defense?: number; // 防御力加成
+      speed?: number; // 速度加成
+      critChance?: number; // 暴击率加成
+      critDamage?: number; // 暴击伤害加成
+      reflectDamage?: number; // 反弹伤害比例
+      spirit?: number; // 神识加成
+      physique?: number; // 体魄加成
+      maxHp?: number; // 最大气血加成（百分比）
+      revive?: number; // 复活标记（1表示有复活）
+      dodge?: number; // 闪避率加成
+      ignoreDefense?: boolean; // 攻击无视防御
+      regen?: number; // 每回合恢复最大气血的百分比
+      damageReduction?: number; // 受到伤害减少比例
+      immunity?: boolean; // 免疫所有负面状态
+      cleanse?: boolean; // 清除所有负面状态
+      magicDefense?: number; // 法术防御加成
+      duration?: number; // 持续回合数
+    };
+    // Debuff效果（对敌人）
+    debuff?: {
+      attack?: number; // 降低攻击力（负数表示降低）
+      defense?: number; // 降低防御力（负数表示降低）
+      speed?: number; // 降低速度（负数表示降低）
+      spirit?: number; // 降低神识（负数表示降低）
+      hp?: number; // 每回合损失最大气血的百分比（负数表示损失）
+      duration?: number; // 持续回合数
+    };
+    // 特殊效果
+    special?: {
+      type: 'instant_kill' | 'stun' | 'silence' | 'reflect' | 'absorb';
+      value?: number; // 效果数值
+      chance?: number; // 触发概率（0-1）
+    };
+  };
+  cooldown?: number; // 冷却回合数（战斗内）
+}
+
 export interface LogEntry {
   id: string;
   text: string;
@@ -330,7 +490,7 @@ export interface LogEntry {
   timestamp: number;
 }
 
-export type AdventureType = 'normal' | 'lucky' | 'secret_realm' | 'sect_challenge';
+export type AdventureType = 'normal' | 'lucky' | 'secret_realm' | 'sect_challenge' | 'dao_combining_challenge';
 
 export interface AdventureResult {
   story: string;
@@ -373,13 +533,18 @@ export interface AdventureResult {
     earth?: number;
   };
   triggerSecretRealm?: boolean; // 是否触发随机秘境
+  longevityRuleObtained?: string; // 获得的规则之力ID
+  heavenEarthSoulEncounter?: string; // 遇到的天地之魄BOSS ID
+  adventureType?: AdventureType; // 历练类型（用于判断是否需要触发战斗等）
   itemObtained?: {
     name: string;
-    type: string; // "草药" | "材料" | "法宝" | "武器" | "护甲" | "首饰" | "戒指"
+    type: string; // "草药" | "材料" | "法宝" | "武器" | "护甲" | "首饰" | "戒指" | "进阶物品"
     description: string;
     rarity?: string;
     isEquippable?: boolean;
     equipmentSlot?: string; // "头部" | "肩部" | "胸甲" | "手套" | "裤腿" | "鞋子" | "戒指1-4" | "首饰1-2" | "法宝1-2" | "武器"
+    advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule'; // 进阶物品类型（仅当type为"进阶物品"时使用）
+    advancedItemId?: string; // 进阶物品ID（用于炼化）
     effect?: {
       attack?: number;
       defense?: number;
@@ -635,6 +800,10 @@ export interface LotteryPrize {
     exp?: number;
     petId?: string;
     tickets?: number;
+    foundationTreasure?: boolean; // 标记为筑基奇物
+    heavenEarthEssence?: boolean; // 标记为天地精华
+    heavenEarthMarrow?: boolean; // 标记为天地之髓
+    longevityRule?: boolean; // 标记为规则之力
   };
 }
 
@@ -701,6 +870,8 @@ export interface ShopItem {
   isEquippable?: boolean;
   minRealm?: RealmType; // 最低境界要求
   reviveChances?: number; // 保命机会次数（1-3次），仅传说和仙品装备可能有
+  isAdvancedItem?: boolean; // 标记为进阶物品
+  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule'; // 进阶物品类型
 }
 
 export interface Shop {
@@ -727,6 +898,15 @@ export interface Buff {
   duration: number; // 剩余回合数，-1表示永久（战斗期间）
   source: string; // 来源（功法、丹药、技能等）
   description?: string;
+  reflectDamage?: number; // 反弹伤害比例（0-1之间）
+  critDamage?: number; // 暴击伤害加成
+  revive?: number; // 复活标记（1表示有复活）
+  dodge?: number; // 闪避率加成（0-1之间）
+  ignoreDefense?: boolean; // 攻击无视防御
+  regen?: number; // 每回合恢复最大气血的百分比
+  damageReduction?: number; // 受到伤害减少比例（0-1之间）
+  immunity?: boolean; // 免疫所有负面状态
+  magicDefense?: number; // 法术防御加成
 }
 
 export interface Debuff {
@@ -827,6 +1007,7 @@ export interface BattleAction {
     miss?: boolean;
     blocked?: boolean;
     manaCost?: number;
+    reflectedDamage?: number; // 反弹伤害值
   };
   description: string; // 行动描述文本
 }
@@ -874,6 +1055,7 @@ export type PlayerAction =
   | { type: 'attack' }
   | { type: 'skill'; skillId: string }
   | { type: 'item'; itemId: string }
+  | { type: 'advancedItem'; itemType: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule'; itemId: string }
   | { type: 'defend' }
   | { type: 'flee' };
 
@@ -935,4 +1117,77 @@ export interface GrottoConfig {
   maxHerbSlots: number; // 最大灵草种植槽位
   realmRequirement?: RealmType; // 境界要求（可选）
   description: string; // 描述
+}
+
+// ==================== 天劫系统类型定义 ====================
+
+// 天劫等级
+export type TribulationLevel = '金丹天劫' | '元婴天劫' | '化神天劫' | '合道天劫' | '长生天劫';
+
+// 天劫阶段
+export type TribulationStage = '准备中' | '第一道雷劫' | '第二道雷劫' | '第三道雷劫' | '渡劫完成' | '渡劫失败';
+
+// 天劫状态
+export interface TribulationState {
+  isOpen: boolean; // 是否触发天劫弹窗
+  targetRealm: RealmType; // 目标境界（突破后的境界）
+  tribulationLevel: TribulationLevel; // 天劫等级
+  stage: TribulationStage; // 当前阶段
+  deathProbability: number; // 死亡概率（0-1）
+  attributeBonus: number; // 属性修正值（降低死亡概率）
+  equipmentBonus: number; // 装备修正值（降低死亡概率）
+  totalStats: {
+    attack: number;
+    defense: number;
+    spirit: number;
+    physique: number;
+    speed: number;
+    maxHp: number;
+  }; // 综合属性（用于显示）
+  equipmentQualityScore: number; // 装备品质评分
+  isCleared: boolean; // 是否已成功度过天劫
+}
+
+// 天劫结果
+export interface TribulationResult {
+  success: boolean; // 是否成功
+  deathProbability: number; // 最终死亡概率
+  roll: number; // 随机值
+  hpLoss?: number; // 如果成功，可能损耗气血
+  description: string; // 渡劫描述
+}
+
+// ==================== 合道期挑战系统类型定义 ====================
+
+// 天地之魄BOSS接口
+export interface HeavenEarthSoulBoss {
+  id: string;
+  name: string;
+  description: string;
+  realm: RealmType;
+  baseStats: {
+    attack: number;
+    defense: number;
+    hp: number;
+    spirit: number;
+    physique: number;
+    speed: number;
+  };
+  difficulty: 'easy' | 'normal' | 'hard' | 'extreme'; // 难度等级
+  strengthMultiplier: number; // 战斗力浮动倍数 (0.9-3.0)
+  specialSkills: BattleSkill[]; // 特殊技能
+  rewards: {
+    exp: number;
+    spiritStones: number;
+    items?: string[]; // 奖励物品ID列表
+    daoCombiningUnlocked?: boolean; // 是否解锁合道期
+  };
+}
+
+// 合道期挑战状态
+export interface DaoCombiningChallengeState {
+  isOpen: boolean; // 是否打开挑战界面
+  bossId: string | null; // 当前挑战的BOSS ID
+  bossStrengthMultiplier: number; // BOSS强度倍数
+  battleResult: BattleResult | null; // 战斗结果
 }

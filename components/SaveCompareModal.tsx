@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { compareSaves, SaveData, SaveComparison } from '../utils/saveManagerUtils';
+import { formatNumber } from '../utils/formatUtils';
 import dayjs from 'dayjs';
 
 interface Props {
@@ -14,16 +15,6 @@ const SaveCompareModal: React.FC<Props> = ({ isOpen, onClose, save1, save2 }) =>
   if (!isOpen) return null;
 
   const comparison: SaveComparison = compareSaves(save1, save2);
-
-  const formatNumber = (num: number): string => {
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(2) + 'M';
-    }
-    if (num >= 1000) {
-      return (num / 1000).toFixed(2) + 'K';
-    }
-    return num.toString();
-  };
 
   const getDiff = (oldVal: number, newVal: number) => {
     const diff = newVal - oldVal;
@@ -111,7 +102,7 @@ const SaveCompareModal: React.FC<Props> = ({ isOpen, onClose, save1, save2 }) =>
           </button>
         </div>
 
-        <div className="p-4 md:p-6 overflow-y-auto flex-1">
+        <div className="modal-scroll-container modal-scroll-content p-4 md:p-6">
           {/* 基本信息对比 */}
           <div className="mb-6">
             <h3 className="text-md font-semibold text-stone-300 mb-3">

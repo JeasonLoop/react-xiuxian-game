@@ -27,7 +27,7 @@ import {
   Filter,
   SlidersHorizontal,
 } from 'lucide-react';
-import { REALM_ORDER, SPIRITUAL_ROOT_NAMES } from '../constants';
+import { REALM_ORDER, SPIRITUAL_ROOT_NAMES, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES } from '../constants/index';
 import EquipmentPanel from './EquipmentPanel';
 import BatchDiscardModal from './BatchDiscardModal';
 import BatchUseModal from './BatchUseModal';
@@ -39,7 +39,7 @@ import {
   getRarityDisplayName,
   normalizeRarityValue,
 } from '../utils/rarityUtils';
-import { getItemStats } from '../utils/itemUtils';
+import { getItemStats, normalizeTypeLabel } from '../utils/itemUtils';
 import {
   findEmptyEquipmentSlot,
   isItemEquipped as checkItemEquipped,
@@ -47,6 +47,8 @@ import {
   areSlotsInSameGroup,
 } from '../utils/equipmentUtils';
 import { useDebounce } from '../hooks/useDebounce';
+import { showConfirm } from '../utils/toastUtils';
+import { formatValueChange, formatNumber } from '../utils/formatUtils';
 
 interface Props {
   isOpen: boolean;
@@ -64,30 +66,10 @@ interface Props {
   onOrganizeInventory?: () => void;
   onRefineNatalArtifact?: (item: Item) => void;
   onUnrefineNatalArtifact?: () => void;
+  onRefineAdvancedItem?: (item: Item) => void;
 }
 
-type ItemCategory = 'all' | 'equipment' | 'pill' | 'consumable' | 'recipe';
-
-// 统一稀有度与类型显示，兼容英文/别称数据
-// normalizeRarityValue 已移至 rarityUtils.ts，直接导入使用
-
-const typeAliasMap: Record<string, string> = {
-  herb: '草药',
-  pill: '丹药',
-  material: '材料',
-  artifact: '法宝',
-  weapon: '武器',
-  armor: '护甲',
-  accessory: '首饰',
-  ring: '戒指',
-  recipe: '丹方',
-};
-
-const normalizeTypeLabel = (type: ItemType | string): string => {
-  if (!type) return '未知';
-  const key = String(type).toLowerCase();
-  return typeAliasMap[key] || (type as string);
-};
+type ItemCategory = 'all' | 'equipment' | 'pill' | 'consumable' | 'recipe' | 'advancedItem';
 
 // 物品项组件 - 使用 memo 优化性能
 interface InventoryItemProps {
@@ -95,6 +77,7 @@ interface InventoryItemProps {
   isNatal: boolean;
   canRefine: boolean;
   isEquipped: boolean;
+  player: PlayerStats;
   onHover: (item: Item | null) => void;
   onUseItem: (item: Item) => void;
   onEquipItem: (item: Item) => void;
@@ -103,6 +86,7 @@ interface InventoryItemProps {
   onDiscardItem: (item: Item) => void;
   onRefineNatalArtifact?: (item: Item) => void;
   onUnrefineNatalArtifact?: () => void;
+  onRefineAdvancedItem?: (item: Item) => void;
 }
 
 const InventoryItem = memo<InventoryItemProps>(
@@ -111,6 +95,7 @@ const InventoryItem = memo<InventoryItemProps>(
     isNatal,
     canRefine,
     isEquipped,
+    player,
     onHover,
     onUseItem,
     onEquipItem,
@@ -119,6 +104,7 @@ const InventoryItem = memo<InventoryItemProps>(
     onDiscardItem,
     onRefineNatalArtifact,
     onUnrefineNatalArtifact,
+    onRefineAdvancedItem,
   }) => {
     // 使用统一的工具函数计算物品统计
     const stats = getItemStats(item, isNatal);
@@ -171,6 +157,50 @@ const InventoryItem = memo<InventoryItemProps>(
           <p className="text-xs text-stone-500 italic mb-3">
             {item.description}
           </p>
+
+          {/* 进阶物品效果显示 */}
+          {item.type === ItemType.AdvancedItem && item.advancedItemType && item.advancedItemId && (() => {
+            let advancedItemData: any = null;
+            if (item.advancedItemType === 'foundationTreasure') {
+              advancedItemData = FOUNDATION_TREASURES[item.advancedItemId];
+            } else if (item.advancedItemType === 'heavenEarthEssence') {
+              advancedItemData = HEAVEN_EARTH_ESSENCES[item.advancedItemId];
+            } else if (item.advancedItemType === 'heavenEarthMarrow') {
+              advancedItemData = HEAVEN_EARTH_MARROWS[item.advancedItemId];
+            } else if (item.advancedItemType === 'longevityRule') {
+              advancedItemData = LONGEVITY_RULES[item.advancedItemId];
+            }
+
+            if (advancedItemData && advancedItemData.effects) {
+              const effects = advancedItemData.effects;
+              const effectEntries: string[] = [];
+
+              if (effects.hpBonus) effectEntries.push(`血+${effects.hpBonus}`);
+              if (effects.attackBonus) effectEntries.push(`攻+${effects.attackBonus}`);
+              if (effects.defenseBonus) effectEntries.push(`防+${effects.defenseBonus}`);
+              if (effects.spiritBonus) effectEntries.push(`神识+${effects.spiritBonus}`);
+              if (effects.physiqueBonus) effectEntries.push(`体魄+${effects.physiqueBonus}`);
+              if (effects.speedBonus) effectEntries.push(`速度+${effects.speedBonus}`);
+
+              return (
+                <div className="text-xs mb-3 space-y-1">
+                  {effectEntries.length > 0 && (
+                    <div className="text-stone-400 grid grid-cols-2 gap-1">
+                      {effectEntries.map((entry, idx) => (
+                        <span key={idx}>{entry}</span>
+                      ))}
+                    </div>
+                  )}
+                  {effects.specialEffect && (
+                    <div className="text-emerald-400 italic mt-1">
+                      ✨ {effects.specialEffect}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            return null;
+          })()}
 
           {/* 材料用途说明 */}
           {item.type === ItemType.Material && (
@@ -391,6 +421,90 @@ const InventoryItem = memo<InventoryItemProps>(
                   </button>
                 ) : null;
               })()}
+              {/* 进阶物品炼化按钮 */}
+              {item.type === ItemType.AdvancedItem && item.advancedItemType && onRefineAdvancedItem && (() => {
+                const currentRealmIndex = REALM_ORDER.indexOf(player.realm);
+                let requiredRealm: RealmType | null = null;
+                let canRefine = false;
+                let warningMessage = '';
+
+                if (item.advancedItemType === 'foundationTreasure') {
+                  requiredRealm = RealmType.QiRefining;
+                  canRefine = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.QiRefining);
+                  warningMessage = '天道警告：炼化筑基奇物需要达到炼气期！';
+                } else if (item.advancedItemType === 'heavenEarthEssence') {
+                  requiredRealm = RealmType.GoldenCore;
+                  canRefine = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.GoldenCore);
+                  warningMessage = '天道警告：炼化天地精华需要达到金丹期！';
+                } else if (item.advancedItemType === 'heavenEarthMarrow') {
+                  requiredRealm = RealmType.NascentSoul;
+                  canRefine = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.NascentSoul);
+                  warningMessage = '天道警告：炼化天地之髓需要达到元婴期！';
+                } else if (item.advancedItemType === 'longevityRule') {
+                  requiredRealm = RealmType.DaoCombining;
+                  canRefine = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.DaoCombining);
+                  warningMessage = '天道警告：炼化规则之力需要达到合道期！';
+                }
+
+                // 检查是否已经拥有
+                let alreadyOwned = false;
+                if (item.advancedItemType === 'foundationTreasure' && player.foundationTreasure) {
+                  alreadyOwned = true;
+                } else if (item.advancedItemType === 'heavenEarthEssence' && player.heavenEarthEssence) {
+                  alreadyOwned = true;
+                } else if (item.advancedItemType === 'heavenEarthMarrow' && player.heavenEarthMarrow) {
+                  alreadyOwned = true;
+                } else if (item.advancedItemType === 'longevityRule' && item.advancedItemId) {
+                  alreadyOwned = (player.longevityRules || []).includes(item.advancedItemId);
+                  // 检查是否达到最大数量
+                  const maxRules = player.maxLongevityRules || 3;
+                  if ((player.longevityRules || []).length >= maxRules) {
+                    alreadyOwned = true;
+                  }
+                }
+
+                return (
+                  <button
+                    onClick={() => {
+                      if (!canRefine) {
+                        alert(warningMessage);
+                        return;
+                      }
+                      if (alreadyOwned) {
+                        alert('你已经拥有该进阶物品，无法重复炼化！');
+                        return;
+                      }
+                      // 二次确认，特别是筑基奇物炼化后不可修改
+                      const confirmMessage = item.advancedItemType === 'foundationTreasure'
+                        ? `确定要炼化【${item.name}】吗？\n\n⚠️ 警告：筑基奇物炼化后将无法修改，请谨慎选择！`
+                        : `确定要炼化【${item.name}】吗？`;
+                      showConfirm(
+                        confirmMessage,
+                        '确认炼化',
+                        () => {
+                          onRefineAdvancedItem(item);
+                        }
+                      );
+                    }}
+                    disabled={!canRefine || alreadyOwned}
+                    className={`flex-1 text-xs py-2 rounded transition-colors border ${
+                      !canRefine || alreadyOwned
+                        ? 'bg-stone-800/50 text-stone-500 border-stone-700/50 cursor-not-allowed opacity-50'
+                        : 'bg-purple-900/20 hover:bg-purple-900/40 text-purple-300 border-purple-700/50'
+                    }`}
+                    title={
+                      alreadyOwned
+                        ? '你已经拥有该进阶物品'
+                        : !canRefine
+                        ? warningMessage
+                        : '炼化进阶物品'
+                    }
+                  >
+                    <Sparkles size={14} className="inline mr-1" />
+                    炼化
+                  </button>
+                );
+              })()}
               <button
                 onClick={() => onDiscardItem(item)}
                 className="px-3 bg-red-900 hover:bg-red-800 text-red-200 text-xs py-2 rounded transition-colors border border-red-700"
@@ -436,6 +550,7 @@ const InventoryModal: React.FC<Props> = ({
   onOrganizeInventory,
   onRefineNatalArtifact,
   onUnrefineNatalArtifact,
+  onRefineAdvancedItem,
 }) => {
   const [hoveredItem, setHoveredItem] = useState<Item | null>(null);
   const [showEquipment, setShowEquipment] = useState(true);
@@ -524,6 +639,9 @@ const InventoryModal: React.FC<Props> = ({
       const typeKey = String(item.type).toLowerCase();
       if (item.type === ItemType.Recipe || typeKey === 'recipe') {
         return 'recipe'; // 丹方单独分类
+      }
+      if (item.type === ItemType.AdvancedItem || typeKey === 'advanceditem' || typeKey === '进阶物品') {
+        return 'advancedItem'; // 进阶物品单独分类
       }
       if (
         item.isEquippable ||
@@ -768,7 +886,7 @@ const InventoryModal: React.FC<Props> = ({
           {/* 装备面板 */}
           {(showEquipment || mobileActiveTab === 'equipment') && (
             <div
-              className={`w-full md:w-1/2 border-b md:border-b-0 md:border-r border-stone-600 p-3 md:p-4 overflow-y-auto ${
+              className={`w-full md:w-1/2 border-b md:border-b-0 md:border-r border-stone-600 p-3 md:p-4 modal-scroll-container modal-scroll-content ${
                 mobileActiveTab !== 'equipment' ? 'hidden md:block' : ''
               }`}
             >
@@ -783,7 +901,7 @@ const InventoryModal: React.FC<Props> = ({
 
           {/* 物品列表 */}
           <div
-            className={`${showEquipment ? 'w-full md:w-1/2' : 'w-full'} p-4 overflow-y-auto flex flex-col ${
+            className={`${showEquipment ? 'w-full md:w-1/2' : 'w-full'} modal-scroll-container modal-scroll-content p-4 flex flex-col ${
               mobileActiveTab !== 'inventory' ? 'hidden md:flex' : ''
             }`}
           >
@@ -801,6 +919,7 @@ const InventoryModal: React.FC<Props> = ({
                 />
                 {searchQuery && (
                   <button
+                    title="清除搜索"
                     onClick={() => setSearchQuery('')}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-stone-400 hover:text-stone-200"
                   >
@@ -874,6 +993,7 @@ const InventoryModal: React.FC<Props> = ({
                       <div>
                         <div className="flex gap-2 mb-2">
                           <select
+                            title="属性筛选"
                             value={statFilter}
                             onChange={(e) => {
                               setStatFilter(e.target.value as typeof statFilter);
@@ -978,6 +1098,17 @@ const InventoryModal: React.FC<Props> = ({
                   } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
                 >
                   丹方
+                </button>
+                <button
+                  onClick={() => handleCategoryChange('advancedItem')}
+                  disabled={isPending}
+                  className={`px-3 py-1.5 rounded text-sm border transition-colors ${
+                    selectedCategory === 'advancedItem'
+                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                  } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
+                >
+                  进阶物品
                 </button>
               </div>
               {/* 装备部位细分（仅在装备分类时显示） */}
@@ -1170,6 +1301,7 @@ const InventoryModal: React.FC<Props> = ({
                     isNatal={item.id === player.natalArtifactId}
                     canRefine={canRefineGlobal}
                     isEquipped={itemEquippedMap.get(item.id) || false}
+                    player={player}
                     onHover={handleHoverItem}
                     onUseItem={onUseItem}
                     onEquipItem={handleEquipWrapper}
@@ -1178,6 +1310,7 @@ const InventoryModal: React.FC<Props> = ({
                     onDiscardItem={onDiscardItem}
                     onRefineNatalArtifact={onRefineNatalArtifact}
                     onUnrefineNatalArtifact={onUnrefineNatalArtifact}
+                    onRefineAdvancedItem={onRefineAdvancedItem}
                   />
                 ));
               })()}
@@ -1195,24 +1328,21 @@ const InventoryModal: React.FC<Props> = ({
                 <span
                   className={`${comparison.attack > 0 ? 'text-mystic-jade' : 'text-mystic-blood'}`}
                 >
-                  攻击 {comparison.attack > 0 ? '+' : ''}
-                  {comparison.attack}
+                  攻击 {formatValueChange(calculateTotalEquippedStats.attack, calculateTotalEquippedStats.attack + comparison.attack)}
                 </span>
               )}
               {comparison.defense !== 0 && (
                 <span
                   className={`${comparison.defense > 0 ? 'text-mystic-jade' : 'text-mystic-blood'}`}
                 >
-                  防御 {comparison.defense > 0 ? '+' : ''}
-                  {comparison.defense}
+                  防御 {formatValueChange(calculateTotalEquippedStats.defense, calculateTotalEquippedStats.defense + comparison.defense)}
                 </span>
               )}
               {comparison.hp !== 0 && (
                 <span
                   className={`${comparison.hp > 0 ? 'text-mystic-jade' : 'text-mystic-blood'}`}
                 >
-                  气血 {comparison.hp > 0 ? '+' : ''}
-                  {comparison.hp}
+                  气血 {formatValueChange(calculateTotalEquippedStats.hp, calculateTotalEquippedStats.hp + comparison.hp)}
                 </span>
               )}
               {comparison.attack === 0 &&
@@ -1226,17 +1356,17 @@ const InventoryModal: React.FC<Props> = ({
               <span className="text-stone-400">装备预览:</span>
               {calculateTotalEquippedStats.attack > 0 && (
                 <span className="text-mystic-jade">
-                  攻击 +{calculateTotalEquippedStats.attack}
+                  攻击 {formatNumber(calculateTotalEquippedStats.attack)}
                 </span>
               )}
               {calculateTotalEquippedStats.defense > 0 && (
                 <span className="text-mystic-jade">
-                  防御 +{calculateTotalEquippedStats.defense}
+                  防御 {formatNumber(calculateTotalEquippedStats.defense)}
                 </span>
               )}
               {calculateTotalEquippedStats.hp > 0 && (
                 <span className="text-mystic-jade">
-                  气血 +{calculateTotalEquippedStats.hp}
+                  气血 {formatNumber(calculateTotalEquippedStats.hp)}
                 </span>
               )}
               {calculateTotalEquippedStats.attack === 0 &&

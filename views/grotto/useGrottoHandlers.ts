@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlayerStats, ItemType, RealmType, ItemRarity } from '../../types';
-import { GROTTO_CONFIGS, PLANTABLE_HERBS, REALM_ORDER, SPIRIT_ARRAY_ENHANCEMENTS, HERB_MUTATION_CONFIG, SPEEDUP_CONFIG, HERBARIUM_REWARDS } from '../../constants';
+import { GROTTO_CONFIGS, PLANTABLE_HERBS, REALM_ORDER, SPIRIT_ARRAY_ENHANCEMENTS, HERB_MUTATION_CONFIG, SPEEDUP_CONFIG, HERBARIUM_REWARDS } from '../../constants/index';
 import { addItemToInventory } from '../../utils/inventoryUtils';
 
 interface UseGrottoHandlersProps {

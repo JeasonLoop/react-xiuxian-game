@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { X, Home, ArrowUp, Sprout, Package, Coins, Zap, Clock, CheckCircle, AlertCircle, BookOpen, Sparkles, Gauge } from 'lucide-react';
 import { PlayerStats, ItemRarity } from '../types';
-import { GROTTO_CONFIGS, PLANTABLE_HERBS, REALM_ORDER, SPIRIT_ARRAY_ENHANCEMENTS, SPEEDUP_CONFIG, HERBARIUM_REWARDS } from '../constants';
+import { GROTTO_CONFIGS, PLANTABLE_HERBS, REALM_ORDER, SPIRIT_ARRAY_ENHANCEMENTS, SPEEDUP_CONFIG, HERBARIUM_REWARDS } from '../constants/index';
 import { getRarityTextColor } from '../utils/rarityUtils';
+import { formatGrottoTime } from '../utils/formatUtils';
 import { ItemType } from '../types';
 
 interface Props {
@@ -17,26 +18,6 @@ interface Props {
   onToggleAutoHarvest: () => void;
   onSpeedupHerb: (index: number) => void;
 }
-
-/**
- * 格式化时间显示
- */
-const formatTime = (milliseconds: number): string => {
-  if (milliseconds <= 0) return '已完成';
-
-  const totalMinutes = Math.ceil(milliseconds / 60000);
-  if (totalMinutes < 60) {
-    return `${totalMinutes}分钟`;
-  }
-
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-
-  if (minutes === 0) {
-    return `${hours}小时`;
-  }
-  return `${hours}小时${minutes}分钟`;
-};
 
 /**
  * 计算进度百分比（0-100）
@@ -312,7 +293,7 @@ const GrottoModal: React.FC<Props> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 min-h-0">
+        <div className="modal-scroll-container modal-scroll-content p-6 min-h-0">
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {grotto.level === 0 ? (
@@ -498,7 +479,7 @@ const GrottoModal: React.FC<Props> = ({
                                           <Clock size={14} className="text-blue-400" />
                                           <span>剩余时间</span>
                                         </span>
-                                        <span className="font-bold text-mystic-gold">{formatTime(remaining)}</span>
+                                        <span className="font-bold text-mystic-gold">{formatGrottoTime(remaining)}</span>
                                       </div>
                                       <div className="w-full bg-stone-700/50 rounded-full h-2.5 overflow-hidden border border-stone-600">
                                         <div

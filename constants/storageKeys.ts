@@ -13,6 +13,8 @@ export const STORAGE_KEYS = {
   SETTINGS: 'xiuxian-game-settings',
   /** 调试模式键 */
   DEBUG_MODE: 'xiuxian-debug-mode',
+  /** 是否已显示修仙法门弹窗 */
+  CULTIVATION_INTRO_SHOWN: 'xiuxian-cultivation-intro-shown',
 } as const;
 
 /**

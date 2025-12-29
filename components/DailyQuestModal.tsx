@@ -184,7 +184,7 @@ const DailyQuestModal: React.FC<Props> = ({
         </div>
 
         {/* Quest List */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="modal-scroll-container modal-scroll-content p-4 space-y-3">
           {sortedQuests.length === 0 ? (
             <div className="text-center text-stone-400 py-8">
               <Sparkles className="w-12 h-12 mx-auto mb-2 opacity-50" />

@@ -5,6 +5,7 @@ import React, {
   useRef,
   useMemo,
 } from 'react';
+import { checkBreakthroughConditions } from './utils/cultivationUtils';
 import {
   Item,
   Shop,
@@ -14,6 +15,8 @@ import {
   AdventureType,
   RealmType,
   ItemType,
+  TribulationState,
+  TribulationResult,
 } from './types';
 import WelcomeScreen from './components/WelcomeScreen';
 import StartScreen from './components/StartScreen';
@@ -21,6 +24,8 @@ import DeathModal from './components/DeathModal';
 import DebugModal from './components/DebugModal';
 import SaveManagerModal from './components/SaveManagerModal';
 import SaveCompareModal from './components/SaveCompareModal';
+import TribulationModal from './components/TribulationModal';
+import CultivationIntroModal from './components/CultivationIntroModal';
 import { SaveData, clearAllSlots } from './utils/saveManagerUtils';
 import { BattleReplay } from './services/battleService';
 import { useGameState } from './hooks/useGameState';
@@ -32,11 +37,11 @@ import { usePassiveRegeneration } from './hooks/usePassiveRegeneration';
 import { useAutoGrottoHarvest } from './hooks/useAutoGrottoHarvest';
 import { useBattleResultHandler } from './hooks/useBattleResultHandler';
 import { STORAGE_KEYS } from './constants/storageKeys';
-import { setGlobalAlertSetter } from './utils/toastUtils';
+import { setGlobalAlertSetter, showConfirm } from './utils/toastUtils';
 import AlertModal from './components/AlertModal';
 import { AlertType } from './components/AlertModal';
 import { useItemActionLog } from './hooks/useItemActionLog';
-import { REALM_ORDER } from './constants';
+import { REALM_ORDER, TRIBULATION_CONFIG } from './constants/index';
 import {
   useKeyboardShortcuts,
   KeyboardShortcut,
@@ -46,6 +51,7 @@ import {
   configToShortcut,
 } from './utils/shortcutUtils';
 import { compareItemEffects } from './utils/objectUtils';
+import { shouldTriggerTribulation, createTribulationState } from './utils/tribulationUtils';
 import {
   initializeEventTemplateLibrary,
   setEventTemplateLibrary,
@@ -104,6 +110,9 @@ function App() {
 
   // 欢迎界面状态 - 总是显示欢迎界面，让用户选择继续或开始
   const [showWelcome, setShowWelcome] = useState(true);
+
+  // 修仙法门弹窗状态
+  const [showCultivationIntro, setShowCultivationIntro] = useState(false);
 
   // 使用自定义hooks管理游戏效果
   const { visualEffects, createAddLog, triggerVisual } = useGameEffects();
@@ -228,6 +237,40 @@ function App() {
   const [isSaveCompareOpen, setIsSaveCompareOpen] = useState(false);
   const [compareSave1, setCompareSave1] = useState<SaveData | null>(null);
   const [compareSave2, setCompareSave2] = useState<SaveData | null>(null);
+
+  // 天劫弹窗状态
+  const [tribulationState, setTribulationState] = useState<TribulationState | null>(null);
+  // 防止天劫重复触发的标志
+  const isTribulationTriggeredRef = useRef(false);
+
+  // 处理天劫完成
+  const handleTribulationComplete = (result: TribulationResult) => {
+    // 不在这里重置标志位，让境界变化时的 useEffect 来重置
+    if (result.success) {
+      // 渡劫成功，执行突破（跳过成功率检查）
+      breakthroughHandlers.handleBreakthrough(true);
+      // 扣除气血
+      if (result.hpLoss && result.hpLoss > 0) {
+        setPlayer((prev) => {
+          if (!prev) return prev;
+          const newHp = Math.max(0, prev.hp - result.hpLoss);
+          return { ...prev, hp: newHp };
+        });
+        addLog(`渡劫成功，但损耗了${result.hpLoss}点气血。`, 'normal');
+      } else {
+        addLog(result.description, 'gain');
+      }
+      setTribulationState(null);
+    } else {
+      // 渡劫失败，触发死亡
+      setDeathReason(result.description);
+      setPlayer((prev) => {
+        if (!prev) return prev;
+        return { ...prev, hp: 0 };
+      });
+      setTribulationState(null);
+    }
+  };
 
   // 初始化全局 alert
   useEffect(() => {
@@ -369,6 +412,8 @@ function App() {
 
     initEnemyNames();
   }, [isReady, saveEnemyNames, loadEnemyNames, hasEnemyNames]);
+
+
   // 自动功能和死亡状态
   const [autoMeditate, setAutoMeditate] = useState(false);
   const [autoAdventure, setAutoAdventure] = useState(false);
@@ -390,6 +435,7 @@ function App() {
       adventureType: AdventureType;
       riskLevel?: '低' | '中' | '高' | '极度危险';
       realmMinRealm?: RealmType;
+      bossId?: string; // 指定的天地之魄BOSS ID（用于事件模板）
     }) => {
       // 如果正在自动历练，暂停自动历练但保存状态
       if (autoAdventure) {
@@ -696,6 +742,7 @@ function App() {
   const handleUseItem = itemHandlers.handleUseItem;
   const handleOrganizeInventory = itemHandlers.handleOrganizeInventory;
   const handleDiscardItem = itemHandlers.handleDiscardItem;
+  const handleRefineAdvancedItem = itemHandlers.handleRefineAdvancedItem;
   const handleBatchUse = (itemIds: string[]) => {
     itemHandlers.handleBatchUseItems(itemIds);
   };
@@ -1026,10 +1073,64 @@ function App() {
         }
         return;
       }
-      breakthroughHandlers.handleBreakthrough();
+
+      // 检查是否已经触发了天劫（防止重复触发）
+      if (isTribulationTriggeredRef.current) {
+        return;
+      }
+
+      // 检查是否需要渡劫
+      const isRealmUpgrade = player.realmLevel >= 9;
+      let targetRealm = player.realm;
+      if (isRealmUpgrade) {
+        const currentIndex = REALM_ORDER.indexOf(player.realm);
+        if (currentIndex < REALM_ORDER.length - 1) {
+          targetRealm = REALM_ORDER[currentIndex + 1];
+        }
+      }
+
+      // 如果是境界升级，先检查是否满足突破条件
+      if (isRealmUpgrade && targetRealm !== player.realm) {
+        const conditionCheck = checkBreakthroughConditions(player, targetRealm);
+        if (!conditionCheck.canBreakthrough) {
+          addLog(conditionCheck.message, 'danger');
+          // 锁定经验值，避免反复触发
+          setPlayer((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
+          return;
+        }
+      }
+
+      // 检查是否需要渡劫（只有在满足条件后才检查）
+      if (shouldTriggerTribulation(player) && !tribulationState?.isOpen) {
+        // 设置标志位，防止重复触发
+        isTribulationTriggeredRef.current = true;
+
+        // 获取天劫名称
+        const config = TRIBULATION_CONFIG[targetRealm];
+        const tribulationName = config?.tribulationLevel || `${targetRealm}天劫`;
+
+        // 显示确认弹窗
+        showConfirm(
+          `你的${tribulationName}来了，是否现在渡劫？`,
+          '确认渡劫',
+          () => {
+            // 用户确认后，创建天劫状态并触发弹窗
+            const newTribulationState = createTribulationState(player, targetRealm);
+            setTribulationState(newTribulationState);
+          },
+          () => {
+            // 用户取消，重置标志位并锁定经验值，防止立即再次触发
+            isTribulationTriggeredRef.current = false;
+            setPlayer((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
+          }
+        );
+      } else if (!tribulationState?.isOpen) {
+        // 不需要渡劫，直接执行突破
+        breakthroughHandlers.handleBreakthrough();
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [player?.exp, player?.maxExp, player?.realm, player?.realmLevel]);
+  }, [player?.exp, player?.maxExp, player?.realm, player?.realmLevel, tribulationState?.isOpen]);
 
   // 初始化日常任务（只在游戏开始时执行一次，或日期变化时执行）
   useEffect(() => {
@@ -1045,6 +1146,20 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameStarted]);
 
+  // 首次进入检测：显示修仙法门弹窗
+  useEffect(() => {
+    if (gameStarted && !showWelcome) {
+      const hasShown = localStorage.getItem(STORAGE_KEYS.CULTIVATION_INTRO_SHOWN);
+      if (!hasShown) {
+        // 延迟一点显示，让游戏界面先加载完成
+        const timer = setTimeout(() => {
+          setShowCultivationIntro(true);
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [gameStarted, showWelcome]);
+
   // 监听突破成功，更新任务进度
   const prevRealmRef = useRef<{ realm: string; level: number } | null>(null);
   useEffect(() => {
@@ -1054,6 +1169,8 @@ function App() {
       if (player.realm !== prevRealm || player.realmLevel !== prevLevel) {
         // 境界或等级变化，说明突破成功
         dailyQuestHandlers.updateQuestProgress('breakthrough', 1);
+        // 重置天劫触发标志
+        isTribulationTriggeredRef.current = false;
       }
     }
     if (player) {
@@ -1499,6 +1616,15 @@ function App() {
 
   return (
     <>
+      {/* 天劫弹窗 */}
+      {tribulationState && (
+        <TribulationModal
+          tribulationState={tribulationState}
+          onTribulationComplete={handleTribulationComplete}
+          player={player}
+        />
+      )}
+
       {/* 死亡弹窗 - 无法关闭 */}
       {isDead && player && (
         <DeathModal
@@ -1645,6 +1771,12 @@ function App() {
             setReputationEvent(event);
             setIsReputationEventOpen(true);
           }}
+          onChallengeDaoCombining={() => {
+            // 挑战天地之魄：使用executeAdventure执行特殊挑战
+            if (adventureHandlers) {
+              adventureHandlers.executeAdventure('dao_combining_challenge', undefined, '极度危险');
+            }
+          }}
         />
       )}
 
@@ -1712,8 +1844,6 @@ function App() {
                 earth: Math.floor(Math.random() * 16),
               },
               unlockedTitles: loadedPlayer.unlockedTitles || (loadedPlayer.titleId ? [loadedPlayer.titleId] : ['title-novice']),
-              inheritanceRoute: loadedPlayer.inheritanceRoute || null,
-              inheritanceSkills: loadedPlayer.inheritanceSkills || [],
               reputation: loadedPlayer.reputation || 0,
               // 宗门追杀系统
               betrayedSects: loadedPlayer.betrayedSects || [],
@@ -1850,6 +1980,7 @@ function App() {
           handleOrganizeInventory,
           handleRefineNatalArtifact,
           handleUnrefineNatalArtifact,
+          handleRefineAdvancedItem,
           handleUpgradeItem,
           handleLearnArt,
           handleActivateArt,
@@ -1924,6 +2055,12 @@ function App() {
             setTurnBasedBattleParams(null);
             handleBattleResult(result, updatedInventory);
 
+            // 如果自动历练状态是 false，清除暂停状态但不恢复自动历练
+            if (!autoAdventure) {
+              setAutoAdventurePausedByBattle(false);
+              return;
+            }
+
             // 如果玩家死亡，清除自动历练暂停状态（死亡检测会处理）
             if (result && player) {
               const playerHpAfter = Math.max(
@@ -1937,7 +2074,7 @@ function App() {
               // 如果没有战斗结果或玩家不存在，也清除暂停状态
               setAutoAdventurePausedByBattle(false);
             }
-            // 如果玩家还活着，useEffect 会自动恢复自动历练
+            // 如果玩家还活着且 autoAdventure 为 true，useEffect 会自动恢复自动历练
           },
         }}
       />
@@ -1951,6 +2088,15 @@ function App() {
           </div>
         </>
       )}
+
+      {/* 修仙法门弹窗 */}
+      <CultivationIntroModal
+        isOpen={showCultivationIntro}
+        onClose={() => {
+          setShowCultivationIntro(false);
+          localStorage.setItem(STORAGE_KEYS.CULTIVATION_INTRO_SHOWN, 'true');
+        }}
+      />
     </>
   );
 }

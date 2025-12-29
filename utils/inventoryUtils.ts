@@ -78,6 +78,8 @@ export function addItemToInventory(
         equipmentSlot: equipmentSlot,
         recipeData: itemData.recipeData,
         reviveChances: itemData.reviveChances,
+        advancedItemType: itemData.advancedItemType,
+        advancedItemId: itemData.advancedItemId,
       } as Item);
     }
     return newInv;
@@ -105,6 +107,8 @@ export function addItemToInventory(
       permanentEffect: normalized.permanentEffect,
       isEquippable: false,
       recipeData: itemData.recipeData,
+      advancedItemType: itemData.advancedItemType,
+      advancedItemId: itemData.advancedItemId,
     } as Item);
   }
 

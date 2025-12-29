@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { PlayerStats, RealmType, SecretRealm } from '../types';
-import { REALM_ORDER } from '../constants';
+import { REALM_ORDER } from '../constants/index';
 import { generateRandomRealms } from '../services/randomService';
 import { X, Mountain, Gem, Ticket, RefreshCw } from 'lucide-react';
 
@@ -38,7 +38,7 @@ const SecretRealmModal: React.FC<Props> = ({
       onClick={onClose}
     >
       <div
-        className="bg-ink-900 w-full h-[80vh] md:h-auto md:max-w-4xl md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-purple-900 shadow-[0_0_30px_rgba(147,51,234,0.3)] flex flex-col md:max-h-[85vh]"
+        className="bg-ink-900 w-full h-[80vh] md:h-auto md:max-w-4xl md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-purple-900 shadow-[0_0_30px_rgba(147,51,234,0.3)] flex flex-col md:max-h-[85vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-3 md:p-4 border-b border-purple-900 flex justify-between items-center bg-purple-900/20 md:rounded-t">
@@ -63,7 +63,7 @@ const SecretRealmModal: React.FC<Props> = ({
           </div>
         </div>
 
-        <div className="p-3 md:p-6 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+        <div className="modal-scroll-container modal-scroll-content grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6 p-3 md:p-6">
           {availableRealms.map((realm) => {
             const playerRealmIndex = getRealmIndex(player.realm);
             const reqRealmIndex = getRealmIndex(realm.minRealm);

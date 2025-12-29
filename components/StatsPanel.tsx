@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { PlayerStats } from '../types';
-import { CULTIVATION_ARTS } from '../constants';
+import { CULTIVATION_ARTS } from '../constants/index';
 import { getRarityTextColor } from '../utils/rarityUtils';
-import { Shield, Zap, Coins, BookOpen, Sword, ChevronDown, ChevronUp, Clock, Sparkles } from 'lucide-react';
+import { Shield, Zap, Coins, BookOpen, Sword, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { getPlayerTotalStats } from '../utils/statUtils';
+import { getGoldenCoreMethodTitle,  } from '../utils/cultivationUtils';
+import { formatNumber } from '../utils/formatUtils';
 
 interface Props {
   player: PlayerStats;
@@ -61,7 +63,14 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
             {player.name}
           </h2>
           <div className="text-stone-400 text-xs mt-0.5 font-serif">
-            {player.realm} - {player.realmLevel} 层
+            {(() => {
+              // 如果是金丹期，显示几法金丹
+              if (player.realm === '金丹期' && player.goldenCoreMethodCount) {
+                const methodTitle = getGoldenCoreMethodTitle(player.goldenCoreMethodCount);
+                return `${methodTitle} - ${player.realmLevel} 层`;
+              }
+              return `${player.realm} - ${player.realmLevel} 层`;
+            })()}
           </div>
         </div>
         {isCollapsed ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
@@ -73,7 +82,14 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
           {player.name}
         </h2>
         <div className="text-stone-400 text-sm mt-1 font-serif">
-          {player.realm} - {player.realmLevel} 层
+          {(() => {
+            // 如果是金丹期，显示几法金丹
+            if (player.realm === '金丹期' && player.goldenCoreMethodCount) {
+              const methodTitle = getGoldenCoreMethodTitle(player.goldenCoreMethodCount);
+              return `${methodTitle} - ${player.realmLevel} 层`;
+            }
+            return `${player.realm} - ${player.realmLevel} 层`;
+          })()}
         </div>
       </div>
 
@@ -87,7 +103,7 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
             <div className="flex justify-between text-xs text-stone-400 mb-1">
               <span>气血 (HP)</span>
               <span>
-                {player.hp} / {totalStats.maxHp}
+                {formatNumber(player.hp)} / {formatNumber(totalStats.maxHp)}
               </span>
             </div>
             <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
@@ -102,7 +118,7 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
             <div className="flex justify-between text-xs text-stone-400 mb-1">
               <span>修为 (Exp)</span>
               <span>
-                {Math.floor(player.exp)} / {player.maxExp}
+                {formatNumber(Math.floor(player.exp))} / {formatNumber(player.maxExp)}
               </span>
             </div>
             <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
@@ -117,7 +133,7 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
             <div className="flex justify-between text-xs text-stone-400 mb-1">
               <span>寿命 (年)</span>
               <span>
-                {Math.floor(player.lifespan ?? player.maxLifespan ?? 100)} / {Math.floor(player.maxLifespan ?? 100)}
+                {formatNumber(Math.floor(player.lifespan ?? player.maxLifespan ?? 100))} / {formatNumber(Math.floor(player.maxLifespan ?? 100))}
               </span>
             </div>
             <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
@@ -229,7 +245,7 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
             <div>
               <div className="text-[10px] md:text-xs text-stone-500">灵石</div>
               <div className="text-mystic-gold font-bold text-xs md:text-base">
-                {player.spiritStones}
+                {formatNumber(player.spiritStones)}
               </div>
             </div>
           </div>

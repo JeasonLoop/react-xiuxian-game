@@ -29,7 +29,12 @@ import {
   BATTLE_POTIONS,
   getPillDefinition,
   SECT_MASTER_CHALLENGE_REQUIREMENTS,
-} from '../constants';
+  HEAVEN_EARTH_SOUL_BOSSES,
+  FOUNDATION_TREASURES,
+  HEAVEN_EARTH_ESSENCES,
+  HEAVEN_EARTH_MARROWS,
+  LONGEVITY_RULES,
+} from '../constants/index';
 import { getPlayerTotalStats } from '../utils/statUtils';
 import { getRandomEnemyName } from './templateService';
 import { logger } from '../utils/logger';
@@ -176,12 +181,12 @@ const getBattleDifficulty = (
   riskLevel?: '低' | '中' | '高' | '极度危险'
 ): number => {
   if (adventureType === 'secret_realm' && riskLevel) {
-    // 秘境根据风险等级调整难度（降低基础难度，减少死亡率）
+    // 秘境根据风险等级调整难度（扩大差异使风险等级名称与实际难度匹配）
     const riskMultipliers = {
-      低: 0.85,  // 从1.0降低到0.85
-      中: 1.0,   // 从1.25降低到1.0
-      高: 1.2,   // 从1.5降低到1.2
-      极度危险: 1.5, // 从2.0降低到1.5
+      低: 0.6,      // 降低难度，适合刷级
+      中: 1.0,       // 标准难度
+      高: 1.5,       // 提高难度，增加挑战
+      极度危险: 2.2, // 大幅提高难度，名副其实的"极度危险"
     };
     return riskMultipliers[riskLevel];
   }
@@ -191,15 +196,17 @@ const getBattleDifficulty = (
     lucky: 0.85,
     secret_realm: 1.25,
     sect_challenge: 1.5, // 宗主挑战难度稍微下调，从2.0降至1.8
+    dao_combining_challenge: 2.0, // 天地之魄挑战难度
   };
   return baseDifficulty[adventureType];
 };
 
 const baseBattleChance: Record<AdventureType, number> = {
-  normal: 0.4, // 历练基础概率从22%提高到40%
-  lucky: 0.2, // 机缘历练基础概率从8%提高到20%
-  secret_realm: 0.65, // 秘境基础概率从45%提高到65%
+  normal: 0.25, // 历练基础概率降低到25%
+  lucky: 0.12, // 机缘历练基础概率降低到12%
+  secret_realm: 0.45, // 秘境基础概率降低到45%
   sect_challenge: 1.0, // 挑战必然触发
+  dao_combining_challenge: 1.0, // 天地之魄挑战必然触发
 };
 
 // Fisher-Yates 洗牌算法，用于打乱数组顺序
@@ -270,14 +277,14 @@ const generateLoot = (
 
   // 根据玩家境界调整稀有度概率（高境界更容易获得高级物品）
   const realmIndex = REALM_ORDER.indexOf(playerRealm);
-  // 境界加成：每个境界增加稀有度概率，高境界加成更明显
-  // 基础加成：每个境界增加2%仙品、3%传说、5%稀有概率
+  // 境界加成：每个境界增加稀有度概率，降低加成上限防止物品通胀
+  // 基础加成：每个境界增加1%仙品、1.5%传说、2.5%稀有概率
   // 高境界（第4个境界及以上）额外获得50%加成
   const isHighRealm = realmIndex >= 3; // 元婴期及以上
   const realmMultiplier = isHighRealm ? 1.5 : 1.0;
-  const realmBonusImmortal = Math.min(0.15, realmIndex * 0.02 * realmMultiplier); // 仙品加成，最高15%
-  const realmBonusLegend = Math.min(0.20, realmIndex * 0.03 * realmMultiplier); // 传说加成，最高20%
-  const realmBonusRare = Math.min(0.25, realmIndex * 0.05 * realmMultiplier); // 稀有加成，最高25%
+  const realmBonusImmortal = Math.min(0.05, realmIndex * 0.01 * realmMultiplier); // 仙品加成，最高5%
+  const realmBonusLegend = Math.min(0.10, realmIndex * 0.015 * realmMultiplier); // 传说加成，最高10%
+  const realmBonusRare = Math.min(0.20, realmIndex * 0.025 * realmMultiplier); // 稀有加成，最高20%
 
   // 根据敌人强度和类型决定稀有度分布
   const getRarityChance = (): ItemRarity => {
@@ -285,10 +292,10 @@ const generateLoot = (
     if (adventureType === 'secret_realm') {
       // 秘境：根据风险等级调整稀有度概率
       if (riskLevel === '极度危险') {
-        // 极度危险：更高概率获得顶级物品
-        if (roll < 0.15 + realmBonusImmortal) return '仙品';
-        if (roll < 0.5 + realmBonusLegend) return '传说';
-        if (roll < 0.85 + realmBonusRare) return '稀有';
+        // 极度危险：更高概率获得顶级物品（降低基础概率防止通胀）
+        if (roll < 0.05 + realmBonusImmortal) return '仙品'; // 降低10%
+        if (roll < 0.20 + realmBonusLegend) return '传说'; // 降低30%
+        if (roll < 0.70 + realmBonusRare) return '稀有'; // 降低15%
         return '普通';
       } else if (riskLevel === '高') {
         // 高风险：较高概率
@@ -577,6 +584,8 @@ export interface BattleRoundLog {
 
 export interface BattleReplay {
   id: string;
+  adventureType?: AdventureType; // 历练类型
+  bossId?: string | null; // 挑战的BOSS ID（用于天地之魄等特殊战斗）
   enemy: {
     name: string;
     title: string;
@@ -654,7 +663,8 @@ const createEnemy = async (
   realmMinRealm?: RealmType,
   sectMasterId?: string | null,
   huntSectId?: string | null,
-  huntLevel?: number
+  huntLevel?: number,
+  bossId?: string // 指定的天地之魄BOSS ID（用于事件模板）
 ): Promise<{
   name: string;
   title: string;
@@ -667,6 +677,19 @@ const createEnemy = async (
   strengthMultiplier: number;
 }> => {
   const currentRealmIndex = REALM_ORDER.indexOf(player.realm);
+
+  // 保存选中的BOSS用于后续属性计算（天地之魄挑战）
+  let selectedBossForStats: typeof HEAVEN_EARTH_SOUL_BOSSES[string] | null = null;
+  if (adventureType === 'dao_combining_challenge') {
+    // 天地之魄挑战：如果指定了BOSS ID，使用指定的；否则随机选择一个
+    if (bossId && HEAVEN_EARTH_SOUL_BOSSES[bossId]) {
+      selectedBossForStats = HEAVEN_EARTH_SOUL_BOSSES[bossId];
+    } else {
+      const bossIds = Object.keys(HEAVEN_EARTH_SOUL_BOSSES);
+      const randomBossId = bossIds[Math.floor(Math.random() * bossIds.length)];
+      selectedBossForStats = HEAVEN_EARTH_SOUL_BOSSES[randomBossId] || null;
+    }
+  }
 
   // 如果进入秘境且有秘境的最低境界要求，基于秘境境界计算敌人强度
   let targetRealmIndex: number;
@@ -728,6 +751,9 @@ const createEnemy = async (
         3 // 至少元婴期
       );
     }
+  } else if (adventureType === 'dao_combining_challenge') {
+    // 天地之魄挑战：固定为化神期
+    targetRealmIndex = REALM_ORDER.indexOf(RealmType.SpiritSevering);
   } else {
     // 普通历练和机缘历练，按原逻辑
     const realmOffset =
@@ -782,6 +808,11 @@ const createEnemy = async (
       // 20% 概率：境界突破或感悟提升，实力处于顶峰
       strengthVariance = { min: 1.3, max: 1.6 };
     }
+  } else if (adventureType === 'dao_combining_challenge') {
+    // 天地之魄挑战：倍数将在后续根据玩家战斗力计算（0.9~3.0倍）
+    // 这里先设置一个默认值，实际倍数会在属性计算时动态生成
+    strengthMultiplier = 1.0; // 临时值，会在后面重新计算
+    strengthVariance = { min: 1.0, max: 1.0 }; // 天地之魄倍数由随机数决定，不需要额外波动
   } else if (adventureType === 'normal') {
     if (strengthRoll < 0.4) {
       // 弱敌 40%
@@ -894,9 +925,15 @@ const createEnemy = async (
       name = '上代宗主';
       title = '威震八方的';
     }
+  } else if (adventureType === 'dao_combining_challenge') {
+    // 天地之魄挑战：使用已选中的BOSS
+    if (selectedBossForStats) {
+      name = selectedBossForStats.name;
+      title = '天地之魄-';
+    }
   }
 
-  if (Math.random() < 0.15 && adventureType !== 'sect_challenge') {
+  if (Math.random() < 0.15 && adventureType !== 'sect_challenge' && adventureType !== 'dao_combining_challenge') {
     try {
       // 使用模板库生成敌人名称
       const generated = getRandomEnemyName(realm, adventureType);
@@ -959,15 +996,71 @@ const createEnemy = async (
     basePlayerRealmLevel = player.realmLevel;
   }
 
-  // 平衡敌人的基础属性（优化：统一攻击和防御系数，使战斗更平衡）
-  // 攻击和防御系数都设为0.75，境界加成也统一为+2.5，避免敌人攻击力过强
-  const baseAttack = basePlayerAttack * 0.75 + basePlayerRealmLevel * 2.5;
-  const baseDefense = basePlayerDefense * 0.75 + basePlayerRealmLevel * 2.5;
-  // 计算敌人神识：基于玩家神识和境界基础神识
-  const realmBaseSpirit = REALM_DATA[realm]?.baseSpirit || 0;
-  const baseSpirit = basePlayerSpirit * 0.3 + realmBaseSpirit * 0.5 + basePlayerRealmLevel * 1;
+  // 平衡敌人的基础属性
+  // 天地之魄挑战：直接使用BOSS的基础属性
+  let baseAttack: number;
+  let baseDefense: number;
+  let baseMaxHp: number;
+  let baseSpeed: number;
+  let baseSpirit: number;
 
-  // 动态调整敌人血量：根据攻击力和防御力计算，确保战斗有足够的回合数（至少3-5回合）
+  if (adventureType === 'dao_combining_challenge' && selectedBossForStats) {
+    // 使用BOSS的基础属性
+    baseAttack = selectedBossForStats.baseStats.attack;
+    baseDefense = selectedBossForStats.baseStats.defense;
+    baseMaxHp = selectedBossForStats.baseStats.hp;
+    baseSpeed = selectedBossForStats.baseStats.speed;
+    baseSpirit = selectedBossForStats.baseStats.spirit;
+  } else {
+    // 普通敌人：基于玩家属性计算（优化：统一攻击和防御系数，使战斗更平衡）
+    // 攻击和防御系数都设为0.75，境界加成也统一为+2.5，避免敌人攻击力过强
+    baseAttack = basePlayerAttack * 0.75 + basePlayerRealmLevel * 2.5;
+    baseDefense = basePlayerDefense * 0.75 + basePlayerRealmLevel * 2.5;
+    // 计算敌人神识：基于玩家神识和境界基础神识
+    const realmBaseSpirit = REALM_DATA[realm]?.baseSpirit || 0;
+    baseSpirit = basePlayerSpirit * 0.3 + realmBaseSpirit * 0.5 + basePlayerRealmLevel * 1;
+    baseMaxHp = basePlayerMaxHp;
+    baseSpeed = basePlayerSpeed;
+  }
+
+  // 天地之魄挑战：根据玩家战斗力动态调整BOSS属性（0.9~3.0倍）
+  if (adventureType === 'dao_combining_challenge' && selectedBossForStats) {
+    // 计算玩家战斗力（综合攻击、防御、血量等属性）
+    const playerCombatPower = basePlayerAttack * 0.4 + basePlayerDefense * 0.3 + basePlayerMaxHp * 0.002 + basePlayerSpeed * 0.15 + basePlayerSpirit * 0.15;
+
+    // 计算BOSS基准战斗力（使用BOSS基础属性）
+    const bossBaseCombatPower = baseAttack * 0.4 + baseDefense * 0.3 + baseMaxHp * 0.002 + baseSpeed * 0.15 + baseSpirit * 0.15;
+
+    // 随机倍数：0.9~1.8倍玩家战斗力（缩小范围避免难度极端）
+    const randomMultiplier = 0.9 + Math.random() * 0.9; // 0.9 ~ 1.8
+
+    // 计算目标战斗力
+    const targetCombatPower = playerCombatPower * randomMultiplier;
+
+    // 计算比例系数
+    const powerRatio = bossBaseCombatPower > 0 ? targetCombatPower / bossBaseCombatPower : randomMultiplier;
+
+    // 按比例调整BOSS属性
+    const adjustedAttack = Math.round(baseAttack * powerRatio);
+    const adjustedDefense = Math.round(baseDefense * powerRatio);
+    const adjustedMaxHp = Math.round(baseMaxHp * powerRatio);
+    const adjustedSpeed = Math.round(baseSpeed * powerRatio);
+    const adjustedSpirit = Math.round(baseSpirit * powerRatio);
+
+    return {
+      name,
+      title,
+      realm,
+      attack: adjustedAttack,
+      defense: adjustedDefense,
+      maxHp: adjustedMaxHp,
+      speed: adjustedSpeed,
+      spirit: adjustedSpirit,
+      strengthMultiplier: randomMultiplier, // 保存实际倍数用于生成奖励
+    };
+  }
+
+  // 普通敌人：动态调整敌人血量，根据攻击力和防御力计算，确保战斗有足够的回合数（至少3-5回合）
   // 基础血量 = 玩家血量 * (0.6 + 随机0.3) = 60%-90%
   // 然后根据敌人攻击力调整，确保玩家需要至少3回合才能击败敌人
   const baseHpMultiplier = 0.6 + Math.random() * 0.3; // 60%-90%
@@ -983,7 +1076,6 @@ const createEnemy = async (
     // 敌人攻击力较弱，血量提高10%，确保有挑战性
     calculatedHp = Math.round(calculatedHp * 1.1);
   }
-
   return {
     name,
     title,
@@ -1000,7 +1092,7 @@ const createEnemy = async (
     speed: Math.max(
       6,
       Math.round(
-        basePlayerSpeed * (0.7 + Math.random() * 0.3) * strengthMultiplier
+        baseSpeed * (0.7 + Math.random() * 0.3) * strengthMultiplier
       )
     ),
     spirit: Math.max(
@@ -1032,8 +1124,10 @@ const calcDamage = (attack: number, defense: number) => {
     baseDamage = Math.max(1, penetration); // 至少1点伤害
   }
 
-  // 随机波动 85%-115%
-  const randomFactor = 0.85 + Math.random() * 0.3;
+  // 随机波动范围（伤害在一定范围内浮动）
+  // 根据战斗力差异调整随机范围：差距越大，波动越大
+  const baseRandomRange = 0.2; // 基础±10%波动（即0.9~1.1倍）
+  const randomFactor = 0.9 + Math.random() * baseRandomRange; // 0.9~1.1倍
   return Math.round(Math.max(1, baseDamage * randomFactor));
 };
 
@@ -1042,6 +1136,11 @@ export const shouldTriggerBattle = (
   player: PlayerStats,
   adventureType: AdventureType
 ): boolean => {
+  // 挑战类型（宗主挑战、天地之魄挑战）总是触发战斗
+  if (adventureType === 'sect_challenge' || adventureType === 'dao_combining_challenge') {
+    return true;
+  }
+
   const base = baseBattleChance[adventureType] ?? 0.2; // 基础战斗概率
   const realmBonus = REALM_ORDER.indexOf(player.realm) * 0.02; // 境界加成（从0.015提高到0.02）
   const speedBonus = (player.speed || 0) * 0.0005; // 速度加成（从0.0004提高到0.0005）
@@ -1059,6 +1158,7 @@ export const resolveBattleEncounter = async (
   realmName?: string,
   huntSectId?: string | null,
   huntLevel?: number,
+  bossId?: string, // 指定的天地之魄BOSS ID（用于事件模板）
 ): Promise<BattleResolution> => {
   const enemy = await createEnemy(
     player,
@@ -1067,7 +1167,8 @@ export const resolveBattleEncounter = async (
     realmMinRealm,
     undefined,
     huntSectId,
-    huntLevel
+    huntLevel,
+    bossId
   );
   const difficulty = getBattleDifficulty(adventureType, riskLevel);
   // 确保初始值为有效数字，防止NaN
@@ -1104,8 +1205,8 @@ export const resolveBattleEncounter = async (
     const speedSum = Math.max(1, playerSpeed + enemySpeed); // 确保至少为1，避免除零
     const critSpeed = isPlayerTurn ? playerSpeed : enemySpeed;
     // 优化暴击率计算：降低速度对暴击率的影响，设置上限为20%
-    // 基础8% + 速度加成最高12% = 最高20%暴击率
-    const critChanceBase = 0.08 + (critSpeed / speedSum) * 0.12;
+    // 基础10% + 速度加成最高10% = 最高20%暴击率（修复：基础暴击率改为10%）
+    const critChanceBase = 0.10 + (critSpeed / speedSum) * 0.10;
     // 确保暴击率在合理范围内（最高20%）
     const validCritChance = Math.max(0, Math.min(0.2, critChanceBase));
     const crit = Math.random() < validCritChance;
@@ -1409,6 +1510,8 @@ export const resolveBattleEncounter = async (
     adventureResult,
     replay: {
       id: randomId(),
+      adventureType,
+      bossId: bossId || null,
       enemy,
       rounds,
       victory,
@@ -1557,12 +1660,13 @@ export const initializeTurnBasedBattle = async (
   adventureType: AdventureType,
   riskLevel?: '低' | '中' | '高' | '极度危险',
   realmMinRealm?: RealmType,
-  sectMasterId?: string | null
+  sectMasterId?: string | null,
+  bossId?: string // 指定的天地之魄BOSS ID（用于事件模板）
 ): Promise<BattleState> => {
   // 创建敌人（如果是追杀战斗，从 player 对象中获取追杀参数）
   const huntSectId = adventureType === 'sect_challenge' && player.sectId === null ? player.sectHuntSectId : undefined;
   const huntLevel = adventureType === 'sect_challenge' && player.sectId === null ? player.sectHuntLevel : undefined;
-  const enemyData = await createEnemy(player, adventureType, riskLevel, realmMinRealm, sectMasterId, huntSectId, huntLevel);
+  const enemyData = await createEnemy(player, adventureType, riskLevel, realmMinRealm, sectMasterId, huntSectId, huntLevel, bossId);
 
   // 创建玩家战斗单位
   const playerUnit = createBattleUnitFromPlayer(player);
@@ -1947,6 +2051,9 @@ export function executePlayerAction(
     case 'item':
       actionResult = executeItem(newState, action.itemId);
       break;
+    case 'advancedItem':
+      actionResult = executeAdvancedItem(newState, action.itemType, action.itemId);
+      break;
     case 'defend':
       actionResult = executeDefend(newState, 'player');
       break;
@@ -2111,12 +2218,12 @@ function executeNormalAttack(
   const baseDamage = calcDamage(attacker.attack, target.defense);
 
   // 计算暴击（优化：统一暴击率计算，设置上限）
-  let critChance = 0.08; // 基础暴击率
+  let critChance = 0.10; // 基础暴击率10%（修复：从8%改为10%）
   // 根据速度差计算速度加成（与自动战斗保持一致）
   const attackerSpeed = Number(attacker.speed) || 0;
   const targetSpeed = Number(target.speed) || 0;
   const speedSum = Math.max(1, attackerSpeed + targetSpeed);
-  const speedBonus = (attackerSpeed / speedSum) * 0.12; // 速度加成最高12%
+  const speedBonus = (attackerSpeed / speedSum) * 0.10; // 速度加成最高10%（从12%调整为10%）
   critChance += speedBonus;
   // 应用Buff/Debuff
   attacker.buffs.forEach((buff) => {
@@ -2127,11 +2234,49 @@ function executeNormalAttack(
   // 设置暴击率上限为20%（除非Buff超过）
   critChance = Math.min(0.2, Math.max(0, critChance));
   const isCrit = Math.random() < critChance;
-  const finalDamage = isCrit ? Math.round(baseDamage * 1.5) : baseDamage;
+  // 计算暴击伤害倍率（基础1.5倍，加上buff加成）
+  let critMultiplier = 1.5;
+  attacker.buffs.forEach((buff) => {
+    if (buff.critDamage && buff.critDamage > 0) {
+      critMultiplier += buff.critDamage;
+    }
+  });
+  const finalDamage = isCrit ? Math.round(baseDamage * critMultiplier) : baseDamage;
+
+  // 检查闪避
+  let isDodged = false;
+  if (target.buffs.some(buff => buff.dodge && buff.dodge > 0)) {
+    const maxDodge = Math.max(...target.buffs
+      .filter(buff => buff.dodge && buff.dodge > 0)
+      .map(buff => buff.dodge!));
+    isDodged = Math.random() < maxDodge;
+  }
+
+  if (isDodged) {
+    return {
+      id: randomId(),
+      round: battleState.round,
+      turn: attackerId,
+      actor: attackerId,
+      actionType: 'attack',
+      target: targetId,
+      result: {
+        miss: true,
+      },
+      description:
+        attackerId === 'player'
+          ? `你发动攻击，但被${target.name}闪避了！`
+          : `${attacker.name}攻击，但被你闪避了！`,
+    };
+  }
 
   // 应用防御状态（优化：根据攻击力和防御力比例动态调整减伤效果）
   let actualDamage = finalDamage;
-  if (target.isDefending) {
+
+  // 检查攻击者是否有无视防御buff
+  const hasIgnoreDefense = attacker.buffs.some(buff => buff.ignoreDefense);
+
+  if (target.isDefending && !hasIgnoreDefense) {
     // 基础减伤50%，如果攻击力远高于防御力，减伤效果降低
     const attackDefenseRatio = attacker.attack / Math.max(1, target.defense);
     let defenseReduction = 0.5; // 基础减伤50%
@@ -2150,10 +2295,49 @@ function executeNormalAttack(
     }
 
     actualDamage = Math.round(actualDamage * (1 - defenseReduction));
+  } else if (hasIgnoreDefense) {
+    // 无视防御，直接造成伤害
+    actualDamage = finalDamage;
+  }
+
+  // 应用伤害减免buff
+  if (target.buffs.some(buff => buff.damageReduction && buff.damageReduction > 0)) {
+    const maxReduction = Math.max(...target.buffs
+      .filter(buff => buff.damageReduction && buff.damageReduction > 0)
+      .map(buff => buff.damageReduction!));
+    actualDamage = Math.round(actualDamage * (1 - maxReduction));
   }
 
   // 更新目标血量（确保是整数）
   target.hp = Math.max(0, Math.floor(target.hp - actualDamage));
+
+  // 处理反弹伤害（如果目标有 reflectDamage buff）
+  let reflectedDamage = 0;
+  if (actualDamage > 0 && target.buffs.some(buff => buff.reflectDamage && buff.reflectDamage > 0)) {
+    // 找到最高的反弹伤害比例
+    const maxReflectRatio = Math.max(...target.buffs
+      .filter(buff => buff.reflectDamage && buff.reflectDamage > 0)
+      .map(buff => buff.reflectDamage!));
+
+    if (maxReflectRatio > 0) {
+      reflectedDamage = Math.floor(actualDamage * maxReflectRatio);
+      attacker.hp = Math.max(0, Math.floor(attacker.hp - reflectedDamage));
+    }
+  }
+
+  // 构建描述
+  let description = '';
+  if (attackerId === 'player') {
+    description = `你发动攻击，造成 ${actualDamage}${isCrit ? '（暴击）' : ''} 点伤害。`;
+    if (reflectedDamage > 0) {
+      description += ` ${target.name}的反弹效果对你造成了 ${reflectedDamage} 点伤害！`;
+    }
+  } else {
+    description = `${attacker.name}攻击，造成 ${actualDamage}${isCrit ? '（暴击）' : ''} 点伤害。`;
+    if (reflectedDamage > 0) {
+      description += ` 你的反弹效果对${attacker.name}造成了 ${reflectedDamage} 点伤害！`;
+    }
+  }
 
   return {
     id: randomId(),
@@ -2165,11 +2349,9 @@ function executeNormalAttack(
     result: {
       damage: actualDamage,
       crit: isCrit,
+      reflectedDamage: reflectedDamage > 0 ? reflectedDamage : undefined,
     },
-    description:
-      attackerId === 'player'
-        ? `你发动攻击，造成 ${actualDamage}${isCrit ? '（暴击）' : ''} 点伤害。`
-        : `${attacker.name}攻击，造成 ${actualDamage}${isCrit ? '（暴击）' : ''} 点伤害。`,
+    description,
   };
 }
 
@@ -2208,6 +2390,7 @@ function executeSkill(
   // 执行技能效果
   let damage = 0;
   let heal = 0;
+  let reflectedDamage = 0;
   const buffs: Buff[] = [];
   const debuffs: Debuff[] = [];
 
@@ -2235,15 +2418,86 @@ function executeSkill(
       }
     });
     const isCrit = Math.random() < critChance;
+
+    // 计算暴击伤害倍率（基础1.5倍或技能指定倍率，加上buff加成）
+    let critMultiplier = skill.damage.critMultiplier || 1.5;
+    caster.buffs.forEach((buff) => {
+      if (buff.critDamage && buff.critDamage > 0) {
+        critMultiplier += buff.critDamage;
+      }
+    });
+
+    // 计算基础伤害（包括暴击）
     damage = isCrit
-      ? Math.round(baseDamage * (skill.damage.critMultiplier || 1.5))
-      : baseDamage;
+      ? Math.round(baseDamage * critMultiplier)
+      : Math.round(baseDamage);
+
+    // 添加随机伤害浮动（0.9-1.1倍）
+    const randomMultiplier = 0.9 + Math.random() * 0.2; // 0.9-1.1之间的随机数
+    damage = Math.round(damage * randomMultiplier);
+
+    // 应用防御（保留技能伤害的特殊处理逻辑）
+    if (skill.damage.type === 'physical') {
+      // 物理伤害：如果伤害值大于目标防御，造成伤害；否则造成很少的穿透伤害
+      if (damage > target.defense) {
+        damage = damage - target.defense * 0.5; // 正常减伤
+      } else {
+        // 伤害小于防御，造成少量穿透伤害
+        damage = Math.max(1, Math.round(damage * 0.1));
+      }
+    } else {
+      // 法术伤害：如果伤害值大于目标神识，造成伤害；否则造成很少的穿透伤害
+      // 应用法术防御buff
+      let effectiveSpirit = target.spirit;
+      if (target.buffs.some(buff => buff.magicDefense && buff.magicDefense > 0)) {
+        const maxMagicDefense = Math.max(...target.buffs
+          .filter(buff => buff.magicDefense && buff.magicDefense > 0)
+          .map(buff => buff.magicDefense!));
+        effectiveSpirit = Math.floor(target.spirit * (1 + maxMagicDefense));
+      }
+
+      if (damage > effectiveSpirit) {
+        damage = damage - effectiveSpirit * 0.3; // 正常减伤
+      } else {
+        // 伤害小于神识，造成少量穿透伤害
+        damage = Math.max(1, Math.round(damage * 0.1));
+      }
+    }
 
     // 确保伤害至少为1（除非完全免疫）
     damage = Math.max(1, Math.round(damage));
 
+    // 检查闪避
+    let isDodged = false;
+    if (target.buffs.some(buff => buff.dodge && buff.dodge > 0)) {
+      const maxDodge = Math.max(...target.buffs
+        .filter(buff => buff.dodge && buff.dodge > 0)
+        .map(buff => buff.dodge!));
+      isDodged = Math.random() < maxDodge;
+    }
+
+    if (isDodged) {
+      return {
+        id: randomId(),
+        round: battleState.round,
+        turn: casterId,
+        actor: casterId,
+        actionType: 'skill',
+        skillId,
+        target: targetId,
+        result: {
+          miss: true,
+          manaCost: skill.cost.mana,
+        },
+        description: generateSkillDescription(skill, caster, target, 0, 0) + ` 但被${target.name}闪避了！`,
+      };
+    }
+
+    // 检查攻击者是否有无视防御buff
+    const hasIgnoreDefense = caster.buffs.some(buff => buff.ignoreDefense);
+
     // 应用防御状态减伤（优化：与普通攻击保持一致，动态调整减伤效果）
-    if (target.isDefending) {
+    if (target.isDefending && !hasIgnoreDefense) {
       // 基础减伤50%，如果攻击力远高于防御力，减伤效果降低
       const skillAttackValue = skill.damage.type === 'magical' ? caster.spirit : caster.attack;
       const targetDefenseValue = skill.damage.type === 'magical' ? target.spirit : target.defense;
@@ -2264,9 +2518,33 @@ function executeSkill(
       }
 
       damage = Math.round(damage * (1 - defenseReduction));
+    } else if (hasIgnoreDefense) {
+      // 无视防御，直接造成伤害
+      damage = damage;
+    }
+
+    // 应用伤害减免buff
+    if (target.buffs.some(buff => buff.damageReduction && buff.damageReduction > 0)) {
+      const maxReduction = Math.max(...target.buffs
+        .filter(buff => buff.damageReduction && buff.damageReduction > 0)
+        .map(buff => buff.damageReduction!));
+      damage = Math.round(damage * (1 - maxReduction));
     }
 
     target.hp = Math.max(0, Math.floor(target.hp - damage));
+
+    // 处理反弹伤害（如果目标有 reflectDamage buff）
+    if (damage > 0 && target.buffs.some(buff => buff.reflectDamage && buff.reflectDamage > 0)) {
+      // 找到最高的反弹伤害比例
+      const maxReflectRatio = Math.max(...target.buffs
+        .filter(buff => buff.reflectDamage && buff.reflectDamage > 0)
+        .map(buff => buff.reflectDamage!));
+
+      if (maxReflectRatio > 0) {
+        reflectedDamage = Math.floor(damage * maxReflectRatio);
+        caster.hp = Math.max(0, Math.floor(caster.hp - reflectedDamage));
+      }
+    }
   }
 
   // 治疗计算
@@ -2285,12 +2563,26 @@ function executeSkill(
     }
     if (effect.type === 'debuff' && effect.debuff) {
       const targetUnit = effect.target === 'enemy' ? target : caster;
-      targetUnit.debuffs.push({ ...effect.debuff });
+      // 检查免疫
+      const hasImmunity = targetUnit.buffs.some(buff => buff.immunity);
+      if (!hasImmunity) {
+        targetUnit.debuffs.push({ ...effect.debuff });
+      }
     }
   });
 
   // 设置冷却
   caster.cooldowns[skillId] = skill.maxCooldown;
+
+  // 生成描述（包含反弹伤害信息）
+  let description = generateSkillDescription(skill, caster, target, damage, heal);
+  if (reflectedDamage > 0) {
+    if (casterId === 'enemy') {
+      description += ` 你的反弹效果对${caster.name}造成了 ${reflectedDamage} 点伤害！`;
+    } else {
+      description += ` ${target.name}的反弹效果对你造成了 ${reflectedDamage} 点伤害！`;
+    }
+  }
 
   return {
     id: randomId(),
@@ -2306,8 +2598,284 @@ function executeSkill(
       buffs,
       debuffs,
       manaCost: skill.cost.mana,
+      reflectedDamage: reflectedDamage > 0 ? reflectedDamage : undefined,
     },
-    description: generateSkillDescription(skill, caster, target, damage, heal),
+    description,
+  };
+}
+
+/**
+ * 执行使用进阶物品
+ */
+function executeAdvancedItem(
+  battleState: BattleState,
+  itemType: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule',
+  itemId: string
+): BattleAction {
+  const player = battleState.player;
+  const enemy = battleState.enemy;
+
+  // 根据类型获取进阶物品
+  let advancedItem: any = null;
+  switch (itemType) {
+    case 'foundationTreasure':
+      advancedItem = FOUNDATION_TREASURES[itemId];
+      break;
+    case 'heavenEarthEssence':
+      advancedItem = HEAVEN_EARTH_ESSENCES[itemId];
+      break;
+    case 'heavenEarthMarrow':
+      advancedItem = HEAVEN_EARTH_MARROWS[itemId];
+      break;
+    case 'longevityRule':
+      advancedItem = LONGEVITY_RULES[itemId];
+      break;
+  }
+
+  if (!advancedItem || !advancedItem.battleEffect) {
+    throw new Error(`Advanced item ${itemId} not found or has no battle effect`);
+  }
+
+  const effect = advancedItem.battleEffect;
+  let damage = 0;
+  let heal = 0;
+  const buffs: Buff[] = [];
+  const debuffs: Debuff[] = [];
+  let description = '';
+
+  // 检查冷却（使用battleState中的冷却记录）
+  const cooldownKey = `advanced_${itemType}_${itemId}`;
+  if ((battleState.player.cooldowns[cooldownKey] || 0) > 0) {
+    throw new Error(`${advancedItem.name}还在冷却中`);
+  }
+
+  // 检查消耗
+  if (effect.cost.lifespan) {
+    // 寿命消耗在战斗结束后处理，这里只记录
+    // 实际应该在战斗结束后从playerStats中扣除
+  }
+  if (effect.cost.maxHp) {
+    const maxHpCost = typeof effect.cost.maxHp === 'number' && effect.cost.maxHp < 1
+      ? Math.floor(player.maxHp * effect.cost.maxHp)
+      : (effect.cost.maxHp || 0);
+    player.maxHp = Math.max(1, player.maxHp - maxHpCost);
+    player.hp = Math.min(player.hp, player.maxHp); // 调整当前HP不超过最大HP
+  }
+  if (effect.cost.hp) {
+    player.hp = Math.max(1, player.hp - effect.cost.hp);
+  }
+  if (effect.cost.spirit) {
+    player.mana = Math.max(0, (player.mana || 0) - effect.cost.spirit);
+  }
+
+  // 应用效果
+  if (effect.type === 'damage' && effect.effect.damage) {
+    const dmg = effect.effect.damage;
+    let baseDamage = 0;
+
+    if (dmg.base) {
+      baseDamage = dmg.base;
+    }
+    if (dmg.multiplier) {
+      baseDamage += player.attack * dmg.multiplier;
+    }
+    if (dmg.percentOfMaxHp) {
+      baseDamage += player.maxHp * dmg.percentOfMaxHp;
+    }
+    if (dmg.percentOfLifespan) {
+      // 寿命百分比伤害（需要从playerStats获取，这里简化处理）
+      baseDamage += player.maxHp * dmg.percentOfLifespan * 0.1; // 简化：用最大HP的10%代表寿命
+    }
+
+    // 应用对邪魔的伤害倍率（如果敌人是邪魔类型）
+    const isDemon = enemy.name.includes('魔') || enemy.name.includes('邪') || enemy.name.includes('鬼') ||
+                    enemy.name.includes('妖') || enemy.name.includes('怨') || enemy.name.includes('恶');
+    if (dmg.demonMultiplier && isDemon) {
+      baseDamage = Math.floor(baseDamage * dmg.demonMultiplier);
+    }
+
+    // 计算最终伤害
+    if (dmg.ignoreDefense) {
+      // 支持百分比无视防御（0-1之间的数字）或完全无视（true）
+      const ignoreRatio = typeof dmg.ignoreDefense === 'number' ? dmg.ignoreDefense : 1;
+      const effectiveDefense = enemy.defense * (1 - ignoreRatio);
+      damage = Math.floor(Math.max(1, baseDamage - effectiveDefense * 0.5));
+    } else {
+      damage = Math.floor(Math.max(1, baseDamage - enemy.defense * 0.5));
+    }
+
+    // 应用必定暴击
+    let isCrit = false;
+    if (dmg.guaranteedCrit) {
+      isCrit = true;
+      damage = Math.floor(damage * 1.5); // 基础暴击倍率1.5
+    }
+
+    enemy.hp = Math.max(0, enemy.hp - damage);
+    description = `${effect.name}！对${enemy.name}造成了 ${damage}${isCrit ? '（暴击）' : ''} 点伤害！`;
+  }
+
+  if (effect.type === 'heal' && effect.effect.heal) {
+    const healEffect = effect.effect.heal;
+    if (healEffect.base) {
+      heal = healEffect.base;
+    }
+    if (healEffect.percentOfMaxHp) {
+      heal += Math.floor(player.maxHp * healEffect.percentOfMaxHp);
+    }
+    player.hp = Math.min(player.maxHp, player.hp + heal);
+    description = `${effect.name}！恢复了 ${heal} 点气血！`;
+  }
+
+  if (effect.type === 'buff' && effect.effect.buff) {
+    const buffEffect = effect.effect.buff;
+    const buff: Buff = {
+      id: `advanced_${itemId}_${Date.now()}`,
+      name: effect.name,
+      type: 'custom',
+      value: 0,
+      duration: buffEffect.duration || 3,
+      source: advancedItem.name,
+      description: effect.description,
+    };
+
+    if (buffEffect.attack) {
+      player.attack = Math.floor(player.attack * (1 + buffEffect.attack));
+    }
+    if (buffEffect.defense) {
+      player.defense = Math.floor(player.defense * (1 + buffEffect.defense));
+    }
+    if (buffEffect.speed) {
+      player.speed = Math.floor(player.speed * (1 + buffEffect.speed));
+    }
+    if (buffEffect.critChance) {
+      // 暴击率加成通过buff记录
+      buff.type = 'crit';
+      buff.value = buffEffect.critChance;
+    }
+    if (buffEffect.critDamage) {
+      // 暴击伤害加成
+      buff.critDamage = buffEffect.critDamage;
+    }
+    if (buffEffect.reflectDamage) {
+      // 反弹伤害比例
+      buff.reflectDamage = buffEffect.reflectDamage;
+    }
+    if (buffEffect.spirit) {
+      // 神识加成
+      player.spirit = Math.floor(player.spirit * (1 + buffEffect.spirit));
+    }
+    if (buffEffect.physique) {
+      // 体魄加成（体魄影响防御和生命）
+      player.defense = Math.floor(player.defense * (1 + buffEffect.physique * 0.5));
+      player.maxHp = Math.floor(player.maxHp * (1 + buffEffect.physique * 0.3));
+      player.hp = Math.min(player.maxHp, Math.floor(player.hp * (1 + buffEffect.physique * 0.3)));
+    }
+    if (buffEffect.maxHp) {
+      // 最大气血加成
+      const oldMaxHp = player.maxHp;
+      player.maxHp = Math.floor(player.maxHp * (1 + buffEffect.maxHp));
+      // 按比例增加当前HP
+      const hpRatio = player.hp / oldMaxHp;
+      player.hp = Math.floor(player.maxHp * hpRatio);
+    }
+    if (buffEffect.revive) {
+      // 复活标记
+      buff.revive = buffEffect.revive;
+    }
+    if (buffEffect.dodge !== undefined) {
+      // 闪避率加成
+      buff.dodge = buffEffect.dodge;
+    }
+    if (buffEffect.ignoreDefense) {
+      // 攻击无视防御
+      buff.ignoreDefense = buffEffect.ignoreDefense;
+    }
+    if (buffEffect.regen) {
+      // 每回合恢复
+      buff.regen = buffEffect.regen;
+    }
+    if (buffEffect.damageReduction) {
+      // 伤害减免
+      buff.damageReduction = buffEffect.damageReduction;
+    }
+    if (buffEffect.immunity) {
+      // 免疫所有负面状态
+      buff.immunity = buffEffect.immunity;
+    }
+    if (buffEffect.cleanse) {
+      // 清除所有负面状态
+      player.debuffs = [];
+    }
+    if (buffEffect.magicDefense) {
+      // 法术防御加成（影响神识防御）
+      buff.magicDefense = buffEffect.magicDefense;
+    }
+
+    player.buffs.push(buff);
+    buffs.push(buff);
+    description = `${effect.name}！获得了强大的增益效果！`;
+  }
+
+  if (effect.type === 'debuff' && effect.effect.debuff) {
+    const debuffEffect = effect.effect.debuff;
+    const debuff: Debuff = {
+      id: `advanced_${itemId}_debuff_${Date.now()}`,
+      name: effect.name,
+      type: 'weakness',
+      value: 0,
+      duration: debuffEffect.duration || 3,
+      source: advancedItem.name,
+      description: effect.description,
+    };
+
+    if (debuffEffect.attack) {
+      enemy.attack = Math.floor(enemy.attack * (1 - debuffEffect.attack));
+    }
+    if (debuffEffect.defense) {
+      enemy.defense = Math.floor(enemy.defense * (1 - debuffEffect.defense));
+    }
+    if (debuffEffect.speed) {
+      enemy.speed = Math.floor(enemy.speed * (1 + debuffEffect.speed)); // speed是负数，所以用加法
+    }
+    if (debuffEffect.spirit) {
+      enemy.spirit = Math.floor(enemy.spirit * (1 + debuffEffect.spirit)); // spirit是负数，所以用加法
+    }
+    if (debuffEffect.hp) {
+      // 持续掉血（负数表示损失）
+      debuff.type = 'poison'; // 使用poison类型表示持续掉血
+      debuff.value = debuffEffect.hp; // 存储百分比值
+    }
+
+    // 检查免疫
+    const hasImmunity = enemy.buffs.some(buff => buff.immunity);
+    if (!hasImmunity) {
+      enemy.debuffs.push(debuff);
+      debuffs.push(debuff);
+      description = `${effect.name}！${enemy.name}受到了削弱效果！`;
+    } else {
+      description = `${effect.name}！但${enemy.name}免疫了负面效果！`;
+    }
+  }
+
+  // 设置冷却
+  if (effect.cooldown) {
+    battleState.player.cooldowns[cooldownKey] = effect.cooldown;
+  }
+
+  return {
+    id: randomId(),
+    round: battleState.round,
+    turn: 'player',
+    actor: 'player',
+    actionType: 'skill', // 使用skill类型，因为进阶物品效果类似技能
+    result: {
+      damage,
+      heal,
+      buffs,
+      debuffs,
+    },
+    description,
   };
 }
 
@@ -2447,8 +3015,15 @@ function updateBattleStateAfterAction(
     unit.debuffs = unit.debuffs
       .map((debuff) => {
         if (debuff.type === 'poison' || debuff.type === 'burn') {
-          const debuffValue = Math.floor(debuff.value);
-          unit.hp = Math.max(0, Math.floor(unit.hp - debuffValue));
+          // 如果是百分比掉血（value是负数百分比）
+          if (debuff.value < 0 && debuff.value > -1) {
+            const hpLoss = Math.floor(unit.maxHp * Math.abs(debuff.value));
+            unit.hp = Math.max(0, Math.floor(unit.hp - hpLoss));
+          } else {
+            // 固定数值掉血
+            const debuffValue = Math.floor(debuff.value);
+            unit.hp = Math.max(0, Math.floor(unit.hp - debuffValue));
+          }
         }
         return { ...debuff, duration: debuff.duration - 1 };
       })
@@ -2460,6 +3035,11 @@ function updateBattleStateAfterAction(
         if (buff.type === 'heal' && buff.duration > 0) {
           const healValue = Math.floor(buff.value);
           unit.hp = Math.min(unit.maxHp, Math.floor(unit.hp + healValue));
+        }
+        // 处理持续恢复（regen）
+        if (buff.regen && buff.regen > 0 && buff.duration > 0) {
+          const regenValue = Math.floor(unit.maxHp * buff.regen);
+          unit.hp = Math.min(unit.maxHp, Math.floor(unit.hp + regenValue));
         }
         return { ...buff, duration: buff.duration === -1 ? -1 : buff.duration - 1 };
       })

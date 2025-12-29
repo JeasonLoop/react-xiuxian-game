@@ -15,7 +15,7 @@ import {
   getUpgradeMultiplier,
   RARITY_MULTIPLIERS,
   REALM_ORDER,
-} from '../../constants';
+} from '../../constants/index';
 
 interface UseEquipmentHandlersProps {
   player: PlayerStats;
@@ -44,14 +44,20 @@ export function useEquipmentHandlers({
   setItemActionLog,
 }: UseEquipmentHandlersProps) {
   const handleEquipItem = (item: Item, slot: EquipmentSlot) => {
-    // 检查装备类型是否匹配
-    if (!item.equipmentSlot) {
-      addLog('该物品无法装备！', 'danger');
-      return;
-    }
     // 防御性检查：确保slot不为null或undefined
     if (!slot) {
       addLog('装备槽位无效！', 'danger');
+      return;
+    }
+
+    // 对于戒指、首饰、法宝，即使没有equipmentSlot也可以装备（根据type确定槽位）
+    const isRing = item.type === ItemType.Ring;
+    const isAccessory = item.type === ItemType.Accessory;
+    const isArtifact = item.type === ItemType.Artifact;
+
+    // 对于其他装备类型，需要equipmentSlot
+    if (!isRing && !isAccessory && !isArtifact && !item.equipmentSlot) {
+      addLog('该物品无法装备！', 'danger');
       return;
     }
 
@@ -62,11 +68,6 @@ export function useEquipmentHandlers({
         addLog('该物品不在背包中！', 'danger');
         return prev;
       }
-
-      // 对于戒指、首饰、法宝，允许装备到任意同类型的空槽位
-      const isRing = item.type === ItemType.Ring;
-      const isAccessory = item.type === ItemType.Accessory;
-      const isArtifact = item.type === ItemType.Artifact;
 
       if (isRing) {
         const ringSlots = [

@@ -151,7 +151,7 @@ const SectTreasureVaultModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[70] p-4 backdrop-blur-sm">
-      <div className="bg-paper-800 w-full max-w-4xl rounded border border-gold-500 shadow-2xl flex flex-col max-h-[85vh]">
+      <div className="bg-paper-800 w-full max-w-4xl rounded border border-gold-500 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
         <div className="p-4 border-b border-gold-500 flex justify-between items-center bg-ink-800 rounded-t">
           <h3 className="text-xl font-serif text-mystic-gold flex items-center gap-2">
             <Package size={20} />
@@ -166,7 +166,7 @@ const SectTreasureVaultModal: React.FC<Props> = ({
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="modal-scroll-container modal-scroll-content p-6">
           <div className="mb-4 text-stone-300 text-sm">
             <p className="mb-2">✨ 这里是宗门历代积累的珍藏，你可以选择一件物品带走。</p>
             <p className="text-stone-400">宝库中的物品品质与你的境界相关，境界越高，获得高品质物品的概率越大。</p>

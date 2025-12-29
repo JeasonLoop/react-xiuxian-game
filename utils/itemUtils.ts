@@ -1,13 +1,14 @@
 import { Item, ItemType, ItemRarity, EquipmentSlot, RealmType } from '../types';
-import { RARITY_MULTIPLIERS, REALM_ORDER, REALM_DATA } from '../constants';
+import { RARITY_MULTIPLIERS, REALM_ORDER, REALM_DATA } from '../constants/index';
 import { getItemFromConstants } from './itemConstantsUtils';
 
 // 共享的装备数值配置（统一管理，避免重复定义）
+// 调整属性浮动范围，缩小差距，使装备属性更稳定
 export const EQUIPMENT_RARITY_PERCENTAGES: Record<ItemRarity, { min: number; max: number }> = {
-  普通: { min: 0.15, max: 0.5 },
-  稀有: { min: 0.30, max: 1.0 },
-  传说: { min: 0.60, max: 2.0 },
-  仙品: { min: 1.50, max: 5.0 },
+  普通: { min: 0.20, max: 0.35 },  // 从0.15-0.5调整为0.20-0.35，差距从0.35缩小到0.15
+  稀有: { min: 0.40, max: 0.70 },  // 从0.30-1.0调整为0.40-0.70，差距从0.7缩小到0.3
+  传说: { min: 0.80, max: 1.30 },  // 从0.60-2.0调整为0.80-1.30，差距从1.4缩小到0.5
+  仙品: { min: 2.00, max: 3.00 },  // 从1.50-5.0调整为2.00-3.00，差距从3.5缩小到1.0
 };
 
 export const EQUIPMENT_MIN_STATS: Record<ItemRarity, { attack: number; defense: number; hp: number; spirit: number; physique: number; speed: number }> = {
@@ -22,7 +23,7 @@ type ItemEffect = NonNullable<Item['effect']>;
 type ItemPermanentEffect = NonNullable<Item['permanentEffect']>;
 
 // 将常见的类型别称规范化，避免多处硬编码
-const normalizeTypeHint = (type?: ItemType | string): ItemType | undefined => {
+export const normalizeTypeHint = (type?: ItemType | string): ItemType | undefined => {
   if (!type) return undefined;
   const t = String(type).toLowerCase();
   const map: Record<string, ItemType> = {
@@ -55,6 +56,25 @@ const normalizeTypeHint = (type?: ItemType | string): ItemType | undefined => {
     recipe: ItemType.Recipe,
   };
   return map[t] || (Object.values(ItemType).includes(type as ItemType) ? (type as ItemType) : undefined);
+};
+
+// 将类型别称规范化为中文字符串标签（用于显示）
+export const normalizeTypeLabel = (type: ItemType | string): string => {
+  if (!type) return '未知';
+  const t = String(type).toLowerCase();
+  const map: Record<string, string> = {
+    herb: '草药',
+    pill: '丹药',
+    material: '材料',
+    artifact: '法宝',
+    weapon: '武器',
+    armor: '护甲',
+    accessory: '首饰',
+    ring: '戒指',
+    recipe: '丹方',
+    advanceditem: '进阶物品',
+  };
+  return map[t] || (type as string);
 };
 
 // 稳定的槽位选择：同名物品在任意流程都会落在同一个槽位
@@ -573,6 +593,84 @@ export const adjustEquipmentStatsByRealm = (
   }
 
   return adjusted;
+};
+
+/**
+ * 根据境界调整物品效果（通用函数，适用于所有物品类型）
+ * 对于装备，使用专门的 adjustEquipmentStatsByRealm
+ * 对于其他物品（丹药、草药等），根据境界进行倍数调整
+ */
+export const adjustItemStatsByRealm = (
+  effect: Item['effect'],
+  permanentEffect: Item['permanentEffect'],
+  realm: RealmType,
+  realmLevel: number,
+  itemType: ItemType,
+  rarity: ItemRarity = '普通'
+): { effect?: Item['effect']; permanentEffect?: Item['permanentEffect'] } => {
+  // 装备类型使用专门的调整函数
+  const isEquipment = itemType === ItemType.Weapon ||
+                      itemType === ItemType.Armor ||
+                      itemType === ItemType.Accessory ||
+                      itemType === ItemType.Ring ||
+                      itemType === ItemType.Artifact;
+
+  if (isEquipment && effect) {
+    const adjustedEffect = adjustEquipmentStatsByRealm(effect, realm, realmLevel, rarity);
+    return { effect: adjustedEffect, permanentEffect: undefined };
+  }
+
+  // 非装备物品：根据境界进行倍数调整
+  const realmIndex = REALM_ORDER.indexOf(realm);
+  // 境界倍数：炼气期1倍、筑基期2倍、金丹期4倍、元婴期8倍、化神期16倍、合道期20倍、长生境25倍
+  const realmBaseMultipliers = [1, 2, 4, 8, 16, 20, 25];
+  const realmMultiplier = realmBaseMultipliers[realmIndex] || 1;
+  // 境界等级加成：每级增加10%
+  const levelMultiplier = 1 + (realmLevel - 1) * 0.1;
+  const totalMultiplier = realmMultiplier * levelMultiplier;
+
+  const adjustedEffect: Item['effect'] = {};
+  const adjustedPermanentEffect: Item['permanentEffect'] = {};
+
+  // 调整临时效果
+  if (effect) {
+    if (effect.attack !== undefined) adjustedEffect.attack = Math.floor(effect.attack * totalMultiplier);
+    if (effect.defense !== undefined) adjustedEffect.defense = Math.floor(effect.defense * totalMultiplier);
+    if (effect.hp !== undefined) adjustedEffect.hp = Math.floor(effect.hp * totalMultiplier);
+    if (effect.spirit !== undefined) adjustedEffect.spirit = Math.floor(effect.spirit * totalMultiplier);
+    if (effect.physique !== undefined) adjustedEffect.physique = Math.floor(effect.physique * totalMultiplier);
+    if (effect.speed !== undefined) adjustedEffect.speed = Math.floor(effect.speed * totalMultiplier);
+    if (effect.exp !== undefined) adjustedEffect.exp = Math.floor(effect.exp * totalMultiplier);
+    // 寿命不受境界调整影响
+    if (effect.lifespan !== undefined) adjustedEffect.lifespan = effect.lifespan;
+  }
+
+  // 调整永久效果
+  if (permanentEffect) {
+    if (permanentEffect.attack !== undefined) adjustedPermanentEffect.attack = Math.floor(permanentEffect.attack * totalMultiplier);
+    if (permanentEffect.defense !== undefined) adjustedPermanentEffect.defense = Math.floor(permanentEffect.defense * totalMultiplier);
+    if (permanentEffect.spirit !== undefined) adjustedPermanentEffect.spirit = Math.floor(permanentEffect.spirit * totalMultiplier);
+    if (permanentEffect.physique !== undefined) adjustedPermanentEffect.physique = Math.floor(permanentEffect.physique * totalMultiplier);
+    if (permanentEffect.speed !== undefined) adjustedPermanentEffect.speed = Math.floor(permanentEffect.speed * totalMultiplier);
+    if (permanentEffect.maxHp !== undefined) adjustedPermanentEffect.maxHp = Math.floor(permanentEffect.maxHp * totalMultiplier);
+    // 最大寿命不受境界调整影响
+    if (permanentEffect.maxLifespan !== undefined) adjustedPermanentEffect.maxLifespan = permanentEffect.maxLifespan;
+
+    if (permanentEffect.spiritualRoots) {
+      adjustedPermanentEffect.spiritualRoots = {};
+      const roots = permanentEffect.spiritualRoots;
+      if (roots.metal !== undefined) adjustedPermanentEffect.spiritualRoots.metal = Math.floor(roots.metal * totalMultiplier);
+      if (roots.wood !== undefined) adjustedPermanentEffect.spiritualRoots.wood = Math.floor(roots.wood * totalMultiplier);
+      if (roots.water !== undefined) adjustedPermanentEffect.spiritualRoots.water = Math.floor(roots.water * totalMultiplier);
+      if (roots.fire !== undefined) adjustedPermanentEffect.spiritualRoots.fire = Math.floor(roots.fire * totalMultiplier);
+      if (roots.earth !== undefined) adjustedPermanentEffect.spiritualRoots.earth = Math.floor(roots.earth * totalMultiplier);
+    }
+  }
+
+  return {
+    effect: Object.keys(adjustedEffect).length > 0 ? adjustedEffect : effect,
+    permanentEffect: Object.keys(adjustedPermanentEffect).length > 0 ? adjustedPermanentEffect : permanentEffect,
+  };
 };
 
 /**

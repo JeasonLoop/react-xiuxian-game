@@ -1,6 +1,6 @@
 import React from 'react';
-import { PlayerStats, Item, Pet, ItemType, ItemRarity, EquipmentSlot, RealmType } from '../../types';
-import { PET_TEMPLATES, DISCOVERABLE_RECIPES, getRandomPetName, REALM_ORDER } from '../../constants';
+import { PlayerStats, Item, Pet, ItemType, ItemRarity, RealmType } from '../../types';
+import { PET_TEMPLATES, DISCOVERABLE_RECIPES, getRandomPetName, REALM_ORDER,} from '../../constants/index';
 import { uid } from '../../utils/gameUtils';
 import { showConfirm } from '../../utils/toastUtils';
 import { LOOT_ITEMS } from '../../services/battleService';
@@ -396,7 +396,8 @@ const organizeInventory = (player: PlayerStats): Item[] => {
     [ItemType.Pill]: 6,
     [ItemType.Herb]: 7,
     [ItemType.Material]: 8,
-    [ItemType.Recipe]: 9,
+    [ItemType.AdvancedItem]: 9, // 进阶物品
+    [ItemType.Recipe]: 10,
   };
 
   const rarityOrder: Record<string, number> = {
@@ -511,10 +512,133 @@ export function useItemHandlers({
     }
   };
 
+  const handleRefineAdvancedItem = (item: Item) => {
+    if (item.type !== ItemType.AdvancedItem || !item.advancedItemType || !item.advancedItemId) {
+      addLog('该物品不是进阶物品！', 'danger');
+      return;
+    }
+
+    const currentRealmIndex = REALM_ORDER.indexOf(player.realm);
+    let requiredRealm: RealmType | null = null;
+    let canRefine = false;
+    let warningMessage = '';
+
+    if (item.advancedItemType === 'foundationTreasure') {
+      requiredRealm = RealmType.QiRefining;
+      canRefine = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.QiRefining);
+      warningMessage = '天道警告：炼化筑基奇物需要达到炼气期！';
+    } else if (item.advancedItemType === 'heavenEarthEssence') {
+      requiredRealm = RealmType.GoldenCore;
+      canRefine = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.GoldenCore);
+      warningMessage = '天道警告：炼化天地精华需要达到金丹期！';
+    } else if (item.advancedItemType === 'heavenEarthMarrow') {
+      requiredRealm = RealmType.NascentSoul;
+      canRefine = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.NascentSoul);
+      warningMessage = '天道警告：炼化天地之髓需要达到元婴期！';
+    } else if (item.advancedItemType === 'longevityRule') {
+      requiredRealm = RealmType.DaoCombining;
+      canRefine = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.DaoCombining);
+      warningMessage = '天道警告：炼化规则之力需要达到合道期！';
+    }
+
+    if (!canRefine) {
+      addLog(warningMessage, 'danger');
+      return;
+    }
+
+    // 检查是否已经拥有
+    if (item.advancedItemType === 'foundationTreasure' && player.foundationTreasure) {
+      addLog('你已经拥有筑基奇物，无法重复炼化！', 'danger');
+      return;
+    }
+    if (item.advancedItemType === 'heavenEarthEssence' && player.heavenEarthEssence) {
+      addLog('你已经拥有天地精华，无法重复炼化！', 'danger');
+      return;
+    }
+    if (item.advancedItemType === 'heavenEarthMarrow' && player.heavenEarthMarrow) {
+      addLog('你已经拥有天地之髓，无法重复炼化！', 'danger');
+      return;
+    }
+    if (item.advancedItemType === 'longevityRule' && item.advancedItemId) {
+      if ((player.longevityRules || []).includes(item.advancedItemId)) {
+        addLog('你已经拥有该规则之力，无法重复炼化！', 'danger');
+        return;
+      }
+      const maxRules = player.maxLongevityRules || 3;
+      if ((player.longevityRules || []).length >= maxRules) {
+        addLog('你已经拥有最大数量的规则之力，无法继续炼化！', 'danger');
+        return;
+      }
+    }
+
+    // 执行炼化
+    setPlayer((prev) => {
+      const newInventory = prev.inventory
+        .map((i) => {
+          if (i.id === item.id) {
+            return { ...i, quantity: i.quantity - 1 };
+          }
+          return i;
+        })
+        .filter((i) => i.quantity > 0);
+
+      let newFoundationTreasure = prev.foundationTreasure;
+      let newHeavenEarthEssence = prev.heavenEarthEssence;
+      let newHeavenEarthMarrow = prev.heavenEarthMarrow;
+      let newLongevityRules = [...(prev.longevityRules || [])];
+      let marrowRefiningProgress = prev.marrowRefiningProgress;
+      let marrowRefiningSpeed = prev.marrowRefiningSpeed;
+
+      if (item.advancedItemType === 'foundationTreasure') {
+        newFoundationTreasure = item.advancedItemId;
+        const successMessage = `✨ 你成功炼化了筑基奇物【${item.name}】！`;
+        addLog(successMessage, 'special');
+        if (setItemActionLog) {
+          setItemActionLog({ text: successMessage, type: 'special' });
+        }
+      } else if (item.advancedItemType === 'heavenEarthEssence') {
+        newHeavenEarthEssence = item.advancedItemId;
+        const successMessage = `✨ 你成功炼化了天地精华【${item.name}】！`;
+        addLog(successMessage, 'special');
+        if (setItemActionLog) {
+          setItemActionLog({ text: successMessage, type: 'special' });
+        }
+      } else if (item.advancedItemType === 'heavenEarthMarrow') {
+        newHeavenEarthMarrow = item.advancedItemId;
+        marrowRefiningProgress = 0;
+        marrowRefiningSpeed = 1.0;
+        const successMessage = `✨ 你成功炼化了天地之髓【${item.name}】！`;
+        addLog(successMessage, 'special');
+        if (setItemActionLog) {
+          setItemActionLog({ text: successMessage, type: 'special' });
+        }
+      } else if (item.advancedItemType === 'longevityRule' && item.advancedItemId) {
+        newLongevityRules.push(item.advancedItemId);
+        const successMessage = `✨ 你成功炼化了规则之力【${item.name}】！`;
+        addLog(successMessage, 'special');
+        if (setItemActionLog) {
+          setItemActionLog({ text: successMessage, type: 'special' });
+        }
+      }
+
+      return {
+        ...prev,
+        inventory: newInventory,
+        foundationTreasure: newFoundationTreasure,
+        heavenEarthEssence: newHeavenEarthEssence,
+        heavenEarthMarrow: newHeavenEarthMarrow,
+        longevityRules: newLongevityRules,
+        marrowRefiningProgress,
+        marrowRefiningSpeed,
+      };
+    });
+  };
+
   return {
     handleUseItem,
     handleOrganizeInventory,
     handleDiscardItem,
     handleBatchUseItems,
+    handleRefineAdvancedItem,
   };
 }

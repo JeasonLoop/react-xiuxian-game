@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { PlayerStats, SectRank, RealmType, Item, AdventureResult } from '../types';
-import { SECTS, SECT_RANK_REQUIREMENTS, REALM_ORDER, SECT_RANK_DATA } from '../constants';
+import { SECTS, SECT_RANK_REQUIREMENTS, REALM_ORDER, SECT_RANK_DATA } from '../constants/index';
 import { generateRandomSects, generateRandomSectTasks, generateSectShopItems, RandomSectTask } from '../services/randomService';
 import { X, Users, ShoppingBag, Shield, Scroll, ArrowUp, RefreshCw } from 'lucide-react';
 import SectTaskModal from './SectTaskModal';
@@ -146,7 +146,7 @@ const SectModal: React.FC<Props> = ({
   if (!player.sectId) {
     return (
       <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-        <div className="bg-paper-800 w-full max-w-4xl rounded border border-stone-600 shadow-2xl flex flex-col max-h-[85vh]">
+        <div className="bg-paper-800 w-full max-w-4xl rounded border border-stone-600 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
           <div className="p-4 border-b border-stone-600 flex justify-between items-center bg-ink-800 rounded-t">
             <h3 className="text-xl font-serif text-mystic-gold flex items-center gap-2">
               <Users size={20} /> 寻访仙门
@@ -169,7 +169,7 @@ const SectModal: React.FC<Props> = ({
             </div>
           </div>
 
-          <div className="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="modal-scroll-container modal-scroll-content p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
             {availableSects.map((sect) => {
               const canJoin =
                 getRealmIndex(player.realm) >= getRealmIndex(sect.reqRealm);
@@ -311,7 +311,7 @@ const SectModal: React.FC<Props> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-6 overflow-y-auto bg-paper-800 max-h-[68vh]">
+        <div className="modal-scroll-container modal-scroll-content p-6 bg-paper-800 max-h-[68vh]">
           {/* Main Hall */}
           {activeTab === 'hall' && (
             <div className="space-y-6">
@@ -478,7 +478,7 @@ const SectModal: React.FC<Props> = ({
                   <span>刷新</span>
                 </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto flex-1 min-h-0">
+              <div className="modal-scroll-container modal-scroll-content grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
                 {randomTasks.map((task) => {
                   // 检查任务是否可以完成（但不阻止点击）
                   const taskStatus = (() => {
