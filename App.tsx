@@ -12,9 +12,6 @@ import {
   ShopItem,
   ShopType,
   EquipmentSlot,
-  AdventureType,
-  RealmType,
-  ItemType,
   TribulationState,
   TribulationResult,
 } from './types';
@@ -55,6 +52,7 @@ import {
 import { compareItemEffects } from './utils/objectUtils';
 import { shouldTriggerTribulation, createTribulationState } from './utils/tribulationUtils';
 import { getPlayerTotalStats } from './utils/statUtils';
+import { isValidDailyQuestType } from './utils/typeGuards';
 
 import { useIndexedDB } from './hooks/useIndexedDB';
 import { usePlayTime } from './hooks/usePlayTime';
@@ -274,9 +272,9 @@ function App() {
     addLog,
     setLoading,
     updateQuestProgress: (type: string, amount: number = 1) => {
-      // 类型转换：string -> DailyQuestType，运行时验证
-      if (['meditate', 'adventure', 'breakthrough', 'alchemy', 'equip', 'pet', 'sect', 'realm', 'kill', 'collect', 'learn', 'other'].includes(type)) {
-        dailyQuestHandlers.updateQuestProgress(type as any, amount);
+      // 类型安全转换：string -> DailyQuestType，运行时验证
+      if (isValidDailyQuestType(type)) {
+        dailyQuestHandlers.updateQuestProgress(type, amount);
       }
     },
   });
@@ -1006,8 +1004,17 @@ function App() {
         breakthroughHandlers.handleBreakthrough();
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [player?.exp, player?.maxExp, player?.realm, player?.realmLevel, tribulationState?.isOpen]);
+  }, [
+    player?.exp,
+    player?.maxExp,
+    player?.realm,
+    player?.realmLevel,
+    tribulationState?.isOpen,
+    breakthroughHandlers.handleBreakthrough,
+    addLog,
+    setPlayer,
+    setTribulationState,
+  ]);
 
   // 监听突破成功，更新任务进度
   const prevRealmRef = useRef<{ realm: string; level: number } | null>(null);
@@ -1025,8 +1032,7 @@ function App() {
     if (player) {
       prevRealmRef.current = { realm: player.realm, level: player.realmLevel };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [player?.realm, player?.realmLevel]);
+  }, [player?.realm, player?.realmLevel, dailyQuestHandlers]);
 
   // 保留 handleOpenUpgrade 和 handleUpgradeItem，因为它们需要状态管理
   const handleOpenUpgrade = (item: Item) => {
