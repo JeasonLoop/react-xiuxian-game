@@ -498,21 +498,18 @@ const InventoryItem = memo<InventoryItemProps>(
                   ? warningMessage
                   : '炼化进阶物品';
 
-                // 使用闭包捕获 setItemActionLog
-                const logSetter = setItemActionLog;
-
                 return (
                   <button
                     onClick={() => {
                       if (!canRefineItem) {
-                        if (logSetter) {
-                          logSetter({ text: warningMessage.replace(/\n/g, ' '), type: 'danger' });
+                        if (setItemActionLog) {
+                          setItemActionLog({ text: warningMessage.replace(/\n/g, ' '), type: 'danger' });
                         }
                         return;
                       }
                       if (alreadyOwned) {
-                        if (logSetter) {
-                          logSetter({ text: alreadyOwnedMessage, type: 'danger' });
+                        if (setItemActionLog) {
+                          setItemActionLog({ text: alreadyOwnedMessage, type: 'danger' });
                         }
                         return;
                       }
@@ -561,9 +558,16 @@ const InventoryItem = memo<InventoryItemProps>(
       prevProps.item.quantity === nextProps.item.quantity &&
       prevProps.item.level === nextProps.item.level &&
       prevProps.item.rarity === nextProps.item.rarity &&
+      prevProps.item.reviveChances === nextProps.item.reviveChances &&
       prevProps.isEquipped === nextProps.isEquipped &&
       prevProps.isNatal === nextProps.isNatal &&
-      prevProps.canRefine === nextProps.canRefine
+      prevProps.canRefine === nextProps.canRefine &&
+      prevProps.playerRealm === nextProps.playerRealm &&
+      prevProps.foundationTreasure === nextProps.foundationTreasure &&
+      prevProps.heavenEarthEssence === nextProps.heavenEarthEssence &&
+      prevProps.heavenEarthMarrow === nextProps.heavenEarthMarrow &&
+      prevProps.longevityRules === nextProps.longevityRules &&
+      prevProps.maxLongevityRules === nextProps.maxLongevityRules
     );
   }
 );
@@ -667,6 +671,9 @@ const InventoryModal: React.FC<Props> = ({
       const targetSlot = findEmptyEquipmentSlot(item, equippedItems);
       if (targetSlot) {
         onEquipItem(item, targetSlot);
+      } else {
+        // 如果没有空槽位，直接替换该部位的物品
+        onEquipItem(item, item.equipmentSlot);
       }
     } else {
       // 对于戒指、首饰、法宝，如果没有equipmentSlot，根据类型查找空槽位
@@ -675,6 +682,9 @@ const InventoryModal: React.FC<Props> = ({
         const emptySlot = slots.find((slot) => !equippedItems[slot]);
         if (emptySlot) {
           onEquipItem(item, emptySlot);
+        } else {
+          // 如果没有空槽位，替换第一个槽位
+          onEquipItem(item, slots[0]);
         }
       }
     }
@@ -821,11 +831,25 @@ const InventoryModal: React.FC<Props> = ({
   // 使用 useMemo 缓存装备比较结果，避免每次渲染都重新计算
   // 注意：必须在 if (!isOpen) return null; 之前调用，遵守 React Hooks 规则
   const comparison = useMemo(() => {
-    if (!hoveredItem || !hoveredItem.isEquippable || !hoveredItem.equipmentSlot)
+    if (!hoveredItem || !hoveredItem.isEquippable)
       return null;
 
-    // 1. Get currently equipped stats for this slot
-    const slot = hoveredItem.equipmentSlot;
+    // 1. Get the slot to compare against
+    let slot: EquipmentSlot | undefined = hoveredItem.equipmentSlot;
+
+    // For items without equipmentSlot (like some Rings/Accessories/Artifacts),
+    // try to find a relevant slot based on type
+    if (!slot) {
+      const slots = getEquipmentSlotsByType(hoveredItem.type);
+      if (slots.length > 0) {
+        // Find an empty slot or use the first one
+        slot = slots.find(s => !equippedItems[s]) || slots[0];
+      }
+    }
+
+    if (!slot) return null;
+
+    // 2. Get currently equipped stats for this slot
     const currentEquippedId = equippedItems[slot];
     let currentEquippedStats = { attack: 0, defense: 0, hp: 0 };
     if (currentEquippedId) {
@@ -837,10 +861,10 @@ const InventoryModal: React.FC<Props> = ({
       }
     }
 
-    // 2. Get hovered item stats
+    // 3. Get hovered item stats
     const hoveredStats = getItemStatsForComparison(hoveredItem);
 
-    // 3. Calculate difference
+    // 4. Calculate difference
     return {
       attack: hoveredStats.attack - currentEquippedStats.attack,
       defense: hoveredStats.defense - currentEquippedStats.defense,
@@ -1050,7 +1074,7 @@ const InventoryModal: React.FC<Props> = ({
                     <Filter size={16} className="text-purple-400" />
                     <h4 className="text-sm font-bold text-purple-300">高级筛选</h4>
                   </div>
-                  <div className="flex-col gap-2">
+                  <div className="flex flex-col gap-2">
                     <label className="block text-xs text-stone-400 mb-2">属性筛选</label>
                     <div className="flex items-center gap-2">
                       {/* 属性筛选 */}
