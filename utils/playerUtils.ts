@@ -165,6 +165,7 @@ export const createInitialPlayer = (
     dailyQuestCompleted: [],
     lastDailyQuestResetDate: new Date().toISOString().split('T')[0],
     gameDays: 1, // 游戏内天数，从第1天开始
+    playTime: 0, // 游戏时长（毫秒），从0开始
     reputation: 0, // 声望值
     // 洞府系统
     grotto: {

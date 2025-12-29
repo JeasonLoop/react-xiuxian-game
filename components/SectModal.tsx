@@ -884,4 +884,4 @@ const SectModal: React.FC<Props> = ({
   );
 };
 
-export default SectModal;
+export default React.memo(SectModal);

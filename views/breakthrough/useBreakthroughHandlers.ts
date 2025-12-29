@@ -1,10 +1,10 @@
 import React from 'react';
 import { PlayerStats } from '../../types';
-import { REALM_DATA, CULTIVATION_ARTS, TALENTS, TITLES, calculateSpiritualRootArtBonus, REALM_ORDER } from '../../constants/index';
-import { getItemStats } from '../../utils/itemUtils';
+import { REALM_DATA, REALM_ORDER } from '../../constants/index';
 import { getRandomBreakthroughDescription } from '../../services/templateService';
 import { getRealmIndex, calculateBreakthroughAttributePoints } from '../../utils/attributeUtils';
 import { checkBreakthroughConditions, calculateGoldenCoreMethodCount } from '../../utils/cultivationUtils';
+import { getPlayerTotalStats, calculatePlayerBonuses } from '../../utils/statUtils';
 
 interface UseBreakthroughHandlersProps {
   player: PlayerStats;
@@ -32,7 +32,7 @@ export function useBreakthroughHandlers({
   setLoading,
   loading,
 }: UseBreakthroughHandlersProps) {
-  const handleBreakthrough = async (skipSuccessCheck: boolean = false) => {
+  const handleBreakthrough = async (skipSuccessCheck: boolean = false, hpLoss: number = 0) => {
     if (loading || !player) return;
 
     const isRealmUpgrade = player.realmLevel >= 9;
@@ -96,73 +96,14 @@ export function useBreakthroughHandlers({
         const oldBasePhysique = Math.floor(oldStats.basePhysique * oldLevelMultiplier);
         const oldBaseSpeed = Math.floor(oldStats.baseSpeed * oldLevelMultiplier);
 
-        // Calculate all bonuses
-        let bonusAttack = 0;
-        let bonusDefense = 0;
-        let bonusHp = 0;
-        let bonusSpirit = 0;
-        let bonusPhysique = 0;
-        let bonusSpeed = 0;
-
-        // Art bonuses (with spiritual root bonus)
-        prev.cultivationArts.forEach((artId) => {
-          const art = CULTIVATION_ARTS.find((a) => a.id === artId);
-          if (art) {
-            const spiritualRootBonus = calculateSpiritualRootArtBonus(
-              art,
-              prev.spiritualRoots || {
-                metal: 0,
-                wood: 0,
-                water: 0,
-                fire: 0,
-                earth: 0,
-              }
-            );
-            bonusAttack += Math.floor((art.effects.attack || 0) * spiritualRootBonus);
-            bonusDefense += Math.floor((art.effects.defense || 0) * spiritualRootBonus);
-            bonusHp += Math.floor((art.effects.hp || 0) * spiritualRootBonus);
-            bonusSpirit += Math.floor((art.effects.spirit || 0) * spiritualRootBonus);
-            bonusPhysique += Math.floor((art.effects.physique || 0) * spiritualRootBonus);
-            bonusSpeed += Math.floor((art.effects.speed || 0) * spiritualRootBonus);
-          }
-        });
-
-        // Equipment bonuses
-        Object.values(prev.equippedItems).forEach((itemId) => {
-          const equippedItem = prev.inventory.find((i) => i.id === itemId);
-          if (equippedItem && equippedItem.effect) {
-            const isNatal = equippedItem.id === prev.natalArtifactId;
-            const itemStats = getItemStats(equippedItem, isNatal);
-            bonusAttack += itemStats.attack;
-            bonusDefense += itemStats.defense;
-            bonusHp += itemStats.hp;
-            bonusSpirit += itemStats.spirit;
-            bonusPhysique += itemStats.physique;
-            bonusSpeed += itemStats.speed;
-          }
-        });
-
-        // Talent bonuses
-        const talent = TALENTS.find((t) => t.id === prev.talentId);
-        if (talent) {
-          bonusAttack += talent.effects.attack || 0;
-          bonusDefense += talent.effects.defense || 0;
-          bonusHp += talent.effects.hp || 0;
-          bonusSpirit += talent.effects.spirit || 0;
-          bonusPhysique += talent.effects.physique || 0;
-          bonusSpeed += talent.effects.speed || 0;
-        }
-
-        // Title bonuses
-        const title = TITLES.find((t) => t.id === prev.titleId);
-        if (title) {
-          bonusAttack += title.effects.attack || 0;
-          bonusDefense += title.effects.defense || 0;
-          bonusHp += title.effects.hp || 0;
-          bonusSpirit += title.effects.spirit || 0;
-          bonusPhysique += title.effects.physique || 0;
-          bonusSpeed += title.effects.speed || 0;
-        }
+        // 使用统一的加成计算函数
+        const bonuses = calculatePlayerBonuses(prev);
+        const bonusAttack = bonuses.attack;
+        const bonusDefense = bonuses.defense;
+        const bonusHp = bonuses.hp;
+        const bonusSpirit = bonuses.spirit;
+        const bonusPhysique = bonuses.physique;
+        const bonusSpeed = bonuses.speed;
 
         // 计算旧境界时的基础属性+固定加成（用于计算分配的属性点）
         const oldBaseWithFixedBonusAttack = oldBaseAttack + bonusAttack;
@@ -251,6 +192,25 @@ export function useBreakthroughHandlers({
           goldenCoreMethodCount = calculateGoldenCoreMethodCount(prev);
         }
 
+        // 构建更新后的玩家状态来计算实际最大血量（包含功法加成等）
+        const updatedPlayer = {
+          ...prev,
+          realm: nextRealm,
+          realmLevel: nextLevel,
+          maxHp: baseMaxHp,
+          attack: baseAttack,
+          defense: baseDefense,
+          spirit: baseSpirit,
+          physique: basePhysique,
+          speed: baseSpeed,
+          goldenCoreMethodCount,
+          activeArtId: prev.activeArtId,
+          cultivationArts: prev.cultivationArts,
+          spiritualRoots: prev.spiritualRoots,
+        };
+        const totalStats = getPlayerTotalStats(updatedPlayer);
+        const actualMaxHp = totalStats.maxHp; // 实际最大血量（包含功法加成）
+
         return {
           ...prev,
           realm: nextRealm,
@@ -259,7 +219,6 @@ export function useBreakthroughHandlers({
           maxExp: newMaxExp,
           // 新属性 = 基础属性（新境界） + 固定加成 + 分配的属性点
           maxHp: baseMaxHp,
-          hp: baseMaxHp, // Full heal
           attack: baseAttack,
           defense: baseDefense,
           spirit: baseSpirit,
@@ -269,6 +228,7 @@ export function useBreakthroughHandlers({
           maxLifespan: newMaxLifespan,
           lifespan: newLifespan,
           goldenCoreMethodCount, // 设置金丹法数
+          hp: Math.max(0, actualMaxHp - hpLoss), // 应用渡劫产生的扣血
           statistics: {
             ...playerStats,
             breakthroughCount: playerStats.breakthroughCount + 1,
@@ -338,69 +298,14 @@ export function useBreakthroughHandlers({
         const oldBasePhysique = Math.floor(oldStats.basePhysique * oldLevelMultiplier);
         const oldBaseSpeed = Math.floor(oldStats.baseSpeed * oldLevelMultiplier);
 
-        // Calculate all bonuses (similar to handleBreakthrough)
-        let bonusAttack = 0;
-        let bonusDefense = 0;
-        let bonusHp = 0;
-        let bonusSpirit = 0;
-        let bonusPhysique = 0;
-        let bonusSpeed = 0;
-
-        prev.cultivationArts.forEach((artId) => {
-          const art = CULTIVATION_ARTS.find((a) => a.id === artId);
-          if (art) {
-            const spiritualRootBonus = calculateSpiritualRootArtBonus(
-              art,
-              prev.spiritualRoots || {
-                metal: 0,
-                wood: 0,
-                water: 0,
-                fire: 0,
-                earth: 0,
-              }
-            );
-            bonusAttack += Math.floor((art.effects.attack || 0) * spiritualRootBonus);
-            bonusDefense += Math.floor((art.effects.defense || 0) * spiritualRootBonus);
-            bonusHp += Math.floor((art.effects.hp || 0) * spiritualRootBonus);
-            bonusSpirit += Math.floor((art.effects.spirit || 0) * spiritualRootBonus);
-            bonusPhysique += Math.floor((art.effects.physique || 0) * spiritualRootBonus);
-            bonusSpeed += Math.floor((art.effects.speed || 0) * spiritualRootBonus);
-          }
-        });
-
-        Object.values(prev.equippedItems).forEach((itemId) => {
-          const equippedItem = prev.inventory.find((i) => i.id === itemId);
-          if (equippedItem && equippedItem.effect) {
-            const isNatal = equippedItem.id === prev.natalArtifactId;
-            const itemStats = getItemStats(equippedItem, isNatal);
-            bonusAttack += itemStats.attack;
-            bonusDefense += itemStats.defense;
-            bonusHp += itemStats.hp;
-            bonusSpirit += itemStats.spirit;
-            bonusPhysique += itemStats.physique;
-            bonusSpeed += itemStats.speed;
-          }
-        });
-
-        const talent = TALENTS.find((t) => t.id === prev.talentId);
-        if (talent) {
-          bonusAttack += talent.effects.attack || 0;
-          bonusDefense += talent.effects.defense || 0;
-          bonusHp += talent.effects.hp || 0;
-          bonusSpirit += talent.effects.spirit || 0;
-          bonusPhysique += talent.effects.physique || 0;
-          bonusSpeed += talent.effects.speed || 0;
-        }
-
-        const title = TITLES.find((t) => t.id === prev.titleId);
-        if (title) {
-          bonusAttack += title.effects.attack || 0;
-          bonusDefense += title.effects.defense || 0;
-          bonusHp += title.effects.hp || 0;
-          bonusSpirit += title.effects.spirit || 0;
-          bonusPhysique += title.effects.physique || 0;
-          bonusSpeed += title.effects.speed || 0;
-        }
+        // 使用统一的加成计算函数
+        const bonuses = calculatePlayerBonuses(prev);
+        const bonusAttack = bonuses.attack;
+        const bonusDefense = bonuses.defense;
+        const bonusHp = bonuses.hp;
+        const bonusSpirit = bonuses.spirit;
+        const bonusPhysique = bonuses.physique;
+        const bonusSpeed = bonuses.speed;
 
         // 计算旧境界时的基础属性+固定加成（用于计算分配的属性点）
         const oldBaseWithFixedBonusAttack = oldBaseAttack + bonusAttack;
@@ -457,6 +362,25 @@ export function useBreakthroughHandlers({
         const basePhysique = Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique + allocatedPhysique;
         const baseSpeed = Math.max(0, Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed + allocatedSpeed);
 
+        // 构建更新后的玩家状态来计算实际最大血量（包含功法加成等）
+        const updatedPlayer = {
+          ...prev,
+          realm: currentRealm,
+          realmLevel: currentLevel,
+          maxHp: baseMaxHp,
+          attack: baseAttack,
+          defense: baseDefense,
+          spirit: baseSpirit,
+          physique: basePhysique,
+          speed: baseSpeed,
+          goldenCoreMethodCount: prev.goldenCoreMethodCount,
+          activeArtId: prev.activeArtId,
+          cultivationArts: prev.cultivationArts,
+          spiritualRoots: prev.spiritualRoots,
+        };
+        const totalStats = getPlayerTotalStats(updatedPlayer);
+        const actualMaxHp = totalStats.maxHp; // 实际最大血量（包含功法加成）
+
         return {
           ...prev,
           realm: currentRealm,
@@ -464,7 +388,7 @@ export function useBreakthroughHandlers({
           exp: newExp,
           maxExp: newMaxExp,
           maxHp: baseMaxHp,
-          hp: baseMaxHp,
+          hp: actualMaxHp, // 使用实际最大血量（包含功法加成）作为满血
           attack: baseAttack,
           defense: baseDefense,
           spirit: baseSpirit,

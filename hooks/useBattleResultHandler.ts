@@ -11,6 +11,7 @@ import {
   SECT_MASTER_CHALLENGE_REQUIREMENTS,
   SECTS,
 } from '../constants/index';
+import { getPlayerTotalStats } from '../utils/statUtils';
 
 // 战斗结果类型（可能不包含所有字段）
 interface BattleResultData {
@@ -65,7 +66,10 @@ export function useBattleResultHandler({
       // 更新玩家状态
       setPlayer((prev) => {
         if (!prev) return prev;
-        let newHp = Math.max(0, prev.hp - result.hpLoss);
+        // 获取实际最大血量（包含功法加成等）作为上限
+        const totalStats = getPlayerTotalStats(prev);
+        const actualMaxHp = totalStats.maxHp;
+        let newHp = Math.max(0, Math.min(actualMaxHp, prev.hp - result.hpLoss));
         let newExp = Math.max(0, prev.exp + result.expChange);
         let newSpiritStones = Math.max(
           0,

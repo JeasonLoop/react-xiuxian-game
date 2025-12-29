@@ -26,20 +26,22 @@ import SaveManagerModal from './components/SaveManagerModal';
 import SaveCompareModal from './components/SaveCompareModal';
 import TribulationModal from './components/TribulationModal';
 import CultivationIntroModal from './components/CultivationIntroModal';
-import { SaveData, clearAllSlots } from './utils/saveManagerUtils';
+import {
+  SaveData,
+  ensurePlayerStatsCompatibility,
+} from './utils/saveManagerUtils';
 import { BattleReplay } from './services/battleService';
 import { useGameState } from './hooks/useGameState';
 import { useGameEffects } from './hooks/useGameEffects';
-import { useAppState } from './hooks/useAppState';
+import { useUI } from './context/UIContext';
 import { useDeathDetection } from './hooks/useDeathDetection';
 import { useAutoFeatures } from './hooks/useAutoFeatures';
 import { usePassiveRegeneration } from './hooks/usePassiveRegeneration';
 import { useAutoGrottoHarvest } from './hooks/useAutoGrottoHarvest';
 import { useBattleResultHandler } from './hooks/useBattleResultHandler';
 import { STORAGE_KEYS } from './constants/storageKeys';
-import { setGlobalAlertSetter, showConfirm } from './utils/toastUtils';
+import {  showConfirm } from './utils/toastUtils';
 import AlertModal from './components/AlertModal';
-import { AlertType } from './components/AlertModal';
 import { useItemActionLog } from './hooks/useItemActionLog';
 import { REALM_ORDER, TRIBULATION_CONFIG } from './constants/index';
 import {
@@ -52,21 +54,14 @@ import {
 } from './utils/shortcutUtils';
 import { compareItemEffects } from './utils/objectUtils';
 import { shouldTriggerTribulation, createTribulationState } from './utils/tribulationUtils';
-import {
-  initializeEventTemplateLibrary,
-  setEventTemplateLibrary,
-  isEventTemplateLibraryInitialized,
-  generateEventTemplateLibrary,
-} from './services/adventureTemplateService';
-import {
-  generateBreakthroughDescriptionLibrary,
-  setBreakthroughDescriptionLibrary,
-  isBreakthroughDescriptionLibraryInitialized,
-  generateEnemyNameLibrary,
-  setEnemyNameLibrary,
-  isEnemyNameLibraryInitialized,
-} from './services/templateService';
+import { getPlayerTotalStats } from './utils/statUtils';
+
 import { useIndexedDB } from './hooks/useIndexedDB';
+import { usePlayTime } from './hooks/usePlayTime';
+import { useGameInitialization } from './hooks/useGameInitialization';
+import { useLevelUp } from './hooks/useLevelUp';
+import { useGlobalAlert } from './hooks/useGlobalAlert';
+import { useRebirth } from './hooks/useRebirth';
 
 // 导入模块化的 handlers
 import {
@@ -106,6 +101,7 @@ function App() {
     setLogs, // 设置游戏日志
     handleStartGame, // 开始游戏
     setGameStarted, // 设置游戏开始状态（用于涅槃重生）
+    saveGame, // 保存存档函数
   } = useGameState();
 
   // 欢迎界面状态 - 总是显示欢迎界面，让用户选择继续或开始
@@ -118,8 +114,8 @@ function App() {
   const { visualEffects, createAddLog, triggerVisual } = useGameEffects();
   const addLog = createAddLog(setLogs);
 
-  // 使用统一的 App 状态管理
-  const appState = useAppState();
+  // 使用统一的 App 状态管理 (通过 Context)
+  const appState = useUI();
   const {
     modals,
     setters,
@@ -129,7 +125,24 @@ function App() {
     battle,
     turnBasedBattle,
     itemActionLog,
+    auto,
+    actions,
   } = appState;
+
+  const {
+    autoMeditate,
+    setAutoMeditate,
+    autoAdventure,
+    setAutoAdventure,
+    pausedByShop: autoAdventurePausedByShop,
+    setPausedByShop: setAutoAdventurePausedByShop,
+    pausedByBattle: autoAdventurePausedByBattle,
+    setPausedByBattle: setAutoAdventurePausedByBattle,
+    pausedByReputationEvent: autoAdventurePausedByReputationEvent,
+    setPausedByReputationEvent: setAutoAdventurePausedByReputationEvent,
+  } = auto;
+
+  const { closeCurrentModal: handleCloseCurrentModal, openTurnBasedBattle: handleOpenTurnBasedBattle } = actions;
 
   // 解构状态以便使用
   const {
@@ -218,19 +231,21 @@ function App() {
     externalSetter: setItemActionLogRaw,
   });
 
-  // 加载和冷却状态
-  const [loading, setLoading] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
+  // 使用自定义 hook 处理游戏初始化
+  useGameInitialization();
 
-  // Alert 弹窗状态
-  const [alertState, setAlertState] = useState<{
-    isOpen: boolean;
-    type: AlertType;
-    title?: string;
-    message: string;
-    onConfirm?: () => void;
-    showCancel?: boolean;
-  } | null>(null);
+  const { loading, setLoading, cooldown, setCooldown } = appState.global;
+
+  // 使用自定义 hook 处理游戏时长和保存
+  usePlayTime({
+    gameStarted,
+    player,
+    setPlayer,
+    saveGame,
+    logs,
+  });
+
+  const { alertState, setAlertState, closeAlert } = useGlobalAlert();
 
   // 存档管理器状态
   const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
@@ -240,219 +255,6 @@ function App() {
 
   // 天劫弹窗状态
   const [tribulationState, setTribulationState] = useState<TribulationState | null>(null);
-  // 防止天劫重复触发的标志
-  const isTribulationTriggeredRef = useRef(false);
-
-  // 处理天劫完成
-  const handleTribulationComplete = (result: TribulationResult) => {
-    // 不在这里重置标志位，让境界变化时的 useEffect 来重置
-    if (result.success) {
-      // 渡劫成功，执行突破（跳过成功率检查）
-      breakthroughHandlers.handleBreakthrough(true);
-      // 扣除气血
-      if (result.hpLoss && result.hpLoss > 0) {
-        setPlayer((prev) => {
-          if (!prev) return prev;
-          const newHp = Math.max(0, prev.hp - result.hpLoss);
-          return { ...prev, hp: newHp };
-        });
-        addLog(`渡劫成功，但损耗了${result.hpLoss}点气血。`, 'normal');
-      } else {
-        addLog(result.description, 'gain');
-      }
-      setTribulationState(null);
-    } else {
-      // 渡劫失败，触发死亡
-      setDeathReason(result.description);
-      setPlayer((prev) => {
-        if (!prev) return prev;
-        return { ...prev, hp: 0 };
-      });
-      setTribulationState(null);
-    }
-  };
-
-  // 初始化全局 alert
-  useEffect(() => {
-    setGlobalAlertSetter((alert) => {
-      setAlertState(alert);
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // IndexedDB Hook
-  const {
-    isReady,
-    saveTemplates,
-    loadTemplates,
-    hasTemplates,
-    saveBreakthroughDescriptions,
-    loadBreakthroughDescriptions,
-    hasBreakthroughDescriptions,
-    saveEnemyNames,
-    loadEnemyNames,
-    hasEnemyNames,
-  } = useIndexedDB();
-
-  // 初始化事件模板库（从 IndexedDB 加载或生成）
-  useEffect(() => {
-    if (!isReady) return;
-
-    const initTemplates = async () => {
-      try {
-        // 检查 IndexedDB 中是否有模板
-        const hasStoredTemplates = await hasTemplates();
-
-        if (hasStoredTemplates) {
-          // 从 IndexedDB 加载
-          const templates = await loadTemplates();
-          if (templates && templates.length > 0) {
-            setEventTemplateLibrary(templates);
-            console.log('从 IndexedDB 加载事件模板库成功');
-            return;
-          }
-        }
-
-        // 如果没有存储的模板，生成新的
-        if (!isEventTemplateLibraryInitialized()) {
-          console.log('生成新的事件模板库...');
-          const newTemplates = generateEventTemplateLibrary();
-          setEventTemplateLibrary(newTemplates);
-
-          // 保存到 IndexedDB
-          try {
-            await saveTemplates(newTemplates);
-            console.log('事件模板库已保存到 IndexedDB');
-          } catch (error) {
-            console.error('保存事件模板库到 IndexedDB 失败:', error);
-          }
-        }
-      } catch (error) {
-        console.error('初始化事件模板库失败:', error);
-        // 如果出错，使用同步初始化作为后备
-        if (!isEventTemplateLibraryInitialized()) {
-          initializeEventTemplateLibrary();
-        }
-      }
-    };
-
-    initTemplates();
-  }, [isReady, saveTemplates, loadTemplates, hasTemplates]);
-
-  // 初始化突破描述模板库（从 IndexedDB 加载或生成）
-  useEffect(() => {
-    if (!isReady) return;
-
-    const initBreakthroughDescriptions = async () => {
-      try {
-        const hasStored = await hasBreakthroughDescriptions();
-
-        if (hasStored) {
-          const descriptions = await loadBreakthroughDescriptions();
-          if (descriptions && descriptions.length > 0) {
-            setBreakthroughDescriptionLibrary(descriptions);
-            console.log('从 IndexedDB 加载突破描述模板库成功');
-            return;
-          }
-        }
-
-        if (!isBreakthroughDescriptionLibraryInitialized()) {
-          console.log('生成新的突破描述模板库...');
-          const newDescriptions = generateBreakthroughDescriptionLibrary();
-          setBreakthroughDescriptionLibrary(newDescriptions);
-
-          try {
-            await saveBreakthroughDescriptions(newDescriptions);
-            console.log('突破描述模板库已保存到 IndexedDB');
-          } catch (error) {
-            console.error('保存突破描述模板库到 IndexedDB 失败:', error);
-          }
-        }
-      } catch (error) {
-        console.error('初始化突破描述模板库失败:', error);
-      }
-    };
-
-    initBreakthroughDescriptions();
-  }, [isReady, saveBreakthroughDescriptions, loadBreakthroughDescriptions, hasBreakthroughDescriptions]);
-
-  // 初始化敌人名称模板库（从 IndexedDB 加载或生成）
-  useEffect(() => {
-    if (!isReady) return;
-
-    const initEnemyNames = async () => {
-      try {
-        const hasStored = await hasEnemyNames();
-
-        if (hasStored) {
-          const names = await loadEnemyNames();
-          if (names && names.length > 0) {
-            setEnemyNameLibrary(names);
-            console.log('从 IndexedDB 加载敌人名称模板库成功');
-            return;
-          }
-        }
-
-        if (!isEnemyNameLibraryInitialized()) {
-          console.log('生成新的敌人名称模板库...');
-          const newNames = generateEnemyNameLibrary();
-          setEnemyNameLibrary(newNames);
-
-          try {
-            await saveEnemyNames(newNames);
-            console.log('敌人名称模板库已保存到 IndexedDB');
-          } catch (error) {
-            console.error('保存敌人名称模板库到 IndexedDB 失败:', error);
-          }
-        }
-      } catch (error) {
-        console.error('初始化敌人名称模板库失败:', error);
-      }
-    };
-
-    initEnemyNames();
-  }, [isReady, saveEnemyNames, loadEnemyNames, hasEnemyNames]);
-
-
-  // 自动功能和死亡状态
-  const [autoMeditate, setAutoMeditate] = useState(false);
-  const [autoAdventure, setAutoAdventure] = useState(false);
-  const [autoAdventurePausedByShop, setAutoAdventurePausedByShop] =
-    useState(false);
-  const [autoAdventurePausedByBattle, setAutoAdventurePausedByBattle] =
-    useState(false);
-  const [autoAdventurePausedByReputationEvent, setAutoAdventurePausedByReputationEvent] =
-    useState(false);
-  const [isDead, setIsDead] = useState(false);
-  const [deathBattleData, setDeathBattleData] = useState<BattleReplay | null>(
-    null
-  );
-  const [deathReason, setDeathReason] = useState('');
-
-  // 统一处理回合制战斗打开逻辑
-  const handleOpenTurnBasedBattle = useCallback(
-    (params: {
-      adventureType: AdventureType;
-      riskLevel?: '低' | '中' | '高' | '极度危险';
-      realmMinRealm?: RealmType;
-      bossId?: string; // 指定的天地之魄BOSS ID（用于事件模板）
-    }) => {
-      // 如果正在自动历练，暂停自动历练但保存状态
-      if (autoAdventure) {
-        setAutoAdventure(false);
-        setAutoAdventurePausedByBattle(true);
-      }
-      setTurnBasedBattleParams(params);
-      setIsTurnBasedBattleOpen(true);
-    },
-    [
-      autoAdventure,
-      setAutoAdventure,
-      setAutoAdventurePausedByBattle,
-      setTurnBasedBattleParams,
-      setIsTurnBasedBattleOpen,
-    ]
-  );
 
   // 初始化所有模块化的 handlers
   const battleHandlers = useBattleHandlers({
@@ -492,6 +294,99 @@ function App() {
     addLog,
     setLoading,
     loading,
+  });
+
+  // 使用等级提升与天劫处理 hook
+  const { isTribulationTriggeredRef } = useLevelUp({
+    player,
+    setPlayer,
+    tribulationState,
+    setTribulationState,
+    handleBreakthrough: breakthroughHandlers.handleBreakthrough,
+    addLog,
+  });
+
+  // 处理天劫完成
+  const handleTribulationComplete = (result: TribulationResult) => {
+    // 不在这里重置标志位，让境界变化时的 useEffect 来重置
+    if (result.success) {
+      // 渡劫成功，执行突破（跳过成功率检查）
+      // 将天劫产生的扣血传递给突破处理器，确保在同一次状态更新中处理
+      breakthroughHandlers.handleBreakthrough(true, result.hpLoss || 0);
+
+      if (result.hpLoss && result.hpLoss > 0) {
+        addLog(`渡劫成功，但损耗了${result.hpLoss}点气血。`, 'normal');
+      } else {
+        addLog(result.description, 'gain');
+      }
+      setTribulationState(null);
+    } else {
+      // 渡劫失败，触发死亡
+      setDeathReason(result.description);
+      setPlayer((prev) => {
+        if (!prev) return prev;
+        return { ...prev, hp: 0 };
+      });
+      setTribulationState(null);
+    }
+  };
+
+  // IndexedDB Hook
+  const {
+    isReady,
+    saveTemplates,
+    loadTemplates,
+    hasTemplates,
+    saveBreakthroughDescriptions,
+    loadBreakthroughDescriptions,
+    hasBreakthroughDescriptions,
+    saveEnemyNames,
+    loadEnemyNames,
+    hasEnemyNames,
+  } = useIndexedDB();
+
+  // 确保新游戏开始时自动历练状态被重置
+  // 当检测到新游戏开始时（玩家从null变为有值，且是初始状态），重置自动历练状态
+  const prevPlayerNameRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (gameStarted && player) {
+      // 检测是否是真正的新游戏：玩家名字变化，且玩家是初始状态（exp为0，境界为初始境界）
+      const isNewPlayer = prevPlayerNameRef.current !== null &&
+                          prevPlayerNameRef.current !== player.name;
+      const isInitialState = player.exp === 0 &&
+                             player.realm === 'QiRefining' &&
+                             player.realmLevel === 1;
+
+      if (isNewPlayer && isInitialState) {
+        // 新游戏开始时，确保自动历练状态被重置
+        setAutoAdventure(false);
+        setAutoAdventurePausedByBattle(false);
+        setAutoAdventurePausedByShop(false);
+        setAutoAdventurePausedByReputationEvent(false);
+      }
+
+      prevPlayerNameRef.current = player.name;
+    } else if (!gameStarted || !player) {
+      // 游戏未开始或玩家为null时，重置ref
+      prevPlayerNameRef.current = null;
+    }
+  }, [gameStarted, player?.name, player?.exp, player?.realm, player?.realmLevel]);
+
+  const [isDead, setIsDead] = useState(false);
+  const [deathBattleData, setDeathBattleData] = useState<BattleReplay | null>(
+    null
+  );
+  const [deathReason, setDeathReason] = useState('');
+
+  // 使用自定义 hook 处理涅槃重生
+  const { handleRebirth } = useRebirth({
+    setPlayer,
+    setLogs,
+    setGameStarted,
+    setHasSave,
+    setIsDead,
+    setDeathBattleData,
+    setDeathReason,
   });
 
   const itemHandlers = useItemHandlers({
@@ -685,81 +580,31 @@ function App() {
     }
   }, [autoAdventurePausedByBattle, player?.hp, isDead, loading]);
 
-  // 确保新游戏开始时自动历练状态被重置
-  // 当检测到新游戏开始时（玩家从null变为有值，且是初始状态），重置自动历练状态
-  const prevPlayerNameRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (gameStarted && player) {
-      // 检测是否是真正的新游戏：玩家名字变化，且玩家是初始状态（exp为0，境界为初始境界）
-      const isNewPlayer = prevPlayerNameRef.current !== null &&
-                          prevPlayerNameRef.current !== player.name;
-      const isInitialState = player.exp === 0 &&
-                             player.realm === 'QiRefining' &&
-                             player.realmLevel === 1;
-
-      if (isNewPlayer && isInitialState) {
-        // 新游戏开始时，确保自动历练状态被重置
-        setAutoAdventure(false);
-        setAutoAdventurePausedByBattle(false);
-        setAutoAdventurePausedByShop(false);
-        setAutoAdventurePausedByReputationEvent(false);
-      }
-
-      prevPlayerNameRef.current = player.name;
-    } else if (!gameStarted || !player) {
-      // 游戏未开始或玩家为null时，重置ref
-      prevPlayerNameRef.current = null;
-    }
-  }, [gameStarted, player?.name, player?.exp, player?.realm, player?.realmLevel]);
-
-  // 涅槃重生功能
-  const handleRebirth = () => {
-    // 清除所有存档（包括新的多存档槽位系统和旧的存档系统）
-    clearAllSlots(); // 清除所有存档槽位和备份
-    localStorage.removeItem(STORAGE_KEYS.SAVE); // 清除旧存档系统（兼容性）
-
-    // 重置所有状态
-    setIsDead(false);
-    setDeathBattleData(null);
-    setDeathReason('');
-    setLastBattleReplay(null);
-    setAutoMeditate(false);
-    setAutoAdventure(false);
-    setAutoAdventurePausedByBattle(false);
-    setAutoAdventurePausedByShop(false);
-    setAutoAdventurePausedByReputationEvent(false);
-    setPlayer(null);
-    setLogs([]);
-    setGameStarted(false);
-    setHasSave(false); // 重要：更新 hasSave 状态，避免卡在加载存档页面
-
-    // 触发页面刷新或返回开始页面
-    // useGameState 的 handleStartGame 会处理新游戏
-  };
-
   const handleUseInheritance = breakthroughHandlers.handleUseInheritance;
 
   const handleUseItem = itemHandlers.handleUseItem;
   const handleOrganizeInventory = itemHandlers.handleOrganizeInventory;
   const handleDiscardItem = itemHandlers.handleDiscardItem;
   const handleRefineAdvancedItem = itemHandlers.handleRefineAdvancedItem;
-  const handleBatchUse = (itemIds: string[]) => {
+  const handleBatchUse = useCallback((itemIds: string[]) => {
     itemHandlers.handleBatchUseItems(itemIds);
-  };
+  }, [itemHandlers]);
 
-  const handleBatchDiscard = (itemIds: string[]) => {
+  const handleBatchDiscard = useCallback((itemIds: string[]) => {
     setPlayer((prev) => {
+      if (!prev) return prev;
       // 使用 Set 提高查找性能，特别是当 itemIds 数组较大时
       const itemIdsSet = new Set(itemIds);
       const newInv = prev.inventory.filter((i) => !itemIdsSet.has(i.id));
       addLog(`你批量丢弃了 ${itemIds.length} 件物品。`, 'normal');
       return { ...prev, inventory: newInv };
     });
-  };
+  }, [addLog, setPlayer]);
 
   // 处理从宗门宝库拿取物品
-  const handleTakeTreasureVaultItem = (item: Item) => {
+  const handleTakeTreasureVaultItem = useCallback((item: Item) => {
     setPlayer((prev) => {
+      if (!prev) return prev;
       const newInv = [...prev.inventory];
       // 检查背包中是否已有相同物品（装备类物品不叠加）
       const isEquipment = item.isEquippable || false;
@@ -802,7 +647,7 @@ function App() {
         },
       };
     });
-  };
+  }, [addLog, setPlayer]);
 
   // 处理更新宗门宝库（初始化宝库物品）
   const handleUpdateVault = useCallback((vault: { items: Item[]; takenItemIds: string[] }) => {
@@ -813,31 +658,35 @@ function App() {
   }, [setPlayer]);
 
   // 包装 handleEquipItem，添加任务进度更新
-  const handleEquipItem = (item: Item, slot: EquipmentSlot) => {
+  const handleEquipItem = useCallback((item: Item, slot: EquipmentSlot) => {
     equipmentHandlers.handleEquipItem(item, slot);
     dailyQuestHandlers.updateQuestProgress('equip', 1);
-  };
+  }, [equipmentHandlers, dailyQuestHandlers]);
+
   const handleUnequipItem = equipmentHandlers.handleUnequipItem;
+
   // 包装 handleRefineNatalArtifact，添加任务进度更新
-  const handleRefineNatalArtifact = (item: Item) => {
+  const handleRefineNatalArtifact = useCallback((item: Item) => {
     equipmentHandlers.handleRefineNatalArtifact(item);
     dailyQuestHandlers.updateQuestProgress('equip', 1);
-  };
+  }, [equipmentHandlers, dailyQuestHandlers]);
+
   const handleUnrefineNatalArtifact =
     equipmentHandlers.handleUnrefineNatalArtifact;
 
   // 包装 handleLearnArt，添加任务进度更新
-  const handleLearnArt = (art: any) => {
+  const handleLearnArt = useCallback((art: any) => {
     cultivationHandlers.handleLearnArt(art);
     dailyQuestHandlers.updateQuestProgress('learn', 1);
-  };
+  }, [cultivationHandlers, dailyQuestHandlers]);
+
   const handleActivateArt = cultivationHandlers.handleActivateArt;
 
   // 包装 handleCraft，添加任务进度更新
-  const handleCraft = async (recipe: any) => {
+  const handleCraft = useCallback(async (recipe: any) => {
     await alchemyHandlers.handleCraft(recipe);
     dailyQuestHandlers.updateQuestProgress('alchemy', 1);
-  };
+  }, [alchemyHandlers, dailyQuestHandlers]);
 
   const handleSelectTalent = characterHandlers.handleSelectTalent;
   const handleSelectTitle = characterHandlers.handleSelectTitle;
@@ -849,7 +698,7 @@ function App() {
   const handleBuyItem = shopHandlers.handleBuyItem;
   const handleSellItem = shopHandlers.handleSellItem;
 
-  const handleRefreshShop = (newItems: ShopItem[]) => {
+  const handleRefreshShop = useCallback((newItems: ShopItem[]) => {
     if (!currentShop || !player) return;
     const refreshCost = currentShop.refreshCost || 100; // 使用商店的刷新费用，默认100
     if (player.spiritStones < refreshCost) {
@@ -868,15 +717,17 @@ function App() {
       };
     });
     addLog('商店物品已刷新！', 'special');
-  };
+  }, [currentShop, player, addLog, setCurrentShop, setPlayer]);
+
   // 处理声望事件选择
-  const handleReputationEventChoice = (choiceIndex: number) => {
+  const handleReputationEventChoice = useCallback((choiceIndex: number) => {
     if (!reputationEvent || !player) return;
 
     const choice = reputationEvent.choices[choiceIndex];
     if (!choice) return;
 
     setPlayer((prev) => {
+      if (!prev) return prev;
       const newReputation = Math.max(
         0,
         (prev.reputation || 0) + choice.reputationChange
@@ -887,7 +738,10 @@ function App() {
 
       // 处理其他变化
       if (choice.hpChange !== undefined) {
-        newHp = Math.max(0, Math.min(prev.maxHp, prev.hp + choice.hpChange));
+        // 使用实际最大血量（包含金丹法数加成等）作为上限
+        const totalStats = getPlayerTotalStats(prev);
+        const actualMaxHp = totalStats.maxHp;
+        newHp = Math.max(0, Math.min(actualMaxHp, prev.hp + choice.hpChange));
       }
       if (choice.expChange !== undefined) {
         newExp = Math.max(0, prev.exp + choice.expChange);
@@ -941,27 +795,39 @@ function App() {
       setAutoAdventurePausedByReputationEvent(false);
       setAutoAdventure(true);
     }
-  };
+  }, [
+    reputationEvent,
+    player,
+    addLog,
+    setPlayer,
+    setIsReputationEventOpen,
+    setReputationEvent,
+    autoAdventurePausedByReputationEvent,
+    setAutoAdventurePausedByReputationEvent,
+    setAutoAdventure,
+  ]);
 
   const handleUpdateSettings = settingsHandlers.handleUpdateSettings;
   const handleActivatePet = petHandlers.handleActivatePet;
   const handleDeactivatePet = petHandlers.handleDeactivatePet;
   // 包装 handleFeedPet，添加任务进度更新
-  const handleFeedPet = (
+  const handleFeedPet = useCallback((
     petId: string,
     feedType: 'hp' | 'item' | 'exp',
     itemId?: string
   ) => {
     petHandlers.handleFeedPet(petId, feedType, itemId);
     dailyQuestHandlers.updateQuestProgress('pet', 1);
-  };
+  }, [petHandlers, dailyQuestHandlers]);
+
   const handleBatchFeedItems = petHandlers.handleBatchFeedItems;
   const handleBatchFeedHp = petHandlers.handleBatchFeedHp;
   // 包装 handleEvolvePet，添加任务进度更新
-  const handleEvolvePet = (petId: string) => {
+  const handleEvolvePet = useCallback((petId: string) => {
     petHandlers.handleEvolvePet(petId);
     dailyQuestHandlers.updateQuestProgress('pet', 1);
-  };
+  }, [petHandlers, dailyQuestHandlers]);
+
   const handleReleasePet = petHandlers.handleReleasePet;
   const handleBatchReleasePets = petHandlers.handleBatchReleasePets;
   const handleDraw = lotteryHandlers.handleDraw;
@@ -969,10 +835,10 @@ function App() {
   const handleLeaveSect = sectHandlers.handleLeaveSect;
   const handleSafeLeaveSect = sectHandlers.handleSafeLeaveSect;
   // 包装 handleSectTask，添加任务进度更新
-  const handleSectTask = (task: any, encounterResult?: any) => {
+  const handleSectTask = useCallback((task: any, encounterResult?: any) => {
     sectHandlers.handleSectTask(task, encounterResult);
     dailyQuestHandlers.updateQuestProgress('sect', 1);
-  };
+  }, [sectHandlers, dailyQuestHandlers]);
   const handleSectPromote = sectHandlers.handleSectPromote;
   const handleSectBuy = sectHandlers.handleSectBuy;
   const checkAchievements = achievementHandlers.checkAchievements;
@@ -1075,8 +941,15 @@ function App() {
       }
 
       // 检查是否已经触发了天劫（防止重复触发）
-      if (isTribulationTriggeredRef.current) {
+      // 如果经验值只是等于 maxExp（可能是取消后锁定的），且标志位为 true，则不触发
+      // 只有当经验值真正超过 maxExp 时，才允许触发（此时标志位会在境界变化时重置）
+      if (isTribulationTriggeredRef.current && player.exp === player.maxExp) {
         return;
+      }
+
+      // 如果经验值超过 maxExp，说明是新的经验值增加，重置标志位允许触发
+      if (player.exp > player.maxExp) {
+        isTribulationTriggeredRef.current = false;
       }
 
       // 检查是否需要渡劫
@@ -1090,6 +963,9 @@ function App() {
       }
 
       // 如果是境界升级，先检查是否满足突破条件
+      // 注意：shouldTriggerTribulation 内部也会检查条件，但这里提前检查是为了：
+      // 1. 给用户明确的错误提示
+      // 2. 锁定经验值避免反复触发
       if (isRealmUpgrade && targetRealm !== player.realm) {
         const conditionCheck = checkBreakthroughConditions(player, targetRealm);
         if (!conditionCheck.canBreakthrough) {
@@ -1100,7 +976,7 @@ function App() {
         }
       }
 
-      // 检查是否需要渡劫（只有在满足条件后才检查）
+      // 检查是否需要渡劫（只有在满足条件后才检查，shouldTriggerTribulation 内部会再次验证条件）
       if (shouldTriggerTribulation(player) && !tribulationState?.isOpen) {
         // 设置标志位，防止重复触发
         isTribulationTriggeredRef.current = true;
@@ -1119,8 +995,9 @@ function App() {
             setTribulationState(newTribulationState);
           },
           () => {
-            // 用户取消，重置标志位并锁定经验值，防止立即再次触发
-            isTribulationTriggeredRef.current = false;
+            // 用户取消，保持标志位为 true（防止立即再次触发）、清除天劫状态并锁定经验值
+            // 标志位会在经验值真正变化或境界变化时重置
+            setTribulationState(null); // 清除天劫状态
             setPlayer((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
           }
         );
@@ -1131,34 +1008,6 @@ function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player?.exp, player?.maxExp, player?.realm, player?.realmLevel, tribulationState?.isOpen]);
-
-  // 初始化日常任务（只在游戏开始时执行一次，或日期变化时执行）
-  useEffect(() => {
-    if (player && gameStarted) {
-      // 确保 player 对象已经完整初始化
-      try {
-        dailyQuestHandlers.initializeDailyQuests();
-      } catch (error) {
-        console.error('初始化日常任务失败:', error);
-      }
-    }
-    // 只依赖 gameStarted，避免 player 对象变化时重复执行
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameStarted]);
-
-  // 首次进入检测：显示修仙法门弹窗
-  useEffect(() => {
-    if (gameStarted && !showWelcome) {
-      const hasShown = localStorage.getItem(STORAGE_KEYS.CULTIVATION_INTRO_SHOWN);
-      if (!hasShown) {
-        // 延迟一点显示，让游戏界面先加载完成
-        const timer = setTimeout(() => {
-          setShowCultivationIntro(true);
-        }, 500);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [gameStarted, showWelcome]);
 
   // 监听突破成功，更新任务进度
   const prevRealmRef = useRef<{ realm: string; level: number } | null>(null);
@@ -1222,87 +1071,6 @@ function App() {
     checkAchievements,
   ]);
 
-  // 关闭当前打开的弹窗
-  const handleCloseCurrentModal = useCallback(() => {
-    // 在自动历练模式下，不允许通过快捷键关闭回合制战斗弹窗
-    if (isTurnBasedBattleOpen && autoAdventure) {
-      return;
-    }
-
-    if (isShopOpen) setIsShopOpen(false);
-    else if (isInventoryOpen) setIsInventoryOpen(false);
-    else if (isCultivationOpen) setIsCultivationOpen(false);
-    else if (isCharacterOpen) setIsCharacterOpen(false);
-    else if (isAchievementOpen) setIsAchievementOpen(false);
-    else if (isPetOpen) setIsPetOpen(false);
-    else if (isLotteryOpen) setIsLotteryOpen(false);
-    else if (isSettingsOpen) setIsSettingsOpen(false);
-    else if (isRealmOpen) setIsRealmOpen(false);
-    else if (isAlchemyOpen) setIsAlchemyOpen(false);
-    else if (isSectOpen) setIsSectOpen(false);
-    else if (isDailyQuestOpen) setIsDailyQuestOpen(false);
-    else if (isGrottoOpen) setIsGrottoOpen(false);
-    else if (isUpgradeOpen) setIsUpgradeOpen(false);
-    else if (isBattleModalOpen) setIsBattleModalOpen(false);
-    else if (isTurnBasedBattleOpen) {
-      // 非自动历练模式下，正确关闭回合制战斗弹窗
-      setIsTurnBasedBattleOpen(false);
-      setTurnBasedBattleParams(null);
-      // 清除暂停状态
-      if (autoAdventurePausedByBattle) {
-        setAutoAdventurePausedByBattle(false);
-      }
-    }
-    else if (isReputationEventOpen) setIsReputationEventOpen(false);
-    else if (isMobileSidebarOpen) setIsMobileSidebarOpen(false);
-    else if (isMobileStatsOpen) setIsMobileStatsOpen(false);
-    else if (isDebugOpen) setIsDebugOpen(false);
-  }, [
-    isShopOpen,
-    isInventoryOpen,
-    isCultivationOpen,
-    isCharacterOpen,
-    isAchievementOpen,
-    isPetOpen,
-    isLotteryOpen,
-    isSettingsOpen,
-    isRealmOpen,
-    isAlchemyOpen,
-    isSectOpen,
-    isDailyQuestOpen,
-    isGrottoOpen,
-    isUpgradeOpen,
-    isBattleModalOpen,
-    isTurnBasedBattleOpen,
-    isReputationEventOpen,
-    isMobileSidebarOpen,
-    isMobileStatsOpen,
-    isDebugOpen,
-    autoAdventure,
-    autoAdventurePausedByBattle,
-    setIsShopOpen,
-    setIsInventoryOpen,
-    setIsCultivationOpen,
-    setIsCharacterOpen,
-    setIsAchievementOpen,
-    setIsPetOpen,
-    setIsLotteryOpen,
-    setIsSettingsOpen,
-    setIsRealmOpen,
-    setIsAlchemyOpen,
-    setIsSectOpen,
-    setIsDailyQuestOpen,
-    setIsUpgradeOpen,
-    setIsBattleModalOpen,
-    setIsTurnBasedBattleOpen,
-    setIsReputationEventOpen,
-    setIsMobileSidebarOpen,
-    setIsMobileStatsOpen,
-    setIsDebugOpen,
-    setTurnBasedBattleParams,
-    setAutoAdventurePausedByBattle,
-  ]);
-
   // 定义键盘快捷键（使用保存的配置）
   const keyboardShortcuts: KeyboardShortcut[] = useMemo(() => {
     if (!player || !gameStarted) return [];
@@ -1332,14 +1100,7 @@ function App() {
       configToShortcut(
         toggleAutoMeditateConfig,
         () => {
-          setAutoMeditate((prev) => {
-            const newValue = !prev;
-            if (newValue && autoAdventure) {
-              setAutoAdventure(false);
-              addLog('已关闭自动历练，开启自动打坐。', 'normal');
-            }
-            return newValue;
-          });
+          setAutoMeditate((prev) => !prev);
         },
         '切换自动打坐',
         '基础操作'
@@ -1359,12 +1120,6 @@ function App() {
           setAutoAdventurePausedByShop(false);
           setAutoAdventurePausedByBattle(false);
           setAutoAdventurePausedByReputationEvent(false);
-        } else {
-          // 如果开启自动历练，则关闭自动打坐
-          if (autoMeditate) {
-            setAutoMeditate(false);
-            addLog('已关闭自动打坐，开启自动历练。', 'normal');
-          }
         }
         return newValue;
       });
@@ -1544,16 +1299,10 @@ function App() {
 
     return shortcuts;
   }, [
-    player,
-    gameStarted,
-    settings.keyboardShortcuts,
     handleMeditate,
     handleAdventure,
     autoMeditate,
     autoAdventure,
-    setAutoMeditate,
-    setAutoAdventure,
-    addLog,
     setIsInventoryOpen,
     setIsCultivationOpen,
     setIsCharacterOpen,
@@ -1565,7 +1314,6 @@ function App() {
     setIsAlchemyOpen,
     setIsSectOpen,
     setIsDailyQuestOpen,
-    setPlayer,
     handleCloseCurrentModal,
   ]);
 
@@ -1574,6 +1322,277 @@ function App() {
     shortcuts: keyboardShortcuts,
     enabled: gameStarted && !!player && !isDead,
   });
+
+  // 缓存 GameView 的 handlers
+  const gameViewHandlers = useMemo(() => ({
+    onMeditate: handleMeditate,
+    onAdventure: handleAdventure,
+    onOpenRealm: () => setIsRealmOpen(true),
+    onOpenAlchemy: () => setIsAlchemyOpen(true),
+    onOpenSect: () => setIsSectOpen(true),
+    onOpenMenu: () => setIsMobileSidebarOpen(true),
+    onOpenCultivation: () => setIsCultivationOpen(true),
+    onOpenInventory: () => setIsInventoryOpen(true),
+    onOpenCharacter: () => setIsCharacterOpen(true),
+    onOpenAchievement: () => {
+      setIsAchievementOpen(true);
+      setPlayer((prev) => (prev ? {
+        ...prev,
+        viewedAchievements: [...prev.achievements],
+      } : null));
+    },
+    onOpenPet: () => setIsPetOpen(true),
+    onOpenLottery: () => setIsLotteryOpen(true),
+    onOpenDailyQuest: () => setIsDailyQuestOpen(true),
+    onOpenGrotto: () => setIsGrottoOpen(true),
+    onOpenSettings: () => setIsSettingsOpen(true),
+    onOpenDebug: () => setIsDebugOpen(true),
+    onOpenStats: () => setIsMobileStatsOpen(true),
+    onUpdateViewedAchievements: () => {
+      setPlayer((prev) => (prev ? {
+        ...prev,
+        viewedAchievements: [...prev.achievements],
+      } : null));
+    },
+    autoMeditate,
+    autoAdventure,
+    onToggleAutoMeditate: () => {
+      setAutoMeditate((prev) => {
+        const newValue = !prev;
+        // 在内部处理逻辑，避免外部变量依赖
+        return newValue;
+      });
+    },
+    onToggleAutoAdventure: () => {
+      setAutoAdventure((prev) => {
+        const newValue = !prev;
+        if (!newValue) {
+          setAutoAdventurePausedByShop(false);
+          setAutoAdventurePausedByBattle(false);
+          setAutoAdventurePausedByReputationEvent(false);
+        }
+        return newValue;
+      });
+    },
+  }), [
+    handleMeditate,
+    handleAdventure,
+    setIsRealmOpen,
+    setIsAlchemyOpen,
+    setIsSectOpen,
+    setIsMobileSidebarOpen,
+    setIsCultivationOpen,
+    setIsInventoryOpen,
+    setIsCharacterOpen,
+    setIsAchievementOpen,
+    setIsPetOpen,
+    setIsLotteryOpen,
+    setIsDailyQuestOpen,
+    setIsGrottoOpen,
+    setIsSettingsOpen,
+    setIsDebugOpen,
+    setIsMobileStatsOpen,
+    autoMeditate,
+    autoAdventure,
+    setAutoAdventurePausedByShop,
+    setAutoAdventurePausedByBattle,
+    setAutoAdventurePausedByReputationEvent,
+  ]);
+
+  // 缓存 ModalsContainer 的 handlers
+  const modalsHandlers = useMemo(() => ({
+    setIsInventoryOpen,
+    setIsCultivationOpen,
+    setIsAlchemyOpen,
+    setIsUpgradeOpen: (open: boolean) => {
+      setIsUpgradeOpen(open);
+      if (!open) setItemToUpgrade(null);
+    },
+    setIsSectOpen,
+    setIsRealmOpen,
+    setIsCharacterOpen,
+    setIsAchievementOpen,
+    setIsPetOpen,
+    setIsLotteryOpen,
+    setIsSettingsOpen,
+    setIsDailyQuestOpen,
+    setIsGrottoOpen,
+    setIsShopOpen: (open: boolean) => {
+      setIsShopOpen(open);
+      if (!open) {
+        setCurrentShop(null);
+        if (autoAdventurePausedByShop) {
+          setAutoAdventurePausedByShop(false);
+          setAutoAdventure(true);
+        }
+      }
+    },
+    setIsBattleModalOpen,
+    setItemToUpgrade,
+    setCurrentShop,
+    setBattleReplay,
+    setRevealedBattleRounds,
+    handleSkipBattleLogs,
+    handleCloseBattleModal,
+    handleUseItem,
+    handleEquipItem,
+    handleUnequipItem,
+    handleOpenUpgrade,
+    handleDiscardItem,
+    handleBatchDiscard,
+    handleBatchUse,
+    handleOrganizeInventory,
+    handleRefineNatalArtifact,
+    handleUnrefineNatalArtifact,
+    handleRefineAdvancedItem,
+    handleUpgradeItem,
+    handleLearnArt,
+    handleActivateArt,
+    handleCraft,
+    handleJoinSect,
+    handleLeaveSect,
+    handleSafeLeaveSect,
+    handleSectTask,
+    handleSectPromote,
+    handleSectBuy,
+    handleChallengeLeader: sectHandlers.handleChallengeLeader,
+    handleEnterRealm,
+    handleSelectTalent,
+    handleSelectTitle,
+    handleAllocateAttribute,
+    handleAllocateAllAttributes,
+    handleUseInheritance,
+    setPlayer,
+    addLog,
+    handleUpdateViewedAchievements: () => {
+      setPlayer((prev) => (prev ? {
+        ...prev,
+        viewedAchievements: [...prev.achievements],
+      } : null));
+    },
+    handleActivatePet,
+    handleDeactivatePet,
+    handleFeedPet,
+    handleBatchFeedItems,
+    handleBatchFeedHp,
+    handleEvolvePet,
+    handleReleasePet,
+    handleBatchReleasePets,
+    handleDraw,
+    handleUpdateSettings,
+    handleRestartGame: handleRebirth,
+    onOpenSaveManager: () => setIsSaveManagerOpen(true),
+    handleClaimQuestReward: dailyQuestHandlers.claimQuestReward,
+    handleUpgradeGrotto: grottoHandlers.handleUpgradeGrotto,
+    handlePlantHerb: grottoHandlers.handlePlantHerb,
+    handleHarvestHerb: grottoHandlers.handleHarvestHerb,
+    handleHarvestAll: grottoHandlers.handleHarvestAll,
+    handleEnhanceSpiritArray: grottoHandlers.handleEnhanceSpiritArray,
+    handleToggleAutoHarvest: grottoHandlers.handleToggleAutoHarvest,
+    handleSpeedupHerb: grottoHandlers.handleSpeedupHerb,
+    handleBuyItem,
+    handleSellItem,
+    handleRefreshShop,
+    handleReputationEventChoice,
+    setIsReputationEventOpen: (open: boolean) => {
+      setIsReputationEventOpen(open);
+      if (!open) {
+        setReputationEvent(null);
+        if (autoAdventurePausedByReputationEvent) {
+          setAutoAdventurePausedByReputationEvent(false);
+          setAutoAdventure(true);
+        }
+      }
+    },
+    setIsTreasureVaultOpen: (open: boolean) => setIsTreasureVaultOpen(open),
+    handleTakeTreasureVaultItem,
+    handleUpdateVault,
+    setIsTurnBasedBattleOpen: (open: boolean) => {
+      setIsTurnBasedBattleOpen(open);
+      if (!open) {
+        setTurnBasedBattleParams(null);
+      }
+    },
+    handleTurnBasedBattleClose: (result: any, updatedInventory?: Item[]) => {
+      setIsTurnBasedBattleOpen(false);
+      setTurnBasedBattleParams(null);
+      handleBattleResult(result, updatedInventory);
+      if (!autoAdventure) {
+        setAutoAdventurePausedByBattle(false);
+        return;
+      }
+      // 使用函数式更新获取最新的 player 状态，避免依赖外部 player 变量
+      setPlayer((currentPlayer) => {
+        if (result && currentPlayer) {
+          const playerHpAfter = Math.max(0, currentPlayer.hp - (result.hpLoss || 0));
+          if (playerHpAfter <= 0) {
+            setAutoAdventurePausedByBattle(false);
+          }
+        } else {
+          setAutoAdventurePausedByBattle(false);
+        }
+        return currentPlayer;
+      });
+    },
+  }), [
+    setIsInventoryOpen, setIsCultivationOpen, setIsAlchemyOpen, setIsUpgradeOpen,
+    setIsSectOpen, setIsRealmOpen, setIsCharacterOpen, setIsAchievementOpen,
+    setIsPetOpen, setIsLotteryOpen, setIsSettingsOpen, setIsDailyQuestOpen,
+    setIsGrottoOpen, setIsShopOpen, setIsBattleModalOpen, setItemToUpgrade,
+    setCurrentShop, setBattleReplay, setRevealedBattleRounds, handleSkipBattleLogs,
+    handleCloseBattleModal, handleUseItem, handleEquipItem, handleUnequipItem,
+    handleOpenUpgrade, handleDiscardItem, handleBatchDiscard, handleBatchUse,
+    handleOrganizeInventory, handleRefineNatalArtifact, handleUnrefineNatalArtifact,
+    handleRefineAdvancedItem, handleUpgradeItem, handleLearnArt, handleActivateArt,
+    handleCraft, handleJoinSect, handleLeaveSect, handleSafeLeaveSect, handleSectTask,
+    handleSectPromote, handleSectBuy, sectHandlers.handleChallengeLeader,
+    handleEnterRealm, handleSelectTalent, handleSelectTitle, handleAllocateAttribute,
+    handleAllocateAllAttributes, handleUseInheritance, setPlayer, addLog,
+    handleActivatePet, handleDeactivatePet, handleFeedPet, handleBatchFeedItems,
+    handleBatchFeedHp, handleEvolvePet, handleReleasePet, handleBatchReleasePets,
+    handleDraw, handleUpdateSettings, handleRebirth, setIsSaveManagerOpen,
+    dailyQuestHandlers.claimQuestReward, grottoHandlers.handleUpgradeGrotto,
+    grottoHandlers.handlePlantHerb, grottoHandlers.handleHarvestHerb,
+    grottoHandlers.handleHarvestAll, grottoHandlers.handleEnhanceSpiritArray,
+    grottoHandlers.handleToggleAutoHarvest, grottoHandlers.handleSpeedupHerb,
+    handleBuyItem, handleSellItem, handleRefreshShop, handleReputationEventChoice,
+    setIsReputationEventOpen, setReputationEvent, autoAdventurePausedByReputationEvent,
+    setAutoAdventure, setIsTreasureVaultOpen, handleTakeTreasureVaultItem,
+    handleUpdateVault, setIsTurnBasedBattleOpen, setTurnBasedBattleParams,
+    handleBattleResult, autoAdventure, autoAdventurePausedByShop, setCurrentShop,
+    setAutoAdventurePausedByBattle, setAutoAdventurePausedByShop,
+    setAutoAdventurePausedByReputationEvent
+  ]);
+
+  // 检查是否有任何弹窗处于打开状态
+  const isAnyModalOpen = useMemo(() => {
+    return (
+      isInventoryOpen ||
+      isCultivationOpen ||
+      isAlchemyOpen ||
+      isUpgradeOpen ||
+      isSectOpen ||
+      isRealmOpen ||
+      isCharacterOpen ||
+      isAchievementOpen ||
+      isPetOpen ||
+      isLotteryOpen ||
+      isSettingsOpen ||
+      isDailyQuestOpen ||
+      isShopOpen ||
+      isGrottoOpen ||
+      isBattleModalOpen ||
+      isTurnBasedBattleOpen ||
+      isReputationEventOpen ||
+      isTreasureVaultOpen
+    );
+  }, [
+    isInventoryOpen, isCultivationOpen, isAlchemyOpen, isUpgradeOpen,
+    isSectOpen, isRealmOpen, isCharacterOpen, isAchievementOpen,
+    isPetOpen, isLotteryOpen, isSettingsOpen, isDailyQuestOpen,
+    isShopOpen, isGrottoOpen, isBattleModalOpen, isTurnBasedBattleOpen,
+    isReputationEventOpen, isTreasureVaultOpen
+  ]);
 
   // 显示欢迎界面
   if (showWelcome) {
@@ -1682,68 +1701,7 @@ function App() {
           setIsAlchemyOpen,
           setIsSectOpen,
         }}
-        handlers={{
-          onMeditate: handleMeditate,
-          onAdventure: handleAdventure,
-          onOpenRealm: () => setIsRealmOpen(true),
-          onOpenAlchemy: () => setIsAlchemyOpen(true),
-          onOpenSect: () => setIsSectOpen(true),
-          onOpenMenu: () => setIsMobileSidebarOpen(true),
-          onOpenCultivation: () => setIsCultivationOpen(true),
-          onOpenInventory: () => setIsInventoryOpen(true),
-          onOpenCharacter: () => setIsCharacterOpen(true),
-          onOpenAchievement: () => {
-            setIsAchievementOpen(true);
-            setPlayer((prev) => ({
-              ...prev,
-              viewedAchievements: [...prev.achievements],
-            }));
-          },
-          onOpenPet: () => setIsPetOpen(true),
-          onOpenLottery: () => setIsLotteryOpen(true),
-          onOpenDailyQuest: () => setIsDailyQuestOpen(true),
-          onOpenGrotto: () => setIsGrottoOpen(true),
-          onOpenSettings: () => setIsSettingsOpen(true),
-          onOpenDebug: () => setIsDebugOpen(true),
-          onOpenStats: () => setIsMobileStatsOpen(true),
-          onUpdateViewedAchievements: () => {
-            setPlayer((prev) => ({
-              ...prev,
-              viewedAchievements: [...prev.achievements],
-            }));
-          },
-          autoMeditate,
-          autoAdventure,
-          onToggleAutoMeditate: () => {
-            setAutoMeditate((prev) => {
-              const newValue = !prev;
-              // 如果开启自动打坐，则关闭自动历练
-              if (newValue && autoAdventure) {
-                setAutoAdventure(false);
-                addLog('已关闭自动历练，开启自动打坐。', 'normal');
-              }
-              return newValue;
-            });
-          },
-          onToggleAutoAdventure: () => {
-            setAutoAdventure((prev) => {
-              const newValue = !prev;
-              // 如果关闭自动历练，清除所有暂停状态
-              if (!newValue) {
-                setAutoAdventurePausedByShop(false);
-                setAutoAdventurePausedByBattle(false);
-                setAutoAdventurePausedByReputationEvent(false);
-              } else {
-                // 如果开启自动历练，则关闭自动打坐
-                if (autoMeditate) {
-                  setAutoMeditate(false);
-                  addLog('已关闭自动打坐，开启自动历练。', 'normal');
-                }
-              }
-              return newValue;
-            });
-          },
-        }}
+        handlers={gameViewHandlers}
         isDebugModeEnabled={isDebugModeEnabled}
       />
 
@@ -1784,7 +1742,7 @@ function App() {
       {alertState && (
         <AlertModal
           isOpen={alertState.isOpen}
-          onClose={() => setAlertState(null)}
+          onClose={closeAlert}
           type={alertState.type}
           title={alertState.title}
           message={alertState.message}
@@ -1803,80 +1761,7 @@ function App() {
           currentLogs={logs}
           onLoadSave={(loadedPlayer, loadedLogs) => {
             // 应用兼容性处理，确保旧存档包含新字段
-            const compatiblePlayer = {
-              ...loadedPlayer,
-              dailyTaskCount:
-                loadedPlayer.dailyTaskCount &&
-                typeof loadedPlayer.dailyTaskCount === 'object' &&
-                !('instant' in loadedPlayer.dailyTaskCount)
-                  ? loadedPlayer.dailyTaskCount
-                  : {},
-              lastTaskResetDate:
-                loadedPlayer.lastTaskResetDate ||
-                new Date().toISOString().split('T')[0],
-              viewedAchievements: loadedPlayer.viewedAchievements || [],
-              natalArtifactId: loadedPlayer.natalArtifactId || null,
-              unlockedRecipes: loadedPlayer.unlockedRecipes || [],
-              unlockedArts: loadedPlayer.unlockedArts || loadedPlayer.cultivationArts || [],
-              sectTreasureVault: loadedPlayer.sectTreasureVault || undefined,
-              meditationHpRegenMultiplier:
-                loadedPlayer.meditationHpRegenMultiplier ?? 1.0,
-              meditationBoostEndTime:
-                loadedPlayer.meditationBoostEndTime ?? null,
-              statistics: loadedPlayer.statistics || {
-                killCount: 0,
-                meditateCount: 0,
-                adventureCount: 0,
-                equipCount: 0,
-                petCount: 0,
-                recipeCount: loadedPlayer.unlockedRecipes?.length || 0,
-                artCount: loadedPlayer.cultivationArts?.length || 0,
-                breakthroughCount: 0,
-                secretRealmCount: 0,
-              },
-              lifespan: loadedPlayer.lifespan ?? loadedPlayer.maxLifespan ?? 100,
-              maxLifespan: loadedPlayer.maxLifespan ?? 100,
-              spiritualRoots: loadedPlayer.spiritualRoots || {
-                metal: Math.floor(Math.random() * 16),
-                wood: Math.floor(Math.random() * 16),
-                water: Math.floor(Math.random() * 16),
-                fire: Math.floor(Math.random() * 16),
-                earth: Math.floor(Math.random() * 16),
-              },
-              unlockedTitles: loadedPlayer.unlockedTitles || (loadedPlayer.titleId ? [loadedPlayer.titleId] : ['title-novice']),
-              reputation: loadedPlayer.reputation || 0,
-              // 宗门追杀系统
-              betrayedSects: loadedPlayer.betrayedSects || [],
-              sectHuntEndTime: loadedPlayer.sectHuntEndTime || null,
-              sectHuntLevel: loadedPlayer.sectHuntLevel || 0,
-              sectHuntSectId: loadedPlayer.sectHuntSectId || null,
-              sectHuntSectName: loadedPlayer.sectHuntSectName || null,
-              grotto: loadedPlayer.grotto ? {
-                ...loadedPlayer.grotto,
-                autoHarvest: loadedPlayer.grotto.autoHarvest ?? false,
-                growthSpeedBonus: loadedPlayer.grotto.growthSpeedBonus ?? 0,
-                spiritArrayEnhancement: loadedPlayer.grotto.spiritArrayEnhancement || 0,
-                herbarium: loadedPlayer.grotto.herbarium || [],
-                dailySpeedupCount: loadedPlayer.grotto.dailySpeedupCount || 0,
-                lastSpeedupResetDate: loadedPlayer.grotto.lastSpeedupResetDate || new Date().toISOString().split('T')[0],
-                plantedHerbs: (loadedPlayer.grotto.plantedHerbs || []).map((herb: any) => ({
-                  ...herb,
-                  isMutated: herb.isMutated || false,
-                  mutationBonus: herb.mutationBonus || undefined,
-                })),
-              } : {
-                level: 0,
-                expRateBonus: 0,
-                autoHarvest: false,
-                growthSpeedBonus: 0,
-                plantedHerbs: [],
-                lastHarvestTime: null,
-                spiritArrayEnhancement: 0,
-                herbarium: [],
-                dailySpeedupCount: 0,
-                lastSpeedupResetDate: new Date().toISOString().split('T')[0],
-              },
-            };
+            const compatiblePlayer = ensurePlayerStatsCompatibility(loadedPlayer);
             setPlayer(compatiblePlayer);
             setLogs(loadedLogs);
           }}
@@ -1902,182 +1787,15 @@ function App() {
         />
       )}
 
-      <ModalsContainer
-        player={player}
-        settings={settings}
-        setItemActionLog={setItemActionLog}
-        autoAdventure={autoAdventure}
-        modals={{
-          isInventoryOpen,
-          isCultivationOpen,
-          isAlchemyOpen,
-          isUpgradeOpen,
-          isSectOpen,
-          isRealmOpen,
-          isCharacterOpen,
-          isAchievementOpen,
-          isPetOpen,
-          isLotteryOpen,
-          isSettingsOpen,
-          isDailyQuestOpen,
-          isShopOpen,
-          isGrottoOpen,
-          isBattleModalOpen: isBattleModalOpen && !isDead, // 死亡时不显示战斗弹窗
-          isTurnBasedBattleOpen: isTurnBasedBattleOpen && !isDead,
-          isReputationEventOpen,
-          isTreasureVaultOpen,
-        }}
-        modalState={{
-          currentShop,
-          itemToUpgrade,
-          battleReplay,
-          revealedBattleRounds,
-          turnBasedBattleParams,
-          reputationEvent,
-        }}
-        handlers={{
-          setIsInventoryOpen: (open: boolean) => setIsInventoryOpen(open),
-          setIsCultivationOpen: (open: boolean) => setIsCultivationOpen(open),
-          setIsAlchemyOpen: (open: boolean) => setIsAlchemyOpen(open),
-          setIsUpgradeOpen: (open: boolean) => {
-            setIsUpgradeOpen(open);
-            if (!open) setItemToUpgrade(null);
-          },
-          setIsSectOpen: (open: boolean) => setIsSectOpen(open),
-          setIsRealmOpen: (open: boolean) => setIsRealmOpen(open),
-          setIsCharacterOpen: (open: boolean) => setIsCharacterOpen(open),
-          setIsAchievementOpen: (open: boolean) => setIsAchievementOpen(open),
-          setIsPetOpen: (open: boolean) => setIsPetOpen(open),
-          setIsLotteryOpen: (open: boolean) => setIsLotteryOpen(open),
-          setIsSettingsOpen: (open: boolean) => setIsSettingsOpen(open),
-          setIsDailyQuestOpen: (open: boolean) => setIsDailyQuestOpen(open),
-          setIsGrottoOpen: (open: boolean) => setIsGrottoOpen(open),
-          setIsShopOpen: (open: boolean) => {
-            setIsShopOpen(open);
-            if (!open) {
-              setCurrentShop(null);
-              // 如果自动历练是因为商店暂停的，恢复自动历练
-              if (autoAdventurePausedByShop) {
-                setAutoAdventurePausedByShop(false);
-                setAutoAdventure(true);
-              }
-            }
-          },
-          setIsBattleModalOpen: (open: boolean) => setIsBattleModalOpen(open),
-          setItemToUpgrade,
-          setCurrentShop,
-          setBattleReplay,
-          setRevealedBattleRounds,
-          handleSkipBattleLogs,
-          handleCloseBattleModal,
-          handleUseItem,
-          handleEquipItem,
-          handleUnequipItem,
-          handleOpenUpgrade,
-          handleDiscardItem,
-          handleBatchDiscard,
-          handleBatchUse,
-          handleOrganizeInventory,
-          handleRefineNatalArtifact,
-          handleUnrefineNatalArtifact,
-          handleRefineAdvancedItem,
-          handleUpgradeItem,
-          handleLearnArt,
-          handleActivateArt,
-          handleCraft,
-          handleJoinSect,
-          handleLeaveSect,
-          handleSafeLeaveSect,
-          handleSectTask,
-          handleSectPromote,
-          handleSectBuy,
-          handleChallengeLeader: sectHandlers.handleChallengeLeader,
-          handleEnterRealm,
-          handleSelectTalent,
-          handleSelectTitle,
-          handleAllocateAttribute,
-          handleAllocateAllAttributes,
-          handleUseInheritance,
-          setPlayer,
-          addLog,
-          handleUpdateViewedAchievements: () => {
-            setPlayer((prev) => ({
-              ...prev,
-              viewedAchievements: [...prev.achievements],
-            }));
-          },
-          handleActivatePet,
-          handleDeactivatePet,
-          handleFeedPet,
-          handleBatchFeedItems,
-          handleBatchFeedHp,
-          handleEvolvePet,
-          handleReleasePet,
-          handleBatchReleasePets,
-          handleDraw,
-          handleUpdateSettings,
-          handleRestartGame: handleRebirth,
-          onOpenSaveManager: () => setIsSaveManagerOpen(true),
-          handleClaimQuestReward: dailyQuestHandlers.claimQuestReward,
-          handleUpgradeGrotto: grottoHandlers.handleUpgradeGrotto,
-          handlePlantHerb: grottoHandlers.handlePlantHerb,
-          handleHarvestHerb: grottoHandlers.handleHarvestHerb,
-          handleHarvestAll: grottoHandlers.handleHarvestAll,
-          handleEnhanceSpiritArray: grottoHandlers.handleEnhanceSpiritArray,
-          handleToggleAutoHarvest: grottoHandlers.handleToggleAutoHarvest,
-          handleSpeedupHerb: grottoHandlers.handleSpeedupHerb,
-          handleBuyItem,
-          handleSellItem,
-          handleRefreshShop,
-          handleReputationEventChoice,
-          setIsReputationEventOpen: (open: boolean) => {
-            setIsReputationEventOpen(open);
-            if (!open) {
-              setReputationEvent(null);
-              // 如果自动历练是因为声望事件暂停的，恢复自动历练
-              if (autoAdventurePausedByReputationEvent) {
-                setAutoAdventurePausedByReputationEvent(false);
-                setAutoAdventure(true);
-              }
-            }
-          },
-          setIsTreasureVaultOpen: (open: boolean) => setIsTreasureVaultOpen(open),
-          handleTakeTreasureVaultItem,
-          handleUpdateVault,
-          setIsTurnBasedBattleOpen: (open: boolean) => {
-            setIsTurnBasedBattleOpen(open);
-            if (!open) {
-              setTurnBasedBattleParams(null);
-            }
-          },
-          handleTurnBasedBattleClose: (result, updatedInventory?) => {
-            setIsTurnBasedBattleOpen(false);
-            setTurnBasedBattleParams(null);
-            handleBattleResult(result, updatedInventory);
-
-            // 如果自动历练状态是 false，清除暂停状态但不恢复自动历练
-            if (!autoAdventure) {
-              setAutoAdventurePausedByBattle(false);
-              return;
-            }
-
-            // 如果玩家死亡，清除自动历练暂停状态（死亡检测会处理）
-            if (result && player) {
-              const playerHpAfter = Math.max(
-                0,
-                player.hp - (result.hpLoss || 0)
-              );
-              if (playerHpAfter <= 0) {
-                setAutoAdventurePausedByBattle(false);
-              }
-            } else {
-              // 如果没有战斗结果或玩家不存在，也清除暂停状态
-              setAutoAdventurePausedByBattle(false);
-            }
-            // 如果玩家还活着且 autoAdventure 为 true，useEffect 会自动恢复自动历练
-          },
-        }}
-      />
+      {player && isAnyModalOpen && (
+        <ModalsContainer
+          player={player}
+          settings={settings}
+          setItemActionLog={setItemActionLog}
+          autoAdventure={autoAdventure}
+          handlers={modalsHandlers}
+        />
+      )}
 
       {/* 寿元将尽预警 */}
       {player && !isDead && player.lifespan < Math.max(5, (player.maxLifespan || 100) * 0.1) && (
@@ -2090,15 +1808,18 @@ function App() {
       )}
 
       {/* 修仙法门弹窗 */}
-      <CultivationIntroModal
-        isOpen={showCultivationIntro}
-        onClose={() => {
-          setShowCultivationIntro(false);
-          localStorage.setItem(STORAGE_KEYS.CULTIVATION_INTRO_SHOWN, 'true');
-        }}
-      />
+      {showCultivationIntro && (
+        <CultivationIntroModal
+          isOpen={showCultivationIntro}
+          onClose={() => {
+            setShowCultivationIntro(false);
+            localStorage.setItem(STORAGE_KEYS.CULTIVATION_INTRO_SHOWN, 'true');
+          }}
+        />
+      )}
     </>
   );
+
 }
 
 export default App;

@@ -27,7 +27,6 @@ import {
   ARTIFACT_BATTLE_SKILLS,
   WEAPON_BATTLE_SKILLS,
   BATTLE_POTIONS,
-  getPillDefinition,
   SECT_MASTER_CHALLENGE_REQUIREMENTS,
   HEAVEN_EARTH_SOUL_BOSSES,
   FOUNDATION_TREASURES,
@@ -1012,14 +1011,15 @@ const createEnemy = async (
     baseSpeed = selectedBossForStats.baseStats.speed;
     baseSpirit = selectedBossForStats.baseStats.spirit;
   } else {
-    // 普通敌人：基于玩家属性计算（优化：统一攻击和防御系数，使战斗更平衡）
-    // 攻击和防御系数都设为0.75，境界加成也统一为+2.5，避免敌人攻击力过强
-    baseAttack = basePlayerAttack * 0.75 + basePlayerRealmLevel * 2.5;
-    baseDefense = basePlayerDefense * 0.75 + basePlayerRealmLevel * 2.5;
+    // 普通敌人：基于玩家属性计算（优化：降低系数，确保敌人不会过强）
+    // 攻击和防御系数从0.75降低到0.7，境界加成从2.5降低到2，使敌人更平衡
+    baseAttack = basePlayerAttack * 0.7 + basePlayerRealmLevel * 2;
+    baseDefense = basePlayerDefense * 0.7 + basePlayerRealmLevel * 2;
     // 计算敌人神识：基于玩家神识和境界基础神识
     const realmBaseSpirit = REALM_DATA[realm]?.baseSpirit || 0;
     baseSpirit = basePlayerSpirit * 0.3 + realmBaseSpirit * 0.5 + basePlayerRealmLevel * 1;
-    baseMaxHp = basePlayerMaxHp;
+    // 敌人血量从与玩家相同改为70%-90%，确保战斗回合数合理
+    baseMaxHp = basePlayerMaxHp * (0.7 + Math.random() * 0.2);
     baseSpeed = basePlayerSpeed;
   }
 
@@ -1061,10 +1061,10 @@ const createEnemy = async (
   }
 
   // 普通敌人：动态调整敌人血量，根据攻击力和防御力计算，确保战斗有足够的回合数（至少3-5回合）
-  // 基础血量 = 玩家血量 * (0.6 + 随机0.3) = 60%-90%
-  // 然后根据敌人攻击力调整，确保玩家需要至少3回合才能击败敌人
-  const baseHpMultiplier = 0.6 + Math.random() * 0.3; // 60%-90%
-  let calculatedHp = Math.round(basePlayerMaxHp * baseHpMultiplier * finalDifficulty);
+  // 注意：如果敌人是普通敌人（非天地之魄），baseMaxHp已经在createEnemy中设置为70%-90%玩家血量
+  // 这里只需要根据难度和攻击力比例进行微调
+  const baseHpMultiplier = 1.0; // 基础倍数（因为baseMaxHp已经调整过）
+  let calculatedHp = Math.round(baseMaxHp * baseHpMultiplier * finalDifficulty);
 
   // 根据敌人攻击力动态调整：如果敌人攻击力高，血量适当降低；如果攻击力低，血量适当提高
   // 目标：确保战斗回合数在3-8回合之间
@@ -1108,27 +1108,31 @@ const calcDamage = (attack: number, defense: number) => {
   const validAttack = Number(attack) || 0;
   const validDefense = Number(defense) || 0;
 
-  // 优化后的伤害计算：提高防御收益，使防御属性更有价值
-  // 使用更平滑的公式，防御力越高，减伤效果越明显
-  let baseDamage: number;
+  // 优化后的伤害计算：使用双曲线公式，确保防御收益递减但不会完全无效
+  // 公式: damage = attack * (1 - defense / (defense + attack * k))
+  // 这个公式的特点：
+  // 1. 防御力越高，减伤效果越明显，但不会完全无效
+  // 2. 当防御=0时，伤害=攻击力
+  // 3. 当防御=攻击时，伤害约为攻击力的33%（k=0.5时）
+  // 4. 当防御远大于攻击时，伤害会趋近于0，但不会完全为0
+  const k = 0.5; // 调整系数，控制防御收益曲线
+  const denominator = validDefense + validAttack * k;
 
-  if (validAttack > validDefense) {
-    // 攻击力大于防御力：造成有效伤害
-    // 使用改进公式：80%差值伤害 + 15%攻击力（降低基础伤害比例，提高防御收益）
-    const damageDiff = validAttack - validDefense;
-    baseDamage = damageDiff * 0.8 + validAttack * 0.15; // 80%差值伤害 + 15%攻击力
-  } else {
-    // 攻击力小于等于防御力：造成很少的伤害（穿透伤害）
-    // 优化穿透伤害计算，防御力越高，穿透伤害越低
-    const penetration = Math.max(0, validAttack * 0.08 - validDefense * 0.06);
-    baseDamage = Math.max(1, penetration); // 至少1点伤害
+  // 避免除零
+  if (denominator <= 0) {
+    return Math.max(1, Math.round(validAttack * (0.9 + Math.random() * 0.2)));
   }
 
+  // 计算基础伤害
+  const baseDamage = validAttack * (1 - validDefense / denominator);
+
+  // 确保至少造成1点伤害（除非攻击力为0）
+  const minDamage = validAttack > 0 ? 1 : 0;
+
   // 随机波动范围（伤害在一定范围内浮动）
-  // 根据战斗力差异调整随机范围：差距越大，波动越大
   const baseRandomRange = 0.2; // 基础±10%波动（即0.9~1.1倍）
   const randomFactor = 0.9 + Math.random() * baseRandomRange; // 0.9~1.1倍
-  return Math.round(Math.max(1, baseDamage * randomFactor));
+  return Math.round(Math.max(minDamage, baseDamage * randomFactor));
 };
 
 // 战斗触发
@@ -1171,9 +1175,16 @@ export const resolveBattleEncounter = async (
     bossId
   );
   const difficulty = getBattleDifficulty(adventureType, riskLevel);
+  // 使用getPlayerTotalStats计算实际最大血量（包含金丹法数、心法等加成）
+  const totalStats = getPlayerTotalStats(player);
+  const actualMaxHp = totalStats.maxHp;
   // 确保初始值为有效数字，防止NaN
-  const initialPlayerHp = Number(player.hp) || 0;
-  const initialMaxHp = Number(player.maxHp) || 0;
+  // 按比例调整血量：如果功法增加了最大血量，当前血量也应该按比例增加
+  const baseMaxHp = Number(player.maxHp) || 1; // 避免除零
+  const currentHp = Number(player.hp) || 0;
+  const hpRatio = baseMaxHp > 0 ? currentHp / baseMaxHp : 0; // 计算血量比例
+  const initialPlayerHp = Math.floor(actualMaxHp * hpRatio); // 按比例应用到新的最大血量
+  const initialMaxHp = actualMaxHp;
   let playerHp = Math.max(0, Math.min(initialPlayerHp, initialMaxHp));
   let enemyHp = Number(enemy.maxHp) || 0;
   const rounds: BattleRoundLog[] = [];
@@ -1297,8 +1308,10 @@ export const resolveBattleEncounter = async (
           petHeal = Math.floor(
             baseHeal * (1 + petLevel * 0.05) * (1 + petAffection / 200)
           );
-          const maxHp = Number(player.maxHp) || 0;
-          playerHp = Math.max(0, Math.min(maxHp, Math.floor((Number(playerHp) || 0) + petHeal)));
+          // 使用getPlayerTotalStats计算实际最大血量（包含金丹法数、心法等加成）
+          const totalStats = getPlayerTotalStats(player);
+          const actualMaxHp = totalStats.maxHp;
+          playerHp = Math.max(0, Math.min(actualMaxHp, Math.floor((Number(playerHp) || 0) + petHeal)));
         }
 
         if (usedSkill.effect.buff) {
@@ -1395,12 +1408,14 @@ export const resolveBattleEncounter = async (
 
   // 根据境界计算基础奖励（高境界获得更多奖励）
   const realmIndex = REALM_ORDER.indexOf(player.realm);
-  // 境界基础倍数：每个境界大幅增加奖励倍数（指数增长）
-  const realmBaseMultipliers = [1, 2, 4, 8, 16, 32, 64];
+  // 优化后的境界基础倍数：与装备倍数保持一致，防止数值膨胀
+  // 从 [1, 2, 4, 8, 16, 32, 64] 改为 [1, 1.5, 2.5, 4, 6, 10, 16]
+  // 这样最高倍数从64倍降低到16倍，与境界属性增长（5倍）更匹配
+  const realmBaseMultipliers = [1, 1.5, 2.5, 4, 6, 10, 16];
   const realmBaseMultiplier = realmBaseMultipliers[realmIndex] || 1;
 
   // 基础修为 = 境界基础倍数 * (基础值 + 境界等级 * 系数) * 境界等级加成
-  const levelMultiplier = 1 + (player.realmLevel - 1) * 0.2; // 每级增加20%
+  const levelMultiplier = 1 + (player.realmLevel - 1) * 0.15; // 每级增加15%（从20%降低）
   const baseExp = Math.round(realmBaseMultiplier * (50 + player.realmLevel * 25) * levelMultiplier);
   const rewardExp = Math.round(baseExp * difficulty * rewardMultiplier);
 
@@ -1991,12 +2006,18 @@ function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
   const maxMana = baseMana + realmManaBonus + spiritManaBonus;
   const currentMana = maxMana; // 战斗开始时MP满值
 
+  // 按比例调整血量：如果功法增加了最大血量，当前血量也应该按比例增加
+  const baseMaxHp = Number(player.maxHp) || 1; // 避免除零
+  const currentHp = Number(player.hp) || 0;
+  const hpRatio = baseMaxHp > 0 ? currentHp / baseMaxHp : 0; // 计算血量比例
+  const adjustedHp = Math.floor(totalStats.maxHp * hpRatio); // 按比例应用到新的最大血量
+
   return {
     id: 'player',
     name: player.name,
     realm: player.realm,
-    hp: player.hp,
-    maxHp: player.maxHp,
+    hp: Math.min(adjustedHp, totalStats.maxHp), // 使用按比例调整后的血量
+    maxHp: totalStats.maxHp, // 使用实际最大血量（包含金丹法数加成等）
     attack: totalAttack,
     defense: totalDefense,
     speed: totalSpeed,

@@ -42,6 +42,7 @@ import {
   adjustItemStatsByRealm,
 } from '../../utils/itemUtils';
 import { normalizeRarityValue } from '../../utils/rarityUtils';
+import { getPlayerTotalStats } from '../../utils/statUtils';
 
 interface ExecuteAdventureCoreProps {
   result: AdventureResult;
@@ -345,16 +346,19 @@ const applyResultToPlayer = (
     result.story.includes('传承')
   );
 
-  // 如果事件描述包含功法关键词，保证解锁；否则按概率解锁
-  const artChance = storyHasArtKeywords ? 1.0 : (isSecretRealm ? 0.15 : (adventureType === 'lucky' ? 0.20 : 0.08));
+  // 如果事件描述包含功法关键词，保证解锁；否则按概率解锁（降低概率）
+  const artChance = storyHasArtKeywords ? 1.0 : (isSecretRealm ? 0.08 : (adventureType === 'lucky' ? 0.10 : 0.04));
   let artUnlocked = false;
 
-  // 使用确定性随机数，基于事件描述和玩家状态的哈希值
-  // 避免重复调用时产生不同的随机结果
-  // 使用事件描述的字符码总和作为种子，确保相同事件产生相同结果
+  // 增加随机性：结合确定性随机数和真正的随机数
+  // 使用事件描述的字符码总和作为基础种子
   const storyHash = result.story ? result.story.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) : 0;
-  const artRandomSeed = storyHash + (prev.exp || 0) + (prev.spiritStones || 0) + (prev.realm?.length || 0);
-  const artRandom = Math.abs(Math.sin(artRandomSeed)) % 1;
+  // 添加更多变化因子，让每次历练结果更不一样
+  const deterministicSeed = storyHash + (prev.exp || 0) + (prev.spiritStones || 0) + (prev.realm?.length || 0) + (prev.hp || 0) + (prev.attack || 0);
+  const deterministicRandom = Math.abs(Math.sin(deterministicSeed)) % 1;
+  // 加入真正的随机数，增加变化性（70%确定性 + 30%随机性）
+  const trueRandom = Math.random();
+  const artRandom = deterministicRandom * 0.7 + trueRandom * 0.3;
   const shouldUnlock = artRandom < artChance;
 
   // 使用 Set 跟踪本次处理中已解锁的功法，避免重复
@@ -373,8 +377,12 @@ const applyResultToPlayer = (
       return artRealmIdx >= 0 && playerRealmIdx >= artRealmIdx && (!art.sectId || art.sectId === prev.sectId);
     });
     if (availableArts.length > 0) {
-      // 使用确定性随机数选择功法
-      const artIndex = Math.floor(artRandom * availableArts.length);
+      // 增加随机性：结合确定性随机数和真正的随机数选择功法
+      const selectionSeed = deterministicSeed + availableArts.length;
+      const deterministicSelection = Math.abs(Math.sin(selectionSeed)) % 1;
+      const randomSelection = Math.random();
+      const combinedSelection = deterministicSelection * 0.6 + randomSelection * 0.4;
+      const artIndex = Math.floor(combinedSelection * availableArts.length);
       const randomArt = availableArts[artIndex];
       // 领悟功法只解锁，不直接学习（需要花费灵石学习）
       // 多重检查，确保不会重复添加
@@ -494,8 +502,12 @@ const applyResultToPlayer = (
     if (r.physique) newPhysique = Math.max(0, newPhysique - Math.floor(Math.min(r.physique * scale, prev.physique * 0.1)));
     if (r.speed) newSpeed = Math.max(0, newSpeed - Math.floor(Math.min(r.speed * scale, prev.speed * 0.1)));
     if (r.maxHp) {
-      const red = Math.floor(Math.min(r.maxHp * scale, prev.maxHp * 0.1));
-      newMaxHp = Math.max(prev.maxHp * 0.5, newMaxHp - red); newHp = Math.min(newHp, newMaxHp);
+      // 使用实际最大血量（包含金丹法数加成等）进行计算
+      const totalStats = getPlayerTotalStats(prev);
+      const actualMaxHp = totalStats.maxHp;
+      const red = Math.floor(Math.min(r.maxHp * scale, actualMaxHp * 0.1));
+      newMaxHp = Math.max(actualMaxHp * 0.5, newMaxHp - red);
+      newHp = Math.min(newHp, newMaxHp);
     }
 
     if (isSecretRealm) {
@@ -767,7 +779,39 @@ const applyResultToPlayer = (
   // 修为灵石结算
   newExp = Math.max(0, newExp + (result.expChange || 0));
   newStones = Math.max(0, newStones + (result.spiritStonesChange || 0));
-  const finalHp = isSecretRealm ? Math.max(0, Math.min(newMaxHp, newHp + (result.hpChange || 0))) : Math.min(newMaxHp, newHp + (result.hpChange || 0));
+
+  // 计算实际最大血量（包含功法加成等）
+  // 先构建更新后的玩家状态来计算实际最大血量
+  const updatedPlayer = {
+    ...prev,
+    maxHp: newMaxHp,
+    hp: newHp,
+    attack: newAttack,
+    defense: newDefense,
+    spirit: newSpirit,
+    physique: newPhysique,
+    speed: newSpeed,
+    cultivationArts: newArts,
+    activeArtId: prev.activeArtId,
+    goldenCoreMethodCount: prev.goldenCoreMethodCount,
+    spiritualRoots: newSpiritualRoots,
+  };
+  const totalStats = getPlayerTotalStats(updatedPlayer);
+  const actualMaxHp = totalStats.maxHp;
+
+  // 计算血量变化：先按比例调整当前血量到实际最大血量（如果功法增加了最大血量）
+  const baseMaxHp = newMaxHp || 1; // 避免除零
+  const hpRatio = baseMaxHp > 0 ? newHp / baseMaxHp : 0; // 当前血量比例
+  const adjustedHp = Math.floor(actualMaxHp * hpRatio); // 按比例调整到实际最大血量
+
+  // 应用血量变化，使用实际最大血量作为上限
+  let finalHp = adjustedHp + (result.hpChange || 0);
+  finalHp = Math.max(0, Math.min(actualMaxHp, finalHp));
+
+  // 秘境特殊处理：确保血量不为负
+  if (isSecretRealm) {
+    finalHp = Math.max(0, finalHp);
+  }
 
   // 同步新学习的功法到解锁列表（确保新学习的功法也在解锁列表中）
   // 使用 Set 确保唯一性
@@ -919,10 +963,12 @@ export async function executeAdventureCore({
       const srTemplate = getRandomEventTemplate('secret_realm', undefined, player.realm, player.realmLevel);
 
       if (srTemplate) {
+        // 使用实际最大血量（包含金丹法数加成等）
+        const totalStats = getPlayerTotalStats(player);
         const srResult = templateToAdventureResult(srTemplate, {
           realm: player.realm,
           realmLevel: player.realmLevel,
-          maxHp: player.maxHp,
+          maxHp: totalStats.maxHp,
         });
         setPlayer(prev => applyResultToPlayer(prev, srResult, { isSecretRealm: true, adventureType: 'secret_realm', addLog, triggerVisual }));
         addLog(srResult.story, srResult.eventColor);

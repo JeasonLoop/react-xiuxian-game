@@ -898,4 +898,4 @@ const PetModal: React.FC<Props> = ({
   );
 };
 
-export default PetModal;
+export default React.memo(PetModal);

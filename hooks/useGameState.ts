@@ -9,6 +9,7 @@ import {
   saveToSlot,
   getAllSlots,
   setCurrentSlotId,
+  ensurePlayerStatsCompatibility,
 } from '../utils/saveManagerUtils';
 
 export function useGameState() {
@@ -74,85 +75,8 @@ export function useGameState() {
         }
 
         if (savedData) {
-          // 确保加载的存档包含新字段
-          const loadedPlayer = {
-            ...savedData.player,
-            dailyTaskCount:
-              savedData.player.dailyTaskCount &&
-              typeof savedData.player.dailyTaskCount === 'object' &&
-              !('instant' in savedData.player.dailyTaskCount) // 新格式：Record<string, number>
-                ? savedData.player.dailyTaskCount
-                : {}, // 兼容旧存档：旧格式转换为空对象
-            lastTaskResetDate:
-              savedData.player.lastTaskResetDate ||
-              new Date().toISOString().split('T')[0],
-            viewedAchievements: savedData.player.viewedAchievements || [],
-            natalArtifactId: savedData.player.natalArtifactId || null,
-            unlockedRecipes: savedData.player.unlockedRecipes || [], // 兼容旧存档，确保 unlockedRecipes 存在
-            unlockedArts: savedData.player.unlockedArts || savedData.player.cultivationArts || [], // 兼容旧存档：如果没有unlockedArts，使用cultivationArts作为已解锁的功法
-            meditationHpRegenMultiplier:
-              savedData.player.meditationHpRegenMultiplier ?? 1.0, // 兼容旧存档
-            meditationBoostEndTime:
-              savedData.player.meditationBoostEndTime ?? null, // 兼容旧存档
-            statistics: savedData.player.statistics || {
-              killCount: 0,
-              meditateCount: 0,
-              adventureCount: 0,
-              equipCount: 0,
-              petCount: 0,
-              recipeCount: savedData.player.unlockedRecipes?.length || 0,
-              artCount: savedData.player.cultivationArts?.length || 0,
-              breakthroughCount: 0,
-              secretRealmCount: 0,
-            },
-            // 兼容旧存档：如果没有寿命和灵根数据，则初始化
-            lifespan: savedData.player.lifespan ?? savedData.player.maxLifespan ?? 100,
-            maxLifespan: savedData.player.maxLifespan ?? 100,
-            spiritualRoots: savedData.player.spiritualRoots || {
-              metal: Math.floor(Math.random() * 16),
-              wood: Math.floor(Math.random() * 16),
-              water: Math.floor(Math.random() * 16),
-              fire: Math.floor(Math.random() * 16),
-              earth: Math.floor(Math.random() * 16),
-            },
-            // 称号系统扩展
-            unlockedTitles: savedData.player.unlockedTitles || (savedData.player.titleId ? [savedData.player.titleId] : ['title-novice']),
-            // 声望系统
-            reputation: savedData.player.reputation || 0,
-            // 宗门追杀系统
-            betrayedSects: savedData.player.betrayedSects || [],
-            sectHuntEndTime: savedData.player.sectHuntEndTime || null,
-            sectHuntLevel: savedData.player.sectHuntLevel || 0,
-            sectHuntSectId: savedData.player.sectHuntSectId || null,
-            sectHuntSectName: savedData.player.sectHuntSectName || null,
-            // 洞府系统
-            grotto: savedData.player.grotto ? {
-              ...savedData.player.grotto,
-              autoHarvest: savedData.player.grotto.autoHarvest ?? false,
-              growthSpeedBonus: savedData.player.grotto.growthSpeedBonus ?? 0,
-              spiritArrayEnhancement: savedData.player.grotto.spiritArrayEnhancement || 0,
-              herbarium: savedData.player.grotto.herbarium || [],
-              dailySpeedupCount: savedData.player.grotto.dailySpeedupCount || 0,
-              lastSpeedupResetDate: savedData.player.grotto.lastSpeedupResetDate || new Date().toISOString().split('T')[0],
-              // 兼容旧存档：确保 plantedHerbs 中的新字段存在
-              plantedHerbs: (savedData.player.grotto.plantedHerbs || []).map(herb => ({
-                ...herb,
-                isMutated: herb.isMutated || false,
-                mutationBonus: herb.mutationBonus || undefined,
-              })),
-            } : {
-              level: 0,
-              expRateBonus: 0,
-              autoHarvest: false,
-              growthSpeedBonus: 0,
-              plantedHerbs: [],
-              lastHarvestTime: null,
-              spiritArrayEnhancement: 0,
-              herbarium: [],
-              dailySpeedupCount: 0,
-              lastSpeedupResetDate: new Date().toISOString().split('T')[0],
-            },
-          };
+          // 使用统一的兼容性处理函数
+          const loadedPlayer = ensurePlayerStatsCompatibility(savedData.player);
           setPlayer(loadedPlayer);
           setLogs(savedData.logs || []);
           setGameStarted(true);

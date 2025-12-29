@@ -103,15 +103,9 @@ const LogPanel: React.FC<Props> = ({ logs, playerName, className, onClearLogs })
       }
     }
 
-    // 延迟检查是否在底部，更新滚动按钮状态
-    const timer = setTimeout(() => {
-      const isAtBottom = checkIfAtBottom();
-      setShowScrollButton(!isAtBottom);
-      shouldAutoScrollRef.current = isAtBottom;
-    }, 200);
-
-    return () => clearTimeout(timer);
-  }, [logs, checkIfAtBottom]);
+    // 只有当日志真的增加时才去更新滚动按钮状态
+    // 这里的 timer 逻辑其实可以优化，只在滚动事件或新日志时触发
+  }, [logs.length, checkIfAtBottom]); // 依赖 logs.length 而不是 logs 数组引用
 
   useEffect(() => {
     const container = containerRef.current;
@@ -125,11 +119,13 @@ const LogPanel: React.FC<Props> = ({ logs, playerName, className, onClearLogs })
     };
 
     container.addEventListener('scroll', handleScroll, { passive: true });
-    // 初始检查
+    // 初始检查和每秒轮询（兜底）
     handleScroll();
+    const interval = setInterval(handleScroll, 1000);
 
     return () => {
       container.removeEventListener('scroll', handleScroll);
+      clearInterval(interval);
     };
   }, [checkIfAtBottom]);
 

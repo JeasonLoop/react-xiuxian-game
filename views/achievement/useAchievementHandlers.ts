@@ -3,6 +3,7 @@ import { PlayerStats, RealmType } from '../../types';
 import { REALM_ORDER, ACHIEVEMENTS, TITLES } from '../../constants/index';
 import { uid } from '../../utils/gameUtils';
 import { calculateTitleEffects } from '../../utils/titleUtils';
+import { getPlayerTotalStats } from '../../utils/statUtils';
 
 interface UseAchievementHandlersProps {
   player: PlayerStats;
@@ -182,11 +183,20 @@ export function useAchievementHandlers({
         const oldEffects = calculateTitleEffects(prev.titleId, prev.unlockedTitles || []);
         const newEffects = calculateTitleEffects(finalTitleId, updatedUnlockedTitles);
 
+        // 先计算新的基础属性
+        const newMaxHp = prev.maxHp + (newEffects.hp - oldEffects.hp);
+        const newHp = prev.hp + (newEffects.hp - oldEffects.hp);
+
+        // 创建临时玩家对象来计算实际最大血量
+        const tempPlayer = { ...prev, maxHp: newMaxHp };
+        const totalStats = getPlayerTotalStats(tempPlayer);
+        const actualMaxHp = totalStats.maxHp;
+
         statUpdates = {
           attack: prev.attack + (newEffects.attack - oldEffects.attack),
           defense: prev.defense + (newEffects.defense - oldEffects.defense),
-          maxHp: prev.maxHp + (newEffects.hp - oldEffects.hp),
-          hp: Math.min(prev.hp + (newEffects.hp - oldEffects.hp), prev.maxHp + (newEffects.hp - oldEffects.hp)),
+          maxHp: newMaxHp,
+          hp: Math.min(newHp, actualMaxHp), // 使用实际最大血量作为上限
           spirit: prev.spirit + (newEffects.spirit - oldEffects.spirit),
           physique: prev.physique + (newEffects.physique - oldEffects.physique),
           speed: prev.speed + (newEffects.speed - oldEffects.speed),
@@ -199,11 +209,20 @@ export function useAchievementHandlers({
         const newEffects = calculateTitleEffects(prev.titleId, updatedUnlockedTitles);
 
         if (JSON.stringify(oldEffects) !== JSON.stringify(newEffects)) {
+          // 先计算新的基础属性
+          const newMaxHp = prev.maxHp + (newEffects.hp - oldEffects.hp);
+          const newHp = prev.hp + (newEffects.hp - oldEffects.hp);
+
+          // 创建临时玩家对象来计算实际最大血量
+          const tempPlayer = { ...prev, maxHp: newMaxHp };
+          const totalStats = getPlayerTotalStats(tempPlayer);
+          const actualMaxHp = totalStats.maxHp;
+
           statUpdates = {
             attack: prev.attack + (newEffects.attack - oldEffects.attack),
             defense: prev.defense + (newEffects.defense - oldEffects.defense),
-            maxHp: prev.maxHp + (newEffects.hp - oldEffects.hp),
-            hp: Math.min(prev.hp + (newEffects.hp - oldEffects.hp), prev.maxHp + (newEffects.hp - oldEffects.hp)),
+            maxHp: newMaxHp,
+            hp: Math.min(newHp, actualMaxHp), // 使用实际最大血量作为上限
             spirit: prev.spirit + (newEffects.spirit - oldEffects.spirit),
             physique: prev.physique + (newEffects.physique - oldEffects.physique),
             speed: prev.speed + (newEffects.speed - oldEffects.speed),

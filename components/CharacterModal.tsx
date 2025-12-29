@@ -19,7 +19,6 @@ import { getGoldenCoreBonusMultiplier, getGoldenCoreMethodTitle, calculateGolden
 import { getItemStats } from '../utils/itemUtils';
 import { getRarityTextColor } from '../utils/rarityUtils';
 import { showConfirm, showError } from '../utils/toastUtils';
-import { STORAGE_KEYS } from '../constants/storageKeys';
 import {
   calculateTitleEffects,
   getActiveSetEffects,
@@ -233,7 +232,29 @@ const CharacterModal: React.FC<Props> = ({
   const [showMarrowFeedModal, setShowMarrowFeedModal] = useState(false);
   const [selectedFeedItemId, setSelectedFeedItemId] = useState<string | null>(null);
   const [showTitleDetails, setShowTitleDetails] = useState(false);
-  const [gameStartTime, setGameStartTime] = useState<number | null>(null);
+
+  // 缓存每个物品的炼化进度值，避免每次渲染时重新计算导致数值跳动
+  const itemProgressCache = useMemo(() => {
+    const cache: Record<string, number> = {};
+    if (player && showMarrowFeedModal) {
+      player.inventory
+        .filter((item) => {
+          const isEquipped = Object.values(player.equippedItems).includes(item.id);
+          return !isEquipped && item.quantity > 0;
+        })
+        .forEach((item) => {
+          // 使用物品ID生成稳定的随机值（基于ID的哈希）
+          const hash = item.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+          const seed = (hash % 1000) / 1000; // 0-1之间的稳定值
+
+          const rarity = item.rarity || '普通';
+          const baseProgress = rarity === '普通' ? 1.5 : rarity === '稀有' ? 4 : rarity === '传说' ? 8 : 20;
+          // 使用稳定的seed值替代Math.random()，确保每次渲染时值不变
+          cache[item.id] = Math.floor(baseProgress * (0.8 + seed * 0.4)); // 80%-120%波动
+        });
+    }
+    return cache;
+  }, [player?.inventory, player?.equippedItems, showMarrowFeedModal]);
   const currentTalent = TALENTS.find((t) => t.id === player.talentId);
   const currentTitle = TITLES.find((t) => t.id === player.titleId);
 
@@ -333,21 +354,6 @@ const CharacterModal: React.FC<Props> = ({
     return getActiveSetEffects(player.titleId, player.unlockedTitles || []);
   }, [player.titleId, player.unlockedTitles]);
 
-  // 获取游戏开始时间（从存档时间戳计算）
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEYS.SAVE);
-      if (saved) {
-        const saveData = JSON.parse(saved);
-        if (saveData.timestamp) {
-          // 从最早的存档时间戳作为游戏开始时间（简化处理）
-          setGameStartTime(saveData.timestamp);
-        }
-      }
-    } catch (e) {
-      console.error('获取游戏开始时间失败:', e);
-    }
-  }, []);
 
   // 计算属性来源
   const calculateAttributeSources = () => {
@@ -470,11 +476,10 @@ const CharacterModal: React.FC<Props> = ({
 
   const attributeSources = calculateAttributeSources();
 
-  // 计算游戏时长
+  // 计算游戏时长（从存档中的 playTime 获取）
   const gameDuration = useMemo(() => {
-    if (!gameStartTime) return null;
-    const now = Date.now();
-    const duration = now - gameStartTime;
+    if (!player || player.playTime === undefined) return null;
+    const duration = player.playTime; // 使用存档中的累计时长
     const hours = Math.floor(duration / (1000 * 60 * 60));
     const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
     const days = Math.floor(hours / 24);
@@ -487,7 +492,7 @@ const CharacterModal: React.FC<Props> = ({
     } else {
       return `${minutes}分钟`;
     }
-  }, [gameStartTime]);
+  }, [player?.playTime]);
 
   // 计算统计数据
   const statistics = useMemo(() => {
@@ -1846,10 +1851,8 @@ const CharacterModal: React.FC<Props> = ({
                   })
                   .map((item) => {
                     const rarity = item.rarity || '普通';
-                    const rarityMultiplier = RARITY_MULTIPLIERS[rarity] || 1;
-                    // 根据稀有度计算进度提升
-                    const baseProgress = rarity === '普通' ? 1.5 : rarity === '稀有' ? 4 : rarity === '传说' ? 8 : 20;
-                    const progressGain = Math.floor(baseProgress * (0.8 + Math.random() * 0.4)); // 80%-120%波动
+                    // 从缓存中获取进度值，避免每次渲染时重新计算
+                    const progressGain = itemProgressCache[item.id] || 0;
 
                     return (
                       <button
@@ -1915,4 +1918,4 @@ const CharacterModal: React.FC<Props> = ({
   );
 };
 
-export default CharacterModal;
+export default React.memo(CharacterModal);

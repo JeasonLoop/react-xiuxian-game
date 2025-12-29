@@ -45,6 +45,7 @@ import {
   isItemEquipped as checkItemEquipped,
   findItemEquippedSlot,
   areSlotsInSameGroup,
+  getEquipmentSlotsByType,
 } from '../utils/equipmentUtils';
 import { useDebounce } from '../hooks/useDebounce';
 import { showConfirm } from '../utils/toastUtils';
@@ -55,7 +56,13 @@ interface Props {
   onClose: () => void;
   inventory: Item[];
   equippedItems: Partial<Record<EquipmentSlot, string>>;
-  player: PlayerStats;
+  natalArtifactId?: string;
+  playerRealm: string;
+  foundationTreasure?: string;
+  heavenEarthEssence?: string;
+  heavenEarthMarrow?: string;
+  longevityRules?: string[];
+  maxLongevityRules?: number;
   onUseItem: (item: Item) => void;
   onEquipItem: (item: Item, slot: EquipmentSlot) => void;
   onUnequipItem: (slot: EquipmentSlot) => void;
@@ -67,6 +74,7 @@ interface Props {
   onRefineNatalArtifact?: (item: Item) => void;
   onUnrefineNatalArtifact?: () => void;
   onRefineAdvancedItem?: (item: Item) => void;
+  setItemActionLog?: (log: { text: string; type: string } | null) => void;
 }
 
 type ItemCategory = 'all' | 'equipment' | 'pill' | 'consumable' | 'recipe' | 'advancedItem';
@@ -77,7 +85,12 @@ interface InventoryItemProps {
   isNatal: boolean;
   canRefine: boolean;
   isEquipped: boolean;
-  player: PlayerStats;
+  playerRealm: string;
+  foundationTreasure?: string;
+  heavenEarthEssence?: string;
+  heavenEarthMarrow?: string;
+  longevityRules?: string[];
+  maxLongevityRules?: number;
   onHover: (item: Item | null) => void;
   onUseItem: (item: Item) => void;
   onEquipItem: (item: Item) => void;
@@ -87,6 +100,7 @@ interface InventoryItemProps {
   onRefineNatalArtifact?: (item: Item) => void;
   onUnrefineNatalArtifact?: () => void;
   onRefineAdvancedItem?: (item: Item) => void;
+  setItemActionLog?: (log: { text: string; type: string } | null) => void;
 }
 
 const InventoryItem = memo<InventoryItemProps>(
@@ -95,7 +109,12 @@ const InventoryItem = memo<InventoryItemProps>(
     isNatal,
     canRefine,
     isEquipped,
-    player,
+    playerRealm,
+    foundationTreasure,
+    heavenEarthEssence,
+    heavenEarthMarrow,
+    longevityRules,
+    maxLongevityRules,
     onHover,
     onUseItem,
     onEquipItem,
@@ -105,12 +124,13 @@ const InventoryItem = memo<InventoryItemProps>(
     onRefineNatalArtifact,
     onUnrefineNatalArtifact,
     onRefineAdvancedItem,
+    setItemActionLog,
   }) => {
     // 使用统一的工具函数计算物品统计
     const stats = getItemStats(item, isNatal);
     const rarity = normalizeRarityValue(item.rarity);
     const rarityLabel = getRarityDisplayName(rarity);
-    const typeLabel = normalizeTypeLabel(item.type);
+    const typeLabel = normalizeTypeLabel(item.type, item);
     const showLevel =
       typeof item.level === 'number' && Number.isFinite(item.level) && item.level > 0;
     const reviveChances =
@@ -421,57 +441,79 @@ const InventoryItem = memo<InventoryItemProps>(
                   </button>
                 ) : null;
               })()}
-              {/* 进阶物品炼化按钮 */}
               {item.type === ItemType.AdvancedItem && item.advancedItemType && onRefineAdvancedItem && (() => {
-                const currentRealmIndex = REALM_ORDER.indexOf(player.realm);
-                let requiredRealm: RealmType | null = null;
-                let canRefine = false;
+                const currentRealmIndex = REALM_ORDER.indexOf(playerRealm as RealmType);
+                let canRefineItem = false;
                 let warningMessage = '';
+                let requiredRealmName = '';
 
                 if (item.advancedItemType === 'foundationTreasure') {
-                  requiredRealm = RealmType.QiRefining;
-                  canRefine = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.QiRefining);
-                  warningMessage = '天道警告：炼化筑基奇物需要达到炼气期！';
+                  requiredRealmName = '炼气期';
+                  canRefineItem = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.QiRefining);
+                  warningMessage = `炼化筑基奇物需要达到${requiredRealmName}境界\n当前境界：${playerRealm}`;
                 } else if (item.advancedItemType === 'heavenEarthEssence') {
-                  requiredRealm = RealmType.GoldenCore;
-                  canRefine = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.GoldenCore);
-                  warningMessage = '天道警告：炼化天地精华需要达到金丹期！';
+                  requiredRealmName = '金丹期';
+                  canRefineItem = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.GoldenCore);
+                  warningMessage = `炼化天地精华需要达到${requiredRealmName}境界\n当前境界：${playerRealm}`;
                 } else if (item.advancedItemType === 'heavenEarthMarrow') {
-                  requiredRealm = RealmType.NascentSoul;
-                  canRefine = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.NascentSoul);
-                  warningMessage = '天道警告：炼化天地之髓需要达到元婴期！';
+                  requiredRealmName = '元婴期';
+                  canRefineItem = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.NascentSoul);
+                  warningMessage = `炼化天地之髓需要达到${requiredRealmName}境界\n当前境界：${playerRealm}`;
                 } else if (item.advancedItemType === 'longevityRule') {
-                  requiredRealm = RealmType.DaoCombining;
-                  canRefine = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.DaoCombining);
-                  warningMessage = '天道警告：炼化规则之力需要达到合道期！';
+                  requiredRealmName = '合道期';
+                  canRefineItem = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.DaoCombining);
+                  warningMessage = `炼化规则之力需要达到${requiredRealmName}境界\n当前境界：${playerRealm}`;
                 }
 
                 // 检查是否已经拥有
                 let alreadyOwned = false;
-                if (item.advancedItemType === 'foundationTreasure' && player.foundationTreasure) {
+                let alreadyOwnedMessage = '';
+                if (item.advancedItemType === 'foundationTreasure' && foundationTreasure) {
                   alreadyOwned = true;
-                } else if (item.advancedItemType === 'heavenEarthEssence' && player.heavenEarthEssence) {
+                  alreadyOwnedMessage = '你已经拥有筑基奇物，无法重复炼化';
+                } else if (item.advancedItemType === 'heavenEarthEssence' && heavenEarthEssence) {
                   alreadyOwned = true;
-                } else if (item.advancedItemType === 'heavenEarthMarrow' && player.heavenEarthMarrow) {
+                  alreadyOwnedMessage = '你已经拥有天地精华，无法重复炼化';
+                } else if (item.advancedItemType === 'heavenEarthMarrow' && heavenEarthMarrow) {
                   alreadyOwned = true;
+                  alreadyOwnedMessage = '你已经拥有天地之髓，无法重复炼化';
                 } else if (item.advancedItemType === 'longevityRule' && item.advancedItemId) {
-                  alreadyOwned = (player.longevityRules || []).includes(item.advancedItemId);
-                  // 检查是否达到最大数量
-                  const maxRules = player.maxLongevityRules || 3;
-                  if ((player.longevityRules || []).length >= maxRules) {
+                  if ((longevityRules || []).includes(item.advancedItemId)) {
                     alreadyOwned = true;
+                    alreadyOwnedMessage = '你已经拥有该规则之力，无法重复炼化';
+                  } else {
+                    // 检查是否达到最大数量
+                    const maxRules = maxLongevityRules || 3;
+                    if ((longevityRules || []).length >= maxRules) {
+                      alreadyOwned = true;
+                      alreadyOwnedMessage = `你已经拥有${maxRules}个规则之力（已达上限），无法继续炼化`;
+                    }
                   }
                 }
+
+                // 生成完整的提示信息
+                const tooltipMessage = alreadyOwned
+                  ? alreadyOwnedMessage
+                  : !canRefineItem
+                  ? warningMessage
+                  : '炼化进阶物品';
+
+                // 使用闭包捕获 setItemActionLog
+                const logSetter = setItemActionLog;
 
                 return (
                   <button
                     onClick={() => {
-                      if (!canRefine) {
-                        alert(warningMessage);
+                      if (!canRefineItem) {
+                        if (logSetter) {
+                          logSetter({ text: warningMessage.replace(/\n/g, ' '), type: 'danger' });
+                        }
                         return;
                       }
                       if (alreadyOwned) {
-                        alert('你已经拥有该进阶物品，无法重复炼化！');
+                        if (logSetter) {
+                          logSetter({ text: alreadyOwnedMessage, type: 'danger' });
+                        }
                         return;
                       }
                       // 二次确认，特别是筑基奇物炼化后不可修改
@@ -486,19 +528,13 @@ const InventoryItem = memo<InventoryItemProps>(
                         }
                       );
                     }}
-                    disabled={!canRefine || alreadyOwned}
+                    disabled={!canRefineItem || alreadyOwned}
                     className={`flex-1 text-xs py-2 rounded transition-colors border ${
-                      !canRefine || alreadyOwned
+                      !canRefineItem || alreadyOwned
                         ? 'bg-stone-800/50 text-stone-500 border-stone-700/50 cursor-not-allowed opacity-50'
                         : 'bg-purple-900/20 hover:bg-purple-900/40 text-purple-300 border-purple-700/50'
                     }`}
-                    title={
-                      alreadyOwned
-                        ? '你已经拥有该进阶物品'
-                        : !canRefine
-                        ? warningMessage
-                        : '炼化进阶物品'
-                    }
+                    title={tooltipMessage}
                   >
                     <Sparkles size={14} className="inline mr-1" />
                     炼化
@@ -539,7 +575,13 @@ const InventoryModal: React.FC<Props> = ({
   onClose,
   inventory,
   equippedItems,
-  player,
+  natalArtifactId,
+  playerRealm,
+  foundationTreasure,
+  heavenEarthEssence,
+  heavenEarthMarrow,
+  longevityRules,
+  maxLongevityRules,
   onUseItem,
   onEquipItem,
   onUnequipItem,
@@ -551,6 +593,7 @@ const InventoryModal: React.FC<Props> = ({
   onRefineNatalArtifact,
   onUnrefineNatalArtifact,
   onRefineAdvancedItem,
+  setItemActionLog,
 }) => {
   const [hoveredItem, setHoveredItem] = useState<Item | null>(null);
   const [showEquipment, setShowEquipment] = useState(true);
@@ -609,10 +652,31 @@ const InventoryModal: React.FC<Props> = ({
   }, []);
 
   const handleEquipWrapper = useCallback((item: Item) => {
-    if (!item.equipmentSlot) return;
-    const targetSlot = findEmptyEquipmentSlot(item, equippedItems);
-    if (targetSlot) {
-      onEquipItem(item, targetSlot);
+    // 对于戒指、首饰、法宝，即使没有equipmentSlot也可以装备（根据type确定槽位）
+    const isRing = item.type === ItemType.Ring;
+    const isAccessory = item.type === ItemType.Accessory;
+    const isArtifact = item.type === ItemType.Artifact;
+
+    // 对于其他装备类型，需要equipmentSlot
+    if (!isRing && !isAccessory && !isArtifact && !item.equipmentSlot) {
+      return;
+    }
+
+    // 如果物品有equipmentSlot，使用findEmptyEquipmentSlot查找空槽位
+    if (item.equipmentSlot) {
+      const targetSlot = findEmptyEquipmentSlot(item, equippedItems);
+      if (targetSlot) {
+        onEquipItem(item, targetSlot);
+      }
+    } else {
+      // 对于戒指、首饰、法宝，如果没有equipmentSlot，根据类型查找空槽位
+      const slots = getEquipmentSlotsByType(item.type);
+      if (slots.length > 0) {
+        const emptySlot = slots.find((slot) => !equippedItems[slot]);
+        if (emptySlot) {
+          onEquipItem(item, emptySlot);
+        }
+      }
     }
   }, [equippedItems, onEquipItem]);
 
@@ -698,7 +762,7 @@ const InventoryModal: React.FC<Props> = ({
     // 属性过滤 - 优化：只在需要时计算属性
     if (statFilter !== 'all' && statFilterMin > 0) {
       filtered = filtered.filter((item) => {
-        const isNatal = item.id === player.natalArtifactId;
+        const isNatal = item.id === natalArtifactId;
         const stats = getItemStats(item, isNatal);
         const statValue = stats[statFilter] || 0;
         return statValue >= statFilterMin;
@@ -719,7 +783,7 @@ const InventoryModal: React.FC<Props> = ({
     }
 
     return filtered;
-  }, [inventory, selectedCategory, selectedEquipmentSlot, sortByRarity, debouncedSearchQuery, rarityFilter, statFilter, statFilterMin, player.natalArtifactId]);
+  }, [inventory, selectedCategory, selectedEquipmentSlot, sortByRarity, debouncedSearchQuery, rarityFilter, statFilter, statFilterMin, natalArtifactId]);
 
   // 计算所有已装备物品的总属性（使用统一的工具函数）
   const calculateTotalEquippedStats = useMemo(() => {
@@ -732,7 +796,7 @@ const InventoryModal: React.FC<Props> = ({
         const item = inventory.find((i) => i.id === itemId);
         if (item) {
           // 使用统一的工具函数计算属性
-          const isNatal = item.id === player.natalArtifactId;
+          const isNatal = item.id === natalArtifactId;
           const stats = getItemStats(item, isNatal);
 
           totalAttack += stats.attack;
@@ -743,15 +807,15 @@ const InventoryModal: React.FC<Props> = ({
     });
 
     return { attack: totalAttack, defense: totalDefense, hp: totalHp };
-  }, [equippedItems, inventory, player.natalArtifactId]);
+  }, [equippedItems, inventory, natalArtifactId]);
 
   // 获取物品统计信息（用于比较）- 使用统一的工具函数
   const getItemStatsForComparison = useCallback(
     (item: Item) => {
-      const isNatal = item.id === player.natalArtifactId;
+      const isNatal = item.id === natalArtifactId;
       return getItemStats(item, isNatal);
     },
-    [player.natalArtifactId]
+    [natalArtifactId]
   );
 
   // 使用 useMemo 缓存装备比较结果，避免每次渲染都重新计算
@@ -893,7 +957,7 @@ const InventoryModal: React.FC<Props> = ({
               <EquipmentPanel
                 equippedItems={equippedItems}
                 inventory={inventory}
-                player={player}
+                natalArtifactId={natalArtifactId}
                 onUnequip={onUnequipItem}
               />
             </div>
@@ -1290,7 +1354,7 @@ const InventoryModal: React.FC<Props> = ({
                     : `当前分类暂无物品`}
                 </div>
               ) : (() => {
-                const realmIndex = REALM_ORDER.indexOf(player.realm);
+                const realmIndex = REALM_ORDER.indexOf(playerRealm as RealmType);
                 const goldenCoreIndex = REALM_ORDER.indexOf(RealmType.GoldenCore);
                 const canRefineGlobal = realmIndex >= goldenCoreIndex;
 
@@ -1298,10 +1362,15 @@ const InventoryModal: React.FC<Props> = ({
                   <InventoryItem
                     key={item.id}
                     item={item}
-                    isNatal={item.id === player.natalArtifactId}
+                    isNatal={item.id === natalArtifactId}
                     canRefine={canRefineGlobal}
                     isEquipped={itemEquippedMap.get(item.id) || false}
-                    player={player}
+                    playerRealm={playerRealm}
+                    foundationTreasure={foundationTreasure}
+                    heavenEarthEssence={heavenEarthEssence}
+                    heavenEarthMarrow={heavenEarthMarrow}
+                    longevityRules={longevityRules}
+                    maxLongevityRules={maxLongevityRules}
                     onHover={handleHoverItem}
                     onUseItem={onUseItem}
                     onEquipItem={handleEquipWrapper}
@@ -1311,6 +1380,7 @@ const InventoryModal: React.FC<Props> = ({
                     onRefineNatalArtifact={onRefineNatalArtifact}
                     onUnrefineNatalArtifact={onUnrefineNatalArtifact}
                     onRefineAdvancedItem={onRefineAdvancedItem}
+                    setItemActionLog={setItemActionLog}
                   />
                 ));
               })()}
@@ -1403,4 +1473,4 @@ const InventoryModal: React.FC<Props> = ({
   );
 };
 
-export default InventoryModal;
+export default React.memo(InventoryModal);

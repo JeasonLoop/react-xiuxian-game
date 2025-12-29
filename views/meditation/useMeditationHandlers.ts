@@ -6,7 +6,7 @@ import {
   REALM_ORDER,
   calculateSpiritualRootArtBonus,
 } from '../../constants/index';
-import { getActiveMentalArt } from '../../utils/statUtils';
+import { getActiveMentalArt, getPlayerTotalStats } from '../../utils/statUtils';
 
 interface UseMeditationHandlersProps {
   player: PlayerStats;
@@ -107,16 +107,20 @@ export function useMeditationHandlers({
     }
 
     setPlayer((prev) => {
+      // 获取实际的最大血量（包含金丹法数加成等）
+      const totalStats = getPlayerTotalStats(prev);
+      const actualMaxHp = totalStats.maxHp;
+
       // 打坐时直接加速回血：基础2倍，根据境界和层数可以增加
       // 基础倍数 = 2.0 + 境界层数 * 0.1（最高3.5倍）
       const baseMultiplier = 2.0 + Math.min(prev.realmLevel * 0.1, 1.5); // 2.0 - 3.5倍
 
-      // 计算回血量：基础回血 * 打坐加成倍数
-      const baseRegen = Math.max(1, Math.floor(prev.maxHp * 0.01));
+      // 计算回血量：基础回血 * 打坐加成倍数（基于实际最大血量）
+      const baseRegen = Math.max(1, Math.floor(actualMaxHp * 0.01));
       const actualRegen = Math.floor(baseRegen * baseMultiplier);
 
-      // 直接恢复血量
-      const newHp = Math.min(prev.maxHp, prev.hp + actualRegen);
+      // 直接恢复血量（使用实际最大血量作为上限）
+      const newHp = Math.min(actualMaxHp, prev.hp + actualRegen);
 
       // 添加回血提示
       const multiplierText = baseMultiplier.toFixed(1);

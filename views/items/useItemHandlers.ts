@@ -5,6 +5,7 @@ import { uid } from '../../utils/gameUtils';
 import { showConfirm } from '../../utils/toastUtils';
 import { LOOT_ITEMS } from '../../services/battleService';
 import { compareItemEffects } from '../../utils/objectUtils';
+import { getPlayerTotalStats } from '../../utils/statUtils';
 
 interface UseItemHandlersProps {
   player: PlayerStats;
@@ -103,7 +104,10 @@ const applyItemEffect = (
 
   // 3. 处理临时效果
   if (item.effect?.hp) {
-    newStats.hp = Math.min(newStats.maxHp, newStats.hp + item.effect.hp);
+    // 使用实际最大血量（包含金丹法数加成等）作为上限
+    const totalStats = getPlayerTotalStats(newStats);
+    const actualMaxHp = totalStats.maxHp;
+    newStats.hp = Math.min(actualMaxHp, newStats.hp + item.effect.hp);
     effectLogs.push(`恢复了 ${item.effect.hp} 点气血。`);
   }
   if (item.effect?.exp) {

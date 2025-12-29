@@ -3,7 +3,7 @@
  * 处理自动打坐、自动历练等自动功能逻辑
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { PlayerStats } from '../types';
 
 interface UseAutoFeaturesParams {
@@ -43,28 +43,35 @@ export function useAutoFeatures({
   handleAdventure,
   setCooldown,
 }: UseAutoFeaturesParams) {
+  const playerRef = useRef(player);
+  useEffect(() => {
+    playerRef.current = player;
+  }, [player]);
+
   // 自动打坐逻辑
   useEffect(() => {
-    // 提前检查所有条件，避免不必要的 timer 创建
-    if (!autoMeditate || !player || loading || cooldown > 0 || autoAdventure) return;
+    // 提前检查所有条件
+    if (!autoMeditate || !playerRef.current || loading || cooldown > 0 || autoAdventure) return;
 
     const timer = setTimeout(() => {
+      const currentPlayer = playerRef.current;
       // 再次检查条件，防止状态在延迟期间发生变化
-      if (autoMeditate && !loading && cooldown === 0 && player && !autoAdventure) {
+      if (autoMeditate && !loading && cooldown === 0 && currentPlayer && !autoAdventure) {
         handleMeditate();
         setCooldown(1);
       }
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [autoMeditate, player, loading, cooldown, autoAdventure, handleMeditate, setCooldown]);
+    // 移除了 player 依赖，使用 ref 避免频繁触发
+  }, [autoMeditate, loading, cooldown, autoAdventure, handleMeditate, setCooldown]);
 
   // 自动历练逻辑
   useEffect(() => {
-    // 提前检查所有条件，避免不必要的 timer 创建
+    // 提前检查所有条件
     if (
       !autoAdventure ||
-      !player ||
+      !playerRef.current ||
       loading ||
       cooldown > 0 ||
       isShopOpen ||
@@ -78,16 +85,17 @@ export function useAutoFeatures({
       return;
 
     const timer = setTimeout(() => {
+      const currentPlayer = playerRef.current;
       // 再次检查条件，防止状态在延迟期间发生变化
-      if (autoAdventure && !loading && cooldown === 0 && player && !autoMeditate && !isReputationEventOpen && !isTurnBasedBattleOpen && !autoAdventurePausedByShop && !autoAdventurePausedByBattle && !autoAdventurePausedByReputationEvent) {
+      if (autoAdventure && !loading && cooldown === 0 && currentPlayer && !autoMeditate && !isReputationEventOpen && !isTurnBasedBattleOpen && !autoAdventurePausedByShop && !autoAdventurePausedByBattle && !autoAdventurePausedByReputationEvent) {
         handleAdventure();
       }
     }, 500);
 
     return () => clearTimeout(timer);
+    // 移除了 player 依赖，使用 ref 避免频繁触发
   }, [
     autoAdventure,
-    player,
     loading,
     cooldown,
     autoMeditate,

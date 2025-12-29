@@ -36,17 +36,20 @@ export const findEmptyEquipmentSlot = (
   item: Item,
   equippedItems: Partial<Record<EquipmentSlot, string>>
 ): EquipmentSlot | null => {
-  if (!item.equipmentSlot) return null;
-
-  // 对于戒指、首饰、法宝，需要查找同类型槽位中的空槽位
+  // 对于戒指、首饰、法宝，即使没有equipmentSlot也可以根据type查找槽位
   const slots = getEquipmentSlotsByType(item.type);
   if (slots.length > 0) {
+    // 优先查找空槽位
     const emptySlot = slots.find((slot) => !equippedItems[slot]);
     if (emptySlot) {
-      // 有空槽位，返回第一个空槽位
       return emptySlot;
     }
-    // 如果没有空槽位，返回 null（不替换已有装备）
+    // 如果没有空槽位，返回第一个槽位（用于替换已有装备）
+    return slots[0];
+  }
+
+  // 其他装备类型需要equipmentSlot
+  if (!item.equipmentSlot) {
     return null;
   }
 

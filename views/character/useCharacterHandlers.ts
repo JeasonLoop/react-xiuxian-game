@@ -4,9 +4,9 @@ import { TITLES, TITLE_SET_EFFECTS } from '../../constants/index';
 import { calculateTitleEffects } from '../../utils/titleUtils';
 import {
   getAttributeMultiplier,
-  calculateAttributeValue,
   BASE_ATTRIBUTES,
 } from '../../utils/attributeUtils';
+import { getPlayerTotalStats } from '../../utils/statUtils';
 
 interface UseCharacterHandlersProps {
   player: PlayerStats;
@@ -80,6 +80,11 @@ export function useCharacterHandlers({
       let newSpeed = prev.speed + speedDiff;
       let newLuck = prev.luck + luckDiff;
 
+      // 计算实际最大血量（包含功法加成等）
+      const tempPlayer = { ...prev, maxHp: newMaxHp };
+      const totalStats = getPlayerTotalStats(tempPlayer);
+      const actualMaxHp = totalStats.maxHp;
+
       let logMessage = `你装备了称号【${title.name}】！`;
 
       // 检查是否有套装效果
@@ -100,7 +105,7 @@ export function useCharacterHandlers({
         attack: newAttack,
         defense: newDefense,
         maxHp: newMaxHp,
-        hp: Math.min(newHp, newMaxHp),
+        hp: Math.min(newHp, actualMaxHp), // 使用实际最大血量作为上限
         spirit: newSpirit,
         physique: newPhysique,
         speed: newSpeed,
@@ -148,6 +153,11 @@ export function useCharacterHandlers({
         const gain = Math.floor(baseHp * multiplier);
         newMaxHp += gain;
         newHp += gain;
+        // 计算实际最大血量（包含功法加成等）作为上限
+        const tempPlayer = { ...prev, maxHp: newMaxHp };
+        const totalStats = getPlayerTotalStats(tempPlayer);
+        const actualMaxHp = totalStats.maxHp;
+        newHp = Math.min(newHp, actualMaxHp);
         addLog(`你分配了1点属性点到气血 (+${gain})`, 'gain');
       } else if (type === 'spirit') {
         const gain = Math.floor(baseSpirit * multiplier);
@@ -159,6 +169,11 @@ export function useCharacterHandlers({
         newPhysique += physiqueGain;
         newMaxHp += hpGain;
         newHp += hpGain;
+        // 计算实际最大血量（包含功法加成等）作为上限
+        const tempPlayer = { ...prev, maxHp: newMaxHp };
+        const totalStats = getPlayerTotalStats(tempPlayer);
+        const actualMaxHp = totalStats.maxHp;
+        newHp = Math.min(newHp, actualMaxHp);
         addLog(`你分配了1点属性点到体魄 (+${physiqueGain}体魄, +${hpGain}气血)`, 'gain');
       } else if (type === 'speed') {
         const gain = Math.floor(baseSpeed * multiplier);
@@ -224,6 +239,11 @@ export function useCharacterHandlers({
         totalGain = Math.floor(baseHp * multiplier * pointsToAllocate);
         newMaxHp += totalGain;
         newHp += totalGain;
+        // 计算实际最大血量（包含功法加成等）作为上限
+        const tempPlayer = { ...prev, maxHp: newMaxHp };
+        const totalStats = getPlayerTotalStats(tempPlayer);
+        const actualMaxHp = totalStats.maxHp;
+        newHp = Math.min(newHp, actualMaxHp);
         addLog(`你一键分配了 ${pointsToAllocate} 点属性点到气血 (+${totalGain})`, 'gain');
       } else if (type === 'spirit') {
         totalGain = Math.floor(baseSpirit * multiplier * pointsToAllocate);
@@ -235,6 +255,11 @@ export function useCharacterHandlers({
         newPhysique += totalPhysiqueGain;
         newMaxHp += totalHpGain;
         newHp += totalHpGain;
+        // 计算实际最大血量（包含功法加成等）作为上限
+        const tempPlayer = { ...prev, maxHp: newMaxHp };
+        const totalStats = getPlayerTotalStats(tempPlayer);
+        const actualMaxHp = totalStats.maxHp;
+        newHp = Math.min(newHp, actualMaxHp);
         addLog(
           `你一键分配了 ${pointsToAllocate} 点属性点到体魄 (+${totalPhysiqueGain}体魄, +${totalHpGain}气血)`,
           'gain'

@@ -20,7 +20,7 @@ export function deepEqual(obj1: any, obj2: any): boolean {
   if (keys1.length !== keys2.length) return false;
 
   for (const key of keys1) {
-    if (!keys2.includes(key)) return false;
+    if (!Object.prototype.hasOwnProperty.call(obj2, key)) return false;
 
     const val1 = obj1[key];
     const val2 = obj2[key];

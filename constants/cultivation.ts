@@ -383,7 +383,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     realmRequirement: RealmType.DaoCombining,
     cost: 60000,
     spiritualRoot: 'fire',
-    effects: { expRate: 1.5, attack: 8000, defense: 7000, hp: 15000, spirit: 3000 },
+    effects: { expRate: 1.5, attack: 160, defense: 140, hp: 2400, spirit: 120 }, // 优化：从8000/7000/15000/3000降低到160/140/2400/120
   },
   // 新增五行功法
   {
@@ -560,7 +560,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     realmRequirement: RealmType.SpiritSevering,
     cost: 32000,
     spiritualRoot: 'metal',
-    effects: { attack: 8000, defense: 3000, speed: 2000 },
+    effects: { attack: 160, defense: 60, speed: 80 }, // 优化：从8000/3000/2000降低到160/60/80
   },
   {
     id: 'art-five-elements',

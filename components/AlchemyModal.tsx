@@ -155,4 +155,4 @@ const AlchemyModal: React.FC<Props> = ({
   );
 };
 
-export default AlchemyModal;
+export default React.memo(AlchemyModal);

@@ -6,6 +6,7 @@
 import React from 'react';
 import { useEffect, useRef } from 'react';
 import { PlayerStats } from '../types';
+import { getPlayerTotalStats } from '../utils/statUtils';
 
 interface UsePassiveRegenerationParams {
   player: PlayerStats | null;
@@ -43,13 +44,18 @@ export function usePassiveRegeneration({
       setPlayer((prev) => {
         if (!prev) return prev;
 
-        // 计算基础回血量
-        const baseRegen = Math.max(1, Math.floor(prev.maxHp * 0.01));
+        // 获取实际的最大血量（包含金丹法数加成等）
+        const totalStats = getPlayerTotalStats(prev);
+        const actualMaxHp = totalStats.maxHp;
 
-        if (prev.hp < prev.maxHp) {
+        // 计算基础回血量（基于实际最大血量）
+        const baseRegen = Math.max(1, Math.floor(actualMaxHp * 0.01));
+
+        // 判断是否需要回血（使用实际最大血量）
+        if (prev.hp < actualMaxHp) {
           return {
             ...prev,
-            hp: Math.min(prev.maxHp, prev.hp + baseRegen),
+            hp: Math.min(actualMaxHp, prev.hp + baseRegen),
           };
         }
 

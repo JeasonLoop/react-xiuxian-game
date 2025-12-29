@@ -5,6 +5,7 @@
 
 import { LotteryPrize, ItemType, EquipmentSlot, ItemRarity } from '../types'
 import { generateLotteryPrizes } from '../utils/itemGenerator';
+import { FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES } from './advanced';
 
 // --- 抽奖系统 ---
 export const LOTTERY_PRIZES: LotteryPrize[] = [
@@ -1695,75 +1696,83 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     weight: 2,
     value: { tickets: 5 },
   },
-  // 进阶物品奖励（极稀有）
-  {
-    id: 'lottery-foundation-treasure',
-    name: '筑基奇物',
-    type: 'item',
-    rarity: '传说',
-    weight: 3, // 从1提高到3
+  // 进阶物品奖励（极稀有）- 使用具体的进阶物品
+  // 筑基奇物
+  ...Object.values(FOUNDATION_TREASURES).map((treasure) => ({
+    id: `lottery-foundation-treasure-${treasure.id}`,
+    name: treasure.name,
+    type: 'item' as const,
+    rarity: treasure.rarity as ItemRarity,
+    weight: treasure.rarity === '仙品' ? 0.5 : treasure.rarity === '传说' ? 1.5 : treasure.rarity === '稀有' ? 2 : 3,
     value: {
       item: {
-        name: '筑基奇物',
-        type: ItemType.Material,
-        description: '突破筑基期的关键物品，可在修炼系统中使用',
+        name: treasure.name,
+        type: ItemType.AdvancedItem,
+        description: treasure.description,
         quantity: 1,
-        rarity: '传说',
+        rarity: treasure.rarity as ItemRarity,
+        advancedItemType: 'foundationTreasure' as const,
+        advancedItemId: treasure.id,
       },
-      foundationTreasure: true, // 标记为进阶物品，需要在抽奖处理中特殊处理
     },
-  },
-  {
-    id: 'lottery-heaven-earth-essence',
-    name: '天地精华',
-    type: 'item',
-    rarity: '仙品',
-    weight: 2, // 从0.5提高到2
+  })),
+  // 天地精华
+  ...Object.values(HEAVEN_EARTH_ESSENCES).map((essence) => ({
+    id: `lottery-heaven-earth-essence-${essence.id}`,
+    name: essence.name,
+    type: 'item' as const,
+    rarity: essence.rarity as ItemRarity,
+    weight: essence.rarity === '仙品' ? 0.3 : essence.rarity === '传说' ? 1 : essence.rarity === '稀有' ? 1.5 : 2,
     value: {
       item: {
-        name: '天地精华',
-        type: ItemType.Material,
-        description: '突破元婴期的关键物品，可在修炼系统中使用',
+        name: essence.name,
+        type: ItemType.AdvancedItem,
+        description: essence.description,
         quantity: 1,
-        rarity: '仙品',
+        rarity: essence.rarity as ItemRarity,
+        advancedItemType: 'heavenEarthEssence' as const,
+        advancedItemId: essence.id,
       },
-      heavenEarthEssence: true,
     },
-  },
-  {
-    id: 'lottery-heaven-earth-marrow',
-    name: '天地之髓',
-    type: 'item',
-    rarity: '仙品',
-    weight: 1.5, // 从0.3提高到1.5
+  })),
+  // 天地之髓
+  ...Object.values(HEAVEN_EARTH_MARROWS).map((marrow) => ({
+    id: `lottery-heaven-earth-marrow-${marrow.id}`,
+    name: marrow.name,
+    type: 'item' as const,
+    rarity: marrow.rarity as ItemRarity,
+    weight: marrow.rarity === '仙品' ? 0.2 : marrow.rarity === '传说' ? 0.8 : marrow.rarity === '稀有' ? 1.2 : 1.5,
     value: {
       item: {
-        name: '天地之髓',
-        type: ItemType.Material,
-        description: '突破化神期的关键物品，可在修炼系统中使用',
+        name: marrow.name,
+        type: ItemType.AdvancedItem,
+        description: marrow.description,
         quantity: 1,
-        rarity: '仙品',
+        rarity: marrow.rarity as ItemRarity,
+        advancedItemType: 'heavenEarthMarrow' as const,
+        advancedItemId: marrow.id,
       },
-      heavenEarthMarrow: true,
     },
-  },
-  {
-    id: 'lottery-longevity-rule',
-    name: '规则之力',
-    type: 'item',
-    rarity: '仙品',
-    weight: 0.5, // 从0.1提高到0.5
+  })),
+  // 规则之力
+  ...Object.values(LONGEVITY_RULES).map((rule) => ({
+    id: `lottery-longevity-rule-${rule.id}`,
+    name: rule.name,
+    type: 'item' as const,
+    rarity: '仙品' as ItemRarity,
+    weight: 0.5,
     value: {
       item: {
-        name: '规则之力',
-        type: ItemType.Material,
-        description: '掌控天地的规则之力，可在修炼系统中使用',
+        name: rule.name,
+        type: ItemType.AdvancedItem,
+        description: rule.description,
         quantity: 1,
-        rarity: '仙品',
+        rarity: '仙品' as ItemRarity,
+        advancedItemType: 'longevityRule' as const,
+        advancedItemId: rule.id,
       },
-      longevityRule: true,
     },
-  },
+  })),
 ];
 
 // 生成装备奖品（每个品级10件）

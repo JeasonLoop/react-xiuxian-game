@@ -1,5 +1,6 @@
 import React from 'react';
 import { PlayerStats, SecretRealm, RealmType } from '../../types';
+import { getPlayerTotalStats } from '../../utils/statUtils';
 
 interface UseRealmHandlersProps {
   player: PlayerStats;
@@ -42,7 +43,9 @@ export function useRealmHandlers({
   const handleEnterRealm = async (realm: SecretRealm) => {
     if (loading || cooldown > 0 || !player) return;
 
-    if (player.hp < player.maxHp * 0.3) {
+    // 使用实际最大血量（包含金丹法数加成等）来判断气血不足
+    const totalStats = getPlayerTotalStats(player);
+    if (player.hp < totalStats.maxHp * 0.3) {
       const message = '你气血不足，此时进入秘境无异于自寻死路！';
       addLog(message, 'danger');
       if (setItemActionLog) {

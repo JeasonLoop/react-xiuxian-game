@@ -769,4 +769,4 @@ const ShopModal: React.FC<Props> = ({
   );
 };
 
-export default ShopModal;
+export default React.memo(ShopModal);

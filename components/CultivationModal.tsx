@@ -477,4 +477,4 @@ const CultivationModal: React.FC<Props> = ({
   );
 };
 
-export default CultivationModal;
+export default React.memo(CultivationModal);

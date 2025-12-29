@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { PlayerStats, Pet, ItemType} from '../../types';
-import { LOTTERY_PRIZES, PET_TEMPLATES, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES } from '../../constants/index';
+import { LOTTERY_PRIZES, PET_TEMPLATES } from '../../constants/index';
 import { uid } from '../../utils/gameUtils';
 import { addItemToInventory } from '../../utils/inventoryUtils';
 
@@ -199,78 +199,63 @@ export function useLotteryHandlers({
           newExp += amount;
           addLog(`获得 ${amount} 修为`, 'gain');
         } else if (prize.type === 'item' && prize.value.item) {
+          const item = prize.value.item;
           // 检查是否是进阶物品
-          if (prize.value.foundationTreasure) {
-            // 筑基奇物 - 添加到背包
-            const treasures = Object.values(FOUNDATION_TREASURES);
-            const selected = treasures[Math.floor(Math.random() * treasures.length)];
-            newInv.push({
-              id: uid(),
-              name: selected.name,
-              type: ItemType.AdvancedItem,
-              description: selected.description,
-              quantity: 1,
-              rarity: selected.rarity,
-              advancedItemType: 'foundationTreasure',
-              advancedItemId: selected.id,
-            });
-            addLog(`✨ 获得筑基奇物【${selected.name}】！这是突破筑基期的关键物品！`, 'special');
-          } else if (prize.value.heavenEarthEssence) {
-            // 天地精华 - 添加到背包
-            const essences = Object.values(HEAVEN_EARTH_ESSENCES);
-            const selected = essences[Math.floor(Math.random() * essences.length)];
-            newInv.push({
-              id: uid(),
-              name: selected.name,
-              type: ItemType.AdvancedItem,
-              description: selected.description,
-              quantity: 1,
-              rarity: selected.rarity,
-              advancedItemType: 'heavenEarthEssence',
-              advancedItemId: selected.id,
-            });
-            addLog(`✨ 获得天地精华【${selected.name}】！这是突破元婴期的关键物品！`, 'special');
-          } else if (prize.value.heavenEarthMarrow) {
-            // 天地之髓 - 添加到背包
-            const marrows = Object.values(HEAVEN_EARTH_MARROWS);
-            const selected = marrows[Math.floor(Math.random() * marrows.length)];
-            newInv.push({
-              id: uid(),
-              name: selected.name,
-              type: ItemType.AdvancedItem,
-              description: selected.description,
-              quantity: 1,
-              rarity: selected.rarity,
-              advancedItemType: 'heavenEarthMarrow',
-              advancedItemId: selected.id,
-            });
-            addLog(`✨ 获得天地之髓【${selected.name}】！这是突破化神期的关键物品！`, 'special');
-          } else if (prize.value.longevityRule) {
-            // 规则之力 - 添加到背包
-            const rules = Object.values(LONGEVITY_RULES);
-            const currentRules = prev.longevityRules || [];
-            const availableRules = rules.filter(r => !currentRules.includes(r.id));
-            const maxRules = prev.maxLongevityRules || 3;
-            if (availableRules.length > 0 && currentRules.length < maxRules) {
-              const selected = availableRules[Math.floor(Math.random() * availableRules.length)];
+          if (item.advancedItemType && item.advancedItemId) {
+            // 进阶物品 - 直接使用奖品中的具体物品信息
+            if (item.advancedItemType === 'longevityRule') {
+              // 规则之力需要检查是否已拥有
+              const currentRules = prev.longevityRules || [];
+              const maxRules = prev.maxLongevityRules || 3;
+              if (currentRules.includes(item.advancedItemId)) {
+                addLog(`你已经拥有规则之力【${item.name}】，本次奖励转换为灵石`, 'gain');
+                newStones += 20000;
+              } else if (currentRules.length >= maxRules) {
+                addLog(`你已经拥有所有规则之力，本次奖励转换为灵石`, 'gain');
+                newStones += 20000;
+              } else {
+                newInv.push({
+                  id: uid(),
+                  name: item.name,
+                  type: ItemType.AdvancedItem,
+                  description: item.description,
+                  quantity: 1,
+                  rarity: item.rarity || '仙品',
+                  advancedItemType: item.advancedItemType,
+                  advancedItemId: item.advancedItemId,
+                });
+                const typeNames: Record<string, string> = {
+                  foundationTreasure: '筑基奇物',
+                  heavenEarthEssence: '天地精华',
+                  heavenEarthMarrow: '天地之髓',
+                  longevityRule: '规则之力',
+                };
+                const typeName = typeNames[item.advancedItemType] || '进阶物品';
+                addLog(`✨ 获得${typeName}【${item.name}】！`, 'special');
+              }
+            } else {
+              // 其他进阶物品直接添加
               newInv.push({
                 id: uid(),
-                name: selected.name,
+                name: item.name,
                 type: ItemType.AdvancedItem,
-                description: selected.description,
+                description: item.description,
                 quantity: 1,
-                rarity: '仙品',
-                advancedItemType: 'longevityRule',
-                advancedItemId: selected.id,
+                rarity: item.rarity || '传说',
+                advancedItemType: item.advancedItemType,
+                advancedItemId: item.advancedItemId,
               });
-              addLog(`✨ 获得规则之力【${selected.name}】！这是掌控天地的力量！`, 'special');
-            } else {
-              addLog(`你已经拥有所有规则之力，本次奖励转换为灵石`, 'gain');
-              newStones += 20000;
+              const typeNames: Record<string, string> = {
+                foundationTreasure: '筑基奇物',
+                heavenEarthEssence: '天地精华',
+                heavenEarthMarrow: '天地之髓',
+                longevityRule: '规则之力',
+              };
+              const typeName = typeNames[item.advancedItemType] || '进阶物品';
+              addLog(`✨ 获得${typeName}【${item.name}】！`, 'special');
             }
           } else {
             // 普通物品
-            const item = prize.value.item;
             newInv = addItemToInventory(newInv, item);
             addLog(`获得 ${item.name}！`, 'gain');
           }

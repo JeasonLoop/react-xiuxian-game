@@ -8,6 +8,8 @@ import {
 } from '../services/adventureTemplateService';
 import { X, Loader2 } from 'lucide-react';
 import { logger } from '../utils/logger';
+import { getPlayerTotalStats } from '../utils/statUtils';
+
 
 interface Props {
   isOpen: boolean;
@@ -110,10 +112,12 @@ const SectTaskModal: React.FC<Props> = ({
             const template = getRandomEventTemplate('lucky', riskLevel, player.realm, player.realmLevel);
 
             if (template) {
+              // 使用实际最大血量（包含金丹法数加成等）
+              const totalStats = getPlayerTotalStats(player);
               const result = templateToAdventureResult(template, {
                 realm: player.realm,
                 realmLevel: player.realmLevel,
-                maxHp: player.maxHp,
+                maxHp: totalStats.maxHp,
               });
               setEncounterResult(result);
 

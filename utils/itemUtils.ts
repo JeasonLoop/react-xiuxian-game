@@ -5,10 +5,11 @@ import { getItemFromConstants } from './itemConstantsUtils';
 // 共享的装备数值配置（统一管理，避免重复定义）
 // 调整属性浮动范围，缩小差距，使装备属性更稳定
 export const EQUIPMENT_RARITY_PERCENTAGES: Record<ItemRarity, { min: number; max: number }> = {
-  普通: { min: 0.20, max: 0.35 },  // 从0.15-0.5调整为0.20-0.35，差距从0.35缩小到0.15
-  稀有: { min: 0.40, max: 0.70 },  // 从0.30-1.0调整为0.40-0.70，差距从0.7缩小到0.3
-  传说: { min: 0.80, max: 1.30 },  // 从0.60-2.0调整为0.80-1.30，差距从1.4缩小到0.5
-  仙品: { min: 2.00, max: 3.00 },  // 从1.50-5.0调整为2.00-3.00，差距从3.5缩小到1.0
+  普通: { min: 0.25, max: 0.40 },  // 普通装备：25%-40%基础属性
+  稀有: { min: 0.50, max: 0.80 },  // 稀有装备：50%-80%基础属性（约1.3倍普通）
+  传说: { min: 0.90, max: 1.40 },  // 传说装备：90%-140%基础属性（约1.8倍普通）
+  仙品: { min: 1.50, max: 2.20 },  // 仙品装备：150%-220%基础属性（约2.5倍普通）
+  // 优化：缩小稀有度差距，从原来的1/1.5/2.5/4倍改为1/1.3/1.8/2.5倍
 };
 
 export const EQUIPMENT_MIN_STATS: Record<ItemRarity, { attack: number; defense: number; hp: number; spirit: number; physique: number; speed: number }> = {
@@ -59,9 +60,24 @@ export const normalizeTypeHint = (type?: ItemType | string): ItemType | undefine
 };
 
 // 将类型别称规范化为中文字符串标签（用于显示）
-export const normalizeTypeLabel = (type: ItemType | string): string => {
+export const normalizeTypeLabel = (type: ItemType | string, item?: { advancedItemType?: string }): string => {
   if (!type) return '未知';
   const t = String(type).toLowerCase();
+
+  // 如果是进阶物品，显示具体类型
+  if (t === 'advanceditem' || type === ItemType.AdvancedItem) {
+    if (item?.advancedItemType) {
+      const typeMap: Record<string, string> = {
+        foundationTreasure: '筑基奇物',
+        heavenEarthEssence: '天地精华',
+        heavenEarthMarrow: '天地之髓',
+        longevityRule: '规则之力',
+      };
+      return typeMap[item.advancedItemType] || '进阶物品';
+    }
+    return '进阶物品';
+  }
+
   const map: Record<string, string> = {
     herb: '草药',
     pill: '丹药',
@@ -489,11 +505,13 @@ export const getRealmEquipmentMultiplier = (realm: RealmType, realmLevel: number
   const realmIndex = REALM_ORDER.indexOf(realm);
   // 如果境界索引无效，使用默认值（炼气期，索引0）
   const validRealmIndex = realmIndex >= 0 ? realmIndex : 0;
-  // 基础倍数：根据境界指数增长 [1, 2, 4, 6, 10, 16, 32];
-  const realmBaseMultipliers = [1, 2, 4, 6, 10, 16, 32];
+  // 优化后的基础倍数：降低增长幅度，防止数值膨胀
+  // 从 [1, 2, 4, 6, 10, 16, 32] 改为 [1, 1.5, 2.5, 4, 6, 10, 16]
+  // 这样最高倍数从32倍降低到16倍，与境界属性增长（5倍）更匹配
+  const realmBaseMultipliers = [1, 1.5, 2.5, 4, 6, 10, 16];
   const realmBaseMultiplier = realmBaseMultipliers[validRealmIndex] || 1;
-  // 境界等级加成：每级增加10%（更温和的增长）
-  const levelMultiplier = 1 + (realmLevel - 1) * 0.1;
+  // 境界等级加成：每级增加8%（进一步降低增长）
+  const levelMultiplier = 1 + (realmLevel - 1) * 0.08;
   return realmBaseMultiplier * levelMultiplier;
 };
 
@@ -537,9 +555,10 @@ export const adjustEquipmentStatsByRealm = (
   // 境界等级加成：每级增加5%
   const levelMultiplier = 1 + (realmLevel - 1) * 0.05;
 
-  // 境界指数增长倍数：确保高境界装备数值显著提升
-  // 炼气期1倍、筑基期2倍、金丹期4倍、元婴期8倍、化神期16倍、炼虚期32倍、渡劫期64倍
-  const realmBaseMultipliers = [1, 2, 4, 8, 16, 32, 64];
+  // 优化后的境界指数增长倍数：与装备倍数函数保持一致，防止数值膨胀
+  // 从 [1, 2, 4, 8, 16, 32, 64] 改为 [1, 1.5, 2.5, 4, 6, 10, 16]
+  // 这样最高倍数从64倍降低到16倍，与境界属性增长（5倍）更匹配
+  const realmBaseMultipliers = [1, 1.5, 2.5, 4, 6, 10, 16];
   const realmMultiplier = realmBaseMultipliers[realmIndex] || 1;
 
   const adjusted: Item['effect'] = {};

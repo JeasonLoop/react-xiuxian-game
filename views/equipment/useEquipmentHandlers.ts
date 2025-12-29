@@ -8,6 +8,7 @@ import {
   RealmType,
 } from '../../types';
 import { getItemStats } from '../../utils/itemUtils';
+import { getPlayerTotalStats } from '../../utils/statUtils';
 import {
   UPGRADE_MATERIAL_NAME,
   UPGRADE_STONE_NAME,
@@ -215,13 +216,18 @@ export function useEquipmentHandlers({
         }
       }
 
+      // 计算实际最大血量（包含功法加成等）作为上限
+      const tempPlayer = { ...prev, maxHp: newMaxHp };
+      const totalStats = getPlayerTotalStats(tempPlayer);
+      const actualMaxHp = totalStats.maxHp;
+
       return {
         ...prev,
         equippedItems: newEquippedItems,
         attack: newAttack,
         defense: newDefense,
         maxHp: newMaxHp,
-        hp: Math.min(prev.hp, newMaxHp),
+        hp: Math.min(prev.hp, actualMaxHp), // 使用实际最大血量作为上限
         spirit: newSpirit,
         physique: newPhysique,
         speed: Math.max(0, newSpeed),
@@ -260,6 +266,11 @@ export function useEquipmentHandlers({
       const newEquippedItems = { ...prev.equippedItems };
       delete newEquippedItems[slot];
 
+      // 计算实际最大血量（包含功法加成等）作为上限
+      const tempPlayer = { ...prev, maxHp: newMaxHp };
+      const totalStats = getPlayerTotalStats(tempPlayer);
+      const actualMaxHp = totalStats.maxHp;
+
       addLog(`你卸下了 ${item.name}。`, 'normal');
 
       return {
@@ -268,7 +279,7 @@ export function useEquipmentHandlers({
         attack: newAttack,
         defense: newDefense,
         maxHp: newMaxHp,
-        hp: Math.min(prev.hp, newMaxHp),
+        hp: Math.min(prev.hp, actualMaxHp), // 使用实际最大血量作为上限
         spirit: newSpirit,
         physique: newPhysique,
         speed: Math.max(0, newSpeed),
@@ -336,7 +347,12 @@ export function useEquipmentHandlers({
       });
 
       const newMaxHp = prev.maxHp - hpCost;
-      const newHp = Math.min(prev.hp, newMaxHp);
+
+      // 计算实际最大血量（包含功法加成等）作为上限
+      const tempPlayer = { ...prev, maxHp: newMaxHp };
+      const totalStats = getPlayerTotalStats(tempPlayer);
+      const actualMaxHp = totalStats.maxHp;
+      const newHp = Math.min(prev.hp, actualMaxHp);
 
       // 如果本命法宝已装备，需要重新计算属性
       let newAttack = prev.attack;

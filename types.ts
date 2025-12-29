@@ -298,6 +298,7 @@ export interface PlayerStats {
   dailyQuestCompleted: string[]; // 今日已完成的任务ID
   lastDailyQuestResetDate: string; // 上次重置日常任务的日期（YYYY-MM-DD格式）
   gameDays: number; // 游戏内天数（从开始游戏起计算）
+  playTime: number; // 游戏时长（毫秒），从开始游戏起累计
 
   // 新增修炼系统字段
   foundationTreasure?: string; // 筑基奇物ID
@@ -800,10 +801,6 @@ export interface LotteryPrize {
     exp?: number;
     petId?: string;
     tickets?: number;
-    foundationTreasure?: boolean; // 标记为筑基奇物
-    heavenEarthEssence?: boolean; // 标记为天地精华
-    heavenEarthMarrow?: boolean; // 标记为天地之髓
-    longevityRule?: boolean; // 标记为规则之力
   };
 }
 

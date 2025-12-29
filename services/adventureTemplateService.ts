@@ -1,9 +1,7 @@
 import { AdventureResult, AdventureType, ItemRarity, RealmType, EquipmentSlot, ItemType } from '../types';
 import {
   REALM_ORDER,
-  REALM_DATA,
   LOTTERY_PRIZES,
-  CULTIVATION_ARTS,
   PET_TEMPLATES,
   getPillDefinition,
   DISCOVERABLE_RECIPES,
@@ -18,6 +16,8 @@ import {
 } from '../constants/index';
 import { logger } from '../utils/logger';
 import { ITEM_TEMPLATES } from '../constants/itemTemplates';
+import { getPlayerTotalStats } from '../utils/statUtils';
+import { PlayerStats } from '../types';
 
 /**
  * 事件模板接口

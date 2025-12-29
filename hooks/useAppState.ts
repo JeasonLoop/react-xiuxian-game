@@ -3,7 +3,7 @@
  * 统一管理所有模态框状态、商店状态、通知状态等
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   Item,
   Shop,
@@ -109,6 +109,33 @@ export interface AppState {
     event: AdventureResult['reputationEvent'] | null;
     setEvent: (event: AdventureResult['reputationEvent'] | null) => void;
   };
+  auto: {
+    autoMeditate: boolean;
+    setAutoMeditate: (value: boolean) => void;
+    autoAdventure: boolean;
+    setAutoAdventure: (value: boolean) => void;
+    pausedByShop: boolean;
+    setPausedByShop: (value: boolean) => void;
+    pausedByBattle: boolean;
+    setPausedByBattle: (value: boolean) => void;
+    pausedByReputationEvent: boolean;
+    setPausedByReputationEvent: (value: boolean) => void;
+  };
+  global: {
+    loading: boolean;
+    setLoading: (loading: boolean) => void;
+    cooldown: number;
+    setCooldown: (cooldown: number) => void;
+  };
+  actions: {
+    closeCurrentModal: () => void;
+    openTurnBasedBattle: (params: {
+      adventureType: AdventureType;
+      riskLevel?: '低' | '中' | '高' | '极度危险';
+      realmMinRealm?: RealmType;
+      bossId?: string;
+    }) => void;
+  };
 }
 
 /**
@@ -173,7 +200,82 @@ export function useAppState(): AppState {
   } | null>(null);
 
   // 声望事件
-  const [reputationEvent, setReputationEvent] = useState<AdventureResult['reputationEvent'] | null>(null);
+  const [reputationEvent, setEvent] = useState<AdventureResult['reputationEvent'] | null>(null);
+
+  // 自动功能状态
+  const [autoMeditate, setAutoMeditate] = useState(false);
+  const [autoAdventure, setAutoAdventure] = useState(false);
+  const [pausedByShop, setPausedByShop] = useState(false);
+  const [pausedByBattle, setPausedByBattle] = useState(false);
+  const [pausedByReputationEvent, setPausedByReputationEvent] = useState(false);
+
+  // 全局加载和冷却状态
+  const [loading, setLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  // 关闭当前打开的弹窗
+  const closeCurrentModal = useCallback(() => {
+    // 在自动历练模式下，不允许通过快捷键关闭回合制战斗弹窗
+    if (isTurnBasedBattleOpen && autoAdventure) {
+      return;
+    }
+
+    if (isShopOpen) {
+      setIsShopOpen(false);
+      setCurrentShop(null);
+    }
+    else if (isInventoryOpen) setIsInventoryOpen(false);
+    else if (isCultivationOpen) setIsCultivationOpen(false);
+    else if (isCharacterOpen) setIsCharacterOpen(false);
+    else if (isAchievementOpen) setIsAchievementOpen(false);
+    else if (isPetOpen) setIsPetOpen(false);
+    else if (isLotteryOpen) setIsLotteryOpen(false);
+    else if (isSettingsOpen) setIsSettingsOpen(false);
+    else if (isRealmOpen) setIsRealmOpen(false);
+    else if (isAlchemyOpen) setIsAlchemyOpen(false);
+    else if (isSectOpen) setIsSectOpen(false);
+    else if (isDailyQuestOpen) setIsDailyQuestOpen(false);
+    else if (isGrottoOpen) setIsGrottoOpen(false);
+    else if (isUpgradeOpen) {
+      setIsUpgradeOpen(false);
+      setItemToUpgrade(null);
+    }
+    else if (isBattleModalOpen) setIsBattleModalOpen(false);
+    else if (isTurnBasedBattleOpen) {
+      setIsTurnBasedBattleOpen(false);
+      setTurnBasedBattleParams(null);
+      if (pausedByBattle) {
+        setPausedByBattle(false);
+      }
+    }
+    else if (isReputationEventOpen) setIsReputationEventOpen(false);
+    else if (isMobileSidebarOpen) setIsMobileSidebarOpen(false);
+    else if (isMobileStatsOpen) setIsMobileStatsOpen(false);
+    else if (isDebugOpen) setIsDebugOpen(false);
+  }, [
+    isShopOpen, isInventoryOpen, isCultivationOpen, isCharacterOpen,
+    isAchievementOpen, isPetOpen, isLotteryOpen, isSettingsOpen,
+    isRealmOpen, isAlchemyOpen, isSectOpen, isDailyQuestOpen,
+    isGrottoOpen, isUpgradeOpen, isBattleModalOpen, isTurnBasedBattleOpen,
+    isReputationEventOpen, isMobileSidebarOpen, isMobileStatsOpen, isDebugOpen,
+    autoAdventure, pausedByBattle
+  ]);
+
+  // 统一处理回合制战斗打开逻辑
+  const openTurnBasedBattle = useCallback((params: {
+    adventureType: AdventureType;
+    riskLevel?: '低' | '中' | '高' | '极度危险';
+    realmMinRealm?: RealmType;
+    bossId?: string;
+  }) => {
+    // 如果正在自动历练，暂停自动历练但保存状态
+    if (autoAdventure) {
+      setAutoAdventure(false);
+      setPausedByBattle(true);
+    }
+    setTurnBasedBattleParams(params);
+    setIsTurnBasedBattleOpen(true);
+  }, [autoAdventure, setAutoAdventure, setPausedByBattle, setTurnBasedBattleParams, setIsTurnBasedBattleOpen]);
 
   return {
     modals: {
@@ -256,7 +358,29 @@ export function useAppState(): AppState {
     },
     reputationEvent: {
       event: reputationEvent,
-      setEvent: setReputationEvent,
+      setEvent,
+    },
+    auto: {
+      autoMeditate,
+      setAutoMeditate,
+      autoAdventure,
+      setAutoAdventure,
+      pausedByShop,
+      setPausedByShop,
+      pausedByBattle,
+      setPausedByBattle,
+      pausedByReputationEvent,
+      setPausedByReputationEvent,
+    },
+    global: {
+      loading,
+      setLoading,
+      cooldown,
+      setCooldown,
+    },
+    actions: {
+      closeCurrentModal,
+      openTurnBasedBattle,
     },
   };
 }

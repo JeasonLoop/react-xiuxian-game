@@ -166,10 +166,12 @@ export function useAdventureHandlers({
         const template = getRandomEventTemplate(adventureType, riskLevel, player.realm, player.realmLevel);
 
         if (template) {
+          // 使用实际最大血量（包含金丹法数加成等）
+          const totalStats = getPlayerTotalStats(player);
           result = templateToAdventureResult(template, {
             realm: player.realm,
             realmLevel: player.realmLevel,
-            maxHp: player.maxHp,
+            maxHp: totalStats.maxHp,
           });
 
           // 如果事件模板返回的是天地之魄事件，需要触发战斗
@@ -354,7 +356,9 @@ export function useAdventureHandlers({
 
   const handleAdventure = async () => {
     if (loading || cooldown > 0) return;
-    if (player.hp < player.maxHp * 0.2) {
+    // 使用实际最大血量（包含金丹法数加成等）来判断重伤状态
+    const totalStats = getPlayerTotalStats(player);
+    if (player.hp < totalStats.maxHp * 0.2) {
       addLog('你身受重伤，仍然强撑着继续历练...', 'danger');
     }
 

@@ -13,15 +13,12 @@ import {
   SECT_SPECIAL_REWARDS,
   SECT_MASTER_CHALLENGE_REQUIREMENTS,
   REALM_ORDER,
-  FOUNDATION_TREASURES,
-  HEAVEN_EARTH_ESSENCES,
-  HEAVEN_EARTH_MARROWS,
-  LONGEVITY_RULES,
 } from '../../constants/index';
+import { getPlayerTotalStats } from '../../utils/statUtils';
 import { RandomSectTask } from '../../services/randomService';
 import { AdventureResult } from '../../types';
-import { uid } from '../../utils/gameUtils';
 import { addItemToInventory } from '../../utils/inventoryUtils';
+import { sectTaskUtils } from '../../utils/sectTaskUtils';
 
 interface UseSectHandlersProps {
   player: PlayerStats;
@@ -257,32 +254,12 @@ export function useSectHandlers({
     isPerfectCompletion?: boolean
   ) => {
     setPlayer((prev) => {
-      // 1. 每日任务限制逻辑（按单个任务限制）
-      const today = new Date().toISOString().split('T')[0];
-      let dailyTaskCount = prev.dailyTaskCount || {};
-      let lastTaskResetDate = prev.lastTaskResetDate || today;
-
-      if (lastTaskResetDate !== today) {
-        dailyTaskCount = {};
-        lastTaskResetDate = today;
-      }
-
-      // 每个任务每天最多3次
-      const TASK_DAILY_LIMIT = 3;
-      const currentCount = dailyTaskCount[task.id] || 0;
-
-      if (currentCount >= TASK_DAILY_LIMIT) {
-        logMessage(
-          `今日已完成${TASK_DAILY_LIMIT}次【${task.name}】任务，请明日再来。`,
-          'danger'
-        );
+      // 1. 每日任务限制逻辑
+      const { limitReached, updatedCount, resetDate } = sectTaskUtils.checkDailyLimit(prev, task.id);
+      if (limitReached) {
+        logMessage(`今日已完成3次【${task.name}】任务，请明日再来。`, 'danger');
         return prev;
       }
-
-      dailyTaskCount = {
-        ...dailyTaskCount,
-        [task.id]: currentCount + 1,
-      };
 
       // 2. 消耗检查与扣除
       let updatedInventory = [...prev.inventory];
@@ -295,17 +272,9 @@ export function useSectHandlers({
 
       if (task.cost?.items) {
         for (const itemReq of task.cost.items) {
-          const itemIdx = updatedInventory.findIndex(
-            (i) => i.name === itemReq.name
-          );
-          if (
-            itemIdx === -1 ||
-            updatedInventory[itemIdx].quantity < itemReq.quantity
-          ) {
-            logMessage(
-              `物品不足，需要 ${itemReq.quantity} 个【${itemReq.name}】。`,
-              'danger'
-            );
+          const itemIdx = updatedInventory.findIndex((i) => i.name === itemReq.name);
+          if (itemIdx === -1 || updatedInventory[itemIdx].quantity < itemReq.quantity) {
+            logMessage(`物品不足，需要 ${itemReq.quantity} 个【${itemReq.name}】。`, 'danger');
             return prev;
           }
           updatedInventory[itemIdx] = {
@@ -317,33 +286,10 @@ export function useSectHandlers({
       }
 
       // 3. 奖励计算
-      let contribGain = task.reward.contribution || 0;
-      let expGain = task.reward.exp || 0;
-      let stoneGain = task.reward.spiritStones || 0;
+      const { contribGain, expGain, stoneGain } = sectTaskUtils.calculateRewards(prev, task, !!isPerfectCompletion, encounterResult);
 
-      // 连续类型加成
       if (prev.lastCompletedTaskType === task.type && task.typeBonus) {
-        const multiplier = 1 + task.typeBonus / 100;
-        contribGain = Math.floor(contribGain * multiplier);
-        expGain = Math.floor(expGain * multiplier);
-        stoneGain = Math.floor(stoneGain * multiplier);
-        logMessage(
-          `连续完成${task.type}任务，获得${task.typeBonus}%奖励加成！`,
-          'special'
-        );
-      }
-
-      // 完美完成加成
-      if (isPerfectCompletion && task.completionBonus) {
-        contribGain += task.completionBonus.contribution || 0;
-        expGain += task.completionBonus.exp || 0;
-        stoneGain += task.completionBonus.spiritStones || 0;
-      }
-
-      // 奇遇额外奖励
-      if (encounterResult) {
-        expGain += encounterResult.expChange || 0;
-        stoneGain += encounterResult.spiritStonesChange || 0;
+        logMessage(`连续完成${task.type}任务，获得${task.typeBonus}%奖励加成！`, 'special');
       }
 
       // 4. 发放奖励
@@ -376,92 +322,11 @@ export function useSectHandlers({
         }
       }
 
-      // 进阶物品奖励（高难度任务有概率获得）- 添加到背包
-      const currentRealmIndex = REALM_ORDER.indexOf(prev.realm);
-
-      // 只有极难任务才有概率获得进阶物品
-      if (task.difficulty === '极难' && task.quality === '仙品') {
-        const advancedItemChance = 0.08; // 8%概率
-
-        // 筑基奇物（炼气期、筑基期）
-        if (currentRealmIndex <= REALM_ORDER.indexOf(RealmType.Foundation) && Math.random() < advancedItemChance) {
-          const treasures = Object.values(FOUNDATION_TREASURES);
-          const availableTreasures = treasures.filter(t => !t.requiredLevel || prev.realmLevel >= t.requiredLevel);
-          if (availableTreasures.length > 0) {
-            const selected = availableTreasures[Math.floor(Math.random() * availableTreasures.length)];
-            updatedInventory.push({
-              id: uid(),
-              name: selected.name,
-              type: ItemType.AdvancedItem,
-              description: selected.description,
-              quantity: 1,
-              rarity: selected.rarity,
-              advancedItemType: 'foundationTreasure',
-              advancedItemId: selected.id,
-            });
-            specialMsg += ` ✨ 获得筑基奇物【${selected.name}】！`;
-          }
-        }
-
-        // 天地精华（金丹期、元婴期）
-        if (currentRealmIndex >= REALM_ORDER.indexOf(RealmType.GoldenCore) && currentRealmIndex <= REALM_ORDER.indexOf(RealmType.NascentSoul) && Math.random() < advancedItemChance) {
-          const essences = Object.values(HEAVEN_EARTH_ESSENCES);
-          if (essences.length > 0) {
-            const selected = essences[Math.floor(Math.random() * essences.length)];
-            updatedInventory.push({
-              id: uid(),
-              name: selected.name,
-              type: ItemType.AdvancedItem,
-              description: selected.description,
-              quantity: 1,
-              rarity: selected.rarity,
-              advancedItemType: 'heavenEarthEssence',
-              advancedItemId: selected.id,
-            });
-            specialMsg += ` ✨ 获得天地精华【${selected.name}】！`;
-          }
-        }
-
-        // 天地之髓（化神期及以上）
-        if (currentRealmIndex >= REALM_ORDER.indexOf(RealmType.SpiritSevering) && Math.random() < advancedItemChance * 0.7) {
-          const marrows = Object.values(HEAVEN_EARTH_MARROWS);
-          if (marrows.length > 0) {
-            const selected = marrows[Math.floor(Math.random() * marrows.length)];
-            updatedInventory.push({
-              id: uid(),
-              name: selected.name,
-              type: ItemType.AdvancedItem,
-              description: selected.description,
-              quantity: 1,
-              rarity: selected.rarity,
-              advancedItemType: 'heavenEarthMarrow',
-              advancedItemId: selected.id,
-            });
-            specialMsg += ` ✨ 获得天地之髓【${selected.name}】！`;
-          }
-        }
-
-        // 规则之力（长生境）
-        if (currentRealmIndex >= REALM_ORDER.indexOf(RealmType.LongevityRealm) && Math.random() < advancedItemChance * 0.5) {
-          const rules = Object.values(LONGEVITY_RULES);
-          const currentRules = prev.longevityRules || [];
-          const availableRules = rules.filter(r => !currentRules.includes(r.id));
-          const maxRules = prev.maxLongevityRules || 3;
-          if (availableRules.length > 0 && currentRules.length < maxRules) {
-            const selected = availableRules[Math.floor(Math.random() * availableRules.length)];
-            updatedInventory.push({
-              id: uid(),
-              name: selected.name,
-              type: ItemType.AdvancedItem,
-              description: selected.description,
-              quantity: 1,
-              rarity: '仙品',
-              advancedItemType: 'longevityRule',
-              advancedItemId: selected.id,
-            });
-            specialMsg += ` ✨ 获得规则之力【${selected.name}】！`;
-          }
-        }
+      // 进阶物品奖励
+      const { item: advItem, message: advMsg } = sectTaskUtils.tryGetAdvancedItem(prev, task);
+      if (advItem) {
+        updatedInventory.push(advItem);
+        specialMsg += advMsg;
       }
 
       // 5. 日志与状态更新
@@ -477,8 +342,10 @@ export function useSectHandlers({
         isPerfectCompletion ? 'special' : 'gain'
       );
 
+      const totalStats = getPlayerTotalStats(prev);
+      const actualMaxHp = totalStats.maxHp;
       const newHp = encounterResult
-        ? Math.max(0, Math.min(prev.maxHp, prev.hp + (encounterResult.hpChange || 0)))
+        ? Math.max(0, Math.min(actualMaxHp, prev.hp + (encounterResult.hpChange || 0)))
         : prev.hp;
 
       return {
@@ -488,8 +355,8 @@ export function useSectHandlers({
         hp: newHp,
         inventory: updatedInventory,
         sectContribution: prev.sectContribution + contribGain,
-        dailyTaskCount,
-        lastTaskResetDate,
+        dailyTaskCount: updatedCount,
+        lastTaskResetDate: resetDate,
         lastCompletedTaskType: task.type,
       };
     });

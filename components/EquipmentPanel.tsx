@@ -8,19 +8,23 @@ import { getEquipmentSlotConfig } from '../utils/equipmentUtils';
 interface Props {
   equippedItems: Partial<Record<EquipmentSlot, string>>;
   inventory: Item[];
-  player: PlayerStats;
+  natalArtifactId?: string;
   onUnequip: (slot: EquipmentSlot) => void;
 }
 
-const EquipmentPanel: React.FC<Props> = ({ equippedItems, inventory, player, onUnequip }) => {
+const EquipmentPanel: React.FC<Props> = ({
+  equippedItems,
+  inventory,
+  natalArtifactId,
+  onUnequip,
+}) => {
   const getItemById = (id: string | undefined): Item | null => {
     if (!id) return null;
-    return inventory.find(item => item.id === id) || null;
+    return inventory.find((item) => item.id === id) || null;
   };
 
   // 使用统一的工具函数获取槽位配置
   const slotConfig = getEquipmentSlotConfig();
-
 
   return (
     <div className="bg-stone-900 rounded-lg border border-stone-700 p-4">
@@ -33,7 +37,7 @@ const EquipmentPanel: React.FC<Props> = ({ equippedItems, inventory, player, onU
         {slotConfig.map(({ slot, label }) => {
           const itemId = equippedItems[slot];
           const item = getItemById(itemId);
-          const isNatal = item ? item.id === player.natalArtifactId : false;
+          const isNatal = item ? item.id === natalArtifactId : false;
           const stats = item ? getItemStats(item, isNatal) : null;
           const rarity = normalizeRarityValue(item?.rarity);
           const showLevel =

@@ -10,6 +10,87 @@ import {
   getBackupKey as getBackupKeyConstant,
 } from '../constants/storageKeys';
 
+/**
+ * 确保玩家数据兼容性，填充缺失的字段
+ */
+export const ensurePlayerStatsCompatibility = (loadedPlayer: any): PlayerStats => {
+  return {
+    ...loadedPlayer,
+    dailyTaskCount:
+      loadedPlayer.dailyTaskCount &&
+      typeof loadedPlayer.dailyTaskCount === 'object' &&
+      !('instant' in loadedPlayer.dailyTaskCount)
+        ? loadedPlayer.dailyTaskCount
+        : {},
+    lastTaskResetDate:
+      loadedPlayer.lastTaskResetDate ||
+      new Date().toISOString().split('T')[0],
+    viewedAchievements: loadedPlayer.viewedAchievements || [],
+    natalArtifactId: loadedPlayer.natalArtifactId || null,
+    unlockedRecipes: loadedPlayer.unlockedRecipes || [],
+    unlockedArts: loadedPlayer.unlockedArts || loadedPlayer.cultivationArts || [],
+    sectTreasureVault: loadedPlayer.sectTreasureVault || undefined,
+    meditationHpRegenMultiplier:
+      loadedPlayer.meditationHpRegenMultiplier ?? 1.0,
+    meditationBoostEndTime:
+      loadedPlayer.meditationBoostEndTime ?? null,
+    playTime: loadedPlayer.playTime ?? 0,
+    statistics: loadedPlayer.statistics || {
+      killCount: 0,
+      meditateCount: 0,
+      adventureCount: 0,
+      equipCount: 0,
+      petCount: 0,
+      recipeCount: loadedPlayer.unlockedRecipes?.length || 0,
+      artCount: loadedPlayer.cultivationArts?.length || 0,
+      breakthroughCount: 0,
+      secretRealmCount: 0,
+    },
+    lifespan: loadedPlayer.lifespan ?? loadedPlayer.maxLifespan ?? 100,
+    maxLifespan: loadedPlayer.maxLifespan ?? 100,
+    spiritualRoots: loadedPlayer.spiritualRoots || {
+      metal: Math.floor(Math.random() * 16),
+      wood: Math.floor(Math.random() * 16),
+      water: Math.floor(Math.random() * 16),
+      fire: Math.floor(Math.random() * 16),
+      earth: Math.floor(Math.random() * 16),
+    },
+    unlockedTitles: loadedPlayer.unlockedTitles || (loadedPlayer.titleId ? [loadedPlayer.titleId] : ['title-novice']),
+    reputation: loadedPlayer.reputation || 0,
+    // 宗门追杀系统
+    betrayedSects: loadedPlayer.betrayedSects || [],
+    sectHuntEndTime: loadedPlayer.sectHuntEndTime || null,
+    sectHuntLevel: loadedPlayer.sectHuntLevel || 0,
+    sectHuntSectId: loadedPlayer.sectHuntSectId || null,
+    sectHuntSectName: loadedPlayer.sectHuntSectName || null,
+    grotto: loadedPlayer.grotto ? {
+      ...loadedPlayer.grotto,
+      autoHarvest: loadedPlayer.grotto.autoHarvest ?? false,
+      growthSpeedBonus: loadedPlayer.grotto.growthSpeedBonus ?? 0,
+      spiritArrayEnhancement: loadedPlayer.grotto.spiritArrayEnhancement || 0,
+      herbarium: loadedPlayer.grotto.herbarium || [],
+      dailySpeedupCount: loadedPlayer.grotto.dailySpeedupCount || 0,
+      lastSpeedupResetDate: loadedPlayer.grotto.lastSpeedupResetDate || new Date().toISOString().split('T')[0],
+      plantedHerbs: (loadedPlayer.grotto.plantedHerbs || []).map((herb: any) => ({
+        ...herb,
+        isMutated: herb.isMutated || false,
+        mutationBonus: herb.mutationBonus || undefined,
+      })),
+    } : {
+      level: 0,
+      expRateBonus: 0,
+      autoHarvest: false,
+      growthSpeedBonus: 0,
+      plantedHerbs: [],
+      lastHarvestTime: null,
+      spiritArrayEnhancement: 0,
+      herbarium: [],
+      dailySpeedupCount: 0,
+      lastSpeedupResetDate: new Date().toISOString().split('T')[0],
+    },
+  };
+};
+
 export interface SaveSlot {
   id: number; // 存档槽位ID (1-10)
   name: string; // 存档名称（用户自定义）
@@ -368,17 +449,33 @@ export const compareSaves = (
 };
 
 /**
- * 导出存档为JSON字符串
+ * 导出存档为加密/编码后的字符串
  */
 export const exportSave = (saveData: SaveData): string => {
-  return JSON.stringify(saveData, null, 2);
+  const json = JSON.stringify(saveData);
+  // 简单的 Base64 编码，增加一点点修改难度
+  try {
+    return btoa(encodeURIComponent(json));
+  } catch (e) {
+    return json; // 回退到普通 JSON
+  }
 };
 
 /**
- * 导入存档（从JSON字符串）
+ * 导入存档（处理加密/编码）
  */
-export const importSave = (jsonString: string): SaveData | null => {
+export const importSave = (encodedString: string): SaveData | null => {
   try {
+    let jsonString = encodedString;
+    // 尝试解码 Base64
+    try {
+      if (!encodedString.startsWith('{')) {
+        jsonString = decodeURIComponent(atob(encodedString));
+      }
+    } catch (e) {
+      // 如果不是 Base64，则按原样处理
+    }
+
     const saveData: SaveData = JSON.parse(jsonString);
 
     // 验证数据结构

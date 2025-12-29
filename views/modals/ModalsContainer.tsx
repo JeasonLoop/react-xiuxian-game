@@ -1,33 +1,35 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import {
   PlayerStats,
   Shop,
   GameSettings,
   Item,
   ShopItem,
-  RealmType,
-  AdventureType,
   CultivationArt,
   Recipe,
 } from '../../types';
-import InventoryModal from '../../components/InventoryModal';
-import CultivationModal from '../../components/CultivationModal';
-import AlchemyModal from '../../components/AlchemyModal';
-import ArtifactUpgradeModal from '../../components/ArtifactUpgradeModal';
-import SectModal from '../../components/SectModal';
-import SecretRealmModal from '../../components/SecretRealmModal';
-import BattleModal from '../../components/BattleModal';
-import TurnBasedBattleModal from '../../components/TurnBasedBattleModal';
-import CharacterModal from '../../components/CharacterModal';
-import AchievementModal from '../../components/AchievementModal';
-import PetModal from '../../components/PetModal';
-import LotteryModal from '../../components/LotteryModal';
-import SettingsModal from '../../components/SettingsModal';
-import DailyQuestModal from '../../components/DailyQuestModal';
-import ShopModal from '../../components/ShopModal';
-import ReputationEventModal from '../../components/ReputationEventModal';
-import GrottoModal from '../../components/GrottoModal';
-import SectTreasureVaultModal from '../../components/SectTreasureVaultModal';
+import { useUI } from '../../context/UIContext';
+
+// 使用 React.lazy 异步加载所有弹窗以优化性能
+const InventoryModal = lazy(() => import('../../components/InventoryModal'));
+const CultivationModal = lazy(() => import('../../components/CultivationModal'));
+const AlchemyModal = lazy(() => import('../../components/AlchemyModal'));
+const ArtifactUpgradeModal = lazy(() => import('../../components/ArtifactUpgradeModal'));
+const SectModal = lazy(() => import('../../components/SectModal'));
+const SecretRealmModal = lazy(() => import('../../components/SecretRealmModal'));
+const BattleModal = lazy(() => import('../../components/BattleModal'));
+const TurnBasedBattleModal = lazy(() => import('../../components/TurnBasedBattleModal'));
+const CharacterModal = lazy(() => import('../../components/CharacterModal'));
+const AchievementModal = lazy(() => import('../../components/AchievementModal'));
+const PetModal = lazy(() => import('../../components/PetModal'));
+const LotteryModal = lazy(() => import('../../components/LotteryModal'));
+const SettingsModal = lazy(() => import('../../components/SettingsModal'));
+const DailyQuestModal = lazy(() => import('../../components/DailyQuestModal'));
+const ShopModal = lazy(() => import('../../components/ShopModal'));
+const ReputationEventModal = lazy(() => import('../../components/ReputationEventModal'));
+const GrottoModal = lazy(() => import('../../components/GrottoModal'));
+const SectTreasureVaultModal = lazy(() => import('../../components/SectTreasureVaultModal'));
+
 import { BattleReplay } from '../../services/battleService';
 import { RandomSectTask } from '../../services/randomService';
 
@@ -46,39 +48,6 @@ interface ModalsContainerProps {
   settings: GameSettings;
   setItemActionLog?: (log: { text: string; type: string } | null) => void;
   autoAdventure?: boolean; // 是否在自动历练模式下
-  modals: {
-    isInventoryOpen: boolean;
-    isCultivationOpen: boolean;
-    isAlchemyOpen: boolean;
-    isUpgradeOpen: boolean;
-    isSectOpen: boolean;
-    isRealmOpen: boolean;
-    isCharacterOpen: boolean;
-    isAchievementOpen: boolean;
-    isPetOpen: boolean;
-    isLotteryOpen: boolean;
-    isSettingsOpen: boolean;
-    isDailyQuestOpen: boolean;
-    isShopOpen: boolean;
-    isGrottoOpen: boolean;
-    isBattleModalOpen: boolean;
-    isTurnBasedBattleOpen?: boolean;
-    isReputationEventOpen: boolean;
-    isTreasureVaultOpen: boolean;
-  };
-  modalState: {
-    currentShop: Shop | null;
-    itemToUpgrade: Item | null;
-    battleReplay: BattleReplay | null;
-    revealedBattleRounds: number;
-    turnBasedBattleParams?: {
-      adventureType: AdventureType;
-      riskLevel?: '低' | '中' | '高' | '极度危险';
-      realmMinRealm?: RealmType;
-      bossId?: string; // 指定的天地之魄BOSS ID（用于事件模板）
-    } | null;
-    reputationEvent: any;
-  };
   handlers: {
     // Modal toggles
     setIsInventoryOpen: (open: boolean) => void;
@@ -102,6 +71,7 @@ interface ModalsContainerProps {
     setRevealedBattleRounds: (
       rounds: number | ((prev: number) => number)
     ) => void;
+    // ... rest of handlers
     // Battle
     handleSkipBattleLogs: () => void;
     handleCloseBattleModal: () => void;
@@ -211,26 +181,36 @@ interface ModalsContainerProps {
   };
 }
 
-export default function ModalsContainer({
+function ModalsContainer({
   player,
   settings,
   setItemActionLog,
   autoAdventure = false,
-  modals,
-  modalState,
   handlers,
 }: ModalsContainerProps) {
-  return (
-    <>
-      <BattleModal
-        isOpen={modals.isBattleModalOpen}
-        replay={modalState.battleReplay}
-        revealedRounds={modalState.revealedBattleRounds}
-        onSkip={handlers.handleSkipBattleLogs}
-        onClose={handlers.handleCloseBattleModal}
-      />
+  const { modals, shop, upgrade, battle, turnBasedBattle, reputationEvent } = useUI();
+  const modalState = {
+    currentShop: shop.currentShop,
+    itemToUpgrade: upgrade.itemToUpgrade,
+    battleReplay: battle.battleReplay,
+    revealedBattleRounds: battle.revealedBattleRounds,
+    turnBasedBattleParams: turnBasedBattle.params,
+    reputationEvent: reputationEvent.event,
+  };
 
-      {modalState.turnBasedBattleParams && (
+  return (
+    <Suspense fallback={null}>
+      {modals.isBattleModalOpen && (
+        <BattleModal
+          isOpen={modals.isBattleModalOpen}
+          replay={modalState.battleReplay}
+          revealedRounds={modalState.revealedBattleRounds}
+          onSkip={handlers.handleSkipBattleLogs}
+          onClose={handlers.handleCloseBattleModal}
+        />
+      )}
+
+      {(modals.isTurnBasedBattleOpen || false) && modalState.turnBasedBattleParams && (
         <TurnBasedBattleModal
           isOpen={modals.isTurnBasedBattleOpen || false}
           player={player}
@@ -256,7 +236,13 @@ export default function ModalsContainer({
           onClose={() => handlers.setIsInventoryOpen(false)}
           inventory={player.inventory}
           equippedItems={player.equippedItems}
-          player={player}
+          natalArtifactId={player.natalArtifactId}
+          playerRealm={player.realm}
+          foundationTreasure={player.foundationTreasure}
+          heavenEarthEssence={player.heavenEarthEssence}
+          heavenEarthMarrow={player.heavenEarthMarrow}
+          longevityRules={player.longevityRules}
+          maxLongevityRules={player.maxLongevityRules}
           onUseItem={handlers.handleUseItem}
           onEquipItem={handlers.handleEquipItem}
           onUnequipItem={handlers.handleUnequipItem}
@@ -266,6 +252,7 @@ export default function ModalsContainer({
           onBatchUse={handlers.handleBatchUse}
           onOrganizeInventory={handlers.handleOrganizeInventory}
           onRefineNatalArtifact={handlers.handleRefineNatalArtifact}
+          setItemActionLog={setItemActionLog}
           onUnrefineNatalArtifact={handlers.handleUnrefineNatalArtifact}
           onRefineAdvancedItem={handlers.handleRefineAdvancedItem}
         />
@@ -397,7 +384,7 @@ export default function ModalsContainer({
         />
       )}
 
-      {modalState.currentShop && (
+      {modals.isShopOpen && modalState.currentShop && (
         <ShopModal
           isOpen={modals.isShopOpen}
           onClose={() => {
@@ -413,35 +400,44 @@ export default function ModalsContainer({
         />
       )}
 
-      <ReputationEventModal
-        isOpen={modals.isReputationEventOpen}
-        onClose={() => {
-          handlers.setIsReputationEventOpen(false);
-        }}
-        event={modalState.reputationEvent}
-        onChoice={handlers.handleReputationEventChoice}
-      />
+      {modals.isReputationEventOpen && (
+        <ReputationEventModal
+          isOpen={modals.isReputationEventOpen}
+          onClose={() => {
+            handlers.setIsReputationEventOpen(false);
+          }}
+          event={modalState.reputationEvent}
+          onChoice={handlers.handleReputationEventChoice}
+        />
+      )}
 
-      <GrottoModal
-        isOpen={modals.isGrottoOpen}
-        onClose={() => handlers.setIsGrottoOpen(false)}
-        player={player}
-        onUpgradeGrotto={handlers.handleUpgradeGrotto}
-        onPlantHerb={handlers.handlePlantHerb}
-        onHarvestHerb={handlers.handleHarvestHerb}
-        onHarvestAll={handlers.handleHarvestAll}
-        onEnhanceSpiritArray={handlers.handleEnhanceSpiritArray}
-        onToggleAutoHarvest={handlers.handleToggleAutoHarvest}
-        onSpeedupHerb={handlers.handleSpeedupHerb}
-      />
+      {modals.isGrottoOpen && (
+        <GrottoModal
+          isOpen={modals.isGrottoOpen}
+          onClose={() => handlers.setIsGrottoOpen(false)}
+          player={player}
+          onUpgradeGrotto={handlers.handleUpgradeGrotto}
+          onPlantHerb={handlers.handlePlantHerb}
+          onHarvestHerb={handlers.handleHarvestHerb}
+          onHarvestAll={handlers.handleHarvestAll}
+          onEnhanceSpiritArray={handlers.handleEnhanceSpiritArray}
+          onToggleAutoHarvest={handlers.handleToggleAutoHarvest}
+          onSpeedupHerb={handlers.handleSpeedupHerb}
+        />
+      )}
 
-      <SectTreasureVaultModal
-        isOpen={modals.isTreasureVaultOpen}
-        onClose={() => handlers.setIsTreasureVaultOpen(false)}
-        player={player}
-        onTakeItem={handlers.handleTakeTreasureVaultItem}
-        onUpdateVault={handlers.handleUpdateVault}
-      />
-    </>
+      {modals.isTreasureVaultOpen && (
+        <SectTreasureVaultModal
+          isOpen={modals.isTreasureVaultOpen}
+          onClose={() => handlers.setIsTreasureVaultOpen(false)}
+          player={player}
+          onTakeItem={handlers.handleTakeTreasureVaultItem}
+          onUpdateVault={handlers.handleUpdateVault}
+        />
+      )}
+    </Suspense>
   );
 }
+
+export default React.memo(ModalsContainer);
+
