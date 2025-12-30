@@ -60,6 +60,9 @@ import { useGameInitialization } from './hooks/useGameInitialization';
 import { useLevelUp } from './hooks/useLevelUp';
 import { useGlobalAlert } from './hooks/useGlobalAlert';
 import { useRebirth } from './hooks/useRebirth';
+import { logger } from './utils/logger';
+import { CultivationArt, Recipe, SecretRealm, BattleResult, AdventureResult } from './types';
+import { RandomSectTask } from './services/randomService';
 
 // 导入模块化的 handlers
 import {
@@ -497,14 +500,12 @@ function App() {
     },
     onReputationEvent: (event) => {
       // 测试环境打印调试信息
-      if (import.meta.env.DEV) {
-        console.log('【声望事件回调触发】', {
-          event,
-          hasChoices: !!event?.choices,
-          choicesCount: event?.choices?.length || 0,
-          autoAdventure,
-        });
-      }
+      logger.debug('【声望事件回调触发】', {
+        event,
+        hasChoices: !!event?.choices,
+        choicesCount: event?.choices?.length || 0,
+        autoAdventure,
+      });
 
       // 如果正在自动历练，暂停自动历练
       if (autoAdventure) {
@@ -516,12 +517,10 @@ function App() {
       setIsReputationEventOpen(true);
 
       // 测试环境确认状态设置
-      if (import.meta.env.DEV) {
-        console.log('【声望事件状态设置】', {
-          eventSet: !!event,
-          shouldOpen: true,
-        });
-      }
+      logger.debug('【声望事件状态设置】', {
+        eventSet: !!event,
+        shouldOpen: true,
+      });
     },
     onOpenTurnBasedBattle: handleOpenTurnBasedBattle,
     skipBattle: false, // 不再跳过战斗，自动模式下也会弹出战斗弹窗
@@ -684,7 +683,7 @@ function App() {
     equipmentHandlers.handleUnrefineNatalArtifact;
 
   // 包装 handleLearnArt，添加任务进度更新
-  const handleLearnArt = useCallback((art: any) => {
+  const handleLearnArt = useCallback((art: CultivationArt) => {
     cultivationHandlers.handleLearnArt(art);
     dailyQuestHandlers.updateQuestProgress('learn', 1);
   }, [cultivationHandlers, dailyQuestHandlers]);
@@ -692,7 +691,7 @@ function App() {
   const handleActivateArt = cultivationHandlers.handleActivateArt;
 
   // 包装 handleCraft，添加任务进度更新
-  const handleCraft = useCallback(async (recipe: any) => {
+  const handleCraft = useCallback(async (recipe: Recipe) => {
     await alchemyHandlers.handleCraft(recipe);
     dailyQuestHandlers.updateQuestProgress('alchemy', 1);
   }, [alchemyHandlers, dailyQuestHandlers]);
@@ -844,7 +843,7 @@ function App() {
   const handleLeaveSect = sectHandlers.handleLeaveSect;
   const handleSafeLeaveSect = sectHandlers.handleSafeLeaveSect;
   // 包装 handleSectTask，添加任务进度更新
-  const handleSectTask = useCallback((task: any, encounterResult?: any) => {
+  const handleSectTask = useCallback((task: RandomSectTask, encounterResult?: AdventureResult) => {
     sectHandlers.handleSectTask(task, encounterResult);
     dailyQuestHandlers.updateQuestProgress('sect', 1);
   }, [sectHandlers, dailyQuestHandlers]);
@@ -929,7 +928,7 @@ function App() {
     executeAdventure,
   });
   // 包装 handleEnterRealm，添加任务进度更新
-  const handleEnterRealm = async (realm: any) => {
+  const handleEnterRealm = async (realm: SecretRealm) => {
     await realmHandlers.handleEnterRealm(realm);
     dailyQuestHandlers.updateQuestProgress('realm', 1);
   };
@@ -1526,7 +1525,7 @@ function App() {
         setTurnBasedBattleParams(null);
       }
     },
-    handleTurnBasedBattleClose: (result: any, updatedInventory?: Item[]) => {
+    handleTurnBasedBattleClose: (result: BattleResult | null, updatedInventory?: Item[]) => {
       setIsTurnBasedBattleOpen(false);
       setTurnBasedBattleParams(null);
       handleBattleResult(result, updatedInventory);
