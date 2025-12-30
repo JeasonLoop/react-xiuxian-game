@@ -266,20 +266,29 @@ export function useEquipmentHandlers({
       const newEquippedItems = { ...prev.equippedItems };
       delete newEquippedItems[slot];
 
+      // 确保最大血量至少为1
+      const finalMaxHp = Math.max(1, newMaxHp);
+
       // 计算实际最大血量（包含功法加成等）作为上限
-      const tempPlayer = { ...prev, maxHp: newMaxHp };
+      // 使用更新后的equippedItems来计算，确保计算结果准确
+      const tempPlayer = { ...prev, maxHp: finalMaxHp, equippedItems: newEquippedItems };
       const totalStats = getPlayerTotalStats(tempPlayer);
-      const actualMaxHp = totalStats.maxHp;
+      const actualMaxHp = Math.max(1, totalStats.maxHp); // 确保实际最大血量至少为1
 
       addLog(`你卸下了 ${item.name}。`, 'normal');
+
+      // 计算新血量：不能超过新的最大血量，同时确保至少为1（避免死亡）
+      // 如果当前血量大于新的最大血量，则限制为新的最大血量
+      // 如果当前血量可能导致死亡（<=0），则至少保持1点血量
+      const newHp = Math.max(1, Math.min(actualMaxHp, prev.hp));
 
       return {
         ...prev,
         equippedItems: newEquippedItems,
         attack: newAttack,
         defense: newDefense,
-        maxHp: newMaxHp,
-        hp: Math.min(prev.hp, actualMaxHp), // 使用实际最大血量作为上限
+        maxHp: finalMaxHp,
+        hp: newHp,
         spirit: newSpirit,
         physique: newPhysique,
         speed: Math.max(0, newSpeed),

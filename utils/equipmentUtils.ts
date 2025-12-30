@@ -36,19 +36,27 @@ export const findEmptyEquipmentSlot = (
   item: Item,
   equippedItems: Partial<Record<EquipmentSlot, string>>
 ): EquipmentSlot | null => {
-  // 对于戒指、首饰、法宝，即使没有equipmentSlot也可以根据type查找槽位
+  // 对于戒指、首饰、法宝，即使有equipmentSlot属性，也要优先查找空槽位
+  // 忽略物品的equipmentSlot属性，因为多槽位装备应该优先使用空槽位
   const slots = getEquipmentSlotsByType(item.type);
   if (slots.length > 0) {
-    // 优先查找空槽位
-    const emptySlot = slots.find((slot) => !equippedItems[slot]);
-    if (emptySlot) {
-      return emptySlot;
+    // 优先查找空槽位（明确检查是否为 undefined 或 null，确保空槽位检查正确）
+    // 遍历所有可能的槽位，找到第一个空的就返回
+    for (const slot of slots) {
+      console.log('slot', slot);
+      console.log('equippedItems', equippedItems);
+      const equippedItemId = equippedItems[slot];
+      console.log('equippedItemId', equippedItemId);
+      // 如果槽位为空（undefined 或不存在），直接返回这个空槽位
+      if (equippedItemId === undefined || equippedItemId === null || equippedItemId === '') {
+        return slot;
+      }
     }
-    // 如果没有空槽位，返回第一个槽位（用于替换已有装备）
+    // 只有当所有槽位都满了，才返回第一个槽位（用于替换已有装备）
     return slots[0];
   }
 
-  // 其他装备类型需要equipmentSlot
+  // 其他装备类型（武器、护甲等）需要equipmentSlot
   if (!item.equipmentSlot) {
     return null;
   }
@@ -67,12 +75,15 @@ export const isItemEquipped = (
   item: Item,
   equippedItems: Partial<Record<EquipmentSlot, string>>
 ): boolean => {
-  if (!item.equipmentSlot) return false;
-
-  // 对于戒指、首饰、法宝，需要检查所有同类型槽位
+  // 对于戒指、首饰、法宝，即使没有equipmentSlot也可以根据type检查所有同类型槽位
   const slots = getEquipmentSlotsByType(item.type);
   if (slots.length > 0) {
     return slots.some((slot) => equippedItems[slot] === item.id);
+  }
+
+  // 其他装备类型需要equipmentSlot才能检查
+  if (!item.equipmentSlot) {
+    return false;
   }
 
   // 其他装备类型直接检查对应槽位
@@ -89,13 +100,16 @@ export const findItemEquippedSlot = (
   item: Item,
   equippedItems: Partial<Record<EquipmentSlot, string>>
 ): EquipmentSlot | null => {
-  if (!item.equipmentSlot) return null;
-
-  // 对于戒指、首饰、法宝，需要检查所有同类型槽位
+  // 对于戒指、首饰、法宝，即使没有equipmentSlot也可以根据type查找所有同类型槽位
   const slots = getEquipmentSlotsByType(item.type);
   if (slots.length > 0) {
     const equippedSlot = slots.find((slot) => equippedItems[slot] === item.id);
     return equippedSlot || null;
+  }
+
+  // 其他装备类型需要equipmentSlot才能查找
+  if (!item.equipmentSlot) {
+    return null;
   }
 
   // 其他装备类型直接检查对应槽位

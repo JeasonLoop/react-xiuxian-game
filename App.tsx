@@ -141,6 +141,8 @@ function App() {
     setPausedByBattle: setAutoAdventurePausedByBattle,
     pausedByReputationEvent: autoAdventurePausedByReputationEvent,
     setPausedByReputationEvent: setAutoAdventurePausedByReputationEvent,
+    pausedByHeavenEarthSoul: autoAdventurePausedByHeavenEarthSoul,
+    setPausedByHeavenEarthSoul: setAutoAdventurePausedByHeavenEarthSoul,
   } = auto;
 
   const { closeCurrentModal: handleCloseCurrentModal, openTurnBasedBattle: handleOpenTurnBasedBattle } = actions;
@@ -375,6 +377,7 @@ function App() {
         setAutoAdventurePausedByBattle(false);
         setAutoAdventurePausedByShop(false);
         setAutoAdventurePausedByReputationEvent(false);
+        setAutoAdventurePausedByHeavenEarthSoul(false);
       }
 
       prevPlayerNameRef.current = player.name;
@@ -525,6 +528,9 @@ function App() {
     onOpenTurnBasedBattle: handleOpenTurnBasedBattle,
     skipBattle: false, // 不再跳过战斗，自动模式下也会弹出战斗弹窗
     useTurnBasedBattle: true, // 使用新的回合制战斗系统
+    autoAdventure, // 传递自动历练状态
+    setAutoAdventurePausedByHeavenEarthSoul, // 传递设置天地之魄暂停状态的函数
+    setAutoAdventure, // 传递设置自动历练状态的函数
   });
 
   const sectHandlers = useSectHandlers({
@@ -908,6 +914,7 @@ function App() {
     autoAdventurePausedByShop,
     autoAdventurePausedByBattle,
     autoAdventurePausedByReputationEvent,
+    autoAdventurePausedByHeavenEarthSoul,
     setAutoAdventurePausedByShop,
     handleMeditate,
     handleAdventure,
@@ -1132,6 +1139,7 @@ function App() {
           setAutoAdventurePausedByShop(false);
           setAutoAdventurePausedByBattle(false);
           setAutoAdventurePausedByReputationEvent(false);
+          setAutoAdventurePausedByHeavenEarthSoul(false);
         }
         return newValue;
       });
@@ -1526,11 +1534,17 @@ function App() {
       }
     },
     handleTurnBasedBattleClose: (result: BattleResult | null, updatedInventory?: Item[]) => {
+      // 检查是否是天地之魄战斗
+      const isHeavenEarthSoulBattle = turnBasedBattleParams?.bossId !== undefined;
+
       setIsTurnBasedBattleOpen(false);
       setTurnBasedBattleParams(null);
       handleBattleResult(result, updatedInventory);
       if (!autoAdventure) {
         setAutoAdventurePausedByBattle(false);
+        if (isHeavenEarthSoulBattle) {
+          setAutoAdventurePausedByHeavenEarthSoul(false);
+        }
         return;
       }
       // 使用函数式更新获取最新的 player 状态，避免依赖外部 player 变量
@@ -1539,9 +1553,15 @@ function App() {
           const playerHpAfter = Math.max(0, currentPlayer.hp - (result.hpLoss || 0));
           if (playerHpAfter <= 0) {
             setAutoAdventurePausedByBattle(false);
+            if (isHeavenEarthSoulBattle) {
+              setAutoAdventurePausedByHeavenEarthSoul(false);
+            }
           }
         } else {
           setAutoAdventurePausedByBattle(false);
+          if (isHeavenEarthSoulBattle) {
+            setAutoAdventurePausedByHeavenEarthSoul(false);
+          }
         }
         return currentPlayer;
       });
@@ -1573,7 +1593,8 @@ function App() {
     handleUpdateVault, setIsTurnBasedBattleOpen, setTurnBasedBattleParams,
     handleBattleResult, autoAdventure, autoAdventurePausedByShop, setCurrentShop,
     setAutoAdventurePausedByBattle, setAutoAdventurePausedByShop,
-    setAutoAdventurePausedByReputationEvent
+    setAutoAdventurePausedByReputationEvent, setAutoAdventurePausedByHeavenEarthSoul,
+    turnBasedBattleParams
   ]);
 
   // 检查是否有任何弹窗处于打开状态

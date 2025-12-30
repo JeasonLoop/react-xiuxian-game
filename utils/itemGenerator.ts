@@ -5,6 +5,7 @@
 
 import { Item, ItemType, ItemRarity, EquipmentSlot, LotteryPrize } from '../types';
 import { ITEM_TEMPLATES, getItemTemplatesByType, getItemTemplatesByRarity, getItemTemplatesByTypeAndRarity } from '../constants/itemTemplates';
+import { uid } from './gameUtils';
 
 /**
  * 物品生成配置
@@ -37,7 +38,7 @@ function getRarityWeight(rarity: ItemRarity): number {
 function randomRarityByWeight(): ItemRarity {
   const rarities: ItemRarity[] = ['普通', '稀有', '传说', '仙品'];
   const totalWeight = rarities.reduce((sum, rarity) => sum + getRarityWeight(rarity), 0);
-  
+
   let random = Math.random() * totalWeight;
   for (const rarity of rarities) {
     random -= getRarityWeight(rarity);
@@ -45,7 +46,7 @@ function randomRarityByWeight(): ItemRarity {
       return rarity;
     }
   }
-  
+
   return '普通';
 }
 
@@ -67,14 +68,14 @@ function adjustStatsByRealm(
     DaoCombining: 32,
     LongevityRealm: 64,
   };
-  
+
   const realmMultiplier = realmMultipliers[realm] || 1;
   const levelMultiplier = 1 + (realmLevel - 1) * 0.1;
   const totalMultiplier = realmMultiplier * levelMultiplier;
-  
+
   const adjusted: Item['effect'] = {};
   const adjustedPermanent: Item['permanentEffect'] = {};
-  
+
   // 调整临时效果
   if (effect) {
     if (effect.attack) adjusted.attack = Math.floor(effect.attack * totalMultiplier);
@@ -86,7 +87,7 @@ function adjustStatsByRealm(
     if (effect.exp) adjusted.exp = Math.floor(effect.exp * totalMultiplier);
     if (effect.lifespan) adjusted.lifespan = effect.lifespan; // 寿命不受境界调整影响
   }
-  
+
   // 调整永久效果
   if (permanentEffect) {
     if (permanentEffect.attack) adjustedPermanent.attack = Math.floor(permanentEffect.attack * totalMultiplier);
@@ -96,7 +97,7 @@ function adjustStatsByRealm(
     if (permanentEffect.speed) adjustedPermanent.speed = Math.floor(permanentEffect.speed * totalMultiplier);
     if (permanentEffect.maxHp) adjustedPermanent.maxHp = Math.floor(permanentEffect.maxHp * totalMultiplier);
     if (permanentEffect.maxLifespan) adjustedPermanent.maxLifespan = permanentEffect.maxLifespan; // 最大寿命不受境界调整影响
-    
+
     if (permanentEffect.spiritualRoots) {
       adjustedPermanent.spiritualRoots = {};
       const roots = permanentEffect.spiritualRoots;
@@ -107,7 +108,7 @@ function adjustStatsByRealm(
       if (roots.earth) adjustedPermanent.spiritualRoots.earth = Math.floor(roots.earth * totalMultiplier);
     }
   }
-  
+
   return {
     effect: Object.keys(adjusted).length > 0 ? adjusted : effect,
     permanentEffect: Object.keys(adjustedPermanent).length > 0 ? adjustedPermanent : permanentEffect,
@@ -121,10 +122,10 @@ function adjustStatsByRealm(
  */
 export function generateItems(options: GenerateItemsOptions): Item[] {
   const { type, rarity, count, allowDuplicates = true, realm, realmLevel = 1 } = options;
-  
+
   // 获取可用的物品模板
   let availableTemplates = ITEM_TEMPLATES;
-  
+
   if (type && rarity) {
     // 指定类型和稀有度
     availableTemplates = getItemTemplatesByTypeAndRarity(type, rarity);
@@ -135,50 +136,50 @@ export function generateItems(options: GenerateItemsOptions): Item[] {
     // 只指定稀有度
     availableTemplates = getItemTemplatesByRarity(rarity);
   }
-  
+
   // 如果没有找到模板，返回空数组
   if (availableTemplates.length === 0) {
     return [];
   }
-  
+
   const generatedItems: Item[] = [];
   const usedIds = new Set<string>();
   const maxAttempts = count * 10; // 防止无限循环
   let attempts = 0;
-  
+
   while (generatedItems.length < count && attempts < maxAttempts) {
     attempts++;
-    
+
     // 随机选择一个模板
     const template = availableTemplates[Math.floor(Math.random() * availableTemplates.length)];
-    
+
     // 如果不允许重复，检查是否已经使用过
     if (!allowDuplicates && usedIds.has(template.id)) {
       continue;
     }
-    
+
     // 深拷贝模板
     const item: Item = JSON.parse(JSON.stringify(template));
-    
-    // 生成新的唯一ID
-    item.id = `${item.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
+    // 生成新的唯一ID（使用 uid 函数确保唯一性，不依赖模板的 id）
+    item.id = uid();
+
     // 如果没有指定稀有度，根据权重随机选择
     if (!rarity) {
       item.rarity = randomRarityByWeight();
     }
-    
+
     // 根据境界调整数值
     if (realm) {
       const adjusted = adjustStatsByRealm(item.effect, item.permanentEffect, realm, realmLevel);
       item.effect = adjusted.effect;
       item.permanentEffect = adjusted.permanentEffect;
     }
-    
+
     generatedItems.push(item);
     usedIds.add(template.id);
   }
-  
+
   return generatedItems;
 }
 
@@ -199,13 +200,13 @@ export function generateItem(options: Omit<GenerateItemsOptions, 'count'>): Item
  */
 export function generateLotteryPrizes(options: Omit<GenerateItemsOptions, 'count'>): LotteryPrize[] {
   const item = generateItem(options);
-  
+
   if (!item) {
     return [];
   }
-  
+
   const weight = getRarityWeight(item.rarity);
-  
+
   return [{
     id: `lottery-prize-${item.id}`,
     name: item.name,
@@ -231,7 +232,7 @@ export function generateItemsByTypes(
   count: number
 ): Item[] {
   const items: Item[] = [];
-  
+
   types.forEach(type => {
     const typeItems = generateItems({
       type,
@@ -241,7 +242,7 @@ export function generateItemsByTypes(
     });
     items.push(...typeItems);
   });
-  
+
   return items;
 }
 
@@ -253,9 +254,9 @@ export function generateItemsByTypes(
 export function generateAllRarityEquipments(count: number = 10): Item[] {
   const rarities: ItemRarity[] = ['普通', '稀有', '传说', '仙品'];
   const types: ItemType[] = [ItemType.Weapon, ItemType.Armor, ItemType.Accessory, ItemType.Ring, ItemType.Artifact];
-  
+
   const items: Item[] = [];
-  
+
   types.forEach(type => {
     rarities.forEach(rarity => {
       const rarityItems = generateItems({
@@ -267,7 +268,7 @@ export function generateAllRarityEquipments(count: number = 10): Item[] {
       items.push(...rarityItems);
     });
   });
-  
+
   return items;
 }
 
@@ -278,9 +279,9 @@ export function generateAllRarityEquipments(count: number = 10): Item[] {
  */
 export function generateAllRarityPills(count: number = 10): Item[] {
   const rarities: ItemRarity[] = ['普通', '稀有', '传说', '仙品'];
-  
+
   const items: Item[] = [];
-  
+
   rarities.forEach(rarity => {
     const rarityItems = generateItems({
       type: ItemType.Pill,
@@ -290,7 +291,7 @@ export function generateAllRarityPills(count: number = 10): Item[] {
     });
     items.push(...rarityItems);
   });
-  
+
   return items;
 }
 
@@ -301,9 +302,9 @@ export function generateAllRarityPills(count: number = 10): Item[] {
  */
 export function generateAllRarityHerbs(count: number = 10): Item[] {
   const rarities: ItemRarity[] = ['普通', '稀有', '传说', '仙品'];
-  
+
   const items: Item[] = [];
-  
+
   rarities.forEach(rarity => {
     const rarityItems = generateItems({
       type: ItemType.Herb,
@@ -313,7 +314,7 @@ export function generateAllRarityHerbs(count: number = 10): Item[] {
     });
     items.push(...rarityItems);
   });
-  
+
   return items;
 }
 
@@ -324,9 +325,9 @@ export function generateAllRarityHerbs(count: number = 10): Item[] {
  */
 export function generateAllRarityMaterials(count: number = 10): Item[] {
   const rarities: ItemRarity[] = ['普通', '稀有', '传说', '仙品'];
-  
+
   const items: Item[] = [];
-  
+
   rarities.forEach(rarity => {
     const rarityItems = generateItems({
       type: ItemType.Material,
@@ -336,7 +337,7 @@ export function generateAllRarityMaterials(count: number = 10): Item[] {
     });
     items.push(...rarityItems);
   });
-  
+
   return items;
 }
 

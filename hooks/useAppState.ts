@@ -94,11 +94,13 @@ export interface AppState {
       adventureType: AdventureType;
       riskLevel?: '低' | '中' | '高' | '极度危险';
       realmMinRealm?: RealmType;
+      bossId?: string;
     } | null;
     setParams: (params: {
       adventureType: AdventureType;
       riskLevel?: '低' | '中' | '高' | '极度危险';
       realmMinRealm?: RealmType;
+      bossId?: string;
     } | null) => void;
   };
   itemActionLog: {
@@ -120,6 +122,8 @@ export interface AppState {
     setPausedByBattle: (value: boolean) => void;
     pausedByReputationEvent: boolean;
     setPausedByReputationEvent: (value: boolean) => void;
+    pausedByHeavenEarthSoul: boolean;
+    setPausedByHeavenEarthSoul: (value: boolean) => void;
   };
   global: {
     loading: boolean;
@@ -191,6 +195,7 @@ export function useAppState(): AppState {
     adventureType: AdventureType;
     riskLevel?: '低' | '中' | '高' | '极度危险';
     realmMinRealm?: RealmType;
+    bossId?: string;
   } | null>(null);
 
   // 物品操作日志
@@ -208,6 +213,7 @@ export function useAppState(): AppState {
   const [pausedByShop, setPausedByShop] = useState(false);
   const [pausedByBattle, setPausedByBattle] = useState(false);
   const [pausedByReputationEvent, setPausedByReputationEvent] = useState(false);
+  const [pausedByHeavenEarthSoul, setPausedByHeavenEarthSoul] = useState(false);
 
   // 全局加载和冷却状态
   const [loading, setLoading] = useState(false);
@@ -371,6 +377,8 @@ export function useAppState(): AppState {
       setPausedByBattle,
       pausedByReputationEvent,
       setPausedByReputationEvent,
+      pausedByHeavenEarthSoul,
+      setPausedByHeavenEarthSoul,
     },
     global: {
       loading,

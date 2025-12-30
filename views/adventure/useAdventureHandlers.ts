@@ -52,6 +52,9 @@ interface UseAdventureHandlersProps {
   skipBattle?: boolean; // 是否跳过战斗（自动模式下）
   useTurnBasedBattle?: boolean; // 是否使用回合制战斗系统
   onReputationEvent?: (event: AdventureResult['reputationEvent']) => void; // 声望事件回调
+  autoAdventure?: boolean; // 是否正在自动历练
+  setAutoAdventurePausedByHeavenEarthSoul?: (paused: boolean) => void; // 设置天地之魄暂停状态
+  setAutoAdventure?: (value: boolean) => void; // 设置自动历练状态
 }
 
 export function useAdventureHandlers({
@@ -69,6 +72,9 @@ export function useAdventureHandlers({
   skipBattle = false,
   useTurnBasedBattle = true, // 默认使用新的回合制战斗系统
   onReputationEvent,
+  autoAdventure = false,
+  setAutoAdventurePausedByHeavenEarthSoul,
+  setAutoAdventure,
 }: UseAdventureHandlersProps) {
   const executeAdventure = async (
     adventureType: AdventureType,
@@ -177,7 +183,7 @@ export function useAdventureHandlers({
           // 天地之魄：化神期及以上有额外概率遭遇
           const currentRealmIndex = REALM_ORDER.indexOf(player.realm);
           const spiritSeveringIndex = REALM_ORDER.indexOf(RealmType.SpiritSevering);
-          
+
           if (currentRealmIndex >= spiritSeveringIndex && !result.heavenEarthSoulEncounter) {
             const isSecretRealm = adventureType === 'secret_realm';
             // 化神期及以上：根据境界和事件类型计算概率
@@ -227,6 +233,12 @@ export function useAdventureHandlers({
                 strengthComparison = '你的实力略弱于对方';
               } else {
                 strengthComparison = '你的实力明显弱于对方，建议谨慎挑战';
+              }
+
+              // 如果是自动历练模式，需要暂停自动历练
+              if (autoAdventure && setAutoAdventurePausedByHeavenEarthSoul && setAutoAdventure) {
+                setAutoAdventurePausedByHeavenEarthSoul(true);
+                setAutoAdventure(false);
               }
 
               // 构建提示信息
@@ -298,6 +310,11 @@ export function useAdventureHandlers({
                   addLog(`你选择暂时避开${boss.name}，继续探索...`, 'normal');
                   setLoading(false);
                   setCooldown(1);
+                  // 如果之前是自动历练模式，恢复自动历练
+                  if (setAutoAdventurePausedByHeavenEarthSoul && setAutoAdventure) {
+                    setAutoAdventurePausedByHeavenEarthSoul(false);
+                    // 注意：这里不自动恢复 autoAdventure，让用户手动决定是否继续自动历练
+                  }
                 }
               );
 
