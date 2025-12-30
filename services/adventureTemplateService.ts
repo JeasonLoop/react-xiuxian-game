@@ -176,6 +176,7 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
     'heavenEarthSoul', // 天地之魄（化神期及以上，提高概率）
     'heavenEarthSoul', // 天地之魄（重复，提高概率）
     'heavenEarthSoul', // 天地之魄（再次重复，进一步提高概率）
+    'heavenEarthSoul', // 天地之魄（再次提高概率）
     'longevityRule', // 规则之力（长生境）
     'trap', // 陷阱
     'evilCultivator', // 邪修魔修
