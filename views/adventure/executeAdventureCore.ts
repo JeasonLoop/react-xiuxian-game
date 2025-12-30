@@ -57,6 +57,7 @@ interface ExecuteAdventureCoreProps {
   adventureType: AdventureType;
   skipBattle?: boolean;
   onReputationEvent?: (event: AdventureResult['reputationEvent']) => void;
+  onPauseAutoAdventure?: () => void; // 暂停自动历练回调（用于天地之魄等特殊事件）
 }
 
 // 已移除 ensureEquipmentAttributes 函数
@@ -707,18 +708,6 @@ const applyResultToPlayer = (
     }
   }
 
-  // 天地之魄：从事件模板中获取，触发挑战（确保adventureType已设置）
-  if (result.heavenEarthSoulEncounter) {
-    const bossId = result.heavenEarthSoulEncounter;
-    addLog(`你遇到了天地之魄【${HEAVEN_EARTH_SOUL_BOSSES[bossId]?.name || '未知'}】！这是合道期的考验，只有击败它才能获得合道期的资格！`, 'danger');
-    // 确保adventureType设置为合道挑战类型
-    if (!result.adventureType || result.adventureType !== 'dao_combining_challenge') {
-      result.adventureType = 'dao_combining_challenge';
-    }
-    // 注意：实际战斗会在后续的战斗逻辑中处理，这里只是标记遇到了
-    // 由于adventureType已经设置为'dao_combining_challenge'，战斗系统会自动识别
-  }
-
   // 天地之魄挑战胜利：给予对应天地之魄功法（作为进阶物品显示）
   if (adventureType === 'dao_combining_challenge' && battleContext?.victory && battleContext?.bossId) {
     const bossId = battleContext.bossId;
@@ -868,7 +857,7 @@ const applyResultToPlayer = (
 };
 
 export async function executeAdventureCore({
-  result, battleContext, petSkillCooldowns, player, setPlayer, addLog, triggerVisual, onOpenBattleModal, realmName, adventureType, riskLevel, onReputationEvent
+  result, battleContext, petSkillCooldowns, player, setPlayer, addLog, triggerVisual, onOpenBattleModal, realmName, adventureType, riskLevel, onReputationEvent, onPauseAutoAdventure
 }: ExecuteAdventureCoreProps & { riskLevel?: '低' | '中' | '高' | '极度危险'; }) {
   // Visual Effects
   const safeHpChange = result.hpChange || 0;
@@ -935,6 +924,12 @@ export async function executeAdventureCore({
   // Apply Main Result
   // 根据 adventureType 判断是否为秘境
   const isSecretRealm = adventureType === 'secret_realm';
+
+  // 在应用结果之前，检查是否触发了天地之魄，如果是则立即暂停自动历练
+  if ((result.adventureType === 'dao_combining_challenge' || result.heavenEarthSoulEncounter)) {
+    onPauseAutoAdventure();
+  }
+
   setPlayer(prev => applyResultToPlayer(prev, result, { isSecretRealm, adventureType, realmName, riskLevel, battleContext, petSkillCooldowns, addLog, triggerVisual }));
 
   // Events & Logs

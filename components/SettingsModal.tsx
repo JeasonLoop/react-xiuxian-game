@@ -17,6 +17,14 @@ import { GameSettings } from '../types';
 import dayjs from 'dayjs';
 import { showError, showSuccess, showInfo, showConfirm } from '../utils/toastUtils';
 import { STORAGE_KEYS } from '../constants/storageKeys';
+import {
+  getCurrentSlotId,
+  saveToSlot,
+  loadFromSlot,
+  exportSave,
+  importSave,
+  ensurePlayerStatsCompatibility,
+} from '../utils/saveManagerUtils';
 import ChangelogModal from './ChangelogModal';
 import ShortcutsModal from './ShortcutsModal';
 import { KeyboardShortcut } from '../hooks/useKeyboardShortcuts';
@@ -90,30 +98,11 @@ const SettingsModal: React.FC<Props> = ({
 
     try {
       const text = await file.text();
-      let saveData;
+      // 使用 importSave 函数处理存档（支持 Base64 编码）
+      const saveData = importSave(text);
 
-      // 尝试解析JSON
-      try {
-        saveData = JSON.parse(text);
-      } catch (parseError) {
+      if (!saveData) {
         showError('存档文件格式错误！请确保文件内容是有效的JSON格式。');
-        console.error('JSON解析错误:', parseError);
-        return;
-      }
-
-      // 验证存档数据结构
-      if (!saveData || typeof saveData !== 'object') {
-        showError('存档文件格式不正确！文件内容必须是有效的JSON对象。');
-        return;
-      }
-
-      if (!saveData.player || typeof saveData.player !== 'object') {
-        showError('存档文件格式不正确！缺少必要的玩家数据。');
-        return;
-      }
-
-      if (!Array.isArray(saveData.logs)) {
-        showError('存档文件格式不正确！日志数据必须是数组格式。');
         return;
       }
 
@@ -130,8 +119,20 @@ const SettingsModal: React.FC<Props> = ({
         '确认导入',
         () => {
           try {
-            // 保存到localStorage
-            localStorage.setItem(STORAGE_KEYS.SAVE, JSON.stringify(saveData));
+            // 获取当前存档槽位ID，如果没有则使用槽位1
+            const currentSlotId = getCurrentSlotId();
+
+            // 使用新的存档系统保存到当前槽位
+            const success = saveToSlot(
+              currentSlotId,
+              ensurePlayerStatsCompatibility(saveData.player),
+              saveData.logs
+            );
+
+            if (!success) {
+              showError('保存存档失败，请重试！');
+              return;
+            }
 
             // 直接刷新页面，不需要再次确认
             // 延迟一小段时间让用户看到操作完成
@@ -159,27 +160,26 @@ const SettingsModal: React.FC<Props> = ({
 
   const handleExportSave = () => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEYS.SAVE);
-      if (!saved) {
+      // 获取当前存档槽位ID
+      const currentSlotId = getCurrentSlotId();
+
+      // 从当前槽位加载存档
+      const saveData = loadFromSlot(currentSlotId);
+
+      if (!saveData) {
         showError('没有找到存档数据！请先开始游戏。');
         return;
       }
 
-      // 解析存档数据以获取玩家信息用于文件名
-      let saveData;
-      try {
-        saveData = JSON.parse(saved);
-      } catch (error) {
-        showError('存档数据损坏，无法导出！');
-        return;
-      }
+      // 使用 exportSave 函数导出（支持 Base64 编码）
+      const jsonString = exportSave(saveData);
 
       // 创建文件名
       const playerName = saveData.player?.name || 'player';
       const fileName = `xiuxian-save-${playerName}-${dayjs().format('YYYY-MM-DD HH:mm:ss')}.json`;
 
       // 创建下载链接
-      const blob = new Blob([saved], { type: 'application/json' });
+      const blob = new Blob([jsonString], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
