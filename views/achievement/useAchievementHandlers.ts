@@ -6,8 +6,8 @@ import { calculateTitleEffects } from '../../utils/titleUtils';
 import { getPlayerTotalStats } from '../../utils/statUtils';
 
 interface UseAchievementHandlersProps {
-  player: PlayerStats;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
+  player: PlayerStats | null;
+  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats | null>>;
   addLog: (message: string, type?: string) => void;
 }
 /**
@@ -31,21 +31,22 @@ export function useAchievementHandlers({
     if (checkingAchievementsRef.current) return; // 防止重复触发
     checkingAchievementsRef.current = true;
 
+    if (!ACHIEVEMENTS?.length) return;
+
     setPlayer((prev) => {
       if (!prev) {
         checkingAchievementsRef.current = false;
         return prev; // 防止 prev 为 null
       }
 
-      const newAchievements = [...prev.achievements];
+      const newAchievements = [...(prev.achievements || [])];
       let hasNewAchievement = false;
       let newExp = prev.exp;
       let newStones = prev.spiritStones;
-      let newInv = [...prev.inventory];
+      let newInv = [...(prev?.inventory || [])];
       let lastRewardedTitleId = '';
       const newlyUnlockedTitles: string[] = [];
-
-      ACHIEVEMENTS.forEach((achievement) => {
+      (ACHIEVEMENTS || []).forEach((achievement) => {
         // 跳过已完成的成就，避免重复触发
         if (newAchievements.includes(achievement.id)) return;
 
@@ -94,13 +95,13 @@ export function useAchievementHandlers({
           completed = stats.equipCount >= achievement.requirement.value;
         } else if (achievement.requirement.type === 'pet') {
           // 灵宠成就
-          completed = Array.isArray(prev.pets) && prev.pets.length >= achievement.requirement.value;
+          completed = Array.isArray(prev.pets) && (prev.pets?.length || 0) >= achievement.requirement.value;
         } else if (achievement.requirement.type === 'recipe') {
           // 丹方成就
-          completed = Array.isArray(prev.unlockedRecipes) && prev.unlockedRecipes.length >= achievement.requirement.value;
+          completed = Array.isArray(prev.unlockedRecipes) && (prev.unlockedRecipes?.length || 0) >= achievement.requirement.value;
         } else if (achievement.requirement.type === 'art') {
           // 功法成就
-          completed = Array.isArray(prev.cultivationArts) && prev.cultivationArts.length >= achievement.requirement.value;
+          completed = Array.isArray(prev.cultivationArts) && (prev.cultivationArts?.length || 0) >= achievement.requirement.value;
         } else if (achievement.requirement.type === 'breakthrough') {
           // 突破成就
           completed = stats.breakthroughCount >= achievement.requirement.value;

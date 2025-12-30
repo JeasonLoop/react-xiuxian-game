@@ -1,13 +1,13 @@
 /**
- * App 状态管理 Hook
- * 统一管理所有模态框状态、商店状态、通知状态等
+ * App 状态管理 Hook - 兼容层
+ * 此 hook 现在从 zustand uiStore 读取状态，保持原有接口兼容
+ * 后续可以逐步在组件中直接使用 useUIStore
  */
 
-import { useState, useCallback } from 'react';
+import { useUIStore } from '../store/uiStore';
 import {
   Item,
   Shop,
-  ShopItem,
   AdventureType,
   RealmType,
   AdventureResult,
@@ -77,9 +77,13 @@ export interface AppState {
   };
   notifications: {
     purchaseSuccess: { item: string; quantity: number } | null;
-    setPurchaseSuccess: (value: { item: string; quantity: number } | null) => void;
+    setPurchaseSuccess: (
+      value: { item: string; quantity: number } | null
+    ) => void;
     lotteryRewards: Array<{ type: string; name: string; quantity?: number }>;
-    setLotteryRewards: (value: Array<{ type: string; name: string; quantity?: number }>) => void;
+    setLotteryRewards: (
+      value: Array<{ type: string; name: string; quantity?: number }>
+    ) => void;
   };
   battle: {
     battleReplay: BattleReplay | null;
@@ -95,11 +99,13 @@ export interface AppState {
       riskLevel?: '低' | '中' | '高' | '极度危险';
       realmMinRealm?: RealmType;
     } | null;
-    setParams: (params: {
-      adventureType: AdventureType;
-      riskLevel?: '低' | '中' | '高' | '极度危险';
-      realmMinRealm?: RealmType;
-    } | null) => void;
+    setParams: (
+      params: {
+        adventureType: AdventureType;
+        riskLevel?: '低' | '中' | '高' | '极度危险';
+        realmMinRealm?: RealmType;
+      } | null
+    ) => void;
   };
   itemActionLog: {
     value: { text: string; type: string } | null;
@@ -139,249 +145,94 @@ export interface AppState {
 }
 
 /**
- * 统一管理 App 的所有状态
+ * 统一管理 App 的所有状态 - 兼容层
+ * 从 zustand uiStore 读取状态，保持原有接口兼容
  */
 export function useAppState(): AppState {
-  // 模态框状态
-  const [isInventoryOpen, setIsInventoryOpen] = useState(false);
-  const [isCultivationOpen, setIsCultivationOpen] = useState(false);
-  const [isAlchemyOpen, setIsAlchemyOpen] = useState(false);
-  const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
-  const [isSectOpen, setIsSectOpen] = useState(false);
-  const [isRealmOpen, setIsRealmOpen] = useState(false);
-  const [isCharacterOpen, setIsCharacterOpen] = useState(false);
-  const [isAchievementOpen, setIsAchievementOpen] = useState(false);
-  const [isPetOpen, setIsPetOpen] = useState(false);
-  const [isLotteryOpen, setIsLotteryOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isDailyQuestOpen, setIsDailyQuestOpen] = useState(false);
-  const [isShopOpen, setIsShopOpen] = useState(false);
-  const [isGrottoOpen, setIsGrottoOpen] = useState(false);
-  const [isDebugOpen, setIsDebugOpen] = useState(false);
-  const [isBattleModalOpen, setIsBattleModalOpen] = useState(false);
-  const [isTurnBasedBattleOpen, setIsTurnBasedBattleOpen] = useState(false);
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [isMobileStatsOpen, setIsMobileStatsOpen] = useState(false);
-  const [isDebugModeEnabled, setIsDebugModeEnabled] = useState(false);
-  const [isReputationEventOpen, setIsReputationEventOpen] = useState(false);
-  const [isTreasureVaultOpen, setIsTreasureVaultOpen] = useState(false);
-
-  // 商店状态
-  const [currentShop, setCurrentShop] = useState<Shop | null>(null);
-
-  // 升级状态
-  const [itemToUpgrade, setItemToUpgrade] = useState<Item | null>(null);
-
-  // 通知状态
-  const [purchaseSuccess, setPurchaseSuccess] = useState<{
-    item: string;
-    quantity: number;
-  } | null>(null);
-  const [lotteryRewards, setLotteryRewards] = useState<
-    Array<{ type: string; name: string; quantity?: number }>
-  >([]);
-
-  // 战斗状态
-  const [battleReplay, setBattleReplay] = useState<BattleReplay | null>(null);
-  const [revealedBattleRounds, setRevealedBattleRounds] = useState(0);
-  const [lastBattleReplay, setLastBattleReplay] = useState<BattleReplay | null>(null);
-
-  // 回合制战斗状态
-  const [turnBasedBattleParams, setTurnBasedBattleParams] = useState<{
-    adventureType: AdventureType;
-    riskLevel?: '低' | '中' | '高' | '极度危险';
-    realmMinRealm?: RealmType;
-  } | null>(null);
-
-  // 物品操作日志
-  const [itemActionLog, setItemActionLog] = useState<{
-    text: string;
-    type: string;
-  } | null>(null);
-
-  // 声望事件
-  const [reputationEvent, setEvent] = useState<AdventureResult['reputationEvent'] | null>(null);
-
-  // 自动功能状态
-  const [autoMeditate, setAutoMeditate] = useState(false);
-  const [autoAdventure, setAutoAdventure] = useState(false);
-  const [pausedByShop, setPausedByShop] = useState(false);
-  const [pausedByBattle, setPausedByBattle] = useState(false);
-  const [pausedByReputationEvent, setPausedByReputationEvent] = useState(false);
-
-  // 全局加载和冷却状态
-  const [loading, setLoading] = useState(false);
-  const [cooldown, setCooldown] = useState(0);
-
-  // 关闭当前打开的弹窗
-  const closeCurrentModal = useCallback(() => {
-    // 在自动历练模式下，不允许通过快捷键关闭回合制战斗弹窗
-    if (isTurnBasedBattleOpen && autoAdventure) {
-      return;
-    }
-
-    if (isShopOpen) {
-      setIsShopOpen(false);
-      setCurrentShop(null);
-    }
-    else if (isInventoryOpen) setIsInventoryOpen(false);
-    else if (isCultivationOpen) setIsCultivationOpen(false);
-    else if (isCharacterOpen) setIsCharacterOpen(false);
-    else if (isAchievementOpen) setIsAchievementOpen(false);
-    else if (isPetOpen) setIsPetOpen(false);
-    else if (isLotteryOpen) setIsLotteryOpen(false);
-    else if (isSettingsOpen) setIsSettingsOpen(false);
-    else if (isRealmOpen) setIsRealmOpen(false);
-    else if (isAlchemyOpen) setIsAlchemyOpen(false);
-    else if (isSectOpen) setIsSectOpen(false);
-    else if (isDailyQuestOpen) setIsDailyQuestOpen(false);
-    else if (isGrottoOpen) setIsGrottoOpen(false);
-    else if (isUpgradeOpen) {
-      setIsUpgradeOpen(false);
-      setItemToUpgrade(null);
-    }
-    else if (isBattleModalOpen) setIsBattleModalOpen(false);
-    else if (isTurnBasedBattleOpen) {
-      setIsTurnBasedBattleOpen(false);
-      setTurnBasedBattleParams(null);
-      if (pausedByBattle) {
-        setPausedByBattle(false);
-      }
-    }
-    else if (isReputationEventOpen) setIsReputationEventOpen(false);
-    else if (isMobileSidebarOpen) setIsMobileSidebarOpen(false);
-    else if (isMobileStatsOpen) setIsMobileStatsOpen(false);
-    else if (isDebugOpen) setIsDebugOpen(false);
-  }, [
-    isShopOpen, isInventoryOpen, isCultivationOpen, isCharacterOpen,
-    isAchievementOpen, isPetOpen, isLotteryOpen, isSettingsOpen,
-    isRealmOpen, isAlchemyOpen, isSectOpen, isDailyQuestOpen,
-    isGrottoOpen, isUpgradeOpen, isBattleModalOpen, isTurnBasedBattleOpen,
-    isReputationEventOpen, isMobileSidebarOpen, isMobileStatsOpen, isDebugOpen,
-    autoAdventure, pausedByBattle
-  ]);
-
-  // 统一处理回合制战斗打开逻辑
-  const openTurnBasedBattle = useCallback((params: {
-    adventureType: AdventureType;
-    riskLevel?: '低' | '中' | '高' | '极度危险';
-    realmMinRealm?: RealmType;
-    bossId?: string;
-  }) => {
-    // 如果正在自动历练，暂停自动历练但保存状态
-    if (autoAdventure) {
-      setAutoAdventure(false);
-      setPausedByBattle(true);
-    }
-    setTurnBasedBattleParams(params);
-    setIsTurnBasedBattleOpen(true);
-  }, [autoAdventure, setAutoAdventure, setPausedByBattle, setTurnBasedBattleParams, setIsTurnBasedBattleOpen]);
+  // 从 zustand store 获取所有状态和 actions
+  const store = useUIStore();
 
   return {
-    modals: {
-      isInventoryOpen,
-      isCultivationOpen,
-      isAlchemyOpen,
-      isUpgradeOpen,
-      isSectOpen,
-      isRealmOpen,
-      isCharacterOpen,
-      isAchievementOpen,
-      isPetOpen,
-      isLotteryOpen,
-      isSettingsOpen,
-      isDailyQuestOpen,
-      isShopOpen,
-      isGrottoOpen,
-      isDebugOpen,
-      isBattleModalOpen,
-      isTurnBasedBattleOpen,
-      isMobileSidebarOpen,
-      isMobileStatsOpen,
-      isDebugModeEnabled,
-      isReputationEventOpen,
-      isTreasureVaultOpen,
-    },
+    modals: store.modals,
     setters: {
-      setIsInventoryOpen,
-      setIsCultivationOpen,
-      setIsAlchemyOpen,
-      setIsUpgradeOpen,
-      setIsSectOpen,
-      setIsRealmOpen,
-      setIsCharacterOpen,
-      setIsAchievementOpen,
-      setIsPetOpen,
-      setIsLotteryOpen,
-      setIsSettingsOpen,
-      setIsDailyQuestOpen,
-      setIsShopOpen,
-      setIsGrottoOpen,
-      setIsDebugOpen,
-      setIsBattleModalOpen,
-      setIsTurnBasedBattleOpen,
-      setIsMobileSidebarOpen,
-      setIsMobileStatsOpen,
-      setIsDebugModeEnabled,
-      setIsReputationEventOpen,
-      setIsTreasureVaultOpen,
+      setIsInventoryOpen: store.setIsInventoryOpen,
+      setIsCultivationOpen: store.setIsCultivationOpen,
+      setIsAlchemyOpen: store.setIsAlchemyOpen,
+      setIsUpgradeOpen: store.setIsUpgradeOpen,
+      setIsSectOpen: store.setIsSectOpen,
+      setIsRealmOpen: store.setIsRealmOpen,
+      setIsCharacterOpen: store.setIsCharacterOpen,
+      setIsAchievementOpen: store.setIsAchievementOpen,
+      setIsPetOpen: store.setIsPetOpen,
+      setIsLotteryOpen: store.setIsLotteryOpen,
+      setIsSettingsOpen: store.setIsSettingsOpen,
+      setIsDailyQuestOpen: store.setIsDailyQuestOpen,
+      setIsShopOpen: store.setIsShopOpen,
+      setIsGrottoOpen: store.setIsGrottoOpen,
+      setIsDebugOpen: store.setIsDebugOpen,
+      setIsBattleModalOpen: store.setIsBattleModalOpen,
+      setIsTurnBasedBattleOpen: store.setIsTurnBasedBattleOpen,
+      setIsMobileSidebarOpen: store.setIsMobileSidebarOpen,
+      setIsMobileStatsOpen: store.setIsMobileStatsOpen,
+      setIsDebugModeEnabled: store.setIsDebugModeEnabled,
+      setIsReputationEventOpen: store.setIsReputationEventOpen,
+      setIsTreasureVaultOpen: store.setIsTreasureVaultOpen,
     },
     shop: {
-      currentShop,
-      setCurrentShop,
+      currentShop: store.currentShop,
+      setCurrentShop: store.setCurrentShop,
     },
     upgrade: {
-      itemToUpgrade,
-      setItemToUpgrade,
+      itemToUpgrade: store.itemToUpgrade,
+      setItemToUpgrade: store.setItemToUpgrade,
     },
     notifications: {
-      purchaseSuccess,
-      setPurchaseSuccess,
-      lotteryRewards,
-      setLotteryRewards,
+      purchaseSuccess: store.purchaseSuccess,
+      setPurchaseSuccess: store.setPurchaseSuccess,
+      lotteryRewards: store.lotteryRewards,
+      setLotteryRewards: store.setLotteryRewards,
     },
     battle: {
-      battleReplay,
-      setBattleReplay,
-      revealedBattleRounds,
-      setRevealedBattleRounds,
-      lastBattleReplay,
-      setLastBattleReplay,
+      battleReplay: store.battleReplay,
+      setBattleReplay: store.setBattleReplay,
+      revealedBattleRounds: store.revealedBattleRounds,
+      setRevealedBattleRounds: store.setRevealedBattleRounds,
+      lastBattleReplay: store.lastBattleReplay,
+      setLastBattleReplay: store.setLastBattleReplay,
     },
     turnBasedBattle: {
-      params: turnBasedBattleParams,
-      setParams: setTurnBasedBattleParams,
+      params: store.turnBasedBattleParams,
+      setParams: store.setTurnBasedBattleParams,
     },
     itemActionLog: {
-      value: itemActionLog,
-      setValue: setItemActionLog,
+      value: store.itemActionLog,
+      setValue: store.setItemActionLog,
     },
     reputationEvent: {
-      event: reputationEvent,
-      setEvent,
+      event: store.reputationEvent,
+      setEvent: store.setReputationEvent,
     },
     auto: {
-      autoMeditate,
-      setAutoMeditate,
-      autoAdventure,
-      setAutoAdventure,
-      pausedByShop,
-      setPausedByShop,
-      pausedByBattle,
-      setPausedByBattle,
-      pausedByReputationEvent,
-      setPausedByReputationEvent,
+      autoMeditate: store.autoMeditate,
+      setAutoMeditate: store.setAutoMeditate,
+      autoAdventure: store.autoAdventure,
+      setAutoAdventure: store.setAutoAdventure,
+      pausedByShop: store.pausedByShop,
+      setPausedByShop: store.setPausedByShop,
+      pausedByBattle: store.pausedByBattle,
+      setPausedByBattle: store.setPausedByBattle,
+      pausedByReputationEvent: store.pausedByReputationEvent,
+      setPausedByReputationEvent: store.setPausedByReputationEvent,
     },
     global: {
-      loading,
-      setLoading,
-      cooldown,
-      setCooldown,
+      loading: store.loading,
+      setLoading: store.setLoading,
+      cooldown: store.cooldown,
+      setCooldown: store.setCooldown,
     },
     actions: {
-      closeCurrentModal,
-      openTurnBasedBattle,
+      closeCurrentModal: store.closeCurrentModal,
+      openTurnBasedBattle: store.openTurnBasedBattle,
     },
   };
 }
-
