@@ -11,6 +11,7 @@ import {
   RotateCcw,
   FolderOpen,
   Keyboard,
+  MessageCircle,
 } from 'lucide-react';
 import { GameSettings } from '../types';
 import dayjs from 'dayjs';
@@ -493,6 +494,26 @@ const SettingsModal: React.FC<Props> = ({
               <p className="text-xs text-stone-500">
                 查看所有可用的键盘快捷键，提高操作效率
               </p>
+            </div>
+          </div>
+
+          {/* 用户反馈交流群 */}
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <MessageCircle size={20} className="text-stone-400" />
+              <h3 className="font-bold">用户反馈交流群</h3>
+            </div>
+            <div className="space-y-3">
+              <div className="bg-stone-900/50 border border-stone-700 rounded p-4 flex flex-col items-center">
+                <img
+                  src="/assets/images/group.jpg"
+                  alt="云灵修仙-用户反馈交流群"
+                  className="w-full max-w-xs rounded-lg shadow-lg"
+                />
+                <p className="text-xs text-stone-400 mt-3 text-center">
+                  扫码加入微信群，反馈建议、交流心得
+                </p>
+              </div>
             </div>
           </div>
 
