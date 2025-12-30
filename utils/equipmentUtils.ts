@@ -43,10 +43,7 @@ export const findEmptyEquipmentSlot = (
     // 优先查找空槽位（明确检查是否为 undefined 或 null，确保空槽位检查正确）
     // 遍历所有可能的槽位，找到第一个空的就返回
     for (const slot of slots) {
-      console.log('slot', slot);
-      console.log('equippedItems', equippedItems);
       const equippedItemId = equippedItems[slot];
-      console.log('equippedItemId', equippedItemId);
       // 如果槽位为空（undefined 或不存在），直接返回这个空槽位
       if (equippedItemId === undefined || equippedItemId === null || equippedItemId === '') {
         return slot;

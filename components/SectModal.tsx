@@ -41,6 +41,7 @@ const SectModal: React.FC<Props> = ({
     {}
   );
   const [refreshKey, setRefreshKey] = useState(0);
+  const [realmFilter, setRealmFilter] = useState<RealmType | 'all'>('all');
 
   // 藏宝阁刷新相关状态
   const [sectShopItems, setSectShopItems] = useState<Array<{ name: string; cost: number; item: Omit<Item, 'id'> }>>(() => generateSectShopItems(1));
@@ -79,6 +80,19 @@ const SectModal: React.FC<Props> = ({
     if (!player.sectId) return [];
     return generateRandomSectTasks(player.sectRank, player.realm, 12);
   }, [player.sectId, player.sectRank, player.realm, refreshKey]);
+
+  // 根据境界过滤任务列表
+  const filteredTasks = useMemo(() => {
+    if (realmFilter === 'all') return randomTasks;
+    const filterRealmIndex = REALM_ORDER.indexOf(realmFilter);
+    return randomTasks.filter((task) => {
+      // 如果没有境界要求，显示所有任务
+      if (!task.minRealm) return true;
+      // 只显示境界要求小于等于选择境界的任务
+      const taskRealmIndex = REALM_ORDER.indexOf(task.minRealm);
+      return taskRealmIndex <= filterRealmIndex;
+    });
+  }, [randomTasks, realmFilter]);
 
   const handleRefresh = () => {
     setRefreshKey((prev) => prev + 1);
@@ -467,19 +481,39 @@ const SectModal: React.FC<Props> = ({
           {/* Mission Hall */}
           {activeTab === 'mission' && (
             <div className="flex flex-col h-full">
-              <div className="flex justify-between items-center mb-4 flex-shrink-0">
+              <div className="flex justify-between items-center mb-4 flex-shrink-0 flex-wrap gap-2">
                 <h4 className="font-serif text-lg text-stone-200">任务列表</h4>
-                <button
-                  onClick={handleRefresh}
-                  className="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded text-sm flex items-center gap-1.5 transition-colors"
-                  title="刷新任务列表"
-                >
-                  <RefreshCw size={16} />
-                  <span>刷新</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={realmFilter}
+                    onChange={(e) => setRealmFilter(e.target.value as RealmType | 'all')}
+                    className="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded text-sm transition-colors cursor-pointer"
+                    title="按境界过滤任务"
+                  >
+                    <option value="all">全部境界</option>
+                    {REALM_ORDER.map((realm) => (
+                      <option key={realm} value={realm}>
+                        {realm}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    onClick={handleRefresh}
+                    className="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded text-sm flex items-center gap-1.5 transition-colors"
+                    title="刷新任务列表"
+                  >
+                    <RefreshCw size={16} />
+                    <span>刷新</span>
+                  </button>
+                </div>
               </div>
               <div className="modal-scroll-container modal-scroll-content grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
-                {randomTasks.map((task) => {
+                {filteredTasks.length === 0 ? (
+                  <div className="col-span-full text-center text-stone-500 py-10 font-serif">
+                    当前过滤条件下暂无任务
+                  </div>
+                ) : (
+                  filteredTasks.map((task) => {
                   // 检查任务是否可以完成（但不阻止点击）
                   const taskStatus = (() => {
                     const reasons: string[] = [];
@@ -712,7 +746,8 @@ const SectModal: React.FC<Props> = ({
                       </button>
                     </div>
                   );
-                })}
+                  })
+                )}
               </div>
             </div>
           )}

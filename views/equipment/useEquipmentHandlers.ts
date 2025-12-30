@@ -17,6 +17,7 @@ import {
   RARITY_MULTIPLIERS,
   REALM_ORDER,
 } from '../../constants/index';
+import { findEmptyEquipmentSlot } from '../../utils/equipmentUtils';
 
 interface UseEquipmentHandlersProps {
   player: PlayerStats;
@@ -70,6 +71,24 @@ export function useEquipmentHandlers({
         return prev;
       }
 
+      // 对于戒指、首饰、法宝，先查找空槽位
+      // 只有当所有槽位都满时，才使用传入的槽位进行替换
+      let targetSlot = slot;
+      if (isRing || isAccessory || isArtifact) {
+        const emptySlot = findEmptyEquipmentSlot(item, prev.equippedItems);
+        if (emptySlot) {
+          // 检查找到的槽位是否真的是空的
+          const equippedItemId = prev.equippedItems[emptySlot];
+          if (equippedItemId === undefined || equippedItemId === null || equippedItemId === '') {
+            // 找到了空槽位，使用空槽位
+            targetSlot = emptySlot;
+          }
+          // 如果槽位已被占用，说明所有槽位都满了，使用传入的 slot 进行替换
+          // targetSlot 已经是 slot，不需要修改
+        }
+        // 如果 emptySlot 为 null，说明该物品类型无法装备，但这种情况应该在前面的检查中已经被过滤了
+      }
+
       if (isRing) {
         const ringSlots = [
           EquipmentSlot.Ring1,
@@ -77,7 +96,7 @@ export function useEquipmentHandlers({
           EquipmentSlot.Ring3,
           EquipmentSlot.Ring4,
         ];
-        if (!ringSlots.includes(slot)) {
+        if (!ringSlots.includes(targetSlot)) {
           addLog('戒指只能装备到戒指槽位！', 'danger');
           return prev;
         }
@@ -86,7 +105,7 @@ export function useEquipmentHandlers({
           EquipmentSlot.Accessory1,
           EquipmentSlot.Accessory2,
         ];
-        if (!accessorySlots.includes(slot)) {
+        if (!accessorySlots.includes(targetSlot)) {
           addLog('首饰只能装备到首饰槽位！', 'danger');
           return prev;
         }
@@ -95,13 +114,13 @@ export function useEquipmentHandlers({
           EquipmentSlot.Artifact1,
           EquipmentSlot.Artifact2,
         ];
-        if (!artifactSlots.includes(slot)) {
+        if (!artifactSlots.includes(targetSlot)) {
           addLog('法宝只能装备到法宝槽位！', 'danger');
           return prev;
         }
       } else {
         // 其他装备类型需要精确匹配
-        if (item.equipmentSlot !== slot) {
+        if (item.equipmentSlot !== targetSlot) {
           addLog('装备部位不匹配！', 'danger');
           return prev;
         }
@@ -115,8 +134,8 @@ export function useEquipmentHandlers({
       let newSpeed = prev.speed;
       const newEquippedItems = { ...prev.equippedItems };
 
-      // 检查当前槽位的装备
-      const currentEquippedId = prev.equippedItems[slot];
+      // 检查当前槽位的装备（使用 targetSlot 而不是 slot）
+      const currentEquippedId = prev.equippedItems[targetSlot];
 
       // 如果物品已经在同一槽位装备，不需要做任何操作
       if (currentEquippedId === item.id) {
@@ -128,7 +147,7 @@ export function useEquipmentHandlers({
       for (const [equippedSlot, equippedItemId] of Object.entries(
         prev.equippedItems
       )) {
-        if (equippedItemId === item.id && equippedSlot !== slot) {
+        if (equippedItemId === item.id && equippedSlot !== targetSlot) {
           oldSlot = equippedSlot as EquipmentSlot;
           // 移除旧槽位的装备ID
           delete newEquippedItems[oldSlot];
@@ -175,18 +194,18 @@ export function useEquipmentHandlers({
       newPhysique += newStats.physique;
       newSpeed += newStats.speed;
 
-      // 3. Update equipped items
-      newEquippedItems[slot] = item.id;
+      // 3. Update equipped items（使用 targetSlot）
+      newEquippedItems[targetSlot] = item.id;
 
       if (oldSlot) {
-        const logMessage = `你将 ${item.name} 从${oldSlot}移动到${slot}。`;
+        const logMessage = `你将 ${item.name} 从${oldSlot}移动到${targetSlot}。`;
         addLog(logMessage, 'normal');
         if (setItemActionLog) {
           setItemActionLog({ text: logMessage, type: 'normal' });
           // 延迟清除由 App.tsx 中的 useDelayedState 自动处理
         }
       } else {
-        const logMessage = `你装备了 ${item.name} 到${slot}，实力有所提升。`;
+        const logMessage = `你装备了 ${item.name} 到${targetSlot}，实力有所提升。`;
         addLog(logMessage, 'normal');
         if (setItemActionLog) {
           setItemActionLog({ text: logMessage, type: 'normal' });
@@ -209,7 +228,9 @@ export function useEquipmentHandlers({
       };
       let updatedStatistics = { ...playerStats };
       // 如果之前没有装备在这个槽位，或者是从其他槽位移过来的，增加计数
-      if (!currentEquippedId || currentEquippedId !== item.id) {
+      // 使用 targetSlot 检查
+      const wasEquippedInTargetSlot = prev.equippedItems[targetSlot] === item.id;
+      if (!wasEquippedInTargetSlot) {
         if (!oldSlot) {
           // 新装备，不是移动
           updatedStatistics.equipCount += 1;
