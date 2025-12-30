@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { DifficultyMode, ItemRarity } from '../types';
 import { TALENTS } from '../constants/index';
 import { Sparkles, Sword, Shield, Heart, Zap, User, Upload, TriangleAlert } from 'lucide-react';
-import { showError, showSuccess, showConfirm } from '../utils/toastUtils';
+import { showError } from '../utils/toastUtils';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import {
   getCurrentSlotId,
@@ -80,54 +80,53 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
 
       if (!saveData) {
         showError('存档文件格式错误！请确保文件内容是有效的JSON格式。');
+        // 清空文件输入
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
         return;
       }
 
-      // 显示存档信息预览
-      const playerName = saveData.player.name || '未知';
-      const realm = saveData.player.realm || '未知';
-      const timestamp = saveData.timestamp
-        ? new Date(saveData.timestamp).toLocaleString('zh-CN')
-        : '未知';
-
-      // 确认导入
-      showConfirm(
-        `确定要导入此存档吗？\n\n玩家名称: ${playerName}\n境界: ${realm}\n保存时间: ${timestamp}\n\n当前存档将被替换，页面将自动刷新。`,
-        '确认导入',
-        () => {
-          try {
-            // 使用 importSave 函数处理存档（支持 Base64 编码）
-            const importedData = importSave(JSON.stringify(saveData));
-            if (!importedData) {
-              showError('存档数据格式错误！');
-              return;
-            }
-
-            // 获取当前存档槽位ID，如果没有则使用槽位1
-            const currentSlotId = getCurrentSlotId();
-
-            // 使用新的存档系统保存到当前槽位
-            const success = saveToSlot(
-              currentSlotId,
-              ensurePlayerStatsCompatibility(importedData.player),
-              importedData.logs
-            );
-
-            if (!success) {
-              showError('保存存档失败，请重试！');
-              return;
-            }
-
-            // 提示并刷新页面
-            showSuccess('存档导入成功！页面即将刷新...', undefined, () => {
-              window.location.reload();
-            });
-          } catch (error) {
-            console.error('保存存档失败:', error);
-            showError('保存存档失败，请重试！');
-          }
+      // 验证存档数据格式
+      if (!saveData.player || !Array.isArray(saveData.logs)) {
+        showError('存档数据格式错误！缺少必要的数据字段。');
+        // 清空文件输入
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
         }
-      );
+        return;
+      }
+
+      // 直接导入存档，不需要确认
+      try {
+        // 获取当前存档槽位ID，如果没有则使用槽位1
+        const currentSlotId = getCurrentSlotId();
+
+        // 使用新的存档系统保存到当前槽位
+        const success = saveToSlot(
+          currentSlotId,
+          ensurePlayerStatsCompatibility(saveData.player),
+          saveData.logs || []
+        );
+
+        if (!success) {
+          showError('保存存档失败，请重试！');
+          // 清空文件输入
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+          return;
+        }
+
+        window.location.reload();
+      } catch (error) {
+        console.error('保存存档失败:', error);
+        showError(`保存存档失败：${error instanceof Error ? error.message : '未知错误'}，请重试！`);
+        // 清空文件输入
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
     } catch (error) {
       console.error('导入存档失败:', error);
       showError(

@@ -51,7 +51,6 @@ const SettingsModal: React.FC<Props> = ({
   onClose,
   settings,
   onUpdateSettings,
-  onImportSave,
   onRestartGame,
   onOpenSaveManager,
 }) => {
