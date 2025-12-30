@@ -198,10 +198,10 @@ function App() {
   useEffect(() => {
     const debugMode = localStorage.getItem(STORAGE_KEYS.DEBUG_MODE) === 'true';
     setIsDebugModeEnabled(debugMode);
-  }, [setIsDebugModeEnabled]);
+  }, []);
 
   const { currentShop, setCurrentShop } = shop;
-  const { itemToUpgrade, setItemToUpgrade } = upgrade;
+  const { setItemToUpgrade } = upgrade;
   const {
     purchaseSuccess,
     setPurchaseSuccess,
