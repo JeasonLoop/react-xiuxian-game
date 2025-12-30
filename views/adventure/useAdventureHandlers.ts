@@ -174,6 +174,30 @@ export function useAdventureHandlers({
             maxHp: totalStats.maxHp,
           });
 
+          // 天地之魄：化神期及以上有额外概率遭遇
+          const currentRealmIndex = REALM_ORDER.indexOf(player.realm);
+          const spiritSeveringIndex = REALM_ORDER.indexOf(RealmType.SpiritSevering);
+          
+          if (currentRealmIndex >= spiritSeveringIndex && !result.heavenEarthSoulEncounter) {
+            const isSecretRealm = adventureType === 'secret_realm';
+            // 化神期及以上：根据境界和事件类型计算概率
+            const isSpiritSevering = currentRealmIndex === spiritSeveringIndex;
+            const soulChance = isSpiritSevering
+              ? (isSecretRealm ? 0.08 : (adventureType === 'lucky' ? 0.10 : 0.05)) // 化神期：普通5%，机缘10%，秘境8%
+              : (isSecretRealm ? 0.12 : (adventureType === 'lucky' ? 0.15 : 0.08)); // 化神期以上：普通8%，机缘15%，秘境12%
+
+            if (Math.random() < soulChance) {
+              // 随机选择一个天地之魄BOSS
+              const bosses = Object.values(HEAVEN_EARTH_SOUL_BOSSES);
+              if (bosses.length > 0) {
+                const selectedBoss = bosses[Math.floor(Math.random() * bosses.length)];
+                result.heavenEarthSoulEncounter = selectedBoss.id;
+                result.adventureType = 'dao_combining_challenge';
+              }
+            }
+          }
+
+
           // 如果事件模板返回的是天地之魄事件，需要触发战斗
           if (result.adventureType === 'dao_combining_challenge' || result.heavenEarthSoulEncounter) {
             const actualAdventureType = result.adventureType || 'dao_combining_challenge';
