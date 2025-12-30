@@ -23,7 +23,21 @@ interface Props {
 const StartScreen: React.FC<Props> = ({ onStart }) => {
   const [playerName, setPlayerName] = useState('');
   const [selectedTalentId, setSelectedTalentId] = useState<string | null>(null);
-  const [difficulty, setDifficulty] = useState<DifficultyMode>('normal');
+  // 从 localStorage 读取保存的难度选择，如果没有则默认为 'normal'
+  const [difficulty, setDifficulty] = useState<DifficultyMode>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+      if (saved) {
+        const settings = JSON.parse(saved);
+        if (settings.difficulty) {
+          return settings.difficulty;
+        }
+      }
+    } catch (error) {
+      console.error('读取难度设置失败:', error);
+    }
+    return 'normal';
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 只在组件首次加载时随机生成一个天赋（使用useMemo确保只执行一次）
@@ -129,6 +143,25 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
+  };
+
+  // 保存难度选择到 localStorage
+  const saveDifficulty = (newDifficulty: DifficultyMode) => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+      const settings = saved ? JSON.parse(saved) : {};
+      settings.difficulty = newDifficulty;
+      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+    } catch (error) {
+      console.error('保存难度设置失败:', error);
+    }
+  };
+
+  // 处理难度选择变化
+  const handleDifficultyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDifficulty = e.target.value as DifficultyMode;
+    setDifficulty(newDifficulty);
+    saveDifficulty(newDifficulty);
   };
 
   // 使用统一的工具函数获取稀有度颜色（带边框，StartScreen 使用不同的边框颜色）
@@ -270,16 +303,18 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
               游戏难度
             </label>
             <div className="space-y-2">
-              <label className="flex items-center gap-3 p-3 bg-stone-800/50 rounded border-2 border-stone-700 cursor-pointer hover:border-mystic-jade/50 transition-colors">
+              <label className={`flex items-center gap-3 p-3 bg-stone-800/50 rounded border-2 cursor-pointer transition-colors ${
+                difficulty === 'easy'
+                  ? 'border-green-500 bg-green-900/20'
+                  : 'border-stone-700 hover:border-mystic-jade/50'
+              }`}>
                 <input
                   type="radio"
                   name="difficulty"
                   value="easy"
                   checked={difficulty === 'easy'}
-                  onChange={(e) =>
-                    setDifficulty(e.target.value as DifficultyMode)
-                  }
-                  className="w-4 h-4 text-mystic-jade"
+                  onChange={handleDifficultyChange}
+                  className="w-4 h-4 text-green-500 accent-green-500"
                 />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -290,16 +325,18 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
                   </p>
                 </div>
               </label>
-              <label className="flex items-center gap-3 p-3 bg-stone-800/50 rounded border-2 border-stone-700 cursor-pointer hover:border-mystic-jade/50 transition-colors">
+              <label className={`flex items-center gap-3 p-3 bg-stone-800/50 rounded border-2 cursor-pointer transition-colors ${
+                difficulty === 'normal'
+                  ? 'border-yellow-500 bg-yellow-900/20'
+                  : 'border-stone-700 hover:border-mystic-jade/50'
+              }`}>
                 <input
                   type="radio"
                   name="difficulty"
                   value="normal"
                   checked={difficulty === 'normal'}
-                  onChange={(e) =>
-                    setDifficulty(e.target.value as DifficultyMode)
-                  }
-                  className="w-4 h-4 text-mystic-jade"
+                  onChange={handleDifficultyChange}
+                  className="w-4 h-4 text-yellow-500 accent-yellow-500"
                 />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -310,16 +347,18 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
                   </p>
                 </div>
               </label>
-              <label className="flex items-center gap-3 p-3 bg-stone-800/50 rounded border-2 border-stone-700 cursor-pointer hover:border-mystic-jade/50 transition-colors">
+              <label className={`flex items-center gap-3 p-3 bg-stone-800/50 rounded border-2 cursor-pointer transition-colors ${
+                difficulty === 'hard'
+                  ? 'border-red-500 bg-red-900/20'
+                  : 'border-stone-700 hover:border-mystic-jade/50'
+              }`}>
                 <input
                   type="radio"
                   name="difficulty"
                   value="hard"
                   checked={difficulty === 'hard'}
-                  onChange={(e) =>
-                    setDifficulty(e.target.value as DifficultyMode)
-                  }
-                  className="w-4 h-4 text-mystic-jade"
+                  onChange={handleDifficultyChange}
+                  className="w-4 h-4 text-red-500 accent-red-500"
                 />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -342,6 +381,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
             accept=".json,.txt"
             onChange={handleImportSave}
             className="hidden"
+            aria-label="导入存档文件"
           />
 
           {/* 开始按钮 */}
