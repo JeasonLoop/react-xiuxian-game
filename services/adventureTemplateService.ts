@@ -173,6 +173,7 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
     'foundationTreasure', // 筑基奇物
     'heavenEarthEssence', // 天地精华
     'heavenEarthMarrow', // 天地之髓
+    'heavenEarthMarrow', // 天地之髓（重复一次，提高概率）
     'heavenEarthSoul', // 天地之魄（化神期及以上，提高概率）
     'heavenEarthSoul', // 天地之魄（重复，提高概率）
     'heavenEarthSoul', // 天地之魄（再次重复，进一步提高概率）

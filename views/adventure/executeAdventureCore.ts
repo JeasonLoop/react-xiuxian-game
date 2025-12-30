@@ -217,6 +217,23 @@ const applyResultToPlayer = (
         if ((itemFromConstants as any).advancedItemId && !(itemData as any).advancedItemId) {
           (itemData as any).advancedItemId = (itemFromConstants as any).advancedItemId;
         }
+
+        // 验证装备槽位：即使常量池中有槽位，也要通过名称推断验证是否正确
+        // 如果推断出的槽位与常量池不一致，且推断结果更合理（基于物品名称），则使用推断结果
+        if (isEquippable && equipmentSlot) {
+          const inferred = inferItemTypeAndSlot(itemName, itemType, itemData.description || '', isEquippable);
+          if (inferred.equipmentSlot && inferred.equipmentSlot !== equipmentSlot) {
+            // 如果推断出的槽位与常量池不一致，优先使用推断结果（因为推断基于物品名称，更准确）
+            // 这样可以修复常量池中可能存在的错误槽位定义
+            equipmentSlot = inferred.equipmentSlot;
+            if (import.meta.env.DEV) {
+              console.warn(`【槽位修正】物品"${itemName}"的槽位从常量池的"${itemFromConstants.equipmentSlot}"修正为推断的"${inferred.equipmentSlot}"`);
+            }
+          } else if (!equipmentSlot && inferred.equipmentSlot) {
+            // 如果常量池中没有槽位，但推断出了槽位，使用推断结果
+            equipmentSlot = inferred.equipmentSlot;
+          }
+        }
       } else {
         // 常量池中没有，才进行类型推断
         const inferred = inferItemTypeAndSlot(itemName, itemType, itemData.description || '', isEquippable);
@@ -589,13 +606,12 @@ const applyResultToPlayer = (
 
   // 天地之髓：元婴期、化神期历练/秘境有概率获得（元婴期概率稍低，化神期概率更高）
   const nascentSoulIndex = REALM_ORDER.indexOf(RealmType.NascentSoul);
-  const spiritSeveringIndex = REALM_ORDER.indexOf(RealmType.SpiritSevering);
   if (currentRealmIndex >= nascentSoulIndex) {
     // 元婴期：概率较低；化神期及以上：概率较高
     const isNascentSoul = currentRealmIndex === nascentSoulIndex;
     const marrowChance = isNascentSoul
-      ? (isSecretRealm ? 0.06 : (adventureType === 'lucky' ? 0.07 : 0.03)) // 元婴期：1.5-3%
-      : (isSecretRealm ? 0.06 : (adventureType === 'lucky' ? 0.07 : 0.03)); // 化神期及以上：2.5-6%
+      ? (isSecretRealm ? 0.15 : (adventureType === 'lucky' ? 0.08 : 0.08)) // 元婴期：普通8%，机缘8%，秘境15%
+      : (isSecretRealm ? 0.10 : (adventureType === 'lucky' ? 0.12 : 0.08)); // 化神期及以上：普通8%，机缘12%，秘境10%
     if (Math.random() < marrowChance) {
       const marrows = Object.values(HEAVEN_EARTH_MARROWS);
       if (marrows.length > 0) {
@@ -670,10 +686,35 @@ const applyResultToPlayer = (
     }
   }
 
-  // 天地之魄：从事件模板中获取，触发挑战
+  // 天地之魄：化神期及以上有额外概率遭遇（提高概率）
+  const spiritSeveringIndex = REALM_ORDER.indexOf(RealmType.SpiritSevering);
+  if (currentRealmIndex >= spiritSeveringIndex && !result.heavenEarthSoulEncounter) {
+    // 化神期及以上：根据境界和事件类型计算概率
+    const isSpiritSevering = currentRealmIndex === spiritSeveringIndex;
+    const soulChance = isSpiritSevering
+      ? (isSecretRealm ? 0.08 : (adventureType === 'lucky' ? 0.10 : 0.05)) // 化神期：普通5%，机缘10%，秘境8%
+      : (isSecretRealm ? 0.12 : (adventureType === 'lucky' ? 0.15 : 0.08)); // 化神期以上：普通8%，机缘15%，秘境12%
+
+    if (Math.random() < soulChance) {
+      // 随机选择一个天地之魄BOSS
+      const bosses = Object.values(HEAVEN_EARTH_SOUL_BOSSES);
+      if (bosses.length > 0) {
+        const selectedBoss = bosses[Math.floor(Math.random() * bosses.length)];
+        result.heavenEarthSoulEncounter = selectedBoss.id;
+        result.adventureType = 'dao_combining_challenge';
+        addLog(`你遇到了天地之魄【${selectedBoss.name}】！这是合道期的考验，只有击败它才能获得合道期的资格！`, 'danger');
+      }
+    }
+  }
+
+  // 天地之魄：从事件模板中获取，触发挑战（确保adventureType已设置）
   if (result.heavenEarthSoulEncounter) {
     const bossId = result.heavenEarthSoulEncounter;
     addLog(`你遇到了天地之魄【${HEAVEN_EARTH_SOUL_BOSSES[bossId]?.name || '未知'}】！这是合道期的考验，只有击败它才能获得合道期的资格！`, 'danger');
+    // 确保adventureType设置为合道挑战类型
+    if (!result.adventureType || result.adventureType !== 'dao_combining_challenge') {
+      result.adventureType = 'dao_combining_challenge';
+    }
     // 注意：实际战斗会在后续的战斗逻辑中处理，这里只是标记遇到了
     // 由于adventureType已经设置为'dao_combining_challenge'，战斗系统会自动识别
   }
