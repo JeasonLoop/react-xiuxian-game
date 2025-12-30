@@ -687,26 +687,7 @@ const applyResultToPlayer = (
     }
   }
 
-  // 天地之魄：化神期及以上有额外概率遭遇（提高概率）
-  const spiritSeveringIndex = REALM_ORDER.indexOf(RealmType.SpiritSevering);
-  if (currentRealmIndex >= spiritSeveringIndex && !result.heavenEarthSoulEncounter) {
-    // 化神期及以上：根据境界和事件类型计算概率
-    const isSpiritSevering = currentRealmIndex === spiritSeveringIndex;
-    const soulChance = isSpiritSevering
-      ? (isSecretRealm ? 0.08 : (adventureType === 'lucky' ? 0.10 : 0.05)) // 化神期：普通5%，机缘10%，秘境8%
-      : (isSecretRealm ? 0.12 : (adventureType === 'lucky' ? 0.15 : 0.08)); // 化神期以上：普通8%，机缘15%，秘境12%
 
-    if (Math.random() < soulChance) {
-      // 随机选择一个天地之魄BOSS
-      const bosses = Object.values(HEAVEN_EARTH_SOUL_BOSSES);
-      if (bosses.length > 0) {
-        const selectedBoss = bosses[Math.floor(Math.random() * bosses.length)];
-        result.heavenEarthSoulEncounter = selectedBoss.id;
-        result.adventureType = 'dao_combining_challenge';
-        addLog(`你遇到了天地之魄【${selectedBoss.name}】！这是合道期的考验，只有击败它才能获得合道期的资格！`, 'danger');
-      }
-    }
-  }
 
   // 天地之魄挑战胜利：给予对应天地之魄功法（作为进阶物品显示）
   if (adventureType === 'dao_combining_challenge' && battleContext?.victory && battleContext?.bossId) {
