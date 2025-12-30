@@ -1,5 +1,5 @@
 import React from 'react';
-import { EquipmentSlot, Item, PlayerStats } from '../types';
+import { EquipmentSlot, Item } from '../types';
 import { ShieldCheck, X } from 'lucide-react';
 import { getItemStats } from '../utils/itemUtils';
 import { getRarityColor, normalizeRarityValue } from '../utils/rarityUtils';
