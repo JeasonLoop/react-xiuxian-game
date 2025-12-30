@@ -11,6 +11,7 @@ export const RARITY_MULTIPLIERS: Record<ItemRarity, number> = {
   仙品: 6.0,
 };
 
+// 初始化物品
 export const INITIAL_ITEMS: Item[] = [
   {
     id: 'refining-stone',
@@ -439,6 +440,123 @@ export const COMMON_PILLS = {
   仙灵丹: () => getPillDefinition('仙灵丹'),
   天元丹: () => getPillDefinition('天元丹'),
 };
+
+// 灵宠进化材料（添加到物品常量池，使其可以通过冒险掉落获得）
+export const PET_EVOLUTION_MATERIALS_ITEMS: Item[] = [
+  // 注意：聚灵草已经在 INITIAL_ITEMS 中定义为草药，这里不需要重复添加
+  {
+    id: 'monster-core',
+    name: '妖兽内丹',
+    type: ItemType.Material,
+    description: '妖兽体内凝聚的内丹，蕴含妖力。',
+    quantity: 1,
+    rarity: '普通',
+  },
+  {
+    id: 'spirit-beast-blood',
+    name: '灵兽精血',
+    type: ItemType.Material,
+    description: '灵兽的精血，蕴含强大的生命力。',
+    quantity: 1,
+    rarity: '稀有',
+  },
+  {
+    id: 'moonlight-stone',
+    name: '月华石',
+    type: ItemType.Material,
+    description: '吸收月华之力的灵石，可助灵宠进化。',
+    quantity: 1,
+    rarity: '稀有',
+  },
+  {
+    id: 'star-fragment',
+    name: '星辰碎片',
+    type: ItemType.Material,
+    description: '来自星辰的碎片，蕴含神秘力量。',
+    quantity: 1,
+    rarity: '稀有',
+  },
+  {
+    id: 'dragon-scale',
+    name: '龙鳞片',
+    type: ItemType.Material,
+    description: '真龙脱落的鳞片，极其珍贵。',
+    quantity: 1,
+    rarity: '传说',
+  },
+  {
+    id: 'phoenix-feather',
+    name: '凤凰羽',
+    type: ItemType.Material,
+    description: '凤凰的羽毛，蕴含涅槃之力。',
+    quantity: 1,
+    rarity: '传说',
+  },
+  {
+    id: 'qilin-horn',
+    name: '麒麟角',
+    type: ItemType.Material,
+    description: '麒麟的角，拥有祥瑞之力。',
+    quantity: 1,
+    rarity: '传说',
+  },
+  {
+    id: 'fairy-fruit',
+    name: '仙灵果',
+    type: ItemType.Material,
+    description: '仙灵树结出的果实，可大幅提升灵宠实力。',
+    quantity: 1,
+    rarity: '稀有',
+  },
+  {
+    id: 'heaven-earth-treasure',
+    name: '天材地宝',
+    type: ItemType.Material,
+    description: '天地孕育的至宝，极其罕见。',
+    quantity: 1,
+    rarity: '传说',
+  },
+  {
+    id: 'divine-beast-essence',
+    name: '神兽精魄',
+    type: ItemType.Material,
+    description: '神兽的精魄，蕴含神兽之力。',
+    quantity: 1,
+    rarity: '传说',
+  },
+  {
+    id: 'chaos-stone',
+    name: '混沌石',
+    type: ItemType.Material,
+    description: '来自混沌的奇石，蕴含创世之力。',
+    quantity: 1,
+    rarity: '仙品',
+  },
+  {
+    id: 'dao-fragment',
+    name: '大道碎片',
+    type: ItemType.Material,
+    description: '大道法则的碎片，可助灵宠突破极限。',
+    quantity: 1,
+    rarity: '仙品',
+  },
+  {
+    id: 'fairy-essence',
+    name: '仙灵本源',
+    type: ItemType.Material,
+    description: '仙灵的本源力量，极其珍贵。',
+    quantity: 1,
+    rarity: '仙品',
+  },
+  {
+    id: 'creation-liquid',
+    name: '造化神液',
+    type: ItemType.Material,
+    description: '造化之力凝聚的神液，可重塑灵宠。',
+    quantity: 1,
+    rarity: '仙品',
+  },
+];
 
 // Upgrade Constants
 export const UPGRADE_MATERIAL_NAME = '炼器石';

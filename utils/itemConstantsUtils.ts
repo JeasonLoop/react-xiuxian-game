@@ -11,7 +11,9 @@ import {
   PILL_RECIPES,
   DISCOVERABLE_RECIPES,
   getPillDefinition,
+  PET_EVOLUTION_MATERIALS_ITEMS,
 } from '../constants/index';
+import { ITEM_TEMPLATES } from '../constants/itemTemplates';
 
 // 缓存所有物品
 let cachedAllItems: Array<{
@@ -57,6 +59,22 @@ function getAllItemsFromConstants(): Array<{
 
   // 从 INITIAL_ITEMS 中提取物品
   INITIAL_ITEMS.forEach(item => {
+    if (itemNames.has(item.name)) return;
+    itemNames.add(item.name);
+    items.push({
+      name: item.name,
+      type: item.type,
+      description: item.description,
+      rarity: (item.rarity || '普通') as ItemRarity,
+      effect: item.effect,
+      permanentEffect: item.permanentEffect,
+      isEquippable: item.isEquippable,
+      equipmentSlot: item.equipmentSlot,
+    });
+  });
+
+  // 从灵宠进化材料中提取物品（避免重复）
+  PET_EVOLUTION_MATERIALS_ITEMS.forEach(item => {
     if (itemNames.has(item.name)) return;
     itemNames.add(item.name);
     items.push({
@@ -145,6 +163,22 @@ function getAllItemsFromConstants(): Array<{
       }
     }
 
+    items.push({
+      name: item.name,
+      type: item.type,
+      description: item.description,
+      rarity: (item.rarity || '普通') as ItemRarity,
+      effect: item.effect,
+      permanentEffect: item.permanentEffect,
+      isEquippable: item.isEquippable,
+      equipmentSlot: item.equipmentSlot,
+    });
+  });
+
+  // 从 ITEM_TEMPLATES 中提取物品（自动生成的模板，包括装备、丹药、草药、材料等）
+  ITEM_TEMPLATES.forEach(item => {
+    if (itemNames.has(item.name)) return;
+    itemNames.add(item.name);
     items.push({
       name: item.name,
       type: item.type,
