@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useMemo, useEffect, useCallback } from 'react';
 import { PlayerStats, Item, ItemType, ItemRarity } from '../types';
 import { LOOT_ITEMS } from '../services/battleService';
 import { uid } from '../utils/gameUtils';
 import { getRarityBadge } from '../utils/rarityUtils';
-import { X, Package, Sparkles } from 'lucide-react';
+import { Package, Sparkles } from 'lucide-react';
+import { Modal } from './common';
 
 interface Props {
   isOpen: boolean;
@@ -147,127 +148,121 @@ const SectTreasureVaultModal: React.FC<Props> = ({
     return { total, taken, remaining };
   }, [player.sectTreasureVault]);
 
-  if (!isOpen) return null;
+  const footer = (
+    <button
+      onClick={onClose}
+      className="w-full px-4 py-2 bg-stone-700 hover:bg-stone-600 text-white rounded transition-colors"
+    >
+      关闭
+    </button>
+  );
 
   return (
-    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[70] p-4 backdrop-blur-sm">
-      <div className="bg-paper-800 w-full max-w-4xl rounded border border-gold-500 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
-        <div className="p-4 border-b border-gold-500 flex justify-between items-center bg-ink-800 rounded-t">
-          <h3 className="text-xl font-serif text-mystic-gold flex items-center gap-2">
-            <Package size={20} />
-            宗门宝库
-            <Sparkles size={16} className="text-yellow-400" />
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-stone-400 hover:text-white"
-          >
-            <X size={24} />
-          </button>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        <span className="flex items-center gap-2">
+          宗门宝库
+          <Sparkles size={16} className="text-yellow-400" />
+        </span>
+      }
+      titleIcon={<Package size={20} />}
+      size="4xl"
+      height="full"
+      zIndex={70}
+      containerClassName="border-2 border-mystic-gold"
+      footer={footer}
+    >
+      <div className="mb-4 text-stone-300 text-sm">
+        <p className="mb-2">✨ 这里是宗门历代积累的珍藏，你可以选择一件物品带走。</p>
+        <p className="text-stone-400">宝库中的物品品质与你的境界相关，境界越高，获得高品质物品的概率越大。</p>
+        {vaultStats.total > 0 && (
+          <p className="text-stone-500 text-xs mt-2">
+            剩余物品：{vaultStats.remaining}/{vaultStats.total}（已拿取：{vaultStats.taken}）
+          </p>
+        )}
+      </div>
+
+      {vaultItems.length === 0 ? (
+        <div className="text-center py-12">
+          <Package className="mx-auto text-stone-500 mb-4" size={48} />
+          <p className="text-stone-400 text-lg mb-2">宝库已空</p>
+          <p className="text-stone-500 text-sm">所有物品都已被取走</p>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {vaultItems.map((item) => (
+          <div
+            key={item.id}
+            className={`border rounded-lg p-4 bg-stone-800/30 border-stone-400/50 hover:scale-105 transition-transform cursor-pointer ${
+              item.rarity === '仙品' ? 'bg-yellow-900/30 border-yellow-400/50' :
+              item.rarity === '传说' ? 'bg-purple-900/30 border-purple-400/50' :
+              item.rarity === '稀有' ? 'bg-blue-900/30 border-blue-400/50' :
+              'bg-stone-800/30 border-stone-400/50'
+            }`}
+            onClick={() => {
+              onTakeItem(item);
+              onClose();
+            }}
+          >
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h4 className="font-semibold text-white">{item.name}</h4>
+                  {item.rarity && (
+                    <span className={`text-xs px-2 py-0.5 rounded border ${getRarityBadge(item.rarity)}`}>
+                      {item.rarity}
+                    </span>
+                  )}
+                  <span className="text-xs text-stone-400 px-2 py-0.5 rounded border border-stone-600">
+                    {item.type}
+                  </span>
+                </div>
+                <p className="text-sm text-stone-300 mb-2">{item.description}</p>
 
-        <div className="modal-scroll-container modal-scroll-content p-6">
-          <div className="mb-4 text-stone-300 text-sm">
-            <p className="mb-2">✨ 这里是宗门历代积累的珍藏，你可以选择一件物品带走。</p>
-            <p className="text-stone-400">宝库中的物品品质与你的境界相关，境界越高，获得高品质物品的概率越大。</p>
-            {vaultStats.total > 0 && (
-              <p className="text-stone-500 text-xs mt-2">
-                剩余物品：{vaultStats.remaining}/{vaultStats.total}（已拿取：{vaultStats.taken}）
-              </p>
-            )}
-          </div>
+                {item.effect && (
+                  <div className="text-xs text-stone-400 space-y-1">
+                    {item.effect.attack && <div>攻击 +{item.effect.attack}</div>}
+                    {item.effect.defense && <div>防御 +{item.effect.defense}</div>}
+                    {item.effect.hp && <div>气血 +{item.effect.hp}</div>}
+                    {item.effect.spirit && <div>神识 +{item.effect.spirit}</div>}
+                    {item.effect.physique && <div>体魄 +{item.effect.physique}</div>}
+                    {item.effect.speed && <div>速度 +{item.effect.speed}</div>}
+                    {item.effect.exp && <div>修为 +{item.effect.exp}</div>}
+                  </div>
+                )}
 
-          {vaultItems.length === 0 ? (
-            <div className="text-center py-12">
-              <Package className="mx-auto text-stone-500 mb-4" size={48} />
-              <p className="text-stone-400 text-lg mb-2">宝库已空</p>
-              <p className="text-stone-500 text-sm">所有物品都已被取走</p>
+                {item.permanentEffect && (
+                  <div className="text-xs text-yellow-400 space-y-1 mt-1">
+                    {item.permanentEffect.attack && <div>✨ 攻击永久 +{item.permanentEffect.attack}</div>}
+                    {item.permanentEffect.defense && <div>✨ 防御永久 +{item.permanentEffect.defense}</div>}
+                    {item.permanentEffect.spirit && <div>✨ 神识永久 +{item.permanentEffect.spirit}</div>}
+                    {item.permanentEffect.physique && <div>✨ 体魄永久 +{item.permanentEffect.physique}</div>}
+                    {item.permanentEffect.speed && <div>✨ 速度永久 +{item.permanentEffect.speed}</div>}
+                    {item.permanentEffect.maxHp && <div>✨ 气血上限永久 +{item.permanentEffect.maxHp}</div>}
+                  </div>
+                )}
+              </div>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {vaultItems.map((item) => (
-              <div
-                key={item.id}
-                className={`border rounded-lg p-4 bg-stone-800/30 border-stone-400/50 hover:scale-105 transition-transform cursor-pointer ${
-                  item.rarity === '仙品' ? 'bg-yellow-900/30 border-yellow-400/50' :
-                  item.rarity === '传说' ? 'bg-purple-900/30 border-purple-400/50' :
-                  item.rarity === '稀有' ? 'bg-blue-900/30 border-blue-400/50' :
-                  'bg-stone-800/30 border-stone-400/50'
-                }`}
-                onClick={() => {
+            <div className="mt-3 pt-3 border-t border-stone-700">
+              <button
+                className="w-full px-4 py-2 bg-mystic-gold/20 hover:bg-mystic-gold/30 text-mystic-gold border border-mystic-gold rounded transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
                   onTakeItem(item);
                   onClose();
                 }}
               >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-semibold text-white">{item.name}</h4>
-                      {item.rarity && (
-                        <span className={`text-xs px-2 py-0.5 rounded border ${getRarityBadge(item.rarity)}`}>
-                          {item.rarity}
-                        </span>
-                      )}
-                      <span className="text-xs text-stone-400 px-2 py-0.5 rounded border border-stone-600">
-                        {item.type}
-                      </span>
-                    </div>
-                    <p className="text-sm text-stone-300 mb-2">{item.description}</p>
-
-                    {item.effect && (
-                      <div className="text-xs text-stone-400 space-y-1">
-                        {item.effect.attack && <div>攻击 +{item.effect.attack}</div>}
-                        {item.effect.defense && <div>防御 +{item.effect.defense}</div>}
-                        {item.effect.hp && <div>气血 +{item.effect.hp}</div>}
-                        {item.effect.spirit && <div>神识 +{item.effect.spirit}</div>}
-                        {item.effect.physique && <div>体魄 +{item.effect.physique}</div>}
-                        {item.effect.speed && <div>速度 +{item.effect.speed}</div>}
-                        {item.effect.exp && <div>修为 +{item.effect.exp}</div>}
-                      </div>
-                    )}
-
-                    {item.permanentEffect && (
-                      <div className="text-xs text-yellow-400 space-y-1 mt-1">
-                        {item.permanentEffect.attack && <div>✨ 攻击永久 +{item.permanentEffect.attack}</div>}
-                        {item.permanentEffect.defense && <div>✨ 防御永久 +{item.permanentEffect.defense}</div>}
-                        {item.permanentEffect.spirit && <div>✨ 神识永久 +{item.permanentEffect.spirit}</div>}
-                        {item.permanentEffect.physique && <div>✨ 体魄永久 +{item.permanentEffect.physique}</div>}
-                        {item.permanentEffect.speed && <div>✨ 速度永久 +{item.permanentEffect.speed}</div>}
-                        {item.permanentEffect.maxHp && <div>✨ 气血上限永久 +{item.permanentEffect.maxHp}</div>}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="mt-3 pt-3 border-t border-stone-700">
-                  <button
-                    className="w-full px-4 py-2 bg-gold-600 hover:bg-gold-500 text-white rounded transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onTakeItem(item);
-                      onClose();
-                    }}
-                  >
-                    选择此物品
-                  </button>
-                </div>
-              </div>
-            ))}
+                选择此物品
+              </button>
             </div>
-          )}
+          </div>
+        ))}
         </div>
-
-        <div className="p-4 border-t border-gold-500 bg-ink-800 rounded-b">
-          <button
-            onClick={onClose}
-            className="w-full px-4 py-2 bg-stone-700 hover:bg-stone-600 text-white rounded transition-colors"
-          >
-            关闭
-          </button>
-        </div>
-      </div>
-    </div>
+      )}
+    </Modal>
   );
 };
 
 export default SectTreasureVaultModal;
-

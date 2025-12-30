@@ -6,9 +6,10 @@ import {
   getRandomEventTemplate,
   templateToAdventureResult,
 } from '../services/adventureTemplateService';
-import { X, Loader2 } from 'lucide-react';
+import { Loader2, Scroll } from 'lucide-react';
 import { logger } from '../utils/logger';
 import { getPlayerTotalStats } from '../utils/statUtils';
+import { Modal } from './common';
 
 
 interface Props {
@@ -234,233 +235,211 @@ const SectTaskModal: React.FC<Props> = ({
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4 backdrop-blur-sm"
-      onClick={(e) => {
-        // 阻止事件冒泡到 SectModal
-        e.stopPropagation();
-        // 点击背景时关闭任务弹窗
-        onClose();
-      }}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        <div>
+          <div className="text-xl font-serif text-mystic-gold mb-1">
+            {task.name}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`text-xs px-2 py-0.5 rounded border ${difficultyColors[task.difficulty]} ${difficultyBgColors[task.difficulty]}`}>
+              难度: {task.difficulty}
+            </span>
+            <span className="text-xs text-stone-400">
+              耗时: {
+                task.timeCost === 'instant' ? '瞬时' :
+                task.timeCost === 'short' ? '短暂' :
+                task.timeCost === 'medium' ? '中等' : '较长'
+              }
+            </span>
+            {task.recommendedFor && (
+              <div className="flex gap-1 ml-auto">
+                {task.recommendedFor.highAttack && <span className="text-[10px] bg-red-900/30 text-red-400 px-1.5 py-0.5 rounded">推荐攻击</span>}
+                {task.recommendedFor.highDefense && <span className="text-[10px] bg-blue-900/30 text-blue-400 px-1.5 py-0.5 rounded">推荐防御</span>}
+                {task.recommendedFor.highSpirit && <span className="text-[10px] bg-purple-900/30 text-purple-400 px-1.5 py-0.5 rounded">推荐神识</span>}
+                {task.recommendedFor.highSpeed && <span className="text-[10px] bg-green-900/30 text-green-400 px-1.5 py-0.5 rounded">推荐速度</span>}
+              </div>
+            )}
+          </div>
+        </div>
+      }
+      titleIcon={<Scroll size={20} className="text-mystic-gold" />}
+      size="2xl"
+      height="auto"
+      zIndex={60}
+      showHeaderBorder={false}
     >
-      <div
-        className="bg-paper-800 w-full max-w-2xl rounded-lg border border-stone-600 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="p-4 border-b border-stone-600 bg-ink-800 rounded-t flex justify-between items-center">
-          <div>
-            <h3 className="text-xl font-serif text-mystic-gold mb-1">
-              {task.name}
-            </h3>
-            <div className="flex items-center gap-2">
-              <span className={`text-xs px-2 py-0.5 rounded border ${difficultyColors[task.difficulty]} ${difficultyBgColors[task.difficulty]}`}>
-                难度: {task.difficulty}
-              </span>
-              <span className="text-xs text-stone-400">
-                耗时: {
-                  task.timeCost === 'instant' ? '瞬时' :
-                  task.timeCost === 'short' ? '短暂' :
-                  task.timeCost === 'medium' ? '中等' : '较长'
-                }
-              </span>
-              {task.recommendedFor && (
-                <div className="flex gap-1 ml-auto">
-                  {task.recommendedFor.highAttack && <span className="text-[10px] bg-red-900/30 text-red-400 px-1.5 py-0.5 rounded">推荐攻击</span>}
-                  {task.recommendedFor.highDefense && <span className="text-[10px] bg-blue-900/30 text-blue-400 px-1.5 py-0.5 rounded">推荐防御</span>}
-                  {task.recommendedFor.highSpirit && <span className="text-[10px] bg-purple-900/30 text-purple-400 px-1.5 py-0.5 rounded">推荐神识</span>}
-                  {task.recommendedFor.highSpeed && <span className="text-[10px] bg-green-900/30 text-green-400 px-1.5 py-0.5 rounded">推荐速度</span>}
-                </div>
+      {stage === 'preparing' && (
+        <div className="space-y-4">
+          <p className="text-stone-300">{task.description}</p>
+
+          <div className="bg-ink-800 p-4 rounded border border-stone-700">
+            <h4 className="text-sm font-bold text-stone-200 mb-2">任务奖励</h4>
+            <div className="space-y-1 text-sm text-stone-400">
+              <div>贡献: <span className="text-mystic-gold">{task.reward.contribution}</span></div>
+              {task.reward.exp && (
+                <div>修为: <span className="text-green-400">{task.reward.exp}</span></div>
+              )}
+              {task.reward.spiritStones && (
+                <div>灵石: <span className="text-blue-400">{task.reward.spiritStones}</span></div>
+              )}
+              {task.reward.items && task.reward.items.length > 0 && (
+                <div>物品: {task.reward.items.map((item, idx) => (
+                  <span key={idx} className="text-yellow-400">{item.name} x{item.quantity}</span>
+                ))}</div>
               )}
             </div>
+            {task.completionBonus && (
+              <div className="mt-3 pt-3 border-t border-stone-700">
+                <div className="text-xs text-stone-500 mb-1">完美完成额外奖励:</div>
+                <div className="space-y-1 text-xs text-stone-400">
+                  {task.completionBonus.contribution && (
+                    <div>贡献: <span className="text-mystic-gold">+{task.completionBonus.contribution}</span></div>
+                  )}
+                  {task.completionBonus.exp && (
+                    <div>修为: <span className="text-green-400">+{task.completionBonus.exp}</span></div>
+                  )}
+                  {task.completionBonus.spiritStones && (
+                    <div>灵石: <span className="text-blue-400">+{task.completionBonus.spiritStones}</span></div>
+                  )}
+                </div>
+              </div>
+            )}
+            {task.successRate && (
+              <div className="mt-2 text-xs text-stone-500">
+                完美完成概率: <span className="text-yellow-400">{task.successRate}%</span>
+              </div>
+            )}
           </div>
+
           <button
             onClick={(e) => {
+              e.preventDefault();
               e.stopPropagation();
-              onClose();
+              logger.log('按钮被点击，开始执行任务');
+              handleStartTask();
             }}
-            className="text-stone-400 hover:text-white"
+            disabled={loading}
+            className={`w-full py-3 border rounded transition-colors font-serif ${
+              loading
+                ? 'bg-stone-800 text-stone-600 border-stone-700 cursor-not-allowed'
+                : 'bg-mystic-jade/20 text-mystic-jade border-mystic-jade hover:bg-mystic-jade/30'
+            }`}
           >
-            <X size={24} />
+            {loading ? '执行中...' : '开始执行任务'}
           </button>
         </div>
+      )}
 
-        {/* Content */}
-        <div className="p-6">
-          {stage === 'preparing' && (
-            <div className="space-y-4">
-              <p className="text-stone-300">{task.description}</p>
+      {stage === 'executing' && (
+        <div className="space-y-4">
+          <div className="text-center">
+            <Loader2 className="w-12 h-12 animate-spin text-mystic-gold mx-auto mb-4" />
+            <p className="text-stone-300 mb-4">正在执行任务...</p>
 
-              <div className="bg-ink-800 p-4 rounded border border-stone-700">
-                <h4 className="text-sm font-bold text-stone-200 mb-2">任务奖励</h4>
-                <div className="space-y-1 text-sm text-stone-400">
-                  <div>贡献: <span className="text-mystic-gold">{task.reward.contribution}</span></div>
-                  {task.reward.exp && (
-                    <div>修为: <span className="text-green-400">{task.reward.exp}</span></div>
-                  )}
-                  {task.reward.spiritStones && (
-                    <div>灵石: <span className="text-blue-400">{task.reward.spiritStones}</span></div>
-                  )}
-                  {task.reward.items && task.reward.items.length > 0 && (
-                    <div>物品: {task.reward.items.map((item, idx) => (
-                      <span key={idx} className="text-yellow-400">{item.name} x{item.quantity}</span>
-                    ))}</div>
-                  )}
-                </div>
-                {task.completionBonus && (
-                  <div className="mt-3 pt-3 border-t border-stone-700">
-                    <div className="text-xs text-stone-500 mb-1">完美完成额外奖励:</div>
-                    <div className="space-y-1 text-xs text-stone-400">
-                      {task.completionBonus.contribution && (
-                        <div>贡献: <span className="text-mystic-gold">+{task.completionBonus.contribution}</span></div>
-                      )}
-                      {task.completionBonus.exp && (
-                        <div>修为: <span className="text-green-400">+{task.completionBonus.exp}</span></div>
-                      )}
-                      {task.completionBonus.spiritStones && (
-                        <div>灵石: <span className="text-blue-400">+{task.completionBonus.spiritStones}</span></div>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {task.successRate && (
-                  <div className="mt-2 text-xs text-stone-500">
-                    完美完成概率: <span className="text-yellow-400">{task.successRate}%</span>
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  logger.log('按钮被点击，开始执行任务');
-                  handleStartTask();
-                }}
-                disabled={loading}
-                className={`w-full py-3 border rounded transition-colors font-serif ${
-                  loading
-                    ? 'bg-stone-800 text-stone-600 border-stone-700 cursor-not-allowed'
-                    : 'bg-mystic-jade/20 text-mystic-jade border-mystic-jade hover:bg-mystic-jade/30'
-                }`}
-              >
-                {loading ? '执行中...' : '开始执行任务'}
-              </button>
+            {/* 进度条 */}
+            <div className="w-full bg-stone-700 rounded-full h-4 mb-2">
+              <div
+                className="bg-mystic-gold h-4 rounded-full transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              />
             </div>
-          )}
-
-          {stage === 'executing' && (
-            <div className="space-y-4">
-              <div className="text-center">
-                <Loader2 className="w-12 h-12 animate-spin text-mystic-gold mx-auto mb-4" />
-                <p className="text-stone-300 mb-4">正在执行任务...</p>
-
-                {/* 进度条 */}
-                <div className="w-full bg-stone-700 rounded-full h-4 mb-2">
-                  <div
-                    className="bg-mystic-gold h-4 rounded-full transition-all duration-300"
-                    style={{ width: `${progress}%` }}
-                  />
-                </div>
-                <p className="text-sm text-stone-400">{Math.floor(progress)}%</p>
-              </div>
-            </div>
-          )}
-
-          {stage === 'encounter' && !encounterResult && (
-            <div className="space-y-4">
-              <div className="text-center">
-                <Loader2 className="w-12 h-12 animate-spin text-mystic-gold mx-auto mb-4" />
-                <p className="text-stone-300 mb-4">正在执行任务...</p>
-              </div>
-            </div>
-          )}
-
-          {stage === 'encounter' && encounterResult && (
-            <div className="space-y-4">
-              <div className="bg-ink-800 p-4 rounded border border-stone-700">
-                <h4 className="text-lg font-serif text-mystic-gold mb-2">✨ 奇遇事件</h4>
-                <p className="text-stone-300 whitespace-pre-wrap mb-4">{encounterResult.story}</p>
-
-                {(encounterResult.expChange !== 0 || encounterResult.spiritStonesChange !== 0 || encounterResult.hpChange !== 0) && (
-                  <div className="space-y-1 text-sm">
-                    {encounterResult.expChange > 0 && (
-                      <div className="text-green-400">修为 +{encounterResult.expChange}</div>
-                    )}
-                    {encounterResult.spiritStonesChange > 0 && (
-                      <div className="text-blue-400">灵石 +{encounterResult.spiritStonesChange}</div>
-                    )}
-                    {encounterResult.hpChange !== 0 && (
-                      <div className={encounterResult.hpChange > 0 ? 'text-green-400' : 'text-red-400'}>
-                        气血 {encounterResult.hpChange > 0 ? '+' : ''}{encounterResult.hpChange}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <button
-                onClick={handleEncounterContinue}
-                className="w-full py-3 bg-mystic-jade/20 text-mystic-jade border border-mystic-jade hover:bg-mystic-jade/30 rounded transition-colors font-serif"
-              >
-                继续执行任务
-              </button>
-            </div>
-          )}
-
-          {stage === 'complete' && (() => {
-            const successRate = task.successRate ?? 75;
-            const isPerfectCompletion = Math.random() * 100 < successRate;
-            return (
-              <div className="space-y-4">
-                <div className="text-center">
-                  <div className="text-4xl mb-4">{isPerfectCompletion ? '✨' : '✅'}</div>
-                  <p className="text-xl font-serif text-mystic-gold mb-2">
-                    {isPerfectCompletion ? '完美完成！' : '任务完成！'}
-                  </p>
-                  <p className="text-stone-400">
-                    {isPerfectCompletion
-                      ? '你完美地完成了任务，获得了额外奖励！'
-                      : '你成功完成了任务，获得了相应的奖励。'}
-                  </p>
-                </div>
-
-              {encounterResult && (
-                <div className="bg-ink-800 p-4 rounded border border-stone-700">
-                  <h4 className="text-sm font-bold text-stone-200 mb-2">奇遇奖励</h4>
-                  <div className="space-y-1 text-sm text-stone-400">
-                    {encounterResult.expChange > 0 && (
-                      <div>修为: <span className="text-green-400">+{encounterResult.expChange}</span></div>
-                    )}
-                    {encounterResult.spiritStonesChange > 0 && (
-                      <div>灵石: <span className="text-blue-400">+{encounterResult.spiritStonesChange}</span></div>
-                    )}
-                    {encounterResult.hpChange !== 0 && (
-                      <div className={encounterResult.hpChange > 0 ? 'text-green-400' : 'text-red-400'}>
-                        气血: {encounterResult.hpChange > 0 ? '+' : ''}{encounterResult.hpChange}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-                <button
-                  onClick={handleComplete}
-                  className="w-full py-3 bg-mystic-gold/20 text-mystic-gold border border-mystic-gold hover:bg-mystic-gold/30 rounded transition-colors font-serif"
-                >
-                  确认
-                </button>
-              </div>
-            );
-          })()}
+            <p className="text-sm text-stone-400">{Math.floor(progress)}%</p>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+
+      {stage === 'encounter' && !encounterResult && (
+        <div className="space-y-4">
+          <div className="text-center">
+            <Loader2 className="w-12 h-12 animate-spin text-mystic-gold mx-auto mb-4" />
+            <p className="text-stone-300 mb-4">正在执行任务...</p>
+          </div>
+        </div>
+      )}
+
+      {stage === 'encounter' && encounterResult && (
+        <div className="space-y-4">
+          <div className="bg-ink-800 p-4 rounded border border-stone-700">
+            <h4 className="text-lg font-serif text-mystic-gold mb-2">✨ 奇遇事件</h4>
+            <p className="text-stone-300 whitespace-pre-wrap mb-4">{encounterResult.story}</p>
+
+            {(encounterResult.expChange !== 0 || encounterResult.spiritStonesChange !== 0 || encounterResult.hpChange !== 0) && (
+              <div className="space-y-1 text-sm">
+                {encounterResult.expChange > 0 && (
+                  <div className="text-green-400">修为 +{encounterResult.expChange}</div>
+                )}
+                {encounterResult.spiritStonesChange > 0 && (
+                  <div className="text-blue-400">灵石 +{encounterResult.spiritStonesChange}</div>
+                )}
+                {encounterResult.hpChange !== 0 && (
+                  <div className={encounterResult.hpChange > 0 ? 'text-green-400' : 'text-red-400'}>
+                    气血 {encounterResult.hpChange > 0 ? '+' : ''}{encounterResult.hpChange}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleEncounterContinue}
+            className="w-full py-3 bg-mystic-jade/20 text-mystic-jade border border-mystic-jade hover:bg-mystic-jade/30 rounded transition-colors font-serif"
+          >
+            继续执行任务
+          </button>
+        </div>
+      )}
+
+      {stage === 'complete' && (() => {
+        const successRate = task.successRate ?? 75;
+        const isPerfectCompletion = Math.random() * 100 < successRate;
+        return (
+          <div className="space-y-4">
+            <div className="text-center">
+              <div className="text-4xl mb-4">{isPerfectCompletion ? '✨' : '✅'}</div>
+              <p className="text-xl font-serif text-mystic-gold mb-2">
+                {isPerfectCompletion ? '完美完成！' : '任务完成！'}
+              </p>
+              <p className="text-stone-400">
+                {isPerfectCompletion
+                  ? '你完美地完成了任务，获得了额外奖励！'
+                  : '你成功完成了任务，获得了相应的奖励。'}
+              </p>
+            </div>
+
+          {encounterResult && (
+            <div className="bg-ink-800 p-4 rounded border border-stone-700">
+              <h4 className="text-sm font-bold text-stone-200 mb-2">奇遇奖励</h4>
+              <div className="space-y-1 text-sm text-stone-400">
+                {encounterResult.expChange > 0 && (
+                  <div>修为: <span className="text-green-400">+{encounterResult.expChange}</span></div>
+                )}
+                {encounterResult.spiritStonesChange > 0 && (
+                  <div>灵石: <span className="text-blue-400">+{encounterResult.spiritStonesChange}</span></div>
+                )}
+                {encounterResult.hpChange !== 0 && (
+                  <div className={encounterResult.hpChange > 0 ? 'text-green-400' : 'text-red-400'}>
+                    气血: {encounterResult.hpChange > 0 ? '+' : ''}{encounterResult.hpChange}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+            <button
+              onClick={handleComplete}
+              className="w-full py-3 bg-mystic-gold/20 text-mystic-gold border border-mystic-gold hover:bg-mystic-gold/30 rounded transition-colors font-serif"
+            >
+              确认
+            </button>
+          </div>
+        );
+      })()}
+    </Modal>
   );
 };
 
 export default SectTaskModal;
-

@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { X, Home, ArrowUp, Sprout, Package, Coins, Zap, Clock, CheckCircle, AlertCircle, BookOpen, Sparkles, Gauge } from 'lucide-react';
+import { Home, ArrowUp, Sprout, Package, Coins, Zap, Clock, CheckCircle, AlertCircle, BookOpen, Sparkles, Gauge } from 'lucide-react';
+import { Modal } from './common';
 import { PlayerStats, ItemRarity } from '../types';
 import { GROTTO_CONFIGS, PLANTABLE_HERBS, REALM_ORDER, SPIRIT_ARRAY_ENHANCEMENTS, SPEEDUP_CONFIG, HERBARIUM_REWARDS } from '../constants/index';
 import { getRarityTextColor } from '../utils/rarityUtils';
@@ -194,106 +195,99 @@ const GrottoModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div
-      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className="bg-paper-800 border-2 border-stone-700 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
+  // 标题额外内容（Tabs）
+  const titleExtra = (
+    <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+      <button
+        onClick={() => setActiveTab('overview')}
+        className={`px-4 py-2 rounded transition-colors whitespace-nowrap flex items-center gap-2 shrink-0 ${
+          activeTab === 'overview'
+            ? 'bg-mystic-gold text-stone-900 font-bold'
+            : 'bg-ink-800 text-stone-300 hover:bg-stone-700'
+        }`}
       >
-        {/* Header */}
-        <div className="bg-ink-900 p-4 border-b border-stone-700 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <Home className="text-mystic-gold" size={24} />
-            <h2 className="text-xl font-serif text-mystic-gold tracking-widest">洞府</h2>
-            {grotto.level > 0 && (
-              <span className="text-xs px-2 py-1 rounded bg-stone-700 text-stone-300 border border-stone-600">
-                {currentConfig?.name || `等级 ${grotto.level}`}
-              </span>
-            )}
-          </div>
-          <button
-            onClick={onClose}
-            className="text-stone-400 hover:text-stone-200 transition-colors p-1 rounded hover:bg-stone-700"
-            title="关闭"
-          >
-            <X size={24} />
-          </button>
-        </div>
+        <Home size={16} />
+        <span>总览</span>
+      </button>
+      <button
+        onClick={() => setActiveTab('upgrade')}
+        className={`px-4 py-2 rounded transition-colors whitespace-nowrap flex items-center gap-2 shrink-0 ${
+          activeTab === 'upgrade'
+            ? 'bg-mystic-gold text-stone-900 font-bold'
+            : 'bg-ink-800 text-stone-300 hover:bg-stone-700'
+        }`}
+      >
+        <ArrowUp size={16} />
+        <span>升级</span>
+      </button>
+      <button
+        onClick={() => setActiveTab('plant')}
+        className={`px-4 py-2 rounded transition-colors whitespace-nowrap flex items-center gap-2 relative shrink-0 ${
+          activeTab === 'plant'
+            ? 'bg-mystic-gold text-stone-900 font-bold'
+            : 'bg-ink-800 text-stone-300 hover:bg-stone-700'
+        }`}
+      >
+        <Sprout size={16} />
+        <span>种植</span>
+        {matureHerbsCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+            {matureHerbsCount}
+          </span>
+        )}
+      </button>
+      <button
+        onClick={() => setActiveTab('enhancement')}
+        className={`px-4 py-2 rounded transition-colors whitespace-nowrap flex items-center gap-2 shrink-0 ${
+          activeTab === 'enhancement'
+            ? 'bg-mystic-gold text-stone-900 font-bold'
+            : 'bg-ink-800 text-stone-300 hover:bg-stone-700'
+        }`}
+      >
+        <Zap size={16} />
+        <span>改造</span>
+      </button>
+      <button
+        onClick={() => setActiveTab('herbarium')}
+        className={`px-4 py-2 rounded transition-colors whitespace-nowrap flex items-center gap-2 shrink-0 relative ${
+          activeTab === 'herbarium'
+            ? 'bg-mystic-gold text-stone-900 font-bold'
+            : 'bg-ink-800 text-stone-300 hover:bg-stone-700'
+        }`}
+      >
+        <BookOpen size={16} />
+        <span>图鉴</span>
+        {grotto.herbarium && grotto.herbarium.length > 0 && (
+          <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+            {grotto.herbarium.length}
+          </span>
+        )}
+      </button>
+    </div>
+  );
 
-        {/* Tabs */}
-        <div className="bg-ink-900 border-b border-stone-700 flex gap-2 p-2 overflow-x-auto scrollbar-hide flex-shrink-0">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-4 py-2 rounded transition-colors whitespace-nowrap flex items-center gap-2 flex-shrink-0 ${
-              activeTab === 'overview'
-                ? 'bg-mystic-gold text-stone-900 font-bold'
-                : 'bg-ink-800 text-stone-300 hover:bg-stone-700'
-            }`}
-          >
-            <Home size={16} />
-            <span>总览</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('upgrade')}
-            className={`px-4 py-2 rounded transition-colors whitespace-nowrap flex items-center gap-2 flex-shrink-0 ${
-              activeTab === 'upgrade'
-                ? 'bg-mystic-gold text-stone-900 font-bold'
-                : 'bg-ink-800 text-stone-300 hover:bg-stone-700'
-            }`}
-          >
-            <ArrowUp size={16} />
-            <span>升级</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('plant')}
-            className={`px-4 py-2 rounded transition-colors whitespace-nowrap flex items-center gap-2 relative flex-shrink-0 ${
-              activeTab === 'plant'
-                ? 'bg-mystic-gold text-stone-900 font-bold'
-                : 'bg-ink-800 text-stone-300 hover:bg-stone-700'
-            }`}
-          >
-            <Sprout size={16} />
-            <span>种植</span>
-            {matureHerbsCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {matureHerbsCount}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('enhancement')}
-            className={`px-4 py-2 rounded transition-colors whitespace-nowrap flex items-center gap-2 flex-shrink-0 ${
-              activeTab === 'enhancement'
-                ? 'bg-mystic-gold text-stone-900 font-bold'
-                : 'bg-ink-800 text-stone-300 hover:bg-stone-700'
-            }`}
-          >
-            <Zap size={16} />
-            <span>改造</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('herbarium')}
-            className={`px-4 py-2 rounded transition-colors whitespace-nowrap flex items-center gap-2 flex-shrink-0 relative ${
-              activeTab === 'herbarium'
-                ? 'bg-mystic-gold text-stone-900 font-bold'
-                : 'bg-ink-800 text-stone-300 hover:bg-stone-700'
-            }`}
-          >
-            <BookOpen size={16} />
-            <span>图鉴</span>
-            {grotto.herbarium && grotto.herbarium.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {grotto.herbarium.length}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="modal-scroll-container modal-scroll-content p-6 min-h-0">
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        <span className="flex items-center gap-2">
+          洞府
+          {grotto.level > 0 && (
+            <span className="text-xs px-2 py-1 rounded bg-stone-700 text-stone-300 border border-stone-600 font-normal">
+              {currentConfig?.name || `等级 ${grotto.level}`}
+            </span>
+          )}
+        </span>
+      }
+      titleIcon={<Home className="text-mystic-gold" size={24} />}
+      titleExtra={titleExtra}
+      size="4xl"
+      height="full"
+      showHeaderBorder={false}
+    >
+      {/* Content */}
+      <div className="space-y-6">
           {activeTab === 'overview' && (
             <div className="space-y-6">
               {grotto.level === 0 ? (
@@ -992,8 +986,7 @@ const GrottoModal: React.FC<Props> = ({
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 };
 
