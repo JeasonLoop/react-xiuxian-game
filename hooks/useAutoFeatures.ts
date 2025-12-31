@@ -6,6 +6,7 @@
 import { useEffect, useRef } from 'react';
 import { PlayerStats } from '../types';
 import { AutoAdventureConfig } from '../components/AutoAdventureConfigModal';
+import { getPlayerTotalStats } from '../utils/statUtils';
 
 interface UseAutoFeaturesParams {
   autoMeditate: boolean;
@@ -88,13 +89,18 @@ export function useAutoFeatures({
         // 检查血量阈值
         if (autoAdventureConfig && autoAdventureConfig.minHpThreshold > 0) {
           const currentHp = currentPlayer.hp || 0;
-          if (currentHp <= currentHp * (autoAdventureConfig.minHpThreshold / 100)) {
+          // 获取实际最大血量（包含功法加成等）
+          const totalStats = getPlayerTotalStats(currentPlayer);
+          const actualMaxHp = totalStats.maxHp;
+          // 计算阈值血量：最大血量 * 阈值百分比
+          const thresholdHp = actualMaxHp * (autoAdventureConfig.minHpThreshold / 100);
+          if (currentHp <= thresholdHp) {
             // 血量低于阈值，自动停止历练
             if (setAutoAdventure) {
               setAutoAdventure(false);
             }
             if (addLog) {
-              addLog(`血量低于阈值 ${autoAdventureConfig.minHpThreshold}%，自动停止历练。`, 'warning');
+              addLog(`血量低于阈值 ${autoAdventureConfig.minHpThreshold}%（${Math.floor(thresholdHp)}/${Math.floor(actualMaxHp)}），自动停止历练。`, 'warning');
             }
             return;
           }
