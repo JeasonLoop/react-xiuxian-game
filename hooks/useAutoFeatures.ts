@@ -15,11 +15,6 @@ interface UseAutoFeaturesParams {
   isShopOpen: boolean;
   isReputationEventOpen: boolean;
   isTurnBasedBattleOpen: boolean;
-  autoAdventurePausedByShop: boolean;
-  autoAdventurePausedByBattle: boolean;
-  autoAdventurePausedByReputationEvent: boolean;
-  autoAdventurePausedByHeavenEarthSoul: boolean;
-  setAutoAdventurePausedByShop: (paused: boolean) => void;
   handleMeditate: () => void;
   handleAdventure: () => void;
   setCooldown: (cooldown: number) => void;
@@ -37,10 +32,6 @@ export function useAutoFeatures({
   isShopOpen,
   isReputationEventOpen,
   isTurnBasedBattleOpen,
-  autoAdventurePausedByShop,
-  autoAdventurePausedByBattle,
-  autoAdventurePausedByReputationEvent,
-  autoAdventurePausedByHeavenEarthSoul,
   handleMeditate,
   handleAdventure,
   setCooldown,
@@ -79,10 +70,6 @@ export function useAutoFeatures({
       isShopOpen ||
       isReputationEventOpen ||
       isTurnBasedBattleOpen ||
-      autoAdventurePausedByShop ||
-      autoAdventurePausedByBattle ||
-      autoAdventurePausedByReputationEvent ||
-      autoAdventurePausedByHeavenEarthSoul ||
       autoMeditate
     )
       return;
@@ -90,7 +77,7 @@ export function useAutoFeatures({
     const timer = setTimeout(() => {
       const currentPlayer = playerRef.current;
       // 再次检查条件，防止状态在延迟期间发生变化
-      if (autoAdventure && !loading && cooldown === 0 && currentPlayer && !autoMeditate && !isReputationEventOpen && !isTurnBasedBattleOpen && !autoAdventurePausedByShop && !autoAdventurePausedByBattle && !autoAdventurePausedByReputationEvent && !autoAdventurePausedByHeavenEarthSoul) {
+      if (autoAdventure && !loading && cooldown === 0 && currentPlayer && !autoMeditate && !isReputationEventOpen && !isTurnBasedBattleOpen) {
         handleAdventure();
       }
     }, 500);
@@ -105,10 +92,6 @@ export function useAutoFeatures({
     isShopOpen,
     isReputationEventOpen,
     isTurnBasedBattleOpen,
-    autoAdventurePausedByShop,
-    autoAdventurePausedByBattle,
-    autoAdventurePausedByReputationEvent,
-    autoAdventurePausedByHeavenEarthSoul,
     handleAdventure,
   ]);
 }

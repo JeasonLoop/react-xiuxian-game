@@ -50,6 +50,9 @@ interface UseAdventureHandlersProps {
     bossId?: string; // 指定的天地之魄BOSS ID（用于事件模板）
   }) => void; // 打开回合制战斗
   skipBattle?: boolean; // 是否跳过战斗（自动模式下）
+  fleeOnBattle?: boolean; // 遇到战斗是否逃跑
+  skipShop?: boolean; // 是否跳过商店
+  skipReputationEvent?: boolean; // 是否跳过声望事件
   useTurnBasedBattle?: boolean; // 是否使用回合制战斗系统
   onReputationEvent?: (event: AdventureResult['reputationEvent']) => void; // 声望事件回调
   autoAdventure?: boolean; // 是否正在自动历练
@@ -70,12 +73,90 @@ export function useAdventureHandlers({
   onOpenBattleModal,
   onOpenTurnBasedBattle,
   skipBattle = false,
+  fleeOnBattle = false,
+  skipShop = false,
   useTurnBasedBattle = true, // 默认使用新的回合制战斗系统
   onReputationEvent,
   autoAdventure = false,
   setAutoAdventurePausedByHeavenEarthSoul,
   setAutoAdventure,
 }: UseAdventureHandlersProps) {
+  /**
+   * 处理战斗的公共函数
+   * 根据配置决定是跳过战斗、打开回合制战斗界面，还是使用自动战斗系统
+   */
+  const handleBattle = async (
+    battleType: AdventureType,
+    riskLevel: '低' | '中' | '高' | '极度危险',
+    realmMinRealm: RealmType,
+    bossId?: string,
+    huntSectId?: string,
+    huntLevel?: number
+  ): Promise<{
+    result: AdventureResult;
+    battleContext: BattleReplay | null;
+    shouldReturn: boolean;
+  }> => {
+    // 如果配置了逃跑，直接跳过战斗
+    if (fleeOnBattle) {
+      addLog('你选择避开战斗，继续历练...', 'normal');
+      setLoading(false);
+      setCooldown(1);
+      return { result: {} as AdventureResult, battleContext: null, shouldReturn: true };
+    }
+
+    // 自动历练模式下，如果配置了跳过战斗，直接使用自动战斗系统并展示结果
+    if (autoAdventure && skipBattle) {
+      const battleResolution = await resolveBattleEncounter(
+        player,
+        battleType,
+        riskLevel,
+        realmMinRealm,
+        undefined,
+        huntSectId,
+        huntLevel,
+        bossId
+      );
+      const battleResult = battleResolution.adventureResult;
+      const battleCtx = battleResolution.replay;
+      // 直接展示战斗结果
+      if (battleCtx) {
+        onOpenBattleModal(battleCtx);
+      }
+      return { result: battleResult, battleContext: battleCtx, shouldReturn: false };
+    } else if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
+      // 如果使用回合制战斗系统，打开回合制战斗界面
+      setTimeout(() => {
+        onOpenTurnBasedBattle({
+          adventureType: battleType,
+          riskLevel,
+          realmMinRealm,
+          bossId,
+        });
+      }, 2000);
+      setLoading(false);
+      setCooldown(2);
+      return { result: {} as AdventureResult, battleContext: null, shouldReturn: true };
+    } else {
+      // 否则使用旧的自动战斗系统
+      const battleResolution = await resolveBattleEncounter(
+        player,
+        battleType,
+        riskLevel,
+        realmMinRealm,
+        undefined,
+        huntSectId,
+        huntLevel,
+        bossId
+      );
+      return {
+        result: battleResolution.adventureResult,
+        battleContext: battleResolution.replay,
+        shouldReturn: false,
+      };
+    }
+  };
+
   const executeAdventure = async (
     adventureType: AdventureType,
     realmName?: string,
@@ -115,57 +196,37 @@ export function useAdventureHandlers({
       if (isHunted && huntSectId && Math.random() < 0.11) {
         addLog('⚠️ 你感受到了一股强烈的杀意！宗门追杀者出现了！', 'danger');
 
-        // 如果使用回合制战斗系统，打开回合制战斗界面
-        if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
-          setTimeout(() => {
-            onOpenTurnBasedBattle({
-              adventureType: 'sect_challenge',
-              riskLevel: huntLevel >= 3 ? '极度危险' : huntLevel >= 2 ? '高' : huntLevel >= 1 ? '中' : '低',
-              realmMinRealm: player.realm,
-            });
-          }, 2000);
-          setLoading(false);
-          setCooldown(2); // 设置冷却时间，防止立即再次触发历练
-          return;
-        }
-
-        // 否则使用旧的自动战斗系统
-        battleResolution = await resolveBattleEncounter(
-          player,
+        // 使用公共函数处理战斗
+        const huntRiskLevel = huntLevel >= 3 ? '极度危险' : huntLevel >= 2 ? '高' : huntLevel >= 1 ? '中' : '低';
+        const battleResult = await handleBattle(
           'sect_challenge',
-          huntLevel >= 3 ? '极度危险' : huntLevel >= 2 ? '高' : huntLevel >= 1 ? '中' : '低',
+          huntRiskLevel,
           player.realm,
           undefined,
           huntSectId,
           huntLevel
         );
-        result = battleResolution.adventureResult;
-        battleContext = battleResolution.replay;
+        if (battleResult.shouldReturn) {
+          return;
+        }
+        result = battleResult.result;
+        battleContext = battleResult.battleContext;
       } else if (shouldTriggerBattle(player, adventureType)) {
-        // 如果使用回合制战斗系统，打开回合制战斗界面
-        if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
-          setTimeout(() => {
-          onOpenTurnBasedBattle({
-            adventureType,
-            riskLevel,
-            realmMinRealm,
-          });
-          }, 2000);
-
+        // 如果配置了逃跑，直接跳过战斗
+        if (fleeOnBattle) {
+          addLog('你选择避开战斗，继续历练...', 'normal');
           setLoading(false);
-          setCooldown(2); // 设置冷却时间，防止立即再次触发历练
-          return; // 回合制战斗会在战斗结束后通过回调更新玩家状态
+          setCooldown(1);
+          return;
         }
 
-        // 否则使用旧的自动战斗系统
-        battleResolution = await resolveBattleEncounter(
-          player,
-          adventureType,
-          riskLevel,
-          realmMinRealm
-        );
-        result = battleResolution.adventureResult;
-        battleContext = battleResolution.replay;
+        // 使用公共函数处理战斗
+        const battleResult = await handleBattle(adventureType, riskLevel || '低', realmMinRealm || player.realm);
+        if (battleResult.shouldReturn) {
+          return;
+        }
+        result = battleResult.result;
+        battleContext = battleResult.battleContext;
       } else {
         // 100%使用模板库
         initializeEventTemplateLibrary();
@@ -262,8 +323,41 @@ export function useAdventureHandlers({
                   // 玩家选择挑战
                   addLog(`你决定挑战${boss.name}！`, 'warning');
 
-                  // 如果使用回合制战斗系统，打开回合制战斗界面
-                  if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
+                  // 自动历练模式下，如果配置了跳过战斗，直接使用自动战斗系统并展示结果
+                  if (autoAdventure && skipBattle) {
+                    resolveBattleEncounter(
+                      player,
+                      actualAdventureType,
+                      riskLevel,
+                      player.realm,
+                      undefined,
+                      undefined,
+                      undefined,
+                      bossId
+                    ).then((battleResolution) => {
+                      const battleResult = battleResolution.adventureResult;
+                      const battleCtx = battleResolution.replay;
+                      // 直接展示战斗结果
+                      if (battleCtx) {
+                        onOpenBattleModal(battleCtx);
+                      }
+                      executeAdventureCore({
+                        result: battleResult,
+                        battleContext: battleCtx,
+                        player,
+                        setPlayer,
+                        addLog,
+                        triggerVisual,
+                        onOpenBattleModal,
+                        adventureType: actualAdventureType,
+                        realmName,
+                      });
+                      setLoading(false);
+                      setCooldown(2);
+                    });
+                    return;
+                  } else if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
+                    // 如果使用回合制战斗系统，打开回合制战斗界面
                     setTimeout(() => {
                       onOpenTurnBasedBattle({
                         adventureType: actualAdventureType,
@@ -323,34 +417,18 @@ export function useAdventureHandlers({
             }
 
             // 如果没有BOSS信息，使用默认流程
-            // 如果使用回合制战斗系统，打开回合制战斗界面
-            if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
-              setTimeout(() => {
-                onOpenTurnBasedBattle({
-                  adventureType: actualAdventureType,
-                  riskLevel,
-                  realmMinRealm: player.realm,
-                  bossId,
-                });
-              }, 2000);
-              setLoading(false);
-              setCooldown(2);
-              return;
-            }
-
-            // 否则使用旧的自动战斗系统
-            battleResolution = await resolveBattleEncounter(
-              player,
+            // 使用公共函数处理战斗
+            const battleResult = await handleBattle(
               actualAdventureType,
-              riskLevel,
+              riskLevel || '低',
               player.realm,
-              undefined,
-              undefined,
-              undefined,
               bossId
             );
-            result = battleResolution.adventureResult;
-            battleContext = battleResolution.replay;
+            if (battleResult.shouldReturn) {
+              return;
+            }
+            result = battleResult.result;
+            battleContext = battleResult.battleContext;
           }
         } else {
           // 如果模板库为空，使用默认事件
@@ -425,7 +503,12 @@ export function useAdventureHandlers({
         const shopTypes = [ShopType.Village, ShopType.City, ShopType.Sect, ShopType.LimitedTime, ShopType.BlackMarket, ShopType.Reputation];
         const randomShopType =
           shopTypes[Math.floor(Math.random() * shopTypes.length)];
-        onOpenShop(randomShopType);
+        // 如果配置了跳过商店，不打开商店
+        if (!skipShop) {
+          onOpenShop(randomShopType);
+        } else {
+          addLog('你选择跳过商店，继续历练...', 'normal');
+        }
         setLoading(false);
         setCooldown(2);
       }, 3000);
