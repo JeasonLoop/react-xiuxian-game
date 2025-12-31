@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React, { useMemo } from 'react';
 import {
   PlayerStats,
   Shop,
@@ -11,25 +11,25 @@ import {
 import { useUIStore, useModals } from '../../store';
 import { useShallow } from 'zustand/react/shallow';
 
-// 使用 React.lazy 异步加载所有弹窗以优化性能
-const InventoryModal = lazy(() => import('../../components/InventoryModal'));
-const CultivationModal = lazy(() => import('../../components/CultivationModal'));
-const AlchemyModal = lazy(() => import('../../components/AlchemyModal'));
-const ArtifactUpgradeModal = lazy(() => import('../../components/ArtifactUpgradeModal'));
-const SectModal = lazy(() => import('../../components/SectModal'));
-const SecretRealmModal = lazy(() => import('../../components/SecretRealmModal'));
-const BattleModal = lazy(() => import('../../components/BattleModal'));
-const TurnBasedBattleModal = lazy(() => import('../../components/TurnBasedBattleModal'));
-const CharacterModal = lazy(() => import('../../components/CharacterModal'));
-const AchievementModal = lazy(() => import('../../components/AchievementModal'));
-const PetModal = lazy(() => import('../../components/PetModal'));
-const LotteryModal = lazy(() => import('../../components/LotteryModal'));
-const SettingsModal = lazy(() => import('../../components/SettingsModal'));
-const DailyQuestModal = lazy(() => import('../../components/DailyQuestModal'));
-const ShopModal = lazy(() => import('../../components/ShopModal'));
-const ReputationEventModal = lazy(() => import('../../components/ReputationEventModal'));
-const GrottoModal = lazy(() => import('../../components/GrottoModal'));
-const SectTreasureVaultModal = lazy(() => import('../../components/SectTreasureVaultModal'));
+// 直接导入所有弹窗组件，避免 lazy 加载导致的首次打开延迟
+import InventoryModal from '../../components/InventoryModal';
+import CultivationModal from '../../components/CultivationModal';
+import AlchemyModal from '../../components/AlchemyModal';
+import ArtifactUpgradeModal from '../../components/ArtifactUpgradeModal';
+import SectModal from '../../components/SectModal';
+import SecretRealmModal from '../../components/SecretRealmModal';
+import BattleModal from '../../components/BattleModal';
+import TurnBasedBattleModal from '../../components/TurnBasedBattleModal';
+import CharacterModal from '../../components/CharacterModal';
+import AchievementModal from '../../components/AchievementModal';
+import PetModal from '../../components/PetModal';
+import LotteryModal from '../../components/LotteryModal';
+import SettingsModal from '../../components/SettingsModal';
+import DailyQuestModal from '../../components/DailyQuestModal';
+import ShopModal from '../../components/ShopModal';
+import ReputationEventModal from '../../components/ReputationEventModal';
+import GrottoModal from '../../components/GrottoModal';
+import SectTreasureVaultModal from '../../components/SectTreasureVaultModal';
 
 import { BattleReplay } from '../../services/battleService';
 import { RandomSectTask } from '../../services/randomService';
@@ -207,17 +207,28 @@ function ModalsContainer({
       reputationEvent: state.reputationEvent,
     }))
   );
-  const modalState = {
-    currentShop,
-    itemToUpgrade,
-    battleReplay,
-    revealedBattleRounds,
-    turnBasedBattleParams,
-    reputationEvent,
-  };
+  // 使用 useMemo 缓存 modalState，避免每次渲染都创建新对象
+  const modalState = useMemo(
+    () => ({
+      currentShop,
+      itemToUpgrade,
+      battleReplay,
+      revealedBattleRounds,
+      turnBasedBattleParams,
+      reputationEvent,
+    }),
+    [
+      currentShop,
+      itemToUpgrade,
+      battleReplay,
+      revealedBattleRounds,
+      turnBasedBattleParams,
+      reputationEvent,
+    ]
+  );
 
   return (
-    <Suspense fallback={null}>
+    <>
       {modals.isBattleModalOpen && (
         <BattleModal
           isOpen={modals.isBattleModalOpen}
@@ -228,9 +239,9 @@ function ModalsContainer({
         />
       )}
 
-      {(modals.isTurnBasedBattleOpen || false) && modalState.turnBasedBattleParams && (
+      {modals.isTurnBasedBattleOpen && modalState.turnBasedBattleParams && (
         <TurnBasedBattleModal
-          isOpen={modals.isTurnBasedBattleOpen || false}
+          isOpen={modals.isTurnBasedBattleOpen}
           player={player}
           adventureType={modalState.turnBasedBattleParams.adventureType}
           riskLevel={modalState.turnBasedBattleParams.riskLevel}
@@ -398,7 +409,7 @@ function ModalsContainer({
           isOpen={modals.isDailyQuestOpen}
           onClose={() => handlers.setIsDailyQuestOpen(false)}
           player={player}
-          onClaimReward={handlers.handleClaimQuestReward || (() => {})}
+          onClaimReward={handlers.handleClaimQuestReward ?? (() => {})}
         />
       )}
 
@@ -453,7 +464,7 @@ function ModalsContainer({
           onUpdateVault={handlers.handleUpdateVault}
         />
       )}
-    </Suspense>
+    </>
   );
 }
 

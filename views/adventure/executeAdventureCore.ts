@@ -18,7 +18,6 @@ import {
   DISCOVERABLE_RECIPES,
   PET_EVOLUTION_MATERIALS,
   getRandomPetName,
-  REALM_DATA,
   FOUNDATION_TREASURES,
   HEAVEN_EARTH_ESSENCES,
   HEAVEN_EARTH_MARROWS,
@@ -38,7 +37,6 @@ import { getAllArtifacts, getItemFromConstants } from '../../utils/itemConstants
 import {
   normalizeItemEffect,
   inferItemTypeAndSlot,
-  adjustEquipmentStatsByRealm,
   adjustItemStatsByRealm,
 } from '../../utils/itemUtils';
 import { normalizeRarityValue } from '../../utils/rarityUtils';
@@ -57,6 +55,7 @@ interface ExecuteAdventureCoreProps {
   adventureType: AdventureType;
   skipBattle?: boolean;
   onReputationEvent?: (event: AdventureResult['reputationEvent']) => void;
+  onPauseAutoAdventure?: () => void; // 暂停自动历练回调（用于天地之魄等特殊事件）
 }
 
 // 已移除 ensureEquipmentAttributes 函数
@@ -216,6 +215,23 @@ const applyResultToPlayer = (
         }
         if ((itemFromConstants as any).advancedItemId && !(itemData as any).advancedItemId) {
           (itemData as any).advancedItemId = (itemFromConstants as any).advancedItemId;
+        }
+
+        // 验证装备槽位：即使常量池中有槽位，也要通过名称推断验证是否正确
+        // 如果推断出的槽位与常量池不一致，且推断结果更合理（基于物品名称），则使用推断结果
+        if (isEquippable && equipmentSlot) {
+          const inferred = inferItemTypeAndSlot(itemName, itemType, itemData.description || '', isEquippable);
+          if (inferred.equipmentSlot && inferred.equipmentSlot !== equipmentSlot) {
+            // 如果推断出的槽位与常量池不一致，优先使用推断结果（因为推断基于物品名称，更准确）
+            // 这样可以修复常量池中可能存在的错误槽位定义
+            equipmentSlot = inferred.equipmentSlot;
+            if (import.meta.env.DEV) {
+              console.warn(`【槽位修正】物品"${itemName}"的槽位从常量池的"${itemFromConstants.equipmentSlot}"修正为推断的"${inferred.equipmentSlot}"`);
+            }
+          } else if (!equipmentSlot && inferred.equipmentSlot) {
+            // 如果常量池中没有槽位，但推断出了槽位，使用推断结果
+            equipmentSlot = inferred.equipmentSlot;
+          }
         }
       } else {
         // 常量池中没有，才进行类型推断
@@ -589,13 +605,12 @@ const applyResultToPlayer = (
 
   // 天地之髓：元婴期、化神期历练/秘境有概率获得（元婴期概率稍低，化神期概率更高）
   const nascentSoulIndex = REALM_ORDER.indexOf(RealmType.NascentSoul);
-  const spiritSeveringIndex = REALM_ORDER.indexOf(RealmType.SpiritSevering);
   if (currentRealmIndex >= nascentSoulIndex) {
     // 元婴期：概率较低；化神期及以上：概率较高
     const isNascentSoul = currentRealmIndex === nascentSoulIndex;
     const marrowChance = isNascentSoul
-      ? (isSecretRealm ? 0.06 : (adventureType === 'lucky' ? 0.07 : 0.03)) // 元婴期：1.5-3%
-      : (isSecretRealm ? 0.06 : (adventureType === 'lucky' ? 0.07 : 0.03)); // 化神期及以上：2.5-6%
+      ? (isSecretRealm ? 0.15 : (adventureType === 'lucky' ? 0.08 : 0.08)) // 元婴期：普通8%，机缘8%，秘境15%
+      : (isSecretRealm ? 0.10 : (adventureType === 'lucky' ? 0.12 : 0.08)); // 化神期及以上：普通8%，机缘12%，秘境10%
     if (Math.random() < marrowChance) {
       const marrows = Object.values(HEAVEN_EARTH_MARROWS);
       if (marrows.length > 0) {
@@ -670,13 +685,7 @@ const applyResultToPlayer = (
     }
   }
 
-  // 天地之魄：从事件模板中获取，触发挑战
-  if (result.heavenEarthSoulEncounter) {
-    const bossId = result.heavenEarthSoulEncounter;
-    addLog(`你遇到了天地之魄【${HEAVEN_EARTH_SOUL_BOSSES[bossId]?.name || '未知'}】！这是合道期的考验，只有击败它才能获得合道期的资格！`, 'danger');
-    // 注意：实际战斗会在后续的战斗逻辑中处理，这里只是标记遇到了
-    // 由于adventureType已经设置为'dao_combining_challenge'，战斗系统会自动识别
-  }
+
 
   // 天地之魄挑战胜利：给予对应天地之魄功法（作为进阶物品显示）
   if (adventureType === 'dao_combining_challenge' && battleContext?.victory && battleContext?.bossId) {
@@ -827,7 +836,7 @@ const applyResultToPlayer = (
 };
 
 export async function executeAdventureCore({
-  result, battleContext, petSkillCooldowns, player, setPlayer, addLog, triggerVisual, onOpenBattleModal, realmName, adventureType, riskLevel, onReputationEvent
+  result, battleContext, petSkillCooldowns, player, setPlayer, addLog, triggerVisual, onOpenBattleModal, realmName, adventureType, riskLevel, onReputationEvent, onPauseAutoAdventure
 }: ExecuteAdventureCoreProps & { riskLevel?: '低' | '中' | '高' | '极度危险'; }) {
   // Visual Effects
   const safeHpChange = result.hpChange || 0;
@@ -863,7 +872,7 @@ export async function executeAdventureCore({
           ...prev,
           sectId: huntSectId,
           sectRank: SectRank.Leader,
-          sectMasterId: prev.id || 'player-leader',
+          sectMasterId: 'player-leader', // 玩家成为宗主时，设置为玩家标识
           sectHuntEndTime: null, // 清除追杀状态
           sectHuntLevel: 0,
           sectHuntSectId: null,
@@ -894,6 +903,12 @@ export async function executeAdventureCore({
   // Apply Main Result
   // 根据 adventureType 判断是否为秘境
   const isSecretRealm = adventureType === 'secret_realm';
+
+  // 在应用结果之前，检查是否触发了天地之魄，如果是则立即暂停自动历练
+  if ((result.adventureType === 'dao_combining_challenge' || result.heavenEarthSoulEncounter)) {
+    onPauseAutoAdventure();
+  }
+
   setPlayer(prev => applyResultToPlayer(prev, result, { isSecretRealm, adventureType, realmName, riskLevel, battleContext, petSkillCooldowns, addLog, triggerVisual }));
 
   // Events & Logs

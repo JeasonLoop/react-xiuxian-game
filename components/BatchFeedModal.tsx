@@ -329,17 +329,19 @@ const BatchFeedModal: React.FC<Props> = ({
                 return (
                   <div
                     key={item.id}
-                    className={`p-3 rounded border flex flex-col gap-2 transition-colors ${
+                    className={`p-3 rounded border flex flex-col gap-2 transition-colors cursor-pointer ${
                       isSelected
                         ? 'bg-green-900/30 border-green-600'
                         : 'bg-ink-800 hover:bg-ink-700 border-stone-700'
                     }`}
+                    onClick={() => handleToggleItem(item.id)}
                   >
                     <div className="flex items-start gap-3">
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => handleToggleItem(item.id)}
+                        onClick={(e) => e.stopPropagation()}
                         className="mt-1"
                       />
                       <div className="flex-1 min-w-0">

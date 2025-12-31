@@ -98,12 +98,14 @@ export interface AppState {
       adventureType: AdventureType;
       riskLevel?: '低' | '中' | '高' | '极度危险';
       realmMinRealm?: RealmType;
+      bossId?: string;
     } | null;
     setParams: (
       params: {
         adventureType: AdventureType;
         riskLevel?: '低' | '中' | '高' | '极度危险';
         realmMinRealm?: RealmType;
+        bossId?: string;
       } | null
     ) => void;
   };
@@ -126,6 +128,8 @@ export interface AppState {
     setPausedByBattle: (value: boolean) => void;
     pausedByReputationEvent: boolean;
     setPausedByReputationEvent: (value: boolean) => void;
+    pausedByHeavenEarthSoul: boolean;
+    setPausedByHeavenEarthSoul: (value: boolean) => void;
   };
   global: {
     loading: boolean;
@@ -223,6 +227,8 @@ export function useAppState(): AppState {
       setPausedByBattle: store.setPausedByBattle,
       pausedByReputationEvent: store.pausedByReputationEvent,
       setPausedByReputationEvent: store.setPausedByReputationEvent,
+      pausedByHeavenEarthSoul: store.pausedByHeavenEarthSoul,
+      setPausedByHeavenEarthSoul: store.setPausedByHeavenEarthSoul,
     },
     global: {
       loading: store.loading,

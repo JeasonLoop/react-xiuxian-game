@@ -19,7 +19,11 @@ interface UseAutoFeaturesParams {
   pausedByShop: boolean;
   pausedByBattle: boolean;
   pausedByReputationEvent: boolean;
+  pausedByHeavenEarthSoul: boolean;
   setPausedByShop: (paused: boolean) => void;
+  setPausedByBattle: (paused: boolean) => void;
+  setPausedByReputationEvent: (paused: boolean) => void;
+  setPausedByHeavenEarthSoul: (paused: boolean) => void;
   handleMeditate: () => void;
   handleAdventure: () => void;
   setCooldown: (cooldown: number) => void;
@@ -41,6 +45,7 @@ export function useAutoFeatures({
   pausedByShop,
   pausedByBattle,
   pausedByReputationEvent,
+  pausedByHeavenEarthSoul,
   handleMeditate,
   handleAdventure,
   setCooldown,
@@ -73,7 +78,52 @@ export function useAutoFeatures({
     pausedByShop,
     pausedByBattle,
     pausedByReputationEvent,
+    pausedByHeavenEarthSoul,
   });
+
+  // 自动历练逻辑
+  useEffect(() => {
+    // 提前检查所有条件
+    if (
+      !autoAdventure ||
+      !playerRef.current ||
+      loading ||
+      cooldown > 0 ||
+      isShopOpen ||
+      isReputationEventOpen ||
+      isTurnBasedBattleOpen ||
+      pausedByShop ||
+      pausedByBattle ||
+      pausedByReputationEvent ||
+      pausedByHeavenEarthSoul ||
+      autoMeditate
+    )
+      return;
+
+    const timer = setTimeout(() => {
+      const currentPlayer = playerRef.current;
+      // 再次检查条件，防止状态在延迟期间发生变化
+      if (autoAdventure && !loading && cooldown === 0 && currentPlayer && !autoMeditate && !isReputationEventOpen && !isTurnBasedBattleOpen && !pausedByShop && !pausedByBattle && !pausedByReputationEvent && !pausedByHeavenEarthSoul) {
+        handleAdventure();
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+    // 移除了 player 依赖，使用 ref 避免频繁触发
+  }, [
+    autoAdventure,
+    loading,
+    cooldown,
+    player,
+    isShopOpen,
+    isReputationEventOpen,
+    isTurnBasedBattleOpen,
+    isAlertOpen,
+    pausedByShop,
+    pausedByBattle,
+    pausedByReputationEvent,
+    pausedByHeavenEarthSoul,
+  ]);
 
   // 统一更新所有 refs
   useEffect(() => {
@@ -93,6 +143,7 @@ export function useAutoFeatures({
       pausedByShop,
       pausedByBattle,
       pausedByReputationEvent,
+      pausedByHeavenEarthSoul,
     };
     playerRef.current = player;
   }, [
@@ -108,6 +159,7 @@ export function useAutoFeatures({
     pausedByShop,
     pausedByBattle,
     pausedByReputationEvent,
+    pausedByHeavenEarthSoul,
     handleMeditate,
     handleAdventure,
     setCooldown,
@@ -131,6 +183,7 @@ export function useAutoFeatures({
       state.pausedByShop ||
       state.pausedByBattle ||
       state.pausedByReputationEvent ||
+      state.pausedByHeavenEarthSoul ||
       state.autoMeditate || // 自动打坐时暂停自动历练
       isExecutingAdventureRef.current
     );

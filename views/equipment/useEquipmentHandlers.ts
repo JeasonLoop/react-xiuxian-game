@@ -19,6 +19,7 @@ import {
 } from '../../constants/index';
 import { useGameStore } from '../../store';
 import { useUIStore } from '../../store';
+import { findEmptyEquipmentSlot, getEquipmentSlotLabel } from '../../utils/equipmentUtils';
 
 // 兼容旧接口（可选，用于向后兼容）
 interface UseEquipmentHandlersProps {
@@ -92,6 +93,24 @@ export function useEquipmentHandlers(props?: UseEquipmentHandlersProps) {
         return prev;
       }
 
+      // 对于戒指、首饰、法宝，先查找空槽位
+      // 只有当所有槽位都满时，才使用传入的槽位进行替换
+      let targetSlot = slot;
+      if (isRing || isAccessory || isArtifact) {
+        const emptySlot = findEmptyEquipmentSlot(item, prev.equippedItems);
+        if (emptySlot) {
+          // 检查找到的槽位是否真的是空的
+          const equippedItemId = prev.equippedItems[emptySlot];
+          if (equippedItemId === undefined || equippedItemId === null || equippedItemId === '') {
+            // 找到了空槽位，使用空槽位
+            targetSlot = emptySlot;
+          }
+          // 如果槽位已被占用，说明所有槽位都满了，使用传入的 slot 进行替换
+          // targetSlot 已经是 slot，不需要修改
+        }
+        // 如果 emptySlot 为 null，说明该物品类型无法装备，但这种情况应该在前面的检查中已经被过滤了
+      }
+
       if (isRing) {
         const ringSlots = [
           EquipmentSlot.Ring1,
@@ -99,7 +118,7 @@ export function useEquipmentHandlers(props?: UseEquipmentHandlersProps) {
           EquipmentSlot.Ring3,
           EquipmentSlot.Ring4,
         ];
-        if (!ringSlots.includes(slot)) {
+        if (!ringSlots.includes(targetSlot)) {
           addLog('戒指只能装备到戒指槽位！', 'danger');
           return prev;
         }
@@ -108,7 +127,7 @@ export function useEquipmentHandlers(props?: UseEquipmentHandlersProps) {
           EquipmentSlot.Accessory1,
           EquipmentSlot.Accessory2,
         ];
-        if (!accessorySlots.includes(slot)) {
+        if (!accessorySlots.includes(targetSlot)) {
           addLog('首饰只能装备到首饰槽位！', 'danger');
           return prev;
         }
@@ -117,13 +136,13 @@ export function useEquipmentHandlers(props?: UseEquipmentHandlersProps) {
           EquipmentSlot.Artifact1,
           EquipmentSlot.Artifact2,
         ];
-        if (!artifactSlots.includes(slot)) {
+        if (!artifactSlots.includes(targetSlot)) {
           addLog('法宝只能装备到法宝槽位！', 'danger');
           return prev;
         }
       } else {
         // 其他装备类型需要精确匹配
-        if (item.equipmentSlot !== slot) {
+        if (item.equipmentSlot !== targetSlot) {
           addLog('装备部位不匹配！', 'danger');
           return prev;
         }
@@ -137,8 +156,8 @@ export function useEquipmentHandlers(props?: UseEquipmentHandlersProps) {
       let newSpeed = prev.speed;
       const newEquippedItems = { ...prev.equippedItems };
 
-      // 检查当前槽位的装备
-      const currentEquippedId = prev.equippedItems[slot];
+      // 检查当前槽位的装备（使用 targetSlot 而不是 slot）
+      const currentEquippedId = prev.equippedItems[targetSlot];
 
       // 如果物品已经在同一槽位装备，不需要做任何操作
       if (currentEquippedId === item.id) {
@@ -150,7 +169,7 @@ export function useEquipmentHandlers(props?: UseEquipmentHandlersProps) {
       for (const [equippedSlot, equippedItemId] of Object.entries(
         prev.equippedItems
       )) {
-        if (equippedItemId === item.id && equippedSlot !== slot) {
+        if (equippedItemId === item.id && equippedSlot !== targetSlot) {
           oldSlot = equippedSlot as EquipmentSlot;
           // 移除旧槽位的装备ID
           delete newEquippedItems[oldSlot];
@@ -197,18 +216,21 @@ export function useEquipmentHandlers(props?: UseEquipmentHandlersProps) {
       newPhysique += newStats.physique;
       newSpeed += newStats.speed;
 
-      // 3. Update equipped items
-      newEquippedItems[slot] = item.id;
+      // 3. Update equipped items（使用 targetSlot）
+      newEquippedItems[targetSlot] = item.id;
 
       if (oldSlot) {
-        const logMessage = `你将 ${item.name} 从${oldSlot}移动到${slot}。`;
+        const oldSlotLabel = getEquipmentSlotLabel(oldSlot);
+        const targetSlotLabel = getEquipmentSlotLabel(targetSlot);
+        const logMessage = `你将 ${item.name} 从${oldSlotLabel}移动到${targetSlotLabel}。`;
         addLog(logMessage, 'normal');
         if (setItemActionLog) {
           setItemActionLog({ text: logMessage, type: 'normal' });
           // 延迟清除由 App.tsx 中的 useDelayedState 自动处理
         }
       } else {
-        const logMessage = `你装备了 ${item.name} 到${slot}，实力有所提升。`;
+        const targetSlotLabel = getEquipmentSlotLabel(targetSlot);
+        const logMessage = `你装备了 ${item.name} 到${targetSlotLabel}，实力有所提升。`;
         addLog(logMessage, 'normal');
         if (setItemActionLog) {
           setItemActionLog({ text: logMessage, type: 'normal' });
@@ -231,7 +253,9 @@ export function useEquipmentHandlers(props?: UseEquipmentHandlersProps) {
       };
       let updatedStatistics = { ...playerStats };
       // 如果之前没有装备在这个槽位，或者是从其他槽位移过来的，增加计数
-      if (!currentEquippedId || currentEquippedId !== item.id) {
+      // 使用 targetSlot 检查
+      const wasEquippedInTargetSlot = prev.equippedItems[targetSlot] === item.id;
+      if (!wasEquippedInTargetSlot) {
         if (!oldSlot) {
           // 新装备，不是移动
           updatedStatistics.equipCount += 1;
@@ -288,20 +312,29 @@ export function useEquipmentHandlers(props?: UseEquipmentHandlersProps) {
       const newEquippedItems = { ...prev.equippedItems };
       delete newEquippedItems[slot];
 
+      // 确保最大血量至少为1
+      const finalMaxHp = Math.max(1, newMaxHp);
+
       // 计算实际最大血量（包含功法加成等）作为上限
-      const tempPlayer = { ...prev, maxHp: newMaxHp };
+      // 使用更新后的equippedItems来计算，确保计算结果准确
+      const tempPlayer = { ...prev, maxHp: finalMaxHp, equippedItems: newEquippedItems };
       const totalStats = getPlayerTotalStats(tempPlayer);
-      const actualMaxHp = totalStats.maxHp;
+      const actualMaxHp = Math.max(1, totalStats.maxHp); // 确保实际最大血量至少为1
 
       addLog(`你卸下了 ${item.name}。`, 'normal');
+
+      // 计算新血量：不能超过新的最大血量，同时确保至少为1（避免死亡）
+      // 如果当前血量大于新的最大血量，则限制为新的最大血量
+      // 如果当前血量可能导致死亡（<=0），则至少保持1点血量
+      const newHp = Math.max(1, Math.min(actualMaxHp, prev.hp));
 
       return {
         ...prev,
         equippedItems: newEquippedItems,
         attack: newAttack,
         defense: newDefense,
-        maxHp: newMaxHp,
-        hp: Math.min(prev.hp, actualMaxHp), // 使用实际最大血量作为上限
+        maxHp: finalMaxHp,
+        hp: newHp,
         spirit: newSpirit,
         physique: newPhysique,
         speed: Math.max(0, newSpeed),

@@ -83,6 +83,7 @@ interface UIState {
   pausedByShop: boolean;
   pausedByBattle: boolean;
   pausedByReputationEvent: boolean;
+  pausedByHeavenEarthSoul: boolean;
 
   // 全局状态
   loading: boolean;
@@ -149,6 +150,7 @@ interface UIState {
   setPausedByShop: (value: boolean) => void;
   setPausedByBattle: (value: boolean) => void;
   setPausedByReputationEvent: (value: boolean) => void;
+  setPausedByHeavenEarthSoul: (value: boolean) => void;
 
   // 全局 Setters
   setLoading: (loading: boolean) => void;
@@ -204,6 +206,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   pausedByShop: false,
   pausedByBattle: false,
   pausedByReputationEvent: false,
+  pausedByHeavenEarthSoul: false,
   loading: false,
   cooldown: 0,
 
@@ -300,6 +303,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   setPausedByBattle: (value) => set({ pausedByBattle: value }),
   setPausedByReputationEvent: (value) =>
     set({ pausedByReputationEvent: value }),
+  setPausedByHeavenEarthSoul: (value) =>
+    set({ pausedByHeavenEarthSoul: value }),
 
   // 全局 Setters
   setLoading: (loading) => set({ loading }),

@@ -575,7 +575,6 @@ const InventoryItem = memo<InventoryItemProps>(
 InventoryItem.displayName = 'InventoryItem';
 
 const InventoryModal: React.FC<Props> = ({
-  isOpen,
   onClose,
   inventory,
   equippedItems,
@@ -656,38 +655,15 @@ const InventoryModal: React.FC<Props> = ({
   }, []);
 
   const handleEquipWrapper = useCallback((item: Item) => {
-    // 对于戒指、首饰、法宝，即使没有equipmentSlot也可以装备（根据type确定槽位）
-    const isRing = item.type === ItemType.Ring;
-    const isAccessory = item.type === ItemType.Accessory;
-    const isArtifact = item.type === ItemType.Artifact;
+    // 使用智能查找函数，自动找到对应的空槽位
+    // 对于戒指、首饰、法宝，会优先查找空槽位
+    // 对于其他装备类型，会使用对应的槽位（如果有空槽位则使用，否则替换已有装备）
+    const targetSlot = findEmptyEquipmentSlot(item, equippedItems);
 
-    // 对于其他装备类型，需要equipmentSlot
-    if (!isRing && !isAccessory && !isArtifact && !item.equipmentSlot) {
-      return;
+    if (targetSlot) {
+      onEquipItem(item, targetSlot);
     }
-
-    // 如果物品有equipmentSlot，使用findEmptyEquipmentSlot查找空槽位
-    if (item.equipmentSlot) {
-      const targetSlot = findEmptyEquipmentSlot(item, equippedItems);
-      if (targetSlot) {
-        onEquipItem(item, targetSlot);
-      } else {
-        // 如果没有空槽位，直接替换该部位的物品
-        onEquipItem(item, item.equipmentSlot);
-      }
-    } else {
-      // 对于戒指、首饰、法宝，如果没有equipmentSlot，根据类型查找空槽位
-      const slots = getEquipmentSlotsByType(item.type);
-      if (slots.length > 0) {
-        const emptySlot = slots.find((slot) => !equippedItems[slot]);
-        if (emptySlot) {
-          onEquipItem(item, emptySlot);
-        } else {
-          // 如果没有空槽位，替换第一个槽位
-          onEquipItem(item, slots[0]);
-        }
-      }
-    }
+    // 如果 findEmptyEquipmentSlot 返回 null，说明该物品无法装备（通常是缺少 equipmentSlot 且不是戒指/首饰/法宝）
   }, [equippedItems, onEquipItem]);
 
   const handleUnequipWrapper = useCallback((item: Item) => {

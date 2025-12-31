@@ -225,11 +225,13 @@ function App() {
     pausedByShop,
     pausedByBattle,
     pausedByReputationEvent,
+    pausedByHeavenEarthSoul,
     setAutoMeditate,
     setAutoAdventure,
     setPausedByShop,
     setPausedByBattle,
     setPausedByReputationEvent,
+    setPausedByHeavenEarthSoul,
   } = useUIStore(
     useShallow((state) => ({
       autoMeditate: state.autoMeditate,
@@ -237,11 +239,13 @@ function App() {
       pausedByShop: state.pausedByShop,
       pausedByBattle: state.pausedByBattle,
       pausedByReputationEvent: state.pausedByReputationEvent,
+      pausedByHeavenEarthSoul: state.pausedByHeavenEarthSoul,
       setAutoMeditate: state.setAutoMeditate,
       setAutoAdventure: state.setAutoAdventure,
       setPausedByShop: state.setPausedByShop,
       setPausedByBattle: state.setPausedByBattle,
       setPausedByReputationEvent: state.setPausedByReputationEvent,
+      setPausedByHeavenEarthSoul: state.setPausedByHeavenEarthSoul,
     }))
   );
 
@@ -484,6 +488,7 @@ function App() {
         setPausedByBattle(false);
         setPausedByShop(false);
         setPausedByReputationEvent(false);
+        setPausedByHeavenEarthSoul(false);
       }
 
       prevPlayerNameRef.current = player.name;
@@ -570,7 +575,11 @@ function App() {
     pausedByShop,
     pausedByBattle,
     pausedByReputationEvent,
+    pausedByHeavenEarthSoul,
     setPausedByShop,
+    setPausedByBattle,
+    setPausedByReputationEvent,
+    setPausedByHeavenEarthSoul,
     handleMeditate,
     handleAdventure,
     setCooldown,
@@ -896,11 +905,13 @@ function App() {
       pausedByShop,
       pausedByBattle,
       pausedByReputationEvent,
+      pausedByHeavenEarthSoul,
       setAutoMeditate,
       setAutoAdventure,
       setPausedByShop,
       setPausedByBattle,
       setPausedByReputationEvent,
+      setPausedByHeavenEarthSoul,
     }),
     [
       setItemToUpgrade,
@@ -916,11 +927,13 @@ function App() {
       pausedByShop,
       pausedByBattle,
       pausedByReputationEvent,
+      pausedByHeavenEarthSoul,
       setAutoMeditate,
       setAutoAdventure,
       setPausedByShop,
       setPausedByBattle,
       setPausedByReputationEvent,
+      setPausedByHeavenEarthSoul,
     ]
   );
 
@@ -1055,28 +1068,7 @@ function App() {
       itemActionLogValue={itemActionLogValue}
       setItemActionLog={setItemActionLog}
       autoAdventure={autoAdventure}
-      modals={{
-        isInventoryOpen,
-        isCultivationOpen,
-        isAlchemyOpen,
-        isUpgradeOpen,
-        isSectOpen,
-        isRealmOpen,
-        isCharacterOpen,
-        isAchievementOpen,
-        isPetOpen,
-        isLotteryOpen,
-        isSettingsOpen,
-        isDailyQuestOpen,
-        isShopOpen,
-        isGrottoOpen,
-        isBattleModalOpen,
-        isTurnBasedBattleOpen,
-        isMobileSidebarOpen,
-        isMobileStatsOpen,
-        isReputationEventOpen,
-        isTreasureVaultOpen,
-      }}
+      modals={modals}
       setPlayer={setPlayer}
       setReputationEvent={setReputationEvent}
       setIsReputationEventOpen={setIsReputationEventOpen}

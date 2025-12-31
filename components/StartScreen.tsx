@@ -2,8 +2,14 @@ import React, { useState, useMemo, useRef } from 'react';
 import { DifficultyMode, ItemRarity } from '../types';
 import { TALENTS } from '../constants/index';
 import { Sparkles, Sword, Shield, Heart, Zap, User, Upload, TriangleAlert } from 'lucide-react';
-import { showError, showSuccess, showConfirm } from '../utils/toastUtils';
+import { showError } from '../utils/toastUtils';
 import { STORAGE_KEYS } from '../constants/storageKeys';
+import {
+  getCurrentSlotId,
+  saveToSlot,
+  importSave,
+  ensurePlayerStatsCompatibility,
+} from '../utils/saveManagerUtils';
 import { getRarityTextColor } from '../utils/rarityUtils';
 
 interface Props {
@@ -17,7 +23,21 @@ interface Props {
 const StartScreen: React.FC<Props> = ({ onStart }) => {
   const [playerName, setPlayerName] = useState('');
   const [selectedTalentId, setSelectedTalentId] = useState<string | null>(null);
-  const [difficulty, setDifficulty] = useState<DifficultyMode>('normal');
+  // 从 localStorage 读取保存的难度选择，如果没有则默认为 'normal'
+  const [difficulty, setDifficulty] = useState<DifficultyMode>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+      if (saved) {
+        const settings = JSON.parse(saved);
+        if (settings.difficulty) {
+          return settings.difficulty;
+        }
+      }
+    } catch (error) {
+      console.error('读取难度设置失败:', error);
+    }
+    return 'normal';
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 只在组件首次加载时随机生成一个天赋（使用useMemo确保只执行一次）
@@ -55,54 +75,58 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
 
     try {
       const text = await file.text();
-      let saveData;
+      // 使用 importSave 函数处理存档（支持 Base64 编码）
+      const saveData = importSave(text);
 
-      // 尝试解析JSON
-      try {
-        saveData = JSON.parse(text);
-      } catch (parseError) {
+      if (!saveData) {
         showError('存档文件格式错误！请确保文件内容是有效的JSON格式。');
-        console.error('JSON解析错误:', parseError);
-        return;
-      }
-
-      // 验证存档数据结构
-      if (!saveData || typeof saveData !== 'object') {
-        showError('存档文件格式不正确！文件内容必须是有效的JSON对象。');
-        return;
-      }
-
-      if (!saveData.player || typeof saveData.player !== 'object') {
-        showError('存档文件格式不正确！缺少必要的玩家数据。');
-        return;
-      }
-
-      if (!Array.isArray(saveData.logs)) {
-        showError('存档文件格式不正确！日志数据必须是数组格式。');
-        return;
-      }
-
-      // 显示存档信息预览
-      const playerName = saveData.player.name || '未知';
-      const realm = saveData.player.realm || '未知';
-      const timestamp = saveData.timestamp
-        ? new Date(saveData.timestamp).toLocaleString('zh-CN')
-        : '未知';
-
-      // 确认导入
-      showConfirm(
-        `确定要导入此存档吗？\n\n玩家名称: ${playerName}\n境界: ${realm}\n保存时间: ${timestamp}\n\n当前存档将被替换，页面将自动刷新。`,
-        '确认导入',
-        () => {
-          // 保存到localStorage
-          localStorage.setItem(STORAGE_KEYS.SAVE, JSON.stringify(saveData));
-
-          // 提示并刷新页面
-          showSuccess('存档导入成功！页面即将刷新...', undefined, () => {
-            window.location.reload();
-          });
+        // 清空文件输入
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
         }
-      );
+        return;
+      }
+
+      // 验证存档数据格式
+      if (!saveData.player || !Array.isArray(saveData.logs)) {
+        showError('存档数据格式错误！缺少必要的数据字段。');
+        // 清空文件输入
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
+
+      // 直接导入存档，不需要确认
+      try {
+        // 获取当前存档槽位ID，如果没有则使用槽位1
+        const currentSlotId = getCurrentSlotId();
+
+        // 使用新的存档系统保存到当前槽位
+        const success = saveToSlot(
+          currentSlotId,
+          ensurePlayerStatsCompatibility(saveData.player),
+          saveData.logs || []
+        );
+
+        if (!success) {
+          showError('保存存档失败，请重试！');
+          // 清空文件输入
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+          return;
+        }
+
+        window.location.reload();
+      } catch (error) {
+        console.error('保存存档失败:', error);
+        showError(`保存存档失败：${error instanceof Error ? error.message : '未知错误'}，请重试！`);
+        // 清空文件输入
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
     } catch (error) {
       console.error('导入存档失败:', error);
       showError(
@@ -118,6 +142,25 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
+  };
+
+  // 保存难度选择到 localStorage
+  const saveDifficulty = (newDifficulty: DifficultyMode) => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+      const settings = saved ? JSON.parse(saved) : {};
+      settings.difficulty = newDifficulty;
+      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+    } catch (error) {
+      console.error('保存难度设置失败:', error);
+    }
+  };
+
+  // 处理难度选择变化
+  const handleDifficultyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDifficulty = e.target.value as DifficultyMode;
+    setDifficulty(newDifficulty);
+    saveDifficulty(newDifficulty);
   };
 
   // 使用统一的工具函数获取稀有度颜色（带边框，StartScreen 使用不同的边框颜色）
@@ -259,16 +302,18 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
               游戏难度
             </label>
             <div className="space-y-2">
-              <label className="flex items-center gap-3 p-3 bg-stone-800/50 rounded border-2 border-stone-700 cursor-pointer hover:border-mystic-jade/50 transition-colors">
+              <label className={`flex items-center gap-3 p-3 bg-stone-800/50 rounded border-2 cursor-pointer transition-colors ${
+                difficulty === 'easy'
+                  ? 'border-green-500 bg-green-900/20'
+                  : 'border-stone-700 hover:border-mystic-jade/50'
+              }`}>
                 <input
                   type="radio"
                   name="difficulty"
                   value="easy"
                   checked={difficulty === 'easy'}
-                  onChange={(e) =>
-                    setDifficulty(e.target.value as DifficultyMode)
-                  }
-                  className="w-4 h-4 text-mystic-jade"
+                  onChange={handleDifficultyChange}
+                  className="w-4 h-4 text-green-500 accent-green-500"
                 />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -279,16 +324,18 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
                   </p>
                 </div>
               </label>
-              <label className="flex items-center gap-3 p-3 bg-stone-800/50 rounded border-2 border-stone-700 cursor-pointer hover:border-mystic-jade/50 transition-colors">
+              <label className={`flex items-center gap-3 p-3 bg-stone-800/50 rounded border-2 cursor-pointer transition-colors ${
+                difficulty === 'normal'
+                  ? 'border-yellow-500 bg-yellow-900/20'
+                  : 'border-stone-700 hover:border-mystic-jade/50'
+              }`}>
                 <input
                   type="radio"
                   name="difficulty"
                   value="normal"
                   checked={difficulty === 'normal'}
-                  onChange={(e) =>
-                    setDifficulty(e.target.value as DifficultyMode)
-                  }
-                  className="w-4 h-4 text-mystic-jade"
+                  onChange={handleDifficultyChange}
+                  className="w-4 h-4 text-yellow-500 accent-yellow-500"
                 />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -299,16 +346,18 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
                   </p>
                 </div>
               </label>
-              <label className="flex items-center gap-3 p-3 bg-stone-800/50 rounded border-2 border-stone-700 cursor-pointer hover:border-mystic-jade/50 transition-colors">
+              <label className={`flex items-center gap-3 p-3 bg-stone-800/50 rounded border-2 cursor-pointer transition-colors ${
+                difficulty === 'hard'
+                  ? 'border-red-500 bg-red-900/20'
+                  : 'border-stone-700 hover:border-mystic-jade/50'
+              }`}>
                 <input
                   type="radio"
                   name="difficulty"
                   value="hard"
                   checked={difficulty === 'hard'}
-                  onChange={(e) =>
-                    setDifficulty(e.target.value as DifficultyMode)
-                  }
-                  className="w-4 h-4 text-mystic-jade"
+                  onChange={handleDifficultyChange}
+                  className="w-4 h-4 text-red-500 accent-red-500"
                 />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
@@ -331,6 +380,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
             accept=".json,.txt"
             onChange={handleImportSave}
             className="hidden"
+            aria-label="导入存档文件"
           />
 
           {/* 开始按钮 */}

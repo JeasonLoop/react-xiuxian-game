@@ -131,7 +131,7 @@ const LogPanel: React.FC<Props> = ({ logs, playerName, className, onClearLogs })
 
   // 初始化时滚动到底部
   useEffect(() => {
-    if (displayedLogs.length > 0) {
+    if (displayedLogs.length >= 0) {
       requestAnimationFrame(() => {
         endRef.current?.scrollIntoView({ behavior: 'auto' });
       });
