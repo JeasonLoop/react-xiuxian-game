@@ -258,13 +258,23 @@ export function useBreakthroughHandlers({
       let currentRealm = prev.realm;
       let currentLevel = prev.realmLevel;
 
-      // 计算能够突破的次数
+      // 计算能够突破的次数，并检查突破条件
       while (breakthroughCount > 0) {
         const currentIndex = REALM_ORDER.indexOf(currentRealm);
         if (currentLevel >= 9) {
-          // 境界升级
+          // 境界升级，需要检查突破条件
           if (currentIndex < REALM_ORDER.length - 1) {
-            currentRealm = REALM_ORDER[currentIndex + 1];
+            const targetRealm = REALM_ORDER[currentIndex + 1];
+            const conditionCheck = checkBreakthroughConditions(prev, targetRealm);
+
+            // 如果条件不满足，停止突破并保留剩余的传承
+            if (!conditionCheck.canBreakthrough) {
+              remainingInheritance = breakthroughCount;
+              addLog(`传承突破中断：${conditionCheck.message}`, 'danger');
+              break;
+            }
+
+            currentRealm = targetRealm;
             currentLevel = 1;
           } else {
             // 已经是最高境界，无法再突破
@@ -325,10 +335,44 @@ export function useBreakthroughHandlers({
 
         const newBaseMaxHp = Math.floor(stats.baseMaxHp * levelMultiplier);
         const newMaxExp = Math.floor(stats.maxExpBase * levelMultiplier * 1.5);
+        const newBaseMaxLifespan = stats.baseMaxLifespan;
 
         // 计算超出当前境界的经验值，保留到下一个境界
         const excessExp = Math.max(0, prev.exp - prev.maxExp);
         const newExp = excessExp;
+
+        // 计算寿命增加（传承突破也应该增加寿命）
+        const oldMaxLifespan = prev.maxLifespan || 100;
+        let totalLifespanIncrease = 0;
+
+        // 计算每次突破的寿命增加
+        let tempRealmForLifespan = prev.realm;
+        let tempLevelForLifespan = prev.realmLevel;
+        for (let i = 0; i < actualBreakthroughCount; i++) {
+          const isRealmUpgradeForLifespan = tempLevelForLifespan >= 9;
+          const tempRealmIndex = REALM_ORDER.indexOf(tempRealmForLifespan);
+
+          if (isRealmUpgradeForLifespan) {
+            if (tempRealmIndex < REALM_ORDER.length - 1) {
+              const nextRealmForLifespan = REALM_ORDER[tempRealmIndex + 1];
+              const nextRealmStats = REALM_DATA[nextRealmForLifespan];
+              const oldRealmStats = REALM_DATA[tempRealmForLifespan];
+              const baseIncrease = nextRealmStats.baseMaxLifespan - oldRealmStats.baseMaxLifespan;
+              totalLifespanIncrease += baseIncrease + Math.floor(nextRealmStats.baseMaxLifespan * 0.1);
+              tempRealmForLifespan = nextRealmForLifespan;
+              tempLevelForLifespan = 1;
+            }
+          } else {
+            const tempRealmStats = REALM_DATA[tempRealmForLifespan];
+            const baseIncrease = Math.floor((tempRealmStats.baseMaxLifespan - oldMaxLifespan) / 9);
+            const bonus = Math.floor(Math.random() * 5) + 1;
+            totalLifespanIncrease += baseIncrease + bonus;
+            tempLevelForLifespan++;
+          }
+        }
+
+        const newMaxLifespan = oldMaxLifespan + totalLifespanIncrease;
+        const newLifespan = (prev.lifespan ?? oldMaxLifespan) + totalLifespanIncrease;
 
         // 计算传承突破获得的属性点（指数级别增长）
         let attributePointsGained = 0;
@@ -354,6 +398,13 @@ export function useBreakthroughHandlers({
           'special'
         );
 
+        if (totalLifespanIncrease > 0) {
+          addLog(
+            `✨ 传承突破成功！你的寿命增加了 ${totalLifespanIncrease} 年！当前寿命：${Math.floor(newLifespan)}/${newMaxLifespan} 年`,
+            'gain'
+          );
+        }
+
         // 计算新境界的最终属性 = 基础属性 + 固定加成 + 分配的属性点
         const baseAttack = Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack + allocatedAttack;
         const baseDefense = Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense + allocatedDefense;
@@ -361,6 +412,36 @@ export function useBreakthroughHandlers({
         const baseSpirit = Math.floor(stats.baseSpirit * levelMultiplier) + bonusSpirit + allocatedSpirit;
         const basePhysique = Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique + allocatedPhysique;
         const baseSpeed = Math.max(0, Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed + allocatedSpeed);
+
+        // 计算金丹法数（如果晋升到金丹期）
+        let goldenCoreMethodCount = prev.goldenCoreMethodCount;
+        // 检查是否在传承突破过程中晋升到金丹期
+        let tempRealmForGoldenCore = prev.realm;
+        let tempLevelForGoldenCore = prev.realmLevel;
+        for (let i = 0; i < actualBreakthroughCount; i++) {
+          if (tempLevelForGoldenCore >= 9) {
+            const tempRealmIndex = REALM_ORDER.indexOf(tempRealmForGoldenCore);
+            if (tempRealmIndex < REALM_ORDER.length - 1) {
+              const nextRealm = REALM_ORDER[tempRealmIndex + 1];
+              if (nextRealm === '金丹期') {
+                // 构建临时玩家状态来计算金丹法数
+                const tempPlayer = {
+                  ...prev,
+                  realm: nextRealm,
+                  realmLevel: 1,
+                };
+                goldenCoreMethodCount = calculateGoldenCoreMethodCount(tempPlayer);
+                break;
+              }
+              tempRealmForGoldenCore = nextRealm;
+              tempLevelForGoldenCore = 1;
+            } else {
+              break;
+            }
+          } else {
+            tempLevelForGoldenCore++;
+          }
+        }
 
         // 构建更新后的玩家状态来计算实际最大血量（包含功法加成等）
         const updatedPlayer = {
@@ -373,13 +454,26 @@ export function useBreakthroughHandlers({
           spirit: baseSpirit,
           physique: basePhysique,
           speed: baseSpeed,
-          goldenCoreMethodCount: prev.goldenCoreMethodCount,
+          goldenCoreMethodCount,
           activeArtId: prev.activeArtId,
           cultivationArts: prev.cultivationArts,
           spiritualRoots: prev.spiritualRoots,
         };
         const totalStats = getPlayerTotalStats(updatedPlayer);
         const actualMaxHp = totalStats.maxHp; // 实际最大血量（包含功法加成）
+
+        // 更新统计
+        const playerStats = prev.statistics || {
+          killCount: 0,
+          meditateCount: 0,
+          adventureCount: 0,
+          equipCount: 0,
+          petCount: 0,
+          recipeCount: 0,
+          artCount: 0,
+          breakthroughCount: 0,
+          secretRealmCount: 0,
+        };
 
         return {
           ...prev,
@@ -395,7 +489,14 @@ export function useBreakthroughHandlers({
           physique: basePhysique,
           speed: baseSpeed,
           attributePoints: prev.attributePoints + attributePointsGained,
+          maxLifespan: newMaxLifespan,
+          lifespan: newLifespan,
+          goldenCoreMethodCount, // 设置金丹法数
           inheritanceLevel: remainingInheritance,
+          statistics: {
+            ...playerStats,
+            breakthroughCount: playerStats.breakthroughCount + actualBreakthroughCount,
+          },
         };
       }
 
