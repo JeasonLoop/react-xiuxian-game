@@ -17,7 +17,7 @@ import {
   RARITY_MULTIPLIERS,
   REALM_ORDER,
 } from '../../constants/index';
-import { findEmptyEquipmentSlot } from '../../utils/equipmentUtils';
+import { findEmptyEquipmentSlot, getEquipmentSlotLabel } from '../../utils/equipmentUtils';
 
 interface UseEquipmentHandlersProps {
   player: PlayerStats;
@@ -198,14 +198,17 @@ export function useEquipmentHandlers({
       newEquippedItems[targetSlot] = item.id;
 
       if (oldSlot) {
-        const logMessage = `你将 ${item.name} 从${oldSlot}移动到${targetSlot}。`;
+        const oldSlotLabel = getEquipmentSlotLabel(oldSlot);
+        const targetSlotLabel = getEquipmentSlotLabel(targetSlot);
+        const logMessage = `你将 ${item.name} 从${oldSlotLabel}移动到${targetSlotLabel}。`;
         addLog(logMessage, 'normal');
         if (setItemActionLog) {
           setItemActionLog({ text: logMessage, type: 'normal' });
           // 延迟清除由 App.tsx 中的 useDelayedState 自动处理
         }
       } else {
-        const logMessage = `你装备了 ${item.name} 到${targetSlot}，实力有所提升。`;
+        const targetSlotLabel = getEquipmentSlotLabel(targetSlot);
+        const logMessage = `你装备了 ${item.name} 到${targetSlotLabel}，实力有所提升。`;
         addLog(logMessage, 'normal');
         if (setItemActionLog) {
           setItemActionLog({ text: logMessage, type: 'normal' });
