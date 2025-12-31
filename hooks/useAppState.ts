@@ -37,6 +37,7 @@ export interface AppModalState {
   isDebugModeEnabled: boolean;
   isReputationEventOpen: boolean;
   isTreasureVaultOpen: boolean;
+  isAutoAdventureConfigOpen: boolean;
 }
 
 export interface AppModalSetters {
@@ -62,6 +63,7 @@ export interface AppModalSetters {
   setIsDebugModeEnabled: (enabled: boolean) => void;
   setIsReputationEventOpen: (open: boolean) => void;
   setIsTreasureVaultOpen: (open: boolean) => void;
+  setIsAutoAdventureConfigOpen: (open: boolean) => void;
 }
 
 export interface AppState {
@@ -181,6 +183,7 @@ export function useAppState(): AppState {
       setIsDebugModeEnabled: store.setIsDebugModeEnabled,
       setIsReputationEventOpen: store.setIsReputationEventOpen,
       setIsTreasureVaultOpen: store.setIsTreasureVaultOpen,
+      setIsAutoAdventureConfigOpen: store.setIsAutoAdventureConfigOpen,
     },
     shop: {
       currentShop: store.currentShop,

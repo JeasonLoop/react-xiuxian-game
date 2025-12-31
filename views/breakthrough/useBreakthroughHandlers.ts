@@ -33,7 +33,9 @@ export function useBreakthroughHandlers({
   loading,
 }: UseBreakthroughHandlersProps) {
   const handleBreakthrough = async (skipSuccessCheck: boolean = false, hpLoss: number = 0) => {
-    if (loading || !player) return;
+    if (!player) return;
+    // 注意：不再检查loading状态，允许在自动历练时触发突破
+    // 突破会自己管理loading状态
 
     const isRealmUpgrade = player.realmLevel >= 9;
 
@@ -243,6 +245,7 @@ export function useBreakthroughHandlers({
         exp: Math.floor(prev.exp * 0.7),
         hp: Math.floor(prev.hp * 0.5),
       }));
+      setLoading(false); // 突破失败时也要重置loading状态
     }
   };
 

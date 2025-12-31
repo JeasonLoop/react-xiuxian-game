@@ -38,6 +38,7 @@ interface UseAppKeyboardShortcutsProps {
   setIsDailyQuestOpen: (open: boolean) => void;
   setPlayer: Dispatch<SetStateAction<PlayerStats | null>>;
   handleCloseCurrentModal: () => void;
+  setIsAutoAdventureConfigOpen: (open: boolean) => void;
 }
 
 /**
@@ -70,6 +71,7 @@ export function useAppKeyboardShortcuts(props: UseAppKeyboardShortcutsProps): Ke
     setIsDailyQuestOpen,
     setPlayer,
     handleCloseCurrentModal,
+    setIsAutoAdventureConfigOpen,
   } = props;
 
   const keyboardShortcuts: KeyboardShortcut[] = useMemo(() => {
@@ -132,9 +134,12 @@ export function useAppKeyboardShortcuts(props: UseAppKeyboardShortcutsProps): Ke
         setPausedByBattle(false);
         setPausedByReputationEvent(false);
         setAutoAdventure(true);
+      } else if (currentAutoAdventure) {
+        // 如果正在自动历练，直接关闭
+        setAutoAdventure(false);
       } else {
-        // 正常切换：如果开启则关闭，如果关闭则开启
-        setAutoAdventure(!currentAutoAdventure);
+        // 如果未开启，打开配置弹窗
+        setIsAutoAdventureConfigOpen(true);
       }
     };
     shortcuts.push(

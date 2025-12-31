@@ -69,6 +69,12 @@ interface UseAppHandlersProps {
     realmMinRealm?: any;
     bossId?: string;
   }) => void;
+  autoAdventureConfig?: {
+    skipBattle: boolean;
+    fleeOnBattle: boolean;
+    skipShop: boolean;
+    skipReputationEvent: boolean;
+  };
 }
 
 /**
@@ -98,6 +104,7 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     setCooldown,
     setItemActionLog,
     handleOpenTurnBasedBattle,
+    autoAdventureConfig,
   } = props;
 
   // 直接从 zustand store 获取状态，使用 useShallow 批量选择以减少重渲染
@@ -288,8 +295,13 @@ export function useAppHandlers(props: UseAppHandlersProps) {
       setters.setIsReputationEventOpen(true);
     },
     onOpenTurnBasedBattle: handleOpenTurnBasedBattle,
-    skipBattle: false,
+    skipBattle: autoAdventureConfig?.skipBattle || false,
+    fleeOnBattle: autoAdventureConfig?.fleeOnBattle || false,
+    skipShop: autoAdventureConfig?.skipShop || false,
+    skipReputationEvent: autoAdventureConfig?.skipReputationEvent || false,
     useTurnBasedBattle: true,
+    autoAdventure,
+    setAutoAdventure,
   });
 
   const sectHandlers = useSectHandlers({

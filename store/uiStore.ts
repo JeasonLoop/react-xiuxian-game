@@ -38,6 +38,7 @@ interface ModalState {
   isDebugModeEnabled: boolean;
   isReputationEventOpen: boolean;
   isTreasureVaultOpen: boolean;
+  isAutoAdventureConfigOpen: boolean;
 }
 
 // 回合制战斗参数
@@ -113,6 +114,7 @@ interface UIState {
   setIsDebugModeEnabled: (enabled: boolean) => void;
   setIsReputationEventOpen: (open: boolean) => void;
   setIsTreasureVaultOpen: (open: boolean) => void;
+  setIsAutoAdventureConfigOpen: (open: boolean) => void;
 
   // 商店 Setters
   setCurrentShop: (shop: Shop | null) => void;
@@ -186,6 +188,7 @@ const defaultModalState: ModalState = {
   isDebugModeEnabled: false,
   isReputationEventOpen: false,
   isTreasureVaultOpen: false,
+  isAutoAdventureConfigOpen: false,
 };
 
 export const useUIStore = create<UIState>((set, get) => ({
@@ -270,6 +273,10 @@ export const useUIStore = create<UIState>((set, get) => ({
   setIsTreasureVaultOpen: (open) =>
     set((state) => ({
       modals: { ...state.modals, isTreasureVaultOpen: open },
+    })),
+  setIsAutoAdventureConfigOpen: (open) =>
+    set((state) => ({
+      modals: { ...state.modals, isAutoAdventureConfigOpen: open },
     })),
 
   // 商店 Setters

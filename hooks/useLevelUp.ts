@@ -52,14 +52,15 @@ export function useLevelUp({
         return;
       }
 
-      // 检查是否已经触发了天劫（防止重复触发）
-      if (isTribulationTriggeredRef.current && player.exp === player.maxExp) {
-        return;
-      }
-
       // 如果经验值超过 maxExp，说明是新的经验值增加，重置标志位允许触发
       if (player.exp > player.maxExp) {
         isTribulationTriggeredRef.current = false;
+      }
+
+      // 检查是否已经触发了天劫（防止重复触发）
+      // 只有当经验值刚好等于 maxExp 且已经触发过天劫时，才阻止重复触发
+      if (isTribulationTriggeredRef.current && player.exp === player.maxExp) {
+        return;
       }
 
       // 检查是否需要渡劫
@@ -84,7 +85,9 @@ export function useLevelUp({
       }
 
       // 检查是否需要渡劫
-      if (shouldTriggerTribulation(player) && !tribulationState?.isOpen) {
+      const needsTribulation = shouldTriggerTribulation(player);
+
+      if (needsTribulation && !tribulationState?.isOpen) {
         // 设置标志位，防止重复触发
         isTribulationTriggeredRef.current = true;
 
@@ -105,8 +108,10 @@ export function useLevelUp({
             setPlayerRef.current((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
           }
         );
-      } else if (!tribulationState?.isOpen) {
-        // 不需要渡劫，直接执行突破
+      } else if (!needsTribulation) {
+        // 不需要渡劫，直接执行突破（不管tribulationState的状态）
+        // 在自动历练时，即使loading为true也应该允许突破
+        // 突破函数内部会处理loading状态
         handleBreakthroughRef.current();
       }
     }

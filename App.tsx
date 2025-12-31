@@ -13,6 +13,7 @@ import {
 import WelcomeScreen from './components/WelcomeScreen';
 import StartScreen from './components/StartScreen';
 import LoadingScreen from './components/LoadingScreen';
+
 import {
   SaveData,
 } from './utils/saveManagerUtils';
@@ -123,6 +124,7 @@ function App() {
       setIsDebugModeEnabled: state.setIsDebugModeEnabled,
       setIsReputationEventOpen: state.setIsReputationEventOpen,
       setIsTreasureVaultOpen: state.setIsTreasureVaultOpen,
+      setIsAutoAdventureConfigOpen: state.setIsAutoAdventureConfigOpen,
     }))
   );
   // 解构以便使用（保持向后兼容）
@@ -149,6 +151,7 @@ function App() {
     setIsDebugModeEnabled,
     setIsReputationEventOpen,
     setIsTreasureVaultOpen,
+    setIsAutoAdventureConfigOpen,
   } = modalSetters;
 
   // 全局状态和 setters - 批量选择
@@ -285,7 +288,21 @@ function App() {
     isReputationEventOpen,
     isTreasureVaultOpen,
     isDebugModeEnabled,
+    isAutoAdventureConfigOpen,
   } = modals;
+
+  // Auto adventure config state
+  const [autoAdventureConfig, setAutoAdventureConfig] = useState<{
+    skipBattle: boolean;
+    fleeOnBattle: boolean;
+    skipShop: boolean;
+    skipReputationEvent: boolean;
+  }>({
+    skipBattle: false,
+    fleeOnBattle: false,
+    skipShop: false,
+    skipReputationEvent: false,
+  });
 
   // 检查调试模式是否启用
   useEffect(() => {
@@ -360,6 +377,7 @@ function App() {
     setDeathReason,
     setItemActionLog,
     handleOpenTurnBasedBattle,
+    autoAdventureConfig,
   });
 
   // 从 appHandlers 中提取需要的 handlers
@@ -510,7 +528,6 @@ function App() {
     setDeathBattleData,
     setDeathReason,
   });
-
   // 使用死亡检测 hook
   useDeathDetection({
     player,
@@ -666,6 +683,7 @@ function App() {
     setIsDailyQuestOpen,
     setPlayer,
     handleCloseCurrentModal,
+    setIsAutoAdventureConfigOpen,
   });
 
   // 使用键盘快捷键
@@ -862,6 +880,7 @@ function App() {
       setIsReputationEventOpen,
       setIsTreasureVaultOpen,
       setIsSaveManagerOpen,
+      setIsAutoAdventureConfigOpen,
     }),
     [
       setIsInventoryOpen,
@@ -886,6 +905,7 @@ function App() {
       setIsReputationEventOpen,
       setIsTreasureVaultOpen,
       setIsSaveManagerOpen,
+      setIsAutoAdventureConfigOpen,
     ]
   );
 
@@ -1072,6 +1092,9 @@ function App() {
       setPlayer={setPlayer}
       setReputationEvent={setReputationEvent}
       setIsReputationEventOpen={setIsReputationEventOpen}
+      setIsAutoAdventureConfigOpen={setIsAutoAdventureConfigOpen}
+      autoAdventureConfig={autoAdventureConfig}
+      setAutoAdventureConfig={setAutoAdventureConfig}
       handleTribulationComplete={handleTribulationComplete}
       handleRebirth={handleRebirth}
       closeAlert={closeAlert}

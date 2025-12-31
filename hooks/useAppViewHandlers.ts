@@ -91,6 +91,7 @@ interface UseAppViewHandlersProps {
   setIsReputationEventOpen: (open: boolean) => void;
   setIsTreasureVaultOpen: (open: boolean) => void;
   setIsSaveManagerOpen: (open: boolean) => void;
+  setIsAutoAdventureConfigOpen: (open: boolean) => void;
   setItemToUpgrade: (item: Item | null) => void;
   setCurrentShop: (shop: any | null) => void;
   setBattleReplay: (replay: any | null) => void;
@@ -144,6 +145,7 @@ export function useGameViewHandlers(props: UseAppViewHandlersProps) {
     setPausedByShop,
     setPausedByBattle,
     setPausedByReputationEvent,
+    setIsAutoAdventureConfigOpen,
   } = props;
 
   return useMemo(() => ({
@@ -189,7 +191,13 @@ export function useGameViewHandlers(props: UseAppViewHandlersProps) {
         setPausedByBattle(false);
         return;
       }
-      setAutoAdventure(!autoAdventure);
+      if (autoAdventure) {
+        // 如果正在自动历练，直接关闭
+        setAutoAdventure(false);
+      } else {
+        // 如果未开启，打开配置弹窗
+        setIsAutoAdventureConfigOpen(true);
+      }
     },
   }), [
     handleMeditate,
@@ -218,6 +226,7 @@ export function useGameViewHandlers(props: UseAppViewHandlersProps) {
     setPausedByShop,
     setPausedByBattle,
     setPausedByReputationEvent,
+    setIsAutoAdventureConfigOpen,
   ]);
 }
 

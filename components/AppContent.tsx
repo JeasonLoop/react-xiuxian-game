@@ -17,8 +17,10 @@ import SaveManagerModal from './SaveManagerModal';
 import SaveCompareModal from './SaveCompareModal';
 import ModalsContainer from '../views/modals/ModalsContainer';
 import CultivationIntroModal from './CultivationIntroModal';
+import AutoAdventureConfigModal from './AutoAdventureConfigModal';
 import { ensurePlayerStatsCompatibility } from '../utils/saveManagerUtils';
 import { STORAGE_KEYS } from '../constants/storageKeys';
+import { useUIStore } from '../store/uiStore';
 
 interface AppContentProps {
   // 玩家数据
@@ -76,6 +78,7 @@ interface AppContentProps {
     isMobileStatsOpen: boolean;
     isReputationEventOpen: boolean;
     isTreasureVaultOpen: boolean;
+    isAutoAdventureConfigOpen: boolean;
   };
 
   // Setters
@@ -93,6 +96,21 @@ interface AppContentProps {
   setItemActionLog: (log: { text: string; type: string } | null) => void;
   setReputationEvent: (event: any | null) => void;
   setIsReputationEventOpen: (open: boolean) => void;
+  setIsAutoAdventureConfigOpen: (open: boolean) => void;
+
+  // Auto adventure config
+  autoAdventureConfig: {
+    skipBattle: boolean;
+    fleeOnBattle: boolean;
+    skipShop: boolean;
+    skipReputationEvent: boolean;
+  };
+  setAutoAdventureConfig: (config: {
+    skipBattle: boolean;
+    fleeOnBattle: boolean;
+    skipShop: boolean;
+    skipReputationEvent: boolean;
+  }) => void;
 
   // Handlers
   handleTribulationComplete: (result: any) => void;
@@ -122,6 +140,9 @@ interface AppContentProps {
  * 主游戏内容组件
  */
 export function AppContent(props: AppContentProps) {
+  // 从 store 获取 setAutoAdventure
+  const setAutoAdventure = useUIStore((state) => state.setAutoAdventure);
+
   const {
     player,
     logs,
@@ -161,6 +182,9 @@ export function AppContent(props: AppContentProps) {
     setItemActionLog,
     setReputationEvent,
     setIsReputationEventOpen,
+    setIsAutoAdventureConfigOpen,
+    autoAdventureConfig,
+    setAutoAdventureConfig,
     handleTribulationComplete,
     handleRebirth,
     closeAlert,
@@ -362,6 +386,18 @@ export function AppContent(props: AppContentProps) {
           }}
         />
       )}
+
+      {/* 自动历练配置弹窗 */}
+      <AutoAdventureConfigModal
+        isOpen={modals.isAutoAdventureConfigOpen}
+        onClose={() => setIsAutoAdventureConfigOpen(false)}
+        onConfirm={(config) => {
+          setAutoAdventureConfig(config);
+          setAutoAdventure(true); // 配置确认后自动开启自动历练
+          setIsAutoAdventureConfigOpen(false);
+        }}
+        currentConfig={autoAdventureConfig}
+      />
     </>
   );
 }
