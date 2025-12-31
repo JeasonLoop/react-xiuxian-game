@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { X, Trash2, Filter } from 'lucide-react';
 import { Item, ItemType, ItemRarity, EquipmentSlot } from '../types';
 import { getRarityTextColor, getRarityBorder } from '../utils/rarityUtils';
+import { normalizeTypeLabel } from '../utils/itemUtils';
 import { showConfirm } from '../utils/toastUtils';
 
 interface Props {
@@ -255,7 +256,7 @@ const BatchDiscardModal: React.FC<Props> = ({
                           {rarity}
                         </span>
                         <span className="text-xs text-stone-500">
-                          {item.type}
+                          {normalizeTypeLabel(item.type, item)}
                         </span>
                       </div>
                       <p className="text-xs text-stone-500 line-clamp-2">

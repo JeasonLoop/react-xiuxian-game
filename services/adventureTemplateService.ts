@@ -1607,6 +1607,9 @@ export function templateToAdventureResult(
           permanentEffect: selectedItem.permanentEffect,
           isEquippable: selectedItem.isEquippable,
           equipmentSlot: selectedItem.equipmentSlot as EquipmentSlot | undefined,
+          // 保留进阶物品相关字段
+          advancedItemType: template.itemObtained.advancedItemType,
+          advancedItemId: template.itemObtained.advancedItemId,
         };
       } else {
         // 找不到相同类型的高稀有度物品，保持原物品但提升稀有度

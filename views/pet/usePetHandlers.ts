@@ -199,6 +199,11 @@ export function usePetHandlers(
             addLog(`【${p.name}】升级了！现在是 ${petNewLevel} 级`, 'gain');
           }
 
+          // 如果已达到100级，限制经验值不超过maxExp
+          if (petNewLevel >= 100) {
+            petNewExp = Math.min(petNewExp, petNewMaxExp);
+          }
+
           // 只有升级时才提升属性
           const newStats = leveledUp
             ? {
@@ -476,6 +481,11 @@ export function usePetHandlers(
             petNewMaxExp = Math.floor(petNewMaxExp * 1.2); // 降低经验增长倍数，从1.3降到1.2
             leveledUp = true;
             addLog(`【${p.name}】升级了！现在是 ${petNewLevel} 级`, 'gain');
+          }
+
+          // 如果已达到100级，限制经验值不超过maxExp
+          if (petNewLevel >= 100) {
+            petNewExp = Math.min(petNewExp, petNewMaxExp);
           }
 
           const newStats = leveledUp

@@ -185,7 +185,7 @@ const PetModal: React.FC<Props> = ({
                   <div
                     className="bg-blue-500 h-2 rounded-full"
                     style={{
-                      width: `${(activePet.exp / activePet.maxExp) * 100}%`,
+                      width: `${Math.min(100, (activePet.exp / activePet.maxExp) * 100)}%`,
                     }}
                   />
                 </div>
@@ -450,7 +450,7 @@ const PetModal: React.FC<Props> = ({
                     <div className="w-full bg-stone-700 rounded-full h-1.5 mb-2">
                       <div
                         className="bg-blue-500 h-1.5 rounded-full"
-                        style={{ width: `${(pet.exp / pet.maxExp) * 100}%` }}
+                        style={{ width: `${Math.min(100, (pet.exp / pet.maxExp) * 100)}%` }}
                       />
                     </div>
                     {/* 进化阶段 */}

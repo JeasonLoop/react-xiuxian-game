@@ -499,6 +499,10 @@ const applyResultToPlayer = (
         pet.exp -= pet.maxExp; pet.level += 1; pet.maxExp *= 1.5;
         pet.stats.attack *= 1.1; pet.stats.defense *= 1.1; pet.stats.hp *= 1.1; pet.stats.speed *= 1.05;
       }
+      // 如果已达到100级，限制经验值不超过maxExp
+      if (pet.level >= 100) {
+        pet.exp = Math.min(pet.exp, pet.maxExp);
+      }
       addLog(`✨ 【${pet.name}】获得了经验！`, 'special');
     }
     newPets[petIdx >= 0 ? petIdx : 0] = pet;

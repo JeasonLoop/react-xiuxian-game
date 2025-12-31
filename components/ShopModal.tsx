@@ -21,7 +21,7 @@ import { REALM_ORDER, RARITY_MULTIPLIERS } from '../constants/index';
 import { generateShopItems } from '../services/shopService';
 import { showError, showConfirm } from '../utils/toastUtils';
 import { getRarityTextColor, getRarityBorder } from '../utils/rarityUtils';
-import { calculateItemSellPrice } from '../utils/itemUtils';
+import { calculateItemSellPrice, normalizeTypeLabel } from '../utils/itemUtils';
 import { formatNumber } from '../utils/formatUtils';
 
 interface Props {
@@ -396,7 +396,7 @@ const ShopModal: React.FC<Props> = ({
                               {shopItem.name}
                             </h4>
                             <span className="text-xs text-stone-500">
-                              {shopItem.type}
+                              {normalizeTypeLabel(shopItem.type, shopItem)}
                             </span>
                           </div>
                           <span
@@ -458,7 +458,7 @@ const ShopModal: React.FC<Props> = ({
                               </div>
                             )}
                           </div>
-                          
+
                           {/* 数量控制和购买按钮 */}
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-1 border border-stone-600 rounded bg-stone-800">
@@ -701,7 +701,7 @@ const ShopModal: React.FC<Props> = ({
                               )}
                             </h4>
                             <span className="text-xs text-stone-500">
-                              {item.type}
+                              {normalizeTypeLabel(item.type, item)}
                             </span>
                           </div>
                           <span className="text-xs bg-stone-700 text-stone-300 px-1.5 py-0.5 rounded">

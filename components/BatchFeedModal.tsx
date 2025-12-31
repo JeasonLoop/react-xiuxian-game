@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { X, Filter, Heart } from 'lucide-react';
 import { Item, ItemType, ItemRarity, PlayerStats } from '../types';
 import { getRarityTextColor, getRarityBorder } from '../utils/rarityUtils';
+import { normalizeTypeLabel } from '../utils/itemUtils';
 import {  showInfo } from '../utils/toastUtils';
 
 
@@ -362,7 +363,7 @@ const BatchFeedModal: React.FC<Props> = ({
                             {rarity}
                           </span>
                           <span className="text-xs text-stone-500">
-                            {item.type}
+                            {normalizeTypeLabel(item.type, item)}
                           </span>
                         </div>
                         <p className="text-xs text-stone-500 line-clamp-2">
