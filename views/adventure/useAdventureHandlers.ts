@@ -119,10 +119,7 @@ export function useAdventureHandlers({
       );
       const battleResult = battleResolution.adventureResult;
       const battleCtx = battleResolution.replay;
-      // 直接展示战斗结果
-      if (battleCtx) {
-        onOpenBattleModal(battleCtx);
-      }
+      // 自动历练时跳过战斗，不打开战斗弹窗，直接返回结果
       return { result: battleResult, battleContext: battleCtx, shouldReturn: false };
     } else if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
       // 如果使用回合制战斗系统，打开回合制战斗界面
@@ -337,10 +334,7 @@ export function useAdventureHandlers({
                     ).then((battleResolution) => {
                       const battleResult = battleResolution.adventureResult;
                       const battleCtx = battleResolution.replay;
-                      // 直接展示战斗结果
-                      if (battleCtx) {
-                        onOpenBattleModal(battleCtx);
-                      }
+                      // 自动历练时跳过战斗，不打开战斗弹窗
                       executeAdventureCore({
                         result: battleResult,
                         battleContext: battleCtx,
@@ -351,6 +345,7 @@ export function useAdventureHandlers({
                         onOpenBattleModal,
                         adventureType: actualAdventureType,
                         realmName,
+                        skipBattle, // 传递skipBattle参数，确保不打开战斗弹窗
                       });
                       setLoading(false);
                       setCooldown(2);
@@ -394,6 +389,7 @@ export function useAdventureHandlers({
                       onOpenBattleModal,
                       adventureType: actualAdventureType,
                       realmName,
+                      skipBattle: false, // 手动挑战时，不跳过战斗，会显示战斗弹窗
                     });
                     setLoading(false);
                     setCooldown(2);

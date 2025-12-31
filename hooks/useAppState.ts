@@ -13,6 +13,7 @@ import {
   AdventureResult,
 } from '../types';
 import { BattleReplay } from '../services/battleService';
+import { AutoAdventureConfig } from '../components/AutoAdventureConfigModal';
 
 export interface AppModalState {
   isInventoryOpen: boolean;
@@ -118,6 +119,8 @@ export interface AppState {
     setAutoMeditate: (value: boolean) => void;
     autoAdventure: boolean;
     setAutoAdventure: (value: boolean) => void;
+    autoAdventureConfig: AutoAdventureConfig;
+    setAutoAdventureConfig: (config: AutoAdventureConfig) => void;
     pausedByShop: boolean;
     setPausedByShop: (value: boolean) => void;
     pausedByBattle: boolean;
@@ -218,6 +221,7 @@ export function useAppState(): AppState {
     fleeOnBattle: false,
     skipShop: true, // 默认跳过商店
     skipReputationEvent: false,
+    minHpThreshold: 0, // 默认不限制
   });
   const [pausedByShop, setPausedByShop] = useState(false);
   const [pausedByBattle, setPausedByBattle] = useState(false);

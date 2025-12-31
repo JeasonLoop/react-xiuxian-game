@@ -314,6 +314,7 @@ function App() {
     setTribulationState,
     handleBreakthrough: breakthroughHandlers.handleBreakthrough,
     addLog,
+    autoAdventure, // 传递自动历练状态，自动历练时不触发突破
   });
 
   // 处理天劫完成
@@ -870,6 +871,9 @@ function App() {
     handleMeditate,
     handleAdventure,
     setCooldown,
+    autoAdventureConfig, // 传递自动历练配置
+    setAutoAdventure, // 传递设置自动历练状态的函数
+    addLog, // 传递日志函数
   });
 
   // 现在可以使用 executeAdventure 初始化 realmHandlers

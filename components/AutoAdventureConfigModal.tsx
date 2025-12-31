@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Play, Settings } from 'lucide-react';
 
 export interface AutoAdventureConfig {
@@ -6,6 +6,7 @@ export interface AutoAdventureConfig {
   fleeOnBattle: boolean; // 遇到战斗是否逃跑
   skipShop: boolean; // 是否跳过商店
   skipReputationEvent: boolean; // 是否跳过声望事件
+  minHpThreshold: number; // 血量阈值，低于此值时自动停止历练（0表示不限制）
 }
 
 interface Props {
@@ -20,6 +21,7 @@ const defaultConfig: AutoAdventureConfig = {
   fleeOnBattle: false,
   skipShop: true, // 默认跳过商店
   skipReputationEvent: false,
+  minHpThreshold: 0, // 默认不限制
 };
 
 const AutoAdventureConfigModal: React.FC<Props> = ({
@@ -29,6 +31,13 @@ const AutoAdventureConfigModal: React.FC<Props> = ({
   currentConfig = defaultConfig,
 }) => {
   const [config, setConfig] = useState<AutoAdventureConfig>(currentConfig);
+
+  // 修复状态同步问题：当模态框打开或配置变化时，同步内部状态
+  useEffect(() => {
+    if (isOpen) {
+      setConfig(currentConfig);
+    }
+  }, [isOpen, currentConfig]);
 
   if (!isOpen) return null;
 
@@ -55,6 +64,7 @@ const AutoAdventureConfigModal: React.FC<Props> = ({
           <button
             onClick={onClose}
             className="text-stone-400 hover:text-stone-200 transition-colors"
+            aria-label="关闭"
           >
             <X size={20} />
           </button>
@@ -80,6 +90,7 @@ const AutoAdventureConfigModal: React.FC<Props> = ({
                   setConfig({ ...config, skipBattle: e.target.checked })
                 }
                 className="sr-only peer"
+                aria-label="跳过战斗"
               />
               <div className="w-11 h-6 bg-stone-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-mystic-gold rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-mystic-gold"></div>
             </label>
@@ -104,6 +115,7 @@ const AutoAdventureConfigModal: React.FC<Props> = ({
                 }
                 className="sr-only peer"
                 disabled={config.skipBattle}
+                aria-label="遇到战斗逃跑"
               />
               <div
                 className={`w-11 h-6 bg-stone-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-mystic-gold rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-mystic-gold ${
@@ -131,6 +143,7 @@ const AutoAdventureConfigModal: React.FC<Props> = ({
                   setConfig({ ...config, skipShop: e.target.checked })
                 }
                 className="sr-only peer"
+                aria-label="跳过商店"
               />
               <div className="w-11 h-6 bg-stone-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-mystic-gold rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-mystic-gold"></div>
             </label>
@@ -154,9 +167,34 @@ const AutoAdventureConfigModal: React.FC<Props> = ({
                   setConfig({ ...config, skipReputationEvent: e.target.checked })
                 }
                 className="sr-only peer"
+                aria-label="跳过声望事件"
               />
               <div className="w-11 h-6 bg-stone-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-mystic-gold rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-mystic-gold"></div>
             </label>
+          </div>
+
+          {/* 血量阈值 */}
+          <div className="p-3 bg-stone-900/50 rounded-lg border border-stone-700">
+            <label className="text-stone-200 font-medium block mb-2">
+              血量阈值
+            </label>
+            <p className="text-xs text-stone-400 mb-2">
+              当血量低于此值时自动停止历练（设置为0表示不限制）
+            </p>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="0"
+                value={config.minHpThreshold}
+                onChange={(e) => {
+                  const value = Math.max(0, parseInt(e.target.value) || 0);
+                  setConfig({ ...config, minHpThreshold: value });
+                }}
+                className="flex-1 px-3 py-2 bg-stone-800 border border-stone-600 rounded-lg text-stone-200 focus:outline-none focus:ring-2 focus:ring-mystic-gold"
+                placeholder="0"
+              />
+              <span className="text-stone-400 text-sm">%</span>
+            </div>
           </div>
         </div>
 

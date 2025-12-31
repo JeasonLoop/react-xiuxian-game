@@ -5,6 +5,7 @@
 
 import { useEffect, useRef } from 'react';
 import { PlayerStats } from '../types';
+import { AutoAdventureConfig } from '../components/AutoAdventureConfigModal';
 
 interface UseAutoFeaturesParams {
   autoMeditate: boolean;
@@ -18,6 +19,9 @@ interface UseAutoFeaturesParams {
   handleMeditate: () => void;
   handleAdventure: () => void;
   setCooldown: (cooldown: number) => void;
+  autoAdventureConfig?: AutoAdventureConfig;
+  setAutoAdventure?: (value: boolean) => void;
+  addLog?: (message: string, type?: string) => void;
 }
 
 /**
@@ -35,6 +39,9 @@ export function useAutoFeatures({
   handleMeditate,
   handleAdventure,
   setCooldown,
+  autoAdventureConfig,
+  setAutoAdventure,
+  addLog,
 }: UseAutoFeaturesParams) {
   const playerRef = useRef(player);
   useEffect(() => {
@@ -78,6 +85,20 @@ export function useAutoFeatures({
       const currentPlayer = playerRef.current;
       // 再次检查条件，防止状态在延迟期间发生变化
       if (autoAdventure && !loading && cooldown === 0 && currentPlayer && !autoMeditate && !isReputationEventOpen && !isTurnBasedBattleOpen) {
+        // 检查血量阈值
+        if (autoAdventureConfig && autoAdventureConfig.minHpThreshold > 0) {
+          const currentHp = currentPlayer.hp || 0;
+          if (currentHp <= currentHp * (autoAdventureConfig.minHpThreshold / 100)) {
+            // 血量低于阈值，自动停止历练
+            if (setAutoAdventure) {
+              setAutoAdventure(false);
+            }
+            if (addLog) {
+              addLog(`血量低于阈值 ${autoAdventureConfig.minHpThreshold}%，自动停止历练。`, 'warning');
+            }
+            return;
+          }
+        }
         handleAdventure();
       }
     }, 500);
@@ -93,6 +114,9 @@ export function useAutoFeatures({
     isReputationEventOpen,
     isTurnBasedBattleOpen,
     handleAdventure,
+    autoAdventureConfig,
+    setAutoAdventure,
+    addLog,
   ]);
 }
 
