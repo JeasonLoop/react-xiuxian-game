@@ -13,6 +13,7 @@ interface UseLevelUpParams {
   setTribulationState: (state: TribulationState | null) => void;
   handleBreakthrough: (skipSuccessCheck?: boolean) => void;
   addLog: (message: string, type?: string) => void;
+  autoAdventure?: boolean; // 是否正在自动历练
 }
 
 /**
@@ -25,10 +26,12 @@ export function useLevelUp({
   setTribulationState,
   handleBreakthrough,
   addLog,
+  autoAdventure = false,
 }: UseLevelUpParams) {
   const isTribulationTriggeredRef = useRef(false);
 
   useEffect(() => {
+
     if (player && player.exp >= player.maxExp) {
       // 检查是否达到绝对巅峰
       const realms = REALM_ORDER;
@@ -99,7 +102,7 @@ export function useLevelUp({
         handleBreakthrough();
       }
     }
-  }, [player?.exp, player?.maxExp, player?.realm, player?.realmLevel, !!tribulationState]);
+  }, [player?.exp, player?.maxExp, player?.realm, player?.realmLevel, !!tribulationState, autoAdventure]);
 
   // 监听突破成功，重置天劫标志
   const prevRealmRef = useRef<{ realm: string; level: number } | null>(null);

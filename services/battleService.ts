@@ -1228,7 +1228,6 @@ export const resolveBattleEncounter = async (
     } else {
       playerHp = Math.max(0, (Number(playerHp) || 0) - finalDamage);
     }
-
     rounds.push({
       id: randomId(),
       attacker,

@@ -689,8 +689,6 @@ const applyResultToPlayer = (
     }
   }
 
-
-
   // 天地之魄挑战胜利：给予对应天地之魄功法（作为进阶物品显示）
   if (adventureType === 'dao_combining_challenge' && battleContext?.victory && battleContext?.bossId) {
     const bossId = battleContext.bossId;
@@ -812,13 +810,15 @@ const applyResultToPlayer = (
   const totalStats = getPlayerTotalStats(updatedPlayer);
   const actualMaxHp = totalStats.maxHp;
 
-  // 计算血量变化：先按比例调整当前血量到实际最大血量（如果功法增加了最大血量）
+  // 计算血量变化：直接基于实际最大血量进行计算
+  // 按比例调整当前血量到实际最大血量（如果功法增加了最大血量）
   const baseMaxHp = newMaxHp || 1; // 避免除零
   const hpRatio = baseMaxHp > 0 ? newHp / baseMaxHp : 0; // 当前血量比例
   const adjustedHp = Math.floor(actualMaxHp * hpRatio); // 按比例调整到实际最大血量
 
   // 应用血量变化，使用实际最大血量作为上限
   let finalHp = adjustedHp + (result.hpChange || 0);
+  // 限制在 0 到实际最大血量之间
   finalHp = Math.max(0, Math.min(actualMaxHp, finalHp));
 
   // 秘境特殊处理：确保血量不为负
@@ -840,27 +840,44 @@ const applyResultToPlayer = (
 };
 
 export async function executeAdventureCore({
-  result, battleContext, petSkillCooldowns, player, setPlayer, addLog, triggerVisual, onOpenBattleModal, realmName, adventureType, riskLevel, onReputationEvent, onPauseAutoAdventure
+  result, battleContext, petSkillCooldowns, player, setPlayer, addLog, triggerVisual, onOpenBattleModal, realmName, adventureType, riskLevel, skipBattle, onReputationEvent, onPauseAutoAdventure
 }: ExecuteAdventureCoreProps & { riskLevel?: '低' | '中' | '高' | '极度危险'; }) {
   // Visual Effects
   const safeHpChange = result.hpChange || 0;
   if (safeHpChange < 0) {
     triggerVisual('damage', String(safeHpChange), 'text-red-500');
     document.body?.classList.add('animate-shake'); setTimeout(() => document.body?.classList.remove('animate-shake'), 500);
-  } else if (safeHpChange > 0) triggerVisual('heal', `+${safeHpChange}`, 'text-emerald-400');
+  } else if (safeHpChange > 0) {
+    triggerVisual('heal', `+${safeHpChange}`, 'text-emerald-400');
+  }
   if (result.eventColor === 'danger' || adventureType === 'secret_realm') triggerVisual('slash');
 
+  // Apply Main Result
+  // 根据 adventureType 判断是否为秘境
+  const isSecretRealm = adventureType === 'secret_realm';
+
+  // 在应用结果之前，检查是否触发了天地之魄，如果是则立即暂停自动历练
+  if ((result.adventureType === 'dao_combining_challenge' || result.heavenEarthSoulEncounter)) {
+    onPauseAutoAdventure();
+  }
+
   // 处理追杀战斗结果（只有在追杀状态下才处理，正常挑战宗主不在这里处理）
+  // 注意：必须先应用战斗结果（包括血量变化），然后再处理追杀相关的特殊逻辑
   const isHuntBattle = adventureType === 'sect_challenge' &&
     player.sectHuntSectId &&
     player.sectHuntEndTime &&
     player.sectHuntEndTime > Date.now() &&
     player.sectId === null; // 确保不是在宗门内正常挑战
+
   if (isHuntBattle && battleContext && battleContext.victory) {
     const huntLevel = player.sectHuntLevel || 0;
     const huntSectId = player.sectHuntSectId;
 
+    // 先应用战斗结果（包括血量变化），然后再更新追杀相关状态
     setPlayer((prev) => {
+      // 先应用战斗结果，包括血量变化
+      const updatedPlayer = applyResultToPlayer(prev, result, { isSecretRealm, adventureType, realmName, riskLevel, battleContext, petSkillCooldowns, addLog, triggerVisual });
+
       if (huntLevel >= 3) {
         // 战胜宗主，成为宗主
         // 优先使用保存的宗门名称，否则从SECTS中查找，最后使用ID
@@ -873,7 +890,7 @@ export async function executeAdventureCore({
         addLog(`🎉 你战胜了【${sectName}】的宗主！宗门上下无不震惊，你正式接管了宗门，成为新一代宗主！`, 'special');
 
         return {
-          ...prev,
+          ...updatedPlayer,
           sectId: huntSectId,
           sectRank: SectRank.Leader,
           sectMasterId: 'player-leader', // 玩家成为宗主时，设置为玩家标识
@@ -897,23 +914,15 @@ export async function executeAdventureCore({
         addLog(`⚠️ 你击杀了【${sectName}】的${levelNames[huntLevel]}！宗门震怒，将派出更强的追杀者！`, 'danger');
 
         return {
-          ...prev,
+          ...updatedPlayer,
           sectHuntLevel: newHuntLevel,
         };
       }
     });
+  } else {
+    // 非追杀战斗或非胜利情况，直接应用结果（包括血量变化）
+    setPlayer(prev => applyResultToPlayer(prev, result, { isSecretRealm, adventureType, realmName, riskLevel, battleContext, petSkillCooldowns, addLog, triggerVisual }));
   }
-
-  // Apply Main Result
-  // 根据 adventureType 判断是否为秘境
-  const isSecretRealm = adventureType === 'secret_realm';
-
-  // 在应用结果之前，检查是否触发了天地之魄，如果是则立即暂停自动历练
-  if ((result.adventureType === 'dao_combining_challenge' || result.heavenEarthSoulEncounter)) {
-    onPauseAutoAdventure();
-  }
-
-  setPlayer(prev => applyResultToPlayer(prev, result, { isSecretRealm, adventureType, realmName, riskLevel, battleContext, petSkillCooldowns, addLog, triggerVisual }));
 
   // Events & Logs
   if (result.reputationEvent && onReputationEvent) {
@@ -966,8 +975,8 @@ export async function executeAdventureCore({
   const items = [...(result.itemsObtained || [])]; if (result.itemObtained) items.push(result.itemObtained);
   items.forEach(i => { if (i?.name) addLog(`获得物品: ${normalizeRarityValue(i.rarity) ? `【${normalizeRarityValue(i.rarity)}】` : ''}${i.name}`, 'gain'); });
 
-  // 战斗弹窗延迟2秒后打开
-  if (battleContext) {
+  // 战斗弹窗延迟2秒后打开（如果跳过了战斗则不打开弹窗）
+  if (battleContext && !skipBattle) {
     setTimeout(() => {
       onOpenBattleModal(battleContext);
     }, 2000);
