@@ -2,8 +2,8 @@
  * 死亡检测 Hook
  * 处理玩家死亡检测、保命装备、死亡惩罚等逻辑
  */
-import React from 'react';
 import { useEffect } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { PlayerStats, Item, EquipmentSlot, GameSettings } from '../types';
 import { BattleReplay } from '../services/battleService';
 import { STORAGE_KEYS } from '../constants/storageKeys';
@@ -102,7 +102,7 @@ function generateDetailedDeathReason(
 
 interface UseDeathDetectionParams {
   player: PlayerStats | null;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats | null>>;
+  setPlayer: Dispatch<SetStateAction<PlayerStats | null>>;
   isDead: boolean;
   setIsDead: (dead: boolean) => void;
   addLog: (message: string, type?: string) => void;

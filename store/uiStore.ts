@@ -4,6 +4,7 @@
  */
 
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import {
   Item,
   Shop,
@@ -396,14 +397,17 @@ export const useUIStore = create<UIState>((set, get) => ({
 }));
 
 // 导出便捷 hooks
+// 注意：modals 是嵌套对象，zustand 会自动处理，但如果需要优化可以使用 shallow
 export const useModals = () => useUIStore((state) => state.modals);
 export const useAutoFeatures = () =>
-  useUIStore((state) => ({
-    autoMeditate: state.autoMeditate,
-    autoAdventure: state.autoAdventure,
-    pausedByShop: state.pausedByShop,
-    pausedByBattle: state.pausedByBattle,
-    pausedByReputationEvent: state.pausedByReputationEvent,
-  }));
+  useUIStore(
+    useShallow((state) => ({
+      autoMeditate: state.autoMeditate,
+      autoAdventure: state.autoAdventure,
+      pausedByShop: state.pausedByShop,
+      pausedByBattle: state.pausedByBattle,
+      pausedByReputationEvent: state.pausedByReputationEvent,
+    }))
+  );
 export const useLoading = () => useUIStore((state) => state.loading);
 export const useCooldown = () => useUIStore((state) => state.cooldown);

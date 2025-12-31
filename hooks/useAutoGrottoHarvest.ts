@@ -3,7 +3,8 @@
  * 当自动收获开启时，定期检查并自动收获成熟的灵草
  */
 
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { PlayerStats } from '../types';
 import { PLANTABLE_HERBS } from '../constants/index';
 import { addItemToInventory } from '../utils/inventoryUtils';
@@ -11,7 +12,7 @@ import { ItemType } from '../types';
 
 interface UseAutoGrottoHarvestParams {
   player: PlayerStats | null;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats | null>>;
+  setPlayer: Dispatch<SetStateAction<PlayerStats | null>>;
   addLog: (message: string, type?: string) => void;
 }
 

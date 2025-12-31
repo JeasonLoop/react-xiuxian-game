@@ -4,9 +4,11 @@
  */
 
 import { useMemo } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { PlayerStats } from '../types';
 import { KeyboardShortcut } from './useKeyboardShortcuts';
 import { getShortcutConfig, configToShortcut } from '../utils/shortcutUtils';
+import { useUIStore } from '../store/uiStore';
 
 interface UseAppKeyboardShortcutsProps {
   player: PlayerStats | null;
@@ -20,9 +22,9 @@ interface UseAppKeyboardShortcutsProps {
   autoAdventure: boolean;
   setAutoMeditate: (value: boolean | ((prev: boolean) => boolean)) => void;
   setAutoAdventure: (value: boolean | ((prev: boolean) => boolean)) => void;
-  setAutoAdventurePausedByShop: (value: boolean) => void;
-  setAutoAdventurePausedByBattle: (value: boolean) => void;
-  setAutoAdventurePausedByReputationEvent: (value: boolean) => void;
+  setPausedByShop: (value: boolean) => void;
+  setPausedByBattle: (value: boolean) => void;
+  setPausedByReputationEvent: (value: boolean) => void;
   setIsInventoryOpen: (open: boolean) => void;
   setIsCultivationOpen: (open: boolean) => void;
   setIsCharacterOpen: (open: boolean) => void;
@@ -34,7 +36,7 @@ interface UseAppKeyboardShortcutsProps {
   setIsAlchemyOpen: (open: boolean) => void;
   setIsSectOpen: (open: boolean) => void;
   setIsDailyQuestOpen: (open: boolean) => void;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats | null>>;
+  setPlayer: Dispatch<SetStateAction<PlayerStats | null>>;
   handleCloseCurrentModal: () => void;
 }
 
@@ -52,9 +54,9 @@ export function useAppKeyboardShortcuts(props: UseAppKeyboardShortcutsProps): Ke
     autoAdventure,
     setAutoMeditate,
     setAutoAdventure,
-    setAutoAdventurePausedByShop,
-    setAutoAdventurePausedByBattle,
-    setAutoAdventurePausedByReputationEvent,
+    setPausedByShop,
+    setPausedByBattle,
+    setPausedByReputationEvent,
     setIsInventoryOpen,
     setIsCultivationOpen,
     setIsCharacterOpen,
@@ -110,16 +112,30 @@ export function useAppKeyboardShortcuts(props: UseAppKeyboardShortcutsProps): Ke
       customShortcuts
     );
     const toggleAutoAdventureAction = () => {
-      setAutoAdventure((prev) => {
-        const newValue = !prev;
-        // 如果关闭自动历练，清除所有暂停状态
-        if (!newValue) {
-          setAutoAdventurePausedByShop(false);
-          setAutoAdventurePausedByBattle(false);
-          setAutoAdventurePausedByReputationEvent(false);
-        }
-        return newValue;
-      });
+      // 使用 zustand store 的 getState 获取最新状态，避免闭包问题
+      const store = useUIStore.getState();
+      const currentAutoAdventure = store.autoAdventure;
+      const currentPausedByBattle = store.pausedByBattle;
+      const currentPausedByShop = store.pausedByShop;
+      const currentPausedByReputationEvent = store.pausedByReputationEvent;
+
+      // 如果当前是暂停状态（autoAdventure 为 false 但 pausedBy* 为 true），恢复自动历练
+      const isPaused = !currentAutoAdventure && (
+        currentPausedByBattle ||
+        currentPausedByShop ||
+        currentPausedByReputationEvent
+      );
+
+      if (isPaused) {
+        // 恢复自动历练：清除暂停状态并开启自动历练
+        setPausedByShop(false);
+        setPausedByBattle(false);
+        setPausedByReputationEvent(false);
+        setAutoAdventure(true);
+      } else {
+        // 正常切换：如果开启则关闭，如果关闭则开启
+        setAutoAdventure(!currentAutoAdventure);
+      }
     };
     shortcuts.push(
       configToShortcut(
@@ -131,10 +147,18 @@ export function useAppKeyboardShortcuts(props: UseAppKeyboardShortcutsProps): Ke
     );
 
     // 空格键切换自动历练（优先级高于配置的快捷键）
+    // 注意：如果自动打坐开启，则禁用空格键，避免冲突
     shortcuts.push({
       key: ' ',
-      action: toggleAutoAdventureAction,
-      description: '切换自动历练',
+      action: () => {
+        // 如果自动打坐开启，不执行任何操作（不能开启自动历练）
+        // 但如果自动历练已经开启，即使自动打坐开启，也应该允许关闭自动历练
+        if (autoMeditate && !autoAdventure) {
+          return;
+        }
+        toggleAutoAdventureAction();
+      },
+      description: '切换自动历练（自动打坐时禁用开启）',
       category: '基础操作',
     });
 
@@ -308,9 +332,9 @@ export function useAppKeyboardShortcuts(props: UseAppKeyboardShortcutsProps): Ke
     autoAdventure,
     setAutoMeditate,
     setAutoAdventure,
-    setAutoAdventurePausedByShop,
-    setAutoAdventurePausedByBattle,
-    setAutoAdventurePausedByReputationEvent,
+    setPausedByShop,
+    setPausedByBattle,
+    setPausedByReputationEvent,
     setIsInventoryOpen,
     setIsCultivationOpen,
     setIsCharacterOpen,

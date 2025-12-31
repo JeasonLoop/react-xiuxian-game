@@ -2,35 +2,39 @@ import React from 'react';
 import {
   PlayerStats,
   Recipe,
-  Item,
   ItemType,
-  EquipmentSlot,
   ItemRarity,
 } from '../../types';
-import { uid } from '../../utils/gameUtils';
 import { addItemToInventory } from '../../utils/inventoryUtils';
 import { showSuccess } from '../../utils/toastUtils';
+import { useGameStore } from '../../store';
 
 interface UseAlchemyHandlersProps {
-  player: PlayerStats;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
-  addLog: (message: string, type?: string) => void;
+  player?: PlayerStats;
+  setPlayer?: React.Dispatch<React.SetStateAction<PlayerStats>>;
+  addLog?: (message: string, type?: string) => void;
   triggerVisual?: (type: 'damage' | 'heal' | 'slash' | 'alchemy', value?: string, color?: string) => void;
 }
 
 /**
  * 炼丹处理函数
  * 包含炼丹
- * @param player 玩家数据
- * @param setPlayer 设置玩家数据
- * @param addLog 添加日志
+ * @param props 可选的 props（向后兼容），如果不提供则从 zustand store 获取
  * @returns handleCraft 炼丹
  */
-export function useAlchemyHandlers({
-  setPlayer,
-  addLog,
-  triggerVisual,
-}: UseAlchemyHandlersProps) {
+export function useAlchemyHandlers(
+  props?: UseAlchemyHandlersProps
+) {
+  // 从 zustand store 获取状态
+  const storePlayer = useGameStore((state) => state.player);
+  const storeSetPlayer = useGameStore((state) => state.setPlayer);
+  const storeAddLog = useGameStore((state) => state.addLog);
+
+  // 使用 props 或 store 的值（props 优先，用于向后兼容）
+  // triggerVisual 来自 useGameEffects hook，不是 zustand store 的一部分，所以保持从 props 传入
+  const setPlayer = props?.setPlayer ?? storeSetPlayer;
+  const addLog = props?.addLog ?? storeAddLog;
+  const triggerVisual = props?.triggerVisual;
   const handleCraft = async (recipe: Recipe) => {
     // 先触发炼丹开始动画
     if (triggerVisual) {

@@ -7,30 +7,37 @@ import {
   BASE_ATTRIBUTES,
 } from '../../utils/attributeUtils';
 import { getPlayerTotalStats } from '../../utils/statUtils';
+import { useGameStore, useUIStore } from '../../store';
 
 interface UseCharacterHandlersProps {
-  player: PlayerStats;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
-  addLog: (message: string, type?: string) => void;
+  player?: PlayerStats;
+  setPlayer?: React.Dispatch<React.SetStateAction<PlayerStats>>;
+  addLog?: (message: string, type?: string) => void;
   setItemActionLog?: (log: { text: string; type: string } | null) => void;
 }
 
 /**
  * 角色处理函数
  * 包含选择天赋、选择称号、分配属性
- * @param player 玩家数据
- * @param setPlayer 设置玩家数据
- * @param addLog 添加日志
+ * @param props 可选的 props（向后兼容），如果不提供则从 zustand store 获取
  * @returns handleSelectTalent 选择天赋
  * @returns handleSelectTitle 选择称号
  * @returns handleAllocateAttribute 分配属性
  */
-export function useCharacterHandlers({
-  player,
-  setPlayer,
-  addLog,
-  setItemActionLog,
-}: UseCharacterHandlersProps) {
+export function useCharacterHandlers(
+  props?: UseCharacterHandlersProps
+) {
+  // 从 zustand store 获取状态
+  const storePlayer = useGameStore((state) => state.player);
+  const storeSetPlayer = useGameStore((state) => state.setPlayer);
+  const storeAddLog = useGameStore((state) => state.addLog);
+  const storeSetItemActionLog = useUIStore((state) => state.setItemActionLog);
+
+  // 使用 props 或 store 的值（props 优先，用于向后兼容）
+  const player = props?.player ?? storePlayer;
+  const setPlayer = props?.setPlayer ?? storeSetPlayer;
+  const addLog = props?.addLog ?? storeAddLog;
+  const setItemActionLog = props?.setItemActionLog ?? storeSetItemActionLog;
   const handleSelectTalent = (talentId: string) => {
     // 天赋在游戏开始时随机生成，之后不可修改
     addLog('天赋在游戏开始时已确定，无法修改！', 'danger');

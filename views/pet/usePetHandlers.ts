@@ -4,31 +4,38 @@ import {
   PET_TEMPLATES,
   REALM_ORDER,
 } from '../../constants/index';
+import { useGameStore, useUIStore } from '../../store';
 
 interface UsePetHandlersProps {
-  player: PlayerStats;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
-  addLog: (message: string, type?: string) => void;
+  player?: PlayerStats;
+  setPlayer?: React.Dispatch<React.SetStateAction<PlayerStats>>;
+  addLog?: (message: string, type?: string) => void;
   setItemActionLog?: (log: { text: string; type: string } | null) => void;
 }
 
 /**
  * 灵宠处理函数
  * 包含激活灵宠、喂养灵宠、进化灵宠
- * @param player 玩家数据
- * @param setPlayer 设置玩家数据
- * @param addLog 添加日志
+ * @param props 可选的 props（向后兼容），如果不提供则从 zustand store 获取
  * @returns handleActivatePet 激活灵宠
  * @returns handleFeedPet 喂养灵宠
  * @returns handleEvolvePet 进化灵宠
  */
 
-export function usePetHandlers({
-  player,
-  setPlayer,
-  addLog,
-  setItemActionLog,
-}: UsePetHandlersProps) {
+export function usePetHandlers(
+  props?: UsePetHandlersProps
+) {
+  // 从 zustand store 获取状态
+  const storePlayer = useGameStore((state) => state.player);
+  const storeSetPlayer = useGameStore((state) => state.setPlayer);
+  const storeAddLog = useGameStore((state) => state.addLog);
+  const storeSetItemActionLog = useUIStore((state) => state.setItemActionLog);
+
+  // 使用 props 或 store 的值（props 优先，用于向后兼容）
+  const player = props?.player ?? storePlayer;
+  const setPlayer = props?.setPlayer ?? storeSetPlayer;
+  const addLog = props?.addLog ?? storeAddLog;
+  const setItemActionLog = props?.setItemActionLog ?? storeSetItemActionLog;
   const handleActivatePet = (petId: string) => {
     if (!player) return;
     setPlayer((prev) => ({ ...prev, activePetId: petId }));

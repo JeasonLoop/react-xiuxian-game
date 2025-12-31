@@ -25,8 +25,8 @@ interface AppContentProps {
   player: PlayerStats;
 
   // 游戏状态
-  logs: Array<{ message: string; type?: string; timestamp: number }>;
-  setLogs: React.Dispatch<React.SetStateAction<Array<{ message: string; type?: string; timestamp: number }>>>;
+  logs: Array<{ id: string; text: string; type: string; timestamp: number }>;
+  setLogs: React.Dispatch<React.SetStateAction<Array<{ id: string; text: string; type: string; timestamp: number }>>>;
   visualEffects: any[];
   loading: boolean;
   cooldown: number;

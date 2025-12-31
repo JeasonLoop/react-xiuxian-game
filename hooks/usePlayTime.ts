@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { PlayerStats } from '../types';
 
 interface UsePlayTimeProps {
   gameStarted: boolean;
   player: PlayerStats | null;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats | null>>;
+  setPlayer: Dispatch<SetStateAction<PlayerStats | null>>;
   saveGame: (player: PlayerStats, logs: any[]) => void;
   logs: any[];
 }

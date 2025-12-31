@@ -1,6 +1,6 @@
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import { clearAllSlots } from '../utils/saveManagerUtils';
-import { useUI } from '../context/UIContext';
+import { useUIStore } from '../store';
 import { PlayerStats, LogEntry } from '../types';
 
 interface UseRebirthParams {
@@ -25,7 +25,14 @@ export function useRebirth({
   setDeathBattleData,
   setDeathReason,
 }: UseRebirthParams) {
-  const { auto, battle } = useUI();
+  const {
+    setLastBattleReplay,
+    setAutoMeditate,
+    setAutoAdventure,
+    setPausedByBattle,
+    setPausedByShop,
+    setPausedByReputationEvent,
+  } = useUIStore();
 
   const handleRebirth = () => {
     // 清除所有存档
@@ -38,12 +45,12 @@ export function useRebirth({
     setDeathReason('');
 
     // 重置 UI 状态
-    battle.setLastBattleReplay(null);
-    auto.setAutoMeditate(false);
-    auto.setAutoAdventure(false);
-    auto.setPausedByBattle(false);
-    auto.setPausedByShop(false);
-    auto.setPausedByReputationEvent(false);
+    setLastBattleReplay(null);
+    setAutoMeditate(false);
+    setAutoAdventure(false);
+    setPausedByBattle(false);
+    setPausedByShop(false);
+    setPausedByReputationEvent(false);
 
     // 重置游戏核心状态
     setPlayer(null);

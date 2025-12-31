@@ -2,28 +2,34 @@ import React from 'react';
 import { PlayerStats, CultivationArt, RealmType } from '../../types';
 import { SECTS, REALM_ORDER, calculateSpiritualRootArtBonus } from '../../constants/index';
 import { showError, showWarning } from '../../utils/toastUtils';
+import { useGameStore } from '../../store';
 
 interface UseCultivationHandlersProps {
-  player: PlayerStats;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
-  addLog: (message: string, type?: string) => void;
+  player?: PlayerStats;
+  setPlayer?: React.Dispatch<React.SetStateAction<PlayerStats>>;
+  addLog?: (message: string, type?: string) => void;
 }
 
 /**
  * 功法处理函数
  * 包含领悟功法、激活功法
- * @param player 玩家数据
- * @param setPlayer 设置玩家数据
- * @param addLog 添加日志
+ * @param props 可选的 props（向后兼容），如果不提供则从 zustand store 获取
  * @returns handleLearnArt 领悟功法
  * @returns handleActivateArt 激活功法
  */
 
-export function useCultivationHandlers({
-  player,
-  setPlayer,
-  addLog,
-}: UseCultivationHandlersProps) {
+export function useCultivationHandlers(
+  props?: UseCultivationHandlersProps
+) {
+  // 从 zustand store 获取状态
+  const storePlayer = useGameStore((state) => state.player);
+  const storeSetPlayer = useGameStore((state) => state.setPlayer);
+  const storeAddLog = useGameStore((state) => state.addLog);
+
+  // 使用 props 或 store 的值（props 优先，用于向后兼容）
+  const player = props?.player ?? storePlayer;
+  const setPlayer = props?.setPlayer ?? storeSetPlayer;
+  const addLog = props?.addLog ?? storeAddLog;
   const handleLearnArt = (art: CultivationArt) => {
     if (!player) {
       showError('玩家数据不存在！', '错误');

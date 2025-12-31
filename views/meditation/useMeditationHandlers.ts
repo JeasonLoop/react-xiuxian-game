@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { PlayerStats } from '../../types';
 import {
   TALENTS,
@@ -7,36 +7,47 @@ import {
   calculateSpiritualRootArtBonus,
 } from '../../constants/index';
 import { getActiveMentalArt, getPlayerTotalStats } from '../../utils/statUtils';
+import { useGameStore } from '../../store';
 
 interface UseMeditationHandlersProps {
-  player: PlayerStats;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
-  addLog: (message: string, type?: string) => void;
-  checkLevelUp: (addedExp: number) => void;
+  player?: PlayerStats;
+  setPlayer?: React.Dispatch<React.SetStateAction<PlayerStats>>;
+  addLog?: (message: string, type?: string) => void;
+  checkLevelUp?: (addedExp: number) => void;
 }
 
 /**
  * 打坐处理函数
  * 包含打坐
- * @param player 玩家数据
- * @param setPlayer 设置玩家数据
- * @param addLog 添加日志
- * @param checkLevelUp 检查升级
+ * @param props 可选的 props（向后兼容），如果不提供则从 zustand store 获取
  * @returns handleMeditate 打坐
  */
 
-export function useMeditationHandlers({
-  player,
-  setPlayer,
-  addLog,
-  checkLevelUp,
-}: UseMeditationHandlersProps) {
-  const handleMeditate = () => {
-    if (!player) return;
+export function useMeditationHandlers(
+  props?: UseMeditationHandlersProps
+) {
+  // 从 zustand store 获取状态
+  const storePlayer = useGameStore((state) => state.player);
+  const storeSetPlayer = useGameStore((state) => state.setPlayer);
+  const storeAddLog = useGameStore((state) => state.addLog);
+
+  // 使用 props 或 store 的值（props 优先，用于向后兼容）
+  const player = props?.player ?? storePlayer;
+  const setPlayer = props?.setPlayer ?? storeSetPlayer;
+  const addLog = props?.addLog ?? storeAddLog;
+  const checkLevelUp = props?.checkLevelUp ?? (() => {}); // 默认空函数，升级检查在 useEffect 中处理
+
+  // 使用 useCallback 确保函数能够访问最新的值
+  const handleMeditate = useCallback(() => {
+    // 在函数内部直接从 store 获取最新的 player，避免闭包问题
+    const currentPlayer = props?.player ?? useGameStore.getState().player;
+    const currentSetPlayer = props?.setPlayer ?? useGameStore.getState().setPlayer;
+    const currentAddLog = props?.addLog ?? useGameStore.getState().addLog;
+    if (!currentPlayer) return;
 
     // 根据境界计算基础修为
     // 基础修为 = 境界基础值 * (1 + 境界层数 * 0.15)
-    const realmIndex = REALM_ORDER.indexOf(player.realm);
+    const realmIndex = REALM_ORDER.indexOf(currentPlayer.realm);
 
     // 不同境界的基础修为倍数（基于境界等级）
     const realmBaseMultipliers = [1, 2, 5, 10, 25, 50, 100];
@@ -44,16 +55,16 @@ export function useMeditationHandlers({
 
     // 基础修为 = 境界基础倍数 * (1 + 境界层数 * 0.15)
     let baseGain = Math.floor(
-      realmBaseMultiplier * 10 * (1 + player.realmLevel * 0.15)
+      realmBaseMultiplier * 10 * (1 + currentPlayer.realmLevel * 0.15)
     );
 
     // Apply Active Art Bonus
-    const activeArt = getActiveMentalArt(player);
+    const activeArt = getActiveMentalArt(currentPlayer);
     if (activeArt && activeArt.effects.expRate) {
       // 计算灵根对心法的加成
       const spiritualRootBonus = calculateSpiritualRootArtBonus(
         activeArt,
-        player.spiritualRoots || {
+        currentPlayer.spiritualRoots || {
           metal: 0,
           wood: 0,
           water: 0,
@@ -65,22 +76,22 @@ export function useMeditationHandlers({
     }
 
     // Apply Talent Bonus
-    const talent = TALENTS.find((t) => t.id === player.talentId);
+    const talent = TALENTS.find((t) => t.id === currentPlayer.talentId);
     if (talent && talent.effects.expRate) {
       baseGain = Math.floor(baseGain * (1 + talent.effects.expRate));
     }
 
     // Apply Grotto Bonus (聚灵阵加成 + 改造加成)
-    if (player.grotto) {
-      const totalGrottoBonus = (player.grotto.expRateBonus || 0) + (player.grotto.spiritArrayEnhancement || 0);
+    if (currentPlayer.grotto) {
+      const totalGrottoBonus = (currentPlayer.grotto.expRateBonus || 0) + (currentPlayer.grotto.spiritArrayEnhancement || 0);
       if (totalGrottoBonus > 0) {
         const beforeGrotto = baseGain;
         baseGain = Math.floor(baseGain * (1 + totalGrottoBonus));
         // 只在有改造加成时显示额外提示
-        if (player.grotto.spiritArrayEnhancement && player.grotto.spiritArrayEnhancement > 0) {
-          const enhancementGain = Math.floor(beforeGrotto * player.grotto.spiritArrayEnhancement);
+        if (currentPlayer.grotto.spiritArrayEnhancement && currentPlayer.grotto.spiritArrayEnhancement > 0) {
+          const enhancementGain = Math.floor(beforeGrotto * currentPlayer.grotto.spiritArrayEnhancement);
           if (enhancementGain > 0) {
-            addLog(`聚灵阵改造为你带来了额外的灵气加持！(+${enhancementGain} 修为)`, 'special');
+            currentAddLog(`聚灵阵改造为你带来了额外的灵气加持！(+${enhancementGain} 修为)`, 'special');
           }
         }
       }
@@ -97,16 +108,16 @@ export function useMeditationHandlers({
       actualGain = Math.floor(baseGain * enlightenmentMultiplier);
       const artText = activeArt ? `，运转${activeArt.name}` : '';
       logMessage = `✨ 你突然顿悟，灵台清明，对大道有了更深的理解${artText}！(+${actualGain} 修为)`;
-      addLog(logMessage, 'special');
+      currentAddLog(logMessage, 'special');
     } else {
       // 正常修炼：小幅随机波动
       actualGain = Math.floor(baseGain * (0.85 + Math.random() * 0.3)); // 85%-115%
       const artText = activeArt ? `，运转${activeArt.name}` : '';
       logMessage = `你潜心感悟大道${artText}。(+${actualGain} 修为)`;
-      addLog(logMessage);
+      currentAddLog(logMessage, 'gain');
     }
 
-    setPlayer((prev) => {
+    currentSetPlayer((prev) => {
       // 获取实际的最大血量（包含金丹法数加成等）
       const totalStats = getPlayerTotalStats(prev);
       const actualMaxHp = totalStats.maxHp;
@@ -125,7 +136,9 @@ export function useMeditationHandlers({
       // 添加回血提示
       const multiplierText = baseMultiplier.toFixed(1);
       if (newHp > prev.hp) {
-        addLog(
+        // 使用最新的 addLog
+        const latestAddLog = props?.addLog ?? useGameStore.getState().addLog;
+        latestAddLog(
           `💚 打坐加速回血，恢复 ${actualRegen} 点气血（${multiplierText}倍速度）`,
           'gain'
         );
@@ -155,7 +168,9 @@ export function useMeditationHandlers({
       // 只在获得灵石时显示提示（避免刷屏）
       if (stoneGain > 0 && Math.random() < 0.3) {
         // 30%概率显示提示，避免刷屏
-        addLog(`💰 打坐时获得了 ${Math.max(1, stoneGain)} 灵石`, 'gain');
+        // 使用最新的 addLog
+        const latestAddLog = props?.addLog ?? useGameStore.getState().addLog;
+        latestAddLog(`💰 打坐时获得了 ${Math.max(1, stoneGain)} 灵石`, 'gain');
       }
 
       return {
@@ -171,15 +186,18 @@ export function useMeditationHandlers({
     });
     checkLevelUp(actualGain);
 
-    // 检查首次打坐成就
-    if (!player.achievements.includes('ach-first-step')) {
+    // 检查首次打坐成就（使用最新的 player）
+    const latestPlayer = props?.player ?? useGameStore.getState().player;
+    if (latestPlayer && !latestPlayer.achievements.includes('ach-first-step')) {
       const firstMeditateAchievement = ACHIEVEMENTS.find(
         (a) => a.id === 'ach-first-step'
       );
       if (firstMeditateAchievement) {
-        setPlayer((prev) => {
+        const latestSetPlayer = props?.setPlayer ?? useGameStore.getState().setPlayer;
+        const latestAddLog = props?.addLog ?? useGameStore.getState().addLog;
+        latestSetPlayer((prev) => {
           const newAchievements = [...prev.achievements, 'ach-first-step'];
-          addLog(
+          latestAddLog(
             `🎉 达成成就：【${firstMeditateAchievement.name}】！`,
             'special'
           );
@@ -194,7 +212,7 @@ export function useMeditationHandlers({
         });
       }
     }
-  };
+  }, []); // 空依赖数组，函数内部总是从 store 获取最新值
 
   return {
     handleMeditate,

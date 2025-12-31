@@ -16,8 +16,6 @@ import {
 } from '../constants/index';
 import { logger } from '../utils/logger';
 import { ITEM_TEMPLATES } from '../constants/itemTemplates';
-import { getPlayerTotalStats } from '../utils/statUtils';
-import { PlayerStats } from '../types';
 
 /**
  * 事件模板接口

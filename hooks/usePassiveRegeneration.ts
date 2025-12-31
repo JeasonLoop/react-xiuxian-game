@@ -3,16 +3,16 @@
  * 处理玩家被动回血和冷却时间递减
  */
 
-import React from 'react';
 import { useEffect, useRef, useMemo } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { PlayerStats } from '../types';
 import { getPlayerTotalStats } from '../utils/statUtils';
 
 interface UsePassiveRegenerationParams {
   player: PlayerStats | null;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats | null>>;
+  setPlayer: Dispatch<SetStateAction<PlayerStats | null>>;
   cooldown: number;
-  setCooldown: React.Dispatch<React.SetStateAction<number>>;
+  setCooldown: Dispatch<SetStateAction<number>>;
 }
 
 /**
@@ -105,8 +105,6 @@ export function usePassiveRegeneration({
     }, 1000);
 
     return () => clearInterval(timer);
-    // 只依赖 player 是否存在，而不是整个 player 对象
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [!!player, setPlayer, setCooldown]);
+  }, [!!player]);
 }
 

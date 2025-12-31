@@ -4,33 +4,39 @@ import React, {
   useRef,
   useMemo,
 } from 'react';
-import { checkBreakthroughConditions } from './utils/cultivationUtils';
 import {
   TribulationState,
   TribulationResult,
+  GameSettings,
+  RealmType,
 } from './types';
 import WelcomeScreen from './components/WelcomeScreen';
 import StartScreen from './components/StartScreen';
+import LoadingScreen from './components/LoadingScreen';
 import {
   SaveData,
 } from './utils/saveManagerUtils';
 import { BattleReplay } from './services/battleService';
-import { useGameState } from './hooks/useGameState';
 import { useGameEffects } from './hooks/useGameEffects';
-import { useUI } from './context/UIContext';
+import {
+  useGameStore,
+  usePlayer,
+  useSettings,
+  useLogs,
+  useGameStarted,
+  useUIStore,
+  useModals,
+} from './store';
+import { useShallow } from 'zustand/react/shallow';
 import { useDeathDetection } from './hooks/useDeathDetection';
 import { useAutoFeatures } from './hooks/useAutoFeatures';
 import { usePassiveRegeneration } from './hooks/usePassiveRegeneration';
 import { useAutoGrottoHarvest } from './hooks/useAutoGrottoHarvest';
 import { STORAGE_KEYS } from './constants/storageKeys';
-import {  showConfirm } from './utils/toastUtils';
 import { useItemActionLog } from './hooks/useItemActionLog';
-import { REALM_ORDER, TRIBULATION_CONFIG } from './constants/index';
 import {
   useKeyboardShortcuts,
 } from './hooks/useKeyboardShortcuts';
-
-import { shouldTriggerTribulation, createTribulationState } from './utils/tribulationUtils';
 
 import { usePlayTime } from './hooks/usePlayTime';
 import { useGameInitialization } from './hooks/useGameInitialization';
@@ -45,21 +51,37 @@ import { useGameViewHandlers, useModalsHandlers } from './hooks/useAppViewHandle
 import { AppContent } from './components/AppContent';
 
 function App() {
-  // 使用自定义hooks管理游戏状态
-  const {
-    hasSave, // 是否有存档
-    setHasSave, // 设置是否有存档
-    gameStarted, // 游戏是否开始
-    player, // 玩家数据
-    setPlayer, // 设置玩家数据
-    settings, // 游戏设置
-    setSettings, // 设置游戏设置
-    logs, // 游戏日志
-    setLogs, // 设置游戏日志
-    handleStartGame, // 开始游戏
-    setGameStarted, // 设置游戏开始状态（用于涅槃重生）
-    saveGame, // 保存存档函数
-  } = useGameState();
+  // 直接从 zustand store 获取游戏状态
+  const hasSave = useGameStore((state) => state.hasSave);
+  const setHasSave = useGameStore((state) => state.setHasSave);
+  const gameStarted = useGameStarted();
+  const setGameStarted = useGameStore((state) => state.setGameStarted);
+  const player = usePlayer();
+  const setPlayer = useGameStore((state) => state.setPlayer);
+  const settings = useSettings();
+  const setSettings = useGameStore((state) => state.setSettings);
+  const logs = useLogs();
+  const setLogs = useGameStore((state) => state.setLogs);
+  const saveGame = useGameStore((state) => state.saveGame);
+  const loadGame = useGameStore((state) => state.loadGame);
+  const startNewGame = useGameStore((state) => state.startNewGame);
+
+  // 兼容原有的 handleStartGame 接口
+  const handleStartGame = (
+    playerName: string,
+    talentId: string,
+    difficulty: GameSettings['difficulty']
+  ) => {
+    startNewGame(playerName, talentId, difficulty);
+  };
+
+  // 游戏启动时自动加载存档
+  useEffect(() => {
+    if (hasSave && !player) {
+      loadGame();
+    }
+    // loadGame 是 zustand store 的稳定函数引用，但为了明确依赖关系，仍然包含它
+  }, [hasSave, player, loadGame]);
 
   // 欢迎界面状态 - 总是显示欢迎界面，让用户选择继续或开始
   const [showWelcome, setShowWelcome] = useState(true);
@@ -69,63 +91,41 @@ function App() {
 
   // 使用自定义hooks管理游戏效果
   const { visualEffects, createAddLog, triggerVisual } = useGameEffects();
-  const addLog = createAddLog(setLogs);
+  // createAddLog 和 setLogs 都是稳定的函数引用，addLog 也是稳定的
+  const addLog = useMemo(() => createAddLog(setLogs), [createAddLog, setLogs]);
 
-  // 使用统一的 App 状态管理 (通过 Context)
-  const appState = useUI();
-  const {
-    modals,
-    setters,
-    shop,
-    upgrade,
-    notifications,
-    battle,
-    turnBasedBattle,
-    itemActionLog,
-    auto,
-    actions,
-  } = appState;
+  // 直接从 zustand UI store 获取状态
+  const modals = useModals();
 
-  const {
-    autoMeditate,
-    setAutoMeditate,
-    autoAdventure,
-    setAutoAdventure,
-    pausedByShop: autoAdventurePausedByShop,
-    setPausedByShop: setAutoAdventurePausedByShop,
-    pausedByBattle: autoAdventurePausedByBattle,
-    setPausedByBattle: setAutoAdventurePausedByBattle,
-    pausedByReputationEvent: autoAdventurePausedByReputationEvent,
-    setPausedByReputationEvent: setAutoAdventurePausedByReputationEvent,
-  } = auto;
-
-  const { closeCurrentModal: handleCloseCurrentModal, openTurnBasedBattle: handleOpenTurnBasedBattle } = actions;
-
-  // 解构状态以便使用
-  const {
-    isInventoryOpen,
-    isCultivationOpen,
-    isAlchemyOpen,
-    isUpgradeOpen,
-    isSectOpen,
-    isRealmOpen,
-    isCharacterOpen,
-    isAchievementOpen,
-    isPetOpen,
-    isLotteryOpen,
-    isSettingsOpen,
-    isDailyQuestOpen,
-    isShopOpen,
-    isGrottoOpen,
-    isDebugOpen,
-    isBattleModalOpen,
-    isTurnBasedBattleOpen,
-    isMobileSidebarOpen,
-    isMobileStatsOpen,
-    isReputationEventOpen,
-    isTreasureVaultOpen,
-  } = modals;
-
+  // 优化：批量选择 UI Store 状态和 setters，减少订阅数量
+  // Modal setters - 批量选择所有 setter 函数（函数引用稳定，不会导致重渲染）
+  const modalSetters = useUIStore(
+    useShallow((state) => ({
+      setIsInventoryOpen: state.setIsInventoryOpen,
+      setIsCultivationOpen: state.setIsCultivationOpen,
+      setIsAlchemyOpen: state.setIsAlchemyOpen,
+      setIsUpgradeOpen: state.setIsUpgradeOpen,
+      setIsSectOpen: state.setIsSectOpen,
+      setIsRealmOpen: state.setIsRealmOpen,
+      setIsCharacterOpen: state.setIsCharacterOpen,
+      setIsAchievementOpen: state.setIsAchievementOpen,
+      setIsPetOpen: state.setIsPetOpen,
+      setIsLotteryOpen: state.setIsLotteryOpen,
+      setIsSettingsOpen: state.setIsSettingsOpen,
+      setIsDailyQuestOpen: state.setIsDailyQuestOpen,
+      setIsShopOpen: state.setIsShopOpen,
+      setIsGrottoOpen: state.setIsGrottoOpen,
+      setIsDebugOpen: state.setIsDebugOpen,
+      setIsBattleModalOpen: state.setIsBattleModalOpen,
+      setIsTurnBasedBattleOpen: state.setIsTurnBasedBattleOpen,
+      setIsMobileSidebarOpen: state.setIsMobileSidebarOpen,
+      setIsMobileStatsOpen: state.setIsMobileStatsOpen,
+      setIsDebugModeEnabled: state.setIsDebugModeEnabled,
+      setIsReputationEventOpen: state.setIsReputationEventOpen,
+      setIsTreasureVaultOpen: state.setIsTreasureVaultOpen,
+    }))
+  );
+  // 解构以便使用（保持向后兼容）
   const {
     setIsInventoryOpen,
     setIsCultivationOpen,
@@ -149,34 +149,145 @@ function App() {
     setIsDebugModeEnabled,
     setIsReputationEventOpen,
     setIsTreasureVaultOpen,
-  } = setters;
+  } = modalSetters;
 
-  const { isDebugModeEnabled } = modals;
+  // 全局状态和 setters - 批量选择
+  const { loading, cooldown, setLoading, setCooldown } = useUIStore(
+    useShallow((state) => ({
+      loading: state.loading,
+      cooldown: state.cooldown,
+      setLoading: state.setLoading,
+      setCooldown: state.setCooldown,
+    }))
+  );
+
+  // Shop, upgrade, notifications - 批量选择状态和 setters
+  const {
+    currentShop,
+    itemToUpgrade,
+    purchaseSuccess,
+    lotteryRewards,
+    setCurrentShop,
+    setItemToUpgrade,
+    setPurchaseSuccess,
+    setLotteryRewards,
+  } = useUIStore(
+    useShallow((state) => ({
+      currentShop: state.currentShop,
+      itemToUpgrade: state.itemToUpgrade,
+      purchaseSuccess: state.purchaseSuccess,
+      lotteryRewards: state.lotteryRewards,
+      setCurrentShop: state.setCurrentShop,
+      setItemToUpgrade: state.setItemToUpgrade,
+      setPurchaseSuccess: state.setPurchaseSuccess,
+      setLotteryRewards: state.setLotteryRewards,
+    }))
+  );
+
+  // Battle - 批量选择状态和 setters
+  const {
+    battleReplay,
+    revealedBattleRounds,
+    lastBattleReplay,
+    setBattleReplay,
+    setRevealedBattleRounds,
+    setLastBattleReplay,
+  } = useUIStore(
+    useShallow((state) => ({
+      battleReplay: state.battleReplay,
+      revealedBattleRounds: state.revealedBattleRounds,
+      lastBattleReplay: state.lastBattleReplay,
+      setBattleReplay: state.setBattleReplay,
+      setRevealedBattleRounds: state.setRevealedBattleRounds,
+      setLastBattleReplay: state.setLastBattleReplay,
+    }))
+  );
+
+  // Turn based battle, item action log, reputation event - 批量选择
+  const {
+    setTurnBasedBattleParams,
+    itemActionLogValue,
+    setItemActionLogRaw,
+    setReputationEvent,
+  } = useUIStore(
+    useShallow((state) => ({
+      setTurnBasedBattleParams: state.setTurnBasedBattleParams,
+      itemActionLogValue: state.itemActionLog,
+      setItemActionLogRaw: state.setItemActionLog,
+      setReputationEvent: state.setReputationEvent,
+    }))
+  );
+
+  // Auto features - 批量选择状态和 setters
+  const {
+    autoMeditate,
+    autoAdventure,
+    pausedByShop,
+    pausedByBattle,
+    pausedByReputationEvent,
+    setAutoMeditate,
+    setAutoAdventure,
+    setPausedByShop,
+    setPausedByBattle,
+    setPausedByReputationEvent,
+  } = useUIStore(
+    useShallow((state) => ({
+      autoMeditate: state.autoMeditate,
+      autoAdventure: state.autoAdventure,
+      pausedByShop: state.pausedByShop,
+      pausedByBattle: state.pausedByBattle,
+      pausedByReputationEvent: state.pausedByReputationEvent,
+      setAutoMeditate: state.setAutoMeditate,
+      setAutoAdventure: state.setAutoAdventure,
+      setPausedByShop: state.setPausedByShop,
+      setPausedByBattle: state.setPausedByBattle,
+      setPausedByReputationEvent: state.setPausedByReputationEvent,
+    }))
+  );
+
+  // Actions - 批量选择
+  const { closeCurrentModal, openTurnBasedBattle } = useUIStore(
+    useShallow((state) => ({
+      closeCurrentModal: state.closeCurrentModal,
+      openTurnBasedBattle: state.openTurnBasedBattle,
+    }))
+  );
+
+  // 兼容旧接口的别名（保留以兼容现有代码）
+  const handleCloseCurrentModal = closeCurrentModal;
+  const handleOpenTurnBasedBattle = openTurnBasedBattle;
+
+  // 解构 modals 状态以便使用
+  const {
+    isInventoryOpen,
+    isCultivationOpen,
+    isAlchemyOpen,
+    isUpgradeOpen,
+    isSectOpen,
+    isRealmOpen,
+    isCharacterOpen,
+    isAchievementOpen,
+    isPetOpen,
+    isLotteryOpen,
+    isSettingsOpen,
+    isDailyQuestOpen,
+    isShopOpen,
+    isGrottoOpen,
+    isDebugOpen,
+    isBattleModalOpen,
+    isTurnBasedBattleOpen,
+    isMobileSidebarOpen,
+    isMobileStatsOpen,
+    isReputationEventOpen,
+    isTreasureVaultOpen,
+    isDebugModeEnabled,
+  } = modals;
 
   // 检查调试模式是否启用
   useEffect(() => {
     const debugMode = localStorage.getItem(STORAGE_KEYS.DEBUG_MODE) === 'true';
     setIsDebugModeEnabled(debugMode);
   }, []);
-
-  const { setCurrentShop } = shop;
-  const { setItemToUpgrade } = upgrade;
-  const {
-    purchaseSuccess,
-    lotteryRewards,
-    setLotteryRewards,
-  } = notifications;
-  const { event: reputationEvent, setEvent: setReputationEvent } =
-    appState.reputationEvent;
-  const {
-    setBattleReplay,
-    setRevealedBattleRounds,
-    lastBattleReplay,
-  } = battle;
-  const { setParams: setTurnBasedBattleParams } =
-    turnBasedBattle;
-  const { value: itemActionLogValue, setValue: setItemActionLogRaw } =
-    itemActionLog;
 
   // 使用公共 hook 管理 itemActionLog，自动处理延迟清除
   const { setItemActionLog } = useItemActionLog({
@@ -198,7 +309,7 @@ function App() {
     }
   }, [gameStarted, player]);
 
-  const { loading, setLoading, cooldown, setCooldown } = appState.global;
+  // loading, cooldown 已在上面定义
 
   // 使用自定义 hook 处理游戏时长和保存
   usePlayTime({
@@ -223,25 +334,21 @@ function App() {
   const [deathReason, setDeathReason] = useState('');
   const [tribulationState, setTribulationState] = useState<TribulationState | null>(null);
 
-  // 使用统一的 App Handlers Hook
+  // 使用统一的 App Handlers Hook（直接使用 zustand stores，无需兼容层）
   const appHandlers = useAppHandlers({
     player,
     setPlayer,
     addLog,
     triggerVisual,
     settings,
-    appState,
     gameStarted,
     autoMeditate,
     autoAdventure,
     setAutoMeditate,
     setAutoAdventure,
-    autoAdventurePausedByShop,
-    autoAdventurePausedByBattle,
-    autoAdventurePausedByReputationEvent,
-    setAutoAdventurePausedByShop,
-    setAutoAdventurePausedByBattle,
-    setAutoAdventurePausedByReputationEvent,
+    pausedByReputationEvent,
+    setPausedByShop,
+    setPausedByReputationEvent,
     loading,
     cooldown,
     setLoading,
@@ -316,13 +423,21 @@ function App() {
     dailyQuestHandlers,
   } = appHandlers;
 
+  // 使用 ref 存储最新的 handleBreakthrough，避免 useEffect 依赖导致循环
+  const handleBreakthroughRef = useRef(breakthroughHandlers.handleBreakthrough);
+  useEffect(() => {
+    handleBreakthroughRef.current = breakthroughHandlers.handleBreakthrough;
+  }, [breakthroughHandlers.handleBreakthrough]);
+
   // 使用等级提升与天劫处理 hook
   const { isTribulationTriggeredRef } = useLevelUp({
     player,
     setPlayer,
     tribulationState,
     setTribulationState,
-    handleBreakthrough: breakthroughHandlers.handleBreakthrough,
+    handleBreakthrough: (...args: Parameters<typeof breakthroughHandlers.handleBreakthrough>) => {
+      handleBreakthroughRef.current(...args);
+    },
     addLog,
   });
 
@@ -332,7 +447,7 @@ function App() {
     if (result.success) {
       // 渡劫成功，执行突破（跳过成功率检查）
       // 将天劫产生的扣血传递给突破处理器，确保在同一次状态更新中处理
-      breakthroughHandlers.handleBreakthrough(true, result.hpLoss || 0);
+      handleBreakthroughRef.current(true, result.hpLoss || 0);
 
       if (result.hpLoss && result.hpLoss > 0) {
         addLog(`渡劫成功，但损耗了${result.hpLoss}点气血。`, 'normal');
@@ -360,15 +475,15 @@ function App() {
       const isNewPlayer = prevPlayerNameRef.current !== null &&
                           prevPlayerNameRef.current !== player.name;
       const isInitialState = player.exp === 0 &&
-                             player.realm === 'QiRefining' &&
+                             player.realm === RealmType.QiRefining &&
                              player.realmLevel === 1;
 
       if (isNewPlayer && isInitialState) {
         // 新游戏开始时，确保自动历练状态被重置
         setAutoAdventure(false);
-        setAutoAdventurePausedByBattle(false);
-        setAutoAdventurePausedByShop(false);
-        setAutoAdventurePausedByReputationEvent(false);
+        setPausedByBattle(false);
+        setPausedByShop(false);
+        setPausedByReputationEvent(false);
       }
 
       prevPlayerNameRef.current = player.name;
@@ -376,7 +491,8 @@ function App() {
       // 游戏未开始或玩家为null时，重置ref
       prevPlayerNameRef.current = null;
     }
-  }, [gameStarted, player?.name, player?.exp, player?.realm, player?.realmLevel]);
+    // 使用 player 对象作为依赖，在 effect 内部访问属性，避免可选链依赖
+  }, [gameStarted, player]);
 
 
   // 使用自定义 hook 处理涅槃重生
@@ -409,7 +525,7 @@ function App() {
   // 战斗结束后，如果玩家还活着且之前是自动历练模式，继续自动历练
   useEffect(() => {
     if (
-      autoAdventurePausedByBattle &&
+      pausedByBattle &&
       player &&
       player.hp > 0 &&
       !isDead &&
@@ -418,11 +534,12 @@ function App() {
       // 延迟一小段时间后恢复自动历练，确保状态更新完成
       const timer = setTimeout(() => {
         setAutoAdventure(true);
-        setAutoAdventurePausedByBattle(false);
+        setPausedByBattle(false);
       }, 300);
       return () => clearTimeout(timer);
     }
-  }, [autoAdventurePausedByBattle, player?.hp, isDead, loading]);
+    // setAutoAdventure 和 setPausedByBattle 是 zustand 的稳定函数引用，但为了明确依赖关系，仍然包含它们
+  }, [pausedByBattle, player, isDead, loading]);
 
   // 使用被动回血和冷却管理 hook
   usePassiveRegeneration({
@@ -449,112 +566,32 @@ function App() {
     isShopOpen,
     isReputationEventOpen,
     isTurnBasedBattleOpen,
-    autoAdventurePausedByShop,
-    autoAdventurePausedByBattle,
-    autoAdventurePausedByReputationEvent,
-    setAutoAdventurePausedByShop,
+    isAlertOpen: alertState?.isOpen ?? false, // 确认弹窗是否打开（包括天地之魄确认弹窗）
+    pausedByShop,
+    pausedByBattle,
+    pausedByReputationEvent,
+    setPausedByShop,
     handleMeditate,
     handleAdventure,
     setCooldown,
   });
 
-  // Reactive Level Up Check
-  useEffect(() => {
-    if (player && player.exp >= player.maxExp) {
-      // 检查是否达到绝对巅峰
-      const realms = REALM_ORDER;
-      const isMaxRealm = player.realm === realms[realms.length - 1];
-      if (isMaxRealm && player.realmLevel >= 9) {
-        // 锁定经验为满值
-        if (player.exp > player.maxExp) {
-          setPlayer((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
-        }
-        return;
-      }
-
-      // 检查是否已经触发了天劫（防止重复触发）
-      // 如果经验值只是等于 maxExp（可能是取消后锁定的），且标志位为 true，则不触发
-      // 只有当经验值真正超过 maxExp 时，才允许触发（此时标志位会在境界变化时重置）
-      if (isTribulationTriggeredRef.current && player.exp === player.maxExp) {
-        return;
-      }
-
-      // 如果经验值超过 maxExp，说明是新的经验值增加，重置标志位允许触发
-      if (player.exp > player.maxExp) {
-        isTribulationTriggeredRef.current = false;
-      }
-
-      // 检查是否需要渡劫
-      const isRealmUpgrade = player.realmLevel >= 9;
-      let targetRealm = player.realm;
-      if (isRealmUpgrade) {
-        const currentIndex = REALM_ORDER.indexOf(player.realm);
-        if (currentIndex < REALM_ORDER.length - 1) {
-          targetRealm = REALM_ORDER[currentIndex + 1];
-        }
-      }
-
-      // 如果是境界升级，先检查是否满足突破条件
-      // 注意：shouldTriggerTribulation 内部也会检查条件，但这里提前检查是为了：
-      // 1. 给用户明确的错误提示
-      // 2. 锁定经验值避免反复触发
-      if (isRealmUpgrade && targetRealm !== player.realm) {
-        const conditionCheck = checkBreakthroughConditions(player, targetRealm);
-        if (!conditionCheck.canBreakthrough) {
-          addLog(conditionCheck.message, 'danger');
-          // 锁定经验值，避免反复触发
-          setPlayer((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
-          return;
-        }
-      }
-
-      // 检查是否需要渡劫（只有在满足条件后才检查，shouldTriggerTribulation 内部会再次验证条件）
-      if (shouldTriggerTribulation(player) && !tribulationState?.isOpen) {
-        // 设置标志位，防止重复触发
-        isTribulationTriggeredRef.current = true;
-
-        // 获取天劫名称
-        const config = TRIBULATION_CONFIG[targetRealm];
-        const tribulationName = config?.tribulationLevel || `${targetRealm}天劫`;
-
-        // 显示确认弹窗
-        showConfirm(
-          `你的${tribulationName}来了，是否现在渡劫？`,
-          '确认渡劫',
-          () => {
-            // 用户确认后，创建天劫状态并触发弹窗
-            const newTribulationState = createTribulationState(player, targetRealm);
-            setTribulationState(newTribulationState);
-          },
-          () => {
-            // 用户取消，保持标志位为 true（防止立即再次触发）、清除天劫状态并锁定经验值
-            // 标志位会在经验值真正变化或境界变化时重置
-            setTribulationState(null); // 清除天劫状态
-            setPlayer((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
-          }
-        );
-      } else if (!tribulationState?.isOpen) {
-        // 不需要渡劫，直接执行突破
-        breakthroughHandlers.handleBreakthrough();
-      }
-    }
-  }, [
-    player?.exp,
-    player?.maxExp,
-    player?.realm,
-    player?.realmLevel,
-    tribulationState?.isOpen,
-  ]);
+  // 等级提升逻辑已由 useLevelUp hook 处理，这里不再重复
 
   // 监听突破成功，更新任务进度
   const prevRealmRef = useRef<{ realm: string; level: number } | null>(null);
+  const dailyQuestHandlersRef = useRef(dailyQuestHandlers);
+  useEffect(() => {
+    dailyQuestHandlersRef.current = dailyQuestHandlers;
+  }, [dailyQuestHandlers]);
+
   useEffect(() => {
     if (player && prevRealmRef.current) {
       const prevRealm = prevRealmRef.current.realm;
       const prevLevel = prevRealmRef.current.level;
       if (player.realm !== prevRealm || player.realmLevel !== prevLevel) {
         // 境界或等级变化，说明突破成功
-        dailyQuestHandlers.updateQuestProgress('breakthrough', 1);
+        dailyQuestHandlersRef.current.updateQuestProgress('breakthrough', 1);
         // 重置天劫触发标志
         isTribulationTriggeredRef.current = false;
       }
@@ -562,26 +599,35 @@ function App() {
     if (player) {
       prevRealmRef.current = { realm: player.realm, level: player.realmLevel };
     }
-  }, [player?.realm, player?.realmLevel, dailyQuestHandlers]);
+    // 使用 player 对象作为依赖，在 effect 内部访问属性，避免可选链依赖
+  }, [player]);
 
 
   // Sect handlers、Achievement、Pet、Lottery、Settings handlers 已全部移到对应模块
 
   // 检查成就（境界变化、统计变化时）
+  const checkAchievementsRef = useRef(checkAchievements);
+  useEffect(() => {
+    checkAchievementsRef.current = checkAchievements;
+  }, [checkAchievements]);
+
   useEffect(() => {
     if (player) {
-      checkAchievements();
+      checkAchievementsRef.current();
     }
+    // 使用 player 对象作为依赖，在 effect 内部访问属性，避免可选链依赖
+    // checkAchievements 通过 ref 访问最新值，避免循环依赖
   }, [
+    player,
+    // 使用这些值来触发检查，但通过 player 对象访问
     player?.realm,
     player?.realmLevel,
     player?.statistics,
-    player?.inventory.length,
-    player?.pets.length,
-    player?.cultivationArts.length,
+    player?.inventory?.length,
+    player?.pets?.length,
+    player?.cultivationArts?.length,
     player?.unlockedRecipes?.length,
     player?.lotteryCount,
-    checkAchievements,
   ]);
 
   // 使用统一的键盘快捷键 Hook
@@ -595,9 +641,9 @@ function App() {
     autoAdventure,
     setAutoMeditate,
     setAutoAdventure,
-    setAutoAdventurePausedByShop,
-    setAutoAdventurePausedByBattle,
-    setAutoAdventurePausedByReputationEvent,
+    setPausedByShop,
+    setPausedByBattle,
+    setPausedByReputationEvent,
     setIsInventoryOpen,
     setIsCultivationOpen,
     setIsCharacterOpen,
@@ -619,206 +665,293 @@ function App() {
     enabled: gameStarted && !!player && !isDead,
   });
 
-  // 使用统一的 View Handlers Hook
-  const gameViewHandlers = useGameViewHandlers({
-    handleMeditate,
-    handleAdventure,
-    handleEnterRealm,
-    handleUseItem,
-    handleEquipItem,
-    handleUnequipItem,
-    handleOpenUpgrade,
-    handleDiscardItem,
-    handleBatchDiscard,
-    handleBatchUse,
-    handleOrganizeInventory,
-    handleRefineNatalArtifact,
-    handleUnrefineNatalArtifact,
-    handleRefineAdvancedItem,
-    handleUpgradeItem,
-    handleLearnArt,
-    handleActivateArt,
-    handleCraft,
-    handleJoinSect,
-    handleLeaveSect,
-    handleSafeLeaveSect,
-    handleSectTask,
-    handleSectPromote,
-    handleSectBuy,
-    handleChallengeLeader,
-    handleSelectTalent,
-    handleSelectTitle,
-    handleAllocateAttribute,
-    handleAllocateAllAttributes,
-    handleUseInheritance,
-    handleActivatePet,
-    handleDeactivatePet,
-    handleFeedPet,
-    handleBatchFeedItems,
-    handleBatchFeedHp,
-    handleEvolvePet,
-    handleReleasePet,
-    handleBatchReleasePets,
-    handleDraw,
-    handleUpdateSettings,
-    handleRebirth,
-    handleClaimQuestReward: claimQuestReward,
-    handleUpgradeGrotto,
-    handlePlantHerb,
-    handleHarvestHerb,
-    handleHarvestAll,
-    handleEnhanceSpiritArray,
-    handleToggleAutoHarvest,
-    handleSpeedupHerb,
-    handleBuyItem,
-    handleSellItem,
-    handleRefreshShop,
-    handleReputationEventChoice,
-    handleTakeTreasureVaultItem,
-    handleUpdateVault,
-    handleBattleResult,
-    handleSkipBattleLogs,
-    handleCloseBattleModal,
-    setIsInventoryOpen,
-    setIsCultivationOpen,
-    setIsAlchemyOpen,
-    setIsUpgradeOpen,
-    setIsSectOpen,
-    setIsRealmOpen,
-    setIsCharacterOpen,
-    setIsAchievementOpen,
-    setIsPetOpen,
-    setIsLotteryOpen,
-    setIsSettingsOpen,
-    setIsDebugOpen,
-    setIsDailyQuestOpen,
-    setIsShopOpen,
-    setIsGrottoOpen,
-    setIsBattleModalOpen,
-    setIsTurnBasedBattleOpen,
-    setIsMobileSidebarOpen,
-    setIsMobileStatsOpen,
-    setIsReputationEventOpen,
-    setIsTreasureVaultOpen,
-    setIsSaveManagerOpen,
-    setItemToUpgrade,
-    setCurrentShop,
-    setBattleReplay,
-    setRevealedBattleRounds,
-    setTurnBasedBattleParams,
-    setReputationEvent,
-    setPlayer,
-    addLog,
-    autoMeditate,
-    autoAdventure,
-    autoAdventurePausedByShop,
-    autoAdventurePausedByReputationEvent,
-    setAutoMeditate,
-    setAutoAdventure,
-    setAutoAdventurePausedByShop,
-    setAutoAdventurePausedByBattle,
-    setAutoAdventurePausedByReputationEvent,
-  });
+  const coreHandlers = useMemo(
+    () => ({
+      handleMeditate,
+      handleAdventure,
+      handleEnterRealm,
+      handleUseItem,
+      handleEquipItem,
+      handleUnequipItem,
+      handleOpenUpgrade,
+      handleDiscardItem,
+      handleBatchDiscard,
+      handleBatchUse,
+      handleOrganizeInventory,
+      handleRefineNatalArtifact,
+      handleUnrefineNatalArtifact,
+      handleRefineAdvancedItem,
+      handleUpgradeItem,
+      handleLearnArt,
+      handleActivateArt,
+      handleCraft,
+    }),
+    [
+      handleMeditate,
+      handleAdventure,
+      handleEnterRealm,
+      handleUseItem,
+      handleEquipItem,
+      handleUnequipItem,
+      handleOpenUpgrade,
+      handleDiscardItem,
+      handleBatchDiscard,
+      handleBatchUse,
+      handleOrganizeInventory,
+      handleRefineNatalArtifact,
+      handleUnrefineNatalArtifact,
+      handleRefineAdvancedItem,
+      handleUpgradeItem,
+      handleLearnArt,
+      handleActivateArt,
+      handleCraft,
+    ]
+  );
 
-  const modalsHandlers = useModalsHandlers({
-    handleMeditate,
-    handleAdventure,
-    handleEnterRealm,
-    handleUseItem,
-    handleEquipItem,
-    handleUnequipItem,
-    handleOpenUpgrade,
-    handleDiscardItem,
-    handleBatchDiscard,
-    handleBatchUse,
-    handleOrganizeInventory,
-    handleRefineNatalArtifact,
-    handleUnrefineNatalArtifact,
-    handleRefineAdvancedItem,
-    handleUpgradeItem,
-    handleLearnArt,
-    handleActivateArt,
-    handleCraft,
-    handleJoinSect,
-    handleLeaveSect,
-    handleSafeLeaveSect,
-    handleSectTask,
-    handleSectPromote,
-    handleSectBuy,
-    handleChallengeLeader,
-    handleSelectTalent,
-    handleSelectTitle,
-    handleAllocateAttribute,
-    handleAllocateAllAttributes,
-    handleUseInheritance,
-    handleActivatePet,
-    handleDeactivatePet,
-    handleFeedPet,
-    handleBatchFeedItems,
-    handleBatchFeedHp,
-    handleEvolvePet,
-    handleReleasePet,
-    handleBatchReleasePets,
-    handleDraw,
-    handleUpdateSettings,
-    handleRebirth,
-    handleClaimQuestReward: claimQuestReward,
-    handleUpgradeGrotto,
-    handlePlantHerb,
-    handleHarvestHerb,
-    handleHarvestAll,
-    handleEnhanceSpiritArray,
-    handleToggleAutoHarvest,
-    handleSpeedupHerb,
-    handleBuyItem,
-    handleSellItem,
-    handleRefreshShop,
-    handleReputationEventChoice,
-    handleTakeTreasureVaultItem,
-    handleUpdateVault,
-    handleBattleResult,
-    handleSkipBattleLogs,
-    handleCloseBattleModal,
-    setIsInventoryOpen,
-    setIsCultivationOpen,
-    setIsAlchemyOpen,
-    setIsUpgradeOpen,
-    setIsSectOpen,
-    setIsRealmOpen,
-    setIsCharacterOpen,
-    setIsAchievementOpen,
-    setIsPetOpen,
-    setIsLotteryOpen,
-    setIsSettingsOpen,
-    setIsDebugOpen,
-    setIsDailyQuestOpen,
-    setIsShopOpen,
-    setIsGrottoOpen,
-    setIsBattleModalOpen,
-    setIsTurnBasedBattleOpen,
-    setIsMobileSidebarOpen,
-    setIsMobileStatsOpen,
-    setIsReputationEventOpen,
-    setIsTreasureVaultOpen,
-    setIsSaveManagerOpen,
-    setItemToUpgrade,
-    setCurrentShop,
-    setBattleReplay,
-    setRevealedBattleRounds,
-    setTurnBasedBattleParams,
-    setReputationEvent,
-    setPlayer,
-    addLog,
-    autoMeditate,
-    autoAdventure,
-    autoAdventurePausedByShop,
-    autoAdventurePausedByReputationEvent,
-    setAutoMeditate,
-    setAutoAdventure,
-    setAutoAdventurePausedByShop,
-    setAutoAdventurePausedByBattle,
-    setAutoAdventurePausedByReputationEvent,
-  });
+  // 宗门相关 handlers（较少变化）
+  const sectHandlers = useMemo(
+    () => ({
+      handleJoinSect,
+      handleLeaveSect,
+      handleSafeLeaveSect,
+      handleSectTask,
+      handleSectPromote,
+      handleSectBuy,
+      handleChallengeLeader,
+    }),
+    [
+      handleJoinSect,
+      handleLeaveSect,
+      handleSafeLeaveSect,
+      handleSectTask,
+      handleSectPromote,
+      handleSectBuy,
+      handleChallengeLeader,
+    ]
+  );
+
+  // 角色相关 handlers（较少变化）
+  const characterHandlers = useMemo(
+    () => ({
+      handleSelectTalent,
+      handleSelectTitle,
+      handleAllocateAttribute,
+      handleAllocateAllAttributes,
+      handleUseInheritance,
+    }),
+    [
+      handleSelectTalent,
+      handleSelectTitle,
+      handleAllocateAttribute,
+      handleAllocateAllAttributes,
+      handleUseInheritance,
+    ]
+  );
+
+  // 灵宠相关 handlers（较少变化）
+  const petHandlers = useMemo(
+    () => ({
+      handleActivatePet,
+      handleDeactivatePet,
+      handleFeedPet,
+      handleBatchFeedItems,
+      handleBatchFeedHp,
+      handleEvolvePet,
+      handleReleasePet,
+      handleBatchReleasePets,
+    }),
+    [
+      handleActivatePet,
+      handleDeactivatePet,
+      handleFeedPet,
+      handleBatchFeedItems,
+      handleBatchFeedHp,
+      handleEvolvePet,
+      handleReleasePet,
+      handleBatchReleasePets,
+    ]
+  );
+
+  // 洞府相关 handlers
+  const grottoHandlers = useMemo(
+    () => ({
+      handleUpgradeGrotto,
+      handlePlantHerb,
+      handleHarvestHerb,
+      handleHarvestAll,
+      handleEnhanceSpiritArray,
+      handleToggleAutoHarvest,
+      handleSpeedupHerb,
+    }),
+    [
+      handleUpgradeGrotto,
+      handlePlantHerb,
+      handleHarvestHerb,
+      handleHarvestAll,
+      handleEnhanceSpiritArray,
+      handleToggleAutoHarvest,
+      handleSpeedupHerb,
+    ]
+  );
+
+  // 商店和战斗相关 handlers（较少变化）
+  const shopAndBattleHandlers = useMemo(
+    () => ({
+      handleBuyItem,
+      handleSellItem,
+      handleRefreshShop,
+      handleReputationEventChoice,
+      handleTakeTreasureVaultItem,
+      handleUpdateVault,
+      handleBattleResult,
+      handleSkipBattleLogs,
+      handleCloseBattleModal,
+      handleDraw,
+      handleUpdateSettings,
+      handleRebirth,
+      handleClaimQuestReward: claimQuestReward,
+    }),
+    [
+      handleBuyItem,
+      handleSellItem,
+      handleRefreshShop,
+      handleReputationEventChoice,
+      handleTakeTreasureVaultItem,
+      handleUpdateVault,
+      handleBattleResult,
+      handleSkipBattleLogs,
+      handleCloseBattleModal,
+      handleDraw,
+      handleUpdateSettings,
+      handleRebirth,
+      claimQuestReward,
+    ]
+  );
+
+  // Modal setters（稳定引用，很少变化）
+  const modalSettersGroup = useMemo(
+    () => ({
+      setIsInventoryOpen,
+      setIsCultivationOpen,
+      setIsAlchemyOpen,
+      setIsUpgradeOpen,
+      setIsSectOpen,
+      setIsRealmOpen,
+      setIsCharacterOpen,
+      setIsAchievementOpen,
+      setIsPetOpen,
+      setIsLotteryOpen,
+      setIsSettingsOpen,
+      setIsDebugOpen,
+      setIsDailyQuestOpen,
+      setIsShopOpen,
+      setIsGrottoOpen,
+      setIsBattleModalOpen,
+      setIsTurnBasedBattleOpen,
+      setIsMobileSidebarOpen,
+      setIsMobileStatsOpen,
+      setIsReputationEventOpen,
+      setIsTreasureVaultOpen,
+      setIsSaveManagerOpen,
+    }),
+    [
+      setIsInventoryOpen,
+      setIsCultivationOpen,
+      setIsAlchemyOpen,
+      setIsUpgradeOpen,
+      setIsSectOpen,
+      setIsRealmOpen,
+      setIsCharacterOpen,
+      setIsAchievementOpen,
+      setIsPetOpen,
+      setIsLotteryOpen,
+      setIsSettingsOpen,
+      setIsDebugOpen,
+      setIsDailyQuestOpen,
+      setIsShopOpen,
+      setIsGrottoOpen,
+      setIsBattleModalOpen,
+      setIsTurnBasedBattleOpen,
+      setIsMobileSidebarOpen,
+      setIsMobileStatsOpen,
+      setIsReputationEventOpen,
+      setIsTreasureVaultOpen,
+      setIsSaveManagerOpen,
+    ]
+  );
+
+  // 其他 setters 和状态（可能经常变化）
+  const otherSettersAndState = useMemo(
+    () => ({
+      setItemToUpgrade,
+      setCurrentShop,
+      setBattleReplay,
+      setRevealedBattleRounds,
+      setTurnBasedBattleParams,
+      setReputationEvent,
+      setPlayer,
+      addLog,
+      autoMeditate,
+      autoAdventure,
+      pausedByShop,
+      pausedByBattle,
+      pausedByReputationEvent,
+      setAutoMeditate,
+      setAutoAdventure,
+      setPausedByShop,
+      setPausedByBattle,
+      setPausedByReputationEvent,
+    }),
+    [
+      setItemToUpgrade,
+      setCurrentShop,
+      setBattleReplay,
+      setRevealedBattleRounds,
+      setTurnBasedBattleParams,
+      setReputationEvent,
+      setPlayer,
+      addLog,
+      autoMeditate,
+      autoAdventure,
+      pausedByShop,
+      pausedByBattle,
+      pausedByReputationEvent,
+      setAutoMeditate,
+      setAutoAdventure,
+      setPausedByShop,
+      setPausedByBattle,
+      setPausedByReputationEvent,
+    ]
+  );
+
+  // 合并所有 handlers 参数（仅在需要时重新创建）
+  const commonHandlersParams = useMemo(
+    () => ({
+      ...coreHandlers,
+      ...sectHandlers,
+      ...characterHandlers,
+      ...petHandlers,
+      ...grottoHandlers,
+      ...shopAndBattleHandlers,
+      ...modalSettersGroup,
+      ...otherSettersAndState,
+    }),
+    [
+      coreHandlers,
+      sectHandlers,
+      characterHandlers,
+      petHandlers,
+      grottoHandlers,
+      shopAndBattleHandlers,
+      modalSettersGroup,
+      otherSettersAndState,
+    ]
+  );
+
+  // 使用统一的 View Handlers Hook
+  const gameViewHandlers = useGameViewHandlers(commonHandlersParams);
+
+  const modalsHandlers = useModalsHandlers(commonHandlersParams);
 
   // 检查是否有任何弹窗处于打开状态
   const isAnyModalOpen = useMemo(() => {
@@ -872,21 +1005,14 @@ function App() {
     );
   }
 
+  // 如果有存档但 player 还在加载中，显示加载状态
+  if (hasSave && !player && gameStarted) {
+    return <LoadingScreen />;
+  }
+
   // 显示开始界面（取名界面）- 只有在没有存档且游戏未开始时才显示
   if (!hasSave && (!gameStarted || !player)) {
     return <StartScreen onStart={handleStartGame} />;
-  }
-
-  // 如果有存档但 player 还在加载中，显示加载状态
-  if (hasSave && !player) {
-    return (
-      <div className="fixed inset-0 bg-linear-to-br from-stone-900 via-stone-800 to-stone-900 flex items-center justify-center z-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-mystic-gold mx-auto mb-4"></div>
-          <p className="text-stone-400 text-lg">加载存档中...</p>
-        </div>
-      </div>
-    );
   }
 
   if (!player) {

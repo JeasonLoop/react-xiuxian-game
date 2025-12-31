@@ -2,8 +2,8 @@
  * App View Handlers Hook
  * 统一管理 GameView 和 ModalsContainer 的 handlers
  */
-import React from 'react';
 import { useMemo } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { Item, BattleResult, ShopItem } from '../types';
 import { PlayerStats } from '../types';
 
@@ -97,19 +97,20 @@ interface UseAppViewHandlersProps {
   setRevealedBattleRounds: (rounds: number) => void;
   setTurnBasedBattleParams: (params: any | null) => void;
   setReputationEvent: (event: any | null) => void;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats | null>>;
+  setPlayer: Dispatch<SetStateAction<PlayerStats | null>>;
   addLog: (message: string, type?: string) => void;
 
   // State
   autoMeditate: boolean;
   autoAdventure: boolean;
-  autoAdventurePausedByShop: boolean;
-  autoAdventurePausedByReputationEvent: boolean;
+  pausedByShop: boolean;
+  pausedByBattle: boolean;
+  pausedByReputationEvent: boolean;
   setAutoMeditate: (value: boolean | ((prev: boolean) => boolean)) => void;
   setAutoAdventure: (value: boolean | ((prev: boolean) => boolean)) => void;
-  setAutoAdventurePausedByShop: (value: boolean) => void;
-  setAutoAdventurePausedByBattle: (value: boolean) => void;
-  setAutoAdventurePausedByReputationEvent: (value: boolean) => void;
+  setPausedByShop: (value: boolean) => void;
+  setPausedByBattle: (value: boolean) => void;
+  setPausedByReputationEvent: (value: boolean) => void;
 }
 
 /**
@@ -137,11 +138,12 @@ export function useGameViewHandlers(props: UseAppViewHandlersProps) {
     setPlayer,
     autoMeditate,
     autoAdventure,
+    pausedByBattle,
     setAutoMeditate,
     setAutoAdventure,
-    setAutoAdventurePausedByShop,
-    setAutoAdventurePausedByBattle,
-    setAutoAdventurePausedByReputationEvent,
+    setPausedByShop,
+    setPausedByBattle,
+    setPausedByReputationEvent,
   } = props;
 
   return useMemo(() => ({
@@ -176,22 +178,18 @@ export function useGameViewHandlers(props: UseAppViewHandlersProps) {
     },
     autoMeditate,
     autoAdventure,
+    pausedByBattle,
     onToggleAutoMeditate: () => {
-      setAutoMeditate((prev) => {
-        const newValue = !prev;
-        return newValue;
-      });
+      setAutoMeditate(!autoMeditate);
     },
     onToggleAutoAdventure: () => {
-      setAutoAdventure((prev) => {
-        const newValue = !prev;
-        if (!newValue) {
-          setAutoAdventurePausedByShop(false);
-          setAutoAdventurePausedByBattle(false);
-          setAutoAdventurePausedByReputationEvent(false);
-        }
-        return newValue;
-      });
+      // 如果因战斗暂停，点击应该关闭自动历练并清除暂停状态
+      if (pausedByBattle) {
+        setAutoAdventure(false);
+        setPausedByBattle(false);
+        return;
+      }
+      setAutoAdventure(!autoAdventure);
     },
   }), [
     handleMeditate,
@@ -214,11 +212,12 @@ export function useGameViewHandlers(props: UseAppViewHandlersProps) {
     setPlayer,
     autoMeditate,
     autoAdventure,
+    pausedByBattle,
     setAutoMeditate,
     setAutoAdventure,
-    setAutoAdventurePausedByShop,
-    setAutoAdventurePausedByBattle,
-    setAutoAdventurePausedByReputationEvent,
+    setPausedByShop,
+    setPausedByBattle,
+    setPausedByReputationEvent,
   ]);
 }
 
@@ -304,7 +303,7 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     handleReputationEventChoice,
     setIsReputationEventOpen,
     setReputationEvent,
-    autoAdventurePausedByReputationEvent,
+    pausedByReputationEvent,
     setAutoAdventure,
     setIsTreasureVaultOpen,
     handleTakeTreasureVaultItem,
@@ -313,10 +312,10 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     setTurnBasedBattleParams,
     handleBattleResult,
     autoAdventure,
-    autoAdventurePausedByShop,
-    setAutoAdventurePausedByBattle,
-    setAutoAdventurePausedByShop,
-    setAutoAdventurePausedByReputationEvent,
+    pausedByShop,
+    setPausedByBattle,
+    setPausedByShop,
+    setPausedByReputationEvent,
   } = props;
 
   return useMemo(() => ({
@@ -340,8 +339,8 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
       setIsShopOpen(open);
       if (!open) {
         setCurrentShop(null);
-        if (autoAdventurePausedByShop) {
-          setAutoAdventurePausedByShop(false);
+        if (pausedByShop) {
+          setPausedByShop(false);
           setAutoAdventure(true);
         }
       }
@@ -417,8 +416,8 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
       setIsReputationEventOpen(open);
       if (!open) {
         setReputationEvent(null);
-        if (autoAdventurePausedByReputationEvent) {
-          setAutoAdventurePausedByReputationEvent(false);
+        if (pausedByReputationEvent) {
+          setPausedByReputationEvent(false);
           setAutoAdventure(true);
         }
       }
@@ -437,17 +436,17 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
       setTurnBasedBattleParams(null);
       handleBattleResult(result, updatedInventory);
       if (!autoAdventure) {
-        setAutoAdventurePausedByBattle(false);
+        setPausedByBattle(false);
         return;
       }
       setPlayer((currentPlayer) => {
         if (result && currentPlayer) {
           const playerHpAfter = Math.max(0, currentPlayer.hp - (result.hpLoss || 0));
           if (playerHpAfter <= 0) {
-            setAutoAdventurePausedByBattle(false);
+            setPausedByBattle(false);
           }
         } else {
-          setAutoAdventurePausedByBattle(false);
+          setPausedByBattle(false);
         }
         return currentPlayer;
       });
@@ -473,12 +472,12 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     handleHarvestHerb, handleHarvestAll, handleEnhanceSpiritArray,
     handleToggleAutoHarvest, handleSpeedupHerb, handleBuyItem, handleSellItem,
     handleRefreshShop, handleReputationEventChoice, setIsReputationEventOpen,
-    setReputationEvent, autoAdventurePausedByReputationEvent, setAutoAdventure,
+    setReputationEvent, pausedByReputationEvent, setAutoAdventure,
     setIsTreasureVaultOpen, handleTakeTreasureVaultItem, handleUpdateVault,
     setIsTurnBasedBattleOpen, setTurnBasedBattleParams, handleBattleResult,
-    autoAdventure, autoAdventurePausedByShop, setCurrentShop,
-    setAutoAdventurePausedByBattle, setAutoAdventurePausedByShop,
-    setAutoAdventurePausedByReputationEvent,
+    autoAdventure, pausedByShop, setCurrentShop,
+    setPausedByBattle, setPausedByShop,
+    setPausedByReputationEvent,
   ]);
 }
 

@@ -4,15 +4,16 @@ import { SHOPS, REALM_ORDER, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN
 import { uid } from '../../utils/gameUtils';
 import { calculateItemSellPrice } from '../../utils/itemUtils';
 import { generateShopItems } from '../../services/shopService';
+import { useGameStore, useUIStore } from '../../store';
 
 interface UseShopHandlersProps {
-  player: PlayerStats;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
-  addLog: (message: string, type?: string) => void;
-  currentShop: Shop | null;
-  setCurrentShop: (shop: Shop | null) => void;
-  setIsShopOpen: (open: boolean) => void;
-  setPurchaseSuccess: (
+  player?: PlayerStats;
+  setPlayer?: React.Dispatch<React.SetStateAction<PlayerStats>>;
+  addLog?: (message: string, type?: string) => void;
+  currentShop?: Shop | null;
+  setCurrentShop?: (shop: Shop | null) => void;
+  setIsShopOpen?: (open: boolean) => void;
+  setPurchaseSuccess?: (
     success: { item: string; quantity: number } | null
   ) => void;
 }
@@ -20,27 +21,32 @@ interface UseShopHandlersProps {
 /**
  * 商店处理函数
  * 包含打开商店、购买物品、出售物品
- * @param player 玩家数据
- * @param setPlayer 设置玩家数据
- * @param addLog 添加日志
- * @param currentShop 当前商店
- * @param setCurrentShop 设置当前商店
- * @param setIsShopOpen 设置商店是否打开
- * @param setPurchaseSuccess 设置购买成功
+ * @param props 可选的 props（向后兼容），如果不提供则从 zustand store 获取
  * @returns handleOpenShop 打开商店
  * @returns handleBuyItem 购买物品
  * @returns handleSellItem 出售物品
  */
 
-export function useShopHandlers({
-  player,
-  setPlayer,
-  addLog,
-  currentShop,
-  setCurrentShop,
-  setIsShopOpen,
-  setPurchaseSuccess,
-}: UseShopHandlersProps) {
+export function useShopHandlers(
+  props?: UseShopHandlersProps
+) {
+  // 从 zustand store 获取状态
+  const storePlayer = useGameStore((state) => state.player);
+  const storeSetPlayer = useGameStore((state) => state.setPlayer);
+  const storeAddLog = useGameStore((state) => state.addLog);
+  const storeCurrentShop = useUIStore((state) => state.currentShop);
+  const storeSetCurrentShop = useUIStore((state) => state.setCurrentShop);
+  const storeSetIsShopOpen = useUIStore((state) => state.setIsShopOpen);
+  const storeSetPurchaseSuccess = useUIStore((state) => state.setPurchaseSuccess);
+
+  // 使用 props 或 store 的值（props 优先，用于向后兼容）
+  const player = props?.player ?? storePlayer;
+  const setPlayer = props?.setPlayer ?? storeSetPlayer;
+  const addLog = props?.addLog ?? storeAddLog;
+  const currentShop = props?.currentShop ?? storeCurrentShop;
+  const setCurrentShop = props?.setCurrentShop ?? storeSetCurrentShop;
+  const setIsShopOpen = props?.setIsShopOpen ?? storeSetIsShopOpen;
+  const setPurchaseSuccess = props?.setPurchaseSuccess ?? storeSetPurchaseSuccess;
   const handleOpenShop = (shopType: ShopType) => {
     const shop = SHOPS.find((s) => s.type === shopType);
     if (shop) {

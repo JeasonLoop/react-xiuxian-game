@@ -1,5 +1,5 @@
-import React from 'react';
 import { useEffect, useRef } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { PlayerStats, TribulationState, RealmType } from '../types';
 import { REALM_ORDER, TRIBULATION_CONFIG } from '../constants/index';
 import { checkBreakthroughConditions } from '../utils/cultivationUtils';
@@ -8,7 +8,7 @@ import { showConfirm } from '../utils/toastUtils';
 
 interface UseLevelUpParams {
   player: PlayerStats | null;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats | null>>;
+  setPlayer: Dispatch<SetStateAction<PlayerStats | null>>;
   tribulationState: TribulationState | null;
   setTribulationState: (state: TribulationState | null) => void;
   handleBreakthrough: (skipSuccessCheck?: boolean) => void;
@@ -28,6 +28,17 @@ export function useLevelUp({
 }: UseLevelUpParams) {
   const isTribulationTriggeredRef = useRef(false);
 
+  // 使用 ref 存储不稳定的函数引用，避免 useEffect 依赖导致循环
+  const handleBreakthroughRef = useRef(handleBreakthrough);
+  const addLogRef = useRef(addLog);
+  const setPlayerRef = useRef(setPlayer);
+
+  useEffect(() => {
+    handleBreakthroughRef.current = handleBreakthrough;
+    addLogRef.current = addLog;
+    setPlayerRef.current = setPlayer;
+  }, [handleBreakthrough, addLog, setPlayer]);
+
   useEffect(() => {
     if (player && player.exp >= player.maxExp) {
       // 检查是否达到绝对巅峰
@@ -36,7 +47,7 @@ export function useLevelUp({
       if (isMaxRealm && player.realmLevel >= 9) {
         // 锁定经验为满值
         if (player.exp > player.maxExp) {
-          setPlayer((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
+          setPlayerRef.current((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
         }
         return;
       }
@@ -65,15 +76,15 @@ export function useLevelUp({
       if (isRealmUpgrade && targetRealm !== player.realm) {
         const conditionCheck = checkBreakthroughConditions(player, targetRealm);
         if (!conditionCheck.canBreakthrough) {
-          addLog(conditionCheck.message, 'danger');
+          addLogRef.current(conditionCheck.message, 'danger');
           // 锁定经验值，避免反复触发
-          setPlayer((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
+          setPlayerRef.current((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
           return;
         }
       }
 
       // 检查是否需要渡劫
-      if (shouldTriggerTribulation(player) && !tribulationState) {
+      if (shouldTriggerTribulation(player) && !tribulationState?.isOpen) {
         // 设置标志位，防止重复触发
         isTribulationTriggeredRef.current = true;
 
@@ -91,15 +102,17 @@ export function useLevelUp({
           },
           () => {
             setTribulationState(null);
-            setPlayer((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
+            setPlayerRef.current((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
           }
         );
-      } else if (!tribulationState) {
+      } else if (!tribulationState?.isOpen) {
         // 不需要渡劫，直接执行突破
-        handleBreakthrough();
+        handleBreakthroughRef.current();
       }
     }
-  }, [player?.exp, player?.maxExp, player?.realm, player?.realmLevel, !!tribulationState]);
+    // 移除不稳定的函数依赖，使用 ref 访问最新值
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player?.exp, player?.maxExp, player?.realm, player?.realmLevel, tribulationState?.isOpen]);
 
   // 监听突破成功，重置天劫标志
   const prevRealmRef = useRef<{ realm: string; level: number } | null>(null);

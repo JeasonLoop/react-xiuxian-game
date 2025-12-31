@@ -27,6 +27,7 @@ interface ActionBarProps {
   onOpenSect: () => void;
   autoMeditate: boolean;
   autoAdventure: boolean;
+  pausedByBattle?: boolean; // 是否因战斗暂停
   onToggleAutoMeditate: () => void;
   onToggleAutoAdventure: () => void;
 }
@@ -41,6 +42,7 @@ function ActionBar({
   onOpenSect,
   autoMeditate,
   autoAdventure,
+  pausedByBattle = false,
   onToggleAutoMeditate,
   onToggleAutoAdventure,
 }: ActionBarProps) {
@@ -127,14 +129,20 @@ function ActionBar({
           className={`
             absolute top-1 right-1 p-1 rounded transition-all duration-200
             ${
-              autoAdventure
+              autoAdventure || pausedByBattle
                 ? 'bg-mystic-gold/80 text-stone-900 hover:bg-mystic-gold'
                 : 'bg-stone-700/80 text-stone-400 hover:bg-stone-600'
             }
           `}
-          title={autoAdventure ? '关闭自动历练' : '开启自动历练'}
+          title={
+            pausedByBattle
+              ? '取消自动历练（战斗中）'
+              : autoAdventure
+              ? '关闭自动历练'
+              : '开启自动历练'
+          }
         >
-          {autoAdventure ? <Pause size={12} /> : <Play size={12} />}
+          {autoAdventure || pausedByBattle ? <Pause size={12} /> : <Play size={12} />}
         </button>
       </div>
 

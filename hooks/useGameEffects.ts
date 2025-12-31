@@ -1,5 +1,5 @@
-import React from 'react';
 import { useState, useCallback, useRef, useEffect } from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { LogEntry } from '../types';
 import { uid } from '../utils/gameUtils';
 
@@ -20,7 +20,7 @@ export function useGameEffects() {
   // 限制日志数量，避免内存占用过大
   const MAX_LOGS = 1000;
   const createAddLog = useCallback(
-    (setLogs: React.Dispatch<React.SetStateAction<LogEntry[]>>) => {
+    (setLogs: Dispatch<SetStateAction<LogEntry[]>>) => {
       return (text: string, type: LogEntry['type'] = 'normal') => {
         setLogs((prev) => {
           const now = Date.now();

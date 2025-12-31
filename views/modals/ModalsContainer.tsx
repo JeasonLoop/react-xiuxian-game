@@ -8,7 +8,8 @@ import {
   CultivationArt,
   Recipe,
 } from '../../types';
-import { useUI } from '../../context/UIContext';
+import { useUIStore, useModals } from '../../store';
+import { useShallow } from 'zustand/react/shallow';
 
 // 使用 React.lazy 异步加载所有弹窗以优化性能
 const InventoryModal = lazy(() => import('../../components/InventoryModal'));
@@ -188,14 +189,31 @@ function ModalsContainer({
   autoAdventure = false,
   handlers,
 }: ModalsContainerProps) {
-  const { modals, shop, upgrade, battle, turnBasedBattle, reputationEvent } = useUI();
+  const modals = useModals();
+  const {
+    currentShop,
+    itemToUpgrade,
+    battleReplay,
+    revealedBattleRounds,
+    turnBasedBattleParams,
+    reputationEvent,
+  } = useUIStore(
+    useShallow((state) => ({
+      currentShop: state.currentShop,
+      itemToUpgrade: state.itemToUpgrade,
+      battleReplay: state.battleReplay,
+      revealedBattleRounds: state.revealedBattleRounds,
+      turnBasedBattleParams: state.turnBasedBattleParams,
+      reputationEvent: state.reputationEvent,
+    }))
+  );
   const modalState = {
-    currentShop: shop.currentShop,
-    itemToUpgrade: upgrade.itemToUpgrade,
-    battleReplay: battle.battleReplay,
-    revealedBattleRounds: battle.revealedBattleRounds,
-    turnBasedBattleParams: turnBasedBattle.params,
-    reputationEvent: reputationEvent.event,
+    currentShop,
+    itemToUpgrade,
+    battleReplay,
+    revealedBattleRounds,
+    turnBasedBattleParams,
+    reputationEvent,
   };
 
   return (

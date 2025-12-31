@@ -2,7 +2,7 @@
  * 战斗结果处理 Hook
  * 处理回合制战斗结果，更新玩家状态、处理物品奖励等
  */
-import React from 'react';
+import type { Dispatch, SetStateAction } from 'react';
 import { Item, ItemType, PlayerStats, SectRank} from '../types';
 import { addItemToInventory } from '../utils/inventoryUtils';
 import {
@@ -38,7 +38,7 @@ interface BattleResultData {
 
 interface UseBattleResultHandlerParams {
   player: PlayerStats | null;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats | null>>;
+  setPlayer: Dispatch<SetStateAction<PlayerStats | null>>;
   addLog: (message: string, type?: string) => void;
   setLoading: (loading: boolean) => void;
   updateQuestProgress?: (type: string, amount?: number) => void; // 更新任务进度回调

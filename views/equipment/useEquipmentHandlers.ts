@@ -17,20 +17,22 @@ import {
   RARITY_MULTIPLIERS,
   REALM_ORDER,
 } from '../../constants/index';
+import { useGameStore } from '../../store';
+import { useUIStore } from '../../store';
 
+// 兼容旧接口（可选，用于向后兼容）
 interface UseEquipmentHandlersProps {
-  player: PlayerStats;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
-  addLog: (message: string, type?: string) => void;
+  player?: PlayerStats | null;
+  setPlayer?: React.Dispatch<React.SetStateAction<PlayerStats | null>>;
+  addLog?: (message: string, type?: string) => void;
   setItemActionLog?: (log: { text: string; type: string } | null) => void;
 }
 
 /**
  * 装备处理函数
  * 包含装备物品、卸下物品、祭炼本命法宝、解除祭炼本命法宝、打开升级界面、升级物品
- * @param player 玩家数据
- * @param setPlayer 设置玩家数据
- * @param addLog 添加日志
+ * 现在直接从 zustand store 获取状态，props 为可选（向后兼容）
+ * @param props 可选，用于向后兼容
  * @returns handleEquipItem 装备物品
  * @returns handleUnequipItem 卸下物品
  * @returns handleRefineNatalArtifact 祭炼本命法宝
@@ -38,12 +40,32 @@ interface UseEquipmentHandlersProps {
  * @returns handleOpenUpgrade 打开升级界面
  * @returns handleUpgradeItem 升级物品
  */
-export function useEquipmentHandlers({
-  player,
-  setPlayer,
-  addLog,
-  setItemActionLog,
-}: UseEquipmentHandlersProps) {
+export function useEquipmentHandlers(props?: UseEquipmentHandlersProps) {
+  // 从 zustand store 获取状态
+  const storePlayer = useGameStore((state) => state.player);
+  const storeSetPlayer = useGameStore((state) => state.setPlayer);
+  const storeAddLog = useGameStore((state) => state.addLog);
+  const storeSetItemActionLog = useUIStore((state) => state.setItemActionLog);
+  const storeSetItemToUpgrade = useUIStore((state) => state.setItemToUpgrade);
+
+  // 使用 props 或 store 的值（props 优先，用于向后兼容）
+  const player = props?.player ?? storePlayer;
+  const setPlayer = props?.setPlayer ?? storeSetPlayer;
+  const addLog = props?.addLog ?? storeAddLog;
+  const setItemActionLog = props?.setItemActionLog ?? storeSetItemActionLog;
+
+  // 如果 player 为 null，返回空的 handlers（防御性编程）
+  if (!player) {
+    return {
+      handleEquipItem: () => {},
+      handleUnequipItem: () => {},
+      handleRefineNatalArtifact: () => {},
+      handleUnrefineNatalArtifact: () => {},
+      handleOpenUpgrade: () => {},
+      handleUpgradeItem: () => {},
+    };
+  }
+
   const handleEquipItem = (item: Item, slot: EquipmentSlot) => {
     // 防御性检查：确保slot不为null或undefined
     if (!slot) {
@@ -451,6 +473,7 @@ export function useEquipmentHandlers({
   };
 
   const handleOpenUpgrade = (item: Item) => {
+    storeSetItemToUpgrade(item); // 使用 store 的 setItemToUpgrade
     return item; // 这个函数主要用于设置状态，实际逻辑在调用处
   };
 

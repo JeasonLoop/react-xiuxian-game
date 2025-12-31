@@ -99,7 +99,7 @@ interface GameState {
 export const useGameStore = create<GameState>((set, get) => ({
   // 初始状态
   hasSave: checkHasSave(),
-  gameStarted: checkHasSave(),
+  gameStarted: false, // 初始为 false，只有加载存档或开始新游戏后才为 true
   player: null,
   settings: loadInitialSettings(),
   logs: [],

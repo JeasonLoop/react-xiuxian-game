@@ -5,8 +5,9 @@
  * 这个 hook 从 App.tsx 中提取了所有 handlers 相关的逻辑，
  * 使 App.tsx 更加简洁和易于维护。
  */
-import React from 'react';
-import { useCallback } from 'react';
+import { useCallback, useMemo, useRef, useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import type { Dispatch, SetStateAction } from 'react';
 import {
   Item,
   ShopItem,
@@ -19,8 +20,8 @@ import { compareItemEffects } from '../utils/objectUtils';
 import { getPlayerTotalStats } from '../utils/statUtils';
 import { withQuestProgress } from '../utils/questProgressDecorator';
 import { logger } from '../utils/logger';
-import { AppState } from './useAppState';
 import { useBattleResultHandler } from './useBattleResultHandler';
+import { useUIStore } from '../store/uiStore';
 import {
   useMeditationHandlers,
   useBreakthroughHandlers,
@@ -44,22 +45,18 @@ import {
 
 interface UseAppHandlersProps {
   player: PlayerStats | null;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats | null>>;
+  setPlayer: Dispatch<SetStateAction<PlayerStats | null>>;
   addLog: (message: string, type?: string) => void;
   triggerVisual: (type: string, text?: string, className?: string) => void;
   settings: any;
-  appState: AppState;
   gameStarted: boolean;
   autoMeditate: boolean;
   autoAdventure: boolean;
   setAutoMeditate: (value: boolean) => void;
   setAutoAdventure: (value: boolean) => void;
-  autoAdventurePausedByShop: boolean;
-  autoAdventurePausedByBattle: boolean;
-  autoAdventurePausedByReputationEvent: boolean;
-  setAutoAdventurePausedByShop: (value: boolean) => void;
-  setAutoAdventurePausedByBattle: (value: boolean) => void;
-  setAutoAdventurePausedByReputationEvent: (value: boolean) => void;
+  pausedByReputationEvent: boolean;
+  setPausedByShop: (value: boolean) => void;
+  setPausedByReputationEvent: (value: boolean) => void;
   loading: boolean;
   cooldown: number;
   setLoading: (loading: boolean) => void;
@@ -89,13 +86,12 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     addLog,
     triggerVisual,
     settings,
-    appState,
     autoMeditate,
     autoAdventure,
     setAutoAdventure,
-    autoAdventurePausedByReputationEvent,
-    setAutoAdventurePausedByShop,
-    setAutoAdventurePausedByReputationEvent,
+    pausedByReputationEvent,
+    setPausedByShop,
+    setPausedByReputationEvent,
     loading,
     cooldown,
     setLoading,
@@ -104,26 +100,74 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     handleOpenTurnBasedBattle,
   } = props;
 
+  // 直接从 zustand store 获取状态，使用 useShallow 批量选择以减少重渲染
   const {
     modals,
-    setters,
-    shop,
-    upgrade,
-    battle,
-    reputationEvent,
-  } = appState;
-
-  const { currentShop, setCurrentShop } = shop;
-  const { setItemToUpgrade } = upgrade;
-  const { setPurchaseSuccess, setLotteryRewards } = appState.notifications;
-  const { event: reputationEventValue, setEvent: setReputationEvent } = reputationEvent;
-  const {
+    currentShop,
+    setCurrentShop,
+    setItemToUpgrade,
+    setPurchaseSuccess,
+    setLotteryRewards,
     battleReplay,
     setBattleReplay,
     revealedBattleRounds,
     setRevealedBattleRounds,
     setLastBattleReplay,
-  } = battle;
+    reputationEvent: reputationEventValue,
+    setReputationEvent,
+    pausedByShop,
+    pausedByBattle,
+    setPausedByBattle,
+  } = useUIStore(
+    useShallow((state) => ({
+      modals: state.modals,
+      currentShop: state.currentShop,
+      setCurrentShop: state.setCurrentShop,
+      setItemToUpgrade: state.setItemToUpgrade,
+      setPurchaseSuccess: state.setPurchaseSuccess,
+      setLotteryRewards: state.setLotteryRewards,
+      battleReplay: state.battleReplay,
+      setBattleReplay: state.setBattleReplay,
+      revealedBattleRounds: state.revealedBattleRounds,
+      setRevealedBattleRounds: state.setRevealedBattleRounds,
+      setLastBattleReplay: state.setLastBattleReplay,
+      reputationEvent: state.reputationEvent,
+      setReputationEvent: state.setReputationEvent,
+      pausedByShop: state.pausedByShop,
+      pausedByBattle: state.pausedByBattle,
+      setPausedByBattle: state.setPausedByBattle,
+    }))
+  );
+
+  // Modal setters - 使用 useMemo 缓存，避免每次渲染创建新对象
+  // Zustand 的函数引用是稳定的，所以依赖项为空数组
+  const setters = useMemo(() => {
+    const store = useUIStore.getState();
+    return {
+      setIsInventoryOpen: store.setIsInventoryOpen,
+      setIsCultivationOpen: store.setIsCultivationOpen,
+      setIsAlchemyOpen: store.setIsAlchemyOpen,
+      setIsUpgradeOpen: store.setIsUpgradeOpen,
+      setIsSectOpen: store.setIsSectOpen,
+      setIsRealmOpen: store.setIsRealmOpen,
+      setIsCharacterOpen: store.setIsCharacterOpen,
+      setIsAchievementOpen: store.setIsAchievementOpen,
+      setIsPetOpen: store.setIsPetOpen,
+      setIsLotteryOpen: store.setIsLotteryOpen,
+      setIsSettingsOpen: store.setIsSettingsOpen,
+      setIsDailyQuestOpen: store.setIsDailyQuestOpen,
+      setIsShopOpen: store.setIsShopOpen,
+      setIsGrottoOpen: store.setIsGrottoOpen,
+      setIsDebugOpen: store.setIsDebugOpen,
+      setIsBattleModalOpen: store.setIsBattleModalOpen,
+      setIsTurnBasedBattleOpen: store.setIsTurnBasedBattleOpen,
+      setIsMobileSidebarOpen: store.setIsMobileSidebarOpen,
+      setIsMobileStatsOpen: store.setIsMobileStatsOpen,
+      setIsDebugModeEnabled: store.setIsDebugModeEnabled,
+      setIsReputationEventOpen: store.setIsReputationEventOpen,
+      setIsTreasureVaultOpen: store.setIsTreasureVaultOpen,
+    };
+  }, []);
 
   // 初始化所有模块化的 handlers
   // 注意：所有 hooks 必须无条件调用，以遵守 React Hooks 规则
@@ -159,12 +203,8 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     },
   });
 
-  const meditationHandlers = useMeditationHandlers({
-    player,
-    setPlayer,
-    addLog,
-    checkLevelUp: () => {}, // 检查升级逻辑在 useEffect 中处理
-  });
+  // meditationHandlers 现在直接从 zustand store 获取状态，无需传入 props
+  const meditationHandlers = useMeditationHandlers();
 
   const breakthroughHandlers = useBreakthroughHandlers({
     player,
@@ -174,68 +214,35 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     loading,
   });
 
-  const itemHandlers = useItemHandlers({
-    player,
-    setPlayer,
-    addLog,
-    setItemActionLog,
-    onOpenTreasureVault: () => setters.setIsTreasureVaultOpen(true),
-  });
+  // Items 和 Equipment handlers 现在直接从 zustand store 获取状态
+  // 不再需要传入 props（向后兼容，仍支持传入 props）
+  const itemHandlers = useItemHandlers();
 
-  const equipmentHandlers = useEquipmentHandlers({
-    player,
-    setPlayer,
-    addLog,
-    setItemActionLog,
-  });
+  const equipmentHandlers = useEquipmentHandlers();
 
-  const cultivationHandlers = useCultivationHandlers({
-    player,
-    setPlayer,
-    addLog,
-  });
+  // cultivationHandlers 现在直接从 zustand store 获取状态，无需传入 props
+  const cultivationHandlers = useCultivationHandlers();
 
+  // alchemyHandlers 现在直接从 zustand store 获取状态，triggerVisual 仍从 props 传入（来自 useGameEffects）
   const alchemyHandlers = useAlchemyHandlers({
-    player,
-    setPlayer,
-    addLog,
     triggerVisual,
   });
 
-  const characterHandlers = useCharacterHandlers({
-    player,
-    setPlayer,
-    addLog,
-    setItemActionLog,
-  });
+  // characterHandlers 现在直接从 zustand store 获取状态，无需传入 props
+  const characterHandlers = useCharacterHandlers();
 
-  const shopHandlers = useShopHandlers({
-    player,
-    setPlayer,
-    addLog,
-    currentShop,
-    setCurrentShop,
-    setIsShopOpen: setters.setIsShopOpen,
-    setPurchaseSuccess,
-  });
+  // shopHandlers 现在直接从 zustand store 获取状态，无需传入 props
+  const shopHandlers = useShopHandlers();
 
   const settingsHandlers = useSettingsHandlers({
     setSettings: () => {}, // TODO: 需要传入实际的 setSettings
   });
 
-  const petHandlers = usePetHandlers({
-    player,
-    setPlayer,
-    addLog,
-    setItemActionLog,
-  });
+  // petHandlers 现在直接从 zustand store 获取状态，无需传入 props
+  const petHandlers = usePetHandlers();
 
-  const lotteryHandlers = useLotteryHandlers({
-    player,
-    setPlayer,
-    addLog,
-    setLotteryRewards,
-  });
+  // lotteryHandlers 现在直接从 zustand store 获取状态，无需传入 props
+  const lotteryHandlers = useLotteryHandlers();
 
   const grottoHandlers = useGrottoHandlers({
     player,
@@ -256,7 +263,7 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     cooldown,
     onOpenShop: (shopType: ShopType) => {
       if (autoAdventure) {
-        setAutoAdventurePausedByShop(true);
+        setPausedByShop(true);
         setAutoAdventure(false);
       }
       shopHandlers.handleOpenShop(shopType);
@@ -274,7 +281,7 @@ export function useAppHandlers(props: UseAppHandlersProps) {
       });
 
       if (autoAdventure) {
-        setAutoAdventurePausedByReputationEvent(true);
+        setPausedByReputationEvent(true);
         setAutoAdventure(false);
       }
       setReputationEvent(event);
@@ -514,8 +521,8 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     setters.setIsReputationEventOpen(false);
     setReputationEvent(null);
 
-    if (autoAdventurePausedByReputationEvent) {
-      setAutoAdventurePausedByReputationEvent(false);
+    if (pausedByReputationEvent) {
+      setPausedByReputationEvent(false);
       setAutoAdventure(true);
     }
   }, [
@@ -525,8 +532,8 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     setPlayer,
     setters.setIsReputationEventOpen,
     setReputationEvent,
-    autoAdventurePausedByReputationEvent,
-    setAutoAdventurePausedByReputationEvent,
+    pausedByReputationEvent,
+    setPausedByReputationEvent,
     setAutoAdventure,
   ]);
 
@@ -561,25 +568,43 @@ export function useAppHandlers(props: UseAppHandlersProps) {
 
   const { handleAdventure: originalHandleAdventure } = adventureHandlers;
 
-  const handleAdventure = async () => {
+  // 使用 ref 存储 handlers，避免依赖项变化导致无限循环
+  const meditationHandlersRef = useRef(meditationHandlers);
+  const dailyQuestHandlersRef = useRef(dailyQuestHandlers);
+  const originalHandleAdventureRef = useRef(originalHandleAdventure);
+
+  useEffect(() => {
+    meditationHandlersRef.current = meditationHandlers;
+  }, [meditationHandlers]);
+
+  useEffect(() => {
+    dailyQuestHandlersRef.current = dailyQuestHandlers;
+  }, [dailyQuestHandlers]);
+
+  useEffect(() => {
+    originalHandleAdventureRef.current = originalHandleAdventure;
+  }, [originalHandleAdventure]);
+
+  // 使用 useCallback 稳定函数引用，避免 useAutoFeatures 无限循环
+  const handleAdventure = useCallback(async () => {
     if (autoMeditate) {
       addLog('正在打坐中，无法历练。请先停止自动打坐。', 'danger');
       return;
     }
-    await originalHandleAdventure();
-    dailyQuestHandlers.updateQuestProgress('adventure', 1);
-  };
+    await originalHandleAdventureRef.current();
+    dailyQuestHandlersRef.current.updateQuestProgress('adventure', 1);
+  }, [autoMeditate, addLog]);
 
-  const handleMeditate = () => {
+  const handleMeditate = useCallback(() => {
     if (loading || cooldown > 0 || !player) return;
     if (autoAdventure) {
       addLog('正在历练中，无法打坐。请先停止自动历练。', 'danger');
       return;
     }
-    meditationHandlers.handleMeditate();
-    dailyQuestHandlers.updateQuestProgress('meditate', 1);
+    meditationHandlersRef.current.handleMeditate();
+    dailyQuestHandlersRef.current.updateQuestProgress('meditate', 1);
     setCooldown(1);
-  };
+  }, [loading, cooldown, player, autoAdventure, addLog, setCooldown]);
 
   const handleEnterRealm = useCallback(
     async (realm: SecretRealm) => {

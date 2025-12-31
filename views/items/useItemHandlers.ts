@@ -6,11 +6,14 @@ import { showConfirm } from '../../utils/toastUtils';
 import { LOOT_ITEMS } from '../../services/battleService';
 import { compareItemEffects } from '../../utils/objectUtils';
 import { getPlayerTotalStats } from '../../utils/statUtils';
+import { useGameStore } from '../../store';
+import { useUIStore } from '../../store';
 
+// 兼容旧接口（可选，用于向后兼容）
 interface UseItemHandlersProps {
-  player: PlayerStats;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
-  addLog: (message: string, type?: string) => void;
+  player?: PlayerStats | null;
+  setPlayer?: React.Dispatch<React.SetStateAction<PlayerStats | null>>;
+  addLog?: (message: string, type?: string) => void;
   setItemActionLog?: (log: { text: string; type: string } | null) => void;
   onOpenTreasureVault?: () => void; // 打开宗门宝库弹窗的回调
 }
@@ -439,14 +442,34 @@ const organizeInventory = (player: PlayerStats): Item[] => {
 
 /**
  * 物品处理钩子
+ * 现在直接从 zustand store 获取状态，props 为可选（向后兼容）
  */
-export function useItemHandlers({
-  player,
-  setPlayer,
-  addLog,
-  setItemActionLog,
-  onOpenTreasureVault,
-}: UseItemHandlersProps) {
+export function useItemHandlers(props?: UseItemHandlersProps) {
+  // 从 zustand store 获取状态
+  const storePlayer = useGameStore((state) => state.player);
+  const storeSetPlayer = useGameStore((state) => state.setPlayer);
+  const storeAddLog = useGameStore((state) => state.addLog);
+  const storeSetItemActionLog = useUIStore((state) => state.setItemActionLog);
+  const storeSetIsTreasureVaultOpen = useUIStore((state) => state.setIsTreasureVaultOpen);
+
+  // 使用 props 或 store 的值（props 优先，用于向后兼容）
+  const player = props?.player ?? storePlayer;
+  const setPlayer = props?.setPlayer ?? storeSetPlayer;
+  const addLog = props?.addLog ?? storeAddLog;
+  const setItemActionLog = props?.setItemActionLog ?? storeSetItemActionLog;
+  const onOpenTreasureVault = props?.onOpenTreasureVault ?? (() => storeSetIsTreasureVaultOpen(true));
+
+  // 如果 player 为 null，返回空的 handlers（防御性编程）
+  if (!player) {
+    return {
+      handleUseItem: () => {},
+      handleOrganizeInventory: () => {},
+      handleDiscardItem: () => {},
+      handleBatchUseItems: () => {},
+      handleRefineAdvancedItem: () => {},
+    };
+  }
+
   const handleUseItem = (item: Item) => {
     // 检查是否是宗门宝库钥匙
     const isTreasureVaultKey = item.name === '宗门宝库钥匙';

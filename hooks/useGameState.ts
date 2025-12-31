@@ -5,24 +5,43 @@
  */
 
 import { useEffect } from 'react';
+import { useShallow } from 'zustand/react/shallow';
 import { useGameStore } from '../store/gameStore';
 import { PlayerStats, LogEntry, GameSettings } from '../types';
 
 export function useGameState() {
-  // 从 zustand store 获取状态和 actions
-  const hasSave = useGameStore((state) => state.hasSave);
-  const setHasSave = useGameStore((state) => state.setHasSave);
-  const gameStarted = useGameStore((state) => state.gameStarted);
-  const setGameStarted = useGameStore((state) => state.setGameStarted);
-  const player = useGameStore((state) => state.player);
-  const setPlayer = useGameStore((state) => state.setPlayer);
-  const settings = useGameStore((state) => state.settings);
-  const setSettings = useGameStore((state) => state.setSettings);
-  const logs = useGameStore((state) => state.logs);
-  const setLogs = useGameStore((state) => state.setLogs);
-  const saveGame = useGameStore((state) => state.saveGame);
-  const loadGame = useGameStore((state) => state.loadGame);
-  const startNewGame = useGameStore((state) => state.startNewGame);
+  // 使用 useShallow 批量选择，减少重渲染
+  const {
+    hasSave,
+    setHasSave,
+    gameStarted,
+    setGameStarted,
+    player,
+    setPlayer,
+    settings,
+    setSettings,
+    logs,
+    setLogs,
+    saveGame,
+    loadGame,
+    startNewGame,
+  } = useGameStore(
+    useShallow((state) => ({
+      hasSave: state.hasSave,
+      setHasSave: state.setHasSave,
+      gameStarted: state.gameStarted,
+      setGameStarted: state.setGameStarted,
+      player: state.player,
+      setPlayer: state.setPlayer,
+      settings: state.settings,
+      setSettings: state.setSettings,
+      logs: state.logs,
+      setLogs: state.setLogs,
+      saveGame: state.saveGame,
+      loadGame: state.loadGame,
+      startNewGame: state.startNewGame,
+    }))
+  );
 
   // 游戏启动时自动加载存档
   useEffect(() => {

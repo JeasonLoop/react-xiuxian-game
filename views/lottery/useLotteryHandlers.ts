@@ -3,12 +3,13 @@ import { PlayerStats, Pet, ItemType} from '../../types';
 import { LOTTERY_PRIZES, PET_TEMPLATES } from '../../constants/index';
 import { uid } from '../../utils/gameUtils';
 import { addItemToInventory } from '../../utils/inventoryUtils';
+import { useGameStore, useUIStore } from '../../store';
 
 interface UseLotteryHandlersProps {
-  player: PlayerStats;
-  setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
-  addLog: (message: string, type?: string) => void;
-  setLotteryRewards: (
+  player?: PlayerStats;
+  setPlayer?: React.Dispatch<React.SetStateAction<PlayerStats>>;
+  addLog?: (message: string, type?: string) => void;
+  setLotteryRewards?: (
     rewards: Array<{ type: string; name: string; quantity?: number }>
   ) => void;
 }
@@ -16,18 +17,23 @@ interface UseLotteryHandlersProps {
 /**
  * 抽奖处理函数
  * 包含抽奖
- * @param player 玩家数据
- * @param setPlayer 设置玩家数据
- * @param addLog 添加日志
- * @param setLotteryRewards 设置抽奖结果
+ * @param props 可选的 props（向后兼容），如果不提供则从 zustand store 获取
  * @returns handleDraw 抽奖
  */
-export function useLotteryHandlers({
-  player,
-  setPlayer,
-  addLog,
-  setLotteryRewards,
-}: UseLotteryHandlersProps) {
+export function useLotteryHandlers(
+  props?: UseLotteryHandlersProps
+) {
+  // 从 zustand store 获取状态
+  const storePlayer = useGameStore((state) => state.player);
+  const storeSetPlayer = useGameStore((state) => state.setPlayer);
+  const storeAddLog = useGameStore((state) => state.addLog);
+  const storeSetLotteryRewards = useUIStore((state) => state.setLotteryRewards);
+
+  // 使用 props 或 store 的值（props 优先，用于向后兼容）
+  const player = props?.player ?? storePlayer;
+  const setPlayer = props?.setPlayer ?? storeSetPlayer;
+  const addLog = props?.addLog ?? storeAddLog;
+  const setLotteryRewards = props?.setLotteryRewards ?? storeSetLotteryRewards;
   const isDrawingRef = useRef(false); // 防止重复调用
   const rewardTimeoutRef = useRef<NodeJS.Timeout | null>(null); // 存储奖励显示定时器
 

@@ -47,7 +47,7 @@ export const INITIAL_ITEMS: Item[] = [
     rarity: '普通',
     level: 0,
     isEquippable: true,
-    equipmentSlot: 'weapon' as any,
+    equipmentSlot: EquipmentSlot.Weapon,
     effect: { attack: 15 },
   },
   {

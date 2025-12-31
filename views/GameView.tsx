@@ -87,6 +87,7 @@ interface GameViewProps {
     onUpdateViewedAchievements: () => void;
     autoMeditate: boolean;
     autoAdventure: boolean;
+    pausedByBattle?: boolean;
     onToggleAutoMeditate: () => void;
     onToggleAutoAdventure: () => void;
   };
@@ -168,6 +169,7 @@ function GameView({
           onOpenSect={handlers.onOpenSect}
           autoMeditate={handlers.autoMeditate}
           autoAdventure={handlers.autoAdventure}
+          pausedByBattle={handlers.pausedByBattle}
           onToggleAutoMeditate={handlers.onToggleAutoMeditate}
           onToggleAutoAdventure={handlers.onToggleAutoAdventure}
         />
