@@ -345,20 +345,6 @@ function App() {
     }
   };
 
-  // IndexedDB Hook
-  const {
-    isReady,
-    saveTemplates,
-    loadTemplates,
-    hasTemplates,
-    saveBreakthroughDescriptions,
-    loadBreakthroughDescriptions,
-    hasBreakthroughDescriptions,
-    saveEnemyNames,
-    loadEnemyNames,
-    hasEnemyNames,
-  } = useIndexedDB();
-
   // 确保新游戏开始时自动历练状态被重置
   // 当检测到新游戏开始时（玩家从null变为有值，且是初始状态），重置自动历练状态
   const prevPlayerNameRef = useRef<string | null>(null);
@@ -1119,7 +1105,7 @@ function App() {
       configToShortcut(
         toggleAutoMeditateConfig,
         () => {
-          setAutoMeditate((prev) => !prev);
+          setAutoMeditate(!autoMeditate);
         },
         '切换自动打坐',
         '基础操作'
@@ -1132,17 +1118,7 @@ function App() {
       customShortcuts
     );
     const toggleAutoAdventureAction = () => {
-      setAutoAdventure((prev) => {
-        const newValue = !prev;
-        // 如果关闭自动历练，清除所有暂停状态
-        if (!newValue) {
-          setAutoAdventurePausedByShop(false);
-          setAutoAdventurePausedByBattle(false);
-          setAutoAdventurePausedByReputationEvent(false);
-          setAutoAdventurePausedByHeavenEarthSoul(false);
-        }
-        return newValue;
-      });
+      setAutoAdventure(!autoAdventure);
     };
     shortcuts.push(
       configToShortcut(
@@ -1377,22 +1353,10 @@ function App() {
     autoMeditate,
     autoAdventure,
     onToggleAutoMeditate: () => {
-      setAutoMeditate((prev) => {
-        const newValue = !prev;
-        // 在内部处理逻辑，避免外部变量依赖
-        return newValue;
-      });
+      setAutoMeditate(!autoMeditate);
     },
     onToggleAutoAdventure: () => {
-      setAutoAdventure((prev) => {
-        const newValue = !prev;
-        if (!newValue) {
-          setAutoAdventurePausedByShop(false);
-          setAutoAdventurePausedByBattle(false);
-          setAutoAdventurePausedByReputationEvent(false);
-        }
-        return newValue;
-      });
+      setAutoAdventure(!autoAdventure);
     },
   }), [
     handleMeditate,
