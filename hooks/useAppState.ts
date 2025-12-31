@@ -37,6 +37,7 @@ export interface AppModalState {
   isDebugModeEnabled: boolean;
   isReputationEventOpen: boolean;
   isTreasureVaultOpen: boolean;
+  isAutoAdventureConfigOpen: boolean;
 }
 
 export interface AppModalSetters {
@@ -62,6 +63,7 @@ export interface AppModalSetters {
   setIsDebugModeEnabled: (enabled: boolean) => void;
   setIsReputationEventOpen: (open: boolean) => void;
   setIsTreasureVaultOpen: (open: boolean) => void;
+  setIsAutoAdventureConfigOpen: (open: boolean) => void;
 }
 
 export interface AppState {
@@ -169,6 +171,7 @@ export function useAppState(): AppState {
   const [isDebugModeEnabled, setIsDebugModeEnabled] = useState(false);
   const [isReputationEventOpen, setIsReputationEventOpen] = useState(false);
   const [isTreasureVaultOpen, setIsTreasureVaultOpen] = useState(false);
+  const [isAutoAdventureConfigOpen, setIsAutoAdventureConfigOpen] = useState(false);
 
   // 商店状态
   const [currentShop, setCurrentShop] = useState<Shop | null>(null);
@@ -210,6 +213,12 @@ export function useAppState(): AppState {
   // 自动功能状态
   const [autoMeditate, setAutoMeditate] = useState(false);
   const [autoAdventure, setAutoAdventure] = useState(false);
+  const [autoAdventureConfig, setAutoAdventureConfig] = useState({
+    skipBattle: false,
+    fleeOnBattle: false,
+    skipShop: true, // 默认跳过商店
+    skipReputationEvent: false,
+  });
   const [pausedByShop, setPausedByShop] = useState(false);
   const [pausedByBattle, setPausedByBattle] = useState(false);
   const [pausedByReputationEvent, setPausedByReputationEvent] = useState(false);
@@ -307,6 +316,7 @@ export function useAppState(): AppState {
       isDebugModeEnabled,
       isReputationEventOpen,
       isTreasureVaultOpen,
+      isAutoAdventureConfigOpen,
     },
     setters: {
       setIsInventoryOpen,
@@ -331,6 +341,7 @@ export function useAppState(): AppState {
       setIsDebugModeEnabled,
       setIsReputationEventOpen,
       setIsTreasureVaultOpen,
+      setIsAutoAdventureConfigOpen,
     },
     shop: {
       currentShop,
@@ -371,6 +382,8 @@ export function useAppState(): AppState {
       setAutoMeditate,
       autoAdventure,
       setAutoAdventure,
+      autoAdventureConfig,
+      setAutoAdventureConfig,
       pausedByShop,
       setPausedByShop,
       pausedByBattle,

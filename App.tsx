@@ -23,6 +23,7 @@ import SaveManagerModal from './components/SaveManagerModal';
 import SaveCompareModal from './components/SaveCompareModal';
 import TribulationModal from './components/TribulationModal';
 import CultivationIntroModal from './components/CultivationIntroModal';
+import AutoAdventureConfigModal from './components/AutoAdventureConfigModal';
 import {
   SaveData,
   ensurePlayerStatsCompatibility,
@@ -135,14 +136,8 @@ function App() {
     setAutoMeditate,
     autoAdventure,
     setAutoAdventure,
-    pausedByShop: autoAdventurePausedByShop,
-    setPausedByShop: setAutoAdventurePausedByShop,
-    pausedByBattle: autoAdventurePausedByBattle,
-    setPausedByBattle: setAutoAdventurePausedByBattle,
-    pausedByReputationEvent: autoAdventurePausedByReputationEvent,
-    setPausedByReputationEvent: setAutoAdventurePausedByReputationEvent,
-    pausedByHeavenEarthSoul: autoAdventurePausedByHeavenEarthSoul,
-    setPausedByHeavenEarthSoul: setAutoAdventurePausedByHeavenEarthSoul,
+    autoAdventureConfig,
+    setAutoAdventureConfig,
   } = auto;
 
   const { closeCurrentModal: handleCloseCurrentModal, openTurnBasedBattle: handleOpenTurnBasedBattle } = actions;
@@ -195,9 +190,10 @@ function App() {
     setIsDebugModeEnabled,
     setIsReputationEventOpen,
     setIsTreasureVaultOpen,
+    setIsAutoAdventureConfigOpen,
   } = setters;
 
-  const { isDebugModeEnabled } = modals;
+  const { isDebugModeEnabled, isAutoAdventureConfigOpen } = modals;
 
   // 检查调试模式是否启用
   useEffect(() => {
@@ -360,10 +356,6 @@ function App() {
       if (isNewPlayer && isInitialState) {
         // 新游戏开始时，确保自动历练状态被重置
         setAutoAdventure(false);
-        setAutoAdventurePausedByBattle(false);
-        setAutoAdventurePausedByShop(false);
-        setAutoAdventurePausedByReputationEvent(false);
-        setAutoAdventurePausedByHeavenEarthSoul(false);
       }
 
       prevPlayerNameRef.current = player.name;
@@ -473,10 +465,9 @@ function App() {
     loading,
     cooldown,
     onOpenShop: (shopType: ShopType) => {
-      // 如果正在自动历练，暂停自动历练
-      if (autoAdventure) {
-        setAutoAdventurePausedByShop(true);
-        setAutoAdventure(false);
+      // 如果配置了跳过商店，不打开商店
+      if (autoAdventure && autoAdventureConfig.skipShop) {
+        return;
       }
       // 复用 shopHandlers 的逻辑
       shopHandlers.handleOpenShop(shopType);
@@ -496,11 +487,11 @@ function App() {
         autoAdventure,
       });
 
-      // 如果正在自动历练，暂停自动历练
-      if (autoAdventure) {
-        setAutoAdventurePausedByReputationEvent(true);
-        setAutoAdventure(false);
+      // 如果配置了跳过声望事件，不打开弹窗
+      if (autoAdventure && autoAdventureConfig.skipReputationEvent) {
+        return;
       }
+
       // 打开声望事件弹窗
       setReputationEvent(event);
       setIsReputationEventOpen(true);
@@ -512,10 +503,12 @@ function App() {
       });
     },
     onOpenTurnBasedBattle: handleOpenTurnBasedBattle,
-    skipBattle: false, // 不再跳过战斗，自动模式下也会弹出战斗弹窗
+    skipBattle: autoAdventure && autoAdventureConfig.skipBattle, // 根据配置决定是否跳过战斗
+    fleeOnBattle: autoAdventure && autoAdventureConfig.fleeOnBattle, // 根据配置决定是否逃跑
+    skipShop: autoAdventure && autoAdventureConfig.skipShop, // 根据配置决定是否跳过商店
+    skipReputationEvent: autoAdventure && autoAdventureConfig.skipReputationEvent, // 根据配置决定是否跳过声望事件
     useTurnBasedBattle: true, // 使用新的回合制战斗系统
     autoAdventure, // 传递自动历练状态
-    setAutoAdventurePausedByHeavenEarthSoul, // 传递设置天地之魄暂停状态的函数
     setAutoAdventure, // 传递设置自动历练状态的函数
   });
 
@@ -562,23 +555,6 @@ function App() {
     setAutoAdventure,
   });
 
-  // 战斗结束后，如果玩家还活着且之前是自动历练模式，继续自动历练
-  useEffect(() => {
-    if (
-      autoAdventurePausedByBattle &&
-      player &&
-      player.hp > 0 &&
-      !isDead &&
-      !loading
-    ) {
-      // 延迟一小段时间后恢复自动历练，确保状态更新完成
-      const timer = setTimeout(() => {
-        setAutoAdventure(true);
-        setAutoAdventurePausedByBattle(false);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [autoAdventurePausedByBattle, player?.hp, isDead, loading]);
 
   const handleUseInheritance = breakthroughHandlers.handleUseInheritance;
 
@@ -791,10 +767,6 @@ function App() {
     setReputationEvent(null);
 
     // 如果自动历练是因为声望事件暂停的，恢复自动历练
-    if (autoAdventurePausedByReputationEvent) {
-      setAutoAdventurePausedByReputationEvent(false);
-      setAutoAdventure(true);
-    }
   }, [
     reputationEvent,
     player,
@@ -802,8 +774,6 @@ function App() {
     setPlayer,
     setIsReputationEventOpen,
     setReputationEvent,
-    autoAdventurePausedByReputationEvent,
-    setAutoAdventurePausedByReputationEvent,
     setAutoAdventure,
   ]);
 
@@ -897,11 +867,6 @@ function App() {
     isShopOpen,
     isReputationEventOpen,
     isTurnBasedBattleOpen,
-    autoAdventurePausedByShop,
-    autoAdventurePausedByBattle,
-    autoAdventurePausedByReputationEvent,
-    autoAdventurePausedByHeavenEarthSoul,
-    setAutoAdventurePausedByShop,
     handleMeditate,
     handleAdventure,
     setCooldown,
@@ -1118,7 +1083,13 @@ function App() {
       customShortcuts
     );
     const toggleAutoAdventureAction = () => {
-      setAutoAdventure(!autoAdventure);
+      if (autoAdventure) {
+        // 如果正在自动历练，直接关闭
+        setAutoAdventure(false);
+      } else {
+        // 如果未开启，打开配置弹窗
+        setIsAutoAdventureConfigOpen(true);
+      }
     };
     shortcuts.push(
       configToShortcut(
@@ -1356,7 +1327,13 @@ function App() {
       setAutoMeditate(!autoMeditate);
     },
     onToggleAutoAdventure: () => {
-      setAutoAdventure(!autoAdventure);
+      if (autoAdventure) {
+        // 如果正在自动历练，直接关闭
+        setAutoAdventure(false);
+      } else {
+        // 如果未开启，打开配置弹窗
+        setIsAutoAdventureConfigOpen(true);
+      }
     },
   }), [
     handleMeditate,
@@ -1378,9 +1355,6 @@ function App() {
     setIsMobileStatsOpen,
     autoMeditate,
     autoAdventure,
-    setAutoAdventurePausedByShop,
-    setAutoAdventurePausedByBattle,
-    setAutoAdventurePausedByReputationEvent,
   ]);
 
   // 缓存 ModalsContainer 的 handlers
@@ -1405,10 +1379,6 @@ function App() {
       setIsShopOpen(open);
       if (!open) {
         setCurrentShop(null);
-        if (autoAdventurePausedByShop) {
-          setAutoAdventurePausedByShop(false);
-          setAutoAdventure(true);
-        }
       }
     },
     setIsBattleModalOpen,
@@ -1482,10 +1452,6 @@ function App() {
       setIsReputationEventOpen(open);
       if (!open) {
         setReputationEvent(null);
-        if (autoAdventurePausedByReputationEvent) {
-          setAutoAdventurePausedByReputationEvent(false);
-          setAutoAdventure(true);
-        }
       }
     },
     setIsTreasureVaultOpen: (open: boolean) => setIsTreasureVaultOpen(open),
@@ -1505,30 +1471,8 @@ function App() {
       setTurnBasedBattleParams(null);
       handleBattleResult(result, updatedInventory);
       if (!autoAdventure) {
-        setAutoAdventurePausedByBattle(false);
-        if (isHeavenEarthSoulBattle) {
-          setAutoAdventurePausedByHeavenEarthSoul(false);
-        }
         return;
       }
-      // 使用函数式更新获取最新的 player 状态，避免依赖外部 player 变量
-      setPlayer((currentPlayer) => {
-        if (result && currentPlayer) {
-          const playerHpAfter = Math.max(0, currentPlayer.hp - (result.hpLoss || 0));
-          if (playerHpAfter <= 0) {
-            setAutoAdventurePausedByBattle(false);
-            if (isHeavenEarthSoulBattle) {
-              setAutoAdventurePausedByHeavenEarthSoul(false);
-            }
-          }
-        } else {
-          setAutoAdventurePausedByBattle(false);
-          if (isHeavenEarthSoulBattle) {
-            setAutoAdventurePausedByHeavenEarthSoul(false);
-          }
-        }
-        return currentPlayer;
-      });
     },
   }), [
     setIsInventoryOpen, setIsCultivationOpen, setIsAlchemyOpen, setIsUpgradeOpen,
@@ -1552,12 +1496,10 @@ function App() {
     grottoHandlers.handleHarvestAll, grottoHandlers.handleEnhanceSpiritArray,
     grottoHandlers.handleToggleAutoHarvest, grottoHandlers.handleSpeedupHerb,
     handleBuyItem, handleSellItem, handleRefreshShop, handleReputationEventChoice,
-    setIsReputationEventOpen, setReputationEvent, autoAdventurePausedByReputationEvent,
+    setIsReputationEventOpen, setReputationEvent,
     setAutoAdventure, setIsTreasureVaultOpen, handleTakeTreasureVaultItem,
     handleUpdateVault, setIsTurnBasedBattleOpen, setTurnBasedBattleParams,
-    handleBattleResult, autoAdventure, autoAdventurePausedByShop, setCurrentShop,
-    setAutoAdventurePausedByBattle, setAutoAdventurePausedByShop,
-    setAutoAdventurePausedByReputationEvent, setAutoAdventurePausedByHeavenEarthSoul,
+    handleBattleResult, autoAdventure, setCurrentShop,
     turnBasedBattleParams
   ]);
 
@@ -1814,6 +1756,17 @@ function App() {
           }}
         />
       )}
+
+      {/* 自动历练配置弹窗 */}
+      <AutoAdventureConfigModal
+        isOpen={isAutoAdventureConfigOpen}
+        onClose={() => setIsAutoAdventureConfigOpen(false)}
+        onConfirm={(config) => {
+          setAutoAdventureConfig(config);
+          setAutoAdventure(true);
+        }}
+        currentConfig={autoAdventureConfig}
+      />
     </>
   );
 
