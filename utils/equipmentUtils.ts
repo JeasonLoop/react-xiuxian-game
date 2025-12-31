@@ -141,6 +141,17 @@ export const getEquipmentSlotConfig = (): Array<{
 };
 
 /**
+ * 获取装备槽位的中文标签
+ * @param slot 装备槽位
+ * @returns 中文标签，如果找不到则返回槽位值本身
+ */
+export const getEquipmentSlotLabel = (slot: EquipmentSlot): string => {
+  const config = getEquipmentSlotConfig();
+  const slotConfig = config.find((c) => c.slot === slot);
+  return slotConfig?.label || slot;
+};
+
+/**
  * 根据槽位获取对应的装备类型
  */
 export const getItemTypeBySlot = (slot: EquipmentSlot): ItemType | null => {

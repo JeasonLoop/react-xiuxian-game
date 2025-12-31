@@ -18,7 +18,6 @@ import {
   DISCOVERABLE_RECIPES,
   PET_EVOLUTION_MATERIALS,
   getRandomPetName,
-  REALM_DATA,
   FOUNDATION_TREASURES,
   HEAVEN_EARTH_ESSENCES,
   HEAVEN_EARTH_MARROWS,
@@ -38,7 +37,6 @@ import { getAllArtifacts, getItemFromConstants } from '../../utils/itemConstants
 import {
   normalizeItemEffect,
   inferItemTypeAndSlot,
-  adjustEquipmentStatsByRealm,
   adjustItemStatsByRealm,
 } from '../../utils/itemUtils';
 import { normalizeRarityValue } from '../../utils/rarityUtils';
@@ -874,7 +872,7 @@ export async function executeAdventureCore({
           ...prev,
           sectId: huntSectId,
           sectRank: SectRank.Leader,
-          sectMasterId: prev.id || 'player-leader',
+          sectMasterId: 'player-leader', // 玩家成为宗主时，设置为玩家标识
           sectHuntEndTime: null, // 清除追杀状态
           sectHuntLevel: 0,
           sectHuntSectId: null,
