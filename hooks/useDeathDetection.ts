@@ -12,6 +12,20 @@ import { useItemActionLog } from '../hooks/useItemActionLog';
 
 
 /**
+ * 获取战斗类型的中文描述
+ */
+function getAdventureTypeName(adventureType?: string): string {
+  const typeMap: Record<string, string> = {
+    normal: '历练',
+    lucky: '奇遇',
+    secret_realm: '秘境',
+    sect_challenge: '宗门挑战',
+    dao_combining_challenge: '天地之魄挑战',
+  };
+  return typeMap[adventureType || ''] || '历练';
+}
+
+/**
  * 生成具体的死亡原因
  */
 function generateDetailedDeathReason(
@@ -35,8 +49,9 @@ function generateDetailedDeathReason(
     }
   }
 
-  const { enemy, rounds, victory } = battleReplay;
+  const { enemy, rounds, victory, adventureType } = battleReplay;
   const enemyName = `${enemy.title}${enemy.name}`;
+  const adventureTypeName = getAdventureTypeName(adventureType);
 
   // 找到最后一击（导致玩家死亡的那一击）
   const lastEnemyAttack = rounds
@@ -49,10 +64,10 @@ function generateDetailedDeathReason(
   if (victory) {
     // 虽然胜利但伤势过重
     const victoryReasons = [
-      `虽然你成功击败了${enemyName}，但在激烈的战斗中，你被其临死前的反扑重创，五脏六腑皆受重创，最终不治身亡。`,
-      `你虽然战胜了${enemyName}，但战斗中的伤势过重，失血过多，最终力竭而亡。`,
-      `虽然${enemyName}倒在了你的剑下，但你在战斗中受到的致命伤无法愈合，最终不治身亡。`,
-      `你成功斩杀了${enemyName}，但自己也身负重伤，真气耗尽，最终油尽灯枯而亡。`,
+      `在${adventureTypeName}中，虽然你成功击败了${enemyName}，但在激烈的战斗中，你被其临死前的反扑重创，五脏六腑皆受重创，最终不治身亡。`,
+      `在${adventureTypeName}中，你虽然战胜了${enemyName}，但战斗中的伤势过重，失血过多，最终力竭而亡。`,
+      `在${adventureTypeName}中，虽然${enemyName}倒在了你的剑下，但你在战斗中受到的致命伤无法愈合，最终不治身亡。`,
+      `在${adventureTypeName}中，你成功斩杀了${enemyName}，但自己也身负重伤，真气耗尽，最终油尽灯枯而亡。`,
     ];
     deathDescription = victoryReasons[Math.floor(Math.random() * victoryReasons.length)];
   } else {
@@ -63,30 +78,30 @@ function generateDetailedDeathReason(
 
       if (isCrit) {
         const critReasons = [
-          `${enemyName}的致命一击直接贯穿了你的心脏，你当场毙命。`,
-          `${enemyName}的暴击攻击击碎了你的护体真气，强大的力量瞬间摧毁了你的生机。`,
-          `${enemyName}的致命一击撕裂了你的丹田，你的修为瞬间崩散，当场身死道消。`,
-          `${enemyName}的暴击攻击直接命中你的要害，你连反应的机会都没有，便已魂飞魄散。`,
+          `在${adventureTypeName}中，${enemyName}的致命一击直接贯穿了你的心脏，你当场毙命。`,
+          `在${adventureTypeName}中，${enemyName}的暴击攻击击碎了你的护体真气，强大的力量瞬间摧毁了你的生机。`,
+          `在${adventureTypeName}中，${enemyName}的致命一击撕裂了你的丹田，你的修为瞬间崩散，当场身死道消。`,
+          `在${adventureTypeName}中，${enemyName}的暴击攻击直接命中你的要害，你连反应的机会都没有，便已魂飞魄散。`,
         ];
         deathDescription = critReasons[Math.floor(Math.random() * critReasons.length)];
       } else if (damage > 100) {
         const heavyReasons = [
-          `${enemyName}的强力攻击重创了你的经脉，你无法承受如此巨大的伤害，最终力竭而亡。`,
-          `${enemyName}的攻击威力巨大，你的防御被彻底击破，身受重伤，最终不治身亡。`,
-          `${enemyName}的猛烈攻击让你五脏移位，伤势过重，最终不治身亡。`,
+          `在${adventureTypeName}中，${enemyName}的强力攻击重创了你的经脉，你无法承受如此巨大的伤害，最终力竭而亡。`,
+          `在${adventureTypeName}中，${enemyName}的攻击威力巨大，你的防御被彻底击破，身受重伤，最终不治身亡。`,
+          `在${adventureTypeName}中，${enemyName}的猛烈攻击让你五脏移位，伤势过重，最终不治身亡。`,
         ];
         deathDescription = heavyReasons[Math.floor(Math.random() * heavyReasons.length)];
       } else {
         const normalReasons = [
-          `在与${enemyName}的激战中，你逐渐力不从心，最终被其击败，力竭而亡。`,
-          `${enemyName}的境界远高于你，你拼尽全力也无法抵挡，最终被其重创，不治身亡。`,
-          `面对${enemyName}的强大实力，你的防御被层层击破，最终身受致命伤，不治身亡。`,
-          `在与${enemyName}的战斗中，你节节败退，最终被其抓住破绽，一击致命。`,
+          `在${adventureTypeName}中，与${enemyName}的激战中，你逐渐力不从心，最终被其击败，力竭而亡。`,
+          `在${adventureTypeName}中，${enemyName}的境界远高于你，你拼尽全力也无法抵挡，最终被其重创，不治身亡。`,
+          `在${adventureTypeName}中，面对${enemyName}的强大实力，你的防御被层层击破，最终身受致命伤，不治身亡。`,
+          `在${adventureTypeName}中，与${enemyName}的战斗中，你节节败退，最终被其抓住破绽，一击致命。`,
         ];
         deathDescription = normalReasons[Math.floor(Math.random() * normalReasons.length)];
       }
     } else {
-      deathDescription = `在与${enemyName}的战斗中，你力竭而亡。`;
+      deathDescription = `在${adventureTypeName}中，与${enemyName}的战斗中，你力竭而亡。`;
     }
   }
 

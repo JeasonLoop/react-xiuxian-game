@@ -217,11 +217,11 @@ export function useAppState(): AppState {
   const [autoMeditate, setAutoMeditate] = useState(false);
   const [autoAdventure, setAutoAdventure] = useState(false);
   const [autoAdventureConfig, setAutoAdventureConfig] = useState({
-    skipBattle: false,
+    skipBattle: true,
     fleeOnBattle: false,
     skipShop: true, // 默认跳过商店
-    skipReputationEvent: false,
-    minHpThreshold: 0, // 默认不限制
+    skipReputationEvent: true,
+    minHpThreshold: 20, // 默认不限制
   });
   const [pausedByShop, setPausedByShop] = useState(false);
   const [pausedByBattle, setPausedByBattle] = useState(false);

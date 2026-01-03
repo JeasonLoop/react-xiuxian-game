@@ -60,7 +60,12 @@ export const normalizeTypeHint = (type?: ItemType | string): ItemType | undefine
 };
 
 // 将类型别称规范化为中文字符串标签（用于显示）
-export const normalizeTypeLabel = (type: ItemType | string, item?: { advancedItemType?: string }): string => {
+export const normalizeTypeLabel = (type: ItemType | string, item?: {
+  advancedItemType?: string;
+  equipmentSlot?: EquipmentSlot;
+  name?: string;
+  description?: string;
+}): string => {
   if (!type) return '未知';
   const t = String(type).toLowerCase();
 
@@ -76,6 +81,30 @@ export const normalizeTypeLabel = (type: ItemType | string, item?: { advancedIte
       return typeMap[item.advancedItemType] || '进阶物品';
     }
     return '进阶物品';
+  }
+
+  // 如果是护甲类型，显示具体槽位名称
+  if (t === 'armor' || type === ItemType.Armor) {
+    // 优先使用物品的 equipmentSlot 属性
+    if (item?.equipmentSlot) {
+      return item.equipmentSlot; // EquipmentSlot 枚举值已经是中文（如"头部"、"肩部"等）
+    }
+
+    // 如果没有 equipmentSlot，尝试从名称和描述推断
+    if (item?.name && item?.description) {
+      const inferred = inferItemTypeAndSlot(
+        item.name,
+        ItemType.Armor,
+        item.description,
+        true
+      );
+      if (inferred.equipmentSlot) {
+        return inferred.equipmentSlot;
+      }
+    }
+
+    // 如果无法推断，显示默认的"护甲"
+    return '护甲';
   }
 
   const map: Record<string, string> = {
@@ -641,11 +670,12 @@ export const adjustItemStatsByRealm = (
 
   // 非装备物品：根据境界进行倍数调整
   const realmIndex = REALM_ORDER.indexOf(realm);
-  // 境界倍数：炼气期1倍、筑基期2倍、金丹期4倍、元婴期8倍、化神期16倍、合道期20倍、长生境25倍
-  const realmBaseMultipliers = [1, 2, 4, 8, 16, 20, 25];
+  // 优化后的境界倍数：与装备调整函数保持一致，防止数值膨胀
+  // 从 [1, 2, 4, 8, 16, 20, 25] 改为 [1, 1.5, 2.5, 4, 6, 10, 16]
+  const realmBaseMultipliers = [1, 1.5, 2.5, 4, 6, 10, 16];
   const realmMultiplier = realmBaseMultipliers[realmIndex] || 1;
-  // 境界等级加成：每级增加10%
-  const levelMultiplier = 1 + (realmLevel - 1) * 0.1;
+  // 降低层数加成：从10%降低到8%，与装备调整保持一致
+  const levelMultiplier = 1 + (realmLevel - 1) * 0.08;
   const totalMultiplier = realmMultiplier * levelMultiplier;
 
   const adjustedEffect: Item['effect'] = {};

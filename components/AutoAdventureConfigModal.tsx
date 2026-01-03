@@ -20,8 +20,8 @@ const defaultConfig: AutoAdventureConfig = {
   skipBattle: true,
   fleeOnBattle: false,
   skipShop: true, // 默认跳过商店
-  skipReputationEvent: false,
-  minHpThreshold: 0, // 默认不限制
+  skipReputationEvent: true,
+  minHpThreshold: 20, // 默认不限制
 };
 
 const AutoAdventureConfigModal: React.FC<Props> = ({
@@ -49,7 +49,7 @@ const AutoAdventureConfigModal: React.FC<Props> = ({
   return (
     <div
       className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm"
-      onClick={onClose}
+      // onClick={onClose}
     >
       <div
         className="bg-paper-800 w-full max-w-md rounded-lg border border-stone-600 shadow-2xl"

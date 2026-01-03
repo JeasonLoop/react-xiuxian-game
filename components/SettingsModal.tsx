@@ -221,7 +221,7 @@ const SettingsModal: React.FC<Props> = ({
 
         <div className="modal-scroll-container modal-scroll-content p-6 space-y-6">
           {/* 音效设置 */}
-          <div>
+          {/* <div>
             <div className="flex items-center gap-2 mb-3">
               <Volume2 size={20} className="text-stone-400" />
               <h3 className="font-bold">音效</h3>
@@ -258,10 +258,10 @@ const SettingsModal: React.FC<Props> = ({
                 </div>
               )}
             </div>
-          </div>
+          </div> */}
 
           {/* 音乐设置 */}
-          <div>
+          {/* <div>
             <div className="flex items-center gap-2 mb-3">
               <Music size={20} className="text-stone-400" />
               <h3 className="font-bold">音乐</h3>
@@ -298,7 +298,7 @@ const SettingsModal: React.FC<Props> = ({
                 </div>
               )}
             </div>
-          </div>
+          </div> */}
 
           {/* 游戏设置 */}
           <div>

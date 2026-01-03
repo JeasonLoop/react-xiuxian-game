@@ -383,7 +383,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     realmRequirement: RealmType.DaoCombining,
     cost: 60000,
     spiritualRoot: 'fire',
-    effects: { expRate: 1.5, attack: 160, defense: 140, hp: 2400, spirit: 120 }, // 优化：从8000/7000/15000/3000降低到160/140/2400/120
+    effects: { expRate: 1.0, attack: 800, defense: 600, hp: 5000, spirit: 500 }, // 平衡：修炼速度100%，属性提升合理
   },
   // 新增五行功法
   {
@@ -549,7 +549,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     realmRequirement: RealmType.SpiritSevering,
     cost: 28000,
     spiritualRoot: 'earth',
-    effects: { defense: 6000, hp: 70000, attack: 4000 },
+    effects: { defense: 1500, hp: 15000, attack: 800 }, // 平衡：降低到合理范围
   },
   {
     id: 'art-golden-immortal',
@@ -560,7 +560,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     realmRequirement: RealmType.SpiritSevering,
     cost: 32000,
     spiritualRoot: 'metal',
-    effects: { attack: 160, defense: 60, speed: 80 }, // 优化：从8000/3000/2000降低到160/60/80
+    effects: { attack: 1200, defense: 400, speed: 200 }, // 平衡：提升到合理范围（化神期天级功法）
   },
   {
     id: 'art-five-elements',
@@ -570,7 +570,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     description: '融合五行之力，达到修炼的极致。',
     realmRequirement: RealmType.DaoCombining,
     cost: 70000,
-    effects: { expRate: 1.2, attack: 10000, defense: 8000, hp: 20000, spirit: 5000 },
+    effects: { expRate: 1.0, attack: 2000, defense: 1500, hp: 10000, spirit: 1200 }, // 平衡：降低到合理范围
   },
   // ==================== 新增攻击类功法 ====================
   // 黄级攻击功法（炼气期）

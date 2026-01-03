@@ -52,6 +52,7 @@ function randomRarityByWeight(): ItemRarity {
 
 /**
  * 根据境界调整物品数值
+ * 优化：降低倍数增长，与装备调整函数保持一致，防止数值膨胀
  */
 function adjustStatsByRealm(
   effect: Item['effect'],
@@ -59,18 +60,21 @@ function adjustStatsByRealm(
   realm: string,
   realmLevel: number = 1
 ): { effect?: Item['effect']; permanentEffect?: Item['permanentEffect'] } {
+  // 优化后的境界倍数：与装备调整函数保持一致
+  // 从 [1, 2, 4, 8, 16, 32, 64] 改为 [1, 1.5, 2.5, 4, 6, 10, 16]
   const realmMultipliers: Record<string, number> = {
     QiRefining: 1,
-    Foundation: 2,
-    GoldenCore: 4,
-    NascentSoul: 8,
-    SpiritSevering: 16,
-    DaoCombining: 32,
-    LongevityRealm: 64,
+    Foundation: 1.5,
+    GoldenCore: 2.5,
+    NascentSoul: 4,
+    SpiritSevering: 6,
+    DaoCombining: 10,
+    LongevityRealm: 16,
   };
 
   const realmMultiplier = realmMultipliers[realm] || 1;
-  const levelMultiplier = 1 + (realmLevel - 1) * 0.1;
+  // 降低层数加成：从10%降低到8%，与装备调整保持一致
+  const levelMultiplier = 1 + (realmLevel - 1) * 0.08;
   const totalMultiplier = realmMultiplier * levelMultiplier;
 
   const adjusted: Item['effect'] = {};
