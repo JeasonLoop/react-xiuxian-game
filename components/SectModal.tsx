@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import Modal from './common/Modal';
 import { PlayerStats, SectRank, RealmType, Item, AdventureResult } from '../types';
 import { SECTS, SECT_RANK_REQUIREMENTS, REALM_ORDER, SECT_RANK_DATA } from '../constants/index';
 import { generateRandomSects, generateRandomSectTasks, generateSectShopItems, RandomSectTask } from '../services/randomService';
@@ -142,84 +143,78 @@ const SectModal: React.FC<Props> = ({
     SECTS.find((s) => s.id === player.sectId);
   const getRealmIndex = (r: RealmType) => REALM_ORDER.indexOf(r);
 
-  // -- Selection View (Not in a sect) --
   if (!player.sectId) {
     return (
-      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-        <div className="bg-paper-800 w-full max-w-4xl rounded border border-stone-600 shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
-          <div className="p-4 border-b border-stone-600 flex justify-between items-center bg-ink-800 rounded-t">
-            <h3 className="text-xl font-serif text-mystic-gold flex items-center gap-2">
-              <Users size={20} /> 寻访仙门
-            </h3>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleRefresh}
-                className="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded text-sm flex items-center gap-1.5 transition-colors"
-                title="刷新宗门列表"
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="寻访仙门"
+        size="4xl"
+        height="auto"
+        containerClassName="bg-paper-800 border-stone-600"
+        headerClassName="bg-ink-800 border-b border-stone-600"
+        contentClassName="bg-paper-800"
+        titleExtra={
+          <button
+            onClick={handleRefresh}
+            className="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded text-sm flex items-center gap-1.5 transition-colors mr-2"
+            title="刷新宗门列表"
+          >
+            <RefreshCw size={16} />
+            <span className="hidden md:inline">刷新</span>
+          </button>
+        }
+      >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {availableSects.map((sect) => {
+            const canJoin =
+              getRealmIndex(player.realm) >= getRealmIndex(sect.reqRealm);
+            return (
+              <div
+                key={sect.id}
+                className="bg-ink-800 border border-stone-700 p-4 rounded flex flex-col"
               >
-                <RefreshCw size={16} />
-                <span className="hidden md:inline">刷新</span>
-              </button>
-              <button
-                onClick={onClose}
-                className="text-stone-400 hover:text-white"
-              >
-                <X size={24} />
-              </button>
-            </div>
-          </div>
+                <h4 className="text-xl font-serif font-bold text-stone-200 mb-2">
+                  {sect.name}
+                </h4>
+                <p className="text-stone-400 text-sm mb-4 flex-1">
+                  {sect.description}
+                </p>
 
-          <div className="modal-scroll-container modal-scroll-content p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            {availableSects.map((sect) => {
-              const canJoin =
-                getRealmIndex(player.realm) >= getRealmIndex(sect.reqRealm);
-              return (
-                <div
-                  key={sect.id}
-                  className="bg-ink-800 border border-stone-700 p-4 rounded flex flex-col"
-                >
-                  <h4 className="text-xl font-serif font-bold text-stone-200 mb-2">
-                    {sect.name}
-                  </h4>
-                  <p className="text-stone-400 text-sm mb-4 flex-1">
-                    {sect.description}
-                  </p>
-
-                  <div className="text-xs text-stone-500 mb-4">
-                    入门要求:{' '}
-                    <span
-                      className={canJoin ? 'text-stone-300' : 'text-red-400'}
-                    >
-                      {sect.reqRealm}
-                    </span>
-                  </div>
-
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (canJoin) {
-                        onJoinSect(sect.id, sect.name, { exitCost: sect.exitCost });
-                      }
-                    }}
-                    disabled={!canJoin}
-                    className={`
-                      w-full py-2 rounded font-serif text-sm transition-colors border touch-manipulation
-                      ${
-                        canJoin
-                          ? 'bg-mystic-jade/20 text-mystic-jade border-mystic-jade hover:bg-mystic-jade/30 active:bg-mystic-jade/40'
-                          : 'bg-stone-800 text-stone-600 border-stone-700 cursor-not-allowed'
-                      }
-                    `}
+                <div className="text-xs text-stone-500 mb-4">
+                  入门要求:{' '}
+                  <span
+                    className={canJoin ? 'text-stone-300' : 'text-red-400'}
                   >
-                    {canJoin ? '拜入山门' : '境界不足'}
-                  </button>
+                    {sect.reqRealm}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
+
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (canJoin) {
+                      onJoinSect(sect.id, sect.name, { exitCost: sect.exitCost });
+                    }
+                  }}
+                  disabled={!canJoin}
+                  className={`
+                    w-full py-2 rounded font-serif text-sm transition-colors border touch-manipulation
+                    ${
+                      canJoin
+                        ? 'bg-mystic-jade/20 text-mystic-jade border-mystic-jade hover:bg-mystic-jade/30 active:bg-mystic-jade/40'
+                        : 'bg-stone-800 text-stone-600 border-stone-700 cursor-not-allowed'
+                    }
+                  `}
+                >
+                  {canJoin ? '拜入山门' : '境界不足'}
+                </button>
+              </div>
+            );
+          })}
         </div>
-      </div>
+      </Modal>
     );
   }
 
@@ -239,79 +234,69 @@ const SectModal: React.FC<Props> = ({
     getRealmIndex(player.realm) >= nextReq.realmIndex;
 
   return (
-    <div
-      className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm touch-manipulation"
-      onClick={onClose}
-    >
-      <div
-        className="bg-paper-800 w-full h-[80vh] md:h-auto md:max-w-4xl md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-600 shadow-2xl flex flex-col md:h-[80vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="p-3 md:p-4 border-b border-stone-600 bg-ink-800 md:rounded-t flex justify-between items-start">
-          <div>
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <h3 className="text-xl md:text-2xl font-serif text-mystic-gold">
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2 mb-0.5">
+              <h3 className="text-lg md:text-xl font-serif text-mystic-gold">
                 {currentSect?.name}
               </h3>
-              <span className="text-[10px] md:text-xs px-2 py-0.5 rounded bg-stone-700 text-stone-300 border border-stone-600 flex items-center gap-1">
+              <span className="text-[10px] px-2 py-0.5 rounded bg-stone-700 text-stone-300 border border-stone-600 flex items-center gap-1">
                 <Shield size={10} className="text-blue-400" />
                 {SECT_RANK_DATA[player.sectRank]?.title || player.sectRank}
               </span>
             </div>
-            <div className="text-xs md:text-sm text-stone-400 flex gap-4">
-              <span>
-                宗门贡献:{' '}
-                <span className="text-white font-bold">
-                  {player.sectContribution}
-                </span>
+            <div className="text-[10px] md:text-xs text-stone-400">
+              宗门贡献:{' '}
+              <span className="text-white font-bold">
+                {player.sectContribution}
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {activeTab === 'mission' && (
-              <button
-                onClick={handleRefresh}
-                className="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded text-sm flex items-center gap-1.5 transition-colors min-h-[44px] md:min-h-0 touch-manipulation"
-                title="刷新任务列表"
-              >
-                <RefreshCw size={16} />
-                <span className="hidden md:inline">刷新</span>
-              </button>
-            )}
+        }
+        size="4xl"
+        height="full"
+        containerClassName="bg-paper-800 border-stone-600"
+        headerClassName="bg-ink-800 border-b border-stone-600"
+        contentClassName="bg-paper-800"
+        titleExtra={
+          activeTab === 'mission' && (
             <button
-              onClick={onClose}
-              className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+              onClick={handleRefresh}
+              className="px-2.5 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded text-xs flex items-center gap-1 transition-colors mr-2"
+              title="刷新任务列表"
             >
-              <X size={24} />
+              <RefreshCw size={14} />
+              <span className="hidden sm:inline">刷新</span>
+            </button>
+          )
+        }
+        subHeader={
+          <div className="flex border-b border-stone-700 bg-ink-900">
+            <button
+              onClick={() => setActiveTab('hall')}
+              className={`flex-1 py-2.5 text-xs md:text-sm font-serif transition-colors flex items-center justify-center gap-2 ${activeTab === 'hall' ? 'text-mystic-gold bg-paper-800 border-t-2 border-mystic-gold' : 'text-stone-500 hover:text-stone-300'}`}
+            >
+              <Shield size={14} /> 宗门大殿
+            </button>
+            <button
+              onClick={() => setActiveTab('mission')}
+              className={`flex-1 py-2.5 text-xs md:text-sm font-serif transition-colors flex items-center justify-center gap-2 ${activeTab === 'mission' ? 'text-mystic-gold bg-paper-800 border-t-2 border-mystic-gold' : 'text-stone-500 hover:text-stone-300'}`}
+            >
+              <Scroll size={14} /> 任务阁
+            </button>
+            <button
+              onClick={() => setActiveTab('shop')}
+              className={`flex-1 py-2.5 text-xs md:text-sm font-serif transition-colors flex items-center justify-center gap-2 ${activeTab === 'shop' ? 'text-mystic-gold bg-paper-800 border-t-2 border-mystic-gold' : 'text-stone-500 hover:text-stone-300'}`}
+            >
+              <ShoppingBag size={14} /> 藏宝阁
             </button>
           </div>
-        </div>
-
-        {/* Navigation */}
-        <div className="flex border-b border-stone-700 bg-ink-900">
-          <button
-            onClick={() => setActiveTab('hall')}
-            className={`flex-1 py-3 text-sm font-serif transition-colors flex items-center justify-center gap-2 ${activeTab === 'hall' ? 'text-mystic-gold bg-paper-800 border-t-2 border-mystic-gold' : 'text-stone-500 hover:text-stone-300'}`}
-          >
-            <Shield size={16} /> 宗门大殿
-          </button>
-          <button
-            onClick={() => setActiveTab('mission')}
-            className={`flex-1 py-3 text-sm font-serif transition-colors flex items-center justify-center gap-2 ${activeTab === 'mission' ? 'text-mystic-gold bg-paper-800 border-t-2 border-mystic-gold' : 'text-stone-500 hover:text-stone-300'}`}
-          >
-            <Scroll size={16} /> 任务阁
-          </button>
-          <button
-            onClick={() => setActiveTab('shop')}
-            className={`flex-1 py-3 text-sm font-serif transition-colors flex items-center justify-center gap-2 ${activeTab === 'shop' ? 'text-mystic-gold bg-paper-800 border-t-2 border-mystic-gold' : 'text-stone-500 hover:text-stone-300'}`}
-          >
-            <ShoppingBag size={16} /> 藏宝阁
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="modal-scroll-container modal-scroll-content p-6 bg-paper-800 max-h-[68vh]">
+        }
+      >
           {/* Main Hall */}
           {activeTab === 'hall' && (
             <div className="space-y-6">
@@ -467,7 +452,7 @@ const SectModal: React.FC<Props> = ({
           {/* Mission Hall */}
           {activeTab === 'mission' && (
             <div className="flex flex-col h-full">
-              <div className="flex justify-between items-center mb-4 flex-shrink-0">
+              <div className="flex justify-between items-center mb-4 shrink-0">
                 <h4 className="font-serif text-lg text-stone-200">任务列表</h4>
                 <button
                   onClick={handleRefresh}
@@ -861,8 +846,7 @@ const SectModal: React.FC<Props> = ({
               })}
             </div>
           )}
-        </div>
-      </div>
+      </Modal>
 
       {/* 任务执行弹窗 */}
       {selectedTask && (
@@ -880,7 +864,7 @@ const SectModal: React.FC<Props> = ({
           }}
         />
       )}
-    </div>
+    </>
   );
 };
 

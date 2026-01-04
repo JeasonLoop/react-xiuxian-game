@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Modal from './common/Modal';
 import { X, Save, Trash2, Download, Upload, Copy, RotateCcw, FileText } from 'lucide-react';
 import {
   getAllSlots,
@@ -262,27 +263,18 @@ const SaveManagerModal: React.FC<Props> = ({
   if (!isOpen) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 p-0 md:p-4"
-      onClick={onClose}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="存档管理"
+      size="4xl"
+      height="auto"
+      containerClassName="bg-stone-800 border-stone-700"
+      headerClassName="bg-stone-800 border-b border-stone-700"
+      titleClassName="text-mystic-gold font-serif"
+      contentClassName="bg-stone-800 space-y-4"
+      contentPadding="p-4 md:p-6"
     >
-      <div
-        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[90vh] md:h-auto md:max-w-4xl md:max-h-[90vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="bg-stone-800 border-b border-stone-700 p-3 md:p-4 flex justify-between items-center md:rounded-t-2xl flex-shrink-0">
-          <h2 className="text-lg md:text-xl font-serif text-mystic-gold">
-            存档管理
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-stone-400 hover:text-white min-w-[44px] min-h-[44px] flex items-center justify-center"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        <div className="modal-scroll-container modal-scroll-content p-4 md:p-6 space-y-4">
           {/* 存档槽位列表 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {slots.map((slot) => {
@@ -498,9 +490,7 @@ const SaveManagerModal: React.FC<Props> = ({
               </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 };
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import Modal from './common/Modal';
 import {
   X,
   RotateCcw,
@@ -873,29 +874,39 @@ const DebugModal: React.FC<Props> = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 p-0 md:p-4 touch-manipulation"
-      onClick={onClose}
-    >
-      <div
-        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[90vh] md:h-auto md:max-w-4xl md:max-h-[90vh] flex flex-col safe-area-modal"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="bg-stone-800 border-b border-stone-700 p-3 md:p-4 flex justify-between items-center md:rounded-t-2xl shrink-0">
-          <h2 className="text-lg md:text-xl font-serif text-red-500">
-            🔧 调试模式
-          </h2>
+    <>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="🔧 调试模式"
+      size="4xl"
+      height="full"
+      containerClassName="bg-stone-800 border-stone-700"
+      headerClassName="bg-stone-800 border-b border-stone-700"
+      titleClassName="text-red-500 font-serif"
+      contentClassName="bg-stone-800 space-y-6"
+      contentPadding="p-4 md:p-6"
+      footer={
+        <div className="flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 w-full">
           <button
-            onClick={onClose}
-            className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
+            onClick={handleDisableDebugMode}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-orange-700 active:bg-orange-600 text-white rounded border border-orange-600 transition-colors min-h-[44px] touch-manipulation"
+            title="关闭调试模式"
           >
-            <X size={24} />
+            <Power size={16} />
+            关闭调试模式
+          </button>
+          <button
+            onClick={handleReset}
+            className="flex items-center justify-center gap-2 px-4 py-3 bg-stone-700 active:bg-stone-600 text-stone-200 rounded border border-stone-600 transition-colors min-h-[44px] touch-manipulation"
+          >
+            <RotateCcw size={16} />
+            重置
           </button>
         </div>
-
-        {/* Content */}
-        <div className="modal-scroll-container modal-scroll-content p-4 md:p-6 space-y-6">
+      }
+      footerClassName="bg-stone-800 border-t border-stone-700 p-3 md:p-4"
+    >
           {/* 全局搜索 */}
           <div className="bg-stone-900/50 border border-stone-700 rounded-lg p-3">
             <div className="flex items-center gap-2">
@@ -1309,7 +1320,7 @@ const DebugModal: React.FC<Props> = ({
                   onClick={() => setActiveTab('equipment')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                     activeTab === 'equipment'
-                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      ? 'bg-linear-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
                       : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
                   }`}
                   title="装备"
@@ -1321,7 +1332,7 @@ const DebugModal: React.FC<Props> = ({
                   onClick={() => setActiveTab('item')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                     activeTab === 'item'
-                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      ? 'bg-linear-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
                       : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
                   }`}
                   title="物品"
@@ -1333,7 +1344,7 @@ const DebugModal: React.FC<Props> = ({
                   onClick={() => setActiveTab('recipe')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                     activeTab === 'recipe'
-                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      ? 'bg-linear-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
                       : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
                   }`}
                   title="丹方"
@@ -1345,7 +1356,7 @@ const DebugModal: React.FC<Props> = ({
                   onClick={() => setActiveTab('cultivation')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                     activeTab === 'cultivation'
-                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      ? 'bg-linear-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
                       : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
                   }`}
                   title="功法"
@@ -1357,7 +1368,7 @@ const DebugModal: React.FC<Props> = ({
                   onClick={() => setActiveTab('breakthrough')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                     activeTab === 'breakthrough'
-                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      ? 'bg-linear-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
                       : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
                   }`}
                   title="进阶物品"
@@ -1372,7 +1383,7 @@ const DebugModal: React.FC<Props> = ({
                   onClick={() => setActiveTab('talent')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                     activeTab === 'talent'
-                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      ? 'bg-linear-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
                       : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
                   }`}
                   title="天赋"
@@ -1384,7 +1395,7 @@ const DebugModal: React.FC<Props> = ({
                   onClick={() => setActiveTab('title')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                     activeTab === 'title'
-                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      ? 'bg-linear-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
                       : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
                   }`}
                   title="称号"
@@ -1396,7 +1407,7 @@ const DebugModal: React.FC<Props> = ({
                   onClick={() => setActiveTab('inheritance')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                     activeTab === 'inheritance'
-                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      ? 'bg-linear-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
                       : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
                   }`}
                   title="传承"
@@ -1411,7 +1422,7 @@ const DebugModal: React.FC<Props> = ({
                   onClick={() => setActiveTab('sect')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                     activeTab === 'sect'
-                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      ? 'bg-linear-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
                       : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
                   }`}
                   title="宗门"
@@ -1423,7 +1434,7 @@ const DebugModal: React.FC<Props> = ({
                   onClick={() => setActiveTab('pet')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                     activeTab === 'pet'
-                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      ? 'bg-linear-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
                       : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
                   }`}
                   title="灵宠"
@@ -1435,7 +1446,7 @@ const DebugModal: React.FC<Props> = ({
                   onClick={() => setActiveTab('achievement')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                     activeTab === 'achievement'
-                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      ? 'bg-linear-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
                       : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
                   }`}
                   title="成就"
@@ -1447,7 +1458,7 @@ const DebugModal: React.FC<Props> = ({
                   onClick={() => setActiveTab('reputation')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                     activeTab === 'reputation'
-                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      ? 'bg-linear-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
                       : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
                   }`}
                   title="声望事件"
@@ -1459,7 +1470,7 @@ const DebugModal: React.FC<Props> = ({
                   onClick={() => setActiveTab('death')}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 ${
                     activeTab === 'death'
-                      ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
+                      ? 'bg-linear-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-500/50'
                       : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-md'
                   }`}
                   title="死亡测试"
@@ -1493,7 +1504,7 @@ const DebugModal: React.FC<Props> = ({
                         onClick={() => setEquipmentFilter(rarity)}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                       equipmentFilter === rarity
-                        ? 'bg-gradient-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-500/50'
+                        ? 'bg-linear-to-r from-red-600 to-red-700 text-white shadow-md shadow-red-500/50'
                         : 'bg-stone-700/80 text-stone-300 hover:bg-stone-600 hover:shadow-sm'
                     }`}
                       >
@@ -2123,243 +2134,7 @@ const DebugModal: React.FC<Props> = ({
                   </div>
                 )}
 
-                {/* 编辑灵宠弹窗 */}
-                {editingPet && editingPetId && (
-                  <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-                    <div className="bg-stone-800 border border-stone-700 rounded-lg p-4 max-w-md w-full max-h-[90vh] overflow-y-auto">
-                      <h3 className="font-bold text-stone-200 mb-4">
-                        编辑灵宠：{editingPet.name}
-                      </h3>
-                      <div className="space-y-3">
-                        <div>
-                          <label className="block text-sm text-stone-400 mb-1">
-                            等级
-                          </label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={editingPet.level}
-                            onChange={(e) =>
-                              setEditingPet({
-                                ...editingPet,
-                                level: Math.max(
-                                  1,
-                                  parseInt(e.target.value) || 1
-                                ),
-                              })
-                            }
-                            className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm text-stone-400 mb-1">
-                            经验值
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={editingPet.exp}
-                            onChange={(e) =>
-                              setEditingPet({
-                                ...editingPet,
-                                exp: Math.max(0, parseInt(e.target.value) || 0),
-                              })
-                            }
-                            className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm text-stone-400 mb-1">
-                            最大经验值
-                          </label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={editingPet.maxExp}
-                            onChange={(e) =>
-                              setEditingPet({
-                                ...editingPet,
-                                maxExp: Math.max(
-                                  1,
-                                  parseInt(e.target.value) || 1
-                                ),
-                              })
-                            }
-                            className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm text-stone-400 mb-1">
-                            亲密度 (0-100)
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={editingPet.affection}
-                            onChange={(e) =>
-                              setEditingPet({
-                                ...editingPet,
-                                affection: Math.max(
-                                  0,
-                                  Math.min(100, parseInt(e.target.value) || 0)
-                                ),
-                              })
-                            }
-                            className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm text-stone-400 mb-1">
-                            进化阶段 (0-2)
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            max="2"
-                            value={editingPet.evolutionStage}
-                            onChange={(e) =>
-                              setEditingPet({
-                                ...editingPet,
-                                evolutionStage: Math.max(
-                                  0,
-                                  Math.min(2, parseInt(e.target.value) || 0)
-                                ),
-                              })
-                            }
-                            className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm text-stone-400 mb-1">
-                            攻击力
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={editingPet.stats.attack}
-                            onChange={(e) =>
-                              setEditingPet({
-                                ...editingPet,
-                                stats: {
-                                  ...editingPet.stats,
-                                  attack: Math.max(
-                                    0,
-                                    parseInt(e.target.value) || 0
-                                  ),
-                                },
-                              })
-                            }
-                            className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm text-stone-400 mb-1">
-                            防御力
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={editingPet.stats.defense}
-                            onChange={(e) =>
-                              setEditingPet({
-                                ...editingPet,
-                                stats: {
-                                  ...editingPet.stats,
-                                  defense: Math.max(
-                                    0,
-                                    parseInt(e.target.value) || 0
-                                  ),
-                                },
-                              })
-                            }
-                            className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm text-stone-400 mb-1">
-                            气血
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={editingPet.stats.hp}
-                            onChange={(e) =>
-                              setEditingPet({
-                                ...editingPet,
-                                stats: {
-                                  ...editingPet.stats,
-                                  hp: Math.max(
-                                    0,
-                                    parseInt(e.target.value) || 0
-                                  ),
-                                },
-                              })
-                            }
-                            className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm text-stone-400 mb-1">
-                            速度
-                          </label>
-                          <input
-                            type="number"
-                            min="0"
-                            value={editingPet.stats.speed}
-                            onChange={(e) =>
-                              setEditingPet({
-                                ...editingPet,
-                                stats: {
-                                  ...editingPet.stats,
-                                  speed: Math.max(
-                                    0,
-                                    parseInt(e.target.value) || 0
-                                  ),
-                                },
-                              })
-                            }
-                            className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
-                          />
-                        </div>
-                      </div>
-                      <div className="flex gap-2 mt-4">
-                        <button
-                          onClick={() => {
-                            if (!editingPet) return;
-                            const updatedPets = localPlayer.pets.map((p) =>
-                              p.id === editingPetId ? editingPet : p
-                            );
-                            const updated = {
-                              ...localPlayer,
-                              pets: updatedPets,
-                            };
-                            setLocalPlayer(updated);
-                            // 在状态更新回调外调用，避免在渲染期间更新父组件
-                            onUpdatePlayer({
-                              pets: updatedPets,
-                            });
-                            setEditingPet(null);
-                            setEditingPetId(null);
-                            showSuccess('已更新灵宠参数');
-                          }}
-                          className="flex-1 bg-green-700 hover:bg-green-600 text-white py-2 rounded"
-                        >
-                          保存
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingPet(null);
-                            setEditingPetId(null);
-                          }}
-                          className="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-200 py-2 rounded"
-                        >
-                          取消
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
+
 
                 {/* 添加新灵宠 */}
                 <div className="mt-4">
@@ -2827,7 +2602,7 @@ const DebugModal: React.FC<Props> = ({
                             }
                           );
                         }}
-                        className="w-full px-4 py-3 bg-gradient-to-r from-red-700 via-red-600 to-red-700 hover:from-red-600 hover:via-red-500 hover:to-red-600 text-white font-bold rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+                        className="w-full px-4 py-3 bg-linear-to-r from-red-700 via-red-600 to-red-700 hover:from-red-600 hover:via-red-500 hover:to-red-600 text-white font-bold rounded-lg transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
                       >
                         <Skull size={20} />
                         触发死亡测试
@@ -3603,28 +3378,246 @@ const DebugModal: React.FC<Props> = ({
               </div>
             )}
           </div>
-        </div>
+      </Modal>
 
-        {/* Footer */}
-        <div className="bg-stone-800 border-t border-stone-700 p-3 md:p-4 flex flex-col md:flex-row justify-between items-stretch md:items-center gap-3 shrink-0 safe-area-footer">
-          <button
-            onClick={handleDisableDebugMode}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-orange-700 active:bg-orange-600 text-white rounded border border-orange-600 transition-colors min-h-[44px] touch-manipulation"
-            title="关闭调试模式"
-          >
-            <Power size={16} />
-            关闭调试模式
-          </button>
-          <button
-            onClick={handleReset}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-stone-700 active:bg-stone-600 text-stone-200 rounded border border-stone-600 transition-colors min-h-[44px] touch-manipulation"
-          >
-            <RotateCcw size={16} />
-            重置
-          </button>
+      {/* 编辑灵宠弹窗 - Moved outside Modal */}
+      {editingPet && editingPetId && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-60 p-4">
+          <div className="bg-stone-800 border border-stone-700 rounded-lg p-4 max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="font-bold text-stone-200 mb-4">
+              编辑灵宠：{editingPet.name}
+            </h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm text-stone-400 mb-1">
+                  等级
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={editingPet.level}
+                  onChange={(e) =>
+                    setEditingPet({
+                      ...editingPet,
+                      level: Math.max(
+                        1,
+                        parseInt(e.target.value) || 1
+                      ),
+                    })
+                  }
+                  className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-stone-400 mb-1">
+                  经验值
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editingPet.exp}
+                  onChange={(e) =>
+                    setEditingPet({
+                      ...editingPet,
+                      exp: Math.max(0, parseInt(e.target.value) || 0),
+                    })
+                  }
+                  className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-stone-400 mb-1">
+                  最大经验值
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  value={editingPet.maxExp}
+                  onChange={(e) =>
+                    setEditingPet({
+                      ...editingPet,
+                      maxExp: Math.max(
+                        1,
+                        parseInt(e.target.value) || 1
+                      ),
+                    })
+                  }
+                  className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-stone-400 mb-1">
+                  亲密度 (0-100)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={editingPet.affection}
+                  onChange={(e) =>
+                    setEditingPet({
+                      ...editingPet,
+                      affection: Math.max(
+                        0,
+                        Math.min(100, parseInt(e.target.value) || 0)
+                      ),
+                    })
+                  }
+                  className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-stone-400 mb-1">
+                  进化阶段 (0-2)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="2"
+                  value={editingPet.evolutionStage}
+                  onChange={(e) =>
+                    setEditingPet({
+                      ...editingPet,
+                      evolutionStage: Math.max(
+                        0,
+                        Math.min(2, parseInt(e.target.value) || 0)
+                      ),
+                    })
+                  }
+                  className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-stone-400 mb-1">
+                  攻击力
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editingPet.stats.attack}
+                  onChange={(e) =>
+                    setEditingPet({
+                      ...editingPet,
+                      stats: {
+                        ...editingPet.stats,
+                        attack: Math.max(
+                          0,
+                          parseInt(e.target.value) || 0
+                        ),
+                      },
+                    })
+                  }
+                  className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-stone-400 mb-1">
+                  防御力
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editingPet.stats.defense}
+                  onChange={(e) =>
+                    setEditingPet({
+                      ...editingPet,
+                      stats: {
+                        ...editingPet.stats,
+                        defense: Math.max(
+                          0,
+                          parseInt(e.target.value) || 0
+                        ),
+                      },
+                    })
+                  }
+                  className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-stone-400 mb-1">
+                  气血
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editingPet.stats.hp}
+                  onChange={(e) =>
+                    setEditingPet({
+                      ...editingPet,
+                      stats: {
+                        ...editingPet.stats,
+                        hp: Math.max(
+                          0,
+                          parseInt(e.target.value) || 0
+                        ),
+                      },
+                    })
+                  }
+                  className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-stone-400 mb-1">
+                  速度
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  value={editingPet.stats.speed}
+                  onChange={(e) =>
+                    setEditingPet({
+                      ...editingPet,
+                      stats: {
+                        ...editingPet.stats,
+                        speed: Math.max(
+                          0,
+                          parseInt(e.target.value) || 0
+                        ),
+                      },
+                    })
+                  }
+                  className="w-full bg-stone-900 border border-stone-700 rounded px-3 py-2 text-stone-200"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => {
+                  if (!editingPet) return;
+                  const updatedPets = localPlayer.pets.map((p) =>
+                    p.id === editingPetId ? editingPet : p
+                  );
+                  const updated = {
+                    ...localPlayer,
+                    pets: updatedPets,
+                  };
+                  setLocalPlayer(updated);
+                  // 在状态更新回调外调用，避免在渲染期间更新父组件
+                  onUpdatePlayer({
+                    pets: updatedPets,
+                  });
+                  setEditingPet(null);
+                  setEditingPetId(null);
+                  showSuccess('已更新灵宠参数');
+                }}
+                className="flex-1 bg-green-700 hover:bg-green-600 text-white py-2 rounded"
+              >
+                保存
+              </button>
+              <button
+                onClick={() => {
+                  setEditingPet(null);
+                  setEditingPetId(null);
+                }}
+                className="flex-1 bg-stone-700 hover:bg-stone-600 text-stone-200 py-2 rounded"
+              >
+                取消
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 };
 
