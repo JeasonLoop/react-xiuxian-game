@@ -164,29 +164,26 @@ const BatchFeedModal: React.FC<Props> = ({
   const handleFeed = () => {
     if (selectedItems.size === 0 || !pet) return;
 
-    // 构建喂养列表（使用物品的全部数量）
+    // 构建喂养列表（使用用户设置的数量）
     const itemsToFeed: string[] = [];
+    const itemDetails: string[] = [];
     selectedItems.forEach((itemId) => {
       const item = player.inventory.find((i) => i.id === itemId);
       if (item) {
-        // 使用物品的实际数量，全部喂养
-        for (let i = 0; i < item.quantity; i++) {
+        const quantity = itemQuantities.get(itemId) || 1;
+        // 使用用户设置的数量
+        for (let i = 0; i < quantity; i++) {
           itemsToFeed.push(itemId);
         }
+        itemDetails.push(`${item.name} x${quantity}`);
       }
     });
 
     const totalCount = itemsToFeed.length;
-    const itemNames = Array.from(selectedItems)
-      .map((id) => {
-        const item = player.inventory.find((i) => i.id === id);
-        return item ? `${item.name} x${item.quantity}` : '';
-      })
-      .filter(Boolean)
-      .join('、');
+    const itemNames = itemDetails.join('、');
 
     showInfo(
-      `确定要用所有 ${totalCount} 种物品（共 ${totalCount} 件）喂养【${pet.name}】吗？\n\n提示：将使用所有选中物品的全部数量。`
+      `确定要用 ${selectedItems.size} 种物品（共 ${totalCount} 件）喂养【${pet.name}】吗？\n\n${itemNames}`
       , '批量喂养', () => {
         onFeedItems(petId, itemsToFeed);
         setSelectedItems(new Set());
@@ -198,9 +195,8 @@ const BatchFeedModal: React.FC<Props> = ({
   if (!isOpen || !pet) return null;
 
   const totalSelectedQuantity = Array.from(selectedItems).reduce((sum, itemId) => {
-    const item = player.inventory.find((i) => i.id === itemId);
-    // 使用物品的实际数量（全部喂养）
-    return sum + (item?.quantity || 0);
+    // 使用用户设置的数量
+    return sum + (itemQuantities.get(itemId) || 1);
   }, 0);
 
   return (
@@ -378,13 +374,35 @@ const BatchFeedModal: React.FC<Props> = ({
                           type="number"
                           min={1}
                           max={item.quantity}
-                          value={item.quantity}
-                          readOnly
-                          className="w-20 px-2 py-1 bg-stone-800 border border-stone-600 rounded text-sm text-stone-300 cursor-not-allowed"
-                          title="将使用全部数量进行喂养"
+                          value={itemQuantities.get(item.id) || ''}
+                          onChange={(e) => {
+                            const inputValue = e.target.value;
+                            if (inputValue === '') {
+                              // 允许清空，暂时不更新状态
+                              setItemQuantities((prev) => {
+                                const newQty = new Map(prev);
+                                newQty.delete(item.id);
+                                return newQty;
+                              });
+                            } else {
+                              const newValue = parseInt(inputValue, 10);
+                              if (!isNaN(newValue)) {
+                                handleQuantityChange(item.id, newValue);
+                              }
+                            }
+                          }}
+                          onBlur={(e) => {
+                            // 失去焦点时，如果为空或无效，设置为1
+                            const inputValue = e.target.value;
+                            if (inputValue === '' || isNaN(parseInt(inputValue, 10))) {
+                              handleQuantityChange(item.id, 1);
+                            }
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-20 px-2 py-1 bg-stone-800 border border-stone-600 rounded text-sm text-stone-300 focus:outline-none focus:border-mystic-gold"
                         />
-                        <span className="text-xs text-green-400 font-semibold">
-                          全部喂养
+                        <span className="text-xs text-stone-500">
+                          / {item.quantity}
                         </span>
                       </div>
                     )}
