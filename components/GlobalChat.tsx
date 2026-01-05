@@ -139,7 +139,7 @@ export const GlobalChat: React.FC<Props> = ({ playerName }) => {
 
       {/* 聊天面板 */}
       <div
-        className={`absolute bottom-full right-0 mb-2 w-80 bg-stone-900/95 backdrop-blur-xl border border-amber-500/30 shadow-2xl rounded-lg overflow-hidden flex flex-col transition-all duration-300 origin-bottom-right ${
+        className={`absolute bottom-full right-0 mb-2 w-80 md:w-80 bg-stone-900/95 backdrop-blur-xl border border-amber-500/30 shadow-2xl rounded-lg overflow-hidden flex flex-col transition-all duration-300 origin-bottom-right ${
           isOpen
             ? 'h-96 opacity-100 scale-100'
             : 'h-0 opacity-0 scale-90 pointer-events-none'

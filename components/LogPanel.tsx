@@ -194,8 +194,8 @@ const LogPanel: React.FC<Props> = ({ logs, playerName, className, onClearLogs })
       {onClearLogs && displayedLogs.length > 0 && (
         <button
           onClick={onClearLogs}
-          className="absolute bottom-3 right-14 md:bottom-4 md:right-16 z-[10]
-                     w-9 h-9 md:w-11 md:h-11
+          className="absolute bottom-4 right-16 md:bottom-4 md:right-16 z-[10]
+                     w-10 h-10 md:w-11 md:h-11
                      bg-stone-900/90 border border-stone-700 text-stone-400
                      hover:border-red-500/50 hover:text-red-500
                      rounded-full flex items-center justify-center
@@ -213,8 +213,8 @@ const LogPanel: React.FC<Props> = ({ logs, playerName, className, onClearLogs })
       {showScrollButton && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-3 right-[6.5rem] md:bottom-4 md:right-[7.5rem] z-[10]
-                     w-9 h-9 md:w-11 md:h-11
+          className="absolute bottom-4 right-28 md:bottom-4 md:right-[7.5rem] z-[10]
+                     w-10 h-10 md:w-11 md:h-11
                      bg-stone-900/90 border border-stone-700 text-stone-400
                      hover:border-amber-500/50 hover:text-amber-500
                      rounded-full flex items-center justify-center

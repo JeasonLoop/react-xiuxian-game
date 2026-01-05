@@ -135,7 +135,7 @@ function GameView({
         <StatsPanel player={player} />
       </div>
 
-      <main className="flex-1 flex flex-col h-full relative min-w-0">
+      <main className="flex-1 flex flex-col h-full relative min-w-0 pt-[72px] md:pt-0">
         <GameHeader
           player={player}
           onOpenMenu={handlers.onOpenMenu}
@@ -155,7 +155,7 @@ function GameView({
         <LogPanel
           logs={logs}
           playerName={player.name}
-          className="pb-[23rem] md:pb-0"
+          className="pb-[28rem] md:pb-0"
           onClearLogs={() => setLogs([])}
         />
 
@@ -177,10 +177,10 @@ function GameView({
 
       {/* 自动历练提示 */}
       {handlers.autoAdventure && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-[9999] pointer-events-none">
-          <div className="bg-stone-800/90 backdrop-blur-sm border border-stone-600/50 rounded-lg px-6 py-3 shadow-lg">
-            <p className="text-stone-300 text-lg md:text-xl font-serif">
-              自动历练中 <span className="text-stone-500">按下空格取消...</span>
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9999] pointer-events-none md:top-20">
+          <div className="bg-stone-800/90 backdrop-blur-sm border border-stone-600/50 rounded-lg px-4 py-2 md:px-6 md:py-3 shadow-lg">
+            <p className="text-stone-300 text-sm md:text-lg md:text-xl font-serif">
+              自动历练中 <span className="text-stone-500 text-xs md:text-sm">按下空格取消...</span>
             </p>
           </div>
         </div>

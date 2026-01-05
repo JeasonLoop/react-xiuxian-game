@@ -168,7 +168,7 @@ body {
   }
 
   .modal-scroll-content {
-    margin-top: 60px; /* 为固定头部留出空间 */
+    margin-top: 20px; /* 为固定头部留出空间 */
   }
 }
 
