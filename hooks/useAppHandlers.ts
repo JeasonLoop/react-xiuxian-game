@@ -74,6 +74,7 @@ interface UseAppHandlersProps {
     fleeOnBattle: boolean;
     skipShop: boolean;
     skipReputationEvent: boolean;
+    minHpThreshold: number;
   };
 }
 

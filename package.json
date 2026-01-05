@@ -1,7 +1,7 @@
 {
   "name": "cloud-spirit-cultivation",
   "private": true,
-  "version": "0.3.1.5",
+  "version": "0.3.1.6",
   "type": "module",
   "scripts": {
     "dev": "vite",

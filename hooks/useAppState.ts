@@ -4,6 +4,7 @@
  * 后续可以逐步在组件中直接使用 useUIStore
  */
 
+import { useState } from 'react';
 import { useUIStore } from '../store/uiStore';
 import {
   Item,
@@ -13,6 +14,7 @@ import {
   AdventureResult,
 } from '../types';
 import { BattleReplay } from '../services/battleService';
+import { AutoAdventureConfig } from '../components/AutoAdventureConfigModal';
 
 export interface AppModalState {
   isInventoryOpen: boolean;
@@ -124,6 +126,8 @@ export interface AppState {
     setAutoMeditate: (value: boolean) => void;
     autoAdventure: boolean;
     setAutoAdventure: (value: boolean) => void;
+    autoAdventureConfig: AutoAdventureConfig;
+    setAutoAdventureConfig: (config: AutoAdventureConfig) => void;
     pausedByShop: boolean;
     setPausedByShop: (value: boolean) => void;
     pausedByBattle: boolean;
@@ -158,8 +162,18 @@ export function useAppState(): AppState {
   // 从 zustand store 获取所有状态和 actions
   const store = useUIStore();
 
+  // autoAdventureConfig 暂时在 App.tsx 中管理，这里提供默认值以保持兼容性
+  // TODO: 后续可以将 autoAdventureConfig 迁移到 uiStore
+  const [autoAdventureConfig, setAutoAdventureConfig] = useState<AutoAdventureConfig>({
+    skipBattle: true,
+    fleeOnBattle: false,
+    skipShop: true,
+    skipReputationEvent: true,
+    minHpThreshold: 20,
+  });
+
   return {
-    modals: store.modals,
+    modals: store.modals as AppModalState,
     setters: {
       setIsInventoryOpen: store.setIsInventoryOpen,
       setIsCultivationOpen: store.setIsCultivationOpen,
@@ -183,7 +197,7 @@ export function useAppState(): AppState {
       setIsDebugModeEnabled: store.setIsDebugModeEnabled,
       setIsReputationEventOpen: store.setIsReputationEventOpen,
       setIsTreasureVaultOpen: store.setIsTreasureVaultOpen,
-      setIsAutoAdventureConfigOpen: store.setIsAutoAdventureConfigOpen,
+      setIsAutoAdventureConfigOpen: (store as any).setIsAutoAdventureConfigOpen || (() => {}),
     },
     shop: {
       currentShop: store.currentShop,
@@ -224,6 +238,8 @@ export function useAppState(): AppState {
       setAutoMeditate: store.setAutoMeditate,
       autoAdventure: store.autoAdventure,
       setAutoAdventure: store.setAutoAdventure,
+      autoAdventureConfig,
+      setAutoAdventureConfig,
       pausedByShop: store.pausedByShop,
       setPausedByShop: store.setPausedByShop,
       pausedByBattle: store.pausedByBattle,

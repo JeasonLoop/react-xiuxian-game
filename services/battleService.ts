@@ -1126,8 +1126,8 @@ const calcDamage = (attack: number, defense: number) => {
   // 计算基础伤害
   const baseDamage = validAttack * (1 - validDefense / denominator);
 
-  // 确保至少造成1点伤害（除非攻击力为0）
-  const minDamage = validAttack > 0 ? 1 : 0;
+  // 优化：提高最小伤害到攻击力的15%，确保高防御时仍能造成有效伤害
+  const minDamage = validAttack > 0 ? Math.max(1, Math.floor(validAttack * 0.15)) : 0;
 
   // 随机波动范围（伤害在一定范围内浮动）
   const baseRandomRange = 0.2; // 基础±10%波动（即0.9~1.1倍）
@@ -1228,7 +1228,6 @@ export const resolveBattleEncounter = async (
     } else {
       playerHp = Math.max(0, (Number(playerHp) || 0) - finalDamage);
     }
-
     rounds.push({
       id: randomId(),
       attacker,

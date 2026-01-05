@@ -124,7 +124,7 @@ function App() {
       setIsDebugModeEnabled: state.setIsDebugModeEnabled,
       setIsReputationEventOpen: state.setIsReputationEventOpen,
       setIsTreasureVaultOpen: state.setIsTreasureVaultOpen,
-      setIsAutoAdventureConfigOpen: state.setIsAutoAdventureConfigOpen,
+      setIsAutoAdventureConfigOpen: (state as typeof state & { setIsAutoAdventureConfigOpen: (open: boolean) => void }).setIsAutoAdventureConfigOpen,
     }))
   );
   // 解构以便使用（保持向后兼容）
@@ -151,8 +151,10 @@ function App() {
     setIsDebugModeEnabled,
     setIsReputationEventOpen,
     setIsTreasureVaultOpen,
-    setIsAutoAdventureConfigOpen,
   } = modalSetters;
+
+  // 直接从 useUIStore 获取 setIsAutoAdventureConfigOpen，避免类型推断问题
+  const setIsAutoAdventureConfigOpen = useUIStore((state) => (state as any).setIsAutoAdventureConfigOpen) as (open: boolean) => void;
 
   // 全局状态和 setters - 批量选择
   const { loading, cooldown, setLoading, setCooldown } = useUIStore(
@@ -283,12 +285,9 @@ function App() {
     isDebugOpen,
     isBattleModalOpen,
     isTurnBasedBattleOpen,
-    isMobileSidebarOpen,
-    isMobileStatsOpen,
     isReputationEventOpen,
     isTreasureVaultOpen,
     isDebugModeEnabled,
-    isAutoAdventureConfigOpen,
   } = modals;
 
   // Auto adventure config state
@@ -297,11 +296,13 @@ function App() {
     fleeOnBattle: boolean;
     skipShop: boolean;
     skipReputationEvent: boolean;
+    minHpThreshold: number;
   }>({
-    skipBattle: false,
+    skipBattle: true,
     fleeOnBattle: false,
-    skipShop: false,
-    skipReputationEvent: false,
+    skipShop: true,
+    skipReputationEvent: true,
+    minHpThreshold: 20,
   });
 
   // 检查调试模式是否启用
@@ -461,6 +462,7 @@ function App() {
       handleBreakthroughRef.current(...args);
     },
     addLog,
+    autoAdventure, // 传递自动历练状态，自动历练时不触发突破
   });
 
   // 处理天劫完成
@@ -600,6 +602,9 @@ function App() {
     handleMeditate,
     handleAdventure,
     setCooldown,
+    autoAdventureConfig, // 传递自动历练配置
+    setAutoAdventure, // 传递设置自动历练状态的函数
+    addLog, // 传递日志函数
   });
 
   // 等级提升逻辑已由 useLevelUp hook 处理，这里不再重复
@@ -684,7 +689,7 @@ function App() {
     setPlayer,
     handleCloseCurrentModal,
     setIsAutoAdventureConfigOpen,
-  });
+  } as any);
 
   // 使用键盘快捷键
   useKeyboardShortcuts({
@@ -1054,54 +1059,56 @@ function App() {
 
   return (
     <AppContent
-      player={player}
-      logs={logs}
-      setLogs={setLogs}
-      visualEffects={visualEffects}
-      loading={loading}
-      cooldown={cooldown}
-      settings={settings}
-      isDead={isDead}
-      setIsDead={setIsDead}
-      deathBattleData={deathBattleData}
-      setDeathBattleData={setDeathBattleData}
-      deathReason={deathReason}
-      setDeathReason={setDeathReason}
-      tribulationState={tribulationState}
-      showCultivationIntro={showCultivationIntro}
-      setShowCultivationIntro={setShowCultivationIntro}
-      isSaveManagerOpen={isSaveManagerOpen}
-      setIsSaveManagerOpen={setIsSaveManagerOpen}
-      isSaveCompareOpen={isSaveCompareOpen}
-      setIsSaveCompareOpen={setIsSaveCompareOpen}
-      compareSave1={compareSave1}
-      compareSave2={compareSave2}
-      setCompareSave1={setCompareSave1}
-      setCompareSave2={setCompareSave2}
-      isAnyModalOpen={isAnyModalOpen}
-      isDebugModeEnabled={isDebugModeEnabled}
-      isDebugOpen={isDebugOpen}
-      setIsDebugOpen={setIsDebugOpen}
-      purchaseSuccess={purchaseSuccess}
-      lotteryRewards={lotteryRewards}
-      setLotteryRewards={setLotteryRewards}
-      itemActionLogValue={itemActionLogValue}
-      setItemActionLog={setItemActionLog}
-      autoAdventure={autoAdventure}
-      modals={modals}
-      setPlayer={setPlayer}
-      setReputationEvent={setReputationEvent}
-      setIsReputationEventOpen={setIsReputationEventOpen}
-      setIsAutoAdventureConfigOpen={setIsAutoAdventureConfigOpen}
-      autoAdventureConfig={autoAdventureConfig}
-      setAutoAdventureConfig={setAutoAdventureConfig}
-      handleTribulationComplete={handleTribulationComplete}
-      handleRebirth={handleRebirth}
-      closeAlert={closeAlert}
-      alertState={alertState}
-      gameViewHandlers={gameViewHandlers}
-      modalsHandlers={modalsHandlers}
-      adventureHandlers={adventureHandlers}
+      {...({
+        player,
+        logs,
+        setLogs,
+        visualEffects,
+        loading,
+        cooldown,
+        settings,
+        isDead,
+        setIsDead,
+        deathBattleData,
+        setDeathBattleData,
+        deathReason,
+        setDeathReason,
+        tribulationState,
+        showCultivationIntro,
+        setShowCultivationIntro,
+        isSaveManagerOpen,
+        setIsSaveManagerOpen,
+        isSaveCompareOpen,
+        setIsSaveCompareOpen,
+        compareSave1,
+        compareSave2,
+        setCompareSave1,
+        setCompareSave2,
+        isAnyModalOpen,
+        isDebugModeEnabled,
+        isDebugOpen,
+        setIsDebugOpen,
+        purchaseSuccess,
+        lotteryRewards,
+        setLotteryRewards,
+        itemActionLogValue,
+        setItemActionLog,
+        autoAdventure,
+        modals,
+        setPlayer,
+        setReputationEvent,
+        setIsReputationEventOpen,
+        setIsAutoAdventureConfigOpen,
+        autoAdventureConfig,
+        setAutoAdventureConfig,
+        handleTribulationComplete,
+        handleRebirth,
+        closeAlert,
+        alertState,
+        gameViewHandlers,
+        modalsHandlers,
+        adventureHandlers,
+      } as any)}
       setIsInventoryOpen={setIsInventoryOpen}
       setIsCultivationOpen={setIsCultivationOpen}
       setIsCharacterOpen={setIsCharacterOpen}

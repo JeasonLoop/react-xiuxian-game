@@ -22,8 +22,15 @@ const NAME_COMPONENTS = {
   weaponTypes: ['剑', '刀', '枪', '戟', '斧', '锤', '鞭', '棍', '矛', '弓', '弩', '匕首', '短剑', '长剑', '重剑', '飞剑', '灵剑', '仙剑'],
   // 护甲类型
   armorTypes: ['甲', '袍', '衣', '护甲', '战甲', '铠甲', '道袍', '法袍', '宝甲', '神甲', '战衣', '法衣', '仙衣', '道衣'],
-  // 护甲部位
-  armorParts: ['头盔', '头冠', '道冠', '法冠', '护肩', '肩甲', '胸甲', '护胸', '手套', '护手', '护腿', '腿甲', '战靴', '法靴', '草鞋', '布鞋'],
+  // 护甲部位（按槽位顺序：头部、肩部、胸甲、手套、裤腿、鞋子）
+  armorParts: {
+    head: ['头盔', '头冠', '道冠', '法冠', '仙冠', '龙冠', '凤冠', '帽', '发簪', '发带', '头饰', '面罩'],
+    shoulder: ['护肩', '肩甲', '肩饰', '肩胛', '云肩', '法肩', '仙肩', '披风', '斗篷'],
+    chest: ['胸甲', '护胸', '铠甲', '战甲', '法袍', '道袍', '长袍', '外衣', '护甲', '重甲', '轻甲', '板甲', '锁甲', '软甲', '硬甲'],
+    gloves: ['手套', '护手', '手甲', '拳套', '法手', '仙手', '龙爪套'],
+    legs: ['护腿', '腿甲', '裤', '下装', '法裤', '仙裤', '龙鳞裤'],
+    boots: ['战靴', '法靴', '草鞋', '布鞋', '靴', '鞋', '仙履', '云履', '龙鳞靴'],
+  },
   // 饰品类型
   accessoryTypes: ['玉佩', '手镯', '项链', '护符', '吊坠', '手链', '腰佩', '发带', '护腕', '脚环', '玉珏', '灵珠', '法印', '宝鉴'],
   // 戒指类型
@@ -84,8 +91,11 @@ function generateWeaponName(rarity: ItemRarity, index: number): string {
 
 /**
  * 生成护甲名称
+ * @param rarity 稀有度
+ * @param index 索引
+ * @param slot 装备槽位（可选，如果提供则根据槽位生成对应的部位名称）
  */
-function generateArmorName(rarity: ItemRarity, index: number): string {
+function generateArmorName(rarity: ItemRarity, index: number, slot?: EquipmentSlot): string {
   const materials =
     rarity === '普通' ? NAME_COMPONENTS.commonMaterials :
     rarity === '稀有' ? NAME_COMPONENTS.rareMaterials :
@@ -94,12 +104,40 @@ function generateArmorName(rarity: ItemRarity, index: number): string {
 
   const material = materials[index % materials.length];
 
+  // 如果提供了槽位，根据槽位生成对应的部位名称
+  if (slot) {
+    const slotPartsMap: Partial<Record<EquipmentSlot, string[]>> = {
+      [EquipmentSlot.Head]: NAME_COMPONENTS.armorParts.head,
+      [EquipmentSlot.Shoulder]: NAME_COMPONENTS.armorParts.shoulder,
+      [EquipmentSlot.Chest]: NAME_COMPONENTS.armorParts.chest,
+      [EquipmentSlot.Gloves]: NAME_COMPONENTS.armorParts.gloves,
+      [EquipmentSlot.Legs]: NAME_COMPONENTS.armorParts.legs,
+      [EquipmentSlot.Boots]: NAME_COMPONENTS.armorParts.boots,
+    };
+
+    const parts = slotPartsMap[slot];
+    if (parts && parts.length > 0) {
+      const partIndex = Math.floor(index / materials.length) % parts.length;
+      return `${material}${parts[partIndex]}`;
+    }
+  }
+
+  // 如果没有提供槽位，使用原来的逻辑（兼容性）
   // 根据索引决定使用类型还是部位
   if (index % 2 === 0) {
     const armorType = NAME_COMPONENTS.armorTypes[Math.floor(index / materials.length) % NAME_COMPONENTS.armorTypes.length];
     return `${material}${armorType}`;
   } else {
-    const armorPart = NAME_COMPONENTS.armorParts[Math.floor(index / materials.length) % NAME_COMPONENTS.armorParts.length];
+    // 从所有部位中随机选择（保持向后兼容）
+    const allParts = [
+      ...NAME_COMPONENTS.armorParts.head,
+      ...NAME_COMPONENTS.armorParts.shoulder,
+      ...NAME_COMPONENTS.armorParts.chest,
+      ...NAME_COMPONENTS.armorParts.gloves,
+      ...NAME_COMPONENTS.armorParts.legs,
+      ...NAME_COMPONENTS.armorParts.boots,
+    ];
+    const armorPart = allParts[Math.floor(index / materials.length) % allParts.length];
     return `${material}${armorPart}`;
   }
 }
@@ -218,17 +256,22 @@ type EquipmentType = 'weapon' | 'armor' | 'accessory' | 'ring' | 'artifact';
 
 /**
  * 生成装备名称（使用规则生成，避免拼凑）
+ * @param type 装备类型
+ * @param rarity 稀有度
+ * @param index 索引
+ * @param slot 装备槽位（可选，仅对护甲有效）
  */
 function generateEquipmentName(
   type: EquipmentType,
   rarity: ItemRarity,
-  index: number
+  index: number,
+  slot?: EquipmentSlot
 ): string {
   switch (type) {
     case 'weapon':
       return generateWeaponName(rarity, index);
     case 'armor':
-      return generateArmorName(rarity, index);
+      return generateArmorName(rarity, index, slot);
     case 'accessory':
       return generateAccessoryName(rarity, index);
     case 'ring':
@@ -614,9 +657,10 @@ function generateEquipmentTemplates(): Item[] {
   equipmentTypes.forEach(({ type, itemType, slots }) => {
     rarities.forEach(rarity => {
       for (let i = 0; i < 10; i++) {
-        const name = generateEquipmentName(type, rarity, i);
-        const stats = generateEquipmentStats(type, rarity, i);
         const slot = slots[i % slots.length];
+        // 先确定槽位，然后根据槽位生成名称（确保名称和槽位对应）
+        const name = generateEquipmentName(type, rarity, i, slot);
+        const stats = generateEquipmentStats(type, rarity, i);
 
         items.push({
           id: `equip-${type}-${rarity}-${i + 1}`,
