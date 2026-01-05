@@ -60,7 +60,6 @@ function App() {
   const player = usePlayer();
   const setPlayer = useGameStore((state) => state.setPlayer);
   const settings = useSettings();
-  const setSettings = useGameStore((state) => state.setSettings);
   const logs = useLogs();
   const setLogs = useGameStore((state) => state.setLogs);
   const saveGame = useGameStore((state) => state.saveGame);
@@ -168,13 +167,10 @@ function App() {
 
   // Shop, upgrade, notifications - 批量选择状态和 setters
   const {
-    currentShop,
-    itemToUpgrade,
     purchaseSuccess,
     lotteryRewards,
     setCurrentShop,
     setItemToUpgrade,
-    setPurchaseSuccess,
     setLotteryRewards,
   } = useUIStore(
     useShallow((state) => ({
@@ -191,12 +187,9 @@ function App() {
 
   // Battle - 批量选择状态和 setters
   const {
-    battleReplay,
-    revealedBattleRounds,
     lastBattleReplay,
     setBattleReplay,
     setRevealedBattleRounds,
-    setLastBattleReplay,
   } = useUIStore(
     useShallow((state) => ({
       battleReplay: state.battleReplay,
@@ -298,10 +291,10 @@ function App() {
     skipReputationEvent: boolean;
     minHpThreshold: number;
   }>({
-    skipBattle: true,
+    skipBattle: false,
     fleeOnBattle: false,
-    skipShop: true,
-    skipReputationEvent: true,
+    skipShop: false,
+    skipReputationEvent: false,
     minHpThreshold: 20,
   });
 

@@ -82,6 +82,12 @@ export function useAdventureHandlers({
   setAutoAdventurePausedByHeavenEarthSoul,
   setAutoAdventure,
 }: UseAdventureHandlersProps) {
+  // 确保只有在自动历练模式下才应用跳过配置
+  const effectiveSkipBattle = autoAdventure && skipBattle;
+  const effectiveFleeOnBattle = autoAdventure && fleeOnBattle;
+  const effectiveSkipShop = autoAdventure && skipShop;
+  const effectiveSkipReputationEvent = autoAdventure && skipReputationEvent;
+
   /**
    * 处理战斗的公共函数
    * 根据配置决定是跳过战斗、打开回合制战斗界面，还是使用自动战斗系统
@@ -99,7 +105,7 @@ export function useAdventureHandlers({
     shouldReturn: boolean;
   }> => {
     // 如果配置了逃跑，直接跳过战斗
-    if (fleeOnBattle) {
+    if (effectiveFleeOnBattle) {
       addLog('你选择避开战斗，继续历练...', 'normal');
       setLoading(false);
       setCooldown(1);
@@ -107,7 +113,7 @@ export function useAdventureHandlers({
     }
 
     // 自动历练模式下，如果配置了跳过战斗，直接使用自动战斗系统并展示结果（不打开战斗弹窗）
-    if (autoAdventure && skipBattle) {
+    if (autoAdventure && effectiveSkipBattle) {
       const battleResolution = await resolveBattleEncounter(
         player,
         battleType,
@@ -122,7 +128,7 @@ export function useAdventureHandlers({
       const battleCtx = battleResolution.replay;
       // 自动历练时跳过战斗，不打开战斗弹窗，直接返回结果
       return { result: battleResult, battleContext: battleCtx, shouldReturn: false };
-    } else if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
+    } else if (useTurnBasedBattle && onOpenTurnBasedBattle && !effectiveSkipBattle) {
       // 如果使用回合制战斗系统，打开回合制战斗界面
       setTimeout(() => {
         onOpenTurnBasedBattle({
@@ -211,7 +217,7 @@ export function useAdventureHandlers({
         battleContext = battleResult.battleContext;
       } else if (shouldTriggerBattle(player, adventureType)) {
         // 如果配置了逃跑，直接跳过战斗
-        if (fleeOnBattle) {
+        if (effectiveFleeOnBattle) {
           addLog('你选择避开战斗，继续历练...', 'normal');
           setLoading(false);
           setCooldown(1);
@@ -322,7 +328,7 @@ export function useAdventureHandlers({
                   addLog(`你决定挑战${boss.name}！`, 'warning');
 
                   // 自动历练模式下，如果配置了跳过战斗，直接使用自动战斗系统并展示结果（不打开战斗弹窗）
-                  if (autoAdventure && skipBattle) {
+                  if (autoAdventure && effectiveSkipBattle) {
                     resolveBattleEncounter(
                       player,
                       actualAdventureType,
@@ -346,14 +352,14 @@ export function useAdventureHandlers({
                         onOpenBattleModal,
                         adventureType: actualAdventureType,
                         realmName,
-                        skipReputationEvent,
-                        skipBattle, // 传递skipBattle参数，确保不打开战斗弹窗
+                        skipReputationEvent: effectiveSkipReputationEvent,
+                        skipBattle: effectiveSkipBattle, // 传递skipBattle参数，确保不打开战斗弹窗
                       });
                       setLoading(false);
                       setCooldown(2);
                     });
                     return;
-                  } else if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
+                  } else if (useTurnBasedBattle && onOpenTurnBasedBattle && !effectiveSkipBattle) {
                     // 如果使用回合制战斗系统，打开回合制战斗界面
                     setTimeout(() => {
                       onOpenTurnBasedBattle({
@@ -391,7 +397,7 @@ export function useAdventureHandlers({
                       onOpenBattleModal,
                       adventureType: actualAdventureType,
                       realmName,
-                      skipReputationEvent,
+                      skipReputationEvent: effectiveSkipReputationEvent,
                       skipBattle: false, // 手动挑战时，不跳过战斗，会显示战斗弹窗
                     });
                     setLoading(false);
@@ -460,9 +466,9 @@ export function useAdventureHandlers({
         onOpenBattleModal,
         realmName,
         adventureType,
-        skipBattle,
+        skipBattle: effectiveSkipBattle,
         riskLevel,
-        skipReputationEvent,
+        skipReputationEvent: effectiveSkipReputationEvent,
         onReputationEvent,
       });
     } catch (e) {
@@ -499,7 +505,7 @@ export function useAdventureHandlers({
       addLog('你在路上发现了一处商铺...', 'normal');
 
       // 如果配置了跳过商店，直接跳过并继续历练
-      if (skipShop) {
+      if (effectiveSkipShop) {
         addLog('你选择跳过商店，继续历练...', 'normal');
         setLoading(false);
         setCooldown(1);
