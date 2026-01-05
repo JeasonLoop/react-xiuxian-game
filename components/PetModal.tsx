@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import Modal from './common/Modal';
 import {
   X,
   Heart,
@@ -97,28 +98,18 @@ const PetModal: React.FC<Props> = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm touch-manipulation"
-      onClick={onClose}
+    <>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="灵宠系统"
+      size="3xl"
+      height="full"
+      containerClassName="bg-paper-800 border-stone-600"
+      headerClassName="bg-ink-800 border-b border-stone-600"
+      contentClassName="space-y-6 bg-paper-800"
+      contentPadding="p-6"
     >
-      <div
-        className="bg-paper-800 w-full h-[80vh] md:h-auto md:max-w-3xl rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-600 shadow-2xl flex flex-col md:max-h-[90vh] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="p-3 md:p-4 border-b border-stone-600 flex justify-between items-center bg-ink-800 rounded-t-2xl z-10">
-          <h2 className="text-lg md:text-xl font-serif text-mystic-gold">
-            灵宠系统
-          </h2>
-          <button
-            title="关闭"
-            onClick={onClose}
-            className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        <div className="modal-scroll-container modal-scroll-content p-6 space-y-6 bg-paper-800">
           {/* 当前激活的灵宠 */}
           {activePet && (
             <div className="bg-stone-900 rounded p-4 border-2 border-yellow-600">
@@ -639,11 +630,11 @@ const PetModal: React.FC<Props> = ({
               </div>
             )}
           </div>
-        </div>
+    </Modal>
 
         {/* 喂养方式选择弹窗 */}
         {selectedPetId && (
-          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[60] p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-60 p-4">
             <div className="bg-stone-800 rounded-lg border border-stone-700 w-full max-w-md p-6">
               <h3 className="text-lg font-bold mb-4 text-mystic-gold">
                 选择喂养方式
@@ -825,7 +816,7 @@ const PetModal: React.FC<Props> = ({
           );
 
           return (
-            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
+            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-60 p-4 backdrop-blur-sm">
               <div
                 className="bg-stone-800 w-full max-w-md rounded-lg border border-stone-600 shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
@@ -893,8 +884,7 @@ const PetModal: React.FC<Props> = ({
             </div>
           );
         })()}
-      </div>
-    </div>
+    </>
   );
 };
 

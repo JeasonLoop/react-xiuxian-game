@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { Modal } from './common';
 
 interface Props {
   isOpen: boolean;
@@ -41,79 +41,63 @@ const CultivationIntroModal: React.FC<Props> = ({ isOpen, onClose }) => {
     return () => clearInterval(timer);
   }, [isOpen, isVisible, sentences.length]);
 
-  if (!isOpen || !isVisible) return null;
+  if (!isVisible) return null;
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-[10000] p-4"
-      onClick={onClose}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="修仙法门"
+      size="3xl"
+      height="auto"
+      zIndex={10000}
+      headerClassName="text-center justify-center"
+      showCloseButton={true}
     >
-      <div
-        className="bg-stone-800 rounded-lg border border-stone-600 shadow-lg max-w-3xl w-full p-6 md:p-8 relative"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* 关闭按钮 */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-stone-400 hover:text-white transition-colors"
-          aria-label="关闭"
-        >
-          <X size={20} />
-        </button>
+      {/* 内容区域 */}
+      <div className="space-y-4">
+        {sentences.map((sentence, index) => {
+          const shouldShow = index <= currentIndex;
 
-        {/* 标题 */}
-        <div className="text-center mb-6">
-          <h2 className="text-2xl md:text-3xl font-serif font-bold text-stone-200">
-            修仙法门
-          </h2>
-        </div>
-
-        {/* 内容区域 */}
-        <div className="space-y-4">
-          {sentences.map((sentence, index) => {
-            const shouldShow = index <= currentIndex;
-
-            return (
-              <div
-                key={index}
-                className={`transition-all duration-500 ${
-                  shouldShow
-                    ? 'opacity-100 translate-y-0'
-                    : 'opacity-0 translate-y-4'
+          return (
+            <div
+              key={index}
+              className={`transition-all duration-500 ${
+                shouldShow
+                  ? 'opacity-100 translate-y-0'
+                  : 'opacity-0 translate-y-4'
+              }`}
+            >
+              <p
+                className={`text-lg md:text-xl font-serif text-center leading-relaxed ${
+                  shouldShow ? 'text-stone-300' : 'text-stone-600'
                 }`}
               >
-                <p
-                  className={`text-lg md:text-xl font-serif text-center leading-relaxed ${
-                    shouldShow ? 'text-stone-300' : 'text-stone-600'
-                  }`}
-                >
-                  {sentence}
-                  {index < sentences.length - 1 && '；'}
-                </p>
-              </div>
-            );
-          })}
-        </div>
+                {sentence}
+                {index < sentences.length - 1 && '；'}
+              </p>
+            </div>
+          );
+        })}
+      </div>
 
-        {/* 底部提示 */}
-        {currentIndex >= sentences.length - 1 && (
-          <div className="mt-6 text-center">
-            <p className="text-stone-500 text-sm">
-              点击任意位置关闭
-            </p>
-          </div>
-        )}
-
-        {/* 引用信息 */}
-        <div className="mt-4 text-right">
-          <p className="text-stone-500 text-xs">
-            ---出自《我的模拟长生路》
+      {/* 底部提示 */}
+      {currentIndex >= sentences.length - 1 && (
+        <div className="mt-6 text-center">
+          <p className="text-stone-500 text-sm">
+            点击任意位置关闭
           </p>
         </div>
+      )}
+
+      {/* 引用信息 */}
+      <div className="mt-4 text-right">
+        <p className="text-stone-500 text-xs">
+          ---出自《我的模拟长生路》
+        </p>
       </div>
-    </div>
+    </Modal>
   );
 };
 
 export default CultivationIntroModal;
-

@@ -5,6 +5,7 @@ import React, {
   useCallback,
   memo,
 } from 'react';
+import Modal from './common/Modal';
 import {
   Item,
   ItemType,
@@ -575,6 +576,7 @@ const InventoryItem = memo<InventoryItemProps>(
 InventoryItem.displayName = 'InventoryItem';
 
 const InventoryModal: React.FC<Props> = ({
+  isOpen,
   onClose,
   inventory,
   equippedItems,
@@ -849,57 +851,59 @@ const InventoryModal: React.FC<Props> = ({
   }, [hoveredItem, equippedItems, inventory, getItemStatsForComparison]);
 
   return (
-    <div
-      className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-[60] p-0 md:p-4 backdrop-blur-sm touch-manipulation"
-      onClick={onClose}
-    >
-      <div
-        className="bg-paper-800 w-full h-[80vh] md:h-auto md:max-w-6xl md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-600 shadow-2xl flex flex-col md:max-h-[90vh] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="p-3 md:p-4 border-b border-stone-600 flex justify-between items-center bg-ink-800 md:rounded-t">
-          <h3 className="text-lg md:text-xl font-serif text-mystic-gold flex items-center gap-2">
-            <Package size={18} className="md:w-5 md:h-5" /> 储物袋
-          </h3>
-          <div className="flex gap-2">
+    <>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="储物袋"
+      titleIcon={<Package size={18} className="md:w-5 md:h-5" />}
+      size="full"
+      containerClassName="md:max-w-6xl bg-paper-800 border-stone-600"
+      headerClassName="bg-ink-800 border-b border-stone-600"
+      contentClassName="bg-paper-800"
+      disableScroll={true}
+      showHeaderBorder={false}
+      showFooterBorder={false}
+      titleExtra={
+        <div className="flex gap-2 items-center ml-auto md:ml-4">
             {onOrganizeInventory && (
               <button
                 onClick={() => {
                   onOrganizeInventory();
-                  setSortByRarity(false); // 整理后切换到原始顺序，以显示整理后的分类排序
+                  setSortByRarity(false);
                 }}
-                className="px-2 md:px-3 py-1.5 md:py-1 rounded text-xs md:text-sm border transition-colors min-h-[44px] md:min-h-0 touch-manipulation bg-blue-900/20 border-blue-700 text-blue-300 hover:bg-blue-900/30"
+                className="px-2 md:px-3 py-1.5 md:py-1 rounded text-xs md:text-sm border transition-colors min-h-11 md:min-h-0 touch-manipulation bg-blue-900/20 border-blue-700 text-blue-300 hover:bg-blue-900/30"
                 title="合并同类物品并按分类/品质排序"
               >
                 <div className="flex items-center">
                   <ArrowUpDown size={14} className="inline mr-1" />
-                  整理背包
+                  <span>整理背包</span>
                 </div>
               </button>
             )}
             {onBatchUse && (
               <button
                 onClick={() => setIsBatchUseOpen(true)}
-                className="px-2 md:px-3 py-1.5 md:py-1 rounded text-xs md:text-sm border transition-colors min-h-[44px] md:min-h-0 touch-manipulation bg-green-900/20 border-green-700 text-green-300 hover:bg-green-900/30"
+                className="px-2 md:px-3 py-1.5 md:py-1 rounded text-xs md:text-sm border transition-colors min-h-11 md:min-h-0 touch-manipulation bg-green-900/20 border-green-700 text-green-300 hover:bg-green-900/30"
               >
                 <div className="flex items-center">
                   <Zap size={14} className="inline mr-1" />
-                  批量使用
+                  <span>批量使用</span>
                 </div>
               </button>
             )}
             <button
               onClick={() => setIsBatchDiscardOpen(true)}
-              className="px-2 md:px-3 py-1.5 md:py-1 rounded text-xs md:text-sm border transition-colors min-h-[44px] md:min-h-0 touch-manipulation bg-red-900/20 border-red-700 text-red-300 hover:bg-red-900/30"
+              className="px-2 md:px-3 py-1.5 md:py-1 rounded text-xs md:text-sm border transition-colors min-h-11 md:min-h-0 touch-manipulation bg-red-900/20 border-red-700 text-red-300 hover:bg-red-900/30"
             >
               <div className="flex items-center">
                 <Trash size={14} className="inline mr-1" />
-                批量丢弃
+                <span>批量丢弃</span>
               </div>
             </button>
             <button
               onClick={() => setShowEquipment(!showEquipment)}
-              className={`hidden flex items-center justify-center md:flex px-3 py-1 rounded text-sm border transition-colors ${
+              className={`hidden md:flex items-center justify-center px-3 py-1 rounded text-sm border transition-colors ${
                 showEquipment
                   ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
                   : 'bg-stone-700 border-stone-600 text-stone-300'
@@ -907,18 +911,9 @@ const InventoryModal: React.FC<Props> = ({
             >
               {showEquipment ? '隐藏' : '显示'}装备栏
             </button>
-            <button
-              onClick={onClose}
-              className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
-              aria-label="关闭"
-              title="关闭"
-            >
-              <X size={24} />
-            </button>
-          </div>
         </div>
-
-        {/* 移动端Tab切换 */}
+      }
+      subHeader={
         <div className="md:hidden border-b border-stone-600 bg-ink-800">
           <div className="flex">
             <button
@@ -945,8 +940,69 @@ const InventoryModal: React.FC<Props> = ({
             </button>
           </div>
         </div>
-
-        <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+      }
+      footer={
+          <div className="flex items-center justify-center gap-4 min-h-12 text-sm font-serif w-full">
+          {comparison ? (
+            <div className="flex items-center gap-4">
+              <span className="text-stone-400">装备预览:</span>
+              {comparison.attack !== 0 && (
+                <span
+                  className={`${comparison.attack > 0 ? 'text-mystic-jade' : 'text-mystic-blood'}`}
+                >
+                  攻击 {formatValueChange(calculateTotalEquippedStats.attack, calculateTotalEquippedStats.attack + comparison.attack)}
+                </span>
+              )}
+              {comparison.defense !== 0 && (
+                <span
+                  className={`${comparison.defense > 0 ? 'text-mystic-jade' : 'text-mystic-blood'}`}
+                >
+                  防御 {formatValueChange(calculateTotalEquippedStats.defense, calculateTotalEquippedStats.defense + comparison.defense)}
+                </span>
+              )}
+              {comparison.hp !== 0 && (
+                <span
+                  className={`${comparison.hp > 0 ? 'text-mystic-jade' : 'text-mystic-blood'}`}
+                >
+                  气血 {formatValueChange(calculateTotalEquippedStats.hp, calculateTotalEquippedStats.hp + comparison.hp)}
+                </span>
+              )}
+              {comparison.attack === 0 &&
+                comparison.defense === 0 &&
+                comparison.hp === 0 && (
+                  <span className="text-stone-500">属性无变化</span>
+                )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-4">
+              <span className="text-stone-400">装备预览:</span>
+              {calculateTotalEquippedStats.attack > 0 && (
+                <span className="text-mystic-jade">
+                  攻击 {formatNumber(calculateTotalEquippedStats.attack)}
+                </span>
+              )}
+              {calculateTotalEquippedStats.defense > 0 && (
+                <span className="text-mystic-jade">
+                  防御 {formatNumber(calculateTotalEquippedStats.defense)}
+                </span>
+              )}
+              {calculateTotalEquippedStats.hp > 0 && (
+                <span className="text-mystic-jade">
+                  气血 {formatNumber(calculateTotalEquippedStats.hp)}
+                </span>
+              )}
+              {calculateTotalEquippedStats.attack === 0 &&
+                calculateTotalEquippedStats.defense === 0 &&
+                calculateTotalEquippedStats.hp === 0 && (
+                  <span className="text-stone-500">暂无装备</span>
+                )}
+            </div>
+          )}
+          </div>
+      }
+      footerClassName="p-3 border-t border-stone-600 bg-ink-900 rounded-b"
+    >
+        <div className="flex-1 overflow-hidden flex flex-col md:flex-row h-full">
           {/* 装备面板 */}
           {(showEquipment || mobileActiveTab === 'equipment') && (
             <div
@@ -1386,71 +1442,8 @@ const InventoryModal: React.FC<Props> = ({
               })()}
             </div>
           </div>
-        </div>
-
-        {/* Stat Comparison Footer */}
-        <div className="p-3 border-t border-stone-600 bg-ink-900 rounded-b text-sm font-serif">
-          <div className="flex items-center justify-center gap-4 mb-2 min-h-[3rem]">
-          {comparison ? (
-            <div className="flex items-center gap-4">
-              <span className="text-stone-400">装备预览:</span>
-              {comparison.attack !== 0 && (
-                <span
-                  className={`${comparison.attack > 0 ? 'text-mystic-jade' : 'text-mystic-blood'}`}
-                >
-                  攻击 {formatValueChange(calculateTotalEquippedStats.attack, calculateTotalEquippedStats.attack + comparison.attack)}
-                </span>
-              )}
-              {comparison.defense !== 0 && (
-                <span
-                  className={`${comparison.defense > 0 ? 'text-mystic-jade' : 'text-mystic-blood'}`}
-                >
-                  防御 {formatValueChange(calculateTotalEquippedStats.defense, calculateTotalEquippedStats.defense + comparison.defense)}
-                </span>
-              )}
-              {comparison.hp !== 0 && (
-                <span
-                  className={`${comparison.hp > 0 ? 'text-mystic-jade' : 'text-mystic-blood'}`}
-                >
-                  气血 {formatValueChange(calculateTotalEquippedStats.hp, calculateTotalEquippedStats.hp + comparison.hp)}
-                </span>
-              )}
-              {comparison.attack === 0 &&
-                comparison.defense === 0 &&
-                comparison.hp === 0 && (
-                  <span className="text-stone-500">属性无变化</span>
-                )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-4">
-              <span className="text-stone-400">装备预览:</span>
-              {calculateTotalEquippedStats.attack > 0 && (
-                <span className="text-mystic-jade">
-                  攻击 {formatNumber(calculateTotalEquippedStats.attack)}
-                </span>
-              )}
-              {calculateTotalEquippedStats.defense > 0 && (
-                <span className="text-mystic-jade">
-                  防御 {formatNumber(calculateTotalEquippedStats.defense)}
-                </span>
-              )}
-              {calculateTotalEquippedStats.hp > 0 && (
-                <span className="text-mystic-jade">
-                  气血 {formatNumber(calculateTotalEquippedStats.hp)}
-                </span>
-              )}
-              {calculateTotalEquippedStats.attack === 0 &&
-                calculateTotalEquippedStats.defense === 0 &&
-                calculateTotalEquippedStats.hp === 0 && (
-                  <span className="text-stone-500">暂无装备</span>
-                )}
-            </div>
-          )}
-          </div>
-
-
-        </div>
       </div>
+    </Modal>
 
       <BatchDiscardModal
         isOpen={isBatchDiscardOpen}
@@ -1469,7 +1462,7 @@ const InventoryModal: React.FC<Props> = ({
           onUseItems={handleBatchUse}
         />
       )}
-    </div>
+    </>
   );
 };
 

@@ -1,5 +1,6 @@
 import React from 'react';
-import { X, CheckCircle, XCircle, Info, AlertTriangle } from 'lucide-react';
+import { CheckCircle, XCircle, Info, AlertTriangle } from 'lucide-react';
+import { Modal } from './common';
 
 export type AlertType = 'success' | 'error' | 'info' | 'warning';
 
@@ -28,8 +29,6 @@ const AlertModal: React.FC<AlertModalProps> = ({
   cancelText = '取消',
   onCancel,
 }) => {
-  if (!isOpen) return null;
-
   const getTypeConfig = () => {
     switch (type) {
       case 'success':
@@ -40,6 +39,7 @@ const AlertModal: React.FC<AlertModalProps> = ({
           borderColor: 'border-green-600',
           titleColor: 'text-green-300',
           defaultTitle: '成功',
+          buttonBg: 'bg-green-700 hover:bg-green-600 text-green-200 border-green-600',
         };
       case 'error':
         return {
@@ -49,6 +49,7 @@ const AlertModal: React.FC<AlertModalProps> = ({
           borderColor: 'border-red-600',
           titleColor: 'text-red-300',
           defaultTitle: '错误',
+          buttonBg: 'bg-red-700 hover:bg-red-600 text-red-200 border-red-600',
         };
       case 'warning':
         return {
@@ -58,6 +59,7 @@ const AlertModal: React.FC<AlertModalProps> = ({
           borderColor: 'border-yellow-600',
           titleColor: 'text-yellow-300',
           defaultTitle: '警告',
+          buttonBg: 'bg-yellow-700 hover:bg-yellow-600 text-yellow-200 border-yellow-600',
         };
       case 'info':
       default:
@@ -68,6 +70,7 @@ const AlertModal: React.FC<AlertModalProps> = ({
           borderColor: 'border-blue-600',
           titleColor: 'text-blue-300',
           defaultTitle: '提示',
+          buttonBg: 'bg-blue-700 hover:bg-blue-600 text-blue-200 border-blue-600',
         };
     }
   };
@@ -91,64 +94,44 @@ const AlertModal: React.FC<AlertModalProps> = ({
   };
 
   return (
-    <div
-      className="z-99999 fixed inset-0 bg-black/80 flex items-center justify-center z-[100] p-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
-      <div
-        className={`bg-stone-800 rounded-lg border-2 ${config.borderColor} shadow-2xl max-w-md w-full ${config.bgColor}`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="p-6">
-          {/* 图标和标题 */}
-          <div className="flex items-start gap-4 mb-4">
-            <Icon size={32} className={`${config.iconColor} flex-shrink-0 mt-1`} />
-            <div className="flex-1">
-              <h3 className={`text-xl font-serif font-bold ${config.titleColor} mb-2`}>
-                {displayTitle}
-              </h3>
-              <p className="text-stone-300 text-sm leading-relaxed whitespace-pre-line">
-                {message}
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-stone-400 hover:text-white transition-colors flex-shrink-0"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          {/* 按钮 */}
-          <div className="flex justify-end gap-3 mt-6">
-            {showCancel && (
-              <button
-                onClick={handleCancel}
-                className="px-4 py-2 bg-stone-700 hover:bg-stone-600 text-stone-300 rounded border border-stone-600 transition-colors"
-              >
-                {cancelText}
-              </button>
-            )}
-            <button
-              onClick={handleConfirm}
-              className={`px-4 py-2 rounded border transition-colors ${
-                type === 'success'
-                  ? 'bg-green-700 hover:bg-green-600 text-green-200 border-green-600'
-                  : type === 'error'
-                    ? 'bg-red-700 hover:bg-red-600 text-red-200 border-red-600'
-                    : type === 'warning'
-                      ? 'bg-yellow-700 hover:bg-yellow-600 text-yellow-200 border-yellow-600'
-                      : 'bg-blue-700 hover:bg-blue-600 text-blue-200 border-blue-600'
-              }`}
-            >
-              {confirmText}
-            </button>
-          </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        <div className="flex items-center gap-3">
+          <Icon size={24} className={config.iconColor} />
+          <span className={config.titleColor}>{displayTitle}</span>
         </div>
-      </div>
-    </div>
+      }
+      size="md"
+      height="auto"
+      zIndex={100}
+      containerClassName={`${config.bgColor} ${config.borderColor} border-2`}
+      showHeaderBorder={false}
+      footer={
+        <div className="flex justify-end gap-3">
+          {showCancel && (
+            <button
+              onClick={handleCancel}
+              className="px-4 py-2 bg-stone-700 hover:bg-stone-600 text-stone-300 rounded border border-stone-600 transition-colors"
+            >
+              {cancelText}
+            </button>
+          )}
+          <button
+            onClick={handleConfirm}
+            className={`px-4 py-2 rounded border transition-colors ${config.buttonBg}`}
+          >
+            {confirmText}
+          </button>
+        </div>
+      }
+    >
+      <p className="text-stone-300 text-sm leading-relaxed whitespace-pre-line">
+        {message}
+      </p>
+    </Modal>
   );
 };
 
 export default AlertModal;
-

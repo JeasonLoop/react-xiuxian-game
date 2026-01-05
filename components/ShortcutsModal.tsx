@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Keyboard, Edit2, RotateCcw, Save, AlertCircle } from 'lucide-react';
+import { Keyboard, Edit2, RotateCcw, Save, AlertCircle } from 'lucide-react';
 import { KeyboardShortcut, formatShortcut } from '../hooks/useKeyboardShortcuts';
 import { KeyboardShortcutConfig } from '../types';
 import {
@@ -8,6 +8,7 @@ import {
   checkShortcutConflict,
 } from '../utils/shortcutUtils';
 import { showError, showSuccess } from '../utils/toastUtils';
+import { Modal } from './common';
 
 interface ShortcutsModalProps {
   isOpen: boolean;
@@ -196,8 +197,6 @@ const ShortcutsModal: React.FC<ShortcutsModalProps> = ({
     setIsEditing(false);
   };
 
-  if (!isOpen) return null;
-
   // 按分类分组快捷键
   const shortcutsByCategory = shortcuts.reduce(
     (acc, shortcut) => {
@@ -226,181 +225,165 @@ const ShortcutsModal: React.FC<ShortcutsModalProps> = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 p-0 md:p-4 touch-manipulation"
-      onClick={onClose}
-    >
-      <div
-        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[90vh] md:h-auto md:max-w-2xl md:max-h-[90vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="bg-stone-800 border-b border-stone-700 p-3 md:p-4 flex justify-between items-center md:rounded-t-2xl flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <Keyboard size={20} className="text-mystic-gold" />
-            <h2 className="text-lg md:text-xl font-serif text-mystic-gold">
-              键盘快捷键
-            </h2>
-          </div>
-          <div className="flex items-center gap-2">
-            {!isEditing ? (
-              <>
-                {onUpdateShortcuts && (
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="flex items-center gap-1 px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded text-sm transition-colors"
-                  >
-                    <Edit2 size={16} />
-                    <span>编辑</span>
-                  </button>
-                )}
-                <button
-                  onClick={onClose}
-                  className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
-                >
-                  <X size={24} />
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={handleResetAll}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded text-sm transition-colors"
-                >
-                  <RotateCcw size={16} />
-                  <span>重置全部</span>
-                </button>
-                <button
-                  onClick={handleSave}
-                  className="flex items-center gap-1 px-3 py-1.5 bg-mystic-gold hover:bg-yellow-600 text-stone-900 rounded text-sm transition-colors font-semibold"
-                >
-                  <Save size={16} />
-                  <span>保存</span>
-                </button>
-                <button
-                  onClick={handleCancel}
-                  className="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded text-sm transition-colors"
-                >
-                  取消
-                </button>
-              </>
-            )}
-          </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="键盘快捷键"
+      titleIcon={<Keyboard size={20} className="text-mystic-gold" />}
+      titleExtra={
+        <div className="flex items-center gap-2">
+          {!isEditing ? (
+            onUpdateShortcuts && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="flex items-center gap-1 px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded text-sm transition-colors"
+              >
+                <Edit2 size={16} />
+                <span>编辑</span>
+              </button>
+            )
+          ) : (
+            <>
+              <button
+                onClick={handleResetAll}
+                className="flex items-center gap-1 px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded text-sm transition-colors"
+              >
+                <RotateCcw size={16} />
+                <span>重置全部</span>
+              </button>
+              <button
+                onClick={handleSave}
+                className="flex items-center gap-1 px-3 py-1.5 bg-mystic-gold hover:bg-yellow-600 text-stone-900 rounded text-sm transition-colors font-semibold"
+              >
+                <Save size={16} />
+                <span>保存</span>
+              </button>
+              <button
+                onClick={handleCancel}
+                className="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded text-sm transition-colors"
+              >
+                取消
+              </button>
+            </>
+          )}
         </div>
+      }
+      size="2xl"
+      height="full"
+      closeOnEsc={!isEditing}
+    >
+      <div className="space-y-6">
+        {categories.map((category) => (
+          <div key={category}>
+            <h3 className="font-bold text-mystic-gold mb-3 text-lg">
+              {category}
+            </h3>
+            <div className="space-y-2">
+              {shortcutsByCategory[category].map((shortcut, index) => {
+                const actionId = getActionId(shortcut);
+                const isEditingThis = editingActionId === actionId;
+                const currentConfig = actionId
+                  ? getCurrentShortcut(actionId)
+                  : null;
+                const displayShortcut = currentConfig
+                  ? {
+                      key: currentConfig.key,
+                      ctrl: currentConfig.ctrl,
+                      shift: currentConfig.shift,
+                      alt: currentConfig.alt,
+                      meta: currentConfig.meta,
+                      action: shortcut.action,
+                      description: shortcut.description,
+                      category: shortcut.category,
+                    }
+                  : shortcut;
 
-        <div className="modal-scroll-container modal-scroll-content p-6 space-y-6">
-          {categories.map((category) => (
-            <div key={category}>
-              <h3 className="font-bold text-mystic-gold mb-3 text-lg">
-                {category}
-              </h3>
-              <div className="space-y-2">
-                {shortcutsByCategory[category].map((shortcut, index) => {
-                  const actionId = getActionId(shortcut);
-                  const isEditingThis = editingActionId === actionId;
-                  const currentConfig = actionId
-                    ? getCurrentShortcut(actionId)
-                    : null;
-                  const displayShortcut = currentConfig
-                    ? {
-                        key: currentConfig.key,
-                        ctrl: currentConfig.ctrl,
-                        shift: currentConfig.shift,
-                        alt: currentConfig.alt,
-                        meta: currentConfig.meta,
-                        action: shortcut.action,
-                        description: shortcut.description,
-                        category: shortcut.category,
-                      }
-                    : shortcut;
-
-                  return (
-                    <div
-                      key={index}
-                      className={`flex items-center justify-between p-3 bg-stone-900/50 border rounded transition-colors ${
-                        isEditingThis
-                          ? 'border-mystic-gold border-2'
-                          : conflictActionId === actionId
-                          ? 'border-red-500 border-2'
-                          : 'border-stone-700'
-                      }`}
-                    >
-                      <span className="text-stone-300 flex-1">
-                        {shortcut.description}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        {isEditing && actionId ? (
-                          <>
-                            <button
-                              onClick={() => handleStartEdit(actionId)}
-                              onKeyDown={(e) => {
-                                if (isEditingThis) {
-                                  handleKeyDown(e, actionId);
-                                }
-                              }}
-                              onBlur={() => {
-                                if (isEditingThis) {
-                                  setEditingActionId(null);
-                                }
-                              }}
-                              className={`px-3 py-1.5 border rounded text-sm font-mono transition-colors min-w-[120px] ${
-                                isEditingThis
-                                  ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold outline-none ring-2 ring-mystic-gold'
-                                  : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                              }`}
-                              tabIndex={0}
-                              autoFocus={isEditingThis}
-                            >
-                              {isEditingThis
-                                ? '按下按键...'
-                                : formatShortcut(displayShortcut)}
-                            </button>
-                            <button
-                              onClick={() => actionId && handleResetOne(actionId)}
-                              className="p-1.5 text-stone-400 hover:text-stone-200 transition-colors"
-                              title="重置为默认值"
-                            >
-                              <RotateCcw size={16} />
-                            </button>
-                          </>
-                        ) : (
-                          <kbd className="px-3 py-1.5 bg-stone-700 border border-stone-600 rounded text-sm font-mono text-mystic-gold">
-                            {formatShortcut(displayShortcut)}
-                          </kbd>
-                        )}
-                      </div>
+                return (
+                  <div
+                    key={index}
+                    className={`flex items-center justify-between p-3 bg-stone-900/50 border rounded transition-colors ${
+                      isEditingThis
+                        ? 'border-mystic-gold border-2'
+                        : conflictActionId === actionId
+                        ? 'border-red-500 border-2'
+                        : 'border-stone-700'
+                    }`}
+                  >
+                    <span className="text-stone-300 flex-1">
+                      {shortcut.description}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      {isEditing && actionId ? (
+                        <>
+                          <button
+                            onClick={() => handleStartEdit(actionId)}
+                            onKeyDown={(e) => {
+                              if (isEditingThis) {
+                                handleKeyDown(e, actionId);
+                              }
+                            }}
+                            onBlur={() => {
+                              if (isEditingThis) {
+                                setEditingActionId(null);
+                              }
+                            }}
+                            className={`px-3 py-1.5 border rounded text-sm font-mono transition-colors min-w-[120px] ${
+                              isEditingThis
+                                ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold outline-none ring-2 ring-mystic-gold'
+                                : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                            }`}
+                            tabIndex={0}
+                            autoFocus={isEditingThis}
+                          >
+                            {isEditingThis
+                              ? '按下按键...'
+                              : formatShortcut(displayShortcut)}
+                          </button>
+                          <button
+                            onClick={() => actionId && handleResetOne(actionId)}
+                            className="p-1.5 text-stone-400 hover:text-stone-200 transition-colors"
+                            title="重置为默认值"
+                          >
+                            <RotateCcw size={16} />
+                          </button>
+                        </>
+                      ) : (
+                        <kbd className="px-3 py-1.5 bg-stone-700 border border-stone-600 rounded text-sm font-mono text-mystic-gold">
+                          {formatShortcut(displayShortcut)}
+                        </kbd>
+                      )}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-
-          <div className="pt-4 border-t border-stone-700 space-y-2">
-            {isEditing && (
-              <div className="bg-blue-900/30 border border-blue-700 rounded p-3">
-                <div className="flex items-start gap-2">
-                  <AlertCircle size={16} className="text-blue-400 mt-0.5 flex-shrink-0" />
-                  <div className="text-xs text-blue-300">
-                    <p className="font-semibold mb-1">编辑模式提示：</p>
-                    <ul className="list-disc list-inside space-y-1">
-                      <li>点击快捷键按钮，然后按下您想要设置的按键组合</li>
-                      <li>如果快捷键冲突，会显示错误提示</li>
-                      <li>点击重置按钮可以恢复单个快捷键为默认值</li>
-                      <li>点击"重置全部"可以恢复所有快捷键为默认值</li>
-                    </ul>
                   </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+
+        <div className="pt-4 border-t border-stone-700 space-y-2">
+          {isEditing && (
+            <div className="bg-blue-900/30 border border-blue-700 rounded p-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle size={16} className="text-blue-400 mt-0.5 shrink-0" />
+                <div className="text-xs text-blue-300">
+                  <p className="font-semibold mb-1">编辑模式提示：</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>点击快捷键按钮，然后按下您想要设置的按键组合</li>
+                    <li>如果快捷键冲突，会显示错误提示</li>
+                    <li>点击重置按钮可以恢复单个快捷键为默认值</li>
+                    <li>点击"重置全部"可以恢复所有快捷键为默认值</li>
+                  </ul>
                 </div>
               </div>
-            )}
-            <p className="text-xs text-stone-500 text-center">
-              提示：在输入框中输入时，快捷键会被禁用（ESC 键除外）
-            </p>
-          </div>
+            </div>
+          )}
+          <p className="text-xs text-stone-500 text-center">
+            提示：在输入框中输入时，快捷键会被禁用（ESC 键除外）
+          </p>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 };
 
 export default ShortcutsModal;
-
