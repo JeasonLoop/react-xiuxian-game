@@ -75,12 +75,27 @@ export function useAdventureHandlers({
   skipBattle = false,
   fleeOnBattle = false,
   skipShop = false,
+  skipReputationEvent = false,
   useTurnBasedBattle = true, // 默认使用新的回合制战斗系统
   onReputationEvent,
   autoAdventure = false,
   setAutoAdventurePausedByHeavenEarthSoul,
   setAutoAdventure,
 }: UseAdventureHandlersProps) {
+  // 确保只有在自动历练模式下才应用跳过配置
+  const effectiveSkipBattle = autoAdventure && skipBattle;
+  const effectiveFleeOnBattle = autoAdventure && fleeOnBattle;
+  const effectiveSkipShop = autoAdventure && skipShop;
+  const effectiveSkipReputationEvent = autoAdventure && skipReputationEvent;
+
+  // 暂停自动历练的处理函数
+  const handlePauseAutoAdventure = () => {
+    if (autoAdventure && setAutoAdventurePausedByHeavenEarthSoul && setAutoAdventure) {
+      setAutoAdventurePausedByHeavenEarthSoul(true);
+      setAutoAdventure(false);
+    }
+  };
+
   /**
    * 处理战斗的公共函数
    * 根据配置决定是跳过战斗、打开回合制战斗界面，还是使用自动战斗系统
@@ -95,10 +110,11 @@ export function useAdventureHandlers({
   ): Promise<{
     result: AdventureResult;
     battleContext: BattleReplay | null;
+    petSkillCooldowns?: Record<string, number>;
     shouldReturn: boolean;
   }> => {
     // 如果配置了逃跑，直接跳过战斗
-    if (fleeOnBattle) {
+    if (effectiveFleeOnBattle) {
       addLog('你选择避开战斗，继续历练...', 'normal');
       setLoading(false);
       setCooldown(1);
@@ -106,7 +122,7 @@ export function useAdventureHandlers({
     }
 
     // 自动历练模式下，如果配置了跳过战斗，直接使用自动战斗系统并展示结果
-    if (autoAdventure && skipBattle) {
+    if (effectiveSkipBattle) {
       const battleResolution = await resolveBattleEncounter(
         player,
         battleType,
@@ -119,9 +135,15 @@ export function useAdventureHandlers({
       );
       const battleResult = battleResolution.adventureResult;
       const battleCtx = battleResolution.replay;
+      const petSkillCooldowns = battleResolution.petSkillCooldowns;
       // 自动历练时跳过战斗，不打开战斗弹窗，直接返回结果
-      return { result: battleResult, battleContext: battleCtx, shouldReturn: false };
-    } else if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
+      return {
+        result: battleResult,
+        battleContext: battleCtx,
+        petSkillCooldowns,
+        shouldReturn: false
+      };
+    } else if (useTurnBasedBattle && onOpenTurnBasedBattle && !effectiveSkipBattle) {
       // 如果使用回合制战斗系统，打开回合制战斗界面
       setTimeout(() => {
         onOpenTurnBasedBattle({
@@ -149,6 +171,7 @@ export function useAdventureHandlers({
       return {
         result: battleResolution.adventureResult,
         battleContext: battleResolution.replay,
+        petSkillCooldowns: battleResolution.petSkillCooldowns,
         shouldReturn: false,
       };
     }
@@ -181,8 +204,7 @@ export function useAdventureHandlers({
     try {
       let result;
       let battleContext: BattleReplay | null = null;
-
-      let battleResolution: Awaited<ReturnType<typeof resolveBattleEncounter>> | undefined;
+      let petSkillCooldowns: Record<string, number> | undefined;
 
       // 检查是否被追杀
       const isHunted = player.sectHuntEndTime && player.sectHuntEndTime > Date.now();
@@ -195,7 +217,7 @@ export function useAdventureHandlers({
 
         // 使用公共函数处理战斗
         const huntRiskLevel = huntLevel >= 3 ? '极度危险' : huntLevel >= 2 ? '高' : huntLevel >= 1 ? '中' : '低';
-        const battleResult = await handleBattle(
+        const battleRes = await handleBattle(
           'sect_challenge',
           huntRiskLevel,
           player.realm,
@@ -203,14 +225,15 @@ export function useAdventureHandlers({
           huntSectId,
           huntLevel
         );
-        if (battleResult.shouldReturn) {
+        if (battleRes.shouldReturn) {
           return;
         }
-        result = battleResult.result;
-        battleContext = battleResult.battleContext;
+        result = battleRes.result;
+        battleContext = battleRes.battleContext;
+        petSkillCooldowns = battleRes.petSkillCooldowns;
       } else if (shouldTriggerBattle(player, adventureType)) {
         // 如果配置了逃跑，直接跳过战斗
-        if (fleeOnBattle) {
+        if (effectiveFleeOnBattle) {
           addLog('你选择避开战斗，继续历练...', 'normal');
           setLoading(false);
           setCooldown(1);
@@ -218,12 +241,13 @@ export function useAdventureHandlers({
         }
 
         // 使用公共函数处理战斗
-        const battleResult = await handleBattle(adventureType, riskLevel || '低', realmMinRealm || player.realm);
-        if (battleResult.shouldReturn) {
+        const battleRes = await handleBattle(adventureType, riskLevel || '低', realmMinRealm || player.realm);
+        if (battleRes.shouldReturn) {
           return;
         }
-        result = battleResult.result;
-        battleContext = battleResult.battleContext;
+        result = battleRes.result;
+        battleContext = battleRes.battleContext;
+        petSkillCooldowns = battleRes.petSkillCooldowns;
       } else {
         // 100%使用模板库
         initializeEventTemplateLibrary();
@@ -321,7 +345,7 @@ export function useAdventureHandlers({
                   addLog(`你决定挑战${boss.name}！`, 'warning');
 
                   // 自动历练模式下，如果配置了跳过战斗，直接使用自动战斗系统并展示结果
-                  if (autoAdventure && skipBattle) {
+                  if (effectiveSkipBattle) {
                     resolveBattleEncounter(
                       player,
                       actualAdventureType,
@@ -338,6 +362,7 @@ export function useAdventureHandlers({
                       executeAdventureCore({
                         result: battleResult,
                         battleContext: battleCtx,
+                        petSkillCooldowns: battleResolution.petSkillCooldowns,
                         player,
                         setPlayer,
                         addLog,
@@ -345,13 +370,15 @@ export function useAdventureHandlers({
                         onOpenBattleModal,
                         adventureType: actualAdventureType,
                         realmName,
-                        skipBattle, // 传递skipBattle参数，确保不打开战斗弹窗
+                        skipReputationEvent: effectiveSkipReputationEvent,
+                        skipBattle: effectiveSkipBattle, // 传递skipBattle参数，确保不打开战斗弹窗
+                        onPauseAutoAdventure: handlePauseAutoAdventure,
                       });
                       setLoading(false);
                       setCooldown(2);
                     });
                     return;
-                  } else if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
+                  } else if (useTurnBasedBattle && onOpenTurnBasedBattle && !effectiveSkipBattle) {
                     // 如果使用回合制战斗系统，打开回合制战斗界面
                     setTimeout(() => {
                       onOpenTurnBasedBattle({
@@ -382,6 +409,7 @@ export function useAdventureHandlers({
                     executeAdventureCore({
                       result: battleResult,
                       battleContext: battleCtx,
+                      petSkillCooldowns: battleResolution.petSkillCooldowns,
                       player,
                       setPlayer,
                       addLog,
@@ -389,7 +417,9 @@ export function useAdventureHandlers({
                       onOpenBattleModal,
                       adventureType: actualAdventureType,
                       realmName,
+                      skipReputationEvent: effectiveSkipReputationEvent,
                       skipBattle: false, // 手动挑战时，不跳过战斗，会显示战斗弹窗
+                      onPauseAutoAdventure: handlePauseAutoAdventure,
                     });
                     setLoading(false);
                     setCooldown(2);
@@ -449,7 +479,7 @@ export function useAdventureHandlers({
       await executeAdventureCore({
         result,
         battleContext,
-        petSkillCooldowns: battleResolution?.petSkillCooldowns,
+        petSkillCooldowns,
         player,
         setPlayer,
         addLog,
@@ -457,9 +487,11 @@ export function useAdventureHandlers({
         onOpenBattleModal,
         realmName,
         adventureType,
-        skipBattle,
+        skipBattle: effectiveSkipBattle,
         riskLevel,
+        skipReputationEvent: effectiveSkipReputationEvent,
         onReputationEvent,
+        onPauseAutoAdventure: handlePauseAutoAdventure,
       });
     } catch (e) {
       addLog('历练途中突发异变，你神识受损，不得不返回。', 'danger');
@@ -499,8 +531,8 @@ export function useAdventureHandlers({
         const shopTypes = [ShopType.Village, ShopType.City, ShopType.Sect, ShopType.LimitedTime, ShopType.BlackMarket, ShopType.Reputation];
         const randomShopType =
           shopTypes[Math.floor(Math.random() * shopTypes.length)];
-        // 如果配置了跳过商店，不打开商店
-        if (!skipShop) {
+        // 如果配置了跳过商店，且处于自动历练模式，不打开商店
+        if (!effectiveSkipShop) {
           onOpenShop(randomShopType);
         } else {
           addLog('你选择跳过商店，继续历练...', 'normal');

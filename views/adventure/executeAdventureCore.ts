@@ -54,6 +54,7 @@ interface ExecuteAdventureCoreProps {
   realmName?: string;
   adventureType: AdventureType;
   skipBattle?: boolean;
+  skipReputationEvent?: boolean; // 是否跳过声望事件
   onReputationEvent?: (event: AdventureResult['reputationEvent']) => void;
   onPauseAutoAdventure?: () => void; // 暂停自动历练回调（用于天地之魄等特殊事件）
 }
@@ -840,7 +841,7 @@ const applyResultToPlayer = (
 };
 
 export async function executeAdventureCore({
-  result, battleContext, petSkillCooldowns, player, setPlayer, addLog, triggerVisual, onOpenBattleModal, realmName, adventureType, riskLevel, skipBattle, onReputationEvent, onPauseAutoAdventure
+  result, battleContext, petSkillCooldowns, player, setPlayer, addLog, triggerVisual, onOpenBattleModal, realmName, adventureType, riskLevel, skipBattle, skipReputationEvent, onReputationEvent, onPauseAutoAdventure
 }: ExecuteAdventureCoreProps & { riskLevel?: '低' | '中' | '高' | '极度危险'; }) {
   // Visual Effects
   const safeHpChange = result.hpChange || 0;
@@ -858,7 +859,7 @@ export async function executeAdventureCore({
 
   // 在应用结果之前，检查是否触发了天地之魄，如果是则立即暂停自动历练
   if ((result.adventureType === 'dao_combining_challenge' || result.heavenEarthSoulEncounter)) {
-    onPauseAutoAdventure();
+    onPauseAutoAdventure?.();
   }
 
   // 处理追杀战斗结果（只有在追杀状态下才处理，正常挑战宗主不在这里处理）
@@ -925,25 +926,31 @@ export async function executeAdventureCore({
   }
 
   // Events & Logs
-  if (result.reputationEvent && onReputationEvent) {
-    const eventTitle = result.reputationEvent.title || result.reputationEvent.text || '神秘事件';
-    addLog(`📜 遇到了事件：${eventTitle}`, 'special');
+  if (result.reputationEvent) {
+    if (skipReputationEvent) {
+      // 如果配置了跳过声望事件，只记录日志，不触发回调
+      const eventTitle = result.reputationEvent.title || result.reputationEvent.text || '神秘事件';
+      addLog(`📜 遇到了事件：${eventTitle}，你选择跳过...`, 'normal');
+    } else if (onReputationEvent) {
+      const eventTitle = result.reputationEvent.title || result.reputationEvent.text || '神秘事件';
+      addLog(`📜 遇到了事件：${eventTitle}`, 'special');
 
-    // 测试环境打印调试信息
-    if (import.meta.env.DEV) {
-      console.log('【声望事件触发】', {
-        hasEvent: !!result.reputationEvent,
-        hasCallback: !!onReputationEvent,
-        event: result.reputationEvent,
-        choicesCount: result.reputationEvent.choices?.length || 0,
-      });
-    }
+      // 测试环境打印调试信息
+      if (import.meta.env.DEV) {
+        console.log('【声望事件触发】', {
+          hasEvent: !!result.reputationEvent,
+          hasCallback: !!onReputationEvent,
+          event: result.reputationEvent,
+          choicesCount: result.reputationEvent.choices?.length || 0,
+        });
+      }
 
-    onReputationEvent(result.reputationEvent);
-  } else if (result.reputationEvent && !onReputationEvent) {
-    // 如果有声望事件但没有回调，记录警告
-    if (import.meta.env.DEV) {
-      console.warn('【声望事件警告】有声望事件但没有回调函数', result.reputationEvent);
+      onReputationEvent(result.reputationEvent);
+    } else {
+      // 如果有声望事件但没有回调，记录警告
+      if (import.meta.env.DEV) {
+        console.warn('【声望事件警告】有声望事件但没有回调函数', result.reputationEvent);
+      }
     }
   }
 
