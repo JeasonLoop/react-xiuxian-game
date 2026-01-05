@@ -134,7 +134,7 @@ function GameHeader({
   }, []);
 
   return (
-    <header className="bg-paper-800 p-2 md:p-4 border-b border-stone-700 flex justify-between items-center shadow-lg z-10 sticky top-0 safe-area-header">
+    <header className="bg-paper-800 p-2 md:p-4 border-b border-stone-700 flex justify-between items-center shadow-lg z-[60] fixed top-0 left-0 right-0 safe-area-header">
       <div className="flex items-center gap-3">
         <h1
           onClick={handleTitleClick}

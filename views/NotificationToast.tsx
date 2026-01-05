@@ -15,12 +15,12 @@ interface PurchaseSuccessProps {
 export function PurchaseSuccessToast({ item, quantity }: PurchaseSuccessProps) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[70] pointer-events-none">
-      <div className="bg-green-600 text-white px-6 py-4 rounded-lg shadow-2xl border-2 border-green-400 animate-bounce pointer-events-auto">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">✓</span>
+      <div className="bg-green-600 text-white px-4 md:px-6 py-3 md:py-4 rounded-lg shadow-2xl border-2 border-green-400 animate-bounce pointer-events-auto max-w-[90vw]">
+        <div className="flex items-center gap-2 md:gap-3">
+          <span className="text-xl md:text-2xl">✓</span>
           <div>
-            <div className="font-bold text-lg">购买成功！</div>
-            <div className="text-sm">
+            <div className="font-bold text-base md:text-lg">购买成功！</div>
+            <div className="text-xs md:text-sm">
               获得 {item} x{quantity}
             </div>
           </div>
@@ -80,11 +80,11 @@ export function LotteryRewardsToast({ rewards, onClose }: LotteryRewardsProps) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/70 flex items-center justify-center z-[110] animate-in fade-in duration-300 pointer-events-auto"
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-[110] animate-in fade-in duration-300 pointer-events-auto p-4"
       onClick={onClose}
     >
       <div
-        className="bg-stone-900 border-2 border-mystic-gold p-1 rounded-lg shadow-[0_0_50px_rgba(203,161,53,0.3)] max-w-md w-[90%] animate-in zoom-in duration-500"
+        className="bg-stone-900 border-2 border-mystic-gold p-1 rounded-lg shadow-[0_0_50px_rgba(203,161,53,0.3)] max-w-md w-[90%] md:w-auto animate-in zoom-in duration-500"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-stone-800 rounded px-6 py-8 flex flex-col items-center gap-6">

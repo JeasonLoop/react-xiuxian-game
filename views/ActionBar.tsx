@@ -47,7 +47,7 @@ function ActionBar({
   onToggleAutoAdventure,
 }: ActionBarProps) {
   return (
-    <div className="bg-paper-800 p-3 md:p-4 border-t border-stone-700 grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 shrink-0 fixed md:relative bottom-0 left-0 right-0 md:left-auto md:right-auto z-20 shadow-lg md:shadow-none">
+    <div className="bg-paper-800 p-3 md:p-4 border-t border-stone-700 grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 shrink-0 fixed md:relative bottom-0 left-0 right-0 md:left-auto md:right-auto z-50 shadow-lg md:shadow-none">
       <div className="relative">
         <button
           onClick={onMeditate}
