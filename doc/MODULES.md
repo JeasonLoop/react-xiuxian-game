@@ -93,13 +93,16 @@ react-xiuxian-game/
 │       ├── index.ts
 │       └── useAchievementHandlers.ts
 │
+├── store/                  # Zustand 状态管理
+│   ├── gameStore.ts            # 游戏核心状态（玩家、日志、设置等）
+│   ├── uiStore.ts              # UI 状态（弹窗、商店、战斗等）
+│   └── index.ts                # 统一导出
+│
 ├── hooks/                  # 通用 Hooks
-│   ├── useAppState.ts          # 应用状态管理（弹窗、商店等）
 │   ├── useAutoFeatures.ts      # 自动功能（自动打坐、自动历练）
 │   ├── useBattleResultHandler.ts # 战斗结果处理
 │   ├── useDeathDetection.ts    # 死亡检测
 │   ├── useGameEffects.ts       # 游戏副作用处理
-│   ├── useGameState.ts         # 游戏状态管理
 │   └── usePassiveRegeneration.ts # 被动回血
 │
 ├── utils/                  # 工具函数
@@ -144,14 +147,15 @@ react-xiuxian-game/
 **职责**:
 
 - 应用入口和路由协调
-- 全局状态管理（通过 `useGameState`）
+- 全局状态管理（通过 Zustand Stores）
 - 模块整合和 Handlers 调用
 - 欢迎界面和游戏视图切换
 
 **关键状态**:
 
-通过 `useGameState` Hook 管理：
+通过 Zustand Stores 管理：
 
+**gameStore.ts**:
 ```typescript
 - player: PlayerStats          // 玩家数据
 - logs: LogEntry[]            // 游戏日志
@@ -160,44 +164,78 @@ react-xiuxian-game/
 - hasSave: boolean            // 是否有存档
 ```
 
+**uiStore.ts**:
+```typescript
+- modals: ModalState          // 所有弹窗状态
+- currentShop: Shop | null    // 当前商店
+- autoMeditate: boolean       // 自动打坐
+- autoAdventure: boolean      // 自动历练
+// ... 更多 UI 状态
+```
+
 **核心功能**:
 
-- 使用 `useGameState` 管理全局状态
+- 使用 `useGameStore` 和 `useUIStore` 管理全局状态
 - 使用 `useGameEffects` 处理副作用（自动保存等）
 - 导入并使用各模块的 Handlers
 - 渲染 `GameView` 和 `ModalsContainer`
 
 **代码规模**: 大幅简化，主要作为协调器
 
-### 2. hooks/ - 状态管理 Hooks
+### 2. store/ - Zustand 状态管理
 
-#### useGameState.ts
+#### gameStore.ts
 
-**职责**: 封装游戏全局状态管理逻辑
+**职责**: 游戏核心状态管理（Zustand）
 
 **核心功能**:
 
-- 状态初始化（从 localStorage 加载）
-- 状态更新方法
-- 存档和读档
-- 游戏开始处理
+- 玩家数据管理（player, setPlayer）
+- 游戏日志管理（logs, setLogs）
+- 游戏设置管理（settings, setSettings）
+- 存档和读档（saveGame, loadGame）
+- 游戏状态管理（gameStarted, hasSave）
+- 自动保存（通过 subscribeWithSelector 中间件）
 
-**返回**:
+**便捷 Hooks**:
 
 ```typescript
-{
-  hasSave: boolean;
-  gameStarted: boolean;
-  player: PlayerStats;
-  setPlayer: (player: PlayerStats) => void;
-  settings: GameSettings;
-  setSettings: (settings: GameSettings) => void;
-  logs: LogEntry[];
-  setLogs: (logs: LogEntry[]) => void;
-  handleStartGame: (playerName: string) => void;
-  setGameStarted: (started: boolean) => void;
-}
+// 主 store
+useGameStore()
+
+// 便捷 hooks
+usePlayer()
+useSettings()
+useLogs()
+useGameStarted()
 ```
+
+#### uiStore.ts
+
+**职责**: UI 状态管理（Zustand）
+
+**核心功能**:
+
+- 所有弹窗状态管理（modals, setIsXxxOpen）
+- 商店状态（currentShop, setCurrentShop）
+- 战斗状态（battleReplay, turnBasedBattleParams）
+- 自动功能状态（autoMeditate, autoAdventure）
+- 全局状态（loading, cooldown）
+
+**便捷 Hooks**:
+
+```typescript
+// 主 store
+useUIStore()
+
+// 便捷 hooks
+useModals()
+useAutoFeatures()
+useLoading()
+useCooldown()
+```
+
+### 3. hooks/ - 通用 Hooks
 
 #### useGameEffects.ts
 
@@ -208,17 +246,6 @@ react-xiuxian-game/
 - 自动保存游戏状态
 - 成就检查
 - 其他副作用处理
-
-#### useAppState.ts
-
-**职责**: 管理应用级别的状态
-
-**核心功能**:
-
-- 弹窗状态管理（所有模态框的显示/隐藏）
-- 商店状态管理
-- 战斗状态管理
-- 通知状态管理
 
 #### useAutoFeatures.ts
 
@@ -658,8 +685,10 @@ interface ModalProps {
 
 ```
 App.tsx (协调器)
+  ├── store/
+  │   ├── gameStore.ts (游戏核心状态)
+  │   └── uiStore.ts (UI 状态)
   ├── hooks/
-  │   ├── useGameState.ts (状态管理)
   │   └── useGameEffects.ts (副作用处理)
   ├── views/
   │   ├── GameView.tsx (主视图)
@@ -711,7 +740,7 @@ components/*
 - **视图组合** → `views/` (组合组件 + Handlers)
 - **业务逻辑** → `services/`, `utils/` (服务层和工具函数)
 - **功能复用** → `hooks/` (可复用的功能 Hooks)
-- **状态管理** → `hooks/` (状态管理 Hooks)
+- **状态管理** → `store/` (Zustand Stores)
 - **数据定义** → `types.ts`, `constants.ts`
 - **配置管理** → `config/`
 
@@ -845,19 +874,25 @@ import StatsPanel from './StatsPanel';
 
 - **职责**: 应用协调器
 - **关键功能**:
-  - 使用 `useGameState` 管理全局状态
+  - 使用 `useGameStore` 和 `useUIStore` 管理全局状态
   - 使用 `useGameEffects` 处理副作用
   - 导入各模块 Handlers
   - 渲染欢迎界面和游戏视图
 
-### hooks/useGameState.ts
+### store/gameStore.ts
 
-- **职责**: 游戏状态管理核心
+- **职责**: 游戏核心状态管理
 - **关键功能**:
-  - 状态初始化（从 localStorage）
-  - 状态更新方法
+  - 玩家、日志、设置等游戏核心数据管理
   - 存档和读档
-  - 游戏开始处理
+  - 自动保存（通过 subscribeWithSelector）
+
+### store/uiStore.ts
+
+- **职责**: UI 状态管理
+- **关键功能**:
+  - 所有弹窗状态管理
+  - 商店、战斗、自动功能等 UI 状态管理
 
 ### views/GameView.tsx
 

@@ -185,7 +185,7 @@ export function useShopHandlers({ player, setPlayer, addLog }) {
 
 ### 5. 状态管理层 (State Management Layer)
 
-**位置**: `hooks/useGameState.ts`, `App.tsx`
+**位置**: `store/`, `hooks/`
 
 **职责**:
 
@@ -195,15 +195,23 @@ export function useShopHandlers({ player, setPlayer, addLog }) {
 
 **特点**:
 
-- 使用自定义 Hook 封装状态逻辑
+- 使用 Zustand 进行状态管理
 - 单一数据源（Single Source of Truth）
 - 自动保存到 localStorage
+- 使用中间件（subscribeWithSelector）优化性能
+
+**核心 Stores**:
+
+- **`store/gameStore.ts`** - 游戏核心状态管理（玩家、日志、设置、存档等）
+  - `useGameStore` - 游戏主 store
+  - `usePlayer`, `useSettings`, `useLogs`, `useGameStarted` - 便捷 hooks
+- **`store/uiStore.ts`** - UI 状态管理（弹窗、商店、战斗、自动功能等）
+  - `useUIStore` - UI 主 store
+  - `useModals`, `useAutoFeatures`, `useLoading`, `useCooldown` - 便捷 hooks
 
 **核心 Hooks**:
 
-- `useGameState` - 游戏状态管理（玩家、日志、设置等）
 - `useGameEffects` - 游戏副作用处理（自动保存、成就检查等）
-- `useAppState` - 应用状态管理（弹窗、商店、战斗等）
 - `useAutoFeatures` - 自动功能（自动打坐、自动历练）
 - `useDeathDetection` - 死亡检测和处理
 - `useBattleResultHandler` - 战斗结果处理
@@ -258,7 +266,7 @@ export function useShopHandlers({ player, setPlayer, addLog }) {
        │
        ▼
 ┌─────────────┐
-│ 更新状态     │ (useGameState Hook)
+│ 更新状态     │ (Zustand Stores)
 └──────┬──────┘
        │
        ├──────────────┐
@@ -299,7 +307,7 @@ AI API (GLM/SiliconFlow/OpenAI 等)
 返回 JSON 数据
     │
     ▼
-解析并更新游戏状态 (通过 useGameState)
+解析并更新游戏状态 (通过 Zustand Stores)
 ```
 
 ## 🎨 设计模式
