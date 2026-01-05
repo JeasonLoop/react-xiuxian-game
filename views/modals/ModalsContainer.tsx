@@ -105,6 +105,7 @@ interface ModalsContainerProps {
       cost: number,
       quantity?: number
     ) => void;
+    handleSectLearnArt: (art: CultivationArt) => void;
     handleChallengeLeader: () => void;
     // Realm
     handleEnterRealm: (realm: any) => void;
@@ -331,6 +332,7 @@ function ModalsContainer({
           onTask={handlers.handleSectTask}
           onPromote={handlers.handleSectPromote}
           onBuy={handlers.handleSectBuy}
+          onLearnArt={handlers.handleSectLearnArt}
           onChallengeLeader={handlers.handleChallengeLeader}
           setItemActionLog={setItemActionLog}
         />

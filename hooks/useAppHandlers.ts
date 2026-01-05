@@ -717,6 +717,7 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     handleSectTask,
     handleSectPromote,
     handleSectBuy,
+    handleSectLearnArt: sectHandlers.handleLearnArt,
     handleChallengeLeader: sectHandlers.handleChallengeLeader,
 
     // 成就

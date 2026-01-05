@@ -250,8 +250,12 @@ body {
 }
 
 @keyframes fade-in {
-  0% { opacity: 0; }
-  100% { opacity: 1; }
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 .animate-fade-in {
@@ -288,19 +292,15 @@ body {
 }
 
 /* 隐藏数值输入框的加减按钮 */
-input {
+input[type='number'] {
+  appearance: none;
+  -moz-appearance: textfield;
   /* Chrome, Safari, Edge, Opera */
   &::-webkit-outer-spin-button,
   &::-webkit-inner-spin-button {
     -webkit-appearance: none;
     margin: 0;
   }
-
-  /* Firefox */
-  -moz-appearance: textfield;
-
-  /* 标准属性 */
-  appearance: none;
 }
 
 /* 确保所有状态下的数值输入框都隐藏加减按钮 */

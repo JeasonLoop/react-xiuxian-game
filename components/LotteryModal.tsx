@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Gift, Sparkles } from 'lucide-react';
+import { Gift, Sparkles } from 'lucide-react';
 import { PlayerStats, LotteryPrize, ItemRarity } from '../types';
 import { LOTTERY_PRIZES } from '../constants/index';
 import { showError } from '../utils/toastUtils';
-import { getRarityColor,getRarityBorder } from '../utils/rarityUtils';
+import { getRarityColor, getRarityBorder } from '../utils/rarityUtils';
+import { Modal } from './common';
 
 interface Props {
   isOpen: boolean;
@@ -13,8 +14,6 @@ interface Props {
 }
 
 const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
-  if (!isOpen) return null;
-
   const [isDrawing, setIsDrawing] = useState(false);
   const [lastResult, setLastResult] = useState<LotteryPrize[] | null>(null);
   const [displayTickets, setDisplayTickets] = useState(player.lotteryTickets);
@@ -140,34 +139,19 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm touch-manipulation"
-      onClick={() => !isDrawing && onClose()}
-    >
+    <>
       {renderDrawingOverlay()}
-      <div
-        className="bg-paper-800 w-full h-[80vh] md:h-auto md:max-w-2xl rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-600 shadow-2xl flex flex-col md:max-h-[90vh] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
+      <Modal
+        isOpen={isOpen}
+        onClose={isDrawing ? () => {} : onClose}
+        title="抽奖系统"
+        titleIcon={<Gift className="text-yellow-400 w-5 h-5 md:w-6 md:h-6" />}
+        size="2xl"
+        height="lg"
+        closeOnOverlayClick={!isDrawing}
+        closeOnEsc={!isDrawing}
       >
-        <div className="p-3 md:p-4 border-b border-stone-600 flex justify-between items-center bg-ink-800 rounded-t-2xl z-10">
-          <h2 className="text-lg md:text-xl font-serif text-mystic-gold flex items-center gap-2">
-            <Gift className="text-yellow-400 w-5 h-5 md:w-6 md:h-6" />
-            抽奖系统
-          </h2>
-          <button
-            onClick={onClose}
-            disabled={isDrawing}
-            className={`text-stone-400 min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation transition-colors ${
-              isDrawing
-                ? 'opacity-20 cursor-not-allowed'
-                : 'active:text-white hover:text-stone-300'
-            }`}
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        <div className="modal-scroll-container modal-scroll-content p-6 space-y-6 bg-paper-800">
+        <div className="space-y-6">
           {/* 抽奖券信息 */}
           <div className="bg-stone-900 rounded p-4 border border-stone-700 text-center">
             <div className="text-2xl font-bold text-yellow-400 mb-2">
@@ -363,8 +347,8 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
             </div>
           </div>
         </div>
-      </div>
-    </div>
+      </Modal>
+    </>
   );
 };
 

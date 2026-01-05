@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import {
-  X,
   Volume2,
   Music,
   Save,
@@ -13,6 +12,7 @@ import {
   Keyboard,
   MessageCircle,
 } from 'lucide-react';
+import { Modal } from './common';
 import { GameSettings } from '../types';
 import dayjs from 'dayjs';
 import { showError, showSuccess, showInfo, showConfirm } from '../utils/toastUtils';
@@ -80,7 +80,7 @@ const SettingsModal: React.FC<Props> = ({
     onUpdateSettings({ keyboardShortcuts: newShortcuts });
   };
 
-  if (!isOpen) return null;
+  // Modal 组件内部处理 isOpen，这里不需要提前返回
 
   const handleImportSave = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -199,27 +199,15 @@ const SettingsModal: React.FC<Props> = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 p-0 md:p-4 touch-manipulation"
-      onClick={onClose}
-    >
-      <div
-        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[80vh] md:h-auto md:max-w-md md:max-h-[90vh] flex flex-col"
-        onClick={(e) => e.stopPropagation()}
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title="设置"
+        size="md"
+        height="lg"
       >
-        <div className="bg-stone-800 border-b border-stone-700 p-3 md:p-4 flex justify-between items-center md:rounded-t-2xl flex-shrink-0">
-          <h2 className="text-lg md:text-xl font-serif text-mystic-gold">
-            设置
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        <div className="modal-scroll-container modal-scroll-content p-6 space-y-6">
+        <div className="space-y-6">
           {/* 音效设置 */}
           {/* <div>
             <div className="flex items-center gap-2 mb-3">
@@ -557,7 +545,7 @@ const SettingsModal: React.FC<Props> = ({
             </div>
           </div>
         </div>
-      </div>
+      </Modal>
 
       {/* 更新日志弹窗 */}
       <ChangelogModal
@@ -573,7 +561,7 @@ const SettingsModal: React.FC<Props> = ({
         customShortcuts={settings.keyboardShortcuts}
         onUpdateShortcuts={handleUpdateShortcuts}
       />
-    </div>
+    </>
   );
 };
 

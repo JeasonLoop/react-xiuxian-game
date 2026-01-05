@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import Modal from './common/Modal';
 import {
   Shield,
   Sword,
@@ -570,57 +571,49 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   const enemyHpPercent = (enemyHp / enemyMaxHp) * 100;
 
   return (
-    <div
-      className="fixed inset-0 bg-black/80 flex items-center justify-center z-[80] p-4"
-      onClick={(e) => {
-        // 自动历练模式下不允许点击外部关闭，只能通过逃跑或快进结束战斗
-        if (autoAdventure) {
-          return;
-        }
-        if (
-          e.target === e.currentTarget &&
-          !battleState.waitingForPlayerAction
-        ) {
-          // 只在战斗结束时允许点击外部关闭
-        }
-      }}
-    >
-      <div
-        className="bg-ink-900 border border-stone-700 w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* 头部 */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-stone-700">
-          <div>
-            <div className="text-xs text-stone-500 uppercase tracking-widest">
-              回合制战斗 · 第 {battleState.round} 回合
-            </div>
-            <div className="flex items-center gap-2 text-lg font-serif text-mystic-gold">
-              <Sword size={18} className="text-mystic-gold" />
-              {enemyUnit.name}
-              <span className="text-[11px] text-stone-400 bg-ink-800 px-2 py-0.5 rounded border border-stone-700">
-                {enemyUnit.realm}
-              </span>
-            </div>
-            {battleState.waitingForPlayerAction &&
-              battleState.playerActionsRemaining > 0 && (
-                <div className="text-xs text-emerald-400 mt-1">
-                  剩余行动次数: {battleState.playerActionsRemaining} /{' '}
-                  {battleState.playerMaxActions}
-                </div>
-              )}
+    <Modal
+      isOpen={isOpen}
+      onClose={() => {}} // onClose is handled by internal logic
+      title={
+        <div>
+          <div className="text-[10px] text-stone-500 uppercase tracking-widest leading-none mb-1">
+            回合制战斗 · 第 {battleState.round} 回合
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handleSkipBattle}
-              disabled={isProcessing}
-              className="p-2 rounded border border-stone-600 text-stone-200 hover:bg-stone-700/40 disabled:opacity-50"
-              title="跳过战斗"
-            >
-              <FastForward size={18} />
-            </button>
+          <div className="flex items-center gap-2 text-base md:text-lg font-serif text-mystic-gold">
+            <Sword size={16} className="text-mystic-gold" />
+            {enemyUnit.name}
+            <span className="text-[10px] text-stone-400 bg-ink-800 px-1.5 py-0.5 rounded border border-stone-700 font-sans">
+              {enemyUnit.realm}
+            </span>
           </div>
+          {battleState.waitingForPlayerAction &&
+            battleState.playerActionsRemaining > 0 && (
+              <div className="text-[10px] text-emerald-400 mt-1 leading-none">
+                剩余行动: {battleState.playerActionsRemaining} / {battleState.playerMaxActions}
+              </div>
+            )}
         </div>
+      }
+      titleExtra={
+        <button
+          onClick={handleSkipBattle}
+          disabled={isProcessing}
+          className="p-2 rounded border border-stone-600 text-stone-200 hover:bg-stone-700/40 disabled:opacity-50 transition-colors mr-2"
+          title="跳过战斗"
+        >
+          <FastForward size={16} />
+        </button>
+      }
+      size="4xl"
+      height="auto"
+      showCloseButton={false}
+      closeOnOverlayClick={false}
+      closeOnEsc={false}
+      containerClassName="bg-ink-900 border-stone-700 shadow-2xl"
+      headerClassName="bg-ink-900 border-b border-stone-700 px-4 md:px-6 py-3 md:py-4"
+      contentClassName="bg-ink-950"
+      zIndex={80}
+    >
 
         {/* 战斗区域 */}
         <div className="modal-scroll-container modal-scroll-content px-6 py-4 space-y-4">
@@ -1148,8 +1141,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
             </div>
           </div>
         )}
-      </div>
-    </div>
+    </Modal>
   );
 };
 

@@ -19,6 +19,7 @@ import { RandomSectTask } from '../../services/randomService';
 import { AdventureResult } from '../../types';
 import { addItemToInventory } from '../../utils/inventoryUtils';
 import { sectTaskUtils } from '../../utils/sectTaskUtils';
+import { CultivationArt } from '../../types';
 
 interface UseSectHandlersProps {
   player: PlayerStats;
@@ -464,6 +465,33 @@ export function useSectHandlers({
     });
   };
 
+  const handleLearnArt = (art: CultivationArt) => {
+    setPlayer((prev) => {
+      if (prev.sectContribution < art.cost) {
+        logMessage('贡献不足，无法学习该功法！', 'danger');
+        return prev;
+      }
+
+      // 检查是否已经学习或解锁
+      const hasArt = prev.cultivationArts.includes(art.id) || (prev.unlockedArts || []).includes(art.id);
+      if (hasArt) {
+        logMessage(`你已经掌握了【${art.name}】。`, 'normal');
+        return prev;
+      }
+
+      const newUnlockedArts = [...(prev.unlockedArts || []), art.id];
+
+      logMessage(`你消耗了 ${art.cost} 贡献，领悟了宗门绝学【${art.name}】！`, 'special');
+      logMessage(`现在你可以在【功法】界面中修炼此功法。`, 'gain');
+
+      return {
+        ...prev,
+        sectContribution: prev.sectContribution - art.cost,
+        unlockedArts: newUnlockedArts,
+      };
+    });
+  };
+
   const handleBecomeLeader = () => {
     setPlayer((prev) => {
       if (prev.sectRank !== SectRank.Elder) return prev;
@@ -543,6 +571,7 @@ export function useSectHandlers({
     handleSectTask,
     handleSectPromote,
     handleSectBuy,
+    handleLearnArt,
     handleBecomeLeader,
     handleChallengeLeader,
   };

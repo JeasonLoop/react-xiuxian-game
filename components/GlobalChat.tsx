@@ -119,7 +119,7 @@ export const GlobalChat: React.FC<Props> = ({ playerName }) => {
   };
 
   return (
-    <div className="absolute bottom-3 right-3 md:bottom-4 md:right-4 z-101 transition-all duration-300 ease-in-out w-9 md:w-11">
+    <div className="absolute bottom-3 right-3 md:bottom-4 md:right-4 z-20 transition-all duration-300 ease-in-out w-9 md:w-11">
       {/* 消息气泡统计 / 红点 */}
       {!isOpen && hasNew && (
         <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse border-2 border-stone-900" />

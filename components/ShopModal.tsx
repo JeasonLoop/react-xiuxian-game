@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import Modal from './common/Modal';
 import {
-  X,
   ShoppingBag,
   Coins,
   Package,
@@ -157,7 +157,7 @@ const ShopModal: React.FC<Props> = ({
   ]);
 
   // 当切换标签页时，如果当前筛选的类型在新标签页中不存在，则重置为'all'
-  React.useEffect(() => {
+  useEffect(() => {
     if (
       selectedTypeFilter !== 'all' &&
       !availableTypes.includes(selectedTypeFilter as ItemType)
@@ -227,84 +227,79 @@ const ShopModal: React.FC<Props> = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm touch-manipulation"
-      onClick={onClose}
-    >
-      <div
-        className="bg-paper-800 w-full h-[80vh] md:h-auto md:max-w-4xl md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-600 shadow-2xl flex flex-col md:max-h-[90vh] overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="p-3 md:p-4 border-b border-stone-600 flex justify-between items-center bg-ink-800 md:rounded-t">
-          <div>
-            <h3 className="text-lg md:text-xl font-serif text-mystic-gold flex items-center gap-2">
-              <ShoppingBag size={18} className="md:w-5 md:h-5" />
-              {shop.name}
-            </h3>
-            <p className="text-sm text-stone-400 mt-1">{shop.description}</p>
-            {shop.reputationRequired && (
-              <p className="text-xs text-yellow-400 mt-1">
-                需要声望值：{shop.reputationRequired}（当前：{player.reputation || 0}）
-                {player.reputation < shop.reputationRequired && (
-                  <span className="text-red-400 ml-2">⚠️ 声望不足</span>
-                )}
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {onOpenInventory && (
-              <button
-                onClick={onOpenInventory}
-                className="flex items-center gap-1 px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded border border-stone-600 transition-colors text-sm"
-                title="查看背包"
-              >
-                <Box size={16} />
-                <span className="hidden md:inline">背包</span>
-              </button>
-            )}
-            {onRefreshShop && (
-              <button
-                onClick={() => {
-                  const refreshCost = shop.refreshCost || 100; // 使用商店的刷新费用，默认100
-                  if (player.spiritStones < refreshCost) {
-                    showError(`灵石不足！刷新需要${refreshCost}灵石。`);
-                    return;
-                  }
-                  showConfirm(
-                    `确定要花费 ${refreshCost} 灵石刷新商店物品吗？`,
-                    '确认刷新',
-                    () => {
-                      const newItems = generateShopItems(
-                        shop.type,
-                        player.realm,
-                        true
-                      );
-                      onRefreshShop(newItems);
-                    }
-                  );
-                }}
-                className="flex items-center gap-1 px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded border border-stone-600 transition-colors text-sm"
-                title={`花费${shop.refreshCost || 100}灵石刷新商店物品（小概率出现高级物品）`}
-              >
-                <RefreshCw size={16} />
-                <span className="hidden md:inline">刷新</span>
-                <span className="text-xs text-stone-400">({shop.refreshCost || 100})</span>
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
-            >
-              <X size={24} />
-            </button>
-          </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        <div className="flex flex-col">
+          <h3 className="text-lg md:text-xl font-serif text-mystic-gold flex items-center gap-2">
+            <ShoppingBag size={18} className="md:w-5 md:h-5" />
+            {shop.name}
+          </h3>
+          <p className="text-xs text-stone-400 font-normal mt-0.5">{shop.description}</p>
+          {shop.reputationRequired && (
+            <p className="text-[10px] text-yellow-400 mt-0.5">
+              需要声望：{shop.reputationRequired}（当前：{player.reputation || 0}）
+              {player.reputation < shop.reputationRequired && (
+                <span className="text-red-400 ml-1">⚠️ 不足</span>
+              )}
+            </p>
+          )}
         </div>
-
-        {/* 标签页 */}
+      }
+      size="4xl"
+      height="full"
+      containerClassName="bg-paper-800 border-stone-600"
+      headerClassName="bg-ink-800 border-b border-stone-600"
+      contentClassName="bg-paper-800"
+      titleExtra={
+        <div className="flex items-center gap-1.5 md:gap-2 mr-2">
+          {onOpenInventory && (
+            <button
+              onClick={onOpenInventory}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded border border-stone-600 transition-colors text-xs md:text-sm"
+              title="查看背包"
+            >
+              <Box size={14} className="md:w-4 md:h-4" />
+              <span className="hidden sm:inline">背包</span>
+            </button>
+          )}
+          {onRefreshShop && (
+            <button
+              onClick={() => {
+                const refreshCost = shop.refreshCost || 100;
+                if (player.spiritStones < refreshCost) {
+                  showError(`灵石不足！刷新需要${refreshCost}灵石。`);
+                  return;
+                }
+                showConfirm(
+                  `确定要花费 ${refreshCost} 灵石刷新商店物品吗？`,
+                  '确认刷新',
+                  () => {
+                    const newItems = generateShopItems(
+                      shop.type,
+                      player.realm,
+                      true
+                    );
+                    onRefreshShop(newItems);
+                  }
+                );
+              }}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded border border-stone-600 transition-colors text-xs md:text-sm"
+              title={`花费${shop.refreshCost || 100}灵石刷新`}
+            >
+              <RefreshCw size={14} className="md:w-4 md:h-4" />
+              <span className="hidden sm:inline">刷新</span>
+              <span className="text-[10px] text-stone-400">({shop.refreshCost || 100})</span>
+            </button>
+          )}
+        </div>
+      }
+      subHeader={
         <div className="flex border-b border-stone-600 bg-stone-900">
           <button
             onClick={() => setActiveTab('buy')}
-            className={`flex-1 px-4 py-3 font-bold transition-colors ${
+            className={`flex-1 px-4 py-2.5 text-sm font-bold transition-colors ${
               activeTab === 'buy'
                 ? 'bg-ink-800 text-mystic-gold border-b-2 border-mystic-gold'
                 : 'text-stone-400 hover:text-stone-200'
@@ -314,7 +309,7 @@ const ShopModal: React.FC<Props> = ({
           </button>
           <button
             onClick={() => setActiveTab('sell')}
-            className={`flex-1 px-4 py-3 font-bold transition-colors ${
+            className={`flex-1 px-4 py-2.5 text-sm font-bold transition-colors ${
               activeTab === 'sell'
                 ? 'bg-ink-800 text-mystic-gold border-b-2 border-mystic-gold'
                 : 'text-stone-400 hover:text-stone-200'
@@ -323,9 +318,8 @@ const ShopModal: React.FC<Props> = ({
             出售
           </button>
         </div>
-
-        {/* 内容区域 */}
-        <div className="modal-scroll-container modal-scroll-content p-4">
+      }
+    >
           {activeTab === 'buy' ? (
             <div>
               <div className="mb-4 flex flex-col gap-3">
@@ -763,9 +757,7 @@ const ShopModal: React.FC<Props> = ({
               )}
             </div>
           )}
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 };
 

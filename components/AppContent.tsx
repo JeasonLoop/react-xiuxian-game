@@ -220,6 +220,7 @@ export function AppContent(props: AppContentProps) {
       {/* 死亡弹窗 - 无法关闭 */}
       {isDead && player && (
         <DeathModal
+          isOpen={isDead}
           player={player}
           battleData={deathBattleData}
           deathReason={deathReason}

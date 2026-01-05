@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import Modal from './common/Modal';
 import { createPortal } from 'react-dom';
 import { X, Star, Award, Info, Zap, BarChart3, TrendingUp, Sparkles, BookOpen, Users, Beaker, Package } from 'lucide-react';
 import { PlayerStats, ItemRarity, RealmType, Title } from '../types';
@@ -112,7 +113,7 @@ const HoverableCard: React.FC<{
       {showTooltip && createPortal(
         <div
           ref={tooltipRef}
-          className={`fixed ${width} bg-stone-900 border-2 ${borderColor} rounded-lg p-3 shadow-xl z-[10000] pointer-events-none transition-opacity duration-200`}
+          className={`fixed ${width} bg-stone-900 border-2 ${borderColor} rounded-lg p-3 shadow-xl z-10000 pointer-events-none transition-opacity duration-200`}
           style={{
             top: `${position.top}px`,
             left: `${position.left}px`,
@@ -186,7 +187,7 @@ const Tooltip: React.FC<{
   return createPortal(
     <div
       ref={tooltipRef}
-      className={`fixed ${width} bg-stone-900 border-2 ${borderColor} rounded-lg p-3 shadow-xl z-[10000] pointer-events-none transition-opacity duration-200`}
+      className={`fixed ${width} bg-stone-900 border-2 ${borderColor} rounded-lg p-3 shadow-xl z-10000 pointer-events-none transition-opacity duration-200`}
       style={{
         top: `${position.top}px`,
         left: `${position.left}px`,
@@ -626,26 +627,18 @@ const CharacterModal: React.FC<Props> = ({
   };
 
   return (
-    <div
-      className="fixed inset-0 bg-black/80 flex items-end md:items-center justify-center z-50 p-0 md:p-4 backdrop-blur-sm touch-manipulation"
-      onClick={onClose}
-    >
-      <div
-        className="bg-paper-800 rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-600 shadow-2xl w-full h-[80vh] md:h-auto md:max-w-2xl md:max-h-[90vh] flex flex-col overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="p-3 md:p-4 border-b border-stone-600 bg-ink-800 md:rounded-t flex justify-between items-start">
-          <h2 className="text-lg md:text-xl font-serif text-mystic-gold">
-            角色系统
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-stone-400 active:text-white min-w-[44px] min-h-[44px] flex items-center justify-center touch-manipulation"
-          >
-            <X size={24} />
-          </button>
-        </div>
-        {/* 标签页切换 */}
+    <>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="角色系统"
+      size="2xl"
+      height="full"
+      containerClassName="bg-paper-800 border-stone-600"
+      headerClassName="bg-ink-800 border-b border-stone-600"
+      contentClassName="bg-paper-800"
+      showHeaderBorder={false}
+      subHeader={
         <div className="flex border-b border-stone-600 bg-ink-800">
             <button
               onClick={() => setActiveTab('character')}
@@ -672,12 +665,13 @@ const CharacterModal: React.FC<Props> = ({
               </div>
             </button>
         </div>
-
-        <div className="modal-scroll-container modal-scroll-content p-6 space-y-6 bg-paper-800">
+      }
+    >
+      <div className="space-y-6">
           {activeTab === 'character' ? (
             <>
               {/* 修炼系统信息 */}
-              <div className="bg-gradient-to-r from-blue-900/50 to-green-900/50 rounded-lg p-6 border-2 border-blue-500 shadow-lg" style={{ overflow: 'visible' }}>
+              <div className="bg-linear-to-r from-blue-900/50 to-green-900/50 rounded-lg p-6 border-2 border-blue-500 shadow-lg" style={{ overflow: 'visible' }}>
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-xl font-bold flex items-center gap-3">
                     <TrendingUp className="text-blue-400" size={24} />
@@ -704,7 +698,7 @@ const CharacterModal: React.FC<Props> = ({
                     return (
                       <HoverableCard
                         borderColor="border-blue-500"
-                        className="bg-gradient-to-br from-blue-900/40 to-cyan-900/40 rounded-xl p-4 border-2 border-blue-600 shadow-md hover:shadow-lg transition-all duration-300 relative cursor-pointer"
+                        className="bg-linear-to-br from-blue-900/40 to-cyan-900/40 rounded-xl p-4 border-2 border-blue-600 shadow-md hover:shadow-lg transition-all duration-300 relative cursor-pointer"
                         tooltipContent={
                           <>
                             <div className="text-sm font-bold text-blue-300 mb-2">{treasure?.name}</div>
@@ -780,7 +774,7 @@ const CharacterModal: React.FC<Props> = ({
                       return (
                         <HoverableCard
                           borderColor="border-yellow-500"
-                          className="bg-gradient-to-br from-yellow-900/40 to-orange-900/40 rounded-xl p-4 border-2 border-yellow-600 shadow-md hover:shadow-lg transition-all duration-300 relative cursor-pointer"
+                          className="bg-linear-to-br from-yellow-900/40 to-orange-900/40 rounded-xl p-4 border-2 border-yellow-600 shadow-md hover:shadow-lg transition-all duration-300 relative cursor-pointer"
                           tooltipContent={
                             <>
                               <div className="text-sm font-bold text-yellow-300 mb-2">{methodTitle}详情</div>
@@ -841,7 +835,7 @@ const CharacterModal: React.FC<Props> = ({
                     return (
                       <HoverableCard
                         borderColor="border-purple-500"
-                        className="bg-gradient-to-br from-purple-900/40 to-pink-900/40 rounded-xl p-4 border-2 border-purple-600 shadow-md hover:shadow-lg transition-all duration-300 relative cursor-pointer"
+                        className="bg-linear-to-br from-purple-900/40 to-pink-900/40 rounded-xl p-4 border-2 border-purple-600 shadow-md hover:shadow-lg transition-all duration-300 relative cursor-pointer"
                         tooltipContent={
                           <>
                             <div className="text-sm font-bold text-purple-300 mb-2">{essence?.name}</div>
@@ -907,7 +901,7 @@ const CharacterModal: React.FC<Props> = ({
                     return (
                       <HoverableCard
                         borderColor="border-red-500"
-                        className="bg-gradient-to-br from-red-900/40 to-orange-900/40 rounded-xl p-4 border-2 border-red-600 shadow-md hover:shadow-lg transition-all duration-300 relative cursor-pointer"
+                        className="bg-linear-to-br from-red-900/40 to-orange-900/40 rounded-xl p-4 border-2 border-red-600 shadow-md hover:shadow-lg transition-all duration-300 relative cursor-pointer"
                         tooltipContent={
                           <>
                             <div className="text-sm font-bold text-red-300 mb-2">{marrow?.name}</div>
@@ -987,7 +981,7 @@ const CharacterModal: React.FC<Props> = ({
 
                   {/* 合道期挑战状态 */}
                   {player.daoCombiningChallenged ? (
-                    <div className="bg-gradient-to-br from-indigo-900/40 to-violet-900/40 rounded-xl p-4 border-2 border-indigo-600 shadow-md hover:shadow-lg transition-all duration-300">
+                    <div className="bg-linear-to-br from-indigo-900/40 to-violet-900/40 rounded-xl p-4 border-2 border-indigo-600 shadow-md hover:shadow-lg transition-all duration-300">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-2 h-2 bg-indigo-400 rounded-full"></div>
                         <h4 className="text-base font-bold text-indigo-300">天地之魄</h4>
@@ -1015,7 +1009,7 @@ const CharacterModal: React.FC<Props> = ({
                     <HoverableCard
                       borderColor="border-green-500"
                       width="w-72"
-                      className="bg-gradient-to-br from-green-900/40 to-emerald-900/40 rounded-xl p-4 border-2 border-green-600 shadow-md hover:shadow-lg transition-all duration-300 relative cursor-pointer"
+                      className="bg-linear-to-br from-green-900/40 to-emerald-900/40 rounded-xl p-4 border-2 border-green-600 shadow-md hover:shadow-lg transition-all duration-300 relative cursor-pointer"
                       tooltipContent={
                         <div className="max-h-96 overflow-y-auto">
                           <div className="text-sm font-bold text-green-300 mb-3">规则之力详情</div>
@@ -1081,7 +1075,7 @@ const CharacterModal: React.FC<Props> = ({
               </div>
 
               {/* 传承系统 */}
-              <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded p-4 border-2 border-purple-500">
+              <div className="bg-linear-to-r from-purple-900/50 to-pink-900/50 rounded p-4 border-2 border-purple-500">
                 <h3 className="text-lg font-bold flex items-center gap-2 mb-3">
                   <Sparkles className="text-purple-400" size={20} />
                   传承系统
@@ -1102,7 +1096,7 @@ const CharacterModal: React.FC<Props> = ({
                     {onUseInheritance && (
                       <button
                         onClick={onUseInheritance}
-                        className="w-full px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded border border-purple-400 font-bold text-white transition-all"
+                        className="w-full px-4 py-3 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded border border-purple-400 font-bold text-white transition-all"
                       >
                         使用传承突破境界
                       </button>
@@ -1407,7 +1401,7 @@ const CharacterModal: React.FC<Props> = ({
                 {/* 当前装备的称号 */}
                 {currentTitle ? (
                   <div className="bg-stone-900 rounded p-4 border-2 border-yellow-500/50 mb-3">
-                    <div className="flex justify-between items-start mb-2">
+                    <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <span className={`font-bold ${getRarityTextColor((currentTitle.rarity || '普通') as ItemRarity)}`}>
@@ -1807,13 +1801,13 @@ const CharacterModal: React.FC<Props> = ({
               </div>
             </>
           )}
-        </div>
       </div>
+    </Modal>
 
       {/* 天地之髓投喂模态框 */}
       {showMarrowFeedModal && player.heavenEarthMarrow && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[10001] p-4"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-10000 flex items-center justify-center p-4"
           onClick={() => setShowMarrowFeedModal(false)}
         >
           <div
@@ -1914,7 +1908,7 @@ const CharacterModal: React.FC<Props> = ({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

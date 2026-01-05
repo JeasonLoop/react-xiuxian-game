@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Github, Check } from 'lucide-react';
+import { Github, Check } from 'lucide-react';
+import { Modal } from './common';
 
 interface Props {
   isOpen: boolean;
@@ -164,149 +165,132 @@ const ChangelogModal: React.FC<Props> = ({ isOpen, onClose }) => {
     return '📝';
   };
 
-  if (!isOpen) return null;
-
   const latestVersion = versions[0];
   const isLatest = latestVersion?.version === currentVersion;
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50 p-0 md:p-4 touch-manipulation"
-      onClick={onClose}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        <>
+          版本信息
+          <span className="text-sm text-stone-400 font-mono ml-2">
+            v{currentVersion}
+          </span>
+        </>
+      }
+      size="4xl"
+      height="full"
     >
-      <div
-        className="bg-stone-800 md:rounded-t-2xl md:rounded-b-lg border-0 md:border border-stone-700 w-full h-[90vh] md:h-auto md:max-w-4xl md:max-h-[90vh] overflow-hidden flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* 头部 */}
-        <div className="z-50 bg-stone-800 border-b border-stone-700 p-4 flex justify-between items-center shrink-0">
-          <h2 className="text-lg md:text-xl font-serif text-mystic-gold flex items-center gap-2">
-            版本信息
-            <span className="text-sm text-stone-400 font-mono">
-              v{currentVersion}
-            </span>
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-stone-400 hover:text-stone-200 transition-colors"
-          >
-            <X size={24} />
-          </button>
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-stone-400">加载中...</div>
         </div>
-
-        {/* 内容区域 */}
-        <div className="modal-scroll-container modal-scroll-content p-4 md:p-6">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="text-stone-400">加载中...</div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {/* 当前版本状态 */}
-              {isLatest && latestVersion && (
-                <div className="bg-green-900/30 border border-green-700/50 rounded-lg p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Check size={20} className="text-green-400" />
-                    <span className="text-green-400 font-semibold">
-                      当前为最新版本
-                    </span>
-                  </div>
-                  <div className="text-sm text-green-300">
-                    已是最新版本 v{currentVersion}
-                  </div>
-                </div>
-              )}
-
-              {/* 前往仓库按钮 */}
-              <a
-                href="https://github.com/JeasonLoop/react-xiuxian-game"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded-lg px-4 py-3 transition-colors"
-              >
-                <Github size={18} />
-                <span>前往仓库</span>
-                <Check size={16} className="ml-auto" />
-              </a>
-
-              {/* 变更日志 */}
-              <div>
-                <h3 className="text-lg font-semibold text-stone-200 mb-4">
-                  变更日志
-                </h3>
-                <div className="space-y-6">
-                  {versions.map((version, idx) => (
-                    <div
-                      key={version.version}
-                      className={`border rounded-lg overflow-hidden ${
-                        idx === 0 && isLatest
-                          ? 'border-green-700/50 bg-green-900/10'
-                          : 'border-stone-700 bg-stone-900/30'
-                      }`}
-                    >
-                      {/* 版本标题 */}
-                      <div className="bg-stone-800/50 border-b border-stone-700 px-4 py-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg font-semibold text-mystic-gold">
-                              v{version.version}
-                            </span>
-                            {idx === 0 && isLatest && (
-                              <span className="text-xs bg-green-700/50 text-green-300 px-2 py-1 rounded">
-                                当前版本
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-sm text-stone-400">
-                            {version.date}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* 版本内容 */}
-                      <div className="p-4 space-y-4">
-                        {version.changes.map((change, changeIdx) => (
-                          <div key={changeIdx} className="space-y-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-base">
-                                {getCategoryIcon(change.category)}
-                              </span>
-                              <h4 className="font-semibold text-stone-300">
-                                {formatCategoryName(change.category)}
-                              </h4>
-                            </div>
-                            <ul className="list-none space-y-1.5 ml-6">
-                              {change.items.map((item, itemIdx) => (
-                                <li
-                                  key={itemIdx}
-                                  className="text-sm text-stone-400 flex items-start gap-2"
-                                >
-                                  <span className="text-stone-600 mt-1.5 flex-shrink-0">•</span>
-                                  <span
-                                    className="flex-1"
-                                    dangerouslySetInnerHTML={{
-                                      __html: item
-                                        .replace(/\*\*(.+?)\*\*/g, '<strong class="text-stone-300">$1</strong>')
-                                        .replace(/`(.+?)`/g, '<code class="bg-stone-800 px-1 rounded text-stone-300">$1</code>'),
-                                    }}
-                                  />
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+      ) : (
+        <div className="space-y-6">
+          {/* 当前版本状态 */}
+          {isLatest && latestVersion && (
+            <div className="bg-green-900/30 border border-green-700/50 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Check size={20} className="text-green-400" />
+                <span className="text-green-400 font-semibold">
+                  当前为最新版本
+                </span>
+              </div>
+              <div className="text-sm text-green-300">
+                已是最新版本 v{currentVersion}
               </div>
             </div>
           )}
+
+          {/* 前往仓库按钮 */}
+          <a
+            href="https://github.com/JeasonLoop/react-xiuxian-game"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded-lg px-4 py-3 transition-colors"
+          >
+            <Github size={18} />
+            <span>前往仓库</span>
+            <Check size={16} className="ml-auto" />
+          </a>
+
+          {/* 变更日志 */}
+          <div>
+            <h3 className="text-lg font-semibold text-stone-200 mb-4">
+              变更日志
+            </h3>
+            <div className="space-y-6">
+              {versions.map((version, idx) => (
+                <div
+                  key={version.version}
+                  className={`border rounded-lg overflow-hidden ${
+                    idx === 0 && isLatest
+                      ? 'border-green-700/50 bg-green-900/10'
+                      : 'border-stone-700 bg-stone-900/30'
+                  }`}
+                >
+                  {/* 版本标题 */}
+                  <div className="bg-stone-800/50 border-b border-stone-700 px-4 py-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-semibold text-mystic-gold">
+                          v{version.version}
+                        </span>
+                        {idx === 0 && isLatest && (
+                          <span className="text-xs bg-green-700/50 text-green-300 px-2 py-1 rounded">
+                            当前版本
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-sm text-stone-400">
+                        {version.date}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 版本内容 */}
+                  <div className="p-4 space-y-4">
+                    {version.changes.map((change, changeIdx) => (
+                      <div key={changeIdx} className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">
+                            {getCategoryIcon(change.category)}
+                          </span>
+                          <h4 className="font-semibold text-stone-300">
+                            {formatCategoryName(change.category)}
+                          </h4>
+                        </div>
+                        <ul className="list-none space-y-1.5 ml-6">
+                          {change.items.map((item, itemIdx) => (
+                            <li
+                              key={itemIdx}
+                              className="text-sm text-stone-400 flex items-start gap-2"
+                            >
+                              <span className="text-stone-600 mt-1.5 shrink-0">•</span>
+                              <span
+                                className="flex-1"
+                                dangerouslySetInnerHTML={{
+                                  __html: item
+                                    .replace(/\*\*(.+?)\*\*/g, '<strong class="text-stone-300">$1</strong>')
+                                    .replace(/`(.+?)`/g, '<code class="bg-stone-800 px-1 rounded text-stone-300">$1</code>'),
+                                }}
+                              />
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </Modal>
   );
 };
 
 export default ChangelogModal;
-

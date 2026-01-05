@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import Modal from './common/Modal';
 import { Zap, Shield, Sword, Heart, Eye, Gauge, Skull, CheckCircle2, XCircle, Sparkles, Grid3X3, HelpCircle, Lightbulb } from 'lucide-react';
 import { TribulationState, TribulationResult } from '../types';
 import {
@@ -597,9 +598,18 @@ const TribulationModal: React.FC<TribulationModalProps> = ({
   const currentStageInfo = TRIBULATION_STAGES[currentStage];
 
   return (
-    <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[200] p-2 sm:p-4 md:p-6 backdrop-blur-md">
-      <div className="bg-gradient-to-b from-slate-900 to-stone-900 rounded-lg border-2 border-purple-500/50 shadow-2xl w-full max-w-[95vw] sm:max-w-xl md:max-w-2xl lg:max-w-3xl">
-        <div className="p-4 sm:p-6 md:p-8">
+    <Modal
+      isOpen={tribulationState.isOpen}
+      onClose={handleClose}
+      showCloseButton={false}
+      closeOnOverlayClick={false}
+      closeOnEsc={false}
+      size="3xl"
+      height="auto"
+      containerClassName="bg-linear-to-b from-slate-900 to-stone-900 border-2 border-purple-500/50"
+      contentClassName="p-4 sm:p-6 md:p-8"
+      zIndex={200}
+    >
           {/* 标题 */}
           <div className="text-center mb-4 sm:mb-6 md:mb-8">
             <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2 sm:mb-4">
@@ -1046,9 +1056,7 @@ const TribulationModal: React.FC<TribulationModalProps> = ({
               天劫降临，不可逃避，唯有直面生死！
             </div>
           )}
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 };
 
