@@ -859,7 +859,7 @@ export async function executeAdventureCore({
 
   // 在应用结果之前，检查是否触发了天地之魄，如果是则立即暂停自动历练
   if ((result.adventureType === 'dao_combining_challenge' || result.heavenEarthSoulEncounter)) {
-    onPauseAutoAdventure();
+    onPauseAutoAdventure?.();
   }
 
   // 处理追杀战斗结果（只有在追杀状态下才处理，正常挑战宗主不在这里处理）

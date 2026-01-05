@@ -102,6 +102,7 @@ export function useAdventureHandlers({
   ): Promise<{
     result: AdventureResult;
     battleContext: BattleReplay | null;
+    petSkillCooldowns?: Record<string, number>;
     shouldReturn: boolean;
   }> => {
     // 如果配置了逃跑，直接跳过战斗
@@ -126,6 +127,7 @@ export function useAdventureHandlers({
       );
       const battleResult = battleResolution.adventureResult;
       const battleCtx = battleResolution.replay;
+      const petSkillCooldowns = battleResolution.petSkillCooldowns;
       // 自动历练时跳过战斗，不打开战斗弹窗，直接返回结果
       return { result: battleResult, battleContext: battleCtx, shouldReturn: false };
     } else if (useTurnBasedBattle && onOpenTurnBasedBattle && !effectiveSkipBattle) {
@@ -156,6 +158,7 @@ export function useAdventureHandlers({
       return {
         result: battleResolution.adventureResult,
         battleContext: battleResolution.replay,
+        petSkillCooldowns: battleResolution.petSkillCooldowns,
         shouldReturn: false,
       };
     }
@@ -188,8 +191,7 @@ export function useAdventureHandlers({
     try {
       let result;
       let battleContext: BattleReplay | null = null;
-
-      let battleResolution: Awaited<ReturnType<typeof resolveBattleEncounter>> | undefined;
+      let petSkillCooldowns: Record<string, number> | undefined;
 
       // 检查是否被追杀
       const isHunted = player.sectHuntEndTime && player.sectHuntEndTime > Date.now();
@@ -202,7 +204,7 @@ export function useAdventureHandlers({
 
         // 使用公共函数处理战斗
         const huntRiskLevel = huntLevel >= 3 ? '极度危险' : huntLevel >= 2 ? '高' : huntLevel >= 1 ? '中' : '低';
-        const battleResult = await handleBattle(
+        const battleRes = await handleBattle(
           'sect_challenge',
           huntRiskLevel,
           player.realm,
@@ -210,11 +212,12 @@ export function useAdventureHandlers({
           huntSectId,
           huntLevel
         );
-        if (battleResult.shouldReturn) {
+        if (battleRes.shouldReturn) {
           return;
         }
-        result = battleResult.result;
-        battleContext = battleResult.battleContext;
+        result = battleRes.result;
+        battleContext = battleRes.battleContext;
+        petSkillCooldowns = battleRes.petSkillCooldowns;
       } else if (shouldTriggerBattle(player, adventureType)) {
         // 如果配置了逃跑，直接跳过战斗
         if (effectiveFleeOnBattle) {
@@ -225,12 +228,13 @@ export function useAdventureHandlers({
         }
 
         // 使用公共函数处理战斗
-        const battleResult = await handleBattle(adventureType, riskLevel || '低', realmMinRealm || player.realm);
-        if (battleResult.shouldReturn) {
+        const battleRes = await handleBattle(adventureType, riskLevel || '低', realmMinRealm || player.realm);
+        if (battleRes.shouldReturn) {
           return;
         }
-        result = battleResult.result;
-        battleContext = battleResult.battleContext;
+        result = battleRes.result;
+        battleContext = battleRes.battleContext;
+        petSkillCooldowns = battleRes.petSkillCooldowns;
       } else {
         // 100%使用模板库
         initializeEventTemplateLibrary();
@@ -345,6 +349,7 @@ export function useAdventureHandlers({
                       executeAdventureCore({
                         result: battleResult,
                         battleContext: battleCtx,
+                        petSkillCooldowns: battleResolution.petSkillCooldowns,
                         player,
                         setPlayer,
                         addLog,
@@ -390,6 +395,7 @@ export function useAdventureHandlers({
                     executeAdventureCore({
                       result: battleResult,
                       battleContext: battleCtx,
+                      petSkillCooldowns: battleResolution.petSkillCooldowns,
                       player,
                       setPlayer,
                       addLog,
@@ -458,7 +464,7 @@ export function useAdventureHandlers({
       await executeAdventureCore({
         result,
         battleContext,
-        petSkillCooldowns: battleResolution?.petSkillCooldowns,
+        petSkillCooldowns,
         player,
         setPlayer,
         addLog,
