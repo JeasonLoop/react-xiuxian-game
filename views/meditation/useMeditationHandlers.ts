@@ -49,13 +49,13 @@ export function useMeditationHandlers(
     // 基础修为 = 境界基础值 * (1 + 境界层数 * 0.15)
     const realmIndex = REALM_ORDER.indexOf(currentPlayer.realm);
 
-    // 不同境界的基础修为倍数（基于境界等级）
-    const realmBaseMultipliers = [1, 2, 5, 10, 25, 50, 100];
+    // 不同境界的基础修为倍数（基于境界等级）- 降低基础倍数，减缓升级速度
+    const realmBaseMultipliers = [1, 2, 4, 8, 15, 30, 60]; // 降低倍数：从[1,2,5,10,25,50,100]降低
     const realmBaseMultiplier = realmBaseMultipliers[realmIndex] || 1;
 
-    // 基础修为 = 境界基础倍数 * (1 + 境界层数 * 0.15)
+    // 基础修为 = 境界基础倍数 * 5 * (1 + 境界层数 * 0.1) - 降低基础值和层数加成
     let baseGain = Math.floor(
-      realmBaseMultiplier * 10 * (1 + currentPlayer.realmLevel * 0.15)
+      realmBaseMultiplier * 5 * (1 + currentPlayer.realmLevel * 0.1) // 从10降低到5，从0.15降低到0.1
     );
 
     // Apply Active Art Bonus

@@ -5,6 +5,8 @@
 
 import { useEffect, useRef } from 'react';
 import { PlayerStats } from '../types';
+import { AutoAdventureConfig } from '../components/AutoAdventureConfigModal';
+import { getPlayerTotalStats } from '../utils/statUtils';
 
 interface UseAutoFeaturesParams {
   autoMeditate: boolean;
@@ -27,6 +29,9 @@ interface UseAutoFeaturesParams {
   handleMeditate: () => void;
   handleAdventure: () => void;
   setCooldown: (cooldown: number) => void;
+  autoAdventureConfig?: AutoAdventureConfig;
+  setAutoAdventure?: (value: boolean) => void;
+  addLog?: (message: string, type?: string) => void;
 }
 
 /**
@@ -49,6 +54,9 @@ export function useAutoFeatures({
   handleMeditate,
   handleAdventure,
   setCooldown,
+  autoAdventureConfig,
+  setAutoAdventure,
+  addLog,
 }: UseAutoFeaturesParams) {
   // 使用 ref 跟踪函数和状态，避免闭包问题
   const handleMeditateRef = useRef(handleMeditate);
@@ -104,6 +112,25 @@ export function useAutoFeatures({
       const currentPlayer = playerRef.current;
       // 再次检查条件，防止状态在延迟期间发生变化
       if (autoAdventure && !loading && cooldown === 0 && currentPlayer && !autoMeditate && !isReputationEventOpen && !isTurnBasedBattleOpen && !pausedByShop && !pausedByBattle && !pausedByReputationEvent && !pausedByHeavenEarthSoul) {
+        // 检查血量阈值
+        if (autoAdventureConfig && autoAdventureConfig.minHpThreshold > 0) {
+          const currentHp = currentPlayer.hp || 0;
+          // 获取实际最大血量（包含功法加成等）
+          const totalStats = getPlayerTotalStats(currentPlayer);
+          const actualMaxHp = totalStats.maxHp;
+          // 计算阈值血量：最大血量 * 阈值百分比
+          const thresholdHp = actualMaxHp * (autoAdventureConfig.minHpThreshold / 100);
+          if (currentHp <= thresholdHp) {
+            // 血量低于阈值，自动停止历练
+            if (setAutoAdventure) {
+              setAutoAdventure(false);
+            }
+            if (addLog) {
+              addLog(`血量低于阈值 ${autoAdventureConfig.minHpThreshold}%（${Math.floor(thresholdHp)}/${Math.floor(actualMaxHp)}），自动停止历练。`, 'warning');
+            }
+            return;
+          }
+        }
         handleAdventure();
       }
     }, 500);
@@ -123,6 +150,10 @@ export function useAutoFeatures({
     pausedByBattle,
     pausedByReputationEvent,
     pausedByHeavenEarthSoul,
+    handleAdventure,
+    autoAdventureConfig,
+    setAutoAdventure,
+    addLog,
   ]);
 
   // 统一更新所有 refs

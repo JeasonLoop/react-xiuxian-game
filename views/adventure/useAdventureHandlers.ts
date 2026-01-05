@@ -120,7 +120,7 @@ export function useAdventureHandlers({
       );
       const battleResult = battleResolution.adventureResult;
       const battleCtx = battleResolution.replay;
-      // 跳过战斗时不打开战斗弹窗，直接返回结果
+      // 自动历练时跳过战斗，不打开战斗弹窗，直接返回结果
       return { result: battleResult, battleContext: battleCtx, shouldReturn: false };
     } else if (useTurnBasedBattle && onOpenTurnBasedBattle && !skipBattle) {
       // 如果使用回合制战斗系统，打开回合制战斗界面
@@ -335,7 +335,7 @@ export function useAdventureHandlers({
                     ).then((battleResolution) => {
                       const battleResult = battleResolution.adventureResult;
                       const battleCtx = battleResolution.replay;
-                      // 跳过战斗时不打开战斗弹窗，直接处理结果
+                      // 自动历练时跳过战斗，不打开战斗弹窗
                       executeAdventureCore({
                         result: battleResult,
                         battleContext: battleCtx,

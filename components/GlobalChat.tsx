@@ -113,6 +113,8 @@ export const GlobalChat: React.FC<Props> = ({ playerName }) => {
       // 打开聊天窗口时，更新最后查看时间为当前时间，并清除红点
       setLastViewedTimestamp(Date.now());
       setHasNew(false);
+    } else {
+      setShowEmojiPicker(false);
     }
   };
 

@@ -78,28 +78,33 @@ const BatchUseModal: React.FC<Props> = ({
   }, [inventory, equippedItems, selectedCategory, selectedRarity]);
 
   const handleToggleItem = (itemId: string) => {
-    setSelectedItems((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
+    const isSelected = selectedItems.has(itemId);
+
+    if (isSelected) {
+      // 取消选中
+      setSelectedItems((prev) => {
+        const newSet = new Set(prev);
         newSet.delete(itemId);
-        setItemQuantities((prevQty) => {
-          const newQty = new Map(prevQty);
-          newQty.delete(itemId);
-          return newQty;
-        });
-      } else {
+        return newSet;
+      });
+      setItemQuantities((prev) => {
+        const newQty = new Map(prev);
+        newQty.delete(itemId);
+        return newQty;
+      });
+    } else {
+      // 选中
+      setSelectedItems((prev) => {
+        const newSet = new Set(prev);
         newSet.add(itemId);
-        const item = inventory.find((i) => i.id === itemId);
-        if (item) {
-          setItemQuantities((prevQty) => {
-            const newQty = new Map(prevQty);
-            newQty.set(itemId, 1); // 默认使用1个
-            return newQty;
-          });
-        }
-      }
-      return newSet;
-    });
+        return newSet;
+      });
+      setItemQuantities((prev) => {
+        const newQty = new Map(prev);
+        newQty.set(itemId, 1); // 默认使用1个
+        return newQty;
+      });
+    }
   };
 
   const handleQuantityChange = (itemId: string, quantity: number) => {
@@ -290,7 +295,8 @@ const BatchUseModal: React.FC<Props> = ({
                 return (
                   <div
                     key={item.id}
-                    className={`p-3 rounded border flex flex-col gap-2 transition-colors ${
+                    onClick={() => handleToggleItem(item.id)}
+                    className={`p-3 rounded border flex flex-col gap-2 transition-colors cursor-pointer ${
                       isSelected
                         ? 'bg-green-900/30 border-green-600'
                         : 'bg-ink-800 hover:bg-ink-700 border-stone-700'
@@ -300,8 +306,8 @@ const BatchUseModal: React.FC<Props> = ({
                       <input
                         type="checkbox"
                         checked={isSelected}
-                        onChange={() => handleToggleItem(item.id)}
-                        className="mt-1"
+                        onChange={() => {}}
+                        className="mt-1 pointer-events-none"
                       />
                         <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2 mb-1">
@@ -330,7 +336,10 @@ const BatchUseModal: React.FC<Props> = ({
                       </div>
                     </div>
                     {isSelected && (
-                      <div className="flex items-center gap-2 pl-8">
+                      <div
+                        className="flex items-center gap-2 pl-8"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <label className="text-xs text-stone-400">使用数量:</label>
                         <input
                           type="number"
