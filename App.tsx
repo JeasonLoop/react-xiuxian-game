@@ -537,6 +537,7 @@ function App() {
     setIsBattleModalOpen,
     setAutoMeditate,
     setAutoAdventure,
+    setItemActionLog,
   });
 
   // 战斗结束后，如果玩家还活着且之前是自动历练模式，继续自动历练

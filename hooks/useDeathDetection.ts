@@ -8,7 +8,6 @@ import { PlayerStats, Item, EquipmentSlot, GameSettings } from '../types';
 import { BattleReplay } from '../services/battleService';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import { clearAllSlots } from '../utils/saveManagerUtils';
-import { useItemActionLog } from '../hooks/useItemActionLog';
 
 
 /**
@@ -128,6 +127,7 @@ interface UseDeathDetectionParams {
   setIsBattleModalOpen: (open: boolean) => void;
   setAutoMeditate: (value: boolean) => void;
   setAutoAdventure: (value: boolean) => void;
+  setItemActionLog?: (log: { text: string; type: string } | null) => void;
 }
 
 /**
@@ -146,8 +146,8 @@ export function useDeathDetection({
   setIsBattleModalOpen,
   setAutoMeditate,
   setAutoAdventure,
+  setItemActionLog,
 }: UseDeathDetectionParams) {
-  const { setItemActionLog } = useItemActionLog();
   useEffect(() => {
     if (!player || isDead) return;
 

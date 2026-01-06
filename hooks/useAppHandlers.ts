@@ -115,7 +115,6 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     setCurrentShop,
     setItemToUpgrade,
     setPurchaseSuccess,
-    setLotteryRewards,
     battleReplay,
     setBattleReplay,
     revealedBattleRounds,
@@ -123,9 +122,6 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     setLastBattleReplay,
     reputationEvent: reputationEventValue,
     setReputationEvent,
-    pausedByShop,
-    pausedByBattle,
-    setPausedByBattle,
   } = useUIStore(
     useShallow((state) => ({
       modals: state.modals,
@@ -224,9 +220,13 @@ export function useAppHandlers(props: UseAppHandlersProps) {
 
   // Items 和 Equipment handlers 现在直接从 zustand store 获取状态
   // 不再需要传入 props（向后兼容，仍支持传入 props）
-  const itemHandlers = useItemHandlers();
+  const itemHandlers = useItemHandlers({
+    setItemActionLog,
+  });
 
-  const equipmentHandlers = useEquipmentHandlers();
+  const equipmentHandlers = useEquipmentHandlers({
+    setItemActionLog,
+  });
 
   // cultivationHandlers 现在直接从 zustand store 获取状态，无需传入 props
   const cultivationHandlers = useCultivationHandlers();
@@ -237,7 +237,9 @@ export function useAppHandlers(props: UseAppHandlersProps) {
   });
 
   // characterHandlers 现在直接从 zustand store 获取状态，无需传入 props
-  const characterHandlers = useCharacterHandlers();
+  const characterHandlers = useCharacterHandlers({
+    setItemActionLog,
+  });
 
   // shopHandlers 现在直接从 zustand store 获取状态，无需传入 props
   const shopHandlers = useShopHandlers();
@@ -247,7 +249,9 @@ export function useAppHandlers(props: UseAppHandlersProps) {
   });
 
   // petHandlers 现在直接从 zustand store 获取状态，无需传入 props
-  const petHandlers = usePetHandlers();
+  const petHandlers = usePetHandlers({
+    setItemActionLog,
+  });
 
   // lotteryHandlers 现在直接从 zustand store 获取状态，无需传入 props
   const lotteryHandlers = useLotteryHandlers();

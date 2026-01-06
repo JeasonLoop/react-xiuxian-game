@@ -18,10 +18,14 @@ export function usePlayTime({
   logs,
 }: UsePlayTimeProps) {
   const playTimeIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastPlayTimeUpdateRef = useRef<number>(0);
   const lastPlayTimeSaveRef = useRef<number>(0);
   const playerRef = useRef(player);
   const logsRef = useRef(logs);
+  
+  // 记录当前 session 开始的时间戳
+  const sessionStartTimeRef = useRef<number>(0);
+  // 记录当前 session 的累计时长（用于处理 effect 重启）
+  const sessionAccumulatedTimeRef = useRef<number>(0);
 
   // 保持 refs 与状态同步
   useEffect(() => {
@@ -33,22 +37,23 @@ export function usePlayTime({
   }, [logs]);
 
   useEffect(() => {
+    // 游戏未开始或没有玩家数据时，停止计时
     if (!gameStarted || !player) {
       if (playTimeIntervalRef.current) {
         clearInterval(playTimeIntervalRef.current);
         playTimeIntervalRef.current = null;
+        sessionStartTimeRef.current = 0;
+        sessionAccumulatedTimeRef.current = 0;
       }
       return;
     }
 
-    if (player.playTime === undefined) {
-      setPlayer((prev) => (prev ? { ...prev, playTime: 0 } : null));
-      lastPlayTimeUpdateRef.current = 0;
-    } else {
-      lastPlayTimeUpdateRef.current = player.playTime;
-    }
-
-    const startTime = Date.now();
+    // 初始化 playTime（如果未定义）
+    const basePlayTime = player.playTime ?? 0;
+    
+    // 记录当前 session 开始时间
+    sessionStartTimeRef.current = Date.now();
+    sessionAccumulatedTimeRef.current = 0;
     lastPlayTimeSaveRef.current = Date.now();
 
     playTimeIntervalRef.current = setInterval(() => {
@@ -56,12 +61,16 @@ export function usePlayTime({
         if (!prev) return null;
 
         const now = Date.now();
-        const elapsed = now - startTime;
-        const newPlayTime = lastPlayTimeUpdateRef.current + elapsed;
+        // 计算当前 session 的经过时间
+        const sessionElapsed = now - sessionStartTimeRef.current;
+        // 新的游戏时长 = 基础时长 + session 累计时长 + 当前 session 经过时间
+        const newPlayTime = basePlayTime + sessionAccumulatedTimeRef.current + sessionElapsed;
 
+        // 每 10 秒保存一次
         if (now - lastPlayTimeSaveRef.current >= 10000) {
           lastPlayTimeSaveRef.current = now;
-          lastPlayTimeUpdateRef.current = newPlayTime;
+          sessionAccumulatedTimeRef.current += sessionElapsed;
+          sessionStartTimeRef.current = now;
 
           const currentPlayer = playerRef.current;
           const currentLogs = logsRef.current;
@@ -78,8 +87,20 @@ export function usePlayTime({
       if (playTimeIntervalRef.current) {
         clearInterval(playTimeIntervalRef.current);
         playTimeIntervalRef.current = null;
+        
+        // 清理时保存最后的游戏时长
+        if (playerRef.current && gameStarted) {
+          const now = Date.now();
+          const sessionElapsed = now - sessionStartTimeRef.current;
+          const finalPlayTime = basePlayTime + sessionAccumulatedTimeRef.current + sessionElapsed;
+          saveGame({ ...playerRef.current, playTime: finalPlayTime }, logsRef.current);
+        }
+        
+        sessionStartTimeRef.current = 0;
+        sessionAccumulatedTimeRef.current = 0;
       }
     };
-  }, [gameStarted, player?.name, saveGame, setPlayer]);
+    // 只依赖 gameStarted，避免频繁重启计时器
+  }, [gameStarted, saveGame]);
 }
 

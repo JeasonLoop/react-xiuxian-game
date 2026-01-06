@@ -122,7 +122,6 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
             text: `✨ 祭炼成功！${currentItem.name} 品质提升了！`,
             type: 'special'
           });
-          setTimeout(() => setItemActionLog && setItemActionLog(null), 3000);
         }
         setUpgradeStones(0);
         // 延迟一下再关闭，让用户看到结果
@@ -136,7 +135,6 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
             text: `❌ 祭炼失败！${currentItem.name} 未能提升品质，材料已消耗。`,
             type: 'danger'
           });
-          setTimeout(() => setItemActionLog && setItemActionLog(null), 3000);
         }
         setIsUpgrading(false);
         setUpgradeStones(0);
@@ -163,7 +161,6 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
             text: errorMsg,
             type: 'danger'
           });
-          setTimeout(() => setItemActionLog && setItemActionLog(null), 3000);
         }
         setIsUpgrading(false);
       }
@@ -175,7 +172,6 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
           text: `❌ 祭炼过程中发生错误，请重试！`,
           type: 'danger'
         });
-        setTimeout(() => setItemActionLog && setItemActionLog(null), 3000);
       }
     }
   };
