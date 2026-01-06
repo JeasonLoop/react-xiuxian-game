@@ -634,7 +634,7 @@ const PetModal: React.FC<Props> = ({
 
         {/* 喂养方式选择弹窗 */}
         {selectedPetId && (
-          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-60 p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-70 p-4">
             <div className="bg-stone-800 rounded-lg border border-stone-700 w-full max-w-md p-6">
               <h3 className="text-lg font-bold mb-4 text-mystic-gold">
                 选择喂养方式
@@ -816,7 +816,7 @@ const PetModal: React.FC<Props> = ({
           );
 
           return (
-            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-60 p-4 backdrop-blur-sm">
+            <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-70 p-4 backdrop-blur-sm">
               <div
                 className="bg-stone-800 w-full max-w-md rounded-lg border border-stone-600 shadow-2xl"
                 onClick={(e) => e.stopPropagation()}

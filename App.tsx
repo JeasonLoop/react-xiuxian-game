@@ -291,10 +291,10 @@ function App() {
     skipReputationEvent: boolean;
     minHpThreshold: number;
   }>({
-    skipBattle: false,
+    skipBattle: true,
     fleeOnBattle: false,
-    skipShop: false,
-    skipReputationEvent: false,
+    skipShop: true,
+    skipReputationEvent: true,
     minHpThreshold: 20,
   });
 

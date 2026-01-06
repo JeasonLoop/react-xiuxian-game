@@ -111,7 +111,7 @@ const BatchDiscardModal: React.FC<Props> = ({
       titleIcon={<Trash2 size={20} />}
       size="4xl"
       height="full"
-      zIndex={60}
+      zIndex={70}
     >
       {/* 筛选器 */}
       <div className="mb-4 space-y-3">

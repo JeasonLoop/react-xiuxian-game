@@ -172,7 +172,7 @@ const BatchReleaseModal: React.FC<Props> = ({
       titleIcon={<Trash2 className="text-red-400" size={20} />}
       size="2xl"
       height="full"
-      zIndex={60}
+      zIndex={70}
       footer={confirmRelease ? undefined : footer}
     >
       {confirmRelease ? (
