@@ -89,73 +89,6 @@ export function useAutoFeatures({
     pausedByHeavenEarthSoul,
   });
 
-  // 自动历练逻辑
-  useEffect(() => {
-    // 提前检查所有条件
-    if (
-      !autoAdventure ||
-      !playerRef.current ||
-      loading ||
-      cooldown > 0 ||
-      isShopOpen ||
-      isReputationEventOpen ||
-      isTurnBasedBattleOpen ||
-      pausedByShop ||
-      pausedByBattle ||
-      pausedByReputationEvent ||
-      pausedByHeavenEarthSoul ||
-      autoMeditate
-    )
-      return;
-
-    const timer = setTimeout(() => {
-      const currentPlayer = playerRef.current;
-      // 再次检查条件，防止状态在延迟期间发生变化
-      if (autoAdventure && !loading && cooldown === 0 && currentPlayer && !autoMeditate && !isReputationEventOpen && !isTurnBasedBattleOpen && !pausedByShop && !pausedByBattle && !pausedByReputationEvent && !pausedByHeavenEarthSoul) {
-        // 检查血量阈值
-        if (autoAdventureConfig && autoAdventureConfig.minHpThreshold > 0) {
-          const currentHp = currentPlayer.hp || 0;
-          // 获取实际最大血量（包含功法加成等）
-          const totalStats = getPlayerTotalStats(currentPlayer);
-          const actualMaxHp = totalStats.maxHp;
-          // 计算阈值血量：最大血量 * 阈值百分比
-          const thresholdHp = actualMaxHp * (autoAdventureConfig.minHpThreshold / 100);
-          if (currentHp <= thresholdHp) {
-            // 血量低于阈值，自动停止历练
-            if (setAutoAdventure) {
-              setAutoAdventure(false);
-            }
-            if (addLog) {
-              addLog(`血量低于阈值 ${autoAdventureConfig.minHpThreshold}%（${Math.floor(thresholdHp)}/${Math.floor(actualMaxHp)}），自动停止历练。`, 'warning');
-            }
-            return;
-          }
-        }
-        handleAdventure();
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-    // 移除了 player 依赖，使用 ref 避免频繁触发
-  }, [
-    autoAdventure,
-    loading,
-    cooldown,
-    player,
-    isShopOpen,
-    isReputationEventOpen,
-    isTurnBasedBattleOpen,
-    isAlertOpen,
-    pausedByShop,
-    pausedByBattle,
-    pausedByReputationEvent,
-    pausedByHeavenEarthSoul,
-    handleAdventure,
-    autoAdventureConfig,
-    setAutoAdventure,
-    addLog,
-  ]);
-
   // 统一更新所有 refs
   useEffect(() => {
     handleMeditateRef.current = handleMeditate;
@@ -195,6 +128,41 @@ export function useAutoFeatures({
     handleAdventure,
     setCooldown,
   ]);
+
+  /**
+   * 检查血量阈值
+   * 如果血量低于配置的阈值，自动停止历练并返回 true
+   * @param currentPlayer 当前玩家对象
+   * @returns 是否应该停止历练（true = 血量低于阈值，已停止）
+   */
+  const checkHpThreshold = (currentPlayer: PlayerStats): boolean => {
+    if (!autoAdventureConfig || autoAdventureConfig.minHpThreshold <= 0) {
+      return false; // 未配置阈值或阈值为0，不检查
+    }
+
+    const currentHp = currentPlayer.hp || 0;
+    // 获取实际最大血量（包含功法加成等）
+    const totalStats = getPlayerTotalStats(currentPlayer);
+    const actualMaxHp = totalStats.maxHp;
+    // 计算阈值血量：最大血量 * 阈值百分比
+    const thresholdHp = actualMaxHp * (autoAdventureConfig.minHpThreshold / 100);
+
+    if (currentHp <= thresholdHp) {
+      // 血量低于阈值，自动停止历练
+      if (setAutoAdventure) {
+        setAutoAdventure(false);
+      }
+      if (addLog) {
+        addLog(
+          `血量低于阈值 ${autoAdventureConfig.minHpThreshold}%（${Math.floor(thresholdHp)}/${Math.floor(actualMaxHp)}），自动停止历练。`,
+          'warning'
+        );
+      }
+      return true; // 返回 true 表示应该停止历练
+    }
+
+    return false; // 血量正常，可以继续历练
+  };
 
   /**
    * 检查自动历练是否应该暂停
@@ -298,11 +266,25 @@ export function useAutoFeatures({
         return;
       }
 
+      // 检查血量阈值（在执行历练前）
+      const currentPlayer = playerRef.current;
+      if (currentPlayer && checkHpThreshold(currentPlayer)) {
+        isExecutingAdventureRef.current = false;
+        return;
+      }
+
       // 执行历练
       isExecutingAdventureRef.current = true;
       try {
         // 等待历练完成，避免并发执行
         await handleAdventureRef.current();
+
+        // 历练完成后，再次检查血量阈值
+        const currentPlayerAfterAdventure = playerRef.current;
+        if (currentPlayerAfterAdventure && checkHpThreshold(currentPlayerAfterAdventure)) {
+          isExecutingAdventureRef.current = false;
+          return;
+        }
       } catch (error) {
         console.error('自动历练出错:', error);
       } finally {
@@ -331,6 +313,6 @@ export function useAutoFeatures({
       adventureTimeoutIdsRef.current.forEach((id) => clearTimeout(id));
       adventureTimeoutIdsRef.current = [];
     };
-  }, [autoAdventure]);
+  }, [autoAdventure, autoAdventureConfig, setAutoAdventure, addLog]);
 }
 
