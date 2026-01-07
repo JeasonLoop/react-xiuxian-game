@@ -13,6 +13,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '青木灵根',
     description: '蕴含青木之气的灵根，可增强生命力',
     rarity: '普通',
+    advancedItemType: 'foundationTreasure',
     effects: { hpBonus: 500, spiritBonus: 50 },
     battleEffect: {
       type: 'heal',
@@ -30,6 +31,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '赤火晶石',
     description: '蕴含纯阳火气的晶石，可增强攻击力',
     rarity: '普通',
+    advancedItemType: 'foundationTreasure',
     effects: { attackBonus: 100, physiqueBonus: 30 },
     battleEffect: {
       type: 'damage',
@@ -47,6 +49,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '玄水精魄',
     description: '蕴含玄阴水气的精魄，可增强灵力',
     rarity: '普通',
+    advancedItemType: 'foundationTreasure',
     effects: { spiritBonus: 80, defenseBonus: 40 },
     battleEffect: {
       type: 'buff',
@@ -64,6 +67,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '厚土灵核',
     description: '蕴含厚重土气的灵核，可增强防御',
     rarity: '普通',
+    advancedItemType: 'foundationTreasure',
     effects: { defenseBonus: 80, hpBonus: 300 },
     battleEffect: {
       type: 'heal',
@@ -81,6 +85,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '庚金灵胚',
     description: '蕴含锐利金气的灵胚，可增强速度',
     rarity: '普通',
+    advancedItemType: 'foundationTreasure',
     effects: { speedBonus: 20, attackBonus: 60 },
     battleEffect: {
       type: 'damage',
@@ -98,6 +103,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '风雷之羽',
     description: '蕴含风雷之力的羽毛，可增强身法',
     rarity: '普通',
+    advancedItemType: 'foundationTreasure',
     effects: { speedBonus: 30, spiritBonus: 40 },
     battleEffect: {
       type: 'buff',
@@ -115,6 +121,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '冰晶玉髓',
     description: '蕴含寒冰之气的玉髓，可增强灵力',
     rarity: '普通',
+    advancedItemType: 'foundationTreasure',
     effects: { spiritBonus: 70, defenseBonus: 30 },
     battleEffect: {
       type: 'debuff',
@@ -133,6 +140,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '熔岩之心',
     description: '蕴含地火之力的核心，可增强体魄',
     rarity: '普通',
+    advancedItemType: 'foundationTreasure',
     effects: { physiqueBonus: 50, hpBonus: 400 },
     battleEffect: {
       type: 'damage',
@@ -151,6 +159,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '星辰碎片',
     description: '蕴含星辰之力的碎片，可增强灵力',
     rarity: '普通',
+    advancedItemType: 'foundationTreasure',
     effects: { spiritBonus: 60, speedBonus: 15 },
     battleEffect: {
       type: 'buff',
@@ -168,6 +177,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '月华露珠',
     description: '蕴含月华之气的露珠，可增强生命力',
     rarity: '普通',
+    advancedItemType: 'foundationTreasure',
     effects: { hpBonus: 350, spiritBonus: 45 },
     battleEffect: {
       type: 'heal',
@@ -188,6 +198,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '九转金丹',
     description: '九转炼制的金丹，可大幅增强根基',
     rarity: '稀有',
+    advancedItemType: 'foundationTreasure',
     effects: { hpBonus: 800, attackBonus: 150, defenseBonus: 100 },
     battleEffect: {
       type: 'buff',
@@ -205,6 +216,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '紫府仙莲',
     description: '生长在紫府的仙莲，可增强灵力根基',
     rarity: '稀有',
+    advancedItemType: 'foundationTreasure',
     effects: { spiritBonus: 120, hpBonus: 600, specialEffect: '灵力恢复速度提升20%' },
     battleEffect: {
       type: 'heal',
@@ -223,6 +235,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '龙血精石',
     description: '蕴含真龙血脉的精石，可增强体魄',
     rarity: '稀有',
+    advancedItemType: 'foundationTreasure',
     effects: { physiqueBonus: 80, hpBonus: 1000, attackBonus: 120 },
     battleEffect: {
       type: 'buff',
@@ -240,6 +253,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '凤翎灵羽',
     description: '用凤凰翎羽制成的灵物，可增强灵力',
     rarity: '稀有',
+    advancedItemType: 'foundationTreasure',
     effects: { spiritBonus: 150, speedBonus: 25, specialEffect: '法术伤害提升15%' },
     battleEffect: {
       type: 'damage',
@@ -258,6 +272,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '麒麟角',
     description: '神兽麒麟的角，可增强防御力',
     rarity: '稀有',
+    advancedItemType: 'foundationTreasure',
     effects: { defenseBonus: 150, hpBonus: 700, physiqueBonus: 60 },
     battleEffect: {
       type: 'buff',
@@ -275,6 +290,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '玄武甲片',
     description: '神兽玄武的甲片，可大幅增强防御',
     rarity: '稀有',
+    advancedItemType: 'foundationTreasure',
     effects: { defenseBonus: 200, hpBonus: 900, specialEffect: '受到伤害减少10%' },
     battleEffect: {
       type: 'buff',
@@ -292,6 +308,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '白虎牙',
     description: '神兽白虎的牙齿，可增强攻击力',
     rarity: '稀有',
+    advancedItemType: 'foundationTreasure',
     effects: { attackBonus: 200, speedBonus: 30, physiqueBonus: 70 },
     battleEffect: {
       type: 'damage',
@@ -309,6 +326,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '朱雀羽',
     description: '神兽朱雀的羽毛，可增强火系灵力',
     rarity: '稀有',
+    advancedItemType: 'foundationTreasure',
     effects: { spiritBonus: 180, attackBonus: 130, specialEffect: '火系法术威力提升25%' },
     battleEffect: {
       type: 'damage',
@@ -327,6 +345,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '青龙鳞',
     description: '神兽青龙的鳞片，可增强生命力',
     rarity: '稀有',
+    advancedItemType: 'foundationTreasure',
     effects: { hpBonus: 1200, spiritBonus: 100, speedBonus: 20 },
     battleEffect: {
       type: 'heal',
@@ -345,6 +364,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '混沌石',
     description: '蕴含混沌之气的奇石，可平衡五行',
     rarity: '稀有',
+    advancedItemType: 'foundationTreasure',
     effects: { hpBonus: 500, attackBonus: 100, defenseBonus: 100, spiritBonus: 100, physiqueBonus: 50 },
     battleEffect: {
       type: 'buff',
@@ -364,6 +384,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '太初道胎',
     description: '蕴含太初之气的道胎，可铸就无上根基',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { hpBonus: 1500, attackBonus: 300, defenseBonus: 200, spiritBonus: 250, physiqueBonus: 150, specialEffect: '所有属性提升10%' },
     battleEffect: {
       type: 'buff',
@@ -381,6 +402,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '鸿蒙紫气',
     description: '开天辟地时的鸿蒙紫气，可增强道基',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { spiritBonus: 400, hpBonus: 1000, specialEffect: '灵力上限提升30%，修炼速度提升20%' },
     battleEffect: {
       type: 'buff',
@@ -398,6 +420,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '造化玉碟',
     description: '蕴含造化之力的玉碟，可改变资质',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { hpBonus: 1200, attackBonus: 250, defenseBonus: 180, spiritBonus: 300, speedBonus: 40, specialEffect: '突破成功率提升15%' },
     battleEffect: {
       type: 'buff',
@@ -415,6 +438,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '轮回印',
     description: '蕴含轮回之力的印记，可增强生命力',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { hpBonus: 2000, physiqueBonus: 200, specialEffect: '死亡时有30%几率复活并恢复50%生命' },
     battleEffect: {
       type: 'heal',
@@ -433,6 +457,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '时空沙漏',
     description: '可操控时空的沙漏，可增强速度',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { speedBonus: 60, spiritBonus: 200, specialEffect: '战斗时先手几率提升25%，闪避率提升15%' },
     battleEffect: {
       type: 'buff',
@@ -450,6 +475,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '命运之轮',
     description: '可改变命运的轮盘，可增强气运',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { hpBonus: 800, attackBonus: 200, defenseBonus: 150, spiritBonus: 180, specialEffect: '暴击率提升20%，暴击伤害提升30%' },
     battleEffect: {
       type: 'buff',
@@ -467,6 +493,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '因果之线',
     description: '连接因果的神秘丝线，可增强灵力',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { spiritBonus: 350, hpBonus: 900, specialEffect: '法术命中率提升25%，法术暴击率提升15%' },
     battleEffect: {
       type: 'damage',
@@ -485,6 +512,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '虚无灵镜',
     description: '可看透虚实的灵镜，可增强洞察力',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { defenseBonus: 250, spiritBonus: 220, specialEffect: '受到攻击时有20%几率完全闪避，看破敌人弱点几率提升' },
     battleEffect: {
       type: 'buff',
@@ -502,6 +530,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '永恒之火',
     description: '永不熄灭的火焰，可增强攻击力',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { attackBonus: 350, spiritBonus: 280, specialEffect: '攻击附带灼烧效果，持续造成伤害' },
     battleEffect: {
       type: 'damage',
@@ -520,6 +549,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '不朽之木',
     description: '永恒不朽的神木，可增强生命力',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { hpBonus: 1800, defenseBonus: 220, specialEffect: '生命恢复速度提升50%，中毒抗性提升' },
     battleEffect: {
       type: 'heal',
@@ -540,6 +570,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '天道碎片',
     description: '天道的碎片，蕴含无上法则',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { hpBonus: 2500, attackBonus: 500, defenseBonus: 400, spiritBonus: 600, physiqueBonus: 300, speedBonus: 80, specialEffect: '所有属性提升20%，突破成功率提升25%' },
     battleEffect: {
       type: 'buff',
@@ -557,6 +588,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '混沌青莲',
     description: '混沌中诞生的青莲，可铸就完美道基',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { hpBonus: 3000, spiritBonus: 800, specialEffect: '灵力上限提升50%，修炼速度提升40%，法术威力提升30%' },
     battleEffect: {
       type: 'buff',
@@ -574,6 +606,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '盘古精血',
     description: '开天辟地盘古的精血，可增强体魄',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { physiqueBonus: 500, hpBonus: 4000, attackBonus: 600, defenseBonus: 500, specialEffect: '生命恢复速度提升100%，物理伤害提升40%' },
     battleEffect: {
       type: 'buff',
@@ -591,6 +624,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '女娲石',
     description: '女娲补天所用的神石，可增强灵力',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { spiritBonus: 1000, defenseBonus: 600, hpBonus: 2000, specialEffect: '灵力恢复速度提升80%，法术防御提升50%' },
     battleEffect: {
       type: 'buff',
@@ -608,6 +642,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '东皇钟意',
     description: '蕴含东皇钟神韵的奇物，可增强防御',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { defenseBonus: 800, hpBonus: 3500, specialEffect: '受到伤害减少30%，反弹20%伤害给攻击者' },
     battleEffect: {
       type: 'buff',
@@ -625,6 +660,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '轩辕剑意',
     description: '人族圣剑轩辕剑的剑意，可增强攻击',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { attackBonus: 800, speedBonus: 100, specialEffect: '攻击力提升50%，暴击率提升30%，对邪魔伤害翻倍' },
     battleEffect: {
       type: 'damage',
@@ -642,6 +678,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '昆仑镜心',
     description: '蕴含昆仑镜神韵的奇物，可增强洞察',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { spiritBonus: 700, speedBonus: 120, specialEffect: '先手几率提升40%，闪避率提升25%，看破敌人招式' },
     battleEffect: {
       type: 'buff',
@@ -659,6 +696,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '伏羲琴音',
     description: '蕴含伏羲琴神韵的奇物，可增强灵力',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { spiritBonus: 900, hpBonus: 1800, specialEffect: '灵力上限提升60%，音律法术威力提升50%' },
     battleEffect: {
       type: 'damage',
@@ -677,6 +715,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '神农鼎火',
     description: '蕴含神农鼎神韵的奇物，可增强生命力',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { hpBonus: 5000, physiqueBonus: 400, specialEffect: '生命恢复速度提升150%，中毒抗性提升100%' },
     battleEffect: {
       type: 'heal',
@@ -695,6 +734,7 @@ export const FOUNDATION_TREASURES: Record<string, FoundationTreasure> = {
     name: '太极图录',
     description: '蕴含阴阳大道的至宝，可平衡阴阳',
     rarity: '传说',
+    advancedItemType: 'foundationTreasure',
     effects: { hpBonus: 2200, attackBonus: 400, defenseBonus: 400, spiritBonus: 500, physiqueBonus: 300, speedBonus: 60, specialEffect: '所有属性提升25%，阴阳平衡，万法不侵' },
     battleEffect: {
       type: 'buff',
@@ -759,6 +799,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '业火红莲',
     description: '蕴含业火之力的红莲，可净化因果',
     rarity: '普通',
+    advancedItemType: 'heavenEarthEssence',
     quality: 30,
     effects: { attackBonus: 200, spiritBonus: 100, specialEffect: '攻击附带业火灼烧，持续造成伤害' },
     battleEffect: {
@@ -777,6 +818,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '太华千山',
     description: '太华山脉的精华，可增强防御',
     rarity: '普通',
+    advancedItemType: 'heavenEarthEssence',
     quality: 35,
     effects: { defenseBonus: 250, hpBonus: 500, specialEffect: '受到伤害时有一定几率触发山岳守护' },
     battleEffect: {
@@ -795,6 +837,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '五行洞天',
     description: '蕴含五行之力的洞天精华',
     rarity: '普通',
+    advancedItemType: 'heavenEarthEssence',
     quality: 40,
     effects: { hpBonus: 400, attackBonus: 150, defenseBonus: 150, spiritBonus: 120, physiqueBonus: 80 },
     battleEffect: {
@@ -813,6 +856,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '诡道红符',
     description: '蕴含诡道之力的神秘符箓',
     rarity: '普通',
+    advancedItemType: 'heavenEarthEssence',
     quality: 45,
     effects: { spiritBonus: 200, speedBonus: 30, specialEffect: '法术命中率提升，有一定几率迷惑敌人' },
     battleEffect: {
@@ -832,6 +876,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '幽冥鬼火',
     description: '来自幽冥的诡异火焰',
     rarity: '普通',
+    advancedItemType: 'heavenEarthEssence',
     quality: 50,
     effects: { attackBonus: 180, spiritBonus: 150, specialEffect: '攻击附带幽冥效果，降低敌人防御' },
     battleEffect: {
@@ -851,6 +896,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '血月精华',
     description: '血月之夜凝聚的精华',
     rarity: '普通',
+    advancedItemType: 'heavenEarthEssence',
     quality: 55,
     effects: { physiqueBonus: 100, hpBonus: 600, specialEffect: '生命恢复速度提升，夜晚战斗力增强' },
     battleEffect: {
@@ -870,6 +916,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '星辰之泪',
     description: '星辰陨落时凝聚的精华',
     rarity: '普通',
+    advancedItemType: 'heavenEarthEssence',
     quality: 60,
     effects: { spiritBonus: 180, speedBonus: 25, specialEffect: '灵力上限提升，星辰法术威力增强' },
     battleEffect: {
@@ -888,6 +935,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '九幽寒冰',
     description: '九幽之地的极寒精华',
     rarity: '普通',
+    advancedItemType: 'heavenEarthEssence',
     quality: 65,
     effects: { defenseBonus: 200, spiritBonus: 160, specialEffect: '冰系法术威力提升，有一定几率冻结敌人' },
     battleEffect: {
@@ -907,6 +955,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '雷劫残片',
     description: '天劫后残留的雷劫之力',
     rarity: '普通',
+    advancedItemType: 'heavenEarthEssence',
     quality: 70,
     effects: { attackBonus: 220, speedBonus: 35, specialEffect: '雷系法术威力提升，暴击率增加' },
     battleEffect: {
@@ -926,6 +975,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '混沌魔气',
     description: '混沌中诞生的魔气精华',
     rarity: '普通',
+    advancedItemType: 'heavenEarthEssence',
     quality: 75,
     effects: { physiqueBonus: 120, attackBonus: 190, specialEffect: '物理攻击附带魔气侵蚀效果' },
     battleEffect: {
@@ -947,6 +997,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '轮回之眼',
     description: '可窥视轮回的神秘之眼',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthEssence',
     quality: 80,
     effects: { spiritBonus: 300, hpBonus: 800, specialEffect: '死亡时有几率复活，看破敌人弱点几率提升' },
     battleEffect: {
@@ -966,6 +1017,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '时空碎片',
     description: '破碎的时空法则碎片',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthEssence',
     quality: 85,
     effects: { speedBonus: 50, spiritBonus: 250, specialEffect: '先手几率大幅提升，闪避率增加' },
     battleEffect: {
@@ -984,6 +1036,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '命运之线',
     description: '连接命运的神秘丝线',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthEssence',
     quality: 90,
     effects: { hpBonus: 1000, spiritBonus: 280, specialEffect: '气运提升，机缘获取几率增加' },
     battleEffect: {
@@ -1002,6 +1055,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '因果之轮',
     description: '掌控因果的神秘轮盘',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthEssence',
     quality: 95,
     effects: { attackBonus: 350, defenseBonus: 200, specialEffect: '攻击附带因果反噬效果' },
     battleEffect: {
@@ -1021,6 +1075,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '虚无之镜',
     description: '可看透虚实的镜子',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthEssence',
     quality: 100,
     effects: { defenseBonus: 300, spiritBonus: 320, specialEffect: '受到攻击时有几率完全闪避' },
     battleEffect: {
@@ -1039,6 +1094,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '永恒之火',
     description: '永不熄灭的永恒火焰',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthEssence',
     quality: 105,
     effects: { attackBonus: 380, spiritBonus: 300, specialEffect: '攻击附带永恒灼烧，无法被熄灭' },
     battleEffect: {
@@ -1058,6 +1114,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '不朽之木',
     description: '永恒不朽的神木精华',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthEssence',
     quality: 110,
     effects: { hpBonus: 1500, defenseBonus: 250, specialEffect: '生命恢复速度大幅提升' },
     battleEffect: {
@@ -1077,6 +1134,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '天道碎片',
     description: '破碎的天道法则',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthEssence',
     quality: 115,
     effects: { spiritBonus: 400, attackBonus: 300, defenseBonus: 280, specialEffect: '所有法术威力提升' },
     battleEffect: {
@@ -1095,6 +1153,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '混沌青莲',
     description: '混沌中诞生的青莲精华',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthEssence',
     quality: 120,
     effects: { hpBonus: 1200, spiritBonus: 450, specialEffect: '灵力上限大幅提升，修炼速度加快' },
     battleEffect: {
@@ -1113,6 +1172,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '盘古精血',
     description: '开天辟地盘古的精血',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthEssence',
     quality: 125,
     effects: { physiqueBonus: 200, hpBonus: 2000, attackBonus: 400, specialEffect: '物理伤害大幅提升' },
     battleEffect: {
@@ -1133,6 +1193,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '女娲石',
     description: '女娲补天所用的神石精华',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 130,
     effects: { defenseBonus: 500, spiritBonus: 600, specialEffect: '法术防御大幅提升，灵力恢复速度加快' },
     battleEffect: {
@@ -1151,6 +1212,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '东皇钟',
     description: '上古神器东皇钟的精华',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 135,
     effects: { defenseBonus: 600, hpBonus: 1800, specialEffect: '受到伤害大幅减少，反弹伤害给攻击者' },
     battleEffect: {
@@ -1169,6 +1231,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '轩辕剑',
     description: '人族圣剑轩辕剑的剑意',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 140,
     effects: { attackBonus: 700, speedBonus: 80, specialEffect: '攻击力大幅提升，对邪魔伤害翻倍' },
     battleEffect: {
@@ -1187,6 +1250,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '昆仑镜',
     description: '可窥探天机的神镜精华',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 145,
     effects: { spiritBonus: 700, speedBonus: 100, specialEffect: '先手几率大幅提升，看破敌人招式' },
     battleEffect: {
@@ -1205,6 +1269,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '伏羲琴',
     description: '可操控音律的神琴精华',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 150,
     effects: { spiritBonus: 800, hpBonus: 1500, specialEffect: '音律法术威力大幅提升' },
     battleEffect: {
@@ -1224,6 +1289,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '神农鼎',
     description: '可炼制神药的宝鼎精华',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 155,
     effects: { hpBonus: 3000, physiqueBonus: 300, specialEffect: '生命恢复速度极快，中毒抗性提升' },
     battleEffect: {
@@ -1243,6 +1309,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '太极阴阳图',
     description: '蕴含阴阳大道的至宝精华',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 160,
     effects: { hpBonus: 2000, attackBonus: 500, defenseBonus: 500, spiritBonus: 600, specialEffect: '阴阳平衡，万法不侵' },
     battleEffect: {
@@ -1261,6 +1328,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '诛仙剑阵',
     description: '诛仙剑阵的杀伐精华',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 165,
     effects: { attackBonus: 800, speedBonus: 120, specialEffect: '攻击附带诛仙剑气，威力巨大' },
     battleEffect: {
@@ -1279,6 +1347,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '周天星斗',
     description: '周天星斗大阵的精华',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 170,
     effects: { spiritBonus: 900, defenseBonus: 400, specialEffect: '星辰法术威力极大提升' },
     battleEffect: {
@@ -1298,6 +1367,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '都天神煞',
     description: '都天神煞大阵的精华',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 175,
     effects: { attackBonus: 750, physiqueBonus: 400, specialEffect: '物理攻击附带神煞效果' },
     battleEffect: {
@@ -1319,6 +1389,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '鸿蒙紫气',
     description: '开天辟地时的鸿蒙紫气',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 180,
     effects: { spiritBonus: 1200, hpBonus: 2500, specialEffect: '灵力上限极大提升，修炼速度极快' },
     battleEffect: {
@@ -1337,6 +1408,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '造化玉碟',
     description: '蕴含造化之力的玉碟精华',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 185,
     effects: { hpBonus: 3000, attackBonus: 900, defenseBonus: 700, spiritBonus: 1000, specialEffect: '所有属性大幅提升' },
     battleEffect: {
@@ -1355,6 +1427,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '混沌钟',
     description: '混沌至宝混沌钟的精华',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 190,
     effects: { defenseBonus: 1000, hpBonus: 4000, specialEffect: '防御力极强，可抵挡致命攻击' },
     battleEffect: {
@@ -1373,6 +1446,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '盘古斧',
     description: '开天辟地盘古斧的精华',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 195,
     effects: { attackBonus: 1500, speedBonus: 150, specialEffect: '攻击力极强，可破开一切防御' },
     battleEffect: {
@@ -1391,6 +1465,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '乾坤鼎',
     description: '可炼化万物的乾坤鼎精华',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 200,
     effects: { spiritBonus: 1500, hpBonus: 3500, specialEffect: '灵力恢复速度极快，可炼化一切' },
     battleEffect: {
@@ -1409,6 +1484,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '山河社稷图',
     description: '蕴含山河社稷的图卷精华',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 205,
     effects: { hpBonus: 5000, defenseBonus: 800, specialEffect: '生命值极高，可自成一方世界' },
     battleEffect: {
@@ -1428,6 +1504,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '十二品莲台',
     description: '十二品莲台的精华',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 210,
     effects: { spiritBonus: 1800, defenseBonus: 900, specialEffect: '灵力防御极强，可净化一切负面状态' },
     battleEffect: {
@@ -1446,6 +1523,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '七宝妙树',
     description: '七宝妙树的精华',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 215,
     effects: { attackBonus: 1200, spiritBonus: 1600, specialEffect: '法术攻击威力极大，可刷落一切法宝' },
     battleEffect: {
@@ -1465,6 +1543,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '定海神珠',
     description: '定海神珠的精华',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 220,
     effects: { spiritBonus: 2000, speedBonus: 200, specialEffect: '灵力控制极强，可定住一切' },
     battleEffect: {
@@ -1484,6 +1563,7 @@ export const HEAVEN_EARTH_ESSENCES: Record<string, HeavenEarthEssence> = {
     name: '混沌珠',
     description: '混沌至宝混沌珠的精华',
     rarity: '传说',
+    advancedItemType: 'heavenEarthEssence',
     quality: 225,
     effects: { hpBonus: 6000, attackBonus: 1800, defenseBonus: 1200, spiritBonus: 2500, specialEffect: '所有属性达到极致，混沌不灭' },
     battleEffect: {
@@ -1507,6 +1587,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '星辰髓',
     description: '蕴含星辰之力的精髓',
     rarity: '普通',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 30,
     refiningTime: 30,
     effects: { spiritBonus: 300, speedBonus: 40, specialEffect: '星辰法术威力提升，夜晚修炼速度加快' },
@@ -1526,6 +1607,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '月华髓',
     description: '月华凝聚的精华精髓',
     rarity: '普通',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 35,
     refiningTime: 35,
     effects: { spiritBonus: 350, hpBonus: 800, specialEffect: '灵力恢复速度提升，月夜修炼效果增强' },
@@ -1546,6 +1628,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '日精髓',
     description: '太阳精华凝聚的精髓',
     rarity: '普通',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 40,
     refiningTime: 40,
     effects: { attackBonus: 400, physiqueBonus: 200, specialEffect: '攻击力提升，白日战斗威力增强' },
@@ -1565,6 +1648,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '地脉髓',
     description: '大地脉络的精髓',
     rarity: '普通',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 45,
     refiningTime: 45,
     effects: { defenseBonus: 500, hpBonus: 1000, specialEffect: '防御力提升，大地守护效果' },
@@ -1584,6 +1668,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '天风髓',
     description: '九天之风的精髓',
     rarity: '普通',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 50,
     refiningTime: 50,
     effects: { speedBonus: 60, spiritBonus: 400, specialEffect: '速度大幅提升，风系法术威力增强' },
@@ -1603,6 +1688,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '雷劫髓',
     description: '雷劫中诞生的精髓',
     rarity: '普通',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 55,
     refiningTime: 55,
     effects: { attackBonus: 450, spiritBonus: 380, specialEffect: '雷系法术威力提升，渡劫成功率增加' },
@@ -1623,6 +1709,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '火精髓',
     description: '纯阳火气的精髓',
     rarity: '普通',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 60,
     refiningTime: 60,
     effects: { attackBonus: 500, physiqueBonus: 250, specialEffect: '火系法术威力提升，攻击附带灼烧' },
@@ -1643,6 +1730,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '水精髓',
     description: '玄阴水气的精髓',
     rarity: '普通',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 65,
     refiningTime: 65,
     effects: { spiritBonus: 450, defenseBonus: 350, specialEffect: '水系法术威力提升，防御效果增强' },
@@ -1662,6 +1750,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '木精髓',
     description: '青木生机的精髓',
     rarity: '普通',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 70,
     refiningTime: 70,
     effects: { hpBonus: 1200, spiritBonus: 420, specialEffect: '生命恢复速度提升，木系法术威力增强' },
@@ -1682,6 +1771,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '金精髓',
     description: '庚金锐气的精髓',
     rarity: '普通',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 75,
     refiningTime: 75,
     effects: { attackBonus: 550, defenseBonus: 400, specialEffect: '金属性法术威力提升，攻击穿透效果' },
@@ -1703,6 +1793,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '时空髓',
     description: '时空法则的精髓',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 80,
     refiningTime: 80,
     effects: { speedBonus: 100, spiritBonus: 600, specialEffect: '时空法术威力极大提升，可操控时间流速' },
@@ -1722,6 +1813,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '命运髓',
     description: '命运法则的精髓',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 85,
     refiningTime: 85,
     effects: { hpBonus: 2000, spiritBonus: 700, specialEffect: '气运极大提升，机缘获取几率大幅增加' },
@@ -1741,6 +1833,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '因果髓',
     description: '因果法则的精髓',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 90,
     refiningTime: 90,
     effects: { attackBonus: 800, defenseBonus: 600, specialEffect: '攻击附带因果反噬，防御可反弹伤害' },
@@ -1760,6 +1853,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '轮回髓',
     description: '轮回法则的精髓',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 95,
     refiningTime: 95,
     effects: { hpBonus: 2500, spiritBonus: 800, specialEffect: '死亡时可轮回重生，保留部分修为' },
@@ -1780,6 +1874,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '虚无髓',
     description: '虚无法则的精髓',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 100,
     refiningTime: 100,
     effects: { defenseBonus: 800, spiritBonus: 900, specialEffect: '可化为虚无，免疫大部分物理攻击' },
@@ -1799,6 +1894,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '永恒髓',
     description: '永恒法则的精髓',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 105,
     refiningTime: 105,
     effects: { hpBonus: 3000, physiqueBonus: 500, specialEffect: '生命永恒不灭，寿命大幅延长' },
@@ -1819,6 +1915,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '创造髓',
     description: '创造法则的精髓',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 110,
     refiningTime: 110,
     effects: { spiritBonus: 1200, attackBonus: 900, specialEffect: '可创造万物，法术威力极大提升' },
@@ -1838,6 +1935,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '毁灭髓',
     description: '毁灭法则的精髓',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 115,
     refiningTime: 115,
     effects: { attackBonus: 1500, speedBonus: 120, specialEffect: '毁灭一切，攻击力达到极致' },
@@ -1857,6 +1955,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '秩序髓',
     description: '秩序法则的精髓',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 120,
     refiningTime: 120,
     effects: { defenseBonus: 1000, spiritBonus: 1100, specialEffect: '建立秩序领域，防御力极强' },
@@ -1876,6 +1975,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '混沌髓',
     description: '混沌法则的精髓',
     rarity: '稀有',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 125,
     refiningTime: 125,
     effects: { hpBonus: 3500, attackBonus: 1200, defenseBonus: 900, specialEffect: '混沌不灭，所有属性平衡提升' },
@@ -1897,6 +1997,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '天道髓',
     description: '天道法则的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 130,
     refiningTime: 130,
     effects: { spiritBonus: 2000, hpBonus: 4000, specialEffect: '天道眷顾，修炼速度极快，机缘不断' }
@@ -1906,6 +2007,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '地道髓',
     description: '地道法则的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 135,
     refiningTime: 135,
     effects: { defenseBonus: 1500, hpBonus: 5000, specialEffect: '大地守护，防御力极强，生命值极高' }
@@ -1915,6 +2017,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '人道髓',
     description: '人道法则的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 140,
     refiningTime: 140,
     effects: { attackBonus: 1800, physiqueBonus: 800, specialEffect: '人道昌盛，攻击力极强，体魄强健' }
@@ -1924,6 +2027,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '鬼道髓',
     description: '鬼道法则的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 145,
     refiningTime: 145,
     effects: { spiritBonus: 2200, speedBonus: 180, specialEffect: '鬼道神通，法术威力极大，速度极快' }
@@ -1933,6 +2037,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '妖道髓',
     description: '妖道法则的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 150,
     refiningTime: 150,
     effects: { attackBonus: 2000, hpBonus: 4500, specialEffect: '妖道神通，攻击力极强，生命力旺盛' }
@@ -1942,6 +2047,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '魔道髓',
     description: '魔道法则的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 155,
     refiningTime: 155,
     effects: { attackBonus: 2200, spiritBonus: 2400, specialEffect: '魔道神通，攻击力和灵力都达到极致' }
@@ -1951,6 +2057,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '佛道髓',
     description: '佛道法则的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 160,
     refiningTime: 160,
     effects: { defenseBonus: 1800, spiritBonus: 2600, specialEffect: '佛道神通，防御力和灵力极强' }
@@ -1960,6 +2067,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '仙道髓',
     description: '仙道法则的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 165,
     refiningTime: 165,
     effects: { hpBonus: 6000, spiritBonus: 2800, specialEffect: '仙道神通，生命力和灵力达到仙级' }
@@ -1969,6 +2077,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '神道髓',
     description: '神道法则的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 170,
     refiningTime: 170,
     effects: { attackBonus: 2500, defenseBonus: 2000, specialEffect: '神道神通，攻击和防御都达到神级' }
@@ -1978,6 +2087,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '圣道髓',
     description: '圣道法则的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 175,
     refiningTime: 175,
     effects: { hpBonus: 8000, spiritBonus: 3000, specialEffect: '圣道神通，生命和灵力达到圣级' }
@@ -1989,6 +2099,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '鸿蒙髓',
     description: '鸿蒙未开时的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 180,
     refiningTime: 180,
     effects: { hpBonus: 10000, attackBonus: 3000, defenseBonus: 2500, spiritBonus: 4000, specialEffect: '鸿蒙不灭，所有属性达到极致' }
@@ -1998,6 +2109,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '混沌髓',
     description: '混沌初开的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 185,
     refiningTime: 185,
     effects: { attackBonus: 3500, spiritBonus: 4500, specialEffect: '混沌归一，攻击和灵力达到混沌级' }
@@ -2007,6 +2119,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '太初髓',
     description: '太初时代的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 190,
     refiningTime: 190,
     effects: { defenseBonus: 3000, hpBonus: 12000, specialEffect: '太初守护，防御和生命达到太初级' }
@@ -2016,6 +2129,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '造化髓',
     description: '造化法则的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 195,
     refiningTime: 195,
     effects: { spiritBonus: 5000, speedBonus: 300, specialEffect: '造化无穷，灵力和速度达到造化级' }
@@ -2025,6 +2139,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '命运髓',
     description: '命运长河的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 200,
     refiningTime: 200,
     effects: { hpBonus: 15000, spiritBonus: 5500, specialEffect: '命运主宰，生命和灵力达到命运级' }
@@ -2034,6 +2149,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '因果髓',
     description: '因果之网的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 205,
     refiningTime: 205,
     effects: { attackBonus: 4000, defenseBonus: 3500, specialEffect: '因果循环，攻击和防御达到因果级' }
@@ -2043,6 +2159,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '轮回髓',
     description: '轮回之轮的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 210,
     refiningTime: 210,
     effects: { hpBonus: 20000, physiqueBonus: 1500, specialEffect: '轮回不灭，生命和体魄达到轮回级' }
@@ -2052,6 +2169,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '时空髓',
     description: '时空长河的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 215,
     refiningTime: 215,
     effects: { speedBonus: 500, spiritBonus: 6000, specialEffect: '时空掌控，速度和灵力达到时空级' }
@@ -2061,6 +2179,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '永恒髓',
     description: '永恒之门的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 220,
     refiningTime: 220,
     effects: { hpBonus: 25000, defenseBonus: 4000, specialEffect: '永恒不灭，生命和防御达到永恒级' }
@@ -2070,6 +2189,7 @@ export const HEAVEN_EARTH_MARROWS: Record<string, HeavenEarthMarrow> = {
     name: '大道髓',
     description: '大道本源的精髓',
     rarity: '传说',
+    advancedItemType: 'heavenEarthMarrow',
     quality: 225,
     refiningTime: 225,
     effects: { hpBonus: 30000, attackBonus: 5000, defenseBonus: 4500, spiritBonus: 7000, speedBonus: 600, specialEffect: '大道归一，所有属性达到大道级' }
@@ -2082,6 +2202,7 @@ export const LONGEVITY_RULES: Record<string, LongevityRule> = {
     id: 'lr_001',
     name: '时间规则',
     description: '掌控时间流速的规则之力',
+    advancedItemType: 'longevityRule',
     power: 100,
     effects: { speedPercent: 0.5, specialEffect: '可操控时间流速，战斗中获得先手优势' },
     battleEffect: {
@@ -2099,6 +2220,7 @@ export const LONGEVITY_RULES: Record<string, LongevityRule> = {
     id: 'lr_002',
     name: '空间规则',
     description: '掌控空间移动的规则之力',
+    advancedItemType: 'longevityRule',
     power: 95,
     effects: { defensePercent: 0.4, specialEffect: '可进行空间跳跃，闪避率大幅提升' },
     battleEffect: {
@@ -2116,6 +2238,7 @@ export const LONGEVITY_RULES: Record<string, LongevityRule> = {
     id: 'lr_003',
     name: '生命规则',
     description: '掌控生命力的规则之力',
+    advancedItemType: 'longevityRule',
     power: 90,
     effects: { hpPercent: 0.6, specialEffect: '生命恢复速度极快，可复活一次' },
     battleEffect: {
@@ -2134,6 +2257,7 @@ export const LONGEVITY_RULES: Record<string, LongevityRule> = {
     id: 'lr_004',
     name: '死亡规则',
     description: '掌控死亡的规则之力',
+    advancedItemType: 'longevityRule',
     power: 85,
     effects: { attackPercent: 0.5, specialEffect: '攻击附带死亡气息，有几率直接秒杀敌人' },
     battleEffect: {
@@ -2151,6 +2275,7 @@ export const LONGEVITY_RULES: Record<string, LongevityRule> = {
     id: 'lr_005',
     name: '因果规则',
     description: '掌控因果联系的规则之力',
+    advancedItemType: 'longevityRule',
     power: 80,
     effects: { spiritPercent: 0.4, specialEffect: '可改变因果，攻击必定命中' },
     battleEffect: {
@@ -2168,6 +2293,7 @@ export const LONGEVITY_RULES: Record<string, LongevityRule> = {
     id: 'lr_006',
     name: '命运规则',
     description: '掌控命运轨迹的规则之力',
+    advancedItemType: 'longevityRule',
     power: 75,
     effects: { hpPercent: 0.3, attackPercent: 0.3, specialEffect: '气运极佳，机缘获取几率大幅提升' },
     battleEffect: {
@@ -2185,6 +2311,7 @@ export const LONGEVITY_RULES: Record<string, LongevityRule> = {
     id: 'lr_007',
     name: '创造规则',
     description: '掌控创造之力的规则',
+    advancedItemType: 'longevityRule',
     power: 70,
     effects: { spiritPercent: 0.5, specialEffect: '可创造万物，法术威力极大提升' },
     battleEffect: {
@@ -2202,6 +2329,7 @@ export const LONGEVITY_RULES: Record<string, LongevityRule> = {
     id: 'lr_008',
     name: '毁灭规则',
     description: '掌控毁灭之力的规则',
+    advancedItemType: 'longevityRule',
     power: 65,
     effects: { attackPercent: 0.6, specialEffect: '毁灭一切，攻击力达到极致' },
     battleEffect: {
@@ -2219,6 +2347,7 @@ export const LONGEVITY_RULES: Record<string, LongevityRule> = {
     id: 'lr_009',
     name: '秩序规则',
     description: '掌控秩序平衡的规则',
+    advancedItemType: 'longevityRule',
     power: 60,
     effects: { defensePercent: 0.5, specialEffect: '建立秩序领域，防御力极强' },
     battleEffect: {
@@ -2236,6 +2365,7 @@ export const LONGEVITY_RULES: Record<string, LongevityRule> = {
     id: 'lr_010',
     name: '混沌规则',
     description: '掌控混沌之力的规则',
+    advancedItemType: 'longevityRule',
     power: 55,
     effects: { hpPercent: 0.4, attackPercent: 0.4, defensePercent: 0.4, specialEffect: '混沌不灭，所有属性平衡提升' },
     battleEffect: {

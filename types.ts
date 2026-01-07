@@ -346,6 +346,7 @@ export interface FoundationTreasure {
   name: string;
   description: string;
   rarity: ItemRarity;
+  advancedItemType: 'foundationTreasure'; // 进阶物品类型
   effects: {
     hpBonus?: number;
     attackBonus?: number;
@@ -365,6 +366,7 @@ export interface HeavenEarthEssence {
   name: string;
   description: string;
   rarity: ItemRarity;
+  advancedItemType: 'heavenEarthEssence'; // 进阶物品类型
   quality: number; // 品质 (1-100)
   effects: {
     hpBonus?: number;
@@ -384,6 +386,7 @@ export interface HeavenEarthMarrow {
   name: string;
   description: string;
   rarity: ItemRarity;
+  advancedItemType: 'heavenEarthMarrow'; // 进阶物品类型
   quality: number; // 品质 (1-100)
   refiningTime: number; // 基础炼化时间（天）
   effects: {
@@ -404,6 +407,7 @@ export interface LongevityRule {
   name: string;
   description: string;
   power: number; // 规则之力强度 (1-100)
+  advancedItemType: 'longevityRule'; // 进阶物品类型
   effects: {
     hpPercent?: number;
     attackPercent?: number;

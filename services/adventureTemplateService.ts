@@ -557,13 +557,7 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
       ];
 
       // 将筑基奇物转换为Item格式
-      const permanentEffect: any = {};
-      if (selectedTreasure.effects.hpBonus) permanentEffect.maxHp = selectedTreasure.effects.hpBonus;
-      if (selectedTreasure.effects.attackBonus) permanentEffect.attack = selectedTreasure.effects.attackBonus;
-      if (selectedTreasure.effects.defenseBonus) permanentEffect.defense = selectedTreasure.effects.defenseBonus;
-      if (selectedTreasure.effects.spiritBonus) permanentEffect.spirit = selectedTreasure.effects.spiritBonus;
-      if (selectedTreasure.effects.physiqueBonus) permanentEffect.physique = selectedTreasure.effects.physiqueBonus;
-      if (selectedTreasure.effects.speedBonus) permanentEffect.speed = selectedTreasure.effects.speedBonus;
+      const permanentEffect = convertEffectsToPermanentEffect(selectedTreasure.effects);
 
       return {
         ...baseTemplate,
@@ -597,13 +591,7 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
       ];
 
       // 将天地精华转换为Item格式
-      const permanentEffect: any = {};
-      if (selectedEssence.effects.hpBonus) permanentEffect.maxHp = selectedEssence.effects.hpBonus;
-      if (selectedEssence.effects.attackBonus) permanentEffect.attack = selectedEssence.effects.attackBonus;
-      if (selectedEssence.effects.defenseBonus) permanentEffect.defense = selectedEssence.effects.defenseBonus;
-      if (selectedEssence.effects.spiritBonus) permanentEffect.spirit = selectedEssence.effects.spiritBonus;
-      if (selectedEssence.effects.physiqueBonus) permanentEffect.physique = selectedEssence.effects.physiqueBonus;
-      if (selectedEssence.effects.speedBonus) permanentEffect.speed = selectedEssence.effects.speedBonus;
+      const permanentEffect = convertEffectsToPermanentEffect(selectedEssence.effects);
 
       return {
         ...baseTemplate,
@@ -637,13 +625,7 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
       ];
 
       // 将天地之髓转换为Item格式
-      const permanentEffect: any = {};
-      if (selectedMarrow.effects.hpBonus) permanentEffect.maxHp = selectedMarrow.effects.hpBonus;
-      if (selectedMarrow.effects.attackBonus) permanentEffect.attack = selectedMarrow.effects.attackBonus;
-      if (selectedMarrow.effects.defenseBonus) permanentEffect.defense = selectedMarrow.effects.defenseBonus;
-      if (selectedMarrow.effects.spiritBonus) permanentEffect.spirit = selectedMarrow.effects.spiritBonus;
-      if (selectedMarrow.effects.physiqueBonus) permanentEffect.physique = selectedMarrow.effects.physiqueBonus;
-      if (selectedMarrow.effects.speedBonus) permanentEffect.speed = selectedMarrow.effects.speedBonus;
+      const permanentEffect = convertEffectsToPermanentEffect(selectedMarrow.effects);
 
       return {
         ...baseTemplate,
@@ -856,6 +838,100 @@ function generateSectChallengeEventTemplate(index: number): AdventureEventTempla
 }
 
 /**
+ * 将effects对象转换为permanentEffect格式
+ */
+function convertEffectsToPermanentEffect(effects: any): Record<string, number> {
+  const permanentEffect: Record<string, number> = {};
+  if (effects.hpBonus) permanentEffect.maxHp = effects.hpBonus;
+  if (effects.attackBonus) permanentEffect.attack = effects.attackBonus;
+  if (effects.defenseBonus) permanentEffect.defense = effects.defenseBonus;
+  if (effects.spiritBonus) permanentEffect.spirit = effects.spiritBonus;
+  if (effects.physiqueBonus) permanentEffect.physique = effects.physiqueBonus;
+  if (effects.speedBonus) permanentEffect.speed = effects.speedBonus;
+  return permanentEffect;
+}
+
+/**
+ * 应用仙品丹药效果最小值保障
+ */
+function applyImmortalPillMinValues(
+  effect: any,
+  rarity: ItemRarity
+): void {
+  if (rarity !== '仙品') return;
+
+  const MIN_PILL_EFFECT = 250;
+  const MIN_PILL_EXP_EFFECT = 5000;
+
+  if (effect.exp !== undefined) {
+    effect.exp = Math.max(effect.exp, MIN_PILL_EXP_EFFECT);
+  }
+  if (effect.hp !== undefined) {
+    effect.hp = Math.max(effect.hp, MIN_PILL_EFFECT);
+  }
+  if (effect.attack !== undefined) {
+    effect.attack = Math.max(effect.attack, MIN_PILL_EFFECT);
+  }
+  if (effect.defense !== undefined) {
+    effect.defense = Math.max(effect.defense, MIN_PILL_EFFECT);
+  }
+  if (effect.spirit !== undefined) {
+    effect.spirit = Math.max(effect.spirit, MIN_PILL_EFFECT);
+  }
+  if (effect.physique !== undefined) {
+    effect.physique = Math.max(effect.physique, MIN_PILL_EFFECT);
+  }
+  if (effect.speed !== undefined) {
+    effect.speed = Math.max(effect.speed, MIN_PILL_EFFECT);
+  }
+}
+
+/**
+ * 根据境界调整丹药/草药的效果
+ */
+function adjustPillHerbEffects(
+  effect: any | undefined,
+  permanentEffect: any | undefined,
+  rarity: ItemRarity,
+  realmMultiplier: number
+): { effect: any | undefined; permanentEffect: any | undefined } {
+  const adjustedEffect = effect ? { ...effect } : undefined;
+  const adjustedPermanentEffect = permanentEffect ? { ...permanentEffect } : undefined;
+
+  // 调整临时效果
+  if (adjustedEffect) {
+    const pillEffectMultiplier = realmMultiplier * 2;
+    if (adjustedEffect.exp !== undefined) adjustedEffect.exp = Math.floor(adjustedEffect.exp * pillEffectMultiplier);
+    if (adjustedEffect.hp !== undefined) adjustedEffect.hp = Math.floor(adjustedEffect.hp * pillEffectMultiplier);
+    if (adjustedEffect.attack !== undefined) adjustedEffect.attack = Math.floor(adjustedEffect.attack * pillEffectMultiplier);
+    if (adjustedEffect.defense !== undefined) adjustedEffect.defense = Math.floor(adjustedEffect.defense * pillEffectMultiplier);
+    if (adjustedEffect.spirit !== undefined) adjustedEffect.spirit = Math.floor(adjustedEffect.spirit * pillEffectMultiplier);
+    if (adjustedEffect.physique !== undefined) adjustedEffect.physique = Math.floor(adjustedEffect.physique * pillEffectMultiplier);
+    if (adjustedEffect.speed !== undefined) adjustedEffect.speed = Math.floor(adjustedEffect.speed * pillEffectMultiplier);
+
+    // 仙品丹药效果最小值保障
+    applyImmortalPillMinValues(adjustedEffect, rarity);
+  }
+
+  // 调整永久效果
+  if (adjustedPermanentEffect) {
+    const pillPermanentMultiplier = realmMultiplier * 1.5;
+    if (adjustedPermanentEffect.maxHp !== undefined) adjustedPermanentEffect.maxHp = Math.floor(adjustedPermanentEffect.maxHp * pillPermanentMultiplier);
+    if (adjustedPermanentEffect.attack !== undefined) adjustedPermanentEffect.attack = Math.floor(adjustedPermanentEffect.attack * pillPermanentMultiplier);
+    if (adjustedPermanentEffect.defense !== undefined) adjustedPermanentEffect.defense = Math.floor(adjustedPermanentEffect.defense * pillPermanentMultiplier);
+    if (adjustedPermanentEffect.spirit !== undefined) adjustedPermanentEffect.spirit = Math.floor(adjustedPermanentEffect.spirit * pillPermanentMultiplier);
+    if (adjustedPermanentEffect.physique !== undefined) adjustedPermanentEffect.physique = Math.floor(adjustedPermanentEffect.physique * pillPermanentMultiplier);
+    if (adjustedPermanentEffect.speed !== undefined) adjustedPermanentEffect.speed = Math.floor(adjustedPermanentEffect.speed * pillPermanentMultiplier);
+    if ((adjustedPermanentEffect as any).maxLifespan !== undefined) (adjustedPermanentEffect as any).maxLifespan = Math.floor((adjustedPermanentEffect as any).maxLifespan * pillPermanentMultiplier);
+
+    // 仙品丹药永久效果最小值保障
+    applyImmortalPillMinValues(adjustedPermanentEffect, rarity);
+  }
+
+  return { effect: adjustedEffect, permanentEffect: adjustedPermanentEffect };
+}
+
+/**
  * 生成随机物品
  */
 /**
@@ -1028,14 +1104,7 @@ function getAllItemsFromConstants(): Array<{
     if (itemNames.has(treasure.name)) return;
     itemNames.add(treasure.name);
 
-    // 将effects转换为Item格式的permanentEffect
-    const permanentEffect: any = {};
-    if (treasure.effects.hpBonus) permanentEffect.maxHp = treasure.effects.hpBonus;
-    if (treasure.effects.attackBonus) permanentEffect.attack = treasure.effects.attackBonus;
-    if (treasure.effects.defenseBonus) permanentEffect.defense = treasure.effects.defenseBonus;
-    if (treasure.effects.spiritBonus) permanentEffect.spirit = treasure.effects.spiritBonus;
-    if (treasure.effects.physiqueBonus) permanentEffect.physique = treasure.effects.physiqueBonus;
-    if (treasure.effects.speedBonus) permanentEffect.speed = treasure.effects.speedBonus;
+    const permanentEffect = convertEffectsToPermanentEffect(treasure.effects);
 
     items.push({
       name: treasure.name,
@@ -1053,14 +1122,7 @@ function getAllItemsFromConstants(): Array<{
     if (itemNames.has(essence.name)) return;
     itemNames.add(essence.name);
 
-    // 将effects转换为Item格式的permanentEffect
-    const permanentEffect: any = {};
-    if (essence.effects.hpBonus) permanentEffect.maxHp = essence.effects.hpBonus;
-    if (essence.effects.attackBonus) permanentEffect.attack = essence.effects.attackBonus;
-    if (essence.effects.defenseBonus) permanentEffect.defense = essence.effects.defenseBonus;
-    if (essence.effects.spiritBonus) permanentEffect.spirit = essence.effects.spiritBonus;
-    if (essence.effects.physiqueBonus) permanentEffect.physique = essence.effects.physiqueBonus;
-    if (essence.effects.speedBonus) permanentEffect.speed = essence.effects.speedBonus;
+    const permanentEffect = convertEffectsToPermanentEffect(essence.effects);
 
     items.push({
       name: essence.name,
@@ -1078,14 +1140,7 @@ function getAllItemsFromConstants(): Array<{
     if (itemNames.has(marrow.name)) return;
     itemNames.add(marrow.name);
 
-    // 将effects转换为Item格式的permanentEffect
-    const permanentEffect: any = {};
-    if (marrow.effects.hpBonus) permanentEffect.maxHp = marrow.effects.hpBonus;
-    if (marrow.effects.attackBonus) permanentEffect.attack = marrow.effects.attackBonus;
-    if (marrow.effects.defenseBonus) permanentEffect.defense = marrow.effects.defenseBonus;
-    if (marrow.effects.spiritBonus) permanentEffect.spirit = marrow.effects.spiritBonus;
-    if (marrow.effects.physiqueBonus) permanentEffect.physique = marrow.effects.physiqueBonus;
-    if (marrow.effects.speedBonus) permanentEffect.speed = marrow.effects.speedBonus;
+    const permanentEffect = convertEffectsToPermanentEffect(marrow.effects);
 
     items.push({
       name: marrow.name,
@@ -1623,36 +1678,14 @@ export function templateToAdventureResult(
     }
 
     // 对丹药和草药的效果根据境界倍数进行调整（提高属性值）
-    if (result.itemObtained && (result.itemObtained.type === ItemType.Pill || result.itemObtained.type === ItemType.Herb)) {
-      const adjustedEffect = result.itemObtained.effect ? { ...result.itemObtained.effect } : undefined;
-      const adjustedPermanentEffect = result.itemObtained.permanentEffect ? { ...result.itemObtained.permanentEffect } : undefined;
-
-      // 调整临时效果（effect）
-      if (adjustedEffect) {
-        // 使用较大的倍数调整（境界倍数 * 2，使丹药效果更明显）
-        const pillEffectMultiplier = realmMultiplier * 2;
-        if (adjustedEffect.exp !== undefined) adjustedEffect.exp = Math.floor(adjustedEffect.exp * pillEffectMultiplier);
-        if (adjustedEffect.hp !== undefined) adjustedEffect.hp = Math.floor(adjustedEffect.hp * pillEffectMultiplier);
-        if (adjustedEffect.attack !== undefined) adjustedEffect.attack = Math.floor(adjustedEffect.attack * pillEffectMultiplier);
-        if (adjustedEffect.defense !== undefined) adjustedEffect.defense = Math.floor(adjustedEffect.defense * pillEffectMultiplier);
-        if (adjustedEffect.spirit !== undefined) adjustedEffect.spirit = Math.floor(adjustedEffect.spirit * pillEffectMultiplier);
-        if (adjustedEffect.physique !== undefined) adjustedEffect.physique = Math.floor(adjustedEffect.physique * pillEffectMultiplier);
-        if (adjustedEffect.speed !== undefined) adjustedEffect.speed = Math.floor(adjustedEffect.speed * pillEffectMultiplier);
-      }
-
-      // 调整永久效果（permanentEffect）
-      if (adjustedPermanentEffect) {
-        // 使用较大的倍数调整（境界倍数 * 1.5，永久效果略小一些）
-        const pillPermanentMultiplier = realmMultiplier * 1.5;
-        if (adjustedPermanentEffect.maxHp !== undefined) adjustedPermanentEffect.maxHp = Math.floor(adjustedPermanentEffect.maxHp * pillPermanentMultiplier);
-        if (adjustedPermanentEffect.attack !== undefined) adjustedPermanentEffect.attack = Math.floor(adjustedPermanentEffect.attack * pillPermanentMultiplier);
-        if (adjustedPermanentEffect.defense !== undefined) adjustedPermanentEffect.defense = Math.floor(adjustedPermanentEffect.defense * pillPermanentMultiplier);
-        if (adjustedPermanentEffect.spirit !== undefined) adjustedPermanentEffect.spirit = Math.floor(adjustedPermanentEffect.spirit * pillPermanentMultiplier);
-        if (adjustedPermanentEffect.physique !== undefined) adjustedPermanentEffect.physique = Math.floor(adjustedPermanentEffect.physique * pillPermanentMultiplier);
-        if (adjustedPermanentEffect.speed !== undefined) adjustedPermanentEffect.speed = Math.floor(adjustedPermanentEffect.speed * pillPermanentMultiplier);
-        if ((adjustedPermanentEffect as any).maxLifespan !== undefined) (adjustedPermanentEffect as any).maxLifespan = Math.floor((adjustedPermanentEffect as any).maxLifespan * pillPermanentMultiplier);
-      }
-
+    if (result.itemObtained && result.itemObtained.rarity &&
+        (result.itemObtained.type === ItemType.Pill || result.itemObtained.type === ItemType.Herb)) {
+      const { effect: adjustedEffect, permanentEffect: adjustedPermanentEffect } = adjustPillHerbEffects(
+        result.itemObtained.effect,
+        result.itemObtained.permanentEffect,
+        result.itemObtained.rarity as ItemRarity,
+        realmMultiplier
+      );
       result.itemObtained.effect = adjustedEffect;
       result.itemObtained.permanentEffect = adjustedPermanentEffect;
     }
@@ -1691,31 +1724,12 @@ export function templateToAdventureResult(
 
           // 对丹药和草药的效果根据境界倍数进行调整
           if (adjustedItem.type === ItemType.Pill || adjustedItem.type === ItemType.Herb) {
-            const adjustedEffect = adjustedItem.effect ? { ...adjustedItem.effect } : undefined;
-            const adjustedPermanentEffect = adjustedItem.permanentEffect ? { ...adjustedItem.permanentEffect } : undefined;
-
-            if (adjustedEffect) {
-              const pillEffectMultiplier = realmMultiplier * 2;
-              if (adjustedEffect.exp !== undefined) adjustedEffect.exp = Math.floor(adjustedEffect.exp * pillEffectMultiplier);
-              if (adjustedEffect.hp !== undefined) adjustedEffect.hp = Math.floor(adjustedEffect.hp * pillEffectMultiplier);
-              if (adjustedEffect.attack !== undefined) adjustedEffect.attack = Math.floor(adjustedEffect.attack * pillEffectMultiplier);
-              if (adjustedEffect.defense !== undefined) adjustedEffect.defense = Math.floor(adjustedEffect.defense * pillEffectMultiplier);
-              if (adjustedEffect.spirit !== undefined) adjustedEffect.spirit = Math.floor(adjustedEffect.spirit * pillEffectMultiplier);
-              if (adjustedEffect.physique !== undefined) adjustedEffect.physique = Math.floor(adjustedEffect.physique * pillEffectMultiplier);
-              if (adjustedEffect.speed !== undefined) adjustedEffect.speed = Math.floor(adjustedEffect.speed * pillEffectMultiplier);
-            }
-
-            if (adjustedPermanentEffect) {
-              const pillPermanentMultiplier = realmMultiplier * 1.5;
-              if (adjustedPermanentEffect.maxHp !== undefined) adjustedPermanentEffect.maxHp = Math.floor(adjustedPermanentEffect.maxHp * pillPermanentMultiplier);
-              if (adjustedPermanentEffect.attack !== undefined) adjustedPermanentEffect.attack = Math.floor(adjustedPermanentEffect.attack * pillPermanentMultiplier);
-              if (adjustedPermanentEffect.defense !== undefined) adjustedPermanentEffect.defense = Math.floor(adjustedPermanentEffect.defense * pillPermanentMultiplier);
-              if (adjustedPermanentEffect.spirit !== undefined) adjustedPermanentEffect.spirit = Math.floor(adjustedPermanentEffect.spirit * pillPermanentMultiplier);
-              if (adjustedPermanentEffect.physique !== undefined) adjustedPermanentEffect.physique = Math.floor(adjustedPermanentEffect.physique * pillPermanentMultiplier);
-              if (adjustedPermanentEffect.speed !== undefined) adjustedPermanentEffect.speed = Math.floor(adjustedPermanentEffect.speed * pillPermanentMultiplier);
-              if ((adjustedPermanentEffect as any).maxLifespan !== undefined) (adjustedPermanentEffect as any).maxLifespan = Math.floor((adjustedPermanentEffect as any).maxLifespan * pillPermanentMultiplier);
-            }
-
+            const { effect: adjustedEffect, permanentEffect: adjustedPermanentEffect } = adjustPillHerbEffects(
+              adjustedItem.effect,
+              adjustedItem.permanentEffect,
+              adjustedRarity,
+              realmMultiplier
+            );
             adjustedItem.effect = adjustedEffect;
             adjustedItem.permanentEffect = adjustedPermanentEffect;
           }
@@ -1730,31 +1744,12 @@ export function templateToAdventureResult(
 
           // 对丹药和草药的效果根据境界倍数进行调整
           if (adjustedItem.type === ItemType.Pill || adjustedItem.type === ItemType.Herb) {
-            const adjustedEffect = adjustedItem.effect ? { ...adjustedItem.effect } : undefined;
-            const adjustedPermanentEffect = adjustedItem.permanentEffect ? { ...adjustedItem.permanentEffect } : undefined;
-
-            if (adjustedEffect) {
-              const pillEffectMultiplier = realmMultiplier * 2;
-              if (adjustedEffect.exp !== undefined) adjustedEffect.exp = Math.floor(adjustedEffect.exp * pillEffectMultiplier);
-              if (adjustedEffect.hp !== undefined) adjustedEffect.hp = Math.floor(adjustedEffect.hp * pillEffectMultiplier);
-              if (adjustedEffect.attack !== undefined) adjustedEffect.attack = Math.floor(adjustedEffect.attack * pillEffectMultiplier);
-              if (adjustedEffect.defense !== undefined) adjustedEffect.defense = Math.floor(adjustedEffect.defense * pillEffectMultiplier);
-              if (adjustedEffect.spirit !== undefined) adjustedEffect.spirit = Math.floor(adjustedEffect.spirit * pillEffectMultiplier);
-              if (adjustedEffect.physique !== undefined) adjustedEffect.physique = Math.floor(adjustedEffect.physique * pillEffectMultiplier);
-              if (adjustedEffect.speed !== undefined) adjustedEffect.speed = Math.floor(adjustedEffect.speed * pillEffectMultiplier);
-            }
-
-            if (adjustedPermanentEffect) {
-              const pillPermanentMultiplier = realmMultiplier * 1.5;
-              if (adjustedPermanentEffect.maxHp !== undefined) adjustedPermanentEffect.maxHp = Math.floor(adjustedPermanentEffect.maxHp * pillPermanentMultiplier);
-              if (adjustedPermanentEffect.attack !== undefined) adjustedPermanentEffect.attack = Math.floor(adjustedPermanentEffect.attack * pillPermanentMultiplier);
-              if (adjustedPermanentEffect.defense !== undefined) adjustedPermanentEffect.defense = Math.floor(adjustedPermanentEffect.defense * pillPermanentMultiplier);
-              if (adjustedPermanentEffect.spirit !== undefined) adjustedPermanentEffect.spirit = Math.floor(adjustedPermanentEffect.spirit * pillPermanentMultiplier);
-              if (adjustedPermanentEffect.physique !== undefined) adjustedPermanentEffect.physique = Math.floor(adjustedPermanentEffect.physique * pillPermanentMultiplier);
-              if (adjustedPermanentEffect.speed !== undefined) adjustedPermanentEffect.speed = Math.floor(adjustedPermanentEffect.speed * pillPermanentMultiplier);
-              if ((adjustedPermanentEffect as any).maxLifespan !== undefined) (adjustedPermanentEffect as any).maxLifespan = Math.floor((adjustedPermanentEffect as any).maxLifespan * pillPermanentMultiplier);
-            }
-
+            const { effect: adjustedEffect, permanentEffect: adjustedPermanentEffect } = adjustPillHerbEffects(
+              adjustedItem.effect,
+              adjustedItem.permanentEffect,
+              adjustedRarity,
+              realmMultiplier
+            );
             adjustedItem.effect = adjustedEffect;
             adjustedItem.permanentEffect = adjustedPermanentEffect;
           }
@@ -1765,31 +1760,12 @@ export function templateToAdventureResult(
 
       // 对原始物品也应用倍数调整（如果是丹药或草药）
       if (item.type === ItemType.Pill || item.type === ItemType.Herb) {
-        const adjustedEffect = item.effect ? { ...item.effect } : undefined;
-        const adjustedPermanentEffect = item.permanentEffect ? { ...item.permanentEffect } : undefined;
-
-        if (adjustedEffect) {
-          const pillEffectMultiplier = realmMultiplier * 2;
-          if (adjustedEffect.exp !== undefined) adjustedEffect.exp = Math.floor(adjustedEffect.exp * pillEffectMultiplier);
-          if (adjustedEffect.hp !== undefined) adjustedEffect.hp = Math.floor(adjustedEffect.hp * pillEffectMultiplier);
-          if (adjustedEffect.attack !== undefined) adjustedEffect.attack = Math.floor(adjustedEffect.attack * pillEffectMultiplier);
-          if (adjustedEffect.defense !== undefined) adjustedEffect.defense = Math.floor(adjustedEffect.defense * pillEffectMultiplier);
-          if (adjustedEffect.spirit !== undefined) adjustedEffect.spirit = Math.floor(adjustedEffect.spirit * pillEffectMultiplier);
-          if (adjustedEffect.physique !== undefined) adjustedEffect.physique = Math.floor(adjustedEffect.physique * pillEffectMultiplier);
-          if (adjustedEffect.speed !== undefined) adjustedEffect.speed = Math.floor(adjustedEffect.speed * pillEffectMultiplier);
-        }
-
-        if (adjustedPermanentEffect) {
-          const pillPermanentMultiplier = realmMultiplier * 1.5;
-          if (adjustedPermanentEffect.maxHp !== undefined) adjustedPermanentEffect.maxHp = Math.floor(adjustedPermanentEffect.maxHp * pillPermanentMultiplier);
-          if (adjustedPermanentEffect.attack !== undefined) adjustedPermanentEffect.attack = Math.floor(adjustedPermanentEffect.attack * pillPermanentMultiplier);
-          if (adjustedPermanentEffect.defense !== undefined) adjustedPermanentEffect.defense = Math.floor(adjustedPermanentEffect.defense * pillPermanentMultiplier);
-          if (adjustedPermanentEffect.spirit !== undefined) adjustedPermanentEffect.spirit = Math.floor(adjustedPermanentEffect.spirit * pillPermanentMultiplier);
-          if (adjustedPermanentEffect.physique !== undefined) adjustedPermanentEffect.physique = Math.floor(adjustedPermanentEffect.physique * pillPermanentMultiplier);
-          if (adjustedPermanentEffect.speed !== undefined) adjustedPermanentEffect.speed = Math.floor(adjustedPermanentEffect.speed * pillPermanentMultiplier);
-          if ((adjustedPermanentEffect as any).maxLifespan !== undefined) (adjustedPermanentEffect as any).maxLifespan = Math.floor((adjustedPermanentEffect as any).maxLifespan * pillPermanentMultiplier);
-        }
-
+        const { effect: adjustedEffect, permanentEffect: adjustedPermanentEffect } = adjustPillHerbEffects(
+          item.effect,
+          item.permanentEffect,
+          item.rarity,
+          realmMultiplier
+        );
         return {
           ...item,
           effect: adjustedEffect,
