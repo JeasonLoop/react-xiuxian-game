@@ -86,14 +86,14 @@ export const PET_TEMPLATES: PetTemplate[] = [
         name: '撕咬',
         description: '基础攻击',
         type: 'attack',
-        effect: { damage: 50 },
+        effect: { damageMultiplier: 1.2 },
       },
       {
         id: 'skill-heal',
         name: '治愈之光',
-        description: '恢复气血',
+        description: '恢复主人气血',
         type: 'support',
-        effect: { heal: 250 },
+        effect: { healPercent: 0.15 },
       },
     ],
     stageSkills: {
@@ -101,19 +101,19 @@ export const PET_TEMPLATES: PetTemplate[] = [
         {
           id: 'skill-fox-fire',
           name: '灵狐火',
-          description: '发射灵气狐火攻击敌人',
+          description: '发射灵气狐火，造成大量伤害',
           type: 'attack',
-          effect: { damage: 150 },
+          effect: { damageMultiplier: 2.5 },
           cooldown: 3,
         }
       ],
       stage2: [
         {
           id: 'skill-fox-enchant',
-          name: '魅惑',
-          description: '使敌人分神，造成精神伤害',
+          name: '天狐魅惑',
+          description: '使敌人分神，造成精神伤害并降低防御',
           type: 'attack',
-          effect: { damage: 200 },
+          effect: { damageMultiplier: 3.5, buff: { defensePercent: -0.2 } },
           cooldown: 5,
         }
       ]
@@ -121,11 +121,11 @@ export const PET_TEMPLATES: PetTemplate[] = [
     evolutionRequirements: {
       stage1: {
         level: 10,
-        items: [{ name: '聚灵草', quantity: 10 }],
+        items: [{ name: '聚灵草', quantity: 5 }],
       },
       stage2: {
         level: 30,
-        items: [{ name: '灵兽精血', quantity: 5 }, { name: '月华石', quantity: 3 }],
+        items: [{ name: '灵兽精血', quantity: 3 }, { name: '月华石', quantity: 2 }],
       },
     },
     evolutionNames: {
@@ -152,14 +152,14 @@ export const PET_TEMPLATES: PetTemplate[] = [
         name: '撕咬',
         description: '基础攻击',
         type: 'attack',
-        effect: { damage: 150 },
+        effect: { damageMultiplier: 1.5 },
       },
       {
         id: 'skill-thunder',
         name: '雷击',
         description: '雷属性攻击',
         type: 'attack',
-        effect: { damage: 50 },
+        effect: { damageMultiplier: 2.0 },
         cooldown: 3,
       },
     ],
@@ -168,9 +168,9 @@ export const PET_TEMPLATES: PetTemplate[] = [
         {
           id: 'skill-thunder-roar',
           name: '雷霆咆哮',
-          description: '震慑敌人，造成大量伤害',
+          description: '震慑敌人，造成巨量伤害并提升主人攻击',
           type: 'attack',
-          effect: { damage: 300 },
+          effect: { damageMultiplier: 4.0, buff: { attackPercent: 0.15 } },
           cooldown: 4,
         }
       ],
@@ -178,9 +178,9 @@ export const PET_TEMPLATES: PetTemplate[] = [
         {
           id: 'skill-heavenly-thunder',
           name: '九天引雷',
-          description: '引动九天神雷，毁灭性打击',
+          description: '引动九天神雷，毁灭性打击，且极大提升主人暴击',
           type: 'attack',
-          effect: { damage: 800 },
+          effect: { damageMultiplier: 8.0, buff: { critChance: 0.25 } },
           cooldown: 6,
         }
       ]
@@ -188,11 +188,11 @@ export const PET_TEMPLATES: PetTemplate[] = [
     evolutionRequirements: {
       stage1: {
         level: 20,
-        items: [{ name: '妖兽内丹', quantity: 5 }, { name: '星辰碎片', quantity: 3 }],
+        items: [{ name: '妖兽内丹', quantity: 3 }, { name: '星辰碎片', quantity: 2 }],
       },
       stage2: {
         level: 50,
-        items: [{ name: '龙鳞片', quantity: 3 }, { name: '神兽精魄', quantity: 2 }],
+        items: [{ name: '龙鳞片', quantity: 2 }, { name: '神兽精魄', quantity: 1 }],
       },
     },
     evolutionNames: {
@@ -216,18 +216,18 @@ export const PET_TEMPLATES: PetTemplate[] = [
     skills: [
       {
         id: 'skill-blessing',
-        name: '祝福',
-        description: '提升属性',
+        name: '神凤祝福',
+        description: '大幅提升主人攻击与防御',
         type: 'support',
-        effect: { buff: { attack: 250, defense: 150 } },
+        effect: { buff: { attackPercent: 0.25, defensePercent: 0.25 } },
         cooldown: 5,
       },
       {
         id: 'skill-rebirth',
-        name: '涅槃',
-        description: '大量恢复气血',
+        name: '涅槃重生',
+        description: '极大量恢复气血并清除负面状态',
         type: 'support',
-        effect: { heal: 5000 },
+        effect: { healPercent: 0.8 },
         cooldown: 10,
       },
     ],
@@ -236,9 +236,9 @@ export const PET_TEMPLATES: PetTemplate[] = [
         {
           id: 'skill-phoenix-fire',
           name: '凤凰真火',
-          description: '焚尽世间万物的神火',
+          description: '焚尽世间万物的神火，造成毁灭性伤害',
           type: 'attack',
-          effect: { damage: 600 },
+          effect: { damageMultiplier: 10.0 },
           cooldown: 4,
         }
       ],
@@ -246,9 +246,9 @@ export const PET_TEMPLATES: PetTemplate[] = [
         {
           id: 'skill-immortal-aura',
           name: '长生领域',
-          description: '散发仙气，大幅提升全属性',
+          description: '散发仙气，全属性获得跨越式提升',
           type: 'support',
-          effect: { buff: { attack: 1000, defense: 500, hp: 2000 } },
+          effect: { buff: { attackPercent: 0.5, defensePercent: 0.5, speedPercent: 0.3 } },
           cooldown: 8,
         }
       ]
@@ -256,11 +256,11 @@ export const PET_TEMPLATES: PetTemplate[] = [
     evolutionRequirements: {
       stage1: {
         level: 30,
-        items: [{ name: '凤凰羽', quantity: 5 }, { name: '九转金丹', quantity: 3 }],
+        items: [{ name: '凤凰羽', quantity: 3 }, { name: '九转金丹', quantity: 2 }],
       },
       stage2: {
         level: 70,
-        items: [{ name: '混沌石', quantity: 2 }, { name: '大道碎片', quantity: 2 }, { name: '仙灵本源', quantity: 1 }],
+        items: [{ name: '混沌石', quantity: 1 }, { name: '大道碎片', quantity: 1 }, { name: '仙灵本源', quantity: 1 }],
       },
     },
     evolutionNames: {
@@ -286,17 +286,17 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-ice-breath',
         name: '冰霜吐息',
-        description: '冰属性范围攻击',
+        description: '龙息攻击，造成范围伤害',
         type: 'attack',
-        effect: { damage: 400 },
+        effect: { damageMultiplier: 3.0 },
         cooldown: 4,
       },
       {
         id: 'skill-ice-shield',
         name: '冰霜护盾',
-        description: '提升主人防御',
+        description: '大幅提升主人防御',
         type: 'defense',
-        effect: { buff: { defense: 200 } },
+        effect: { buff: { defensePercent: 0.3 } },
         cooldown: 5,
       },
     ],
@@ -305,9 +305,9 @@ export const PET_TEMPLATES: PetTemplate[] = [
         {
           id: 'skill-ice-prison',
           name: '寒冰牢笼',
-          description: '困住敌人并造成伤害',
+          description: '困住敌人并造成巨量伤害，同时降低敌速',
           type: 'attack',
-          effect: { damage: 800 },
+          effect: { damageMultiplier: 6.0, buff: { speedPercent: -0.2 } },
           cooldown: 5,
         }
       ],
@@ -315,9 +315,9 @@ export const PET_TEMPLATES: PetTemplate[] = [
         {
           id: 'skill-absolute-zero',
           name: '绝对零度',
-          description: '极寒领域，冻结一切',
+          description: '极寒领域，冻结一切，造成毁灭性打击',
           type: 'attack',
-          effect: { damage: 2000 },
+          effect: { damageMultiplier: 12.0 },
           cooldown: 8,
         }
       ]
@@ -325,11 +325,11 @@ export const PET_TEMPLATES: PetTemplate[] = [
     evolutionRequirements: {
       stage1: {
         level: 25,
-        items: [{ name: '龙鳞片', quantity: 5 }, { name: '星辰碎片', quantity: 5 }],
+        items: [{ name: '龙鳞片', quantity: 3 }, { name: '星辰碎片', quantity: 3 }],
       },
       stage2: {
         level: 60,
-        items: [{ name: '神兽精魄', quantity: 3 }, { name: '天材地宝', quantity: 2 }],
+        items: [{ name: '神兽精魄', quantity: 2 }, { name: '天材地宝', quantity: 1 }],
       },
     },
     evolutionNames: {
@@ -354,9 +354,9 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-fire-storm',
         name: '火焰风暴',
-        description: '火属性攻击',
+        description: '大范围火焰攻击',
         type: 'attack',
-        effect: { damage: 70 },
+        effect: { damageMultiplier: 1.8 },
         cooldown: 3,
       },
     ],
@@ -365,9 +365,9 @@ export const PET_TEMPLATES: PetTemplate[] = [
         {
           id: 'skill-fire-wing',
           name: '烈焰之翼',
-          description: '挥动火翼，造成扇形伤害',
+          description: '挥动火翼，造成扇形伤害并提升主人速度',
           type: 'attack',
-          effect: { damage: 300 },
+          effect: { damageMultiplier: 3.5, buff: { speedPercent: 0.15 } },
           cooldown: 3,
         }
       ],
@@ -375,9 +375,9 @@ export const PET_TEMPLATES: PetTemplate[] = [
         {
           id: 'skill-vermilion-bird-strike',
           name: '朱雀神击',
-          description: '化身朱雀，毁灭性冲击',
+          description: '化身朱雀冲击，造成毁灭性伤害',
           type: 'attack',
-          effect: { damage: 1200 },
+          effect: { damageMultiplier: 7.5 },
           cooldown: 6,
         }
       ]
@@ -385,11 +385,11 @@ export const PET_TEMPLATES: PetTemplate[] = [
     evolutionRequirements: {
       stage1: {
         level: 15,
-        items: [{ name: '妖兽内丹', quantity: 8 }, { name: '灵兽精血', quantity: 3 }],
+        items: [{ name: '妖兽内丹', quantity: 5 }, { name: '灵兽精血', quantity: 2 }],
       },
       stage2: {
         level: 40,
-        items: [{ name: '凤凰羽', quantity: 3 }, { name: '仙灵果', quantity: 5 }],
+        items: [{ name: '凤凰羽', quantity: 2 }, { name: '仙灵果', quantity: 3 }],
       },
     },
     evolutionNames: {
@@ -414,9 +414,9 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-earth-shield',
         name: '大地守护',
-        description: '大幅提升防御',
+        description: '大幅提升主人防御',
         type: 'defense',
-        effect: { buff: { defense: 300, hp: 500 } },
+        effect: { buff: { defensePercent: 0.4 } },
         cooldown: 6,
       },
     ],
@@ -425,9 +425,9 @@ export const PET_TEMPLATES: PetTemplate[] = [
         {
           id: 'skill-mystic-defense',
           name: '玄武御',
-          description: '绝对防御，反弹部分伤害',
+          description: '绝对防御，极大提升防御力',
           type: 'defense',
-          effect: { buff: { defense: 800 } },
+          effect: { buff: { defensePercent: 0.8 } },
           cooldown: 8,
         }
       ],
@@ -435,9 +435,9 @@ export const PET_TEMPLATES: PetTemplate[] = [
         {
           id: 'skill-world-turtle',
           name: '撑天之力',
-          description: '引动大地之力，固若金汤',
+          description: '引动大地之力，固若金汤，提升全属性防御',
           type: 'defense',
-          effect: { buff: { defense: 2000, hp: 5000 } },
+          effect: { buff: { defensePercent: 1.5, attackPercent: 0.2 } },
           cooldown: 12,
         }
       ]
@@ -445,11 +445,11 @@ export const PET_TEMPLATES: PetTemplate[] = [
     evolutionRequirements: {
       stage1: {
         level: 12,
-        items: [{ name: '聚灵草', quantity: 15 }],
+        items: [{ name: '聚灵草', quantity: 8 }],
       },
       stage2: {
         level: 35,
-        items: [{ name: '月华石', quantity: 5 }, { name: '星辰碎片', quantity: 5 }],
+        items: [{ name: '月华石', quantity: 3 }, { name: '星辰碎片', quantity: 3 }],
       },
     },
     evolutionNames: {
@@ -474,9 +474,9 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-wind-blade',
         name: '风刃',
-        description: '高速攻击',
+        description: '极速风刃攻击',
         type: 'attack',
-        effect: { damage: 275 },
+        effect: { damageMultiplier: 2.2 },
         cooldown: 2,
       },
     ],
@@ -485,9 +485,9 @@ export const PET_TEMPLATES: PetTemplate[] = [
         {
           id: 'skill-howl',
           name: '月下长啸',
-          description: '提升攻击力与速度',
+          description: '大幅提升主人攻击力与速度',
           type: 'support',
-          effect: { buff: { attack: 500, speed: 50 } },
+          effect: { buff: { attackPercent: 0.2, speedPercent: 0.2 } },
           cooldown: 6,
         }
       ],
@@ -495,9 +495,9 @@ export const PET_TEMPLATES: PetTemplate[] = [
         {
           id: 'skill-celestial-wolf-slash',
           name: '天狼裂星',
-          description: '极速冲杀，瞬间爆发',
+          description: '跨越空间的斩击，瞬间爆发毁灭性伤害',
           type: 'attack',
-          effect: { damage: 2500 },
+          effect: { damageMultiplier: 6.5 },
           cooldown: 5,
         }
       ]
@@ -505,11 +505,11 @@ export const PET_TEMPLATES: PetTemplate[] = [
     evolutionRequirements: {
       stage1: {
         level: 18,
-        items: [{ name: '妖兽内丹', quantity: 6 }, { name: '灵兽精血', quantity: 2 }],
+        items: [{ name: '妖兽内丹', quantity: 3 }, { name: '灵兽精血', quantity: 1 }],
       },
       stage2: {
         level: 45,
-        items: [{ name: '星辰碎片', quantity: 8 }, { name: '仙灵果', quantity: 3 }],
+        items: [{ name: '星辰碎片', quantity: 4 }, { name: '仙灵果', quantity: 2 }],
       },
     },
     evolutionNames: {
@@ -530,20 +530,20 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-water-heal',
         name: '水疗术',
-        description: '恢复气血',
+        description: '持续恢复主人气血',
         type: 'support',
-        effect: { heal: 400 },
+        effect: { healPercent: 0.2 },
         cooldown: 4,
       },
     ],
     evolutionRequirements: {
       stage1: {
         level: 10,
-        items: [{ name: '聚灵草', quantity: 12 }],
+        items: [{ name: '聚灵草', quantity: 6 }],
       },
       stage2: {
         level: 30,
-        items: [{ name: '月华石', quantity: 4 }, { name: '灵兽精血', quantity: 3 }],
+        items: [{ name: '月华石', quantity: 2 }, { name: '灵兽精血', quantity: 2 }],
       },
     },
     evolutionNames: {
@@ -564,20 +564,20 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-shadow-strike',
         name: '暗影突袭',
-        description: '高伤害暗影攻击',
+        description: '潜入阴影中的致命一击',
         type: 'attack',
-        effect: { damage: 450 },
+        effect: { damageMultiplier: 3.2 },
         cooldown: 4,
       },
     ],
     evolutionRequirements: {
       stage1: {
         level: 20,
-        items: [{ name: '妖兽内丹', quantity: 7 }, { name: '星辰碎片', quantity: 4 }],
+        items: [{ name: '妖兽内丹', quantity: 3 }, { name: '星辰碎片', quantity: 2 }],
       },
       stage2: {
         level: 50,
-        items: [{ name: '麒麟角', quantity: 2 }, { name: '九转金丹', quantity: 2 }],
+        items: [{ name: '麒麟角', quantity: 1 }, { name: '九转金丹', quantity: 1 }],
       },
     },
     evolutionNames: {
@@ -598,20 +598,20 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-light-blessing',
         name: '光明祝福',
-        description: '恢复气血并提升属性',
+        description: '恢复气血并提升主人攻击与防御',
         type: 'support',
-        effect: { heal: 300, buff: { attack: 100, defense: 75 } },
+        effect: { healPercent: 0.1, buff: { attackPercent: 0.1, defensePercent: 0.1 } },
         cooldown: 5,
       },
     ],
     evolutionRequirements: {
       stage1: {
         level: 12,
-        items: [{ name: '聚灵草', quantity: 15 }],
+        items: [{ name: '聚灵草', quantity: 8 }],
       },
       stage2: {
         level: 35,
-        items: [{ name: '月华石', quantity: 5 }, { name: '仙灵果', quantity: 3 }],
+        items: [{ name: '月华石', quantity: 3 }, { name: '仙灵果', quantity: 2 }],
       },
     },
     evolutionNames: {
@@ -634,18 +634,18 @@ export const PET_TEMPLATES: PetTemplate[] = [
         name: '雷霆一击',
         description: '强力雷属性攻击',
         type: 'attack',
-        effect: { damage: 600 },
+        effect: { damageMultiplier: 4.5 },
         cooldown: 4,
       },
     ],
     evolutionRequirements: {
       stage1: {
         level: 25,
-        items: [{ name: '龙鳞片', quantity: 4 }, { name: '星辰碎片', quantity: 6 }],
+        items: [{ name: '龙鳞片', quantity: 2 }, { name: '星辰碎片', quantity: 3 }],
       },
       stage2: {
         level: 60,
-        items: [{ name: '神兽精魄', quantity: 3 }, { name: '天材地宝', quantity: 3 }],
+        items: [{ name: '神兽精魄', quantity: 2 }, { name: '天材地宝', quantity: 2 }],
       },
     },
     evolutionNames: {
@@ -666,20 +666,20 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-poison-bite',
         name: '毒牙',
-        description: '带毒的持续伤害攻击',
+        description: '带毒的持续伤害攻击，且降低敌方防御',
         type: 'attack',
-        effect: { damage: 325 },
+        effect: { damageMultiplier: 2.8, buff: { defensePercent: -0.15 } },
         cooldown: 3,
       },
     ],
     evolutionRequirements: {
       stage1: {
         level: 18,
-        items: [{ name: '妖兽内丹', quantity: 8 }, { name: '灵兽精血', quantity: 3 }],
+        items: [{ name: '妖兽内丹', quantity: 4 }, { name: '灵兽精血', quantity: 2 }],
       },
       stage2: {
         level: 45,
-        items: [{ name: '麒麟角', quantity: 2 }, { name: '仙灵果', quantity: 4 }],
+        items: [{ name: '麒麟角', quantity: 1 }, { name: '仙灵果', quantity: 3 }],
       },
     },
     evolutionNames: {
@@ -700,20 +700,20 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-nature-heal',
         name: '自然治愈',
-        description: '恢复大量气血',
+        description: '恢复主人大量气血',
         type: 'support',
-        effect: { heal: 500 },
+        effect: { healPercent: 0.35 },
         cooldown: 4,
       },
     ],
     evolutionRequirements: {
       stage1: {
         level: 12,
-        items: [{ name: '聚灵草', quantity: 15 }],
+        items: [{ name: '聚灵草', quantity: 8 }],
       },
       stage2: {
         level: 35,
-        items: [{ name: '月华石', quantity: 5 }, { name: '灵兽精血', quantity: 4 }],
+        items: [{ name: '月华石', quantity: 3 }, { name: '灵兽精血', quantity: 3 }],
       },
     },
     evolutionNames: {
@@ -734,20 +734,20 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-iron-defense',
         name: '钢铁守护',
-        description: '大幅提升防御',
+        description: '大幅提升主人防御并略微回血',
         type: 'defense',
-        effect: { buff: { defense: 400, hp: 750 } },
+        effect: { healPercent: 0.1, buff: { defensePercent: 0.4 } },
         cooldown: 6,
       },
     ],
     evolutionRequirements: {
       stage1: {
         level: 20,
-        items: [{ name: '妖兽内丹', quantity: 6 }, { name: '星辰碎片', quantity: 5 }],
+        items: [{ name: '妖兽内丹', quantity: 3 }, { name: '星辰碎片', quantity: 3 }],
       },
       stage2: {
         level: 50,
-        items: [{ name: '龙鳞片', quantity: 3 }, { name: '九转金丹', quantity: 2 }],
+        items: [{ name: '龙鳞片', quantity: 2 }, { name: '九转金丹', quantity: 1 }],
       },
     },
     evolutionNames: {
@@ -768,20 +768,20 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-crystal-blessing',
         name: '晶华祝福',
-        description: '提升全属性',
+        description: '全属性提升并提供闪避',
         type: 'support',
-        effect: { buff: { attack: 150, defense: 125 } },
+        effect: { buff: { attackPercent: 0.15, defensePercent: 0.15, dodge: 0.1 } },
         cooldown: 5,
       },
     ],
     evolutionRequirements: {
       stage1: {
         level: 15,
-        items: [{ name: '月华石', quantity: 5 }, { name: '灵兽精血', quantity: 3 }],
+        items: [{ name: '月华石', quantity: 3 }, { name: '灵兽精血', quantity: 2 }],
       },
       stage2: {
         level: 40,
-        items: [{ name: '星辰碎片', quantity: 8 }, { name: '仙灵果', quantity: 4 }],
+        items: [{ name: '星辰碎片', quantity: 4 }, { name: '仙灵果', quantity: 3 }],
       },
     },
     evolutionNames: {
@@ -802,20 +802,20 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-stone-wall',
         name: '石墙守护',
-        description: '大幅提升防御和气血',
+        description: '大幅提升主人防御并提供巨量护盾',
         type: 'defense',
-        effect: { buff: { defense: 500, hp: 1000 } },
+        effect: { buff: { defensePercent: 0.5, hp: 1000 } },
         cooldown: 7,
       },
     ],
     evolutionRequirements: {
       stage1: {
         level: 30,
-        items: [{ name: '龙鳞片', quantity: 5 }, { name: '麒麟角', quantity: 3 }],
+        items: [{ name: '龙鳞片', quantity: 3 }, { name: '麒麟角', quantity: 2 }],
       },
       stage2: {
         level: 65,
-        items: [{ name: '神兽精魄', quantity: 4 }, { name: '天材地宝', quantity: 3 }],
+        items: [{ name: '神兽精魄', quantity: 2 }, { name: '天材地宝', quantity: 2 }],
       },
     },
     evolutionNames: {
@@ -836,20 +836,20 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-void-strike',
         name: '虚空打击',
-        description: '无视防御的虚空攻击',
+        description: '无视防御的虚空攻击，并提升主人暴击',
         type: 'attack',
-        effect: { damage: 550 },
+        effect: { damageMultiplier: 5.0, buff: { critChance: 0.15 } },
         cooldown: 5,
       },
     ],
     evolutionRequirements: {
       stage1: {
         level: 28,
-        items: [{ name: '龙鳞片', quantity: 4 }, { name: '凤凰羽', quantity: 3 }],
+        items: [{ name: '龙鳞片', quantity: 2 }, { name: '凤凰羽', quantity: 2 }],
       },
       stage2: {
         level: 65,
-        items: [{ name: '混沌石', quantity: 2 }, { name: '大道碎片', quantity: 2 }],
+        items: [{ name: '混沌石', quantity: 1 }, { name: '大道碎片', quantity: 1 }],
       },
     },
     evolutionNames: {
@@ -870,20 +870,20 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-golden-roar',
         name: '黄金咆哮',
-        description: '提升攻击和防御',
+        description: '提升主人全方位攻防属性',
         type: 'support',
-        effect: { buff: { attack: 250, defense: 200 } },
+        effect: { buff: { attackPercent: 0.2, defensePercent: 0.2 } },
         cooldown: 5,
       },
     ],
     evolutionRequirements: {
       stage1: {
         level: 25,
-        items: [{ name: '龙鳞片', quantity: 5 }, { name: '麒麟角', quantity: 2 }],
+        items: [{ name: '龙鳞片', quantity: 3 }, { name: '麒麟角', quantity: 1 }],
       },
       stage2: {
         level: 60,
-        items: [{ name: '神兽精魄', quantity: 3 }, { name: '天材地宝', quantity: 3 }],
+        items: [{ name: '神兽精魄', quantity: 2 }, { name: '天材地宝', quantity: 2 }],
       },
     },
     evolutionNames: {
@@ -904,20 +904,20 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-silver-flash',
         name: '银光闪',
-        description: '高速攻击',
+        description: '极速闪击，并提升主人速度',
         type: 'attack',
-        effect: { damage: 70 },
+        effect: { damageMultiplier: 1.5, buff: { speedPercent: 0.1 } },
         cooldown: 3,
       },
     ],
     evolutionRequirements: {
       stage1: {
         level: 18,
-        items: [{ name: '月华石', quantity: 6 }, { name: '灵兽精血', quantity: 3 }],
+        items: [{ name: '月华石', quantity: 3 }, { name: '灵兽精血', quantity: 2 }],
       },
       stage2: {
         level: 45,
-        items: [{ name: '星辰碎片', quantity: 8 }, { name: '仙灵果', quantity: 4 }],
+        items: [{ name: '星辰碎片', quantity: 4 }, { name: '仙灵果', quantity: 2 }],
       },
     },
     evolutionNames: {
@@ -938,20 +938,20 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-rainbow-dance',
         name: '彩虹之舞',
-        description: '提升全属性',
+        description: '大幅提升主人攻击与防御',
         type: 'support',
-        effect: { buff: { attack: 175, defense: 150 } },
+        effect: { buff: { attackPercent: 0.2, defensePercent: 0.2 } },
         cooldown: 6,
       },
     ],
     evolutionRequirements: {
       stage1: {
         level: 20,
-        items: [{ name: '月华石', quantity: 7 }, { name: '星辰碎片', quantity: 5 }],
+        items: [{ name: '月华石', quantity: 4 }, { name: '星辰碎片', quantity: 3 }],
       },
       stage2: {
         level: 50,
-        items: [{ name: '凤凰羽', quantity: 3 }, { name: '仙灵果', quantity: 5 }],
+        items: [{ name: '凤凰羽', quantity: 2 }, { name: '仙灵果', quantity: 3 }],
       },
     },
     evolutionNames: {
@@ -972,28 +972,28 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-dark-blast',
         name: '暗黑冲击',
-        description: '强力暗属性攻击',
+        description: '极强暗属性攻击',
         type: 'attack',
-        effect: { damage: 150 },
+        effect: { damageMultiplier: 5.5 },
         cooldown: 4,
       },
       {
         id: 'skill-dark-shield',
         name: '暗黑护盾',
-        description: '提升防御并恢复气血',
+        description: '大幅提升防御并中量回血',
         type: 'defense',
-        effect: { buff: { defense: 300 }, heal: 500 },
+        effect: { buff: { defensePercent: 0.4 }, healPercent: 0.2 },
         cooldown: 6,
       },
     ],
     evolutionRequirements: {
       stage1: {
         level: 35,
-        items: [{ name: '龙鳞片', quantity: 8 }, { name: '神兽精魄', quantity: 3 }],
+        items: [{ name: '龙鳞片', quantity: 4 }, { name: '神兽精魄', quantity: 2 }],
       },
       stage2: {
         level: 75,
-        items: [{ name: '混沌石', quantity: 3 }, { name: '大道碎片', quantity: 3 }, { name: '造化神液', quantity: 1 }],
+        items: [{ name: '混沌石', quantity: 2 }, { name: '大道碎片', quantity: 2 }, { name: '造化神液', quantity: 1 }],
       },
     },
     evolutionNames: {
@@ -1006,7 +1006,7 @@ export const PET_TEMPLATES: PetTemplate[] = [
     name: '光独角兽',
     nameVariants: ['光独角兽', '圣光独角兽', '神圣独角兽', '光明独角兽', '天光独角兽', '神光独角兽', '圣洁独角兽', '光辉独角兽'],
     species: '神兽',
-    description: '神圣的光独角兽，擅长治疗和辅助。',
+    description: '神圣的光独角兽，擅长治疗 and 辅助。',
     rarity: '仙品',
     image: '🦄',
     baseStats: { attack: 200, defense: 120, hp: 2500, speed: 60 },
@@ -1014,28 +1014,28 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-holy-heal',
         name: '神圣治愈',
-        description: '恢复大量气血',
+        description: '恢复主人大量气血',
         type: 'support',
-        effect: { heal: 1000 },
+        effect: { healPercent: 0.5 },
         cooldown: 4,
       },
       {
         id: 'skill-holy-blessing',
         name: '神圣祝福',
-        description: '提升全属性',
+        description: '跨越式提升主人全属性',
         type: 'support',
-        effect: { buff: { attack: 300, defense: 250, hp: 750 } },
+        effect: { buff: { attackPercent: 0.3, defensePercent: 0.3, speedPercent: 0.2 } },
         cooldown: 6,
       },
     ],
     evolutionRequirements: {
       stage1: {
         level: 35,
-        items: [{ name: '麒麟角', quantity: 5 }, { name: '九转金丹', quantity: 4 }],
+        items: [{ name: '麒麟角', quantity: 3 }, { name: '九转金丹', quantity: 2 }],
       },
       stage2: {
         level: 75,
-        items: [{ name: '仙灵本源', quantity: 2 }, { name: '造化神液', quantity: 1 }],
+        items: [{ name: '仙灵本源', quantity: 1 }, { name: '造化神液', quantity: 1 }],
       },
     },
     evolutionNames: {
@@ -1048,7 +1048,7 @@ export const PET_TEMPLATES: PetTemplate[] = [
     name: '冰凤凰',
     nameVariants: ['冰凤凰', '寒冰凤凰', '冰霜凤凰', '极冰凤凰', '玄冰凤凰', '冰魄凤凰', '雪凤', '冰灵凤凰'],
     species: '神兽',
-    description: '掌控寒冰的凤凰，防御和治疗并重。',
+    description: '掌控寒冰的凤凰，防御 and 治疗并重。',
     rarity: '仙品',
     image: '❄️',
     baseStats: { attack: 200, defense: 130, hp: 2500, speed: 55 },
@@ -1056,28 +1056,28 @@ export const PET_TEMPLATES: PetTemplate[] = [
       {
         id: 'skill-ice-storm',
         name: '冰霜风暴',
-        description: '范围冰属性攻击',
+        description: '寒冰打击敌人，并降低其速度',
         type: 'attack',
-        effect: { damage: 700 },
+        effect: { damageMultiplier: 4.5, buff: { speedPercent: -0.2 } },
         cooldown: 5,
       },
       {
         id: 'skill-ice-recovery',
         name: '冰霜恢复',
-        description: '恢复气血并提升防御',
+        description: '恢复气血并大幅提升主人防御',
         type: 'support',
-        effect: { heal: 750, buff: { defense: 250 } },
+        effect: { healPercent: 0.3, buff: { defensePercent: 0.4 } },
         cooldown: 5,
       },
     ],
     evolutionRequirements: {
       stage1: {
         level: 35,
-        items: [{ name: '凤凰羽', quantity: 8 }, { name: '神兽精魄', quantity: 3 }],
+        items: [{ name: '凤凰羽', quantity: 4 }, { name: '神兽精魄', quantity: 2 }],
       },
       stage2: {
         level: 75,
-        items: [{ name: '混沌石', quantity: 3 }, { name: '大道碎片', quantity: 3 }, { name: '仙灵本源', quantity: 1 }],
+        items: [{ name: '混沌石', quantity: 2 }, { name: '大道碎片', quantity: 2 }, { name: '仙灵本源', quantity: 1 }],
       },
     },
     evolutionNames: {

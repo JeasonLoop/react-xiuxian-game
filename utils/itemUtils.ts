@@ -77,6 +77,7 @@ export const normalizeTypeLabel = (type: ItemType | string, item?: {
         heavenEarthEssence: '天地精华',
         heavenEarthMarrow: '天地之髓',
         longevityRule: '规则之力',
+        soulArt: '本命功法',
       };
       return typeMap[item.advancedItemType] || '进阶物品';
     }

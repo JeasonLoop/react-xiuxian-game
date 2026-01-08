@@ -364,6 +364,7 @@ function App() {
     pausedByReputationEvent,
     setPausedByShop,
     setPausedByReputationEvent,
+    setPausedByHeavenEarthSoul,
     loading,
     cooldown,
     setLoading,

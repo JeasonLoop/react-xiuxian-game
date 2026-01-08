@@ -96,7 +96,7 @@ export interface Item {
   recipeData?: Recipe; // 丹方数据（仅当 type 为 Recipe 时使用）
   reviveChances?: number; // 保命机会次数（1-3次），仅传说和仙品装备可能有
   battleSkills?: BattleSkill[]; // 战斗技能（法宝/武器）
-  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule'; // 进阶物品类型（仅当type为AdvancedItem时使用）
+  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule' | 'soulArt'; // 进阶物品类型（仅当type为AdvancedItem时使用）
   advancedItemId?: string; // 进阶物品ID（用于炼化）
   effect?: {
     hp?: number;
@@ -548,7 +548,7 @@ export interface AdventureResult {
     rarity?: string;
     isEquippable?: boolean;
     equipmentSlot?: string; // "头部" | "肩部" | "胸甲" | "手套" | "裤腿" | "鞋子" | "戒指1-4" | "首饰1-2" | "法宝1-2" | "武器"
-    advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule'; // 进阶物品类型（仅当type为"进阶物品"时使用）
+    advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule' | 'soulArt'; // 进阶物品类型（仅当type为"进阶物品"时使用）
     advancedItemId?: string; // 进阶物品ID（用于炼化）
     effect?: {
       attack?: number;
@@ -740,9 +740,21 @@ export interface PetSkill {
   description: string;
   type: 'attack' | 'defense' | 'support' | 'passive' | 'debuff' | 'buff';
   effect: {
-    damage?: number;
-    heal?: number;
-    buff?: { attack?: number; defense?: number; hp?: number; speed?: number };
+    damage?: number; // 固定伤害
+    damageMultiplier?: number; // 伤害倍率（基于灵宠攻击力）
+    heal?: number; // 固定治疗
+    healPercent?: number; // 百分比治疗（基于玩家最大生命值）
+    buff?: {
+      attack?: number;
+      defense?: number;
+      hp?: number;
+      speed?: number;
+      attackPercent?: number; // 攻击力百分比加成
+      defensePercent?: number; // 防御力百分比加成
+      speedPercent?: number; // 速度百分比加成
+      critChance?: number; // 暴击率加成 (0-1)
+      dodge?: number; // 闪避率加成 (0-1)
+    };
   };
   cooldown?: number;
 }
@@ -872,7 +884,8 @@ export interface ShopItem {
   minRealm?: RealmType; // 最低境界要求
   reviveChances?: number; // 保命机会次数（1-3次），仅传说和仙品装备可能有
   isAdvancedItem?: boolean; // 标记为进阶物品
-  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule'; // 进阶物品类型
+  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule' | 'soulArt'; // 进阶物品类型
+  advancedItemId?: string; // 进阶物品ID
 }
 
 export interface Shop {

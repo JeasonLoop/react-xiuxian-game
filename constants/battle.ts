@@ -23,14 +23,14 @@ export const ARTIFACT_BATTLE_SKILLS: Record<string, BattleSkill[]> = {
             id: 'star-shield',
             name: '星辰护盾',
             type: 'defense',
-            value: 0.3, // 30%防御力提升
+            value: 0.35, // 防御提升从30%提升至35%
             duration: 2,
             source: 'artifact-star-disk',
-            description: '防御力提升30%，持续2回合',
+            description: '防御力提升35%，持续2回合',
           },
         },
       ],
-      cost: { mana: 20 },
+      cost: { mana: 40 }, // 防御技能消耗从20提升至40
       cooldown: 0,
       maxCooldown: 3,
       target: 'self',
@@ -43,16 +43,16 @@ export const ARTIFACT_BATTLE_SKILLS: Record<string, BattleSkill[]> = {
       source: 'artifact',
       sourceId: 'artifact-star-disk',
       effects: [],
-      cost: { mana: 40 },
+      cost: { mana: 80 }, // 核心攻击技能消耗从40提升至80
       cooldown: 0,
       maxCooldown: 4,
       target: 'enemy',
       damage: {
-        base: 30,
-        multiplier: 1.2,
+        base: 45, // 基础伤害从30提升至45
+        multiplier: 1.5, // 伤害倍率从1.2提升至1.5
         type: 'magical',
-        critChance: 0.15,
-        critMultiplier: 2.0,
+        critChance: 0.20, // 暴击率从0.15提升至0.20
+        critMultiplier: 2.2, // 暴击倍率从2.0提升至2.2
       },
     },
   ],
@@ -73,10 +73,10 @@ export const ARTIFACT_BATTLE_SKILLS: Record<string, BattleSkill[]> = {
             id: 'immortal-attack',
             name: '仙灵攻击',
             type: 'attack',
-            value: 0.25, // 25%攻击力提升
+            value: 0.30, // 攻击提升从25%提升至30%
             duration: 3,
             source: 'artifact-immortal-bead',
-            description: '攻击力提升25%，持续3回合',
+            description: '攻击力提升30%，持续3回合',
           },
         },
         {
@@ -86,14 +86,14 @@ export const ARTIFACT_BATTLE_SKILLS: Record<string, BattleSkill[]> = {
             id: 'immortal-defense',
             name: '仙灵防御',
             type: 'defense',
-            value: 0.25, // 25%防御力提升
+            value: 0.30, // 防御提升从25%提升至30%
             duration: 3,
             source: 'artifact-immortal-bead',
-            description: '防御力提升25%，持续3回合',
+            description: '防御力提升30%，持续3回合',
           },
         },
       ],
-      cost: { mana: 50 },
+      cost: { mana: 100 }, // 高级法宝消耗从50大幅提升至100
       cooldown: 0,
       maxCooldown: 5,
       target: 'self',
@@ -113,16 +113,16 @@ export const WEAPON_BATTLE_SKILLS: Record<string, BattleSkill[]> = {
       source: 'weapon',
       sourceId: 'weapon-immortal-sword',
       effects: [],
-      cost: { mana: 25 },
+      cost: { mana: 50 }, // 武器技能消耗从25提升至50
       cooldown: 0,
       maxCooldown: 2,
       target: 'enemy',
       damage: {
-        base: 40,
-        multiplier: 1.3,
+        base: 55, // 基础伤害从40提升至55
+        multiplier: 1.4, // 伤害倍率从1.3提升至1.4
         type: 'physical',
-        critChance: 0.2,
-        critMultiplier: 2.0,
+        critChance: 0.25, // 暴击率从0.2提升至0.25
+        critMultiplier: 2.2, // 暴击倍率从2.0提升至2.2
       },
     },
   ],
@@ -136,16 +136,16 @@ export const WEAPON_BATTLE_SKILLS: Record<string, BattleSkill[]> = {
       source: 'weapon',
       sourceId: 'weapon-star-sword',
       effects: [],
-      cost: { mana: 30 },
+      cost: { mana: 70 }, // 高级武器技能消耗从30提升至70
       cooldown: 0,
       maxCooldown: 3,
       target: 'enemy',
       damage: {
-        base: 60,
-        multiplier: 1.5,
+        base: 80, // 基础伤害从60提升至80
+        multiplier: 1.7, // 伤害倍率从1.5提升至1.7
         type: 'physical',
-        critChance: 0.25,
-        critMultiplier: 2.2,
+        critChance: 0.30, // 暴击率从0.25提升至0.30
+        critMultiplier: 2.5, // 暴击倍率从2.2提升至2.5
       },
     },
   ],

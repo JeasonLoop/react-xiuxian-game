@@ -3382,7 +3382,7 @@ const DebugModal: React.FC<Props> = ({
 
       {/* 编辑灵宠弹窗 - Moved outside Modal */}
       {editingPet && editingPetId && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-60 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-900 p-4">
           <div className="bg-stone-800 border border-stone-700 rounded-lg p-4 max-w-md w-full max-h-[90vh] overflow-y-auto">
             <h3 className="font-bold text-stone-200 mb-4">
               编辑灵宠：{editingPet.name}

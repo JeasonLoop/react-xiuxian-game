@@ -28,7 +28,7 @@ import {
   Filter,
   SlidersHorizontal,
 } from 'lucide-react';
-import { REALM_ORDER, SPIRITUAL_ROOT_NAMES, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES } from '../constants/index';
+import { REALM_ORDER, SPIRITUAL_ROOT_NAMES, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES, CULTIVATION_ARTS } from '../constants/index';
 import EquipmentPanel from './EquipmentPanel';
 import BatchDiscardModal from './BatchDiscardModal';
 import BatchUseModal from './BatchUseModal';
@@ -190,6 +190,8 @@ const InventoryItem = memo<InventoryItemProps>(
               advancedItemData = HEAVEN_EARTH_MARROWS[item.advancedItemId];
             } else if (item.advancedItemType === 'longevityRule') {
               advancedItemData = LONGEVITY_RULES[item.advancedItemId];
+            } else if (item.advancedItemType === 'soulArt') {
+              advancedItemData = CULTIVATION_ARTS.find(art => art.id === item.advancedItemId);
             }
 
             if (advancedItemData && advancedItemData.effects) {
@@ -202,6 +204,22 @@ const InventoryItem = memo<InventoryItemProps>(
               if (effects.spiritBonus) effectEntries.push(`神识+${effects.spiritBonus}`);
               if (effects.physiqueBonus) effectEntries.push(`体魄+${effects.physiqueBonus}`);
               if (effects.speedBonus) effectEntries.push(`速度+${effects.speedBonus}`);
+
+              // 支持功法格式
+              if (effects.hp) effectEntries.push(`血+${effects.hp}`);
+              if (effects.attack) effectEntries.push(`攻+${effects.attack}`);
+              if (effects.defense) effectEntries.push(`防+${effects.defense}`);
+              if (effects.spirit) effectEntries.push(`神识+${effects.spirit}`);
+              if (effects.physique) effectEntries.push(`体魄+${effects.physique}`);
+              if (effects.speed) effectEntries.push(`速度+${effects.speed}`);
+
+              // 支持百分比格式 (规则之力)
+              if (effects.hpPercent) effectEntries.push(`血+${Math.round(effects.hpPercent * 100)}%`);
+              if (effects.attackPercent) effectEntries.push(`攻+${Math.round(effects.attackPercent * 100)}%`);
+              if (effects.defensePercent) effectEntries.push(`防+${Math.round(effects.defensePercent * 100)}%`);
+              if (effects.spiritPercent) effectEntries.push(`神识+${Math.round(effects.spiritPercent * 100)}%`);
+              if (effects.physiquePercent) effectEntries.push(`体魄+${Math.round(effects.physiquePercent * 100)}%`);
+              if (effects.speedPercent) effectEntries.push(`速度+${Math.round(effects.speedPercent * 100)}%`);
 
               return (
                 <div className="text-xs mb-3 space-y-1">

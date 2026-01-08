@@ -36,6 +36,43 @@ export function usePetHandlers(
   const setPlayer = props?.setPlayer ?? storeSetPlayer;
   const addLog = props?.addLog ?? storeAddLog;
   const setItemActionLog = props?.setItemActionLog ?? storeSetItemActionLog;
+
+  /**
+   * 辅助函数：根据等级和进化阶段精确计算灵宠属性
+   * 解决之前升级只增加一次属性的 bug，并提供更平滑的成长曲线
+   */
+  const calculatePetStats = (species: string, level: number, evolutionStage: number) => {
+    const template = PET_TEMPLATES.find((t) => t.species === species);
+    if (!template) return null;
+
+    let { attack, defense, hp, speed } = template.baseStats;
+
+    // 1. 等级成长：每级提升 8% 基础属性，速度提升 2%
+    // 使用循环以确保数值的一致性
+    for (let i = 1; i < level; i++) {
+      attack = Math.floor(attack * 1.08);
+      defense = Math.floor(defense * 1.08);
+      hp = Math.floor(hp * 1.08);
+      speed = Math.floor(speed * 1.02);
+    }
+
+    // 2. 进化加成：阶段性大幅提升
+    if (evolutionStage >= 1) {
+      attack = Math.floor(attack * 4.5);
+      defense = Math.floor(defense * 4.5);
+      hp = Math.floor(hp * 4.5);
+      speed = Math.floor(speed * 2.0);
+    }
+    if (evolutionStage >= 2) {
+      attack = Math.floor(attack * 5.0);
+      defense = Math.floor(defense * 5.0);
+      hp = Math.floor(hp * 5.0);
+      speed = Math.floor(speed * 2.5);
+    }
+
+    return { attack, defense, hp, speed };
+  };
+
   const handleActivatePet = (petId: string) => {
     if (!player) return;
     setPlayer((prev) => ({ ...prev, activePetId: petId }));
@@ -204,15 +241,12 @@ export function usePetHandlers(
             petNewExp = Math.min(petNewExp, petNewMaxExp);
           }
 
-          // 只有升级时才提升属性
-          const newStats = leveledUp
-            ? {
-                attack: Math.floor(p.stats.attack * 1.2), // 从1.1提升到1.2 (每级+20%)
-                defense: Math.floor(p.stats.defense * 1.2), // 从1.1提升到1.2 (每级+20%)
-                hp: Math.floor(p.stats.hp * 1.2), // 从1.1提升到1.2 (每级+20%)
-                speed: Math.floor(p.stats.speed * 1.1), // 从1.05提升到1.1 (每级+10%)
-              }
+          // 计算新属性（解决批量升级属性增长 bug）
+          const calculatedStats = leveledUp
+            ? calculatePetStats(p.species, petNewLevel, p.evolutionStage)
             : p.stats;
+
+          const newStats = calculatedStats || p.stats;
 
           // 增加亲密度（最高100）
           const newAffection = Math.min(100, p.affection + affectionGain);
@@ -369,18 +403,16 @@ export function usePetHandlers(
             'special'
           );
 
+          // 重新计算进化后的属性
+          const newStats = calculatePetStats(p.species, p.level, newStage) || p.stats;
+
           return {
             ...p,
             name: newName,
             evolutionStage: newStage,
             image: stageImage,
             skills: [...p.skills, ...stageSkills], // 保留旧技能，增加新技能
-            stats: {
-              attack: Math.floor(p.stats.attack * statMultiplier),
-              defense: Math.floor(p.stats.defense * statMultiplier),
-              hp: Math.floor(p.stats.hp * statMultiplier),
-              speed: Math.floor(p.stats.speed * speedMultiplier),
-            },
+            stats: newStats,
           };
         }
         return p;
@@ -488,14 +520,12 @@ export function usePetHandlers(
             petNewExp = Math.min(petNewExp, petNewMaxExp);
           }
 
-          const newStats = leveledUp
-            ? {
-                attack: Math.floor(p.stats.attack * 1.2), // 从1.1提升到1.2 (每级+20%)
-                defense: Math.floor(p.stats.defense * 1.2), // 从1.1提升到1.2 (每级+20%)
-                hp: Math.floor(p.stats.hp * 1.2), // 从1.1提升到1.2 (每级+20%)
-                speed: Math.floor(p.stats.speed * 1.1), // 从1.05提升到1.1 (每级+10%)
-              }
+          // 计算新属性（解决批量升级属性增长 bug）
+          const calculatedStats = leveledUp
+            ? calculatePetStats(p.species, petNewLevel, p.evolutionStage)
             : p.stats;
+
+          const newStats = calculatedStats || p.stats;
 
           const newAffection = Math.min(100, p.affection + totalAffectionGain);
 
@@ -689,14 +719,12 @@ export function usePetHandlers(
             addLog(`【${p.name}】升级了！现在是 ${petNewLevel} 级`, 'gain');
           }
 
-          const newStats = leveledUp
-            ? {
-                attack: Math.floor(p.stats.attack * 1.2), // 从1.1提升到1.2
-                defense: Math.floor(p.stats.defense * 1.2), // 从1.1提升到1.2
-                hp: Math.floor(p.stats.hp * 1.2), // 从1.1提升到1.2
-                speed: Math.floor(p.stats.speed * 1.1), // 从1.05提升到1.1
-              }
+          // 计算新属性（解决批量升级属性增长 bug）
+          const calculatedStats = leveledUp
+            ? calculatePetStats(p.species, petNewLevel, p.evolutionStage)
             : p.stats;
+
+          const newStats = calculatedStats || p.stats;
 
           const newAffection = Math.min(100, p.affection + totalAffectionGain);
 

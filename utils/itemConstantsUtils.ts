@@ -12,6 +12,10 @@ import {
   DISCOVERABLE_RECIPES,
   getPillDefinition,
   PET_EVOLUTION_MATERIALS_ITEMS,
+  FOUNDATION_TREASURES,
+  HEAVEN_EARTH_ESSENCES,
+  HEAVEN_EARTH_MARROWS,
+  LONGEVITY_RULES,
 } from '../constants/index';
 import { ITEM_TEMPLATES } from '../constants/itemTemplates';
 
@@ -25,12 +29,14 @@ let cachedAllItems: Array<{
   permanentEffect?: any;
   isEquippable?: boolean;
   equipmentSlot?: EquipmentSlot | string;
+  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
+  advancedItemId?: string;
 }> | null = null;
 
 /**
  * 从所有常量池中获取所有物品
  */
-function getAllItemsFromConstants(): Array<{
+export function getAllItemsFromConstants(): Array<{
   name: string;
   type: ItemType | string;
   description: string;
@@ -39,6 +45,8 @@ function getAllItemsFromConstants(): Array<{
   permanentEffect?: any;
   isEquippable?: boolean;
   equipmentSlot?: EquipmentSlot | string;
+  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
+  advancedItemId?: string;
 }> {
   // 使用缓存
   if (cachedAllItems) {
@@ -54,11 +62,13 @@ function getAllItemsFromConstants(): Array<{
     permanentEffect?: any;
     isEquippable?: boolean;
     equipmentSlot?: EquipmentSlot | string;
+    advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
+    advancedItemId?: string;
   }> = [];
   const itemNames = new Set<string>();
 
-  // 从 INITIAL_ITEMS 中提取物品
-  INITIAL_ITEMS.forEach(item => {
+  // 辅助函数：将基础物品添加到列表
+  const addItem = (item: any) => {
     if (itemNames.has(item.name)) return;
     itemNames.add(item.name);
     items.push({
@@ -70,26 +80,74 @@ function getAllItemsFromConstants(): Array<{
       permanentEffect: item.permanentEffect,
       isEquippable: item.isEquippable,
       equipmentSlot: item.equipmentSlot,
+      advancedItemType: item.advancedItemType,
+      advancedItemId: item.advancedItemId,
     });
-  });
+  };
 
-  // 从灵宠进化材料中提取物品（避免重复）
-  PET_EVOLUTION_MATERIALS_ITEMS.forEach(item => {
-    if (itemNames.has(item.name)) return;
-    itemNames.add(item.name);
+  // 1. 从 INITIAL_ITEMS 中提取物品
+  INITIAL_ITEMS.forEach(addItem);
+
+  // 2. 从灵宠进化材料中提取物品
+  PET_EVOLUTION_MATERIALS_ITEMS.forEach(addItem);
+
+  // 3. 从筑基奇物中提取
+  Object.values(FOUNDATION_TREASURES).forEach(treasure => {
+    if (itemNames.has(treasure.name)) return;
+    itemNames.add(treasure.name);
     items.push({
-      name: item.name,
-      type: item.type,
-      description: item.description,
-      rarity: (item.rarity || '普通') as ItemRarity,
-      effect: item.effect,
-      permanentEffect: item.permanentEffect,
-      isEquippable: item.isEquippable,
-      equipmentSlot: item.equipmentSlot,
+      name: treasure.name,
+      type: ItemType.AdvancedItem,
+      description: treasure.description,
+      rarity: treasure.rarity,
+      advancedItemType: 'foundationTreasure',
+      advancedItemId: treasure.id,
     });
   });
 
-  // 从所有丹方中提取丹药（避免重复）
+  // 4. 从天地精华中提取
+  Object.values(HEAVEN_EARTH_ESSENCES).forEach(essence => {
+    if (itemNames.has(essence.name)) return;
+    itemNames.add(essence.name);
+    items.push({
+      name: essence.name,
+      type: ItemType.AdvancedItem,
+      description: essence.description,
+      rarity: essence.rarity,
+      advancedItemType: 'heavenEarthEssence',
+      advancedItemId: essence.id,
+    });
+  });
+
+  // 5. 从天地之髓中提取
+  Object.values(HEAVEN_EARTH_MARROWS).forEach(marrow => {
+    if (itemNames.has(marrow.name)) return;
+    itemNames.add(marrow.name);
+    items.push({
+      name: marrow.name,
+      type: ItemType.AdvancedItem,
+      description: marrow.description,
+      rarity: marrow.rarity,
+      advancedItemType: 'heavenEarthMarrow',
+      advancedItemId: marrow.id,
+    });
+  });
+
+  // 6. 从规则之力中提取
+  Object.values(LONGEVITY_RULES).forEach(rule => {
+    if (itemNames.has(rule.name)) return;
+    itemNames.add(rule.name);
+    items.push({
+      name: rule.name,
+      type: ItemType.AdvancedItem,
+      description: rule.description,
+      rarity: '仙品',
+      advancedItemType: 'longevityRule',
+      advancedItemId: rule.id,
+    });
+  });
+
+  // 7. 从所有丹方中提取丹药
   [...PILL_RECIPES, ...DISCOVERABLE_RECIPES].forEach(recipe => {
     if (recipe.result && !itemNames.has(recipe.result.name)) {
       itemNames.add(recipe.result.name);
@@ -104,15 +162,13 @@ function getAllItemsFromConstants(): Array<{
     }
   });
 
-  // 从抽奖奖品中提取物品
+  // 8. 从抽奖奖品中提取物品
   LOTTERY_PRIZES.forEach(prize => {
     if (prize.type === 'item' && prize.value.item) {
       const item = prize.value.item;
-      // 避免重复
       if (itemNames.has(item.name)) return;
       itemNames.add(item.name);
 
-      // 如果是丹药，优先从常量中获取完整定义
       if (item.type === ItemType.Pill) {
         const pillDef = getPillDefinition(item.name);
         if (pillDef) {
@@ -127,27 +183,16 @@ function getAllItemsFromConstants(): Array<{
           return;
         }
       }
-      // 非丹药或常量中没有定义的物品，使用原始定义
-      items.push({
-        name: item.name,
-        type: item.type,
-        description: item.description,
-        rarity: (item.rarity || '普通') as ItemRarity,
-        effect: item.effect,
-        permanentEffect: item.permanentEffect,
-        isEquippable: item.isEquippable,
-        equipmentSlot: item.equipmentSlot,
-      });
+      addItem(item);
     }
   });
 
-  // 从宗门商店物品中提取
+  // 9. 从宗门商店物品中提取
   SECT_SHOP_ITEMS.forEach(shopItem => {
     const item = shopItem.item;
     if (itemNames.has(item.name)) return;
     itemNames.add(item.name);
 
-    // 如果是丹药，优先从常量中获取完整定义
     if (item.type === ItemType.Pill) {
       const pillDef = getPillDefinition(item.name);
       if (pillDef) {
@@ -162,34 +207,11 @@ function getAllItemsFromConstants(): Array<{
         return;
       }
     }
-
-    items.push({
-      name: item.name,
-      type: item.type,
-      description: item.description,
-      rarity: (item.rarity || '普通') as ItemRarity,
-      effect: item.effect,
-      permanentEffect: item.permanentEffect,
-      isEquippable: item.isEquippable,
-      equipmentSlot: item.equipmentSlot,
-    });
+    addItem(item);
   });
 
-  // 从 ITEM_TEMPLATES 中提取物品（自动生成的模板，包括装备、丹药、草药、材料等）
-  ITEM_TEMPLATES.forEach(item => {
-    if (itemNames.has(item.name)) return;
-    itemNames.add(item.name);
-    items.push({
-      name: item.name,
-      type: item.type,
-      description: item.description,
-      rarity: (item.rarity || '普通') as ItemRarity,
-      effect: item.effect,
-      permanentEffect: item.permanentEffect,
-      isEquippable: item.isEquippable,
-      equipmentSlot: item.equipmentSlot,
-    });
-  });
+  // 10. 从 ITEM_TEMPLATES 中提取
+  ITEM_TEMPLATES.forEach(addItem);
 
   cachedAllItems = items;
   return items;
@@ -258,6 +280,8 @@ export function getItemsByRarity(rarity: ItemRarity): Array<{
   permanentEffect?: any;
   isEquippable?: boolean;
   equipmentSlot?: EquipmentSlot | string;
+  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
+  advancedItemId?: string;
 }> {
   const allItems = getAllItemsFromConstants();
   return allItems
@@ -276,6 +300,8 @@ export function getItemsByRarity(rarity: ItemRarity): Array<{
         permanentEffect: item.permanentEffect,
         isEquippable: item.isEquippable,
         equipmentSlot: item.equipmentSlot,
+        advancedItemType: item.advancedItemType,
+        advancedItemId: item.advancedItemId,
       };
     });
 }
@@ -294,6 +320,8 @@ export function getItemsByType(itemType: ItemType): Array<{
   permanentEffect?: any;
   isEquippable?: boolean;
   equipmentSlot?: EquipmentSlot | string;
+  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
+  advancedItemId?: string;
 }> {
   const allItems = getAllItemsFromConstants();
   return allItems.filter(item => item.type === itemType).map(item => ({
@@ -305,6 +333,8 @@ export function getItemsByType(itemType: ItemType): Array<{
     permanentEffect: item.permanentEffect,
     isEquippable: item.isEquippable,
     equipmentSlot: item.equipmentSlot,
+    advancedItemType: item.advancedItemType,
+    advancedItemId: item.advancedItemId,
   }));
 }
 

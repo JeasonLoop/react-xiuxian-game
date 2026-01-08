@@ -69,6 +69,8 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
 }) => {
   const [battleState, setBattleState] = useState<BattleState | null>(null);
   const [showSkills, setShowSkills] = useState(false);
+  const [skillSearch, setSkillSearch] = useState('');
+  const [skillTypeFilter, setSkillTypeFilter] = useState<string | null>(null);
   const [showPotions, setShowPotions] = useState(false);
   const [showAdvancedItems, setShowAdvancedItems] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -164,6 +166,8 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
       setIsProcessing(false);
       isActionLockedRef.current = false;
       setShowSkills(false);
+      setSkillSearch('');
+      setSkillTypeFilter(null);
       setShowPotions(false);
       setShowAdvancedItems(false);
       setErrorMessage(null);
@@ -338,6 +342,8 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
     isActionLockedRef.current = true;
     setIsProcessing(true);
     setShowSkills(false);
+    setSkillSearch('');
+    setSkillTypeFilter(null);
     setShowPotions(false);
     setShowAdvancedItems(false);
 
@@ -524,27 +530,54 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
     );
   };
 
-  // 获取可用技能（检查冷却和MP）
-  const availableSkills = useMemo(() => {
-    if (!battleState) return [];
+  // 获取所有可用技能（仅检查冷却和MP，不检查搜索/类型过滤）
+  const totalAvailableSkillsCount = useMemo(() => {
+    if (!battleState) return 0;
     return battleState.player.skills.filter((skill) => {
       const cooldownOk = (battleState.player.cooldowns[skill.id] || 0) === 0;
       const manaOk =
         !skill.cost.mana || (battleState.player.mana || 0) >= skill.cost.mana;
       return cooldownOk && manaOk;
-    });
+    }).length;
   }, [battleState]);
+
+  // 获取可用技能（检查冷却和MP，且包含搜索/类型过滤）
+  const availableSkills = useMemo(() => {
+    if (!battleState) return [];
+    let filtered = battleState.player.skills.filter((skill) => {
+      const cooldownOk = (battleState.player.cooldowns[skill.id] || 0) === 0;
+      const manaOk =
+        !skill.cost.mana || (battleState.player.mana || 0) >= skill.cost.mana;
+      return cooldownOk && manaOk;
+    });
+
+    if (skillSearch) {
+      filtered = filtered.filter(s => s.name.includes(skillSearch));
+    }
+    if (skillTypeFilter) {
+      filtered = filtered.filter(s => s.type === skillTypeFilter);
+    }
+    return filtered;
+  }, [battleState, skillSearch, skillTypeFilter]);
 
   // 获取冷却中或MP不足的技能
   const unavailableSkills = useMemo(() => {
     if (!battleState) return [];
-    return battleState.player.skills.filter((skill) => {
+    let filtered = battleState.player.skills.filter((skill) => {
       const onCooldown = (battleState.player.cooldowns[skill.id] || 0) > 0;
       const notEnoughMana =
         skill.cost.mana && (battleState.player.mana || 0) < skill.cost.mana;
       return onCooldown || notEnoughMana;
     });
-  }, [battleState]);
+
+    if (skillSearch) {
+      filtered = filtered.filter(s => s.name.includes(skillSearch));
+    }
+    if (skillTypeFilter) {
+      filtered = filtered.filter(s => s.type === skillTypeFilter);
+    }
+    return filtered;
+  }, [battleState, skillSearch, skillTypeFilter]);
 
   // 获取可用丹药（从战斗状态中的背包获取，因为物品使用会更新背包）
   const availablePotions = useMemo(() => {
@@ -734,7 +767,13 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                 普通攻击
               </button>
               <button
-                onClick={() => setShowSkills(!showSkills)}
+                onClick={() => {
+                  if (showSkills) {
+                    setSkillSearch('');
+                    setSkillTypeFilter(null);
+                  }
+                  setShowSkills(!showSkills);
+                }}
                 disabled={isProcessing}
                 className={`flex items-center gap-2 px-4 py-2 rounded border ${
                   isProcessing
@@ -743,7 +782,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                 }`}
               >
                 <Zap size={16} />
-                技能 ({availableSkills.length})
+                技能 ({totalAvailableSkillsCount})
               </button>
               <button
                 onClick={() => setShowPotions(!showPotions)}
@@ -797,11 +836,47 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
 
             {/* 技能列表 */}
             {showSkills && (
-              <div className="mt-3 p-3 bg-ink-800 rounded border border-stone-700 max-h-[300px] overflow-y-auto">
-                <div className="text-xs text-stone-400 mb-2">可用技能</div>
-                <div className="space-y-2">
+              <div className="mt-3 p-3 bg-ink-800 rounded border border-stone-700 max-h-[400px] flex flex-col">
+                <div className="flex flex-col gap-2 mb-3">
+                  <div className="flex justify-between items-center">
+                    <div className="text-sm text-stone-300 font-semibold">可用技能 ({availableSkills.length})</div>
+                    <div className="flex gap-1.5">
+                      {[
+                        { id: 'attack', label: '攻击', activeClass: 'bg-rose-900/40 border-rose-500 text-rose-300' },
+                        { id: 'defense', label: '防御', activeClass: 'bg-blue-900/40 border-blue-500 text-blue-300' },
+                        { id: 'heal', label: '治疗', activeClass: 'bg-emerald-900/40 border-emerald-500 text-emerald-300' },
+                        { id: 'buff', label: '增益', activeClass: 'bg-amber-900/40 border-amber-500 text-amber-300' },
+                        { id: 'debuff', label: '减益', activeClass: 'bg-purple-900/40 border-purple-500 text-purple-300' },
+                        { id: 'special', label: '特殊', activeClass: 'bg-cyan-900/40 border-cyan-500 text-cyan-300' },
+                      ].map((type) => (
+                        <button
+                          key={type.id}
+                          onClick={() => setSkillTypeFilter(skillTypeFilter === type.id ? null : type.id)}
+                          className={`px-2 py-1 rounded text-xs border transition-colors ${
+                            skillTypeFilter === type.id
+                              ? type.activeClass
+                              : 'bg-ink-900 border-stone-700 text-stone-500 hover:border-stone-600'
+                          }`}
+                        >
+                          {type.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="搜索技能名称..."
+                    value={skillSearch}
+                    onChange={(e) => setSkillSearch(e.target.value)}
+                    className="w-full bg-ink-900 border border-stone-700 rounded px-3 py-1.5 text-sm text-stone-200 focus:outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div className="overflow-y-auto pr-1 space-y-2 flex-1 min-h-0">
                   {availableSkills.length === 0 ? (
-                    <div className="text-sm text-stone-500">没有可用技能</div>
+                    <div className="text-sm text-stone-500 text-center py-4">
+                      {skillSearch || skillTypeFilter ? '未找到符合条件的技能' : '没有可用技能'}
+                    </div>
                   ) : (
                     availableSkills.map((skill) => (
                       <button
@@ -822,6 +897,13 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                         <div className="flex justify-between items-center">
                           <span className="text-blue-300 font-semibold">
                             {skill.name}
+                            <span className={`ml-2 text-[10px] px-1 rounded border border-blue-500/30 text-blue-400/80 font-normal`}>
+                              {skill.type === 'attack' ? '攻击' :
+                               skill.type === 'defense' ? '防御' :
+                               skill.type === 'heal' ? '治疗' :
+                               skill.type === 'buff' ? '增益' :
+                               skill.type === 'debuff' ? '减益' : '特殊'}
+                            </span>
                           </span>
                           <span className="text-xs text-stone-400">
                             {skill.cost.mana
@@ -835,41 +917,52 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                       </button>
                     ))
                   )}
-                </div>
-                {unavailableSkills.length > 0 && (
-                  <>
-                    <div className="text-xs text-stone-500 mt-3 mb-2">
-                      不可用技能
-                    </div>
-                    <div className="space-y-2">
-                      {unavailableSkills.map((skill) => {
-                        const onCooldown =
-                          (battleState.player.cooldowns[skill.id] || 0) > 0;
-                        const notEnoughMana =
-                          skill.cost.mana &&
-                          (battleState.player.mana || 0) < skill.cost.mana;
-                        return (
-                          <div
-                            key={skill.id}
-                            className="w-full text-left p-2 rounded border border-stone-700 bg-stone-900/40 text-sm opacity-50"
-                          >
-                            <div className="flex justify-between items-center">
-                              <span className="text-stone-400 font-semibold">
-                                {skill.name}
-                              </span>
-                              <span className="text-xs text-stone-500">
-                                {onCooldown &&
-                                  `冷却: ${battleState.player.cooldowns[skill.id]} 回合`}
-                                {notEnoughMana &&
-                                  `灵力不足 (需要 ${skill.cost.mana}, 当前 ${battleState.player.mana || 0})`}
-                              </span>
+
+                  {unavailableSkills.length > 0 && (
+                    <>
+                      <div className="text-xs text-stone-500 mt-4 mb-2 pb-1 border-b border-stone-800">
+                        不可用技能 ({unavailableSkills.length})
+                      </div>
+                      <div className="space-y-2 opacity-60">
+                        {unavailableSkills.map((skill) => {
+                          const onCooldown =
+                            (battleState.player.cooldowns[skill.id] || 0) > 0;
+                          const notEnoughMana =
+                            skill.cost.mana &&
+                            (battleState.player.mana || 0) < skill.cost.mana;
+                          return (
+                            <div
+                              key={skill.id}
+                              className="w-full text-left p-2 rounded border border-stone-700 bg-stone-900/40 text-sm"
+                            >
+                              <div className="flex justify-between items-center">
+                                <span className="text-stone-400 font-semibold">
+                                  {skill.name}
+                                  <span className="ml-2 text-[10px] text-stone-500 font-normal">
+                                    {skill.type === 'attack' ? '攻击' :
+                                     skill.type === 'defense' ? '防御' :
+                                     skill.type === 'heal' ? '治疗' :
+                                     skill.type === 'buff' ? '增益' :
+                                     skill.type === 'debuff' ? '减益' : '特殊'}
+                                  </span>
+                                </span>
+                                <span className="text-xs text-stone-500">
+                                  {onCooldown &&
+                                    `冷却: ${battleState.player.cooldowns[skill.id]} 回合`}
+                                  {notEnoughMana &&
+                                    `灵力不足 (需要 ${skill.cost.mana}, 当前 ${battleState.player.mana || 0})`}
+                                </span>
+                              </div>
+                              <div className="text-xs text-stone-500 mt-1 line-clamp-1">
+                                {skill.description}
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             )}
 

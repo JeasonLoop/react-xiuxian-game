@@ -57,6 +57,7 @@ interface UseAppHandlersProps {
   pausedByReputationEvent: boolean;
   setPausedByShop: (value: boolean) => void;
   setPausedByReputationEvent: (value: boolean) => void;
+  setPausedByHeavenEarthSoul: (value: boolean) => void;
   loading: boolean;
   cooldown: number;
   setLoading: (loading: boolean) => void;
@@ -99,6 +100,7 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     pausedByReputationEvent,
     setPausedByShop,
     setPausedByReputationEvent,
+    setPausedByHeavenEarthSoul,
     loading,
     cooldown,
     setLoading,
@@ -307,6 +309,7 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     useTurnBasedBattle: true,
     autoAdventure,
     setAutoAdventure,
+    setAutoAdventurePausedByHeavenEarthSoul: setPausedByHeavenEarthSoul,
   });
 
   const sectHandlers = useSectHandlers({

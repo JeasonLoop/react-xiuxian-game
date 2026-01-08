@@ -240,19 +240,26 @@ const PetModal: React.FC<Props> = ({
                           </div>
                           <div className="text-xs text-stone-400 mb-1">{skill.description}</div>
                           <div className="text-xs text-stone-500">
-                            {skill.effect.damage && `伤害: ${skill.effect.damage}`}
-                            {skill.effect.heal && `治疗: ${skill.effect.heal}`}
+                            {skill.effect.damage && `伤害: ${skill.effect.damage} `}
+                            {skill.effect.damageMultiplier && `伤害倍率: ${skill.effect.damageMultiplier}x `}
+                            {skill.effect.heal && `治疗: ${skill.effect.heal} `}
+                            {skill.effect.healPercent && `治疗: ${Math.floor(skill.effect.healPercent * 100)}% `}
                             {skill.effect.buff && (
-                              <>
-                                {skill.effect.buff.attack && `攻击+${skill.effect.buff.attack} `}
-                                {skill.effect.buff.defense && `防御+${skill.effect.buff.defense} `}
-                                {skill.effect.buff.hp && `气血+${skill.effect.buff.hp}`}
-                              </>
+                              <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
+                                {skill.effect.buff.attack && <span className="text-orange-300">攻击+${skill.effect.buff.attack}</span>}
+                                {skill.effect.buff.attackPercent && <span className="text-orange-400">攻击+${Math.floor(skill.effect.buff.attackPercent * 100)}%</span>}
+                                {skill.effect.buff.defense && <span className="text-blue-300">防御+${skill.effect.buff.defense}</span>}
+                                {skill.effect.buff.defensePercent && <span className="text-blue-400">防御+${Math.floor(skill.effect.buff.defensePercent * 100)}%</span>}
+                                {skill.effect.buff.speedPercent && <span className="text-cyan-300">速度+${Math.floor(skill.effect.buff.speedPercent * 100)}%</span>}
+                                {skill.effect.buff.critChance && <span className="text-red-400">暴击+${Math.floor(skill.effect.buff.critChance * 100)}%</span>}
+                                {skill.effect.buff.dodge && <span className="text-emerald-300">闪避+${Math.floor(skill.effect.buff.dodge * 100)}%</span>}
+                                {skill.effect.buff.hp && <span className="text-green-300">气血+${skill.effect.buff.hp}</span>}
+                              </div>
                             )}
                             {skill.cooldown && (
-                              <span className="ml-2">
+                              <span className="mt-1 block">
                                 {cooldown > 0 ? (
-                                  <span className="text-yellow-400">冷却: {cooldown}回合</span>
+                                  <span className="text-yellow-400 font-bold">冷却中: {cooldown}回合</span>
                                 ) : (
                                   <span className="text-green-400">冷却: {skill.cooldown}回合</span>
                                 )}
@@ -689,6 +696,30 @@ const PetModal: React.FC<Props> = ({
                       </div>
                     </div>
                   </button>
+
+                  {onBatchFeedItems && (
+                    <button
+                      onClick={() => {
+                        if (!selectedPetId) return;
+                        setBatchFeedPetId(selectedPetId);
+                        setIsBatchFeedOpen(true);
+                        setSelectedPetId(null);
+                        setFeedType(null);
+                      }}
+                      className="w-full px-4 py-3 bg-blue-800 hover:bg-blue-700 rounded border border-blue-600 flex items-center gap-3"
+                      disabled={feedableItems.length === 0}
+                    >
+                      <Layers className="text-blue-300" size={20} />
+                      <div className="flex-1 text-left">
+                        <div className="font-bold">批量喂养</div>
+                        <div className="text-xs text-stone-400">
+                          {feedableItems.length === 0
+                            ? '背包中没有可喂养物品'
+                            : `批量选择物品进行喂养`}
+                        </div>
+                      </div>
+                    </button>
+                  )}
 
                   <button
                     onClick={() => setFeedType('exp')}

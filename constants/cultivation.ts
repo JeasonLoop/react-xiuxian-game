@@ -887,16 +887,16 @@ export const CULTIVATION_ART_BATTLE_SKILLS: Record<string, BattleSkill[]> = {
       source: 'cultivation_art',
       sourceId: 'art-thunder-sword',
       effects: [],
-      cost: { mana: 30 },
+      cost: { mana: 95 }, // 地品攻击技能,消耗从30提升至95
       cooldown: 0,
       maxCooldown: 2,
       target: 'enemy',
       damage: {
-        base: 50,
-        multiplier: 1.5, // 150%攻击力
+        base: 70, // 基础伤害从50提升至70
+        multiplier: 1.8, // 伤害倍率从1.5提升至1.8
         type: 'magical', // 法术伤害（基于神识）
-        critChance: 0.25,
-        critMultiplier: 2.0,
+        critChance: 0.30, // 暴击率从0.25提升至0.30
+        critMultiplier: 2.2, // 暴击倍率从2.0提升至2.2
       },
     },
   ],
@@ -910,13 +910,13 @@ export const CULTIVATION_ART_BATTLE_SKILLS: Record<string, BattleSkill[]> = {
       source: 'cultivation_art',
       sourceId: 'art-immortal-life',
       effects: [],
-      cost: { mana: 25 },
+      cost: { mana: 110 }, // 天品治疗技能,消耗从25大幅提升至110
       cooldown: 0,
       maxCooldown: 3,
       target: 'self',
       heal: {
-        base: 100,
-        multiplier: 0.2, // 20%最大气血
+        base: 150, // 基础治疗从100提升至150
+        multiplier: 0.25, // 治疗倍率从0.2提升至0.25
       },
     },
   ],
@@ -937,23 +937,23 @@ export const CULTIVATION_ART_BATTLE_SKILLS: Record<string, BattleSkill[]> = {
             id: 'burn',
             name: '灼烧',
             type: 'burn',
-            value: 10, // 每回合伤害
+            value: 15, // 灼烧伤害从10提升至15
             duration: 2,
             source: 'skill-fiery-fist',
             description: '每回合受到火焰伤害',
           },
         },
       ],
-      cost: { mana: 20 },
+      cost: { mana: 55 }, // 玄品攻击技能,消耗从20提升至55
       cooldown: 0,
       maxCooldown: 2,
       target: 'enemy',
       damage: {
-        base: 30,
-        multiplier: 1.2,
+        base: 45, // 基础伤害从30提升至45
+        multiplier: 1.35, // 伤害倍率从1.2提升至1.35
         type: 'physical',
-        critChance: 0.15,
-        critMultiplier: 1.8,
+        critChance: 0.20, // 暴击率从0.15提升至0.20
+        critMultiplier: 1.95, // 暴击倍率从1.8提升至1.95
       },
     },
   ],
@@ -1037,7 +1037,7 @@ export const CULTIVATION_ART_BATTLE_SKILLS: Record<string, BattleSkill[]> = {
           },
         },
       ],
-      cost: { mana: 20 },
+      cost: { mana: 35 }, // 黄品Buff技能,消耗从20提升至35
       cooldown: 0,
       maxCooldown: 3,
       target: 'self',

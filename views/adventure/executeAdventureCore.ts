@@ -548,7 +548,12 @@ const applyResultToPlayer = (
   }
 
   // 进阶材料概率
-  if (Math.random() < (isSecretRealm ? 0.08 : 0.05)) {
+  // 如果拥有灵宠，大幅提高进阶材料获取概率（从 5%/8% 提高到 12%/20%）
+  const hasPet = prev.pets && prev.pets.length > 0;
+  const basePetMaterialChance = isSecretRealm ? 0.08 : 0.05;
+  const petMaterialChance = hasPet ? (isSecretRealm ? 0.20 : 0.12) : basePetMaterialChance;
+
+  if (Math.random() < petMaterialChance) {
     const m = PET_EVOLUTION_MATERIALS[Math.floor(Math.random() * PET_EVOLUTION_MATERIALS.length)];
     const idx = newInv.findIndex(i => i.name === m.name);
     if (idx >= 0) newInv[idx] = { ...newInv[idx], quantity: newInv[idx].quantity + 1 };
@@ -728,7 +733,7 @@ const applyResultToPlayer = (
           isEquippable: false,
           effect: {},
           permanentEffect: permanentEffect,
-          advancedItemType: 'heavenEarthEssence' as const,
+          advancedItemType: 'soulArt' as const,
           advancedItemId: soulArt.id,
         };
 

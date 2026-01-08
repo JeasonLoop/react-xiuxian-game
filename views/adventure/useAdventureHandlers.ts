@@ -89,6 +89,16 @@ export function useAdventureHandlers({
   const effectiveSkipReputationEvent = autoAdventure && skipReputationEvent;
 
   /**
+   * 暂停自动历练回调（用于天地之魄等特殊事件）
+   */
+  const handlePauseAutoAdventure = React.useCallback(() => {
+    if (autoAdventure && setAutoAdventurePausedByHeavenEarthSoul && setAutoAdventure) {
+      setAutoAdventurePausedByHeavenEarthSoul(true);
+      setAutoAdventure(false);
+    }
+  }, [autoAdventure, setAutoAdventurePausedByHeavenEarthSoul, setAutoAdventure]);
+
+  /**
    * 处理战斗的公共函数
    * 根据配置决定是跳过战斗、打开回合制战斗界面，还是使用自动战斗系统
    */
@@ -114,7 +124,9 @@ export function useAdventureHandlers({
     }
 
     // 自动历练模式下，如果配置了跳过战斗，直接使用自动战斗系统并展示结果（不打开战斗弹窗）
-    if (autoAdventure && effectiveSkipBattle) {
+    // 注意：天地之魄挑战（bossId 存在或类型为 dao_combining_challenge）不跳过弹窗
+    const isSpecialBattle = battleType === 'dao_combining_challenge' || !!bossId;
+    if (autoAdventure && effectiveSkipBattle && !isSpecialBattle) {
       const battleResolution = await resolveBattleEncounter(
         player,
         battleType,
@@ -305,9 +317,8 @@ export function useAdventureHandlers({
               }
 
               // 如果是自动历练模式，需要暂停自动历练
-              if (autoAdventure && setAutoAdventurePausedByHeavenEarthSoul && setAutoAdventure) {
-                setAutoAdventurePausedByHeavenEarthSoul(true);
-                setAutoAdventure(false);
+              if (autoAdventure) {
+                handlePauseAutoAdventure();
               }
 
               // 构建提示信息
@@ -331,84 +342,16 @@ export function useAdventureHandlers({
                   // 玩家选择挑战
                   addLog(`你决定挑战${boss.name}！`, 'warning');
 
-                  // 自动历练模式下，如果配置了跳过战斗，直接使用自动战斗系统并展示结果（不打开战斗弹窗）
-                  if (autoAdventure && effectiveSkipBattle) {
-                    resolveBattleEncounter(
-                      player,
-                      actualAdventureType,
-                      riskLevel,
-                      player.realm,
-                      undefined,
-                      undefined,
-                      undefined,
-                      bossId
-                    ).then((battleResolution) => {
-                      const battleResult = battleResolution.adventureResult;
-                      const battleCtx = battleResolution.replay;
-                      // 自动历练时跳过战斗，不打开战斗弹窗
-                      executeAdventureCore({
-                        result: battleResult,
-                        battleContext: battleCtx,
-                        petSkillCooldowns: battleResolution.petSkillCooldowns,
-                        player,
-                        setPlayer,
-                        addLog,
-                        triggerVisual,
-                        onOpenBattleModal,
-                        adventureType: actualAdventureType,
-                        realmName,
-                        skipReputationEvent: effectiveSkipReputationEvent,
-                        skipBattle: effectiveSkipBattle, // 传递skipBattle参数，确保不打开战斗弹窗
-                      });
-                      setLoading(false);
-                      setCooldown(2);
-                    });
-                    return;
-                  } else if (useTurnBasedBattle && onOpenTurnBasedBattle && !effectiveSkipBattle) {
-                    // 如果使用回合制战斗系统，打开回合制战斗界面
-                    setTimeout(() => {
+                   setTimeout(() => {
                       onOpenTurnBasedBattle({
                         adventureType: actualAdventureType,
                         riskLevel,
                         realmMinRealm: player.realm,
                         bossId,
                       });
-                    }, 1000);
+                    }, 300);
                     setLoading(false);
                     setCooldown(2);
-                    return;
-                  }
-
-                  // 否则使用旧的自动战斗系统
-                  resolveBattleEncounter(
-                    player,
-                    actualAdventureType,
-                    riskLevel,
-                    player.realm,
-                    undefined,
-                    undefined,
-                    undefined,
-                    bossId
-                  ).then((battleResolution) => {
-                    const battleResult = battleResolution.adventureResult;
-                    const battleCtx = battleResolution.replay;
-                    executeAdventureCore({
-                      result: battleResult,
-                      battleContext: battleCtx,
-                      petSkillCooldowns: battleResolution.petSkillCooldowns,
-                      player,
-                      setPlayer,
-                      addLog,
-                      triggerVisual,
-                      onOpenBattleModal,
-                      adventureType: actualAdventureType,
-                      realmName,
-                      skipReputationEvent: effectiveSkipReputationEvent,
-                      skipBattle: false, // 手动挑战时，不跳过战斗，会显示战斗弹窗
-                    });
-                    setLoading(false);
-                    setCooldown(2);
-                  });
                 },
                 () => {
                   // 玩家选择放弃
@@ -476,6 +419,7 @@ export function useAdventureHandlers({
         riskLevel,
         skipReputationEvent: effectiveSkipReputationEvent,
         onReputationEvent,
+        onPauseAutoAdventure: handlePauseAutoAdventure,
       });
     } catch (e) {
       addLog('历练途中突发异变，你神识受损，不得不返回。', 'danger');
