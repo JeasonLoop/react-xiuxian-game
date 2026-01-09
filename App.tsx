@@ -3,6 +3,7 @@ import React, {
   useEffect,
   useRef,
   useMemo,
+  useCallback,
 } from 'react';
 import {
   TribulationState,
@@ -34,6 +35,15 @@ import { useAutoFeatures } from './hooks/useAutoFeatures';
 import { usePassiveRegeneration } from './hooks/usePassiveRegeneration';
 import { useAutoGrottoHarvest } from './hooks/useAutoGrottoHarvest';
 import { STORAGE_KEYS } from './constants/storageKeys';
+import {
+  DELAY_CONSTANTS,
+  THRESHOLD_CONSTANTS,
+  STORAGE_CONSTANTS,
+  MODAL_CONSTANTS,
+  AUTO_ADVENTURE_CONSTANTS,
+  VISUAL_EFFECT_CONSTANTS,
+  PERFORMANCE_CONSTANTS
+} from './constants/appConstants';
 import { useItemActionLog } from './hooks/useItemActionLog';
 import {
   useKeyboardShortcuts,
@@ -67,13 +77,13 @@ function App() {
   const startNewGame = useGameStore((state) => state.startNewGame);
 
   // 兼容原有的 handleStartGame 接口
-  const handleStartGame = (
+  const handleStartGame = useCallback((
     playerName: string,
     talentId: string,
     difficulty: GameSettings['difficulty']
   ) => {
     startNewGame(playerName, talentId, difficulty);
-  };
+  }, [startNewGame]);
 
   // 游戏启动时自动加载存档
   useEffect(() => {
@@ -91,8 +101,14 @@ function App() {
 
   // 使用自定义hooks管理游戏效果
   const { visualEffects, createAddLog, triggerVisual } = useGameEffects();
-  // createAddLog 和 setLogs 都是稳定的函数引用，addLog 也是稳定的
-  const addLog = useMemo(() => createAddLog(setLogs), [createAddLog, setLogs]);
+
+  // 优化：使用useCallback缓存addLog函数，避免不必要的重渲染
+  const addLog = useCallback((message: string, type?: string) => {
+    if (setLogs && createAddLog) {
+      const logFunc = createAddLog(setLogs);
+      logFunc(message, type);
+    }
+  }, [createAddLog, setLogs]);
 
   // 直接从 zustand UI store 获取状态
   const modals = useModals();
@@ -283,20 +299,14 @@ function App() {
     isDebugModeEnabled,
   } = modals;
 
-  // Auto adventure config state
+  // Auto adventure config state - 使用常量
   const [autoAdventureConfig, setAutoAdventureConfig] = useState<{
     skipBattle: boolean;
     fleeOnBattle: boolean;
     skipShop: boolean;
     skipReputationEvent: boolean;
     minHpThreshold: number;
-  }>({
-    skipBattle: true,
-    fleeOnBattle: false,
-    skipShop: true,
-    skipReputationEvent: true,
-    minHpThreshold: 20,
-  });
+  }>(AUTO_ADVENTURE_CONSTANTS.DEFAULT_CONFIG);
 
   // 检查调试模式是否启用
   useEffect(() => {
@@ -304,9 +314,9 @@ function App() {
     setIsDebugModeEnabled(debugMode);
   }, []);
 
-  // 使用公共 hook 管理 itemActionLog，自动处理延迟清除
+  // 使用公共 hook 管理 itemActionLog，自动处理延迟清除 - 使用常量
   const { setItemActionLog } = useItemActionLog({
-    delay: 3000,
+    delay: DELAY_CONSTANTS.ITEM_ACTION_LOG_CLEAR_DELAY,
     externalSetter: setItemActionLogRaw,
   });
 
@@ -316,10 +326,10 @@ function App() {
   // 检查是否需要显示修仙法门弹窗（新游戏时显示，已显示过则不显示）
   useEffect(() => {
     if (gameStarted && player && !localStorage.getItem(STORAGE_KEYS.CULTIVATION_INTRO_SHOWN)) {
-      // 延迟一小段时间显示，确保游戏界面已加载完成
+      // 延迟一小段时间显示，确保游戏界面已加载完成 - 使用常量
       const timer = setTimeout(() => {
         setShowCultivationIntro(true);
-      }, 500);
+      }, DELAY_CONSTANTS.CULTIVATION_INTRO_DELAY);
       return () => clearTimeout(timer);
     }
   }, [gameStarted, player]);
@@ -487,22 +497,28 @@ function App() {
   // 确保新游戏开始时自动历练状态被重置
   // 当检测到新游戏开始时（玩家从null变为有值，且是初始状态），重置自动历练状态
   const prevPlayerNameRef = useRef<string | null>(null);
+
+  // 优化：使用useCallback缓存重置函数，避免每次渲染都创建新函数
+  const resetAutoStates = useCallback(() => {
+    setAutoAdventure(false);
+    setPausedByBattle(false);
+    setPausedByShop(false);
+    setPausedByReputationEvent(false);
+    setPausedByHeavenEarthSoul(false);
+  }, [setAutoAdventure, setPausedByBattle, setPausedByShop, setPausedByReputationEvent, setPausedByHeavenEarthSoul]);
+
   useEffect(() => {
     if (gameStarted && player) {
-      // 检测是否是真正的新游戏：玩家名字变化，且玩家是初始状态（exp为0，境界为初始境界）
+      // 检测是否是真正的新游戏：玩家名字变化，且玩家是初始状态（使用常量）
       const isNewPlayer = prevPlayerNameRef.current !== null &&
                           prevPlayerNameRef.current !== player.name;
-      const isInitialState = player.exp === 0 &&
+      const isInitialState = player.exp === THRESHOLD_CONSTANTS.NEW_GAME_EXP_THRESHOLD &&
                              player.realm === RealmType.QiRefining &&
-                             player.realmLevel === 1;
+                             player.realmLevel === THRESHOLD_CONSTANTS.NEW_GAME_REALM_LEVEL_THRESHOLD;
 
       if (isNewPlayer && isInitialState) {
         // 新游戏开始时，确保自动历练状态被重置
-        setAutoAdventure(false);
-        setPausedByBattle(false);
-        setPausedByShop(false);
-        setPausedByReputationEvent(false);
-        setPausedByHeavenEarthSoul(false);
+        resetAutoStates();
       }
 
       prevPlayerNameRef.current = player.name;
@@ -511,7 +527,7 @@ function App() {
       prevPlayerNameRef.current = null;
     }
     // 使用 player 对象作为依赖，在 effect 内部访问属性，避免可选链依赖
-  }, [gameStarted, player]);
+  }, [gameStarted, player, resetAutoStates]);
 
 
   // 使用自定义 hook 处理涅槃重生
@@ -546,15 +562,15 @@ function App() {
     if (
       pausedByBattle &&
       player &&
-      player.hp > 0 &&
+      player.hp > THRESHOLD_CONSTANTS.DEATH_HP_THRESHOLD &&
       !isDead &&
       !loading
     ) {
-      // 延迟一小段时间后恢复自动历练，确保状态更新完成
+      // 延迟一小段时间后恢复自动历练，确保状态更新完成 - 使用常量
       const timer = setTimeout(() => {
         setAutoAdventure(true);
         setPausedByBattle(false);
-      }, 300);
+      }, DELAY_CONSTANTS.AUTO_ADVENTURE_RESUME_DELAY);
       return () => clearTimeout(timer);
     }
     // setAutoAdventure 和 setPausedByBattle 是 zustand 的稳定函数引用，但为了明确依赖关系，仍然包含它们

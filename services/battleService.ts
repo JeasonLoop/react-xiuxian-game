@@ -42,140 +42,107 @@ import { getItemsByType } from '../utils/itemConstantsUtils';
 
 const randomId = () => Math.random().toString(36).slice(2, 9);
 
+// ==================== 配置常量 ====================
+
 const ENEMY_NAMES = [
   // 妖兽类
-  '血牙狼',
-  '裂地熊',
-  '玄煞蛛',
-  '阴焰鸦',
-  '噬魂藤',
-  '赤纹虎',
-  '蓝鬃豹',
-  '铁背猿',
-  '骨鳞蜥',
-  '黄泉使',
-  '暗影豹',
-  '雷霆狮',
-  '冰霜蛇',
-  '烈焰鸟',
-  '风暴鹰',
-  '毒沼鳄',
-  '石甲龟',
-  '幻影狐',
-  '幽冥猫',
-  '金角牛',
-  '银鳞鱼',
-  '黑翼蝠',
-  '紫电貂',
-  '青鳞蟒',
-  '赤目猴',
-  '白毛象',
-  '灰鬃马',
-  '绿眼狼',
-  '黄沙蝎',
-  '黑水蛇',
-  '红尾狐',
-  '蓝羽雀',
-
+  '血牙狼', '裂地熊', '玄煞蛛', '阴焰鸦', '噬魂藤', '赤纹虎', '蓝鬃豹', '铁背猿', '骨鳞蜥', '黄泉使',
+  '暗影豹', '雷霆狮', '冰霜蛇', '烈焰鸟', '风暴鹰', '毒沼鳄', '石甲龟', '幻影狐', '幽冥猫', '金角牛',
+  '银鳞鱼', '黑翼蝠', '紫电貂', '青鳞蟒', '赤目猴', '白毛象', '灰鬃马', '绿眼狼', '黄沙蝎', '黑水蛇',
+  '红尾狐', '蓝羽雀',
   // 修士类
-  '星落修士',
-  '魇沙客',
-  '断魂剑客',
-  '血手魔修',
-  '鬼面道人',
-  '邪心散修',
-  '暗影刺客',
-  '狂刀武修',
-  '毒手药师',
-  '阴煞老怪',
-  '血魔真人',
-  '白骨道人',
-  '黑风散人',
-  '赤发魔君',
-  '青面鬼修',
-  '紫袍邪修',
-  '灰衣杀手',
-  '白衣剑客',
-  '黑衣刀客',
-  '红衣魔女',
-  '绿袍毒师',
-
+  '星落修士', '魇沙客', '断魂剑客', '血手魔修', '鬼面道人', '邪心散修', '暗影刺客', '狂刀武修', '毒手药师',
+  '阴煞老怪', '血魔真人', '白骨道人', '黑风散人', '赤发魔君', '青面鬼修', '紫袍邪修', '灰衣杀手', '白衣剑客',
+  '黑衣刀客', '红衣魔女', '绿袍毒师',
   // 特殊类
-  '护宝傀儡',
-  '机关兽',
-  '石像守卫',
-  '木偶人',
-  '铁甲兵',
-  '铜人阵',
-  '银甲卫',
-  '金甲将',
-  '怨灵',
-  '恶鬼',
-  '僵尸',
-  '骷髅',
-  '幽灵',
-  '魔物',
-  '邪灵',
-  '妖魂',
+  '护宝傀儡', '机关兽', '石像守卫', '木偶人', '铁甲兵', '铜人阵', '银甲卫', '金甲将', '怨灵', '恶鬼',
+  '僵尸', '骷髅', '幽灵', '魔物', '邪灵', '妖魂',
 ];
 
 const ENEMY_TITLES = [
   // 妖兽称号
-  '荒原妖兽',
-  '巡山妖将',
-  '秘境妖兽',
-  '深山老妖',
-  '古林妖王',
-  '血海妖尊',
-  '魔域妖将',
-  '妖山统领',
-  '妖谷守护',
-  '妖洞领主',
-  '妖林霸主',
-  '妖域先锋',
-  '妖界战将',
-
+  '荒原妖兽', '巡山妖将', '秘境妖兽', '深山老妖', '古林妖王', '血海妖尊', '魔域妖将', '妖山统领', '妖谷守护',
+  '妖洞领主', '妖林霸主', '妖域先锋', '妖界战将',
   // 修士称号
-  '堕落修士',
-  '邪修',
-  '魔道散修',
-  '血魔修士',
-  '鬼道真人',
-  '邪道魔君',
-  '魔门长老',
-  '邪派护法',
-  '魔教使者',
-  '邪宗弟子',
-  '魔道散人',
-  '邪门高手',
-  '魔修强者',
-
+  '堕落修士', '邪修', '魔道散修', '血魔修士', '鬼道真人', '邪道魔君', '魔门长老', '邪派护法', '魔教使者',
+  '邪宗弟子', '魔道散人', '邪门高手', '魔修强者',
   // 守卫称号
-  '秘境守卫',
-  '护宝傀儡',
-  '遗迹守护',
-  '古墓守卫',
-  '洞府守护',
-  '宝库守卫',
-  '禁地守卫',
-  '秘地守护',
-  '禁制守卫',
-  '法阵守护',
-  '机关守卫',
-  '石像守卫',
-
+  '秘境守卫', '护宝傀儡', '遗迹守护', '古墓守卫', '洞府守护', '宝库守卫', '禁地守卫', '秘地守护', '禁制守卫',
+  '法阵守护', '机关守卫', '石像守卫',
   // 其他称号
-  '荒野游魂',
-  '古战场怨灵',
-  '迷失修士',
-  '堕落真人',
-  '被诅咒者',
-  '魔化修士',
-  '邪化妖兽',
+  '荒野游魂', '古战场怨灵', '迷失修士', '堕落真人', '被诅咒者', '魔化修士', '邪化妖兽',
 ];
+
+/**
+ * 风险等级奖励倍数配置
+ */
+const RISK_REWARD_MULTIPLIERS = {
+  低: 1.0,
+  中: 1.3,
+  高: 1.6,
+  极度危险: 2.2,
+};
+
+/**
+ * 功法品级基础倍数
+ */
+const GRADE_MULTIPLIERS: Record<string, number> = {
+  '黄': 1.0,
+  '玄': 1.5,
+  '地': 2.5,
+  '天': 4.0,
+};
+
+/**
+ * 技能威力品级加成
+ */
+const GRADE_POWER_BONUS: Record<string, { baseDamage: number; damageMultiplier: number; critChance: number; critMultiplier: number }> = {
+  '黄': { baseDamage: 5, damageMultiplier: 0, critChance: 0, critMultiplier: 0 },
+  '玄': { baseDamage: 10, damageMultiplier: 0.1, critChance: 0.02, critMultiplier: 0.1 },
+  '地': { baseDamage: 20, damageMultiplier: 0.2, critChance: 0.05, critMultiplier: 0.2 },
+  '天': { baseDamage: 40, damageMultiplier: 0.35, critChance: 0.08, critMultiplier: 0.3 },
+};
+
+// ==================== 预构建映射表 ====================
+
+// 预构建法宝和武器技能映射表，避免在战斗中重复构建
+const ARTIFACT_SKILLS_MAP = new Map<string, BattleSkill[]>();
+const WEAPON_SKILLS_MAP = new Map<string, BattleSkill[]>();
+
+const initializeSkillMaps = () => {
+  Object.entries(ARTIFACT_BATTLE_SKILLS).forEach(([key, skillArray]) => {
+    ARTIFACT_SKILLS_MAP.set(key, skillArray);
+    skillArray.forEach((skill) => {
+      if (skill.sourceId && !ARTIFACT_SKILLS_MAP.has(skill.sourceId)) {
+        ARTIFACT_SKILLS_MAP.set(skill.sourceId, skillArray);
+      }
+    });
+  });
+
+  Object.entries(WEAPON_BATTLE_SKILLS).forEach(([key, skillArray]) => {
+    WEAPON_SKILLS_MAP.set(key, skillArray);
+    skillArray.forEach((skill) => {
+      if (skill.sourceId && !WEAPON_SKILLS_MAP.has(skill.sourceId)) {
+        WEAPON_SKILLS_MAP.set(skill.sourceId, skillArray);
+      }
+    });
+  });
+};
+
+initializeSkillMaps();
+
+// ==================== 工具函数 ====================
+
+/**
+ * 获取风险等级奖励倍数
+ */
+const getRiskRewardMultiplier = (riskLevel?: '低' | '中' | '高' | '极度危险'): number => {
+  return riskLevel ? (RISK_REWARD_MULTIPLIERS[riskLevel] || 1.0) : 1.0;
+};
 
 // 根据风险等级计算战斗难度
 const getBattleDifficulty = (
+
   adventureType: AdventureType,
   riskLevel?: '低' | '中' | '高' | '极度危险'
 ): number => {
@@ -1144,24 +1111,11 @@ export const resolveBattleEncounter = async (
   const playerHpAfter = Number(playerHp) || 0;
   const hpLoss = Math.max(0, Math.floor(playerHpBefore - playerHpAfter));
 
-  // 根据风险等级调整奖励倍数
-  const getRewardMultiplier = (
-    riskLevel?: '低' | '中' | '高' | '极度危险'
-  ): number => {
-    if (!riskLevel) return 1.0;
-    const multipliers = {
-      低: 1.0,
-      中: 1.3,
-      高: 1.6,
-      极度危险: 2.2,
-    };
-    return multipliers[riskLevel];
-  };
-
   const rewardMultiplier =
-    adventureType === 'secret_realm' ? getRewardMultiplier(riskLevel) : 1.0;
+    adventureType === 'secret_realm' ? getRiskRewardMultiplier(riskLevel) : 1.0;
 
   const { exp: rewardExp, stones: rewardStones } = getExpAndStoneRewards(
+
     player,
     adventureType,
     difficulty,
@@ -1291,24 +1245,11 @@ export const calculateBattleRewards = (
   const enemyStrength = battleState.enemyStrengthMultiplier || 1.0;
   const strengthRewardMultiplier = 0.8 + enemyStrength * 0.4; // 0.8-1.2倍（弱敌）到 1.2-2.0倍（强敌）
 
-  // 根据风险等级调整奖励倍数
-  const getRewardMultiplier = (
-    riskLevel?: '低' | '中' | '高' | '极度危险'
-  ): number => {
-    if (!riskLevel) return 1.0;
-    const multipliers = {
-      低: 1.0,
-      中: 1.3,
-      高: 1.6,
-      极度危险: 2.2,
-    };
-    return multipliers[riskLevel];
-  };
-
   const riskRewardMultiplier =
-    actualAdventureType === 'secret_realm' ? getRewardMultiplier(actualRiskLevel) : 1.0;
+    actualAdventureType === 'secret_realm' ? getRiskRewardMultiplier(actualRiskLevel) : 1.0;
 
   const { exp: rewardExp, stones: rewardStones } = getExpAndStoneRewards(
+
     player,
     actualAdventureType,
     difficulty,
@@ -1500,22 +1441,8 @@ export const initializeTurnBasedBattle = async (
  */
 function generateDefaultSkillForArt(art: { id: string; name: string; type: string; grade: string; effects: any }): BattleSkill | null {
   // 根据功法类型和品级生成不同的技能
-  const gradeMultipliers: Record<string, number> = {
-    '黄': 1.0,
-    '玄': 1.5,
-    '地': 2.5,
-    '天': 4.0,
-  };
-  const multiplier = gradeMultipliers[art.grade] || 1.0;
-
-  // 技能威力加成配置
-  const gradePowerBonus: Record<string, { baseDamage: number; damageMultiplier: number; critChance: number; critMultiplier: number }> = {
-    '黄': { baseDamage: 5, damageMultiplier: 0, critChance: 0, critMultiplier: 0 },
-    '玄': { baseDamage: 10, damageMultiplier: 0.1, critChance: 0.02, critMultiplier: 0.1 },
-    '地': { baseDamage: 20, damageMultiplier: 0.2, critChance: 0.05, critMultiplier: 0.2 },
-    '天': { baseDamage: 40, damageMultiplier: 0.35, critChance: 0.08, critMultiplier: 0.3 },
-  };
-  const powerBonus = gradePowerBonus[art.grade] || gradePowerBonus['黄'];
+  const multiplier = GRADE_MULTIPLIERS[art.grade] || 1.0;
+  const powerBonus = GRADE_POWER_BONUS[art.grade] || GRADE_POWER_BONUS['黄'];
 
   // 根据功法类型决定技能类型
   if (art.type === 'body') {
@@ -1617,6 +1544,7 @@ function generateDefaultSkillForArt(art: { id: string; name: string; type: strin
   return null;
 }
 
+
 /**
  * 从玩家数据创建战斗单位
  */
@@ -1650,7 +1578,7 @@ function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
       skills.push(...artSkills.map((s) => ({ ...s, cooldown: 0 })));
     } else {
       // 如果功法没有配置技能，自动生成默认技能
-      const art = artsMap.get(artId);
+      const art = CULTIVATION_ARTS.find(a => a.id === artId);
       if (art) {
         const defaultSkill = generateDefaultSkillForArt(art);
         if (defaultSkill) {
@@ -1661,33 +1589,7 @@ function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
   });
 
   // 2. 法宝/武器技能
-  // 优化：预先建立技能查找映射，避免在循环中重复调用 Object.values()
-  const artifactSkillsBySourceId = new Map<string, BattleSkill[]>();
-  const weaponSkillsBySourceId = new Map<string, BattleSkill[]>();
-
-  // 建立 sourceId 到技能的映射（用于 fallback 查找）
-  Object.entries(ARTIFACT_BATTLE_SKILLS).forEach(([key, skillArray]) => {
-    // 支持直接通过 key 查找
-    artifactSkillsBySourceId.set(key, skillArray);
-    // 建立 sourceId 到技能的映射
-    skillArray.forEach((skill) => {
-      if (skill.sourceId && !artifactSkillsBySourceId.has(skill.sourceId)) {
-        artifactSkillsBySourceId.set(skill.sourceId, skillArray);
-      }
-    });
-  });
-
-  Object.entries(WEAPON_BATTLE_SKILLS).forEach(([key, skillArray]) => {
-    // 支持直接通过 key 查找
-    weaponSkillsBySourceId.set(key, skillArray);
-    // 建立 sourceId 到技能的映射
-    skillArray.forEach((skill) => {
-      if (skill.sourceId && !weaponSkillsBySourceId.has(skill.sourceId)) {
-        weaponSkillsBySourceId.set(skill.sourceId, skillArray);
-      }
-    });
-  });
-
+  // 使用预构建的映射表，大幅提升查找性能
   equippedItems.forEach((item) => {
     // 优先使用物品自带的battleSkills
     if (item.battleSkills && item.battleSkills.length > 0) {
@@ -1695,21 +1597,24 @@ function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
     } else {
       // 如果没有，尝试从配置中获取
       if (item.type === ItemType.Artifact) {
-        // 优化：先尝试直接通过 item.id 查找，再通过 sourceId 查找
-        const artifactSkills = ARTIFACT_BATTLE_SKILLS[item.id] ||
-          artifactSkillsBySourceId.get(item.id);
+        // 优先通过 id 查找（支持重命名后的法宝）
+        const artifactSkills = ARTIFACT_SKILLS_MAP.get(item.id) ||
+          ARTIFACT_SKILLS_MAP.get(item.name);
         if (artifactSkills) {
           skills.push(...artifactSkills.map((s) => ({ ...s, cooldown: 0 })));
         }
       } else if (item.type === ItemType.Weapon) {
-        const weaponSkills = WEAPON_BATTLE_SKILLS[item.id] ||
-          weaponSkillsBySourceId.get(item.id);
+        // 优先通过 id 查找
+        const weaponSkills = WEAPON_SKILLS_MAP.get(item.id) ||
+          WEAPON_SKILLS_MAP.get(item.name);
         if (weaponSkills) {
           skills.push(...weaponSkills.map((s) => ({ ...s, cooldown: 0 })));
         }
       }
+
     }
   });
+
 
   // 应用被动效果（心法）
   const buffs: Buff[] = [];
@@ -1868,44 +1773,45 @@ export function executePlayerAction(
  * 执行敌人回合（AI）
  */
 export function executeEnemyTurn(battleState: BattleState): BattleState {
-  if (battleState.waitingForPlayerAction || battleState.enemyActionsRemaining <= 0) {
-    throw new Error('Not enemy turn or no actions remaining');
-  }
-
   let newState = { ...battleState };
-  const enemy = newState.enemy;
-  const player = newState.player;
 
-  // 简单的AI：70%普通攻击，20%技能（如果有），10%防御
-  const actionRoll = Math.random();
-  let actionResult: BattleAction | null = null;
-
-  if (actionRoll < 0.7) {
-    // 普通攻击
-    actionResult = executeNormalAttack(newState, 'enemy', 'player');
-  } else if (actionRoll < 0.9 && enemy.skills.length > 0) {
-    // 使用技能（随机选择一个可用技能）
-    const availableSkills = enemy.skills.filter(
-      (s) => (enemy.cooldowns[s.id] || 0) === 0 && (!s.cost.mana || (enemy.mana || 0) >= s.cost.mana)
-    );
-    if (availableSkills.length > 0) {
-      const skill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
-      actionResult = executeSkill(newState, 'enemy', skill.id, 'player');
-    } else {
-      actionResult = executeNormalAttack(newState, 'enemy', 'player');
+  // 使用循环代替递归，处理敌人的多个行动点
+  while (newState.enemyActionsRemaining > 0 && newState.enemy.hp > 0 && newState.player.hp > 0) {
+    if (newState.waitingForPlayerAction) {
+      break;
     }
-  } else {
-    // 防御
-    actionResult = executeDefend(newState, 'enemy');
-  }
 
-  if (actionResult) {
-    newState.history.push(actionResult);
-    newState = updateBattleStateAfterAction(newState, actionResult);
-  }
+    const enemy = newState.enemy;
+    const actionRoll = Math.random();
+    let actionResult: BattleAction | null = null;
 
-  // 减少剩余行动次数
-  newState.enemyActionsRemaining -= 1;
+    if (actionRoll < 0.7) {
+      // 普通攻击
+      actionResult = executeNormalAttack(newState, 'enemy', 'player');
+    } else if (actionRoll < 0.9 && enemy.skills.length > 0) {
+      // 使用技能（随机选择一个可用技能）
+      const availableSkills = enemy.skills.filter(
+        (s) => (enemy.cooldowns[s.id] || 0) === 0 && (!s.cost.mana || (enemy.mana || 0) >= s.cost.mana)
+      );
+      if (availableSkills.length > 0) {
+        const skill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
+        actionResult = executeSkill(newState, 'enemy', skill.id, 'player');
+      } else {
+        actionResult = executeNormalAttack(newState, 'enemy', 'player');
+      }
+    } else {
+      // 防御
+      actionResult = executeDefend(newState, 'enemy');
+    }
+
+    if (actionResult) {
+      newState.history.push(actionResult);
+      newState = updateBattleStateAfterAction(newState, actionResult);
+    }
+
+    // 减少剩余行动次数
+    newState.enemyActionsRemaining -= 1;
+  }
 
   // 敌人回合结束后，更新灵宠技能冷却（如果存在）
   if (newState.activePet && newState.petSkillCooldowns) {
@@ -1919,15 +1825,8 @@ export function executeEnemyTurn(battleState: BattleState): BattleState {
     newState.petSkillCooldowns = updatedCooldowns;
   }
 
-  // 如果还有剩余行动次数，继续敌人回合；否则切换到玩家回合
-  if (newState.enemyActionsRemaining > 0) {
-    // 继续敌人回合，可以再次行动
-    newState.waitingForPlayerAction = false;
-    newState.turn = 'enemy';
-    // 递归执行下一次敌人行动
-    return executeEnemyTurn(newState);
-  } else {
-    // 敌人回合结束，切换到玩家回合
+  // 切换到玩家回合
+  if (newState.enemyActionsRemaining <= 0) {
     newState.waitingForPlayerAction = true;
     newState.turn = 'player';
     newState.round += 1;
@@ -1946,18 +1845,19 @@ export function executeEnemyTurn(battleState: BattleState): BattleState {
     );
     newState.playerActionsRemaining = newState.playerMaxActions;
 
-    // 如果玩家行动次数为0（速度太慢），立即切换回敌人回合
-    if (newState.playerActionsRemaining <= 0) {
+    // 如果玩家行动次数为0（速度太慢），立即再次切换回敌人回合
+    if (newState.playerActionsRemaining <= 0 && newState.enemy.hp > 0) {
       newState.waitingForPlayerAction = false;
       newState.turn = 'enemy';
       newState.enemyActionsRemaining = newState.enemyMaxActions;
-      // 递归执行敌人回合
+      // 注意：这里需要再次进入循环，所以递归调用一次是安全的（因为 round 已经增加了，且这种情况极少连续发生）
       return executeEnemyTurn(newState);
     }
   }
 
   return newState;
 }
+
 
 /**
  * 执行普通攻击
@@ -1974,39 +1874,46 @@ function executeNormalAttack(
   const baseDamage = calcDamage(attacker.attack, target.defense);
 
   // 计算暴击（优化：统一暴击率计算，设置上限）
-  let critChance = 0.10; // 基础暴击率10%（修复：从8%改为10%）
-  // 根据速度差计算速度加成（与自动战斗保持一致）
-  const attackerSpeed = Number(attacker.speed) || 0;
-  const targetSpeed = Number(target.speed) || 0;
-  const speedSum = Math.max(1, attackerSpeed + targetSpeed);
-  const speedBonus = (attackerSpeed / speedSum) * 0.10; // 速度加成最高10%（从12%调整为10%）
-  critChance += speedBonus;
-  // 应用Buff/Debuff
+  let critChance = 0.10; // 基础暴击率10%
+  let critMultiplier = 1.5; // 基础暴击伤害倍率
+
+  // 预先收集攻击者增益
   attacker.buffs.forEach((buff) => {
     if (buff.type === 'crit') {
       critChance += buff.value;
     }
-  });
-  // 设置暴击率上限为20%（除非Buff超过）
-  critChance = Math.min(0.2, Math.max(0, critChance));
-  const isCrit = Math.random() < critChance;
-  // 计算暴击伤害倍率（基础1.5倍，加上buff加成）
-  let critMultiplier = 1.5;
-  attacker.buffs.forEach((buff) => {
     if (buff.critDamage && buff.critDamage > 0) {
       critMultiplier += buff.critDamage;
     }
   });
+
+  // 根据速度差计算速度加成
+  const attackerSpeed = Number(attacker.speed) || 0;
+  const targetSpeed = Number(target.speed) || 0;
+  const speedSum = Math.max(1, attackerSpeed + targetSpeed);
+  const speedBonus = (attackerSpeed / speedSum) * 0.10;
+  critChance += speedBonus;
+
+  // 设置暴击率上限为20%（除非Buff本身加成很高）
+  critChance = Math.min(0.2, Math.max(0, critChance));
+  const isCrit = Math.random() < critChance;
   const finalDamage = isCrit ? Math.round(baseDamage * critMultiplier) : baseDamage;
 
+  // 预先收集目标增益/减益
+  let maxDodge = 0;
+  let maxDamageReduction = 0;
+  let maxReflectRatio = 0;
+  let hasIgnoreDefense = attacker.buffs.some(buff => buff.ignoreDefense);
+
+  target.buffs.forEach((buff) => {
+    if (buff.dodge && buff.dodge > maxDodge) maxDodge = buff.dodge;
+    if (buff.damageReduction && buff.damageReduction > maxDamageReduction) maxDamageReduction = buff.damageReduction;
+    if (buff.reflectDamage && buff.reflectDamage > maxReflectRatio) maxReflectRatio = buff.reflectDamage;
+  });
+
   // 检查闪避
-  let isDodged = false;
-  if (target.buffs.some(buff => buff.dodge && buff.dodge > 0)) {
-    const maxDodge = Math.max(...target.buffs
-      .filter(buff => buff.dodge && buff.dodge > 0)
-      .map(buff => buff.dodge!));
-    isDodged = Math.random() < maxDodge;
-  }
+  const isDodged = maxDodge > 0 && Math.random() < maxDodge;
+
 
   if (isDodged) {
     return {
@@ -2028,9 +1935,6 @@ function executeNormalAttack(
 
   // 应用防御状态（优化：根据攻击力和防御力比例动态调整减伤效果）
   let actualDamage = finalDamage;
-
-  // 检查攻击者是否有无视防御buff
-  const hasIgnoreDefense = attacker.buffs.some(buff => buff.ignoreDefense);
 
   if (target.isDefending && !hasIgnoreDefense) {
     // 基础减伤50%，如果攻击力远高于防御力，减伤效果降低
@@ -2057,11 +1961,8 @@ function executeNormalAttack(
   }
 
   // 应用伤害减免buff
-  if (target.buffs.some(buff => buff.damageReduction && buff.damageReduction > 0)) {
-    const maxReduction = Math.max(...target.buffs
-      .filter(buff => buff.damageReduction && buff.damageReduction > 0)
-      .map(buff => buff.damageReduction!));
-    actualDamage = Math.round(actualDamage * (1 - maxReduction));
+  if (maxDamageReduction > 0) {
+    actualDamage = Math.round(actualDamage * (1 - maxDamageReduction));
   }
 
   // 更新目标血量（确保是整数）
@@ -2069,17 +1970,11 @@ function executeNormalAttack(
 
   // 处理反弹伤害（如果目标有 reflectDamage buff）
   let reflectedDamage = 0;
-  if (actualDamage > 0 && target.buffs.some(buff => buff.reflectDamage && buff.reflectDamage > 0)) {
-    // 找到最高的反弹伤害比例
-    const maxReflectRatio = Math.max(...target.buffs
-      .filter(buff => buff.reflectDamage && buff.reflectDamage > 0)
-      .map(buff => buff.reflectDamage!));
-
-    if (maxReflectRatio > 0) {
-      reflectedDamage = Math.floor(actualDamage * maxReflectRatio);
-      attacker.hp = Math.max(0, Math.floor(attacker.hp - reflectedDamage));
-    }
+  if (actualDamage > 0 && maxReflectRatio > 0) {
+    reflectedDamage = Math.floor(actualDamage * maxReflectRatio);
+    attacker.hp = Math.max(0, Math.floor(attacker.hp - reflectedDamage));
   }
+
 
   // 构建描述
   let description = '';

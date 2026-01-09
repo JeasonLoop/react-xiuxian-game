@@ -20,7 +20,15 @@ import {
 import { ITEM_TEMPLATES } from '../constants/itemTemplates';
 
 // 缓存所有物品
-let cachedAllItems: Array<{
+let cachedAllItems: Array<ConstantItem> | null = null;
+let cachedItemNameMap: Map<string, ConstantItem> | null = null;
+let cachedItemRarityMap: Map<ItemRarity, ConstantItem[]> | null = null;
+let cachedItemTypeMap: Map<ItemType | string, ConstantItem[]> | null = null;
+
+/**
+ * 内部使用的物品类型定义，减少重复代码
+ */
+interface ConstantItem {
   name: string;
   type: ItemType | string;
   description: string;
@@ -31,58 +39,62 @@ let cachedAllItems: Array<{
   equipmentSlot?: EquipmentSlot | string;
   advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
   advancedItemId?: string;
-}> | null = null;
+}
+
+/**
+ * 将原始项转换为 ConstantItem 格式
+ */
+function mapToConstantItem(item: any): ConstantItem {
+  return {
+    name: item.name,
+    type: item.type,
+    description: item.description,
+    rarity: (item.rarity || '普通') as ItemRarity,
+    effect: item.effect,
+    permanentEffect: item.permanentEffect,
+    isEquippable: item.isEquippable,
+    equipmentSlot: item.equipmentSlot,
+    advancedItemType: item.advancedItemType,
+    advancedItemId: item.advancedItemId,
+  };
+}
 
 /**
  * 从所有常量池中获取所有物品
  */
-export function getAllItemsFromConstants(): Array<{
-  name: string;
-  type: ItemType | string;
-  description: string;
-  rarity: ItemRarity;
-  effect?: any;
-  permanentEffect?: any;
-  isEquippable?: boolean;
-  equipmentSlot?: EquipmentSlot | string;
-  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
-  advancedItemId?: string;
-}> {
+export function getAllItemsFromConstants(): Array<ConstantItem> {
   // 使用缓存
   if (cachedAllItems) {
     return cachedAllItems;
   }
 
-  const items: Array<{
-    name: string;
-    type: ItemType | string;
-    description: string;
-    rarity: ItemRarity;
-    effect?: any;
-    permanentEffect?: any;
-    isEquippable?: boolean;
-    equipmentSlot?: EquipmentSlot | string;
-    advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
-    advancedItemId?: string;
-  }> = [];
+  const items: ConstantItem[] = [];
   const itemNames = new Set<string>();
+  const nameMap = new Map<string, ConstantItem>();
+  const rarityMap = new Map<ItemRarity, ConstantItem[]>();
+  const typeMap = new Map<ItemType | string, ConstantItem[]>();
 
-  // 辅助函数：将基础物品添加到列表
+  // 辅助函数：将基础物品添加到列表并更新索引
   const addItem = (item: any) => {
     if (itemNames.has(item.name)) return;
+
+    const constantItem = mapToConstantItem(item);
+
     itemNames.add(item.name);
-    items.push({
-      name: item.name,
-      type: item.type,
-      description: item.description,
-      rarity: (item.rarity || '普通') as ItemRarity,
-      effect: item.effect,
-      permanentEffect: item.permanentEffect,
-      isEquippable: item.isEquippable,
-      equipmentSlot: item.equipmentSlot,
-      advancedItemType: item.advancedItemType,
-      advancedItemId: item.advancedItemId,
-    });
+    items.push(constantItem);
+
+    // 更新索引映射
+    nameMap.set(constantItem.name, constantItem);
+
+    // 更新稀有度映射
+    const rarityItems = rarityMap.get(constantItem.rarity) || [];
+    rarityItems.push(constantItem);
+    rarityMap.set(constantItem.rarity, rarityItems);
+
+    // 更新类型映射
+    const typeItems = typeMap.get(constantItem.type) || [];
+    typeItems.push(constantItem);
+    typeMap.set(constantItem.type, typeItems);
   };
 
   // 1. 从 INITIAL_ITEMS 中提取物品
@@ -93,13 +105,9 @@ export function getAllItemsFromConstants(): Array<{
 
   // 3. 从筑基奇物中提取
   Object.values(FOUNDATION_TREASURES).forEach(treasure => {
-    if (itemNames.has(treasure.name)) return;
-    itemNames.add(treasure.name);
-    items.push({
-      name: treasure.name,
+    addItem({
+      ...treasure,
       type: ItemType.AdvancedItem,
-      description: treasure.description,
-      rarity: treasure.rarity,
       advancedItemType: 'foundationTreasure',
       advancedItemId: treasure.id,
     });
@@ -107,13 +115,9 @@ export function getAllItemsFromConstants(): Array<{
 
   // 4. 从天地精华中提取
   Object.values(HEAVEN_EARTH_ESSENCES).forEach(essence => {
-    if (itemNames.has(essence.name)) return;
-    itemNames.add(essence.name);
-    items.push({
-      name: essence.name,
+    addItem({
+      ...essence,
       type: ItemType.AdvancedItem,
-      description: essence.description,
-      rarity: essence.rarity,
       advancedItemType: 'heavenEarthEssence',
       advancedItemId: essence.id,
     });
@@ -121,13 +125,9 @@ export function getAllItemsFromConstants(): Array<{
 
   // 5. 从天地之髓中提取
   Object.values(HEAVEN_EARTH_MARROWS).forEach(marrow => {
-    if (itemNames.has(marrow.name)) return;
-    itemNames.add(marrow.name);
-    items.push({
-      name: marrow.name,
+    addItem({
+      ...marrow,
       type: ItemType.AdvancedItem,
-      description: marrow.description,
-      rarity: marrow.rarity,
       advancedItemType: 'heavenEarthMarrow',
       advancedItemId: marrow.id,
     });
@@ -135,12 +135,9 @@ export function getAllItemsFromConstants(): Array<{
 
   // 6. 从规则之力中提取
   Object.values(LONGEVITY_RULES).forEach(rule => {
-    if (itemNames.has(rule.name)) return;
-    itemNames.add(rule.name);
-    items.push({
-      name: rule.name,
+    addItem({
+      ...rule,
       type: ItemType.AdvancedItem,
-      description: rule.description,
       rarity: '仙品',
       advancedItemType: 'longevityRule',
       advancedItemId: rule.id,
@@ -149,16 +146,8 @@ export function getAllItemsFromConstants(): Array<{
 
   // 7. 从所有丹方中提取丹药
   [...PILL_RECIPES, ...DISCOVERABLE_RECIPES].forEach(recipe => {
-    if (recipe.result && !itemNames.has(recipe.result.name)) {
-      itemNames.add(recipe.result.name);
-      items.push({
-        name: recipe.result.name,
-        type: recipe.result.type,
-        description: recipe.result.description,
-        rarity: recipe.result.rarity as ItemRarity,
-        effect: recipe.result.effect,
-        permanentEffect: recipe.result.permanentEffect,
-      });
+    if (recipe.result) {
+      addItem(recipe.result);
     }
   });
 
@@ -166,20 +155,10 @@ export function getAllItemsFromConstants(): Array<{
   LOTTERY_PRIZES.forEach(prize => {
     if (prize.type === 'item' && prize.value.item) {
       const item = prize.value.item;
-      if (itemNames.has(item.name)) return;
-      itemNames.add(item.name);
-
       if (item.type === ItemType.Pill) {
-        const pillDef = getPillDefinition(item.name);
+        const pillDef = getPillDefinition(item.name!);
         if (pillDef) {
-          items.push({
-            name: pillDef.name,
-            type: pillDef.type,
-            description: pillDef.description,
-            rarity: pillDef.rarity as ItemRarity,
-            effect: pillDef.effect,
-            permanentEffect: pillDef.permanentEffect,
-          });
+          addItem(pillDef);
           return;
         }
       }
@@ -190,20 +169,10 @@ export function getAllItemsFromConstants(): Array<{
   // 9. 从宗门商店物品中提取
   SECT_SHOP_ITEMS.forEach(shopItem => {
     const item = shopItem.item;
-    if (itemNames.has(item.name)) return;
-    itemNames.add(item.name);
-
     if (item.type === ItemType.Pill) {
-      const pillDef = getPillDefinition(item.name);
+      const pillDef = getPillDefinition(item.name!);
       if (pillDef) {
-        items.push({
-          name: pillDef.name,
-          type: pillDef.type,
-          description: pillDef.description,
-          rarity: pillDef.rarity as ItemRarity,
-          effect: pillDef.effect,
-          permanentEffect: pillDef.permanentEffect,
-        });
+        addItem(pillDef);
         return;
       }
     }
@@ -214,39 +183,22 @@ export function getAllItemsFromConstants(): Array<{
   ITEM_TEMPLATES.forEach(addItem);
 
   cachedAllItems = items;
+  cachedItemNameMap = nameMap;
+  cachedItemRarityMap = rarityMap;
+  cachedItemTypeMap = typeMap;
+
   return items;
 }
 
 /**
- * 从常量池中根据名称获取物品
- * @param itemName 物品名称
- * @returns 物品数据，如果未找到则返回 null
+ * 内部转换函数，确保返回一致的结构
  */
-export function getItemFromConstants(itemName: string): {
-  name: string;
-  type: ItemType;
-  description: string;
-  rarity: ItemRarity;
-  effect?: any;
-  permanentEffect?: any;
-  isEquippable?: boolean;
-  equipmentSlot?: EquipmentSlot | string;
-  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
-  advancedItemId?: string;
-} | null {
-  const allItems = getAllItemsFromConstants();
-  const item = allItems.find(i => i.name === itemName);
-
-  if (!item) {
-    return null;
-  }
-
-  // 验证物品类型是否为有效的 ItemType
+function finalizeItem(item: ConstantItem) {
   const itemType = Object.values(ItemType).includes(item.type as ItemType)
     ? (item.type as ItemType)
     : ItemType.Material;
 
-  const result: any = {
+  return {
     name: item.name,
     type: itemType,
     description: item.description,
@@ -255,15 +207,20 @@ export function getItemFromConstants(itemName: string): {
     permanentEffect: item.permanentEffect,
     isEquippable: item.isEquippable,
     equipmentSlot: item.equipmentSlot,
+    advancedItemType: item.advancedItemType,
+    advancedItemId: item.advancedItemId,
   };
+}
 
-  // 如果物品是进阶物品，添加进阶物品信息
-  if (itemType === ItemType.AdvancedItem && (item as any).advancedItemType) {
-    result.advancedItemType = (item as any).advancedItemType;
-    result.advancedItemId = (item as any).advancedItemId;
-  }
-
-  return result;
+/**
+ * 从常量池中根据名称获取物品
+ * @param itemName 物品名称
+ * @returns 物品数据，如果未找到则返回 null
+ */
+export function getItemFromConstants(itemName: string) {
+  getAllItemsFromConstants(); // 确保缓存已填充
+  const item = cachedItemNameMap?.get(itemName);
+  return item ? finalizeItem(item) : null;
 }
 
 /**
@@ -271,39 +228,10 @@ export function getItemFromConstants(itemName: string): {
  * @param rarity 稀有度
  * @returns 符合条件的物品列表
  */
-export function getItemsByRarity(rarity: ItemRarity): Array<{
-  name: string;
-  type: ItemType;
-  description: string;
-  rarity: ItemRarity;
-  effect?: any;
-  permanentEffect?: any;
-  isEquippable?: boolean;
-  equipmentSlot?: EquipmentSlot | string;
-  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
-  advancedItemId?: string;
-}> {
-  const allItems = getAllItemsFromConstants();
-  return allItems
-    .filter(item => item.rarity === rarity)
-    .map(item => {
-      const itemType = Object.values(ItemType).includes(item.type as ItemType)
-        ? (item.type as ItemType)
-        : ItemType.Material;
-
-      return {
-        name: item.name,
-        type: itemType,
-        description: item.description,
-        rarity: item.rarity,
-        effect: item.effect,
-        permanentEffect: item.permanentEffect,
-        isEquippable: item.isEquippable,
-        equipmentSlot: item.equipmentSlot,
-        advancedItemType: item.advancedItemType,
-        advancedItemId: item.advancedItemId,
-      };
-    });
+export function getItemsByRarity(rarity: ItemRarity) {
+  getAllItemsFromConstants(); // 确保缓存已填充
+  const items = cachedItemRarityMap?.get(rarity) || [];
+  return items.map(finalizeItem);
 }
 
 /**
@@ -311,31 +239,10 @@ export function getItemsByRarity(rarity: ItemRarity): Array<{
  * @param itemType 物品类型
  * @returns 符合条件的物品列表
  */
-export function getItemsByType(itemType: ItemType): Array<{
-  name: string;
-  type: ItemType;
-  description: string;
-  rarity: ItemRarity;
-  effect?: any;
-  permanentEffect?: any;
-  isEquippable?: boolean;
-  equipmentSlot?: EquipmentSlot | string;
-  advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule';
-  advancedItemId?: string;
-}> {
-  const allItems = getAllItemsFromConstants();
-  return allItems.filter(item => item.type === itemType).map(item => ({
-    name: item.name,
-    type: item.type as ItemType,
-    description: item.description,
-    rarity: item.rarity,
-    effect: item.effect,
-    permanentEffect: item.permanentEffect,
-    isEquippable: item.isEquippable,
-    equipmentSlot: item.equipmentSlot,
-    advancedItemType: item.advancedItemType,
-    advancedItemId: item.advancedItemId,
-  }));
+export function getItemsByType(itemType: ItemType) {
+  getAllItemsFromConstants(); // 确保缓存已填充
+  const items = cachedItemTypeMap?.get(itemType) || [];
+  return items.map(finalizeItem);
 }
 
 /**

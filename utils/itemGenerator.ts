@@ -3,9 +3,10 @@
  * 支持根据类型、品级、数量生成物品
  */
 
-import { Item, ItemType, ItemRarity, EquipmentSlot, LotteryPrize } from '../types';
+import { Item, ItemType, ItemRarity, EquipmentSlot, LotteryPrize, RealmType } from '../types';
 import { ITEM_TEMPLATES, getItemTemplatesByType, getItemTemplatesByRarity, getItemTemplatesByTypeAndRarity } from '../constants/itemTemplates';
 import { uid } from './gameUtils';
+import { adjustItemStatsByRealm } from './itemUtils';
 
 /**
  * 物品生成配置
@@ -15,7 +16,7 @@ interface GenerateItemsOptions {
   rarity?: ItemRarity; // 稀有度，如果不指定则根据权重随机
   count: number; // 生成数量
   allowDuplicates?: boolean; // 是否允许重复
-  realm?: 'QiRefining' | 'Foundation' | 'GoldenCore' | 'NascentSoul' | 'SpiritSevering' | 'DaoCombining' | 'LongevityRealm'; // 境界，用于调整数值
+  realm?: RealmType; // 境界，用于调整数值
   realmLevel?: number; // 境界等级，用于调整数值
 }
 
@@ -48,75 +49,6 @@ function randomRarityByWeight(): ItemRarity {
   }
 
   return '普通';
-}
-
-/**
- * 根据境界调整物品数值
- * 优化：降低倍数增长，与装备调整函数保持一致，防止数值膨胀
- */
-function adjustStatsByRealm(
-  effect: Item['effect'],
-  permanentEffect: Item['permanentEffect'],
-  realm: string,
-  realmLevel: number = 1
-): { effect?: Item['effect']; permanentEffect?: Item['permanentEffect'] } {
-  // 优化后的境界倍数：与装备调整函数保持一致
-  // 从 [1, 2, 4, 8, 16, 32, 64] 改为 [1, 1.5, 2.5, 4, 6, 10, 16]
-  const realmMultipliers: Record<string, number> = {
-    QiRefining: 1,
-    Foundation: 1.5,
-    GoldenCore: 2.5,
-    NascentSoul: 4,
-    SpiritSevering: 6,
-    DaoCombining: 10,
-    LongevityRealm: 16,
-  };
-
-  const realmMultiplier = realmMultipliers[realm] || 1;
-  // 降低层数加成：从10%降低到8%，与装备调整保持一致
-  const levelMultiplier = 1 + (realmLevel - 1) * 0.08;
-  const totalMultiplier = realmMultiplier * levelMultiplier;
-
-  const adjusted: Item['effect'] = {};
-  const adjustedPermanent: Item['permanentEffect'] = {};
-
-  // 调整临时效果
-  if (effect) {
-    if (effect.attack) adjusted.attack = Math.floor(effect.attack * totalMultiplier);
-    if (effect.defense) adjusted.defense = Math.floor(effect.defense * totalMultiplier);
-    if (effect.hp) adjusted.hp = Math.floor(effect.hp * totalMultiplier);
-    if (effect.spirit) adjusted.spirit = Math.floor(effect.spirit * totalMultiplier);
-    if (effect.physique) adjusted.physique = Math.floor(effect.physique * totalMultiplier);
-    if (effect.speed) adjusted.speed = Math.floor(effect.speed * totalMultiplier);
-    if (effect.exp) adjusted.exp = Math.floor(effect.exp * totalMultiplier);
-    if (effect.lifespan) adjusted.lifespan = effect.lifespan; // 寿命不受境界调整影响
-  }
-
-  // 调整永久效果
-  if (permanentEffect) {
-    if (permanentEffect.attack) adjustedPermanent.attack = Math.floor(permanentEffect.attack * totalMultiplier);
-    if (permanentEffect.defense) adjustedPermanent.defense = Math.floor(permanentEffect.defense * totalMultiplier);
-    if (permanentEffect.spirit) adjustedPermanent.spirit = Math.floor(permanentEffect.spirit * totalMultiplier);
-    if (permanentEffect.physique) adjustedPermanent.physique = Math.floor(permanentEffect.physique * totalMultiplier);
-    if (permanentEffect.speed) adjustedPermanent.speed = Math.floor(permanentEffect.speed * totalMultiplier);
-    if (permanentEffect.maxHp) adjustedPermanent.maxHp = Math.floor(permanentEffect.maxHp * totalMultiplier);
-    if (permanentEffect.maxLifespan) adjustedPermanent.maxLifespan = permanentEffect.maxLifespan; // 最大寿命不受境界调整影响
-
-    if (permanentEffect.spiritualRoots) {
-      adjustedPermanent.spiritualRoots = {};
-      const roots = permanentEffect.spiritualRoots;
-      if (roots.metal) adjustedPermanent.spiritualRoots.metal = Math.floor(roots.metal * totalMultiplier);
-      if (roots.wood) adjustedPermanent.spiritualRoots.wood = Math.floor(roots.wood * totalMultiplier);
-      if (roots.water) adjustedPermanent.spiritualRoots.water = Math.floor(roots.water * totalMultiplier);
-      if (roots.fire) adjustedPermanent.spiritualRoots.fire = Math.floor(roots.fire * totalMultiplier);
-      if (roots.earth) adjustedPermanent.spiritualRoots.earth = Math.floor(roots.earth * totalMultiplier);
-    }
-  }
-
-  return {
-    effect: Object.keys(adjusted).length > 0 ? adjusted : effect,
-    permanentEffect: Object.keys(adjustedPermanent).length > 0 ? adjustedPermanent : permanentEffect,
-  };
 }
 
 /**
@@ -175,7 +107,7 @@ export function generateItems(options: GenerateItemsOptions): Item[] {
 
     // 根据境界调整数值
     if (realm) {
-      const adjusted = adjustStatsByRealm(item.effect, item.permanentEffect, realm, realmLevel);
+      const adjusted = adjustItemStatsByRealm(item.effect, item.permanentEffect, realm, realmLevel || 1, item.type, item.rarity || '普通');
       item.effect = adjusted.effect;
       item.permanentEffect = adjusted.permanentEffect;
     }

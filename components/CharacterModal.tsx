@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import Modal from './common/Modal';
 import { createPortal } from 'react-dom';
 import { X, Star, Award, Info, Zap, BarChart3, TrendingUp, Sparkles, BookOpen, Users, Beaker, Package } from 'lucide-react';
-import { PlayerStats, ItemRarity, RealmType, Title } from '../types';
+import { PlayerStats, ItemRarity, RealmType, Title, ItemType } from '../types';
 import {
   TALENTS,
   TITLES,
@@ -14,7 +14,6 @@ import {
   HEAVEN_EARTH_ESSENCES,
   HEAVEN_EARTH_MARROWS,
   LONGEVITY_RULES,
-  RARITY_MULTIPLIERS,
 } from '../constants/index';
 import { getGoldenCoreBonusMultiplier, getGoldenCoreMethodTitle, calculateGoldenCoreMethodCount, getGoldenCoreTribulationDifficulty } from '../utils/cultivationUtils';
 import { getItemStats } from '../utils/itemUtils';
@@ -25,7 +24,7 @@ import {
   getActiveSetEffects,
 } from '../utils/titleUtils';
 import { useInheritanceHandlers } from '../views/inheritance';
-import { getPlayerTotalStats, getActiveMentalArt } from '../utils/statUtils';
+import { getPlayerTotalStats, getActiveMentalArt, calculateTotalExpRate } from '../utils/statUtils';
 import { logger } from '../utils/logger';
 import { formatValueChange, formatNumber } from '../utils/formatUtils';
 
@@ -218,6 +217,10 @@ const CharacterModal: React.FC<Props> = ({
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const totalStats = useMemo(() => getPlayerTotalStats(player), [player]);
 
+  // 计算总修炼速度加成
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const expRateInfo = useMemo(() => calculateTotalExpRate(player), [player]);
+
   // 传承处理函数
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const inheritanceHandlers = useInheritanceHandlers({
@@ -231,8 +234,19 @@ const CharacterModal: React.FC<Props> = ({
   );
   const [showAttributeDetails, setShowAttributeDetails] = useState(false);
   const [showMarrowFeedModal, setShowMarrowFeedModal] = useState(false);
-  const [selectedFeedItemId, setSelectedFeedItemId] = useState<string | null>(null);
+  const [marrowFilterRarity, setMarrowFilterRarity] = useState<ItemRarity | '全部'>('全部');
+  const [marrowFilterType, setMarrowFilterType] = useState<string>('全部');
+  const [marrowSearchText, setMarrowSearchText] = useState('');
   const [showTitleDetails, setShowTitleDetails] = useState(false);
+
+  // 当天地之髓投喂模态框打开时，重置筛选条件
+  useEffect(() => {
+    if (showMarrowFeedModal) {
+      setMarrowFilterRarity('全部');
+      setMarrowFilterType('全部');
+      setMarrowSearchText('');
+    }
+  }, [showMarrowFeedModal]);
 
   // 缓存每个物品的炼化进度值，避免每次渲染时重新计算导致数值跳动
   const itemProgressCache = useMemo(() => {
@@ -1727,6 +1741,20 @@ const CharacterModal: React.FC<Props> = ({
                         已学习 / 已解锁
                       </div>
                     </div>
+                    <div className="bg-stone-800 rounded p-3 border border-stone-700">
+                      <div className="text-stone-400 text-xs mb-1">
+                        修炼效率加成
+                      </div>
+                      <div className="text-xl font-bold text-mystic-jade">
+                        +{(expRateInfo.total * 100).toFixed(1)}%
+                      </div>
+                      <div className="text-[10px] text-stone-500">
+                        {expRateInfo.art > 0 && `心法:+${(expRateInfo.art * expRateInfo.spiritualRootBonus * 100).toFixed(0)}% `}
+                        {expRateInfo.talent > 0 && `天赋:+${(expRateInfo.talent * 100).toFixed(0)}% `}
+                        {expRateInfo.title > 0 && `称号:+${(expRateInfo.title * 100).toFixed(0)}% `}
+                        {expRateInfo.grotto > 0 && `洞府:+${(expRateInfo.grotto * 100).toFixed(0)}%`}
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1836,12 +1864,60 @@ const CharacterModal: React.FC<Props> = ({
                   <li>• 仙品物品：+15-25% 进度</li>
                 </ul>
               </div>
+
+              {/* 筛选和搜索 */}
+              <div className="mb-4 space-y-2">
+                <div className="flex flex-wrap gap-2">
+                  <select
+                    value={marrowFilterRarity}
+                    onChange={(e) => setMarrowFilterRarity(e.target.value as any)}
+                    className="bg-stone-700 text-stone-200 text-xs rounded border border-stone-600 px-2 py-1 outline-none focus:border-red-500"
+                  >
+                    <option value="全部">全部稀有度</option>
+                    <option value="普通">普通</option>
+                    <option value="稀有">稀有</option>
+                    <option value="传说">传说</option>
+                    <option value="仙品">仙品</option>
+                  </select>
+                  <select
+                    value={marrowFilterType}
+                    onChange={(e) => setMarrowFilterType(e.target.value)}
+                    className="bg-stone-700 text-stone-200 text-xs rounded border border-stone-600 px-2 py-1 outline-none focus:border-red-500"
+                  >
+                    <option value="全部">全部类型</option>
+                    {Object.values(ItemType).map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                  <div className="flex-1 min-w-[120px]">
+                    <input
+                      type="text"
+                      placeholder="搜索物品名称..."
+                      value={marrowSearchText}
+                      onChange={(e) => setMarrowSearchText(e.target.value)}
+                      className="w-full bg-stone-700 text-stone-200 text-xs rounded border border-stone-600 px-2 py-1 outline-none focus:border-red-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-96 overflow-y-auto">
                 {player.inventory
                   .filter((item) => {
                     // 只显示未装备的物品
                     const isEquipped = Object.values(player.equippedItems).includes(item.id);
-                    return !isEquipped && item.quantity > 0;
+                    if (isEquipped || item.quantity <= 0) return false;
+
+                    // 稀有度筛选
+                    if (marrowFilterRarity !== '全部' && (item.rarity || '普通') !== marrowFilterRarity) return false;
+
+                    // 类型筛选
+                    if (marrowFilterType !== '全部' && item.type !== marrowFilterType) return false;
+
+                    // 名称搜索
+                    if (marrowSearchText && !item.name.toLowerCase().includes(marrowSearchText.toLowerCase())) return false;
+
+                    return true;
                   })
                   .map((item) => {
                     const rarity = item.rarity || '普通';
@@ -1898,10 +1974,23 @@ const CharacterModal: React.FC<Props> = ({
               </div>
               {player.inventory.filter((item) => {
                 const isEquipped = Object.values(player.equippedItems).includes(item.id);
-                return !isEquipped && item.quantity > 0;
+                if (isEquipped || item.quantity <= 0) return false;
+
+                // 稀有度筛选
+                if (marrowFilterRarity !== '全部' && (item.rarity || '普通') !== marrowFilterRarity) return false;
+
+                // 类型筛选
+                if (marrowFilterType !== '全部' && item.type !== marrowFilterType) return false;
+
+                // 名称搜索
+                if (marrowSearchText && !item.name.toLowerCase().includes(marrowSearchText.toLowerCase())) return false;
+
+                return true;
               }).length === 0 && (
-                <div className="text-center py-8 text-stone-400">
-                  背包中没有可投喂的物品
+                <div className="text-center py-8 text-stone-400 col-span-full">
+                  {player.inventory.some(i => !Object.values(player.equippedItems).includes(i.id) && i.quantity > 0)
+                    ? "没有符合筛选条件的物品"
+                    : "背包中没有可投喂的物品"}
                 </div>
               )}
             </div>

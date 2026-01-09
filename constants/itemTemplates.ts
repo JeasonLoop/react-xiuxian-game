@@ -10,33 +10,41 @@ import { EQUIPMENT_MIN_STATS } from '../utils/itemUtils';
 // 名称生成词库
 const NAME_COMPONENTS = {
   // 材质词（普通）
-  commonMaterials: ['精铁', '青钢', '木制', '铁制', '铜制', '石制', '骨制', '藤制', '竹制', '布', '皮', '麻', '草', '棉'],
+  commonMaterials: ['精铁', '青钢', '木制', '铁制', '铜制', '石制', '骨制', '藤制', '竹制', '布', '皮', '麻', '草', '棉', '白铁', '黑铁', '生铁', '镔铁', '凡木', '古木', '青石', '灰石', '兽皮', '狼皮', '粗布', '麻布', '棉布'],
   // 材质词（稀有）
-  rareMaterials: ['寒光', '烈火', '冰霜', '雷霆', '紫金', '龙鳞', '凤羽', '青云', '星辰', '玄铁', '精钢', '玄冰', '金刚', '云纹'],
+  rareMaterials: ['寒光', '烈火', '冰霜', '雷霆', '紫金', '龙鳞', '凤羽', '青云', '星辰', '玄铁', '精钢', '玄冰', '金刚', '云纹', '琉璃', '琥珀', '珊瑚', '玛瑙', '水晶', '碧玉', '墨玉', '赤铜', '秘银', '精金', '沉香', '檀木', '寒铁', '陨铁'],
   // 材质词（传说）
-  legendaryMaterials: ['青莲', '紫霄', '裂空', '破天', '斩龙', '开山', '震天', '追风', '定海', '射日', '真龙', '凤凰', '玄武', '白虎', '麒麟', '九尾', '三足金乌', '四象', '五行', '八卦'],
+  legendaryMaterials: ['青莲', '紫霄', '裂空', '破天', '斩龙', '开山', '震天', '追风', '定海', '射日', '真龙', '凤凰', '玄武', '白虎', '麒麟', '九尾', '三足金乌', '四象', '五行', '八卦', '九天', '幽冥', '乾坤', '阴阳', '混元', '太虚', '归元', '离火', '壬水', '乙木', '庚金', '戊土', '如意', '避雷', '御风'],
   // 材质词（仙品）
-  immortalMaterials: ['诛仙', '灭魔', '弑神', '破虚', '开天', '镇世', '缚龙', '定天', '射月', '斩道', '九天', '十地', '万古', '不朽', '永恒', '不灭', '无上', '至尊', '至圣', '至神'],
+  immortalMaterials: ['诛仙', '灭魔', '弑神', '破虚', '开天', '镇世', '缚龙', '定天', '射月', '斩道', '九天', '十地', '万古', '不朽', '永恒', '不灭', '无上', '至尊', '至圣', '至神', '混沌', '鸿蒙', '诸天', '万界', '起源', '终焉', '永恒', '不灭', '禁忌', '至高', '无极', '造化', '轮回', '涅槃'],
 
   // 武器类型
-  weaponTypes: ['剑', '刀', '枪', '戟', '斧', '锤', '鞭', '棍', '矛', '弓', '弩', '匕首', '短剑', '长剑', '重剑', '飞剑', '灵剑', '仙剑'],
+  weaponTypes: ['剑', '刀', '枪', '戟', '斧', '锤', '鞭', '棍', '矛', '弓', '弩', '匕首', '短剑', '长剑', '重剑', '飞剑', '灵剑', '仙剑', '钩', '镰', '铲', '耙', '扇', '笛', '箫', '琴', '伞', '环', '圈', '爪', '刺', '杵', '槌'],
   // 护甲类型
-  armorTypes: ['甲', '袍', '衣', '护甲', '战甲', '铠甲', '道袍', '法袍', '宝甲', '神甲', '战衣', '法衣', '仙衣', '道衣'],
+  armorTypes: ['甲', '袍', '衣', '护甲', '战甲', '铠甲', '道袍', '法袍', '宝甲', '神甲', '战衣', '法衣', '仙衣', '道衣', '法裳', '羽衣', '金甲', '玄甲'],
   // 护甲部位（按槽位顺序：头部、肩部、胸甲、手套、裤腿、鞋子）
   armorParts: {
-    head: ['头盔', '头冠', '道冠', '法冠', '仙冠', '龙冠', '凤冠', '帽', '发簪', '发带', '头饰', '面罩'],
-    shoulder: ['护肩', '肩甲', '肩饰', '肩胛', '云肩', '法肩', '仙肩', '披风', '斗篷'],
-    chest: ['胸甲', '护胸', '铠甲', '战甲', '法袍', '道袍', '长袍', '外衣', '护甲', '重甲', '轻甲', '板甲', '锁甲', '软甲', '硬甲'],
-    gloves: ['手套', '护手', '手甲', '拳套', '法手', '仙手', '龙爪套'],
-    legs: ['护腿', '腿甲', '裤', '下装', '法裤', '仙裤', '龙鳞裤'],
-    boots: ['战靴', '法靴', '草鞋', '布鞋', '靴', '鞋', '仙履', '云履', '龙鳞靴'],
+    head: ['头盔', '头冠', '道冠', '法冠', '仙冠', '龙冠', '凤冠', '帽', '发簪', '发带', '头饰', '面罩', '兜帽', '额带'],
+    shoulder: ['护肩', '肩甲', '肩饰', '肩胛', '云肩', '法肩', '仙肩', '披风', '斗篷', '披肩', '披帛'],
+    chest: ['胸甲', '护胸', '铠甲', '战甲', '法袍', '道袍', '长袍', '外衣', '护甲', '重甲', '轻甲', '板甲', '锁甲', '软甲', '硬甲', '内衬', '坎肩'],
+    gloves: ['手套', '护手', '手甲', '拳套', '法手', '仙手', '龙爪套', '护腕', '手镯'],
+    legs: ['护腿', '腿甲', '裤', '下装', '法裤', '仙裤', '龙鳞裤', '胫甲', '护膝'],
+    boots: ['战靴', '法靴', '草鞋', '布鞋', '靴', '鞋', '仙履', '云履', '龙鳞靴', '芒鞋', '步履'],
   },
   // 饰品类型
-  accessoryTypes: ['玉佩', '手镯', '项链', '护符', '吊坠', '手链', '腰佩', '发带', '护腕', '脚环', '玉珏', '灵珠', '法印', '宝鉴'],
+  accessoryTypes: ['玉佩', '手镯', '项链', '护符', '吊坠', '手链', '腰佩', '发带', '护腕', '脚环', '玉珏', '灵珠', '法印', '宝鉴', '香囊', '耳坠', '簪子'],
   // 戒指类型
-  ringTypes: ['指环', '戒指', '宝戒', '灵戒', '玉戒', '金戒', '银戒', '法戒', '玄戒', '圣戒'],
+  ringTypes: ['指环', '戒指', '宝戒', '灵戒', '玉戒', '金戒', '银戒', '法戒', '玄戒', '圣戒', '神戒', '仙戒', '道戒'],
   // 法宝类型
-  artifactTypes: ['葫芦', '宝塔', '钟', '镜', '扇', '印', '珠', '鼎', '旗', '符', '笔', '图', '盘', '袋'],
+  artifactTypes: ['葫芦', '宝塔', '钟', '镜', '扇', '印', '珠', '鼎', '旗', '符', '笔', '图', '盘', '袋', '伞', '梭', '灯', '鼓'],
+
+  // 词缀/前缀
+  prefixes: {
+    普通: ['粗制', '简陋', '普通', '凡质', '陈旧', '钝口', '笨重', '实用', '耐用', '平庸'],
+    稀有: ['精良', '淬炼', '锋锐', '轻灵', '坚韧', '聚灵', '破甲', '嗜血', '护主', '流光', '寒冰', '烈焰', '疾风', '厚土'],
+    传说: ['旷世', '绝代', '通灵', '镇派', '无双', '逆天', '噬魂', '斩魔', '圣耀', '虚空', '乾坤', '阴阳', '混元', '太虚'],
+    仙品: ['造化', '混沌', '太初', '鸿蒙', '永恒', '不朽', '禁断', '至高', '天命', '轮回', '灭世', '开天', '诛仙', '至尊'],
+  },
 
   // 丹药效果词
   pillEffects: ['聚气', '回血', '强体', '凝神', '回春', '增智', '提速', '护魂', '保命', '筑基', '洗髓', '破境', '凝魂', '强魄', '增灵', '回灵', '回元', '固本', '培元', '养神'],
@@ -83,10 +91,16 @@ function generateWeaponName(rarity: ItemRarity, index: number): string {
     rarity === '传说' ? NAME_COMPONENTS.legendaryMaterials :
     NAME_COMPONENTS.immortalMaterials;
 
-  const material = materials[index % materials.length];
-  const weaponType = NAME_COMPONENTS.weaponTypes[Math.floor(index / materials.length) % NAME_COMPONENTS.weaponTypes.length];
+  const prefixes = NAME_COMPONENTS.prefixes[rarity];
+  const prefix = prefixes[index % prefixes.length];
+  // 使用偏移量组合，增加多样性
+  const material = materials[(index * 2) % materials.length];
+  const weaponType = NAME_COMPONENTS.weaponTypes[(index * 3) % NAME_COMPONENTS.weaponTypes.length];
 
-  return `${material}${weaponType}`;
+  // 混合模式
+  if (index % 5 === 0) return `${material}${weaponType}`;
+  if (index % 5 === 1) return `${prefix}${weaponType}`;
+  return `${prefix}${material}${weaponType}`;
 }
 
 /**
@@ -102,7 +116,9 @@ function generateArmorName(rarity: ItemRarity, index: number, slot?: EquipmentSl
     rarity === '传说' ? NAME_COMPONENTS.legendaryMaterials :
     NAME_COMPONENTS.immortalMaterials;
 
-  const material = materials[index % materials.length];
+  const prefixes = NAME_COMPONENTS.prefixes[rarity];
+  const prefix = prefixes[index % prefixes.length];
+  const material = materials[(index * 2) % materials.length];
 
   // 如果提供了槽位，根据槽位生成对应的部位名称
   if (slot) {
@@ -117,98 +133,83 @@ function generateArmorName(rarity: ItemRarity, index: number, slot?: EquipmentSl
 
     const parts = slotPartsMap[slot];
     if (parts && parts.length > 0) {
-      const partIndex = Math.floor(index / materials.length) % parts.length;
-      return `${material}${parts[partIndex]}`;
+      const part = parts[(index * 3) % parts.length];
+      if (index % 4 === 0) return `${material}${part}`;
+      return `${prefix}${material}${part}`;
     }
   }
 
-  // 如果没有提供槽位，使用原来的逻辑（兼容性）
-  // 根据索引决定使用类型还是部位
-  if (index % 2 === 0) {
-    const armorType = NAME_COMPONENTS.armorTypes[Math.floor(index / materials.length) % NAME_COMPONENTS.armorTypes.length];
-    return `${material}${armorType}`;
-  } else {
-    // 从所有部位中随机选择（保持向后兼容）
-    const allParts = [
-      ...NAME_COMPONENTS.armorParts.head,
-      ...NAME_COMPONENTS.armorParts.shoulder,
-      ...NAME_COMPONENTS.armorParts.chest,
-      ...NAME_COMPONENTS.armorParts.gloves,
-      ...NAME_COMPONENTS.armorParts.legs,
-      ...NAME_COMPONENTS.armorParts.boots,
-    ];
-    const armorPart = allParts[Math.floor(index / materials.length) % allParts.length];
-    return `${material}${armorPart}`;
-  }
+  // 如果没有提供槽位
+  const armorType = NAME_COMPONENTS.armorTypes[(index * 3) % NAME_COMPONENTS.armorTypes.length];
+  if (index % 4 === 0) return `${material}${armorType}`;
+  return `${prefix}${material}${armorType}`;
 }
 
 /**
  * 生成饰品名称
  */
 function generateAccessoryName(rarity: ItemRarity, index: number): string {
-  if (rarity === '普通') {
-    const materials = NAME_COMPONENTS.commonMaterials;
-    const accessoryType = NAME_COMPONENTS.accessoryTypes[index % NAME_COMPONENTS.accessoryTypes.length];
-    const material = materials[Math.floor(index / NAME_COMPONENTS.accessoryTypes.length) % materials.length];
-    return `${material}制${accessoryType}`;
-  } else {
-    const materials =
-      rarity === '稀有' ? NAME_COMPONENTS.rareMaterials :
-      rarity === '传说' ? NAME_COMPONENTS.legendaryMaterials :
-      NAME_COMPONENTS.immortalMaterials;
+  const materials =
+    rarity === '普通' ? NAME_COMPONENTS.commonMaterials :
+    rarity === '稀有' ? NAME_COMPONENTS.rareMaterials :
+    rarity === '传说' ? NAME_COMPONENTS.legendaryMaterials :
+    NAME_COMPONENTS.immortalMaterials;
 
-    const material = materials[index % materials.length];
-    const accessoryType = NAME_COMPONENTS.accessoryTypes[Math.floor(index / materials.length) % NAME_COMPONENTS.accessoryTypes.length];
-    return `${material}${accessoryType}`;
+  const prefixes = NAME_COMPONENTS.prefixes[rarity];
+  const prefix = prefixes[index % prefixes.length];
+  const material = materials[(index * 2) % materials.length];
+  const accessoryType = NAME_COMPONENTS.accessoryTypes[(index * 3) % NAME_COMPONENTS.accessoryTypes.length];
+
+  if (rarity === '普通') {
+    if (index % 3 === 0) return `${material}制${accessoryType}`;
+    return `${prefix}${material}${accessoryType}`;
   }
+
+  if (index % 4 === 0) return `${material}${accessoryType}`;
+  return `${prefix}${material}${accessoryType}`;
 }
 
 /**
  * 生成戒指名称
  */
 function generateRingName(rarity: ItemRarity, index: number): string {
-  if (rarity === '普通') {
-    const materials = NAME_COMPONENTS.commonMaterials;
-    const ringType = NAME_COMPONENTS.ringTypes[index % NAME_COMPONENTS.ringTypes.length];
-    const material = materials[Math.floor(index / NAME_COMPONENTS.ringTypes.length) % materials.length];
-    return `${material}${ringType}`;
-  } else if (rarity === '稀有') {
-    const effects = ['灵', '法', '护体', '聚灵', '凝神', '回气', '强体', '增智', '提速', '护魂'];
-    const effect = effects[index % effects.length];
-    return `${effect}戒`;
-  } else {
-    const materials =
-      rarity === '传说' ? NAME_COMPONENTS.legendaryMaterials :
-      NAME_COMPONENTS.immortalMaterials;
+  const materials =
+    rarity === '普通' ? NAME_COMPONENTS.commonMaterials :
+    rarity === '稀有' ? NAME_COMPONENTS.rareMaterials :
+    rarity === '传说' ? NAME_COMPONENTS.legendaryMaterials :
+    NAME_COMPONENTS.immortalMaterials;
 
-    const material = materials[index % materials.length];
-    return `${material}戒`;
-  }
+  const prefixes = NAME_COMPONENTS.prefixes[rarity];
+  const prefix = prefixes[index % prefixes.length];
+  const material = materials[(index * 2) % materials.length];
+  const ringType = NAME_COMPONENTS.ringTypes[(index * 3) % NAME_COMPONENTS.ringTypes.length];
+
+  if (index % 3 === 0) return `${material}${ringType}`;
+  return `${prefix}${ringType}`;
 }
 
 /**
  * 生成法宝名称
  */
 function generateArtifactName(rarity: ItemRarity, index: number): string {
-  if (rarity === '普通') {
-    const materials = NAME_COMPONENTS.commonMaterials;
-    const artifactType = NAME_COMPONENTS.artifactTypes[index % NAME_COMPONENTS.artifactTypes.length];
-    const material = materials[Math.floor(index / NAME_COMPONENTS.artifactTypes.length) % materials.length];
-    return `${material}制${artifactType}`;
-  } else if (rarity === '稀有') {
-    const effects = ['灵', '护身', '聚灵', '凝神', '回气', '强体', '增智', '提速', '护魂', '保命'];
-    const effect = effects[index % effects.length];
-    const artifactType = NAME_COMPONENTS.artifactTypes[Math.floor(index / effects.length) % NAME_COMPONENTS.artifactTypes.length];
-    return `${effect}${artifactType}`;
-  } else {
-    const materials =
-      rarity === '传说' ? NAME_COMPONENTS.legendaryMaterials :
-      NAME_COMPONENTS.immortalMaterials;
+  const materials =
+    rarity === '普通' ? NAME_COMPONENTS.commonMaterials :
+    rarity === '稀有' ? NAME_COMPONENTS.rareMaterials :
+    rarity === '传说' ? NAME_COMPONENTS.legendaryMaterials :
+    NAME_COMPONENTS.immortalMaterials;
 
-    const material = materials[index % materials.length];
-    const artifactType = NAME_COMPONENTS.artifactTypes[Math.floor(index / materials.length) % NAME_COMPONENTS.artifactTypes.length];
-    return `${material}${artifactType}`;
+  const prefixes = NAME_COMPONENTS.prefixes[rarity];
+  const prefix = prefixes[index % prefixes.length];
+  const material = materials[(index * 2) % materials.length];
+  const artifactType = NAME_COMPONENTS.artifactTypes[(index * 3) % NAME_COMPONENTS.artifactTypes.length];
+
+  if (rarity === '普通') {
+    if (index % 3 === 0) return `${material}制${artifactType}`;
+    return `${prefix}${artifactType}`;
   }
+
+  if (index % 4 === 0) return `${material}${artifactType}`;
+  return `${prefix}${material}${artifactType}`;
 }
 
 /**
@@ -243,13 +244,8 @@ function generateMaterialName(rarity: ItemRarity, index: number): string {
   return `${rarityPrefix}${materialBase}${materialType}`;
 }
 
-// 品级对应的属性倍率
-const RARITY_MULTIPLIERS: Record<ItemRarity, number> = {
-  普通: 1,
-  稀有: 1.5,
-  传说: 2.5,
-  仙品: 6.0,
-};
+// 品级对应的属性倍率（使用统一的配置，避免不一致）
+import { RARITY_MULTIPLIERS } from './items';
 
 // 装备槽位类型
 type EquipmentType = 'weapon' | 'armor' | 'accessory' | 'ring' | 'artifact';
@@ -285,7 +281,7 @@ function generateEquipmentName(
 
 /**
  * 生成装备基础属性
- * 先应用保底值（EQUIPMENT_MIN_STATS），然后在此基础上进行调整
+ * 严格遵循保底值和上限值设定，确保数值平衡
  */
 function generateEquipmentStats(
   type: EquipmentType,
@@ -298,59 +294,90 @@ function generateEquipmentStats(
   // 获取该稀有度的保底属性
   const minStats = EQUIPMENT_MIN_STATS[rarity];
 
+  // 定义各装备类型的最大属性值（防止数值膨胀）
+  const MAX_STATS: Record<ItemRarity, { attack: number; defense: number; hp: number; spirit: number; physique: number; speed: number }> = {
+    普通: { attack: 600, defense: 600, hp: 600, spirit: 600, physique: 600, speed: 600 },
+    稀有: { attack: 1200, defense: 1200, hp: 1200, spirit: 1200, physique: 1200, speed: 1200 },
+    传说: { attack: 9000, defense: 9000, hp: 9000, spirit: 9000, physique: 9000, speed: 9000 },
+    仙品: { attack: 30000, defense: 30000, hp: 30000, spirit: 30000, physique: 30000, speed: 30000 },
+  };
+
   const stats: Pick<Item['effect'], 'attack' | 'defense' | 'hp' | 'spirit' | 'physique' | 'speed'> = {};
 
-  switch (type) {
-    case 'weapon': {
-      // 武器：先应用保底值，然后在此基础上进行调整
-      const baseAttack = minStats.attack + Math.floor(baseValue * multiplier * (1 + Math.random() * 0.5));
-      const baseSpirit = minStats.spirit + Math.floor(baseValue * multiplier * 0.3 * (1 + Math.random() * 0.5));
+  // 计算属性值的辅助函数，确保在保底值和上限值之间
+  const calculateStatValue = (baseMultiplier: number, statKey: keyof typeof minStats): number => {
+    const minValue = minStats[statKey];
+    const maxValue = MAX_STATS[rarity][statKey];
 
-      // 确保不低于保底值
-      stats.attack = Math.max(baseAttack, minStats.attack);
-      stats.spirit = Math.max(baseSpirit, minStats.spirit);
-      break;
-    }
-    case 'armor': {
-      // 护甲：先应用保底值，然后在此基础上进行调整
-      const baseDefense = minStats.defense + Math.floor(baseValue * multiplier * (1 + Math.random() * 0.5));
-      const baseHp = minStats.hp + Math.floor(baseValue * multiplier * 0.8 * (1 + Math.random() * 0.5));
-      const basePhysique = minStats.physique + Math.floor(baseValue * multiplier * 0.2 * (1 + Math.random() * 0.5));
+    // 基础计算：保底值 + 基础值 × 稀有度倍率 × 装备类型权重 × 随机浮动
+    const baseStat = minValue + Math.floor(baseValue * multiplier * baseMultiplier * (0.8 + Math.random() * 0.4));
 
-      // 确保不低于保底值
-      stats.defense = Math.max(baseDefense, minStats.defense);
-      stats.hp = Math.max(baseHp, minStats.hp);
-      stats.physique = Math.max(basePhysique, minStats.physique);
-      break;
-    }
-    case 'accessory':
-    case 'ring': {
-      // 饰品/戒指：先应用保底值，然后在此基础上进行调整
-      const baseSpirit = minStats.spirit + Math.floor(baseValue * multiplier * 0.8 * (1 + Math.random() * 0.5));
-      const baseSpeed = minStats.speed + Math.floor(baseValue * multiplier * 0.6 * (1 + Math.random() * 0.5));
-      const baseHp = minStats.hp + Math.floor(baseValue * multiplier * 0.4 * (1 + Math.random() * 0.5));
+    // 确保在保底值和上限值之间
+    return Math.max(minValue, Math.min(maxValue, baseStat));
+  };
 
-      // 确保不低于保底值
-      stats.spirit = Math.max(baseSpirit, minStats.spirit);
-      stats.speed = Math.max(baseSpeed, minStats.speed);
-      stats.hp = Math.max(baseHp, minStats.hp);
-      break;
-    }
-    case 'artifact': {
-      // 法宝：先应用保底值，然后在此基础上进行调整
-      const baseAttack = minStats.attack + Math.floor(baseValue * multiplier * 0.5 * (1 + Math.random() * 0.5));
-      const baseDefense = minStats.defense + Math.floor(baseValue * multiplier * 0.5 * (1 + Math.random() * 0.5));
-      const baseSpirit = minStats.spirit + Math.floor(baseValue * multiplier * (1 + Math.random() * 0.5));
-      const baseHp = minStats.hp + Math.floor(baseValue * multiplier * 0.6 * (1 + Math.random() * 0.5));
+  // 1. 定义所有可能的属性及其在不同装备类型下的权重
+  const statWeights: Record<EquipmentType, Record<keyof typeof minStats, number>> = {
+    weapon: { attack: 100, spirit: 40, speed: 30, physique: 10, hp: 10, defense: 5 },
+    armor: { defense: 100, hp: 80, physique: 40, attack: 10, speed: 10, spirit: 5 },
+    accessory: { spirit: 100, speed: 60, hp: 40, attack: 20, physique: 20, defense: 10 },
+    ring: { spirit: 100, speed: 60, hp: 40, attack: 20, physique: 20, defense: 10 },
+    artifact: { spirit: 100, attack: 80, defense: 80, hp: 60, physique: 50, speed: 50 },
+  };
 
-      // 确保不低于保底值
-      stats.attack = Math.max(baseAttack, minStats.attack);
-      stats.defense = Math.max(baseDefense, minStats.defense);
-      stats.spirit = Math.max(baseSpirit, minStats.spirit);
-      stats.hp = Math.max(baseHp, minStats.hp);
-      break;
+  // 2. 根据稀有度决定属性数量范围
+  const statCountRanges: Record<ItemRarity, { min: number; max: number }> = {
+    普通: { min: 1, max: 2 },
+    稀有: { min: 2, max: 3 },
+    传说: { min: 3, max: 5 },
+    仙品: { min: 4, max: 6 },
+  };
+
+  const range = statCountRanges[rarity];
+  const targetCount = Math.floor(Math.random() * (range.max - range.min + 1)) + range.min;
+
+  // 3. 确定“核心属性”（每个类型至少保证有一个核心属性）
+  const coreStats: Record<EquipmentType, keyof typeof minStats> = {
+    weapon: 'attack',
+    armor: 'defense',
+    accessory: 'spirit',
+    ring: 'spirit',
+    artifact: 'spirit',
+  };
+
+  const selectedStats = new Set<keyof typeof minStats>();
+  selectedStats.add(coreStats[type]);
+
+  // 4. 加权随机选择剩余属性
+  const weights = statWeights[type];
+  const availableStats = (Object.keys(weights) as Array<keyof typeof minStats>).filter(s => s !== coreStats[type]);
+
+  while (selectedStats.size < targetCount && availableStats.length > 0) {
+    // 计算总权重
+    const totalWeight = availableStats.reduce((sum, s) => sum + weights[s], 0);
+    let random = Math.random() * totalWeight;
+
+    for (let i = 0; i < availableStats.length; i++) {
+      const stat = availableStats[i];
+      random -= weights[stat];
+      if (random <= 0) {
+        selectedStats.add(stat);
+        availableStats.splice(i, 1);
+        break;
+      }
     }
   }
+
+  // 5. 为选中的属性计算数值
+  selectedStats.forEach(statKey => {
+    // 权重越高的属性，其基础倍率也越高（核心属性 1.0，其他按比例）
+    const isCore = statKey === coreStats[type];
+    const weightFactor = weights[statKey] / 100;
+    // 基础倍率在 0.4 到 1.0 之间
+    const baseMultiplier = isCore ? 1.0 : Math.max(0.4, weightFactor);
+
+    stats[statKey] = calculateStatValue(baseMultiplier, statKey);
+  });
 
   return stats;
 }
@@ -687,13 +714,29 @@ function generateEquipmentTemplates(): Item[] {
 
 /**
  * 生成丹药属性
+ * 严格遵循数值平衡原则，防止属性膨胀
  */
 function generatePillStats(
   rarity: ItemRarity,
   index: number
 ): { effect?: Item['effect']; permanentEffect?: Item['permanentEffect'] } {
   const multiplier = RARITY_MULTIPLIERS[rarity];
-  const baseValue = 10 + index * 10;
+  // 大幅提升基础值，确保高品质物品有保底感
+  const baseValue = (20 + index * 10) * multiplier;
+
+  // 定义各稀有度的最大效果值
+  const MAX_EFFECTS: Record<ItemRarity, { exp: number; hp: number; spirit: number; physique: number, attack: number, defense: number , speed: number}> = {
+    普通: { exp: 1000, hp: 500, spirit: 50, physique: 50, attack: 50, defense: 50, speed: 50},
+    稀有: { exp: 5000, hp: 2000, spirit: 500, physique: 500, attack: 500, defense: 500, speed: 500},
+    传说: { exp: 20000, hp: 8000, spirit: 3000, physique: 3000, attack: 3000, defense: 3000, speed: 3000},
+    仙品: { exp: 100000, hp: 20000, spirit: 5000, physique: 5000, attack: 5000, defense: 5000, speed: 5000},
+  };
+
+  // 计算效果值的辅助函数，确保不超过上限，且有合理的随机性
+  const calculateEffect = (val: number, weight: number, maxValue: number): number => {
+    const value = Math.floor(val * weight * (0.9 + Math.random() * 0.4));
+    return Math.min(maxValue, value);
+  };
 
   // 随机选择效果类型
   const effectType = index % 4;
@@ -701,26 +744,35 @@ function generatePillStats(
   switch (effectType) {
     case 0: // 增加修为
       return {
-        effect: { exp: Math.floor(baseValue * multiplier) },
+        effect: {
+          exp: calculateEffect(baseValue, 10.0, MAX_EFFECTS[rarity].exp)
+        },
       };
     case 1: // 恢复气血
       return {
-        effect: { hp: Math.floor(baseValue * multiplier * 2) },
+        effect: {
+          hp: calculateEffect(baseValue, 5.0, MAX_EFFECTS[rarity].hp)
+        },
       };
     case 2: // 永久增加属性
       return {
         permanentEffect: {
-          spirit: Math.floor(baseValue * multiplier * 0.3),
-          physique: Math.floor(baseValue * multiplier * 0.3),
+          spirit: calculateEffect(baseValue, 0.5, MAX_EFFECTS[rarity].spirit),
+          physique: calculateEffect(baseValue, 0.5, MAX_EFFECTS[rarity].physique),
         },
       };
     case 3: // 混合效果
       return {
-        effect: { exp: Math.floor(baseValue * multiplier * 0.5), hp: Math.floor(baseValue * multiplier) },
+        effect: {
+          exp: calculateEffect(baseValue, 5.0, MAX_EFFECTS[rarity].exp),
+          hp: calculateEffect(baseValue, 2.5, MAX_EFFECTS[rarity].hp)
+        },
         permanentEffect: {
-          spirit: Math.floor(baseValue * multiplier * 0.2),
+          spirit: calculateEffect(baseValue, 0.3, MAX_EFFECTS[rarity].spirit),
         },
       };
+    default:
+      return {};
   }
 }
 
@@ -814,13 +866,29 @@ function generatePillTemplates(): Item[] {
 
 /**
  * 生成草药属性
+ * 严格遵循数值平衡原则，防止属性膨胀
  */
 function generateHerbStats(
   rarity: ItemRarity,
   index: number
 ): { effect?: Item['effect']; permanentEffect?: Item['permanentEffect'] } {
   const multiplier = RARITY_MULTIPLIERS[rarity];
-  const baseValue = 10 + index * 5;
+  // 提高基础值，草药略低于丹药
+  const baseValue = (15 + index * 5) * multiplier;
+
+  // 定义各稀有度的最大效果值
+  const MAX_EFFECTS: Record<ItemRarity, { hp: number; exp: number; spirit: number; physique: number; maxHp: number }> = {
+    普通: { hp: 300, exp: 200, spirit: 15, physique: 15, maxHp: 30 },
+    稀有: { hp: 1000, exp: 800, spirit: 40, physique: 40, maxHp: 150 },
+    传说: { hp: 5000, exp: 3000, spirit: 80, physique: 80, maxHp: 600 },
+    仙品: { hp: 15000, exp: 10000, spirit: 150, physique: 150, maxHp: 1500 },
+  };
+
+  // 计算效果值的辅助函数
+  const calculateEffect = (val: number, weight: number, maxValue: number): number => {
+    const value = Math.floor(val * weight * (0.8 + Math.random() * 0.4));
+    return Math.min(maxValue, value);
+  };
 
   // 随机选择效果类型
   const effectType = index % 3;
@@ -828,20 +896,26 @@ function generateHerbStats(
   switch (effectType) {
     case 0: // 恢复气血
       return {
-        effect: { hp: Math.floor(baseValue * multiplier) },
+        effect: {
+          hp: calculateEffect(baseValue, 4.0, MAX_EFFECTS[rarity].hp)
+        },
       };
     case 1: // 增加修为
       return {
-        effect: { exp: Math.floor(baseValue * multiplier * 0.3) },
+        effect: {
+          exp: calculateEffect(baseValue, 2.0, MAX_EFFECTS[rarity].exp)
+        },
       };
     case 2: // 永久增加属性
       return {
         permanentEffect: {
-          spirit: Math.floor(baseValue * multiplier * 0.2),
-          physique: Math.floor(baseValue * multiplier * 0.2),
-          maxHp: Math.floor(baseValue * multiplier * 0.5),
+          spirit: calculateEffect(baseValue, 0.3, MAX_EFFECTS[rarity].spirit),
+          physique: calculateEffect(baseValue, 0.3, MAX_EFFECTS[rarity].physique),
+          maxHp: calculateEffect(baseValue, 1.0, MAX_EFFECTS[rarity].maxHp),
         },
       };
+    default:
+      return {};
   }
 }
 

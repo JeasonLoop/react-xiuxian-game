@@ -10,7 +10,6 @@ import {
   Item,
   ItemType,
   ItemRarity,
-  PlayerStats,
   EquipmentSlot,
   RealmType,
 } from '../types';

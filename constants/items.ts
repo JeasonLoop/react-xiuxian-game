@@ -28,7 +28,7 @@ export const INITIAL_ITEMS: Item[] = [
     description: '常见的止血草药，叶片翠绿，散发着淡淡的药香，能够快速止血并恢复轻微的外伤，是修士们常备的疗伤草药。',
     quantity: 2,
     rarity: '普通',
-    effect: { hp: 20 },
+    effect: { hp: 200 },
   },
   {
     id: 'spirit-gathering-grass',
@@ -48,7 +48,7 @@ export const INITIAL_ITEMS: Item[] = [
     level: 0,
     isEquippable: true,
     equipmentSlot: EquipmentSlot.Weapon,
-    effect: { attack: 15 },
+    effect: { attack: 50 },
   },
   {
     id: 'cloth-robe',
@@ -60,7 +60,7 @@ export const INITIAL_ITEMS: Item[] = [
     level: 0,
     isEquippable: true,
     equipmentSlot: EquipmentSlot.Chest,
-    effect: { defense: 3, hp: 10 },
+    effect: { defense: 30, hp: 100 },
   },
 ];
 
@@ -120,7 +120,7 @@ export const PILL_RECIPES: Recipe[] = [
       description: '突破筑基期的珍贵丹药，由千年人参和妖兽内丹炼制而成，服用后能够增加突破几率，获得海量修为，并永久提升基础属性，是修士们突破境界的必备丹药。',
       rarity: '传说',
       effect: { exp: 500 },
-      permanentEffect: { spirit: 30, physique: 30, maxHp: 100 },
+      permanentEffect: { spirit: 300, physique: 30, maxHp: 100 },
     },
   },
   {
@@ -439,6 +439,9 @@ export const COMMON_PILLS = {
   破境丹: () => getPillDefinition('破境丹'),
   仙灵丹: () => getPillDefinition('仙灵丹'),
   天元丹: () => getPillDefinition('天元丹'),
+  结金丹: () => getPillDefinition('结金丹'),
+  凝魂丹: () => getPillDefinition('凝魂丹'),
+  凤凰涅槃丹: () => getPillDefinition('凤凰涅槃丹'),
 };
 
 // 灵宠进化材料（添加到物品常量池，使其可以通过冒险掉落获得）

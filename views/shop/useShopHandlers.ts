@@ -5,6 +5,7 @@ import { uid } from '../../utils/gameUtils';
 import { calculateItemSellPrice } from '../../utils/itemUtils';
 import { generateShopItems } from '../../services/shopService';
 import { useGameStore, useUIStore } from '../../store';
+import { addItemToInventory } from '../../utils/inventoryUtils';
 
 interface UseShopHandlersProps {
   player?: PlayerStats;
@@ -182,43 +183,12 @@ export function useShopHandlers(
       }
 
       // 普通物品：放入背包
-      const newInv = [...prev.inventory];
-      const isEquipment = shopItem.isEquippable && shopItem.equipmentSlot;
-      const existingIdx = newInv.findIndex((i) => i.name === shopItem.name);
-
-      if (existingIdx >= 0 && !isEquipment) {
-        // 非装备类物品可以叠加
-        // 确保叠加时保留所有属性（包括permanentEffect）
-        newInv[existingIdx] = {
-          ...newInv[existingIdx],
-          ...shopItem,
-          id: newInv[existingIdx].id, // 保留原有ID
-          quantity: newInv[existingIdx].quantity + quantity,
-        };
-      } else {
-        // 装备类物品或新物品，每个装备单独占一格
-        // 如果是装备，每次购买创建一个新物品（quantity=1）
-        // 如果是非装备，创建或叠加
-        const itemsToAdd = isEquipment ? quantity : 1; // 装备每次购买都创建新物品
-        const addQuantity = isEquipment ? 1 : quantity; // 装备quantity始终为1
-
-        for (let i = 0; i < itemsToAdd; i++) {
-          const newItem: Item = {
-            id: uid(),
-            name: shopItem.name,
-            type: shopItem.type,
-            description: shopItem.description,
-            quantity: addQuantity,
-            rarity: shopItem.rarity,
-            level: 0,
-            isEquippable: shopItem.isEquippable,
-            equipmentSlot: shopItem.equipmentSlot,
-            effect: shopItem.effect,
-            permanentEffect: shopItem.permanentEffect,
-          };
-          newInv.push(newItem);
-        }
-      }
+      const newInv = addItemToInventory(
+        prev.inventory,
+        shopItem,
+        quantity,
+        { realm: prev.realm, realmLevel: prev.realmLevel }
+      );
 
       addLog(
         `你花费 ${totalPrice} 灵石购买了 ${shopItem.name} x${quantity}。`,

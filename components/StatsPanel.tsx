@@ -3,7 +3,7 @@ import { PlayerStats } from '../types';
 import { CULTIVATION_ARTS } from '../constants/index';
 import { getRarityTextColor } from '../utils/rarityUtils';
 import { Shield, Zap, Coins, BookOpen, Sword, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
-import { getPlayerTotalStats } from '../utils/statUtils';
+import { getPlayerTotalStats, calculateTotalExpRate } from '../utils/statUtils';
 import { getGoldenCoreMethodTitle,  } from '../utils/cultivationUtils';
 import { formatNumber } from '../utils/formatUtils';
 
@@ -16,6 +16,9 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
 
   // 使用 getPlayerTotalStats 获取包含心法加成的总属性
   const totalStats = useMemo(() => getPlayerTotalStats(player), [player]);
+
+  // 计算总修炼速度加成
+  const expRateInfo = useMemo(() => calculateTotalExpRate(player), [player]);
 
   // 使用 useMemo 缓存计算结果
   const expPercentage = useMemo(
@@ -127,6 +130,12 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
                 style={{ width: `${expPercentage}%` }}
               />
             </div>
+            {expRateInfo.total > 0 && (
+              <div className="mt-1 flex justify-between text-[10px] text-mystic-jade font-serif">
+                <span>修炼效率加成</span>
+                <span>+{(expRateInfo.total * 100).toFixed(1)}%</span>
+              </div>
+            )}
           </div>
 
           <div>
