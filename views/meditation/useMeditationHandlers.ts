@@ -1,12 +1,10 @@
 import React, { useCallback } from 'react';
 import { PlayerStats } from '../../types';
 import {
-  TALENTS,
   ACHIEVEMENTS,
   REALM_ORDER,
-  calculateSpiritualRootArtBonus,
 } from '../../constants/index';
-import { getActiveMentalArt, getPlayerTotalStats } from '../../utils/statUtils';
+import { getActiveMentalArt, getPlayerTotalStats, calculateTotalExpRate } from '../../utils/statUtils';
 import { useGameStore } from '../../store';
 
 interface UseMeditationHandlersProps {
@@ -53,52 +51,21 @@ export function useMeditationHandlers(
     const realmBaseMultipliers = [1, 2, 4, 8, 15, 30, 60]; // 降低倍数：从[1,2,5,10,25,50,100]降低
     const realmBaseMultiplier = realmBaseMultipliers[realmIndex] || 1;
 
-    // 基础修为 = 境界基础倍数 * 5 * (1 + 境界层数 * 0.1) - 降低基础值和层数加成
+    // 基础修为 = 境界基础倍数 * 5 * (1 + currentPlayer.realmLevel * 0.1) - 降低基础值和层数加成
     let baseGain = Math.floor(
-      realmBaseMultiplier * 5 * (1 + currentPlayer.realmLevel * 0.1) // 从10降低到5，从0.15降低到0.1
+      realmBaseMultiplier * 10 * (1 + currentPlayer.realmLevel * 0.15)
     );
 
-    // Apply Active Art Bonus
+    // 使用统一的函数计算总修炼效率加成
+    const expRateInfo = calculateTotalExpRate(currentPlayer);
+    if (expRateInfo.total > 0) {
+      baseGain = Math.floor(baseGain * (1 + expRateInfo.total));
+    }
+
     const activeArt = getActiveMentalArt(currentPlayer);
-    if (activeArt && activeArt.effects.expRate) {
-      // 计算灵根对心法的加成
-      const spiritualRootBonus = calculateSpiritualRootArtBonus(
-        activeArt,
-        currentPlayer.spiritualRoots || {
-          metal: 0,
-          wood: 0,
-          water: 0,
-          fire: 0,
-          earth: 0,
-        }
-      );
-      baseGain = Math.floor(baseGain * (1 + activeArt.effects.expRate) * spiritualRootBonus);
-    }
 
-    // Apply Talent Bonus
-    const talent = TALENTS.find((t) => t.id === currentPlayer.talentId);
-    if (talent && talent.effects.expRate) {
-      baseGain = Math.floor(baseGain * (1 + talent.effects.expRate));
-    }
-
-    // Apply Grotto Bonus (聚灵阵加成 + 改造加成)
-    if (currentPlayer.grotto) {
-      const totalGrottoBonus = (currentPlayer.grotto.expRateBonus || 0) + (currentPlayer.grotto.spiritArrayEnhancement || 0);
-      if (totalGrottoBonus > 0) {
-        const beforeGrotto = baseGain;
-        baseGain = Math.floor(baseGain * (1 + totalGrottoBonus));
-        // 只在有改造加成时显示额外提示
-        if (currentPlayer.grotto.spiritArrayEnhancement && currentPlayer.grotto.spiritArrayEnhancement > 0) {
-          const enhancementGain = Math.floor(beforeGrotto * currentPlayer.grotto.spiritArrayEnhancement);
-          if (enhancementGain > 0) {
-            currentAddLog(`聚灵阵改造为你带来了额外的灵气加持！(+${enhancementGain} 修为)`, 'special');
-          }
-        }
-      }
-    }
-
-    // 检查是否触发顿悟（0.1%概率）
-    const isEnlightenment = Math.random() < 0.001;
+    // 检查是否触发顿悟（1%概率）
+    const isEnlightenment = Math.random() < 0.01;
     let actualGain: number;
     let logMessage: string;
 

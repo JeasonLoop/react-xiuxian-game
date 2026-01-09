@@ -262,7 +262,7 @@ export function useLotteryHandlers(
             }
           } else {
             // 普通物品
-            newInv = addItemToInventory(newInv, item);
+            newInv = addItemToInventory(newInv, item, 1, { realm: prev.realm, realmLevel: prev.realmLevel });
             addLog(`获得 ${item.name}！`, 'gain');
           }
         } else if (prize.type === 'pet' && prize.value.petId) {

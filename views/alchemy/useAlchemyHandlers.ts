@@ -59,14 +59,19 @@ export function useAlchemyHandlers(
         };
       }
 
-      const cleanedInventory = addItemToInventory(newInventory.filter((i) => i.quantity > 0), {
-        name: recipe.result.name || 'Unknown',
-        type: recipe.result.type || ItemType.Pill,
-        description: recipe.result.description || '',
-        rarity: (recipe.result.rarity as ItemRarity) || '普通',
-        effect: recipe.result.effect,
-        permanentEffect: recipe.result.permanentEffect,
-      });
+      const cleanedInventory = addItemToInventory(
+        newInventory.filter((i) => i.quantity > 0),
+        {
+          name: recipe.result.name || 'Unknown',
+          type: recipe.result.type || ItemType.Pill,
+          description: recipe.result.description || '',
+          rarity: (recipe.result.rarity as ItemRarity) || '普通',
+          effect: recipe.result.effect,
+          permanentEffect: recipe.result.permanentEffect,
+        },
+        1,
+        { realm: prev.realm, realmLevel: prev.realmLevel }
+      );
 
       addLog(`丹炉火起，药香四溢。你炼制出了 ${recipe.result.name}。`, 'gain');
       // 显示全局成功提示

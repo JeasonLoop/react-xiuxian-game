@@ -8,8 +8,8 @@ export const EQUIPMENT_RARITY_PERCENTAGES: Record<ItemRarity, { min: number; max
   普通: { min: 0.25, max: 0.40 },  // 普通装备：25%-40%基础属性
   稀有: { min: 0.50, max: 0.80 },  // 稀有装备：50%-80%基础属性（约1.3倍普通）
   传说: { min: 0.90, max: 1.40 },  // 传说装备：90%-140%基础属性（约1.8倍普通）
-  仙品: { min: 1.50, max: 2.20 },  // 仙品装备：150%-220%基础属性（约2.5倍普通）
-  // 优化：缩小稀有度差距，从原来的1/1.5/2.5/4倍改为1/1.3/1.8/2.5倍
+  仙品: { min: 1.20, max: 1.80 },  // 仙品装备：120%-180%基础属性（约2倍普通）
+  // 优化：缩小稀有度差距，仙品装备范围从150%-220%调整为120%-180%
 };
 
 export const EQUIPMENT_MIN_STATS: Record<ItemRarity, { attack: number; defense: number; hp: number; spirit: number; physique: number; speed: number }> = {
@@ -17,6 +17,44 @@ export const EQUIPMENT_MIN_STATS: Record<ItemRarity, { attack: number; defense: 
   稀有: { attack: 200, defense: 200, hp: 200, spirit: 200, physique: 200, speed: 200 },
   传说: { attack: 400, defense: 400, hp: 400, spirit: 400, physique: 400, speed: 400 },
   仙品: { attack: 1000, defense: 1000, hp: 1000, spirit: 1000, physique: 1000, speed: 1000 },
+};
+
+// 丹药/草药保底属性
+export const CONSUMABLE_MIN_STATS: Record<ItemRarity, { hp?: number; exp?: number; spirit?: number; physique?: number; maxHp?: number }> = {
+  普通: { hp: 100, exp: 50, spirit: 5, physique: 5, maxHp: 10 },
+  稀有: { hp: 500, exp: 300, spirit: 20, physique: 20, maxHp: 50 },
+  传说: { hp: 2000, exp: 1500, spirit: 100, physique: 100, maxHp: 200 },
+  仙品: { hp: 8000, exp: 6000, spirit: 1500, physique: 1500, maxHp: 1000 },
+};
+
+// 境界指数增长倍数（统一管理，防止数值膨胀）
+// 从 [1, 1.5, 2.5, 4, 6, 10, 16] 改为 [1, 1.3, 2.0, 3.0, 4.5, 6.5, 10]
+export const REALM_BASE_MULTIPLIERS = [1, 1.3, 2.0, 3.0, 4.5, 6.5, 10];
+
+// 预编译正则规则，提升推断效率
+const INFER_RULES = {
+  weapon: /剑|刀|枪|戟|斧|锤|鞭|棍|棒|矛|弓|弩|匕首|短剑|长剑|重剑|飞剑|灵剑|仙剑|裂空剑|青莲剑|紫霄剑|玄天剑|青云剑|精铁剑|玄冰剑|宝剑/,
+  head: /头盔|头冠|道冠|法冠|仙冠|龙冠|凤冠|冠|帽|发簪|发带|头饰|面罩|头|首/,
+  headExclude: /项链|玉佩|手镯|手链|吊坠|护符|佩|饰|腰佩|腰坠|灵珠|法印|护腕|脚环|宝鉴|玉珏/,
+  shoulder: /肩|裘|披风|斗篷|肩甲|护肩|肩饰|肩胛|云肩|法肩|仙肩/,
+  ring: /戒指|指环|戒/,
+  accessory: /项链|玉佩|手镯|手链|吊坠|护符|佩|饰|腰佩|腰坠|灵珠|法印|护腕|脚环|宝鉴|玉珏|发带/,
+  accessoryExclude: /手套|护手|手甲|法宝|法器|仙器|神器|灵器|灵宝|头盔|头冠|道冠|法冠|仙冠/,
+  gloves: /手套|护手|手甲|拳套|法手|仙手|龙爪套/,
+  glovesExclude: /手镯|手链/,
+  boots: /靴|鞋|足|步|履|仙履|云履|龙鳞靴|战靴|法靴/,
+  bootsExclude: /头盔|头冠|道冠|法冠|仙冠|龙冠|凤冠|冠|帽|发簪|发带|头饰|面罩|头|首|项链|玉佩|手镯|手链|吊坠|护符|佩|饰|腰佩|腰坠|灵珠|法印|护腕|脚环|宝鉴|玉珏|发带|胸甲|护胸|铠甲|战甲|法袍|长袍|外衣|护甲|重甲|轻板甲|锁甲|软甲|硬甲|袍|衣/,
+  legs: /裤|腿甲|护腿|下装|法裤|仙裤|龙鳞裤|腿/,
+  herb: /草药|药草|灵草|仙草|草|花|果|叶|根|茎|枝|胆草|解毒|疗伤|恢复|治疗|回血|回蓝|回灵|回气/,
+  herbExclude: /草甲|草衣|草帽|草鞋|丹|丸|散|液|膏|剂|锭/,
+  recipe: /丹方|配方|炼制方法|炼药|炼丹.*方法|炼制.*方法|配方.*丹/,
+  pill: /丹药|丹|丸|散|液|膏|剂|药|灵丹|仙丹/,
+  pillExclude: /丹方|配方|锭/,
+  material: /材料|矿物|矿石|晶石|灵石|铁|铜|银|金|木|石|骨|皮|角|鳞|羽|毛|丝|线|布|纸|锭|片|晶|玉|沙|粉|块|条|核|粒|丸/,
+  materialExclude: /丹|药|丸子|药丸/,
+  chest: /道袍|法衣|胸甲|护胸|铠甲|战甲|法袍|长袍|外衣|护甲|重甲|轻甲|板甲|锁甲|软甲|硬甲|袍|衣/,
+  chestExclude: /胆草|草药|药草|灵草|仙草/,
+  artifact: /法宝|法器|仙器|神器|灵器|灵宝|鼎|钟|镜|塔|扇|珠|印|盘|笔|袋|旗|炉|图|符箓|灵符|仙符|神符|法符|兽符|葫芦/,
 };
 
 // 定义物品效果类型（与 Item 接口中的类型保持一致）
@@ -334,9 +372,6 @@ export const inferItemTypeAndSlot = (
   const descLower = description.toLowerCase();
   const combined = nameLower + descLower;
 
-  const weaponKeywords =
-    /剑|刀|枪|戟|斧|锤|鞭|棍|棒|矛|弓|弩|匕首|短剑|长剑|重剑|飞剑|灵剑|仙剑|裂空剑|青莲剑|紫霄剑|玄天剑|青云剑|精铁剑|玄冰剑|宝剑/;
-
   const rules: Array<{
     match: RegExp;
     exclude?: RegExp;
@@ -344,89 +379,92 @@ export const inferItemTypeAndSlot = (
     isEquippable: boolean;
     slot?: EquipmentSlot | EquipmentSlot[];
   }> = [
-    { match: weaponKeywords, type: ItemType.Weapon, isEquippable: true, slot: EquipmentSlot.Weapon },
+    { match: INFER_RULES.weapon, type: ItemType.Weapon, isEquippable: true, slot: EquipmentSlot.Weapon },
     {
-      match: /头盔|头冠|道冠|法冠|仙冠|龙冠|凤冠|冠|帽|发簪|发带|头饰|面罩|头|首/,
+      match: INFER_RULES.head,
+      exclude: INFER_RULES.headExclude,
       type: ItemType.Armor,
       isEquippable: true,
       slot: EquipmentSlot.Head,
     },
     {
-      match: /肩|裘|披风|斗篷|肩甲|护肩|肩饰|肩胛|云肩|法肩|仙肩/,
+      match: INFER_RULES.shoulder,
       type: ItemType.Armor,
       isEquippable: true,
       slot: EquipmentSlot.Shoulder,
     },
     {
-      match: /戒指|指环|戒/,
+      match: INFER_RULES.ring,
       type: ItemType.Ring,
       isEquippable: true,
       slot: [EquipmentSlot.Ring1, EquipmentSlot.Ring2, EquipmentSlot.Ring3, EquipmentSlot.Ring4],
     },
     {
-      match: /项链|玉佩|手镯|手链|吊坠|护符|佩|饰|腰佩|腰坠/,
-      exclude: /手套|护手|手甲|法宝|法器|仙器|神器|灵器|灵宝/, // 避免手套和法宝被误判
+      match: INFER_RULES.accessory,
+      exclude: INFER_RULES.accessoryExclude,
       type: ItemType.Accessory,
       isEquippable: true,
       slot: [EquipmentSlot.Accessory1, EquipmentSlot.Accessory2],
     },
     {
-      match: /手套|护手|手甲|拳套|法手|仙手|龙爪套/,
-      exclude: /手镯|手链/,
+      match: INFER_RULES.gloves,
+      exclude: INFER_RULES.glovesExclude,
       type: ItemType.Armor,
       isEquippable: true,
       slot: EquipmentSlot.Gloves,
     },
     {
-      match: /靴|鞋|足|步|履|仙履|云履|龙鳞靴|战靴|法靴/,
+      match: INFER_RULES.boots,
+      exclude: INFER_RULES.bootsExclude,
       type: ItemType.Armor,
       isEquippable: true,
       slot: EquipmentSlot.Boots,
     },
     {
-      match: /裤|腿甲|护腿|下装|法裤|仙裤|龙鳞裤|腿/,
+      match: INFER_RULES.legs,
       type: ItemType.Armor,
       isEquippable: true,
       slot: EquipmentSlot.Legs,
     },
     {
-      match: /草药|药草|灵草|仙草|草|花|果|叶|根|茎|枝|胆草|解毒|疗伤|恢复|治疗|回血|回蓝|回灵|回气/,
-      exclude: /草甲|草衣|草帽|草鞋|丹|丸|散|液|膏|剂/, // 排除丹药关键词，避免误判（如"回血丹"）
+      match: INFER_RULES.herb,
+      exclude: INFER_RULES.herbExclude,
       type: ItemType.Herb,
       isEquippable: false,
     },
     {
-      // 丹方判断必须在丹药判断之前（优先级更高）
-      match: /丹方|配方|炼制方法|炼药|炼丹.*方法|炼制.*方法|配方.*丹/,
+      match: INFER_RULES.recipe,
       type: ItemType.Recipe,
       isEquippable: false,
     },
     {
-      match: /丹药|丹|丸|散|液|膏|剂|药|灵丹|仙丹/,
-      exclude: /丹方|配方/, // 排除丹方关键词，避免误判
+      match: INFER_RULES.pill,
+      exclude: INFER_RULES.pillExclude,
       type: ItemType.Pill,
       isEquippable: false,
     },
     {
-      match: /材料|矿物|矿石|晶石|灵石|铁|铜|银|金|木|石|骨|皮|角|鳞|羽|毛|丝|线|布|纸/,
+      match: INFER_RULES.material,
+      exclude: INFER_RULES.materialExclude,
       type: ItemType.Material,
       isEquippable: false,
     },
     {
-      match: /道袍|法衣|胸甲|护胸|铠甲|战甲|法袍|长袍|外衣|护甲|重甲|轻甲|板甲|锁甲|软甲|硬甲|袍|衣/,
-      exclude: /胆草|草药|药草|灵草|仙草/,
+      match: INFER_RULES.chest,
+      exclude: INFER_RULES.chestExclude,
       type: ItemType.Armor,
       isEquippable: true,
       slot: EquipmentSlot.Chest,
     },
     {
-      match: /法宝|法器|仙器|神器|灵器|灵宝|鼎|钟|镜|塔|扇|珠|印|盘|笔|袋|旗|炉|图|符箓|灵符|仙符|神符|法符|兽符/,
-      exclude: weaponKeywords,
+      match: INFER_RULES.artifact,
+      exclude: new RegExp(INFER_RULES.weapon.source + '|灵珠|法印|宝鉴|玉珏|护腕|脚环|发带'),
       type: ItemType.Artifact,
       isEquippable: true,
       slot: [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2],
     },
   ];
+
 
   // 如果当前类型已经是明确的装备类型，优先保持类型，只推断槽位
   const normalized = normalizeTypeHint(currentType) || currentType;
@@ -535,15 +573,12 @@ export const getRealmEquipmentMultiplier = (realm: RealmType, realmLevel: number
   const realmIndex = REALM_ORDER.indexOf(realm);
   // 如果境界索引无效，使用默认值（炼气期，索引0）
   const validRealmIndex = realmIndex >= 0 ? realmIndex : 0;
-  // 优化后的基础倍数：降低增长幅度，防止数值膨胀
-  // 从 [1, 2, 4, 6, 10, 16, 32] 改为 [1, 1.5, 2.5, 4, 6, 10, 16]
-  // 这样最高倍数从32倍降低到16倍，与境界属性增长（5倍）更匹配
-  const realmBaseMultipliers = [1, 1.5, 2.5, 4, 6, 10, 16];
-  const realmBaseMultiplier = realmBaseMultipliers[validRealmIndex] || 1;
+  const realmBaseMultiplier = REALM_BASE_MULTIPLIERS[validRealmIndex] || 1;
   // 境界等级加成：每级增加8%（进一步降低增长）
   const levelMultiplier = 1 + (realmLevel - 1) * 0.08;
   return realmBaseMultiplier * levelMultiplier;
 };
+
 
 /**
  * 根据境界调整装备数值
@@ -585,13 +620,11 @@ export const adjustEquipmentStatsByRealm = (
   // 境界等级加成：每级增加5%
   const levelMultiplier = 1 + (realmLevel - 1) * 0.05;
 
-  // 优化后的境界指数增长倍数：与装备倍数函数保持一致，防止数值膨胀
-  // 从 [1, 2, 4, 8, 16, 32, 64] 改为 [1, 1.5, 2.5, 4, 6, 10, 16]
-  // 这样最高倍数从64倍降低到16倍，与境界属性增长（5倍）更匹配
-  const realmBaseMultipliers = [1, 1.5, 2.5, 4, 6, 10, 16];
-  const realmMultiplier = realmBaseMultipliers[realmIndex] || 1;
+  const validRealmIndex = realmIndex >= 0 ? realmIndex : 0;
+  const realmMultiplier = REALM_BASE_MULTIPLIERS[validRealmIndex] || 1;
 
   const adjusted: Item['effect'] = {};
+
 
   // 属性映射表，减少重复代码
   const attributeMap: Array<{
@@ -615,7 +648,7 @@ export const adjustEquipmentStatsByRealm = (
     if (value !== undefined && typeof value === 'number') {
       // 目标值 = 基础属性 × 稀有度百分比 × 境界等级加成 × 境界倍数
       const targetValue = Math.floor(baseValue * targetPercentage * levelMultiplier * realmMultiplier);
-      const maxValue = Math.floor(baseValue * percentage.max * levelMultiplier * realmMultiplier);
+      let maxValue = Math.floor(baseValue * percentage.max * levelMultiplier * realmMultiplier);
 
       // 计算调整后的属性值
       let adjustedValue = value * realmMultiplier;
@@ -625,9 +658,14 @@ export const adjustEquipmentStatsByRealm = (
 
       // 应用稀有度保底值：确保高品质装备至少有对应的最小属性值
       // 这对于低境界玩家获得高品质装备时特别重要
+      // 这里的保底值也要随境界倍数增长，否则在高境界保底没意义
       const minStatValue = minStats[key as keyof typeof minStats];
       if (minStatValue !== undefined) {
-        adjustedValue = Math.max(adjustedValue, minStatValue);
+        const scaledMinStatValue = Math.floor(minStatValue * realmMultiplier);
+        adjustedValue = Math.max(adjustedValue, scaledMinStatValue);
+
+        // 确保最大值不低于保底值，防止在低境界时高品质装备属性被压制
+        maxValue = Math.max(maxValue, Math.floor(scaledMinStatValue * 1.5));
       }
 
       // 最高不超过最大值
@@ -671,26 +709,40 @@ export const adjustItemStatsByRealm = (
 
   // 非装备物品：根据境界进行倍数调整
   const realmIndex = REALM_ORDER.indexOf(realm);
-  // 优化后的境界倍数：与装备调整函数保持一致，防止数值膨胀
-  // 从 [1, 2, 4, 8, 16, 20, 25] 改为 [1, 1.5, 2.5, 4, 6, 10, 16]
-  const realmBaseMultipliers = [1, 1.5, 2.5, 4, 6, 10, 16];
-  const realmMultiplier = realmBaseMultipliers[realmIndex] || 1;
+  const validRealmIndex = realmIndex >= 0 ? realmIndex : 0;
+  const realmMultiplier = REALM_BASE_MULTIPLIERS[validRealmIndex] || 1;
   // 降低层数加成：从10%降低到8%，与装备调整保持一致
   const levelMultiplier = 1 + (realmLevel - 1) * 0.08;
   const totalMultiplier = realmMultiplier * levelMultiplier;
 
+
   const adjustedEffect: Item['effect'] = {};
   const adjustedPermanentEffect: Item['permanentEffect'] = {};
+
+  // 获取该稀有度的保底属性
+  const minConsumableStats = CONSUMABLE_MIN_STATS[rarity] || CONSUMABLE_MIN_STATS['普通'];
 
   // 调整临时效果
   if (effect) {
     if (effect.attack !== undefined) adjustedEffect.attack = Math.floor(effect.attack * totalMultiplier);
     if (effect.defense !== undefined) adjustedEffect.defense = Math.floor(effect.defense * totalMultiplier);
-    if (effect.hp !== undefined) adjustedEffect.hp = Math.floor(effect.hp * totalMultiplier);
-    if (effect.spirit !== undefined) adjustedEffect.spirit = Math.floor(effect.spirit * totalMultiplier);
-    if (effect.physique !== undefined) adjustedEffect.physique = Math.floor(effect.physique * totalMultiplier);
+    if (effect.hp !== undefined) {
+      const val = Math.floor(effect.hp * totalMultiplier);
+      adjustedEffect.hp = minConsumableStats.hp ? Math.max(val, minConsumableStats.hp) : val;
+    }
+    if (effect.spirit !== undefined) {
+      const val = Math.floor(effect.spirit * totalMultiplier);
+      adjustedEffect.spirit = minConsumableStats.spirit ? Math.max(val, minConsumableStats.spirit) : val;
+    }
+    if (effect.physique !== undefined) {
+      const val = Math.floor(effect.physique * totalMultiplier);
+      adjustedEffect.physique = minConsumableStats.physique ? Math.max(val, minConsumableStats.physique) : val;
+    }
     if (effect.speed !== undefined) adjustedEffect.speed = Math.floor(effect.speed * totalMultiplier);
-    if (effect.exp !== undefined) adjustedEffect.exp = Math.floor(effect.exp * totalMultiplier);
+    if (effect.exp !== undefined) {
+      const val = Math.floor(effect.exp * totalMultiplier);
+      adjustedEffect.exp = minConsumableStats.exp ? Math.max(val, minConsumableStats.exp) : val;
+    }
     // 寿命不受境界调整影响
     if (effect.lifespan !== undefined) adjustedEffect.lifespan = effect.lifespan;
   }
@@ -699,10 +751,19 @@ export const adjustItemStatsByRealm = (
   if (permanentEffect) {
     if (permanentEffect.attack !== undefined) adjustedPermanentEffect.attack = Math.floor(permanentEffect.attack * totalMultiplier);
     if (permanentEffect.defense !== undefined) adjustedPermanentEffect.defense = Math.floor(permanentEffect.defense * totalMultiplier);
-    if (permanentEffect.spirit !== undefined) adjustedPermanentEffect.spirit = Math.floor(permanentEffect.spirit * totalMultiplier);
-    if (permanentEffect.physique !== undefined) adjustedPermanentEffect.physique = Math.floor(permanentEffect.physique * totalMultiplier);
+    if (permanentEffect.spirit !== undefined) {
+      const val = Math.floor(permanentEffect.spirit * totalMultiplier);
+      adjustedPermanentEffect.spirit = minConsumableStats.spirit ? Math.max(val, minConsumableStats.spirit) : val;
+    }
+    if (permanentEffect.physique !== undefined) {
+      const val = Math.floor(permanentEffect.physique * totalMultiplier);
+      adjustedPermanentEffect.physique = minConsumableStats.physique ? Math.max(val, minConsumableStats.physique) : val;
+    }
     if (permanentEffect.speed !== undefined) adjustedPermanentEffect.speed = Math.floor(permanentEffect.speed * totalMultiplier);
-    if (permanentEffect.maxHp !== undefined) adjustedPermanentEffect.maxHp = Math.floor(permanentEffect.maxHp * totalMultiplier);
+    if (permanentEffect.maxHp !== undefined) {
+      const val = Math.floor(permanentEffect.maxHp * totalMultiplier);
+      adjustedPermanentEffect.maxHp = minConsumableStats.maxHp ? Math.max(val, minConsumableStats.maxHp) : val;
+    }
     // 最大寿命不受境界调整影响
     if (permanentEffect.maxLifespan !== undefined) adjustedPermanentEffect.maxLifespan = permanentEffect.maxLifespan;
 
@@ -783,29 +844,27 @@ export const calculateItemSellPrice = (item: Item): number => {
     传说: 300,
     仙品: 2000,
   };
-  // 确保 basePrice 有默认值，防止 undefined
-  let basePrice = basePrices[rarity] || 10;
+  const basePrice = basePrices[rarity] || 10;
 
   // 计算属性价值
   let attributeValue = 0;
-  // 确保 rarityMultiplier 有默认值，防止 undefined
   const rarityMultiplier = RARITY_MULTIPLIERS[rarity] || 1;
 
   // 临时效果价值（effect）
-  if (item.effect) {
-    const effect = item.effect;
+  const effect = item.effect;
+  if (effect) {
     attributeValue += (effect.attack || 0) * 2; // 攻击力每点值2灵石
     attributeValue += (effect.defense || 0) * 1.5; // 防御力每点值1.5灵石
     attributeValue += (effect.hp || 0) * 0.5; // 气血每点值0.5灵石
     attributeValue += (effect.spirit || 0) * 1.5; // 神识每点值1.5灵石
     attributeValue += (effect.physique || 0) * 1.5; // 体魄每点值1.5灵石
     attributeValue += (effect.speed || 0) * 2; // 速度每点值2灵石
-    attributeValue += (effect.exp || 0) * 0.1; // 修为每点值0.1灵石（临时效果）
+    attributeValue += (effect.exp || 0) * 0.1; // 修为每点值0.1灵石
   }
 
   // 永久效果价值（permanentEffect，更值钱）
-  if (item.permanentEffect) {
-    const permEffect = item.permanentEffect;
+  const permEffect = item.permanentEffect;
+  if (permEffect) {
     attributeValue += (permEffect.attack || 0) * 10; // 永久攻击每点值10灵石
     attributeValue += (permEffect.defense || 0) * 8; // 永久防御每点值8灵石
     attributeValue += (permEffect.maxHp || 0) * 3; // 永久气血上限每点值3灵石
@@ -814,47 +873,38 @@ export const calculateItemSellPrice = (item: Item): number => {
     attributeValue += (permEffect.speed || 0) * 10; // 永久速度每点值10灵石
   }
 
-  // 应用稀有度倍率到属性价值（确保不是 NaN）
-  attributeValue = Math.floor((attributeValue || 0) * (rarityMultiplier || 1));
+  // 应用稀有度倍率到属性价值
+  attributeValue = Math.floor(attributeValue * rarityMultiplier);
 
   // 装备类物品额外价值加成
   let equipmentBonus = 0;
   if (item.isEquippable) {
-    // 装备类物品根据类型有不同的基础价值
-    switch (item.type) {
-      case ItemType.Weapon:
-        equipmentBonus = (basePrice || 0) * 1.5; // 武器额外50%价值
-        break;
-      case ItemType.Armor:
-        equipmentBonus = (basePrice || 0) * 1.2; // 护甲额外20%价值
-        break;
-      case ItemType.Artifact:
-        equipmentBonus = (basePrice || 0) * 2; // 法宝额外100%价值
-        break;
-      case ItemType.Ring:
-      case ItemType.Accessory:
-        equipmentBonus = (basePrice || 0) * 1.3; // 戒指和首饰额外30%价值
-        break;
-    }
+    const bonusMap: Partial<Record<ItemType, number>> = {
+      [ItemType.Weapon]: basePrice * 1.5,
+      [ItemType.Armor]: basePrice * 1.2,
+      [ItemType.Artifact]: basePrice * 2,
+      [ItemType.Ring]: basePrice * 1.3,
+      [ItemType.Accessory]: basePrice * 1.3,
+    };
+    equipmentBonus = bonusMap[item.type as ItemType] || 0;
   }
 
   // 强化等级加成（每级增加20%价值）
-  const levelMultiplier = 1 + (level || 0) * 0.2;
+  const levelMultiplier = 1 + level * 0.2;
 
-  // 计算最终价格（确保所有值都是数字）
-  const totalValue =
-    ((basePrice || 0) + (attributeValue || 0) + (equipmentBonus || 0)) * (levelMultiplier || 1);
+  // 计算最终价格
+  const totalValue = (basePrice + attributeValue + equipmentBonus) * levelMultiplier;
 
-  // 根据物品类型调整（消耗品价值较低）
-  let typeMultiplier = 1;
-  if (item.type === ItemType.Herb || item.type === ItemType.Pill) {
-    typeMultiplier = 0.5; // 消耗品价值减半
-  } else if (item.type === ItemType.Material) {
-    typeMultiplier = 0.3; // 材料价值更低
-  }
+  // 根据物品类型调整
+  const typeMultipliers: Partial<Record<ItemType, number>> = {
+    [ItemType.Herb]: 0.5,
+    [ItemType.Pill]: 0.5,
+    [ItemType.Material]: 0.3,
+  };
+  const typeMultiplier = typeMultipliers[item.type as ItemType] || 1;
 
-  // 最终价格（取整，最低为1，确保不是 NaN）
-  const finalPrice = Math.max(1, Math.floor((totalValue || 0) * (typeMultiplier || 1)));
-  // 如果计算结果仍然是 NaN，返回默认值
-  return isNaN(finalPrice) ? 1 : finalPrice;
+  // 最终价格（最低为1，防止 NaN）
+  const finalPrice = Math.floor(totalValue * typeMultiplier);
+  return isNaN(finalPrice) ? 1 : Math.max(1, finalPrice);
 };
+
