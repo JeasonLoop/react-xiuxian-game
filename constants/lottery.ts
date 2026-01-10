@@ -718,10 +718,10 @@ materialRarities.forEach(({ rarity, weight }) => {
 
 // 生成合成石奖品（每个品级）
 const stoneRarities: Array<{ rarity: ItemRarity; weight: number }> = [
-  { rarity: '普通', weight: 10 },
-  { rarity: '稀有', weight: 6 },
-  { rarity: '传说', weight: 3 },
-  { rarity: '仙品', weight: 1 },
+  { rarity: '普通', weight: 15 },
+  { rarity: '稀有', weight: 10 },
+  { rarity: '传说', weight: 6 },
+  { rarity: '仙品', weight: 3 },
 ];
 
 stoneRarities.forEach(({ rarity, weight }) => {

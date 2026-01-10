@@ -1,9 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { PlayerStats, Recipe, Item, ItemType, EquipmentSlot, ItemRarity } from '../types';
-import { PILL_RECIPES, DISCOVERABLE_RECIPES, ARTIFACT_STONES } from '../constants/index';
-import { Sparkles, FlaskConical, CircleOff, Hammer, Combine, Trash2, Plus } from 'lucide-react';
+import { PILL_RECIPES, DISCOVERABLE_RECIPES } from '../constants/index';
+import { FlaskConical, CircleOff, Hammer, Combine, Trash2, Plus } from 'lucide-react';
 import { Modal } from './common';
-import { artifactService } from '../services/artifactService';
 
 interface Props {
   isOpen: boolean;

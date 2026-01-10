@@ -23,7 +23,7 @@ import {
   initializeTurnBasedBattle,
   calculateBattleRewards,
 } from '../services/battleService';
-import { BATTLE_POTIONS, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES } from '../constants/index';
+import { BATTLE_POTIONS, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES, CULTIVATION_ARTS } from '../constants/index';
 import { showConfirm } from '../utils/toastUtils';
 
 interface TurnBasedBattleModalProps {
@@ -1141,7 +1141,6 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                   }
                 });
               }
-
               return (
                 <div className="mt-3 p-3 bg-ink-800 rounded border border-stone-700 max-h-[300px] overflow-y-auto">
                   <div className="text-xs text-stone-400 mb-2">进阶物品</div>

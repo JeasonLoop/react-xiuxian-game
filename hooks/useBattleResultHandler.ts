@@ -118,13 +118,32 @@ export function useBattleResultHandler({
             updateQuestProgress('kill', 1);
           }
         }
+        let newUnlockedArts = [...(prev.unlockedArts || [])];
+        let hasNewArt = false;
+        if (hasNewArt) {
+          newStatistics.artCount = (newStatistics.artCount || 0) + 1;
+        }
 
         // 处理物品奖励
         let newInventory = updatedInventory || prev.inventory;
+
+
         if (result.victory && result.items && result.items.length > 0) {
           result.items.forEach((itemData: any) => {
-            newInventory = addItemToInventory(newInventory, itemData);
-            addLog(`获得 ${itemData.name}！`, 'gain');
+            // 特殊处理：天地之魄功法（进阶物品）
+            if (itemData.type === '进阶物品' && itemData.advancedItemType === 'soulArt' && itemData.advancedItemId) {
+              if (!newUnlockedArts.includes(itemData.advancedItemId) &&
+                  !prev.cultivationArts.includes(itemData.advancedItemId)) {
+                newUnlockedArts.push(itemData.advancedItemId);
+                hasNewArt = true;
+                addLog(`✨ 你领悟了天地之魄传授的秘法：【${itemData.name}】！`, 'special');
+              }
+            } else {
+              // 普通物品进入背包
+              newInventory = addItemToInventory(newInventory, itemData);
+              addLog(`获得 ${itemData.name}！`, 'gain');
+            }
+
             // 更新收集任务进度
             if (updateQuestProgress) {
               updateQuestProgress('collect', 1);
@@ -197,6 +216,7 @@ export function useBattleResultHandler({
               sectHuntSectId: null,
               sectHuntSectName: null,
               daoCombiningChallenged: newDaoCombiningChallenged,
+              unlockedArts: newUnlockedArts,
             };
           } else {
             // 击杀宗门弟子/长老，增加追杀强度
@@ -224,6 +244,7 @@ export function useBattleResultHandler({
               sectContribution: finalSectContribution,
               sectHuntLevel: newHuntLevel,
               daoCombiningChallenged: newDaoCombiningChallenged,
+              unlockedArts: newUnlockedArts,
             };
           }
         }
@@ -281,7 +302,8 @@ export function useBattleResultHandler({
           sectRank: newSectRank,
           sectMasterId: finalSectMasterId,
           sectContribution: finalSectContribution,
-          daoCombiningChallenged: newDaoCombiningChallenged
+          daoCombiningChallenged: newDaoCombiningChallenged,
+          unlockedArts: newUnlockedArts
         };
       });
     }

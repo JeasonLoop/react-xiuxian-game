@@ -1037,6 +1037,19 @@ export interface BattleResult {
   spiritChange: number;
   summary: string;
   adventureType?: AdventureType; // 添加历练类型
+  bossId?: string; // 对应的天地之魄BOSS ID
+  items?: Array<{
+    name: string;
+    type: string;
+    description: string;
+    rarity?: string;
+    isEquippable?: boolean;
+    equipmentSlot?: string;
+    advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule' | 'soulArt';
+    advancedItemId?: string;
+    effect?: any;
+    permanentEffect?: any;
+  }>;
 }
 
 // 战斗状态
@@ -1060,6 +1073,7 @@ export interface BattleState {
   enemyStrengthMultiplier?: number; // 敌人强度倍数（用于奖励计算）
   adventureType: AdventureType; // 历练类型
   riskLevel?: '低' | '中' | '高' | '极度危险'; // 风险等级
+  bossId?: string; // 指定的天地之魄BOSS ID
   // 灵宠系统
   activePet?: Pet | null; // 激活的灵宠
   petSkillCooldowns?: Record<string, number>; // 灵宠技能冷却
@@ -1070,7 +1084,7 @@ export type PlayerAction =
   | { type: 'attack' }
   | { type: 'skill'; skillId: string }
   | { type: 'item'; itemId: string }
-  | { type: 'advancedItem'; itemType: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule'; itemId: string }
+  | { type: 'advancedItem'; itemType: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule' | 'soulArt'; itemId: string }
   | { type: 'defend' }
   | { type: 'flee' };
 

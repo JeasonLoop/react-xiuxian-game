@@ -215,6 +215,11 @@ export const LOOT_ITEMS = {
   rings: (() => getItemsByType(ItemType.Ring))(),
   // 法宝类
   artifacts: (() => getItemsByType(ItemType.Artifact))(),
+  // 合成石类
+  stones: (() => getItemsByType(ItemType.ArtifactStone))(),
+
+  // 丹方
+  recipes: (() => getItemsByType(ItemType.Recipe))(),
 };
 
 // 稀有度等级顺序（缓存，避免重复创建）
@@ -308,13 +313,14 @@ const generateLoot = (
     const typeWeights = [
       { type: 'herbs', weight: 25, name: '草药', pool: LOOT_ITEMS.herbs },
       { type: 'pills', weight: 25, name: '丹药', pool: LOOT_ITEMS.pills },
-      { type: 'materials', weight: 15, name: '材料', pool: LOOT_ITEMS.materials },
+      { type: 'materials', weight: 12, name: '材料', pool: LOOT_ITEMS.materials },
       { type: 'weapons', weight: 6, name: '武器', pool: LOOT_ITEMS.weapons },
       { type: 'armors', weight: 8, name: '护甲', pool: LOOT_ITEMS.armors },
-      { type: 'accessories', weight: 3, name: '首饰', pool: LOOT_ITEMS.accessories },
-      { type: 'rings', weight: 3, name: '戒指', pool: LOOT_ITEMS.rings },
+      { type: 'accessories', weight: 5, name: '首饰', pool: LOOT_ITEMS.accessories },
+      { type: 'rings', weight: 5, name: '戒指', pool: LOOT_ITEMS.rings },
       { type: 'artifacts', weight: 7, name: '法宝', pool: LOOT_ITEMS.artifacts },
-      { type: 'recipe', weight: 8, name: '丹方', pool: [] },
+      { type: 'stones', weight: 20, name: '装备合成石', pool: LOOT_ITEMS.stones },
+      { type: 'recipe', weight: 8, name: '丹方', pool: LOOT_ITEMS.recipes },
     ];
 
     // 如果上一个物品是装备类，轻微降低装备类权重
@@ -1300,6 +1306,40 @@ export const calculateBattleRewards = (
     // 如果不是宗主战斗，继续使用普通奖励计算逻辑
   }
 
+  // 天地之魄挑战特殊奖励
+  if (actualAdventureType === 'dao_combining_challenge' && victory) {
+    const bossId = battleState.bossId;
+    if (bossId && HEAVEN_EARTH_SOUL_BOSSES[bossId]) {
+      const boss = HEAVEN_EARTH_SOUL_BOSSES[bossId];
+      // 查找该BOSS对应的功法
+      const soulArt = CULTIVATION_ARTS.find(art => art.isHeavenEarthSoulArt && art.bossId === bossId);
+
+      const rewardsItems: AdventureResult['itemObtained'][] = [];
+
+      if (soulArt) {
+        rewardsItems.push({
+          name: soulArt.name,
+          type: '进阶物品',
+          description: soulArt.description,
+          rarity: '仙品',
+          advancedItemType: 'soulArt',
+          advancedItemId: soulArt.id
+        });
+      }
+
+      // 如果BOSS定义中有物品奖励
+      if (boss.rewards.items && boss.rewards.items.length > 0) {
+        // 这里可以根据需要添加更多BOSS特定的奖励物品
+      }
+
+      return {
+        expChange: boss.rewards.exp,
+        spiritChange: boss.rewards.spiritStones,
+        items: rewardsItems.length > 0 ? rewardsItems : undefined
+      };
+    }
+  }
+
   const expChange = victory
     ? rewardExp
     : -Math.max(5, Math.round(rewardExp * 0.5));
@@ -1431,6 +1471,7 @@ export const initializeTurnBasedBattle = async (
     enemyStrengthMultiplier: enemyData.strengthMultiplier, // 保存敌人强度倍数
     adventureType, // 保存历练类型
     riskLevel, // 保存风险等级
+    bossId, // 保存BOSS ID
     activePet, // 保存激活的灵宠
     petSkillCooldowns, // 保存灵宠技能冷却
   };
@@ -2260,7 +2301,7 @@ function executeSkill(
  */
 function executeAdvancedItem(
   battleState: BattleState,
-  itemType: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule',
+  itemType: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule' | 'soulArt',
   itemId: string
 ): BattleAction {
   const player = battleState.player;
@@ -2280,6 +2321,9 @@ function executeAdvancedItem(
       break;
     case 'longevityRule':
       advancedItem = LONGEVITY_RULES[itemId];
+      break;
+    case 'soulArt':
+      advancedItem = CULTIVATION_ARTS.find(art => art.id === itemId);
       break;
   }
 
