@@ -308,6 +308,7 @@ function ModalsContainer({
           onCraft={handlers.handleCraft}
           onCraftArtifact={handlers.handleCraftArtifact}
           onFuseArtifact={handlers.handleFuseArtifact}
+          setItemActionLog={setItemActionLog}
         />
       )}
 
