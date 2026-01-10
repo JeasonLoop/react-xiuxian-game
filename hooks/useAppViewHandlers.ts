@@ -27,6 +27,8 @@ interface UseAppViewHandlersProps {
   handleLearnArt: (art: any) => void;
   handleActivateArt: (art: any) => void;
   handleCraft: (recipe: any) => Promise<void>;
+  handleCraftArtifact: (materials: Item[], customName: string, selectedSlot?: string) => Promise<void>;
+  handleFuseArtifact: (item1: Item, item2: Item, stone: Item, customName?: string) => Promise<void>;
   handleJoinSect: (sectId: string) => void;
   handleLeaveSect: () => void;
   handleSafeLeaveSect: () => void;
@@ -271,6 +273,8 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     handleLearnArt,
     handleActivateArt,
     handleCraft,
+    handleCraftArtifact,
+    handleFuseArtifact,
     handleJoinSect,
     handleLeaveSect,
     handleSafeLeaveSect,
@@ -376,6 +380,8 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     handleLearnArt,
     handleActivateArt,
     handleCraft,
+    handleCraftArtifact,
+    handleFuseArtifact,
     handleJoinSect,
     handleLeaveSect,
     handleSafeLeaveSect,

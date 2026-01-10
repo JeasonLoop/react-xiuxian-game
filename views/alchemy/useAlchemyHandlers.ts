@@ -4,10 +4,12 @@ import {
   Recipe,
   ItemType,
   ItemRarity,
+  Item,
 } from '../../types';
 import { addItemToInventory } from '../../utils/inventoryUtils';
-import { showSuccess } from '../../utils/toastUtils';
+import { showSuccess, showError } from '../../utils/toastUtils';
 import { useGameStore } from '../../store';
+import { artifactService } from '../../services/artifactService';
 
 interface UseAlchemyHandlersProps {
   player?: PlayerStats;
@@ -17,41 +19,40 @@ interface UseAlchemyHandlersProps {
 }
 
 /**
- * 炼丹处理函数
- * 包含炼丹
- * @param props 可选的 props（向后兼容），如果不提供则从 zustand store 获取
- * @returns handleCraft 炼丹
+ * 炼丹与炼器处理函数
  */
 export function useAlchemyHandlers(
   props?: UseAlchemyHandlersProps
 ) {
   // 从 zustand store 获取状态
-  const storePlayer = useGameStore((state) => state.player);
   const storeSetPlayer = useGameStore((state) => state.setPlayer);
   const storeAddLog = useGameStore((state) => state.addLog);
 
-  // 使用 props 或 store 的值（props 优先，用于向后兼容）
-  // triggerVisual 来自 useGameEffects hook，不是 zustand store 的一部分，所以保持从 props 传入
   const setPlayer = props?.setPlayer ?? storeSetPlayer;
   const addLog = props?.addLog ?? storeAddLog;
   const triggerVisual = props?.triggerVisual;
+
+  /**
+   * 炼丹逻辑
+   */
   const handleCraft = async (recipe: Recipe) => {
-    // 先触发炼丹开始动画
     if (triggerVisual) {
       triggerVisual('alchemy', '🔥 炼丹中...', 'text-mystic-gold');
     }
 
-    // 延迟一下，让用户看到炼丹过程
     await new Promise((resolve) => setTimeout(resolve, 800));
 
     setPlayer((prev) => {
+      if (!prev) return prev;
       if (prev.spiritStones < recipe.cost) return prev;
 
       const newInventory = [...prev.inventory];
       for (const req of recipe.ingredients) {
         const itemIdx = newInventory.findIndex((i) => i.name === req.name);
-        if (itemIdx === -1 || newInventory[itemIdx].quantity < req.qty)
+        if (itemIdx === -1 || newInventory[itemIdx].quantity < req.qty) {
+          showError(`材料不足：${req.name}`);
           return prev;
+        }
 
         newInventory[itemIdx] = {
           ...newInventory[itemIdx],
@@ -74,42 +75,121 @@ export function useAlchemyHandlers(
       );
 
       addLog(`丹炉火起，药香四溢。你炼制出了 ${recipe.result.name}。`, 'gain');
-      // 显示全局成功提示
       showSuccess(`炼制成功！获得 ${recipe.result.name}`);
-      // 触发炼丹成功动画（更明显的效果）
+
       if (triggerVisual) {
-        // 延迟触发成功动画，让用户看到完整的炼丹过程
         setTimeout(() => {
           triggerVisual('alchemy', `✨ ${recipe.result.name}`, 'text-mystic-gold');
         }, 200);
       }
 
-      const newStats = {
-        ...(prev.statistics || {
-          killCount: 0,
-          meditateCount: 0,
-          adventureCount: 0,
-          equipCount: 0,
-          petCount: 0,
-          recipeCount: 0,
-          artCount: 0,
-          breakthroughCount: 0,
-          secretRealmCount: 0,
-          alchemyCount: 0,
-        }),
-      };
+      const newStats = { ...(prev.statistics || {}) };
       newStats.alchemyCount = (newStats.alchemyCount || 0) + 1;
 
       return {
         ...prev,
         spiritStones: prev.spiritStones - recipe.cost,
         inventory: cleanedInventory,
-        statistics: newStats,
+        statistics: newStats as any,
       };
     });
   };
 
+  /**
+   * 炼器逻辑：材料合成
+   */
+  const handleCraftArtifact = async (materials: Item[], customName: string, selectedSlot?: string) => {
+    if (triggerVisual) {
+      triggerVisual('alchemy', '⚒️ 炼器中...', 'text-stone-400');
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    try {
+      const newArtifact = artifactService.craftFromMaterials(materials, customName, selectedSlot);
+
+      setPlayer(prev => {
+        if (!prev) return prev;
+
+        // 扣除材料
+        const newInventory = [...prev.inventory];
+        materials.forEach(m => {
+          const idx = newInventory.findIndex(invItem => invItem.id === m.id);
+          if (idx !== -1) {
+            newInventory[idx].quantity -= 1;
+          }
+        });
+
+        const cleanedInventory = addItemToInventory(
+          newInventory.filter(i => i.quantity > 0),
+          newArtifact,
+          1,
+          { realm: prev.realm, realmLevel: prev.realmLevel }
+        );
+
+        addLog(`金石交击，神兵出世！你炼制出了 ${newArtifact.name}。`, 'special');
+        showSuccess(`炼器成功！获得 ${newArtifact.name}`);
+
+        return {
+          ...prev,
+          inventory: cleanedInventory
+        };
+      });
+    } catch (e: any) {
+      showError(e.message);
+    }
+  };
+
+  /**
+   * 炼器逻辑：装备融合
+   */
+  const handleFuseArtifact = async (item1: Item, item2: Item, stone: Item, customName?: string) => {
+    if (triggerVisual) {
+      triggerVisual('alchemy', '🌀 融合中...', 'text-mystic-gold');
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+
+    try {
+      const fusedItem = artifactService.fuseEquipment(item1, item2, stone, customName);
+
+      setPlayer(prev => {
+        if (!prev) return prev;
+
+        // 移除旧装备和合成石
+        const newInventory = prev.inventory.filter(i =>
+          i.id !== item1.id && i.id !== item2.id
+        );
+
+        // 扣除合成石数量
+        const stoneIdx = newInventory.findIndex(i => i.id === stone.id);
+        if (stoneIdx !== -1) {
+          newInventory[stoneIdx].quantity -= 1;
+        }
+
+        const cleanedInventory = addItemToInventory(
+          newInventory.filter(i => i.quantity > 0),
+          fusedItem,
+          1,
+          { realm: prev.realm, realmLevel: prev.realmLevel }
+        );
+
+        addLog(`两件神兵在合成石的作用下合二为一，${fusedItem.name} 诞生了！`, 'special');
+        showSuccess(`融合成功！获得 ${fusedItem.name}`);
+
+        return {
+          ...prev,
+          inventory: cleanedInventory
+        };
+      });
+    } catch (e: any) {
+      showError(e.message);
+    }
+  };
+
   return {
     handleCraft,
+    handleCraftArtifact,
+    handleFuseArtifact,
   };
 }

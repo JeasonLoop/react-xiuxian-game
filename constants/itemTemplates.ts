@@ -1092,6 +1092,46 @@ function generateMaterialTemplates(): Item[] {
 }
 
 /**
+ * 生成装备合成石模板
+ */
+function generateArtifactStoneTemplates(): Item[] {
+  return [
+    {
+      id: 'artifact-stone-normal',
+      name: '凡品合成石',
+      type: ItemType.ArtifactStone,
+      description: '用于合成普通品质装备的合成石，可以融合两件凡铁级装备。',
+      rarity: '普通',
+      quantity: 1,
+    },
+    {
+      id: 'artifact-stone-rare',
+      name: '精品合成石',
+      type: ItemType.ArtifactStone,
+      description: '用于合成稀有品质装备的合成石，可以融合两件稀有级装备。',
+      rarity: '稀有',
+      quantity: 1,
+    },
+    {
+      id: 'artifact-stone-legendary',
+      name: '极品合成石',
+      type: ItemType.ArtifactStone,
+      description: '用于合成传说品质装备的合成石，可以融合两件传说级装备。',
+      rarity: '传说',
+      quantity: 1,
+    },
+    {
+      id: 'artifact-stone-immortal',
+      name: '仙品合成石',
+      type: ItemType.ArtifactStone,
+      description: '用于合成仙品品质装备的合成石，可以融合两件仙品级装备。',
+      rarity: '仙品',
+      quantity: 1,
+    },
+  ];
+}
+
+/**
  * 生成所有物品模板
  */
 export const ITEM_TEMPLATES: Item[] = [
@@ -1099,6 +1139,7 @@ export const ITEM_TEMPLATES: Item[] = [
   ...generatePillTemplates(),
   ...generateHerbTemplates(),
   ...generateMaterialTemplates(),
+  ...generateArtifactStoneTemplates(),
 ];
 
 /**

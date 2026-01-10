@@ -715,3 +715,19 @@ materialRarities.forEach(({ rarity, weight }) => {
   });
   LOTTERY_PRIZES.push(...generatedPrizes);
 });
+
+// 生成合成石奖品（每个品级）
+const stoneRarities: Array<{ rarity: ItemRarity; weight: number }> = [
+  { rarity: '普通', weight: 10 },
+  { rarity: '稀有', weight: 6 },
+  { rarity: '传说', weight: 3 },
+  { rarity: '仙品', weight: 1 },
+];
+
+stoneRarities.forEach(({ rarity, weight }) => {
+  const generatedPrizes = generateLotteryPrizes({ type: ItemType.ArtifactStone, rarity: rarity as any });
+  generatedPrizes.forEach(prize => {
+    prize.weight = weight;
+  });
+  LOTTERY_PRIZES.push(...generatedPrizes);
+});

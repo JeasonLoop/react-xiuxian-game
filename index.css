@@ -103,6 +103,7 @@ body {
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: #cba135 rgba(28, 28, 26, 0.5);
+  max-height: 80vh;
 }
 
 .modal-scroll-container::-webkit-scrollbar {

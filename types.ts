@@ -59,6 +59,7 @@ export enum ItemType {
   Ring = '戒指',
   Recipe = '丹方',
   AdvancedItem = '进阶物品', // 进阶物品类型
+  ArtifactStone = '装备合成石', // 新增：装备合成石
 }
 
 export type ItemRarity = '普通' | '稀有' | '传说' | '仙品' ;

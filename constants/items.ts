@@ -564,6 +564,43 @@ export const PET_EVOLUTION_MATERIALS_ITEMS: Item[] = [
 // Upgrade Constants
 export const UPGRADE_MATERIAL_NAME = '炼器石';
 export const UPGRADE_STONE_NAME = '强化石';
+
+// 装备合成石
+export const ARTIFACT_STONES = [
+  {
+    id: 'artifact-stone-normal',
+    name: '凡品合成石',
+    type: ItemType.ArtifactStone,
+    description: '用于合成普通品质装备的合成石，可以融合两件凡铁级装备。',
+    rarity: '普通' as ItemRarity,
+    price: 500,
+  },
+  {
+    id: 'artifact-stone-rare',
+    name: '精品合成石',
+    type: ItemType.ArtifactStone,
+    description: '用于合成稀有品质装备的合成石，可以融合两件稀有级装备。',
+    rarity: '稀有' as ItemRarity,
+    price: 2000,
+  },
+  {
+    id: 'artifact-stone-legendary',
+    name: '极品合成石',
+    type: ItemType.ArtifactStone,
+    description: '用于合成传说品质装备的合成石，可以融合两件传说级装备。',
+    rarity: '传说' as ItemRarity,
+    price: 10000,
+  },
+  {
+    id: 'artifact-stone-immortal',
+    name: '仙品合成石',
+    type: ItemType.ArtifactStone,
+    description: '用于合成仙品品质装备的合成石，可以融合两件仙品级装备。',
+    rarity: '仙品' as ItemRarity,
+    price: 50000,
+  },
+];
+
 export const BASE_UPGRADE_COST_STONES = 50;
 export const BASE_UPGRADE_COST_MATS = 2;
 export const UPGRADE_STONE_SUCCESS_BONUS = 0.1; // 每颗强化石提高10%成功率

@@ -90,31 +90,8 @@ interface UIState {
   loading: boolean;
   cooldown: number;
 
-  // Modal Setters
+  // Modal Setters (简化)
   setModal: <K extends keyof ModalState>(key: K, value: ModalState[K]) => void;
-  setIsInventoryOpen: (open: boolean) => void;
-  setIsCultivationOpen: (open: boolean) => void;
-  setIsAlchemyOpen: (open: boolean) => void;
-  setIsUpgradeOpen: (open: boolean) => void;
-  setIsSectOpen: (open: boolean) => void;
-  setIsRealmOpen: (open: boolean) => void;
-  setIsCharacterOpen: (open: boolean) => void;
-  setIsAchievementOpen: (open: boolean) => void;
-  setIsPetOpen: (open: boolean) => void;
-  setIsLotteryOpen: (open: boolean) => void;
-  setIsSettingsOpen: (open: boolean) => void;
-  setIsDailyQuestOpen: (open: boolean) => void;
-  setIsShopOpen: (open: boolean) => void;
-  setIsGrottoOpen: (open: boolean) => void;
-  setIsDebugOpen: (open: boolean) => void;
-  setIsBattleModalOpen: (open: boolean) => void;
-  setIsTurnBasedBattleOpen: (open: boolean) => void;
-  setIsMobileSidebarOpen: (open: boolean) => void;
-  setIsMobileStatsOpen: (open: boolean) => void;
-  setIsDebugModeEnabled: (enabled: boolean) => void;
-  setIsReputationEventOpen: (open: boolean) => void;
-  setIsTreasureVaultOpen: (open: boolean) => void;
-  setIsAutoAdventureConfigOpen: (open: boolean) => void;
 
   // 商店 Setters
   setCurrentShop: (shop: Shop | null) => void;
@@ -217,66 +194,6 @@ export const useUIStore = create<UIState>((set, get) => ({
   setModal: (key, value) =>
     set((state) => ({
       modals: { ...state.modals, [key]: value },
-    })),
-
-  // Modal Setters
-  setIsInventoryOpen: (open) =>
-    set((state) => ({ modals: { ...state.modals, isInventoryOpen: open } })),
-  setIsCultivationOpen: (open) =>
-    set((state) => ({ modals: { ...state.modals, isCultivationOpen: open } })),
-  setIsAlchemyOpen: (open) =>
-    set((state) => ({ modals: { ...state.modals, isAlchemyOpen: open } })),
-  setIsUpgradeOpen: (open) =>
-    set((state) => ({ modals: { ...state.modals, isUpgradeOpen: open } })),
-  setIsSectOpen: (open) =>
-    set((state) => ({ modals: { ...state.modals, isSectOpen: open } })),
-  setIsRealmOpen: (open) =>
-    set((state) => ({ modals: { ...state.modals, isRealmOpen: open } })),
-  setIsCharacterOpen: (open) =>
-    set((state) => ({ modals: { ...state.modals, isCharacterOpen: open } })),
-  setIsAchievementOpen: (open) =>
-    set((state) => ({ modals: { ...state.modals, isAchievementOpen: open } })),
-  setIsPetOpen: (open) =>
-    set((state) => ({ modals: { ...state.modals, isPetOpen: open } })),
-  setIsLotteryOpen: (open) =>
-    set((state) => ({ modals: { ...state.modals, isLotteryOpen: open } })),
-  setIsSettingsOpen: (open) =>
-    set((state) => ({ modals: { ...state.modals, isSettingsOpen: open } })),
-  setIsDailyQuestOpen: (open) =>
-    set((state) => ({ modals: { ...state.modals, isDailyQuestOpen: open } })),
-  setIsShopOpen: (open) =>
-    set((state) => ({ modals: { ...state.modals, isShopOpen: open } })),
-  setIsGrottoOpen: (open) =>
-    set((state) => ({ modals: { ...state.modals, isGrottoOpen: open } })),
-  setIsDebugOpen: (open) =>
-    set((state) => ({ modals: { ...state.modals, isDebugOpen: open } })),
-  setIsBattleModalOpen: (open) =>
-    set((state) => ({ modals: { ...state.modals, isBattleModalOpen: open } })),
-  setIsTurnBasedBattleOpen: (open) =>
-    set((state) => ({
-      modals: { ...state.modals, isTurnBasedBattleOpen: open },
-    })),
-  setIsMobileSidebarOpen: (open) =>
-    set((state) => ({
-      modals: { ...state.modals, isMobileSidebarOpen: open },
-    })),
-  setIsMobileStatsOpen: (open) =>
-    set((state) => ({ modals: { ...state.modals, isMobileStatsOpen: open } })),
-  setIsDebugModeEnabled: (enabled) =>
-    set((state) => ({
-      modals: { ...state.modals, isDebugModeEnabled: enabled },
-    })),
-  setIsReputationEventOpen: (open) =>
-    set((state) => ({
-      modals: { ...state.modals, isReputationEventOpen: open },
-    })),
-  setIsTreasureVaultOpen: (open) =>
-    set((state) => ({
-      modals: { ...state.modals, isTreasureVaultOpen: open },
-    })),
-  setIsAutoAdventureConfigOpen: (open) =>
-    set((state) => ({
-      modals: { ...state.modals, isAutoAdventureConfigOpen: open },
     })),
 
   // 商店 Setters

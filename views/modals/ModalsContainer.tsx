@@ -14,7 +14,7 @@ import { useShallow } from 'zustand/react/shallow';
 // 直接导入所有弹窗组件，避免 lazy 加载导致的首次打开延迟
 import InventoryModal from '../../components/InventoryModal';
 import CultivationModal from '../../components/CultivationModal';
-import AlchemyModal from '../../components/AlchemyModal';
+import CraftingModal from '../../components/CraftingModal';
 import ArtifactUpgradeModal from '../../components/ArtifactUpgradeModal';
 import SectModal from '../../components/SectModal';
 import SecretRealmModal from '../../components/SecretRealmModal';
@@ -36,7 +36,7 @@ import { RandomSectTask } from '../../services/randomService';
 
 /**
  * 弹窗容器组件
- * 包含战斗、背包、功法、炼丹、法宝强化、宗门、秘境、角色、成就、灵宠、抽奖、设置、商店弹窗
+ * 包含战斗、背包、功法、炼丹炼器、法宝强化、宗门、秘境、角色、成就、灵宠、抽奖、设置、商店弹窗
  * @param player 玩家数据
  * @param settings 游戏设置
  * @param modals 弹窗状态
@@ -92,8 +92,10 @@ interface ModalsContainerProps {
     // Cultivation
     handleLearnArt: (art: CultivationArt) => void;
     handleActivateArt: (art: CultivationArt) => void;
-    // Alchemy
+    // Alchemy & Artifact
     handleCraft: (recipe: Recipe) => Promise<void>;
+    handleCraftArtifact: (materials: Item[], customName: string, selectedSlot?: string) => Promise<void>;
+    handleFuseArtifact: (item1: Item, item2: Item, stone: Item, customName?: string) => Promise<void>;
     // Sect
     handleJoinSect: (sectId: string, sectName?: string, sectInfo?: { exitCost?: { spiritStones?: number; items?: { name: string; quantity: number }[] } }) => void;
     handleLeaveSect: () => void;
@@ -299,11 +301,13 @@ function ModalsContainer({
       )}
 
       {modals.isAlchemyOpen && (
-        <AlchemyModal
+        <CraftingModal
           isOpen={modals.isAlchemyOpen}
           onClose={() => handlers.setIsAlchemyOpen(false)}
           player={player}
           onCraft={handlers.handleCraft}
+          onCraftArtifact={handlers.handleCraftArtifact}
+          onFuseArtifact={handlers.handleFuseArtifact}
         />
       )}
 

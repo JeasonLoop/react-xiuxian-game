@@ -187,10 +187,10 @@ function ActionBar({
           className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-cyan-400"
         />
         <span className="font-serif font-bold text-base md:text-base">
-          炼丹
+          炼丹 · 炼器
         </span>
         <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">
-          丹药 · 辅助
+          神丹 · 神兵
         </span>
       </button>
 

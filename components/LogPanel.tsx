@@ -16,8 +16,8 @@ interface Props {
   onClearLogs?: () => void;
 }
 
-// 限制日志数量，只显示最近500条，避免DOM过多导致卡顿
-const MAX_LOGS = 500;
+// 限制日志数量，只显示最近200条，避免DOM过多导致卡顿
+const MAX_LOGS = 201;
 
 // 单个日志项组件，使用 memo 优化
 const LogItem = React.memo<{ log: LogEntry }>(({ log }) => {
@@ -65,8 +65,8 @@ const LogPanel: React.FC<Props> = ({ logs, playerName, className, onClearLogs })
   // 限制日志数量，只显示最近的部分
   const displayedLogs = useMemo(() => {
     if (logs.length <= MAX_LOGS) return logs;
-    return logs.slice(-MAX_LOGS);
-  }, [logs]);
+    return logs.slice(-MAX_LOGS + 1);
+  }, [logs?.length]);
 
   // 检查是否在底部
   const checkIfAtBottom = useCallback(() => {
@@ -78,7 +78,7 @@ const LogPanel: React.FC<Props> = ({ logs, playerName, className, onClearLogs })
     const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
     // 如果距离底部小于等于 50px，认为在底部（增加容差，避免频繁切换）
     return distanceFromBottom <= 50;
-  }, []);
+  }, [displayedLogs.length]);
 
   // 当有新日志时，如果用户在底部，自动滚动到底部
   useEffect(() => {
@@ -91,16 +91,10 @@ const LogPanel: React.FC<Props> = ({ logs, playerName, className, onClearLogs })
     if (hasNewLog) {
       lastLogIdRef.current = lastLog.id;
 
-      // 检查用户是否在底部
-      const isAtBottom = checkIfAtBottom();
-      shouldAutoScrollRef.current = isAtBottom;
-
-      if (!isAtBottom) {
-        // 使用 requestAnimationFrame 确保 DOM 更新后再滚动
-        requestAnimationFrame(() => {
-          endRef.current?.scrollIntoView({ behavior: 'smooth' });
-        });
-      }
+      // 只要有新日志，就强制滚动到底部
+      requestAnimationFrame(() => {
+        endRef.current?.scrollIntoView({ behavior: 'smooth' });
+      });
     }
 
     // 只有当日志真的增加时才去更新滚动按钮状态
@@ -136,7 +130,7 @@ const LogPanel: React.FC<Props> = ({ logs, playerName, className, onClearLogs })
         endRef.current?.scrollIntoView({ behavior: 'auto' });
       });
     }
-  }, []); // 只在组件挂载时执行一次
+  }, [logs.length]); // 只在组件挂载时执行一次
 
   const scrollToBottom = useCallback(() => {
     const container = containerRef.current;
