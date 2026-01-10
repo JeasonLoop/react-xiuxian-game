@@ -11,6 +11,7 @@ interface Props {
   onCraft: (recipe: Recipe) => Promise<void>;
   onCraftArtifact: (materials: Item[], customName: string, selectedSlot?: string) => Promise<void>;
   onFuseArtifact: (item1: Item, item2: Item, stone: Item, customName?: string) => Promise<void>;
+  setItemActionLog?: (log: { text: string; type: string } | null) => void;
 }
 
 const CraftingModal: React.FC<Props> = ({
@@ -20,6 +21,7 @@ const CraftingModal: React.FC<Props> = ({
   onCraft,
   onCraftArtifact,
   onFuseArtifact,
+  setItemActionLog,
 }) => {
   const [activeTab, setActiveTab] = useState<'alchemy' | 'artifact'>('alchemy');
   const [artifactTab, setArtifactTab] = useState<'material' | 'fuse'>('material');
@@ -148,8 +150,42 @@ const CraftingModal: React.FC<Props> = ({
     setSelectedSlot('');
   };
 
+  // 品质等级映射：数字越大品质越高
+  const getRarityLevel = (rarity?: ItemRarity): number => {
+    const rarityLevels: Record<ItemRarity | '普通', number> = {
+      '普通': 0,
+      '稀有': 1,
+      '传说': 2,
+      '仙品': 3,
+    };
+    return rarityLevels[rarity || '普通'];
+  };
+
+  // 检查合成石品质是否满足要求
+  const isStoneRarityValid = (): boolean => {
+    if (!fuseItem1 || !fuseItem2 || !fuseStone) return false;
+    const stoneLevel = getRarityLevel(fuseStone.rarity);
+    const item1Level = getRarityLevel(fuseItem1.rarity);
+    const item2Level = getRarityLevel(fuseItem2.rarity);
+    return stoneLevel >= item1Level && stoneLevel >= item2Level;
+  };
+
   const handleFuse = async () => {
+    // 判断合成石等级要大于等于装备品质
     if (fuseItem1 && fuseItem2 && fuseStone) {
+      // 检查品质要求
+      if (!isStoneRarityValid()) {
+        const maxRarity = getRarityLevel(fuseItem1.rarity) > getRarityLevel(fuseItem2.rarity)
+          ? fuseItem1.rarity || '普通'
+          : fuseItem2.rarity || '普通';
+        if (setItemActionLog) {
+          setItemActionLog({
+            text: `合成石品质不足，需要 ${maxRarity} 或更高品质的合成石才能融合`,
+            type: 'danger',
+          });
+        }
+        return; // 品质不符合要求，不执行融合
+      }
       await onFuseArtifact(fuseItem1, fuseItem2, fuseStone, customFuseName);
       setFuseItem1(null);
       setFuseItem2(null);
@@ -583,7 +619,8 @@ const CraftingModal: React.FC<Props> = ({
                                 fuseItem1.type === fuseItem2.type &&
                                 [ItemType.Ring, ItemType.Artifact, ItemType.Accessory].includes(fuseItem1.type)
                               )
-                            )
+                            ) ||
+                            !isStoneRarityValid()
                           }
                           className={`px-12 py-3 rounded-full font-serif font-bold text-lg flex items-center gap-2 transition-all ${
                             fuseItem1 &&
@@ -595,7 +632,8 @@ const CraftingModal: React.FC<Props> = ({
                                 fuseItem1.type === fuseItem2.type &&
                                 [ItemType.Ring, ItemType.Artifact, ItemType.Accessory].includes(fuseItem1.type)
                               )
-                            )
+                            ) &&
+                            isStoneRarityValid()
                               ? 'bg-mystic-gold text-ink-900 hover:scale-110 shadow-mystic-gold/40 shadow-xl'
                               : 'bg-stone-800 text-stone-600 cursor-not-allowed'
                           }`}
@@ -611,6 +649,11 @@ const CraftingModal: React.FC<Props> = ({
                             )
                           ) && (
                           <div className="text-mystic-blood text-xs mt-2">种类或部位不匹配，无法融合</div>
+                        )}
+                        {fuseItem1 && fuseItem2 && fuseStone && !isStoneRarityValid() && (
+                          <div className="text-mystic-blood text-xs mt-2">
+                            合成石品质不足，需要 {fuseItem1.rarity || '普通'} 或更高品质的合成石
+                          </div>
                         )}
                   </div>
                 </div>
