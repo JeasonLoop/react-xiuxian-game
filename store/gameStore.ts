@@ -10,6 +10,7 @@ import { PlayerStats, LogEntry, GameSettings } from '../types';
 import { createInitialPlayer } from '../utils/playerUtils';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import { TALENTS } from '../constants/index';
+import { initializeEventTemplateLibrary } from '../services/adventureTemplateService';
 import {
   getCurrentSlotId,
   loadFromSlot,
@@ -194,6 +195,10 @@ export const useGameStore = create<GameState>()(
       if (!state.hasSave) return;
 
       try {
+        // 重新生成事件模板库
+        initializeEventTemplateLibrary(true);
+        console.log('加载存档时重新生成事件模板库');
+
         // 优先从多存档槽位系统加载
         const currentSlotId = getCurrentSlotId();
         let savedData = loadFromSlot(currentSlotId);
@@ -237,6 +242,11 @@ export const useGameStore = create<GameState>()(
     // 开始新游戏
     startNewGame: (playerName, talentId, difficulty) => {
       const state = get();
+
+      // 重新生成事件模板库
+      initializeEventTemplateLibrary(true);
+      console.log('开始新游戏时重新生成事件模板库');
+
       const newPlayer = createInitialPlayer(playerName, talentId);
       const initialTalent = TALENTS.find((t) => t.id === talentId);
 

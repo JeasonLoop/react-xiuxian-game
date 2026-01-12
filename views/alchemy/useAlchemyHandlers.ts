@@ -7,9 +7,17 @@ import {
   Item,
 } from '../../types';
 import { addItemToInventory } from '../../utils/inventoryUtils';
-import { showSuccess, showError } from '../../utils/toastUtils';
+import { multiplyEffects, adjustPillEffectByPurity } from '../../utils/itemUtils';
+import { showSuccess, showError, showInfo } from '../../utils/toastUtils';
 import { useGameStore } from '../../store';
 import { artifactService } from '../../services/artifactService';
+import {
+  ALCHEMY_EXP_REQUIREMENTS,
+  ALCHEMY_EXP_GAINED,
+  ALCHEMY_SUCCESS_BASE,
+  ALCHEMY_LEVEL_SUCCESS_BONUS,
+  FAILED_ALCHEMY_RESULT
+} from '../../constants/items';
 
 interface UseAlchemyHandlersProps {
   player?: PlayerStats;
@@ -46,6 +54,7 @@ export function useAlchemyHandlers(
       if (!prev) return prev;
       if (prev.spiritStones < recipe.cost) return prev;
 
+      // 1. 检查并扣除材料
       const newInventory = [...prev.inventory];
       for (const req of recipe.ingredients) {
         const itemIdx = newInventory.findIndex((i) => i.name === req.name);
@@ -60,36 +69,112 @@ export function useAlchemyHandlers(
         };
       }
 
-      const cleanedInventory = addItemToInventory(
-        newInventory.filter((i) => i.quantity > 0),
-        {
-          name: recipe.result.name || 'Unknown',
-          type: recipe.result.type || ItemType.Pill,
-          description: recipe.result.description || '',
-          rarity: (recipe.result.rarity as ItemRarity) || '普通',
-          effect: recipe.result.effect,
-          permanentEffect: recipe.result.permanentEffect,
-        },
-        1,
-        { realm: prev.realm, realmLevel: prev.realmLevel }
-      );
+      // 2. 计算成功率
+      const baseSuccess = ALCHEMY_SUCCESS_BASE[recipe.result.rarity as ItemRarity] || 0.5;
+      const levelBonus = (prev.alchemyLevel - 1) * ALCHEMY_LEVEL_SUCCESS_BONUS;
+      const luckBonus = (prev.luck || 0) * 0.001; // 100幸运提升10%
+      const successRate = Math.min(0.98, baseSuccess + levelBonus + luckBonus);
 
-      addLog(`丹炉火起，药香四溢。你炼制出了 ${recipe.result.name}。`, 'gain');
-      showSuccess(`炼制成功！获得 ${recipe.result.name}`);
+      const isSuccess = Math.random() < successRate;
 
-      if (triggerVisual) {
-        setTimeout(() => {
-          triggerVisual('alchemy', `✨ ${recipe.result.name}`, 'text-mystic-gold');
-        }, 200);
+      let finalResultItem: any;
+      let logMessage = '';
+      let logType: 'normal' | 'gain' | 'danger' | 'special' = 'normal';
+      let expGained = 0;
+      let hpChange = 0;
+
+      if (isSuccess) {
+        // 成功：计算纯度 (60-100)
+        const basePurity = 60 + Math.random() * 20;
+        const levelPurityBonus = (prev.alchemyLevel - 1) * 2;
+        const luckPurityBonus = (prev.luck || 0) * 0.05;
+        const purity = Math.min(100, Math.floor(basePurity + levelPurityBonus + luckPurityBonus));
+
+        // 品质名称前缀
+        let qualityPrefix = '';
+        if (purity >= 100) qualityPrefix = '完美';
+        else if (purity >= 95) qualityPrefix = '极品';
+        else if (purity >= 85) qualityPrefix = '上品';
+        else if (purity >= 70) qualityPrefix = '中品';
+        else qualityPrefix = '下品';
+
+        // 调整效果
+        const { effect, permanentEffect } = adjustPillEffectByPurity(
+          recipe.result.effect,
+          recipe.result.permanentEffect,
+          purity
+        );
+
+        finalResultItem = {
+          ...recipe.result,
+          name: `${qualityPrefix}${recipe.result.name}`,
+          purity: purity,
+          effect,
+          permanentEffect,
+        };
+
+        logMessage = `丹炉火起，药香四溢。你炼制出了【${finalResultItem.name}】(纯度: ${purity}%)。`;
+        logType = 'gain';
+        expGained = ALCHEMY_EXP_GAINED[recipe.result.rarity as ItemRarity] || 10;
+        showSuccess(`炼制成功！获得 ${finalResultItem.name}`);
+
+        if (triggerVisual) {
+          setTimeout(() => {
+            triggerVisual('alchemy', `✨ ${finalResultItem.name}`, 'text-mystic-gold');
+          }, 200);
+        }
+      } else {
+        // 失败：炸炉或废丹
+        const isExplosion = Math.random() < 0.2; // 20% 炸炉率
+        if (isExplosion) {
+          hpChange = -Math.floor(prev.maxHp * 0.1);
+          logMessage = `轰的一声，丹炉承受不住药力炸裂开来！你受到了 ${Math.abs(hpChange)} 点反噬伤害。`;
+          logType = 'danger';
+          showError('炸炉了！炼丹失败。');
+        } else {
+          finalResultItem = FAILED_ALCHEMY_RESULT;
+          logMessage = `火候未到，药材化为了一团黑糊糊的废丹。`;
+          logType = 'normal';
+          showInfo('炼制失败，只得到了废丹。');
+          expGained = Math.max(1, Math.floor((ALCHEMY_EXP_GAINED[recipe.result.rarity as ItemRarity] || 10) / 5));
+        }
+      }
+
+      // 3. 处理经验与升级
+      let newLevel = prev.alchemyLevel || 1;
+      let newProficiency = (prev.alchemyProficiency || 0) + expGained;
+
+      const nextLevelReq = ALCHEMY_EXP_REQUIREMENTS[newLevel] || 9999999;
+      if (newProficiency >= nextLevelReq && newLevel < 9) {
+        newLevel += 1;
+        newProficiency -= nextLevelReq;
+        addLog(`【炼丹】你的炼丹造诣提升到了第 ${newLevel} 层！`, 'special');
+      }
+
+      // 4. 更新背包与统计
+      let cleanedInventory = [...newInventory.filter((i) => i.quantity > 0)];
+
+      if (isSuccess || (finalResultItem && logType !== 'danger')) {
+        cleanedInventory = addItemToInventory(
+          cleanedInventory,
+          finalResultItem,
+          1,
+          { realm: prev.realm, realmLevel: prev.realmLevel }
+        );
       }
 
       const newStats = { ...(prev.statistics || {}) };
       newStats.alchemyCount = (newStats.alchemyCount || 0) + 1;
 
+      if (logMessage) addLog(logMessage, logType);
+
       return {
         ...prev,
+        hp: Math.max(1, prev.hp + hpChange),
         spiritStones: prev.spiritStones - recipe.cost,
         inventory: cleanedInventory,
+        alchemyLevel: newLevel,
+        alchemyProficiency: newProficiency,
         statistics: newStats as any,
       };
     });

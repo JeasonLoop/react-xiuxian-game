@@ -561,6 +561,90 @@ export const PET_EVOLUTION_MATERIALS_ITEMS: Item[] = [
   },
 ];
 
+// 炼丹材料（确保所有丹方使用的材料都在常量池中定义，可通过历练、商店等途径获得）
+export const ALCHEMY_MATERIALS_ITEMS: Item[] = [
+  {
+    id: 'spirit-concentrating-flower',
+    name: '凝神花',
+    type: ItemType.Herb,
+    description: '能够凝聚神识的珍贵花朵，散发着淡淡的灵香，是炼制凝神丹的主要材料。直接使用可永久提升神识。',
+    quantity: 1,
+    rarity: '稀有',
+    effect: { hp: 50, spirit: 5 },
+    permanentEffect: { spirit: 50 },
+  },
+  {
+    id: 'qi-restoring-herb',
+    name: '回气草',
+    type: ItemType.Herb,
+    description: '能够快速恢复灵气的灵草，叶片翠绿，是炼制回气类丹药的常用材料。直接使用可恢复气血并略微提升气血上限。',
+    quantity: 1,
+    rarity: '普通',
+    effect: { hp: 300 },
+    permanentEffect: { maxHp: 50 },
+  },
+  {
+    id: 'millennium-lingzhi',
+    name: '千年灵芝',
+    type: ItemType.Herb,
+    description: '生长千年的灵芝，蕴含着浓郁的灵气，是炼制高阶丹药的珍贵材料。直接使用可大幅提升属性并增加寿命。',
+    quantity: 1,
+    rarity: '传说',
+    effect: { hp: 1500 },
+    permanentEffect: { maxHp: 400, spirit: 200, physique: 150, maxLifespan: 300 },
+  },
+  {
+    id: 'ten-thousand-year-immortal-grass',
+    name: '万年仙草',
+    type: ItemType.Herb,
+    description: '生长万年的仙草，蕴含着天地精华，是炼制仙品丹药的顶级材料。直接使用可获得大幅属性提升和寿命增长。',
+    quantity: 1,
+    rarity: '仙品',
+    effect: { hp: 10000 },
+    permanentEffect: { maxHp: 1000, spirit: 1000, physique: 800, speed: 500, maxLifespan: 2000 },
+  },
+  {
+    id: 'high-grade-monster-core',
+    name: '高阶妖丹',
+    type: ItemType.Material,
+    description: '强大妖兽体内凝聚的高阶内丹，灵气逼人，是炼制传说级丹药的珍贵材料。直接使用可提升体魄和攻击力。',
+    quantity: 1,
+    rarity: '稀有',
+    effect: { hp: 1000 },
+    permanentEffect: { physique: 100, attack: 100 },
+  },
+  {
+    id: 'ten-thousand-year-spirit-milk',
+    name: '万年灵乳',
+    type: ItemType.Material,
+    description: '万年灵脉中凝聚的精华，散发着浓郁的灵气，是炼制仙品丹药的珍贵材料。直接使用可大幅提升神识和各项属性。',
+    quantity: 1,
+    rarity: '传说',
+    effect: { hp: 2000, spirit: 500 },
+    permanentEffect: { spirit: 800, maxHp: 600, physique: 400, speed: 300 },
+  },
+  {
+    id: 'nine-leaf-grass',
+    name: '九叶芝草',
+    type: ItemType.Herb,
+    description: '九叶灵芝，每一片叶子都蕴含着强大的灵气，是炼制仙品丹药的顶级材料。直接使用可大幅提升属性。',
+    quantity: 1,
+    rarity: '传说',
+    effect: { hp: 2500 },
+    permanentEffect: { maxHp: 800, spirit: 600, physique: 500, defense: 300 },
+  },
+  {
+    id: 'dragon-scale-fruit',
+    name: '龙鳞果',
+    type: ItemType.Herb,
+    description: '龙族栖息地生长的灵果，果皮如龙鳞般坚硬，蕴含龙族血脉之力，是炼制高阶丹药的珍贵材料。直接使用可提升体魄和气血上限。',
+    quantity: 1,
+    rarity: '稀有',
+    effect: { hp: 1200 },
+    permanentEffect: { physique: 150, maxHp: 300 },
+  },
+];
+
 // Upgrade Constants
 export const UPGRADE_MATERIAL_NAME = '炼器石';
 export const UPGRADE_STONE_NAME = '强化石';
@@ -600,6 +684,50 @@ export const ARTIFACT_STONES = [
     price: 50000,
   },
 ];
+
+// ==================== 炼丹系统进阶配置 ====================
+
+// 炼丹等级对应的经验要求（每一级升级所需经验）
+export const ALCHEMY_EXP_REQUIREMENTS = [
+  0,        // 1级
+  100,      // 2级
+  300,      // 3级
+  800,      // 4级
+  2000,     // 5级
+  5000,     // 6级
+  12000,    // 7级
+  30000,    // 8级
+  80000,    // 9级（大宗师）
+];
+
+// 不同稀有度丹药提供的炼丹经验
+export const ALCHEMY_EXP_GAINED: Record<ItemRarity, number> = {
+  普通: 10,
+  稀有: 30,
+  传说: 100,
+  仙品: 500,
+};
+
+// 炼丹成功率基础配置
+export const ALCHEMY_SUCCESS_BASE: Record<ItemRarity, number> = {
+  普通: 0.95, // 95%
+  稀有: 0.80, // 80%
+  传说: 0.60, // 60%
+  仙品: 0.30, // 30%
+};
+
+// 每级炼丹等级提供的成功率加成
+export const ALCHEMY_LEVEL_SUCCESS_BONUS = 0.05; // 每级+5%成功率
+
+// 炼丹品质概率（目前先预留，后续可扩展品质分级）
+// 失败产物：废丹
+export const FAILED_ALCHEMY_RESULT = {
+  name: '废丹',
+  type: ItemType.Pill,
+  description: '炼丹失败后的残留物，不仅毫无用处，服用后还可能损伤经脉。',
+  rarity: '普通' as ItemRarity,
+  effect: { hp: -50 },
+};
 
 export const BASE_UPGRADE_COST_STONES = 50;
 export const BASE_UPGRADE_COST_MATS = 2;

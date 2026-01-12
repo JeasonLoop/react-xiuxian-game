@@ -13,7 +13,6 @@ import {
   REALM_ORDER,
   CULTIVATION_ARTS,
   PET_TEMPLATES,
-  DISCOVERABLE_RECIPES,
   getRandomPetName,
   SECTS,
 } from '../../constants/index';
@@ -25,11 +24,7 @@ import {
   getRandomEventTemplate,
   templateToAdventureResult,
 } from '../../services/adventureTemplateService';
-import { getAllArtifacts, getItemFromConstants } from '../../utils/itemConstantsUtils';
-import {
-  normalizeItemEffect,
-  inferItemTypeAndSlot,
-} from '../../utils/itemUtils';
+import { getAllArtifacts } from '../../utils/itemConstantsUtils';
 import { normalizeRarityValue } from '../../utils/rarityUtils';
 import { getPlayerTotalStats } from '../../utils/statUtils';
 import { addItemToInventory } from '../../utils/inventoryUtils';

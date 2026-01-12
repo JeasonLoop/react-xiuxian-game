@@ -28,6 +28,8 @@ export const ensurePlayerStatsCompatibility = (loadedPlayer: any): PlayerStats =
     viewedAchievements: loadedPlayer.viewedAchievements || [],
     natalArtifactId: loadedPlayer.natalArtifactId || null,
     unlockedRecipes: loadedPlayer.unlockedRecipes || [],
+    alchemyLevel: loadedPlayer.alchemyLevel || 1,
+    alchemyProficiency: loadedPlayer.alchemyProficiency || loadedPlayer.alchemyExp || 0,
     unlockedArts: loadedPlayer.unlockedArts || loadedPlayer.cultivationArts || [],
     sectTreasureVault: loadedPlayer.sectTreasureVault || undefined,
     meditationHpRegenMultiplier:

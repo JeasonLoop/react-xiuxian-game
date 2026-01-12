@@ -142,6 +142,8 @@ export const createInitialPlayer = (
     viewedAchievements: [],
     natalArtifactId: null,
     unlockedRecipes: [], // 已解锁的丹方名称列表
+    alchemyLevel: 1, // 炼丹等级
+    alchemyProficiency: 0, // 炼丹熟练度
     meditationHpRegenMultiplier: 1.0, // 打坐回血速度加成倍数（默认1.0）
     meditationBoostEndTime: null, // 打坐回血加成结束时间戳（毫秒）
     statistics: {

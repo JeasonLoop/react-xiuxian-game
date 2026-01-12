@@ -12,6 +12,7 @@ import {
   DISCOVERABLE_RECIPES,
   getPillDefinition,
   PET_EVOLUTION_MATERIALS_ITEMS,
+  ALCHEMY_MATERIALS_ITEMS,
   FOUNDATION_TREASURES,
   HEAVEN_EARTH_ESSENCES,
   HEAVEN_EARTH_MARROWS,
@@ -103,7 +104,10 @@ export function getAllItemsFromConstants(): Array<ConstantItem> {
   // 2. 从灵宠进化材料中提取物品
   PET_EVOLUTION_MATERIALS_ITEMS.forEach(addItem);
 
-  // 3. 从筑基奇物中提取
+  // 3. 从炼丹材料中提取物品
+  ALCHEMY_MATERIALS_ITEMS.forEach(addItem);
+
+  // 4. 从筑基奇物中提取
   Object.values(FOUNDATION_TREASURES).forEach(treasure => {
     addItem({
       ...treasure,
@@ -113,7 +117,7 @@ export function getAllItemsFromConstants(): Array<ConstantItem> {
     });
   });
 
-  // 4. 从天地精华中提取
+  // 5. 从天地精华中提取
   Object.values(HEAVEN_EARTH_ESSENCES).forEach(essence => {
     addItem({
       ...essence,
@@ -123,7 +127,7 @@ export function getAllItemsFromConstants(): Array<ConstantItem> {
     });
   });
 
-  // 5. 从天地之髓中提取
+  // 6. 从天地之髓中提取
   Object.values(HEAVEN_EARTH_MARROWS).forEach(marrow => {
     addItem({
       ...marrow,
@@ -133,7 +137,7 @@ export function getAllItemsFromConstants(): Array<ConstantItem> {
     });
   });
 
-  // 6. 从规则之力中提取
+  // 7. 从规则之力中提取
   Object.values(LONGEVITY_RULES).forEach(rule => {
     addItem({
       ...rule,
@@ -144,14 +148,14 @@ export function getAllItemsFromConstants(): Array<ConstantItem> {
     });
   });
 
-  // 7. 从所有丹方中提取丹药
+  // 8. 从所有丹方中提取丹药
   [...PILL_RECIPES, ...DISCOVERABLE_RECIPES].forEach(recipe => {
     if (recipe.result) {
       addItem(recipe.result);
     }
   });
 
-  // 8. 从抽奖奖品中提取物品
+  // 9. 从抽奖奖品中提取物品
   LOTTERY_PRIZES.forEach(prize => {
     if (prize.type === 'item' && prize.value.item) {
       const item = prize.value.item;
@@ -166,7 +170,7 @@ export function getAllItemsFromConstants(): Array<ConstantItem> {
     }
   });
 
-  // 9. 从宗门商店物品中提取
+  // 10. 从宗门商店物品中提取
   SECT_SHOP_ITEMS.forEach(shopItem => {
     const item = shopItem.item;
     if (item.type === ItemType.Pill) {
@@ -179,7 +183,7 @@ export function getAllItemsFromConstants(): Array<ConstantItem> {
     addItem(item);
   });
 
-  // 10. 从 ITEM_TEMPLATES 中提取
+  // 11. 从 ITEM_TEMPLATES 中提取
   ITEM_TEMPLATES.forEach(addItem);
 
   cachedAllItems = items;

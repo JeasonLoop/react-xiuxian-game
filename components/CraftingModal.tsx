@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { PlayerStats, Recipe, Item, ItemType, EquipmentSlot, ItemRarity } from '../types';
-import { PILL_RECIPES, DISCOVERABLE_RECIPES } from '../constants/index';
-import { FlaskConical, CircleOff, Hammer, Combine, Trash2, Plus } from 'lucide-react';
+import { PILL_RECIPES, DISCOVERABLE_RECIPES, ALCHEMY_SUCCESS_BASE, ALCHEMY_LEVEL_SUCCESS_BONUS, ALCHEMY_EXP_REQUIREMENTS } from '../constants/index';
+import { FlaskConical, CircleOff, Hammer, Combine, Trash2, Plus, Zap, Star } from 'lucide-react';
 import { Modal } from './common';
 
 interface Props {
@@ -222,51 +222,104 @@ const CraftingModal: React.FC<Props> = ({
 
         {activeTab === 'alchemy' ? (
           /* 炼丹界面 */
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 overflow-y-auto pr-2">
-            <div className="col-span-full mb-2 bg-ink-900/50 p-3 rounded border border-stone-700 text-sm text-stone-400 flex justify-between">
-              <span>拥有灵石：<span className="text-mystic-gold font-bold">{player.spiritStones}</span></span>
-              <span>炼丹乃逆天而行，需耗费心神与灵石。</span>
-            </div>
-            {availableRecipes.map((recipe, idx) => {
-              const canAfford = player.spiritStones >= recipe.cost;
-              let hasIngredients = true;
-              return (
-                <div key={idx} className="bg-ink-800 border border-stone-700 rounded p-4 flex flex-col">
-                  <div className="flex justify-between items-start mb-2">
-                    <h4 className="text-lg font-serif font-bold text-stone-200">{recipe.name}</h4>
-                    <span className="text-xs bg-mystic-gold/10 text-mystic-gold border border-mystic-gold/30 px-2 py-0.5 rounded">丹药</span>
-                  </div>
-                  <p className="text-sm text-stone-500 italic mb-4 h-10 overflow-hidden">{recipe.result.description}</p>
-                  <div className="bg-ink-900 p-2 rounded border border-stone-800 mb-4 flex-1">
-                    <div className="text-xs text-stone-500 mb-2 font-bold uppercase tracking-wider">所需材料</div>
-                    <ul className="space-y-1">
-                      {recipe.ingredients.map((ing, i) => {
-                        const owned = countItem(ing.name);
-                        if (owned < ing.qty) hasIngredients = false;
-                        return (
-                          <li key={i} className="flex justify-between text-sm">
-                            <span className="text-stone-300">{ing.name}</span>
-                            <span className={owned >= ing.qty ? 'text-mystic-jade' : 'text-mystic-blood'}>{owned}/{ing.qty}</span>
-                          </li>
-                        );
-                      })}
-                      <li className="flex justify-between text-sm pt-1 border-t border-stone-800 mt-1">
-                        <span className="text-stone-300">灵石消耗</span>
-                        <span className={canAfford ? 'text-mystic-gold' : 'text-mystic-blood'}>{recipe.cost}</span>
-                      </li>
-                    </ul>
-                  </div>
-                  <button
-                    onClick={() => onCraft(recipe)}
-                    disabled={!canAfford || !hasIngredients}
-                    className={`w-full py-2 rounded font-serif font-bold text-sm flex items-center justify-center gap-2 transition-colors ${canAfford && hasIngredients ? 'bg-mystic-gold/20 text-mystic-gold hover:bg-mystic-gold/30 border border-mystic-gold' : 'bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700'}`}
-                  >
-                    {!canAfford || !hasIngredients ? <CircleOff size={16} /> : <FlaskConical size={16} />}
-                    {canAfford && hasIngredients ? '开炉炼丹' : '材料不足'}
-                  </button>
+          <div className="flex flex-col h-full overflow-hidden pr-2">
+            <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="bg-ink-900/50 p-3 rounded border border-stone-700 flex flex-col justify-center">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-xs text-stone-500 font-bold uppercase tracking-wider flex items-center gap-1">
+                    <Star size={12} className="text-mystic-gold" /> 炼丹造诣
+                  </span>
+                  <span className="text-mystic-gold font-bold">第 {player.alchemyLevel || 1} 层</span>
                 </div>
-              );
-            })}
+                <div className="w-full bg-stone-900 h-1.5 rounded-full overflow-hidden border border-stone-800">
+                  <div
+                    className="bg-mystic-gold h-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min(100, ((player.alchemyProficiency || 0) / (ALCHEMY_EXP_REQUIREMENTS[player.alchemyLevel || 1] || 100)) * 100)}%`
+                    }}
+                  />
+                </div>
+                <div className="text-[10px] text-stone-600 text-right mt-1">
+                  熟练度: {player.alchemyProficiency || 0} / {ALCHEMY_EXP_REQUIREMENTS[player.alchemyLevel || 1] || 'MAX'}
+                </div>
+              </div>
+
+              <div className="bg-ink-900/50 p-3 rounded border border-stone-700 flex flex-col justify-center col-span-2">
+                <div className="flex justify-between text-sm">
+                  <span>拥有灵石：<span className="text-mystic-gold font-bold">{player.spiritStones}</span></span>
+                  <span className="text-stone-500 italic text-xs">"神识控火，丹成上品。"</span>
+                </div>
+                <div className="flex gap-4 mt-2">
+                   <div className="flex items-center gap-1 text-[10px] text-stone-500">
+                      <Zap size={10} className="text-mystic-gold" />
+                      等级加成: +{((player.alchemyLevel || 1) - 1) * 5}% 成功率
+                   </div>
+                   <div className="flex items-center gap-1 text-[10px] text-stone-500">
+                      <Zap size={10} className="text-mystic-gold" />
+                      幸运加成: +{Math.floor((player.luck || 0) * 0.1)}% 成功率
+                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 overflow-y-auto pb-4">
+              {availableRecipes.map((recipe, idx) => {
+                const canAfford = player.spiritStones >= recipe.cost;
+                let hasIngredients = true;
+
+                // 计算该丹药的预计成功率
+                const baseSuccess = ALCHEMY_SUCCESS_BASE[recipe.result.rarity as ItemRarity] || 0.5;
+                const levelBonus = ((player.alchemyLevel || 1) - 1) * ALCHEMY_LEVEL_SUCCESS_BONUS;
+                const luckBonus = (player.luck || 0) * 0.001;
+                const successRate = Math.min(0.98, baseSuccess + levelBonus + luckBonus);
+
+                return (
+                  <div key={idx} className="bg-ink-800 border border-stone-700 rounded p-4 flex flex-col group hover:border-mystic-gold/50 transition-all">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="text-lg font-serif font-bold text-stone-200">{recipe.name}</h4>
+                      <div className="flex flex-col items-end">
+                        <span className={`text-[10px] px-2 py-0.5 rounded border ${
+                          successRate > 0.8 ? 'text-mystic-jade border-mystic-jade/30 bg-mystic-jade/10' :
+                          successRate > 0.5 ? 'text-mystic-gold border-mystic-gold/30 bg-mystic-gold/10' :
+                          'text-mystic-blood border-mystic-blood/30 bg-mystic-blood/10'
+                        }`}>
+                          预计成丹率: {Math.floor(successRate * 100)}%
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-stone-500 italic mb-3 h-8 overflow-hidden line-clamp-2">{recipe.result.description}</p>
+
+                    <div className="bg-ink-900 p-2 rounded border border-stone-800 mb-3 flex-1">
+                      <div className="text-[10px] text-stone-500 mb-1.5 font-bold uppercase tracking-wider">所需材料</div>
+                      <ul className="space-y-1">
+                        {recipe.ingredients.map((ing, i) => {
+                          const owned = countItem(ing.name);
+                          if (owned < ing.qty) hasIngredients = false;
+                          return (
+                            <li key={i} className="flex justify-between text-[11px]">
+                              <span className="text-stone-400">{ing.name}</span>
+                              <span className={owned >= ing.qty ? 'text-mystic-jade' : 'text-mystic-blood'}>{owned}/{ing.qty}</span>
+                            </li>
+                          );
+                        })}
+                        <li className="flex justify-between text-[11px] pt-1 border-t border-stone-800 mt-1">
+                          <span className="text-stone-400">灵石消耗</span>
+                          <span className={canAfford ? 'text-mystic-gold' : 'text-mystic-blood'}>{recipe.cost}</span>
+                        </li>
+                      </ul>
+                    </div>
+                    <button
+                      onClick={() => onCraft(recipe)}
+                      disabled={!canAfford || !hasIngredients}
+                      className={`w-full py-2 rounded font-serif font-bold text-sm flex items-center justify-center gap-2 transition-all ${canAfford && hasIngredients ? 'bg-mystic-gold/20 text-mystic-gold hover:bg-mystic-gold/30 border border-mystic-gold active:scale-95 shadow-lg shadow-mystic-gold/10' : 'bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700'}`}
+                    >
+                      {!canAfford || !hasIngredients ? <CircleOff size={16} /> : <FlaskConical size={16} className="group-hover:animate-bounce" />}
+                      {canAfford && hasIngredients ? '开炉炼丹' : '材料不足'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ) : (
           /* 炼器界面 */

@@ -1,9 +1,6 @@
 import { useEffect } from 'react';
 import { useIndexedDB } from './useIndexedDB';
 import {
-  setEventTemplateLibrary,
-  isEventTemplateLibraryInitialized,
-  generateEventTemplateLibrary,
   initializeEventTemplateLibrary,
 } from '../services/adventureTemplateService';
 import {
@@ -35,39 +32,16 @@ export function useGameInitialization() {
 
     const initTemplates = async () => {
       try {
-        const hasStoredTemplates = await hasTemplates();
-
-        if (hasStoredTemplates) {
-          const templates = await loadTemplates();
-          if (templates && templates.length > 0) {
-            setEventTemplateLibrary(templates);
-            console.log('从 IndexedDB 加载事件模板库成功');
-            return;
-          }
-        }
-
-        if (!isEventTemplateLibraryInitialized()) {
-          console.log('生成新的事件模板库...');
-          const newTemplates = generateEventTemplateLibrary();
-          setEventTemplateLibrary(newTemplates);
-
-          try {
-            await saveTemplates(newTemplates);
-            console.log('事件模板库已保存到 IndexedDB');
-          } catch (error) {
-            console.error('保存事件模板库到 IndexedDB 失败:', error);
-          }
-        }
+        // 每次进入游戏都重新生成事件模板库
+        console.log('正在生成初始事件模板库...');
+        initializeEventTemplateLibrary(true);
       } catch (error) {
         console.error('初始化事件模板库失败:', error);
-        if (!isEventTemplateLibraryInitialized()) {
-          initializeEventTemplateLibrary();
-        }
       }
     };
 
     initTemplates();
-  }, [isReady, saveTemplates, loadTemplates, hasTemplates]);
+  }, [isReady]);
 
   // 初始化突破描述模板库
   useEffect(() => {

@@ -97,6 +97,7 @@ export interface Item {
   recipeData?: Recipe; // 丹方数据（仅当 type 为 Recipe 时使用）
   reviveChances?: number; // 保命机会次数（1-3次），仅传说和仙品装备可能有
   battleSkills?: BattleSkill[]; // 战斗技能（法宝/武器）
+  purity?: number; // 丹药纯度 (0-100)，影响丹药效果
   advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule' | 'soulArt'; // 进阶物品类型（仅当type为AdvancedItem时使用）
   advancedItemId?: string; // 进阶物品ID（用于炼化）
   effect?: {
@@ -266,6 +267,9 @@ export interface PlayerStats {
   natalArtifactId: string | null; // 本命法宝ID
   // 丹方系统
   unlockedRecipes: string[]; // 已解锁的丹方名称列表
+  // 炼丹造诣系统
+  alchemyLevel: number; // 炼丹等级
+  alchemyProficiency: number; // 炼丹熟练度 (0-100, 满值后等级提升)
   // 打坐回血速度加成
   meditationHpRegenMultiplier: number; // 打坐回血速度加成倍数（默认1.0，打坐时增加）
   meditationBoostEndTime: number | null; // 打坐回血加成结束时间戳（毫秒）

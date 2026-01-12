@@ -54,10 +54,10 @@ let isInitialized = false;
  * 事件模板数量配置
  */
 const TEMPLATE_COUNTS = {
-  NORMAL: 1500,        // 普通历练事件 (60%)
-  LUCKY: 500,         // 大机缘事件 (10%)
-  SECRET_REALM: 700,  // 秘境探索事件 (25%)
-  SECT_CHALLENGE: 300, // 宗门挑战事件 (5%)
+  NORMAL: 720,        // 普通历练事件 (60%)
+  LUCKY: 120,         // 大机缘事件 (10%)
+  SECRET_REALM: 300,  // 秘境探索事件 (25%)
+  SECT_CHALLENGE: 60, // 宗门挑战事件 (5%)
 } as const;
 
 /**
@@ -972,7 +972,6 @@ function generateRandomItem(rarity: ItemRarity, index: number): AdventureResult[
 
   // 使用 Fisher-Yates 风格的随机选择，增加随机性
   // 先打乱数组顺序（基于确定性随机数）
-  const shuffleSeed = deterministicRandom(index, 500);
   const shuffledItems = [...filteredItems];
   for (let i = shuffledItems.length - 1; i > 0; i--) {
     const j = Math.floor(deterministicRandom(index, 500 + i) * (i + 1));
@@ -1099,8 +1098,8 @@ function generateRandomItem(rarity: ItemRarity, index: number): AdventureResult[
 /**
  * 初始化事件模板库（同步版本，用于直接生成）
  */
-export function initializeEventTemplateLibrary(): void {
-  if (eventTemplateLibrary.length === 0 && !isInitialized) {
+export function initializeEventTemplateLibrary(force: boolean = false): void {
+  if (force || (eventTemplateLibrary.length === 0 && !isInitialized)) {
     eventTemplateLibrary = generateEventTemplateLibrary();
     isInitialized = true;
   }

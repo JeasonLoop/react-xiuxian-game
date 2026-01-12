@@ -908,3 +908,40 @@ export const calculateItemSellPrice = (item: Item): number => {
   return isNaN(finalPrice) ? 1 : Math.max(1, finalPrice);
 };
 
+/**
+ * 乘算物品效果
+ */
+export const multiplyEffects = <T extends Record<string, any>>(effects: T, multiplier: number): T => {
+  const result: any = {};
+  Object.entries(effects).forEach(([key, value]) => {
+    if (typeof value === 'number') {
+      result[key] = Math.floor(value * multiplier);
+    } else if (typeof value === 'object' && value !== null) {
+      result[key] = multiplyEffects(value, multiplier);
+    } else {
+      result[key] = value;
+    }
+  });
+  return result as T;
+};
+
+/**
+ * 根据纯度调整丹药效果
+ * 极品丹药 (纯度100) 效果大幅提升
+ */
+export const adjustPillEffectByPurity = (
+  effect: Item['effect'],
+  permanentEffect: Item['permanentEffect'],
+  purity: number
+): { effect?: Item['effect']; permanentEffect?: Item['permanentEffect'] } => {
+  // 临时效果：100纯度->2.5倍，60纯度->1.5倍
+  const effectMultiplier = 1.5 + (Math.max(60, purity) - 60) * 0.025;
+  // 永久效果：100纯度->1.5倍，60纯度->1.0倍
+  const permanentMultiplier = 1.0 + (Math.max(60, purity) - 60) * 0.0125;
+
+  return {
+    effect: effect ? multiplyEffects(effect, effectMultiplier) : undefined,
+    permanentEffect: permanentEffect ? multiplyEffects(permanentEffect, permanentMultiplier) : undefined,
+  };
+};
+
