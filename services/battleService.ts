@@ -687,7 +687,7 @@ function handlePetAction(
   }
 }
 
-const createEnemy = async (
+export const createEnemy = async (
   player: PlayerStats,
   adventureType: AdventureType,
   riskLevel?: '低' | '中' | '高' | '极度危险',

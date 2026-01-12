@@ -610,8 +610,6 @@ export const ALCHEMY_MATERIALS_ITEMS: Item[] = [
     description: '强大妖兽体内凝聚的高阶内丹，灵气逼人，是炼制传说级丹药的珍贵材料。直接使用可提升体魄和攻击力。',
     quantity: 1,
     rarity: '稀有',
-    effect: { hp: 1000 },
-    permanentEffect: { physique: 100, attack: 100 },
   },
   {
     id: 'ten-thousand-year-spirit-milk',
@@ -620,8 +618,6 @@ export const ALCHEMY_MATERIALS_ITEMS: Item[] = [
     description: '万年灵脉中凝聚的精华，散发着浓郁的灵气，是炼制仙品丹药的珍贵材料。直接使用可大幅提升神识和各项属性。',
     quantity: 1,
     rarity: '传说',
-    effect: { hp: 2000, spirit: 500 },
-    permanentEffect: { spirit: 800, maxHp: 600, physique: 400, speed: 300 },
   },
   {
     id: 'nine-leaf-grass',

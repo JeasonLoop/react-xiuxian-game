@@ -4,6 +4,7 @@ import { REALM_ORDER, HEAVEN_EARTH_SOUL_BOSSES } from '../../constants/index';
 import {
   shouldTriggerBattle,
   resolveBattleEncounter,
+  createEnemy,
   BattleReplay,
 } from '../../services/battleService';
 import { executeAdventureCore } from './executeAdventureCore';
@@ -48,6 +49,7 @@ interface UseAdventureHandlersProps {
     riskLevel?: '低' | '中' | '高' | '极度危险';
     realmMinRealm?: RealmType;
     bossId?: string; // 指定的天地之魄BOSS ID（用于事件模板）
+    onBattleInitialized?: (enemyName: string) => void; // 战斗初始化完成后的回调
   }) => void; // 打开回合制战斗
   skipBattle?: boolean; // 是否跳过战斗（自动模式下）
   fleeOnBattle?: boolean; // 遇到战斗是否逃跑
@@ -144,15 +146,21 @@ export function useAdventureHandlers({
       return { result: battleResult, battleContext: battleCtx, shouldReturn: false };
     } else if (useTurnBasedBattle && onOpenTurnBasedBattle && !effectiveSkipBattle) {
       // 如果使用回合制战斗系统，打开回合制战斗界面
-      setTimeout(() => {
-        onOpenTurnBasedBattle({
-          adventureType: battleType,
-          riskLevel,
-          realmMinRealm,
-          bossId,
-        });
-      }, 2000);
-      setLoading(false);
+      // 注意：不在打开前调用 createEnemy，避免敌人信息不一致
+      // 敌人信息将在战斗弹窗初始化完成后通过回调输出
+      onOpenTurnBasedBattle({
+        adventureType: battleType,
+        riskLevel,
+        realmMinRealm,
+        bossId,
+        onBattleInitialized: (enemyName: string) => {
+          // 战斗初始化完成后输出遭遇敌人的提示
+          addLog(`⚠️ 你遭遇了【${enemyName}】！战斗即将开始...`, 'danger');
+          // 初始化完成后关闭 loading
+          setLoading(false);
+        },
+      });
+      // 保持 loading 状态直到战斗弹窗初始化完成
       setCooldown(2);
       return { result: {} as AdventureResult, battleContext: null, shouldReturn: true };
     } else {
@@ -201,7 +209,7 @@ export function useAdventureHandlers({
     }
 
     try {
-      let result;
+      let result: AdventureResult | undefined;
       let battleContext: BattleReplay | null = null;
       let petSkillCooldowns: Record<string, number> | undefined;
 
@@ -225,6 +233,10 @@ export function useAdventureHandlers({
           huntLevel
         );
         if (battleRes.shouldReturn) {
+          // 如果返回了，确保至少输出一个日志
+          if (!battleRes.result?.story) {
+            addLog('你避开了追杀者，继续历练...', 'normal');
+          }
           return;
         }
         result = battleRes.result;
@@ -242,6 +254,10 @@ export function useAdventureHandlers({
         // 使用公共函数处理战斗
         const battleRes = await handleBattle(adventureType, riskLevel || '低', realmMinRealm || player.realm);
         if (battleRes.shouldReturn) {
+          // 如果返回了，确保至少输出一个日志
+          if (!battleRes.result?.story) {
+            addLog('你避开了战斗，继续历练...', 'normal');
+          }
           return;
         }
         result = battleRes.result;
@@ -378,9 +394,6 @@ export function useAdventureHandlers({
               player.realm,
               bossId
             );
-            if (battleResult.shouldReturn) {
-              return;
-            }
             result = battleResult.result;
             battleContext = battleResult.battleContext;
           }
@@ -396,6 +409,17 @@ export function useAdventureHandlers({
         }
       }
 
+      // 确保 result 存在，如果不存在则使用默认值
+      if (!result) {
+        result = {
+          story: '你在历练途中没有遇到什么特别的事情。',
+          hpChange: 0,
+          expChange: Math.floor(10 * (1 + REALM_ORDER.indexOf(player.realm) * 0.3)),
+          spiritStonesChange: 0,
+          eventColor: 'normal',
+        };
+      }
+
       // 等待2秒后再处理结果
       await new Promise(resolve => setTimeout(resolve, 2000));
 
@@ -403,7 +427,7 @@ export function useAdventureHandlers({
         console.log('result', result);
       }
 
-      // 3秒后执行结果处理
+      // 执行结果处理
       await executeAdventureCore({
         result,
         battleContext,

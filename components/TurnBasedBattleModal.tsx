@@ -25,6 +25,8 @@ import {
 } from '../services/battleService';
 import { BATTLE_POTIONS, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES, CULTIVATION_ARTS } from '../constants/index';
 import { showConfirm } from '../utils/toastUtils';
+import { BattleSkill } from '../types';
+import { useUIStore } from '../store/uiStore';
 
 interface TurnBasedBattleModalProps {
   isOpen: boolean;
@@ -71,6 +73,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   const [showSkills, setShowSkills] = useState(false);
   const [skillSearch, setSkillSearch] = useState('');
   const [skillTypeFilter, setSkillTypeFilter] = useState<string | null>(null);
+  const [skillRarityFilter, setSkillRarityFilter] = useState<string | null>(null);
   const [showPotions, setShowPotions] = useState(false);
   const [showAdvancedItems, setShowAdvancedItems] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -132,6 +135,13 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
           setBattleState(state);
           setIsProcessing(false); // 初始化完成后重置
           isActionLockedRef.current = false;
+
+          // 输出遭遇敌人的提示（使用实际生成的敌人信息）
+          const enemyName = state.enemy.name;
+          const store = useUIStore.getState();
+          if (store.turnBasedBattleParams?.onBattleInitialized) {
+            store.turnBasedBattleParams.onBattleInitialized(enemyName);
+          }
         })
         .catch((error) => {
           if (hasInitTimedOutRef.current || !isInitializedRef.current) {
@@ -541,7 +551,50 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
     }).length;
   }, [battleState]);
 
-  // 获取可用技能（检查冷却和MP，且包含搜索/类型过滤）
+  // 获取技能品质（从功法、法宝等来源获取）
+  const getSkillRarity = useMemo(() => {
+    if (!battleState) return () => null as string | null;
+
+    // 创建功法映射表
+    const artsMap = new Map(CULTIVATION_ARTS.map(art => [art.id, art]));
+
+    // 创建物品映射表（包括所有背包物品，用于通过ID或名称查找）
+    const itemsMap = new Map<string, Item>();
+    battleState.playerInventory.forEach(item => {
+      itemsMap.set(item.id, item);
+      // 也通过名称映射，因为技能可能使用名称作为sourceId
+      if (item.name) {
+        itemsMap.set(item.name, item);
+      }
+    });
+
+    return (skill: BattleSkill): string | null => {
+      // 从功法获取品质（天、地、玄、黄）
+      if (skill.source === 'cultivation_art') {
+        const art = artsMap.get(skill.sourceId);
+        if (art?.grade) {
+          return art.grade;
+        }
+      }
+
+      return null;
+    };
+  }, [battleState]);
+
+  // 获取品质颜色样式
+  const getRarityColor = (rarity: string | null): string => {
+    if (!rarity) return 'border-stone-600 text-stone-400 bg-stone-900/20';
+
+    // 功法品级颜色
+    if (rarity === '天') return 'border-yellow-500 text-yellow-400 bg-yellow-900/20';
+    if (rarity === '地') return 'border-purple-500 text-purple-400 bg-purple-900/20';
+    if (rarity === '玄') return 'border-blue-500 text-blue-400 bg-blue-900/20';
+    if (rarity === '黄') return 'border-green-500 text-green-400 bg-green-900/20';
+
+    return 'border-stone-600 text-stone-400 bg-stone-900/20';
+  };
+
+  // 获取可用技能（检查冷却和MP，且包含搜索/类型/品质过滤）
   const availableSkills = useMemo(() => {
     if (!battleState) return [];
     let filtered = battleState.player.skills.filter((skill) => {
@@ -557,8 +610,14 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
     if (skillTypeFilter) {
       filtered = filtered.filter(s => s.type === skillTypeFilter);
     }
+    if (skillRarityFilter) {
+      filtered = filtered.filter(s => {
+        const rarity = getSkillRarity(s);
+        return rarity === skillRarityFilter;
+      });
+    }
     return filtered;
-  }, [battleState, skillSearch, skillTypeFilter]);
+  }, [battleState, skillSearch, skillTypeFilter, skillRarityFilter, getSkillRarity]);
 
   // 获取冷却中或MP不足的技能
   const unavailableSkills = useMemo(() => {
@@ -576,8 +635,14 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
     if (skillTypeFilter) {
       filtered = filtered.filter(s => s.type === skillTypeFilter);
     }
+    if (skillRarityFilter) {
+      filtered = filtered.filter(s => {
+        const rarity = getSkillRarity(s);
+        return rarity === skillRarityFilter;
+      });
+    }
     return filtered;
-  }, [battleState, skillSearch, skillTypeFilter]);
+  }, [battleState, skillSearch, skillTypeFilter, skillRarityFilter, getSkillRarity]);
 
   // 获取可用丹药（从战斗状态中的背包获取，因为物品使用会更新背包）
   const availablePotions = useMemo(() => {
@@ -771,6 +836,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                   if (showSkills) {
                     setSkillSearch('');
                     setSkillTypeFilter(null);
+                    setSkillRarityFilter(null);
                   }
                   setShowSkills(!showSkills);
                 }}
@@ -840,7 +906,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                 <div className="flex flex-col gap-2 mb-3">
                   <div className="flex justify-between items-center">
                     <div className="text-sm text-stone-300 font-semibold">可用技能 ({availableSkills.length})</div>
-                    <div className="flex gap-1.5">
+                    <div className="flex gap-1.5 flex-wrap">
                       {[
                         { id: 'attack', label: '攻击', activeClass: 'bg-rose-900/40 border-rose-500 text-rose-300' },
                         { id: 'defense', label: '防御', activeClass: 'bg-blue-900/40 border-blue-500 text-blue-300' },
@@ -863,6 +929,27 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                       ))}
                     </div>
                   </div>
+                  {/* 品质筛选 */}
+                  <div className="flex gap-1.5 flex-wrap">
+                    {[
+                      { id: '天', label: '天', color: 'border-yellow-500 text-yellow-400 bg-yellow-900/40' },
+                      { id: '地', label: '地', color: 'border-purple-500 text-purple-400 bg-purple-900/40' },
+                      { id: '玄', label: '玄', color: 'border-blue-500 text-blue-400 bg-blue-900/40' },
+                      { id: '黄', label: '黄', color: 'border-green-500 text-green-400 bg-green-900/40' },
+                    ].map((rarity) => (
+                      <button
+                        key={rarity.id}
+                        onClick={() => setSkillRarityFilter(skillRarityFilter === rarity.id ? null : rarity.id)}
+                        className={`px-2 py-1 rounded text-xs border transition-colors ${
+                          skillRarityFilter === rarity.id
+                            ? rarity.color
+                            : 'bg-ink-900 border-stone-700 text-stone-500 hover:border-stone-600'
+                        }`}
+                      >
+                        {rarity.label}
+                      </button>
+                    ))}
+                  </div>
                   <input
                     type="text"
                     placeholder="搜索技能名称..."
@@ -875,7 +962,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                 <div className="overflow-y-auto pr-1 space-y-2 flex-1 min-h-0">
                   {availableSkills.length === 0 ? (
                     <div className="text-sm text-stone-500 text-center py-4">
-                      {skillSearch || skillTypeFilter ? '未找到符合条件的技能' : '没有可用技能'}
+                      {skillSearch || skillTypeFilter || skillRarityFilter ? '未找到符合条件的技能' : '没有可用技能'}
                     </div>
                   ) : (
                     availableSkills.map((skill) => (
@@ -895,8 +982,10 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                         }`}
                       >
                         <div className="flex justify-between items-center">
-                          <span className="text-blue-300 font-semibold">
-                            {skill.name}
+                          <div className="flex items-center gap-2">
+                            <span className="text-blue-300 font-semibold">
+                              {skill.name}
+                            </span>
                             <span className={`ml-2 text-[10px] px-1 rounded border border-blue-500/30 text-blue-400/80 font-normal`}>
                               {skill.type === 'attack' ? '攻击' :
                                skill.type === 'defense' ? '防御' :
@@ -904,7 +993,15 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                                skill.type === 'buff' ? '增益' :
                                skill.type === 'debuff' ? '减益' : '特殊'}
                             </span>
-                          </span>
+                            {(() => {
+                              const rarity = getSkillRarity(skill);
+                              return rarity ? (
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${getRarityColor(rarity)}`}>
+                                  {rarity}
+                                </span>
+                              ) : null;
+                            })()}
+                          </div>
                           <span className="text-xs text-stone-400">
                             {skill.cost.mana
                               ? `消耗灵力: ${skill.cost.mana}`
@@ -936,8 +1033,10 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                               className="w-full text-left p-2 rounded border border-stone-700 bg-stone-900/40 text-sm"
                             >
                               <div className="flex justify-between items-center">
-                                <span className="text-stone-400 font-semibold">
-                                  {skill.name}
+                                <div className="flex items-center gap-2">
+                                  <span className="text-stone-400 font-semibold">
+                                    {skill.name}
+                                  </span>
                                   <span className="ml-2 text-[10px] text-stone-500 font-normal">
                                     {skill.type === 'attack' ? '攻击' :
                                      skill.type === 'defense' ? '防御' :
@@ -945,7 +1044,15 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                                      skill.type === 'buff' ? '增益' :
                                      skill.type === 'debuff' ? '减益' : '特殊'}
                                   </span>
-                                </span>
+                                  {(() => {
+                                    const rarity = getSkillRarity(skill);
+                                    return rarity ? (
+                                      <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${getRarityColor(rarity)}`}>
+                                        {rarity}
+                                      </span>
+                                    ) : null;
+                                  })()}
+                                </div>
                                 <span className="text-xs text-stone-500">
                                   {onCooldown &&
                                     `冷却: ${battleState.player.cooldowns[skill.id]} 回合`}

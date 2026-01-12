@@ -9,8 +9,48 @@ import {
   HEAVEN_EARTH_SOUL_BOSSES,
   LONGEVITY_RULES,
 } from '../constants/index';
-import {  getAllItemsFromConstants } from '../utils/itemConstantsUtils';
+import { getAllItemsFromConstants } from '../utils/itemConstantsUtils';
 import { logger } from '../utils/logger';
+
+// ==================== 常量定义 ====================
+
+/**
+ * 常用地点描述
+ * 用于生成事件故事中的地点描述
+ */
+const COMMON_LOCATIONS = ['古洞府', '遗迹', '仙山', '秘境', '禁地'] as const;
+const DANGEROUS_LOCATIONS = ['险地', '禁地', '危险区域', '魔域', '死地'] as const;
+const NATURAL_LOCATIONS = ['森林', '山洞', '山谷', '河边', '山崖'] as const;
+const CULTIVATION_LOCATIONS = ['灵泉', '古洞', '遗迹', '仙山', '秘境'] as const;
+
+/**
+ * 常用描述词
+ * 用于修饰物品、地点等的形容词
+ */
+const QUALITY_WORDS = ['残破', '古老', '神秘', '珍贵', '稀有'] as const;
+const CONTAINER_WORDS = ['玉盒', '石盒', '木盒', '金盒', '宝盒'] as const;
+const PLATFORM_WORDS = ['祭坛', '石台', '玉座', '法阵', '灵池'] as const;
+
+/**
+ * 人物类型
+ * 用于生成事件中遇到的人物描述
+ */
+const CULTIVATOR_TYPES = ['散修', '宗门弟子', '游方道士', '隐世高人', '商队护卫'] as const;
+const ELDER_TYPES = ['隐世高人', '前辈修士', '神秘老者', '仙门长老', '散修大能'] as const;
+const ENEMY_TYPES = ['邪修', '魔修', '恶人', '歹徒', '敌人'] as const;
+
+/**
+ * 物品类型
+ * 用于描述洞府中发现的物品
+ */
+const ITEM_TYPES = ['书籍', '丹药', '材料', '灵石', '法器'] as const;
+
+/**
+ * 仙品丹药效果最小值
+ * 确保仙品丹药的效果不会太低
+ */
+const MIN_PILL_EFFECT = 250;
+const MIN_PILL_EXP_EFFECT = 5000;
 
 /**
  * 事件模板接口
@@ -113,27 +153,95 @@ function randomChance(index: number, probability: number, offset: number = 0): b
 }
 
 /**
- * 生成事件模板库（3000个事件）
+ * 从常量数组中获取元素（基于索引）
+ * @param array 常量数组
+ * @param index 索引值
+ * @returns 数组中的元素（循环使用）
+ */
+function getFromConstArray<T extends readonly string[]>(array: T, index: number): T[number] {
+  return array[index % array.length];
+}
+
+/**
+ * 创建基础事件模板
+ */
+function createBaseTemplate(): AdventureEventTemplate {
+  return {
+    story: '',
+    hpChange: 0,
+    expChange: 0,
+    spiritStonesChange: 0,
+    eventColor: 'normal',
+    adventureType: 'normal',
+  };
+}
+
+/**
+ * 从常量池中获取指定类型的物品
+ */
+function getItemFromConstants(itemType: ItemType, index: number, offset: number = 500) {
+  const allItems = getAllItemsFromConstants();
+  const filtered = allItems.filter(item => item.type === itemType);
+  if (filtered.length === 0) return null;
+  const random = deterministicRandom(index, offset);
+  const itemIndex = Math.floor(random * filtered.length);
+  return filtered[itemIndex] || filtered[0];
+}
+
+/**
+ * 生成高级物品事件模板（用于筑基奇物、天地精华、天地之髓等）
+ */
+function generateAdvancedItemTemplate(
+  index: number,
+  items: Array<{ id: string; name: string; description: string; rarity: ItemRarity; effects: EffectSource }>,
+  itemName: string,
+  advancedItemType: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow',
+  storyTemplates: (itemName: string, index: number) => string[],
+  hpRange: [number, number],
+  expRange: [number, number],
+  hpOffset: number,
+  expOffset: number
+): AdventureEventTemplate {
+  const selected = selectFromArray(items, index);
+  const stories = storyTemplates(selected.name, index);
+  const permanentEffect = convertEffectsToPermanentEffect(selected.effects);
+
+  return {
+    ...createBaseTemplate(),
+    story: selectFromArray(stories, index),
+    hpChange: randomInt(index, hpRange[0], hpRange[1], hpOffset),
+    expChange: randomInt(index, expRange[0], expRange[1], expOffset),
+    eventColor: 'special',
+    itemObtained: {
+      name: selected.name,
+      type: ItemType.AdvancedItem,
+      description: selected.description,
+      rarity: selected.rarity,
+      permanentEffect: Object.keys(permanentEffect).length > 0 ? permanentEffect : undefined,
+      advancedItemType,
+      advancedItemId: selected.id,
+    },
+  };
+}
+
+/**
+ * 生成事件模板库（1200个事件）
  */
 export function generateEventTemplateLibrary(): AdventureEventTemplate[] {
   const templates: AdventureEventTemplate[] = [];
 
-  // 普通历练事件 (600个，60%)
   for (let i = 0; i < TEMPLATE_COUNTS.NORMAL; i++) {
     templates.push(generateNormalEventTemplate(i));
   }
 
-  // 大机缘事件 (100个，10%)
   for (let i = 0; i < TEMPLATE_COUNTS.LUCKY; i++) {
     templates.push(generateLuckyEventTemplate(i));
   }
 
-  // 秘境探索事件 (250个，25%)
   for (let i = 0; i < TEMPLATE_COUNTS.SECRET_REALM; i++) {
     templates.push(generateSecretRealmEventTemplate(i));
   }
 
-  // 宗门挑战事件 (50个，5%)
   for (let i = 0; i < TEMPLATE_COUNTS.SECT_CHALLENGE; i++) {
     templates.push(generateSectChallengeEventTemplate(i));
   }
@@ -184,23 +292,22 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
   const rarityRoll = deterministicRandom(index, 1);
   const rarity: ItemRarity = rarityRoll < 0.6 ? '普通' : rarityRoll < 0.9 ? '稀有' : '传说';
 
-  const baseTemplate: AdventureEventTemplate = {
-    story: '',
-    hpChange: 0,
-    expChange: 0,
-    spiritStonesChange: 0,
-    eventColor: 'normal',
-    adventureType: 'normal',
-  };
+  const baseTemplate = createBaseTemplate();
 
   switch (eventType) {
     case 'battle': {
+      const beasts = ['青狼', '黑熊', '花豹', '猛虎', '巨蟒'] as const;
+      const enemies = ['野狼', '山贼', '妖兽', '魔物', '邪修'] as const;
+      const undead = ['骷髅兵', '怨灵', '僵尸', '鬼物', '魔物'] as const;
+      const poisonous = ['毒蛇', '蜘蛛', '蝎子', '蜈蚣', '蝙蝠'] as const;
+      const wild = ['山猫', '野猪', '猛禽', '巨猿', '妖狐'] as const;
+
       const stories = [
-        `你在一片茂密的原始森林中穿行，参天古木遮天蔽日，突然听到前方传来低沉的咆哮声，震得树叶簌簌作响。你屏住呼吸，小心翼翼地拨开灌木，发现一只${['青狼', '黑熊', '花豹', '猛虎', '巨蟒'][index % 5]}正在撕咬猎物，眼中闪烁着凶光。你决定先发制人，运转功法，剑光如电，经过一番激烈的搏斗，终于将其斩于剑下。`,
-        `在荒山野岭中，你正沿着崎岖的山路前行，突然四周传来阵阵低吼，一群${['野狼', '山贼', '妖兽', '魔物', '邪修'][index % 5]}从四面八方围了上来，眼中闪烁着贪婪和杀意。你临危不乱，祭出法宝，施展神通，剑光与妖气交织，经过一场惊心动魄的战斗，终于成功击退了它们。`,
-        `你正在探索一处古战场遗址，残破的兵器散落一地，空气中弥漫着淡淡的血腥味。突然，从废墟深处传来骨骼摩擦的"咔嚓"声，一只${['骷髅兵', '怨灵', '僵尸', '鬼物', '魔物'][index % 5]}从地底爬出，眼中燃烧着幽绿的鬼火。你立即运转护体功法，剑指苍穹，经过一番苦斗，终于将其彻底消灭。`,
-        `在一片幽暗的峡谷中，你小心翼翼地前行，突然感到背后传来一阵寒意。你迅速转身，发现一只巨大的${['毒蛇', '蜘蛛', '蝎子', '蜈蚣', '蝙蝠'][index % 5]}正虎视眈眈地盯着你，毒液从獠牙间滴落，腐蚀着地面。你不敢大意，立即施展身法，剑光如雨，经过一番惊险的战斗，终于将其击败。`,
-        `你在一处山洞中休息时，正闭目调息，突然感到一股强烈的杀意袭来。你猛然睁开双眼，发现一只${['山猫', '野猪', '猛禽', '巨猿', '妖狐'][index % 5]}正悄无声息地接近，眼中闪烁着狡黠的光芒。你立即起身，运转功法，经过一番激烈的搏斗，终于将其击退。`,
+        `你在一片茂密的原始森林中穿行，参天古木遮天蔽日，突然听到前方传来低沉的咆哮声，震得树叶簌簌作响。你屏住呼吸，小心翼翼地拨开灌木，发现一只${getFromConstArray(beasts, index)}正在撕咬猎物，眼中闪烁着凶光。你决定先发制人，运转功法，剑光如电，经过一番激烈的搏斗，终于将其斩于剑下。`,
+        `在荒山野岭中，你正沿着崎岖的山路前行，突然四周传来阵阵低吼，一群${getFromConstArray(enemies, index)}从四面八方围了上来，眼中闪烁着贪婪和杀意。你临危不乱，祭出法宝，施展神通，剑光与妖气交织，经过一场惊心动魄的战斗，终于成功击退了它们。`,
+        `你正在探索一处古战场遗址，残破的兵器散落一地，空气中弥漫着淡淡的血腥味。突然，从废墟深处传来骨骼摩擦的"咔嚓"声，一只${getFromConstArray(undead, index)}从地底爬出，眼中燃烧着幽绿的鬼火。你立即运转护体功法，剑指苍穹，经过一番苦斗，终于将其彻底消灭。`,
+        `在一片幽暗的峡谷中，你小心翼翼地前行，突然感到背后传来一阵寒意。你迅速转身，发现一只巨大的${getFromConstArray(poisonous, index)}正虎视眈眈地盯着你，毒液从獠牙间滴落，腐蚀着地面。你不敢大意，立即施展身法，剑光如雨，经过一番惊险的战斗，终于将其击败。`,
+        `你在一处山洞中休息时，正闭目调息，突然感到一股强烈的杀意袭来。你猛然睁开双眼，发现一只${getFromConstArray(wild, index)}正悄无声息地接近，眼中闪烁着狡黠的光芒。你立即起身，运转功法，经过一番激烈的搏斗，终于将其击退。`,
       ];
       return {
         ...baseTemplate,
@@ -215,23 +322,14 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
 
     case 'herb': {
       // 从常量池中获取草药
-      const allItems = getAllItemsFromConstants();
-      const herbs = allItems.filter(item => item.type === ItemType.Herb);
-      // 使用确定性随机数选择草药，增加随机性
-      const selectedHerb = herbs.length > 0
-        ? (() => {
-            const herbRandom = deterministicRandom(index, 500);
-            const herbIndex = Math.floor(herbRandom * herbs.length);
-            return herbs[herbIndex] || herbs[0];
-          })()
-        : {
-            name: '聚灵草',
-            type: ItemType.Herb,
-            description: '一株珍贵的聚灵草，蕴含着浓郁的灵气。',
-            rarity: '普通' as ItemRarity,
-            effect: { hp: 50, exp: 10 },
-            permanentEffect: { spirit: 1, maxHp: 10 },
-          };
+      const selectedHerb = getItemFromConstants(ItemType.Herb, index, 500) || {
+        name: '聚灵草',
+        type: ItemType.Herb,
+        description: '一株珍贵的聚灵草，蕴含着浓郁的灵气。',
+        rarity: '普通' as ItemRarity,
+        effect: { hp: 50, exp: 10 },
+        permanentEffect: { spirit: 1, maxHp: 10 },
+      };
 
       const stories = [
         `你在山间小径上行走，清风徐来，突然闻到一股淡淡的药香，沁人心脾。你停下脚步，仔细嗅了嗅，循着香味寻找，在一处隐蔽的岩石缝隙中发现了一株${selectedHerb.name}，叶片上还挂着晶莹的露珠，散发着淡淡的灵光。你小心地将其采摘下来，感受到其中蕴含的浓郁灵气。`,
@@ -428,13 +526,22 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
     case 'petOpportunity': {
       const opportunityTypes: Array<'evolution' | 'level' | 'stats' | 'exp'> = ['evolution', 'level', 'stats', 'exp'];
       const type = selectFromArray(opportunityTypes, index);
+      const typeDesc = {
+        evolution: '成功进化，身体发生了巨大的变化，实力大幅提升',
+        level: '等级提升，实力更加强大',
+        stats: '属性增强，各项能力都有了显著提升',
+        exp: '获得经验，对修炼有了更深的理解'
+      }[type];
+
+      const locations = [getFromConstArray(CULTIVATION_LOCATIONS, index), getFromConstArray(QUALITY_WORDS, index)];
       const stories = [
-        `你的灵宠在一处${['灵泉', '古洞', '遗迹', '仙山', '秘境'][index % 5]}中探索时，突然感到一股浓郁的灵气。它循着灵气寻找，发现了一处机缘之地。灵宠在那里停留了许久，吸收了大量的灵气，${type === 'evolution' ? '成功进化，身体发生了巨大的变化，实力大幅提升' : type === 'level' ? '等级提升，实力更加强大' : type === 'stats' ? '属性增强，各项能力都有了显著提升' : '获得经验，对修炼有了更深的理解'}。你看到灵宠的变化，心中充满了喜悦。`,
-        `你在一处${['隐蔽', '神秘', '古老', '珍贵', '稀有'][index % 5]}的地方探索时，你的灵宠突然变得兴奋起来，它似乎感受到了什么。你跟着灵宠，来到了一处机缘之地。灵宠在那里停留了许久，吸收了大量的灵气，${type === 'evolution' ? '成功进化，身体发生了巨大的变化，实力大幅提升' : type === 'level' ? '等级提升，实力更加强大' : type === 'stats' ? '属性增强，各项能力都有了显著提升' : '获得经验，对修炼有了更深的理解'}。你看到灵宠的变化，心中充满了喜悦。`,
-        `你的灵宠在一处${['灵泉', '古洞', '遗迹', '仙山', '秘境'][index % 5]}中探索时，突然感到一股浓郁的灵气。它循着灵气寻找，发现了一处机缘之地。灵宠在那里停留了许久，吸收了大量的灵气，${type === 'evolution' ? '成功进化，身体发生了巨大的变化，实力大幅提升' : type === 'level' ? '等级提升，实力更加强大' : type === 'stats' ? '属性增强，各项能力都有了显著提升' : '获得经验，对修炼有了更深的理解'}。你看到灵宠的变化，心中充满了喜悦。`,
-        `你在一处${['隐蔽', '神秘', '古老', '珍贵', '稀有'][index % 5]}的地方探索时，你的灵宠突然变得兴奋起来，它似乎感受到了什么。你跟着灵宠，来到了一处机缘之地。灵宠在那里停留了许久，吸收了大量的灵气，${type === 'evolution' ? '成功进化，身体发生了巨大的变化，实力大幅提升' : type === 'level' ? '等级提升，实力更加强大' : type === 'stats' ? '属性增强，各项能力都有了显著提升' : '获得经验，对修炼有了更深的理解'}。你看到灵宠的变化，心中充满了喜悦。`,
-        `你的灵宠在一处${['灵泉', '古洞', '遗迹', '仙山', '秘境'][index % 5]}中探索时，突然感到一股浓郁的灵气。它循着灵气寻找，发现了一处机缘之地。灵宠在那里停留了许久，吸收了大量的灵气，${type === 'evolution' ? '成功进化，身体发生了巨大的变化，实力大幅提升' : type === 'level' ? '等级提升，实力更加强大' : type === 'stats' ? '属性增强，各项能力都有了显著提升' : '获得经验，对修炼有了更深的理解'}。你看到灵宠的变化，心中充满了喜悦。`,
+        `你的灵宠在一处${locations[0]}中探索时，突然感到一股浓郁的灵气。它循着灵气寻找，发现了一处机缘之地。灵宠在那里停留了许久，吸收了大量的灵气，${typeDesc}。你看到灵宠的变化，心中充满了喜悦。`,
+        `你在一处${locations[1]}的地方探索时，你的灵宠突然变得兴奋起来，它似乎感受到了什么。你跟着灵宠，来到了一处机缘之地。灵宠在那里停留了许久，吸收了大量的灵气，${typeDesc}。你看到灵宠的变化，心中充满了喜悦。`,
+        `你的灵宠在一处${locations[0]}中探索时，突然感到一股浓郁的灵气。它循着灵气寻找，发现了一处机缘之地。灵宠在那里停留了许久，吸收了大量的灵气，${typeDesc}。你看到灵宠的变化，心中充满了喜悦。`,
+        `你在一处${locations[1]}的地方探索时，你的灵宠突然变得兴奋起来，它似乎感受到了什么。你跟着灵宠，来到了一处机缘之地。灵宠在那里停留了许久，吸收了大量的灵气，${typeDesc}。你看到灵宠的变化，心中充满了喜悦。`,
+        `你的灵宠在一处${locations[0]}中探索时，突然感到一股浓郁的灵气。它循着灵气寻找，发现了一处机缘之地。灵宠在那里停留了许久，吸收了大量的灵气，${typeDesc}。你看到灵宠的变化，心中充满了喜悦。`,
       ];
+
       const petOpportunity: AdventureResult['petOpportunity'] = type === 'evolution'
         ? { type: 'evolution' }
         : type === 'level'
@@ -539,118 +646,73 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
     }
 
     case 'foundationTreasure': {
-      // 从筑基奇物中随机选择一个
-      const allTreasures = Object.values(FOUNDATION_TREASURES);
-      const selectedTreasure = selectFromArray(allTreasures, index);
-
-      const stories = [
-        `你在一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}中探索时，突然感到一股奇异的波动。你循着波动寻找，发现了一处${['隐蔽', '神秘', '古老', '珍贵', '稀有'][index % 5]}的所在，那里摆放着一个${['玉盒', '石盒', '木盒', '金盒', '宝盒'][index % 5]}。你小心地打开，发现里面竟然是一份${selectedTreasure.name}！这正是筑基所需的奇物，你心中大喜，将其小心收好。`,
-        `你在${['探索', '修炼', '游历', '冒险', '寻宝'][index % 5]}时，偶然遇到了一位${['隐世高人', '前辈修士', '神秘老者', '仙门长老', '散修大能'][index % 5]}。对方见你资质不错，又正好处于筑基关口，便赠与了你一份${selectedTreasure.name}。你感激不尽，知道这正是筑基所需的重要奇物。`,
-        `你在一处${['古墓', '遗迹', '洞府', '秘境', '禁地'][index % 5]}的深处，发现了一处${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的祭坛。祭坛上摆放着几件物品，其中一件正是${selectedTreasure.name}。你感受到其中蕴含的强大力量，知道这正是筑基所需的奇物，便将其取走。`,
-        `你在探索时，偶然发现了一处${['隐蔽', '神秘', '古老', '珍贵', '稀有'][index % 5]}的灵地。那里灵气浓郁，似乎有什么宝物。你仔细搜索，在一个${['石缝', '树洞', '洞穴', '水潭', '灵泉'][index % 5]}中发现了一份${selectedTreasure.name}。你感受到其中蕴含的筑基之力，心中充满了喜悦。`,
-        `你在一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}中，意外触发了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的机关。机关启动后，一个${['玉盒', '石盒', '木盒', '金盒', '宝盒'][index % 5]}从暗格中弹出。你打开一看，里面竟然是一份${selectedTreasure.name}！这正是你筑基所需的奇物。`,
-      ];
-
-      // 将筑基奇物转换为Item格式
-      const permanentEffect = convertEffectsToPermanentEffect(selectedTreasure.effects);
-
-      return {
-        ...baseTemplate,
-        story: selectFromArray(stories, index),
-        hpChange: randomInt(index, 10, 30, 460),
-        expChange: randomInt(index, 30, 80, 470),
-        eventColor: 'special',
-        itemObtained: {
-          name: selectedTreasure.name,
-          type: ItemType.AdvancedItem,
-          description: selectedTreasure.description,
-          rarity: selectedTreasure.rarity,
-          permanentEffect: Object.keys(permanentEffect).length > 0 ? permanentEffect : undefined,
-          advancedItemType: 'foundationTreasure',
-          advancedItemId: selectedTreasure.id,
-        },
-      };
+      return generateAdvancedItemTemplate(
+        index,
+        Object.values(FOUNDATION_TREASURES),
+        'foundationTreasure',
+        'foundationTreasure',
+        (name, idx) => [
+          `你在一处${getFromConstArray(COMMON_LOCATIONS, idx)}中探索时，突然感到一股奇异的波动。你循着波动寻找，发现了一处${getFromConstArray(QUALITY_WORDS, idx)}的所在，那里摆放着一个${getFromConstArray(CONTAINER_WORDS, idx)}。你小心地打开，发现里面竟然是一份${name}！这正是筑基所需的奇物，你心中大喜，将其小心收好。`,
+          `你在探索时，偶然遇到了一位${getFromConstArray(ELDER_TYPES, idx)}。对方见你资质不错，又正好处于筑基关口，便赠与了你一份${name}。你感激不尽，知道这正是筑基所需的重要奇物。`,
+          `你在一处${getFromConstArray(COMMON_LOCATIONS, idx)}的深处，发现了一处${getFromConstArray(QUALITY_WORDS, idx)}的祭坛。祭坛上摆放着几件物品，其中一件正是${name}。你感受到其中蕴含的强大力量，知道这正是筑基所需的奇物，便将其取走。`,
+          `你在探索时，偶然发现了一处${getFromConstArray(QUALITY_WORDS, idx)}的灵地。那里灵气浓郁，似乎有什么宝物。你仔细搜索，在一个隐蔽的地方发现了一份${name}。你感受到其中蕴含的筑基之力，心中充满了喜悦。`,
+          `你在一处${getFromConstArray(COMMON_LOCATIONS, idx)}中，意外触发了一个${getFromConstArray(QUALITY_WORDS, idx)}的机关。机关启动后，一个${getFromConstArray(CONTAINER_WORDS, idx)}从暗格中弹出。你打开一看，里面竟然是一份${name}！这正是你筑基所需的奇物。`,
+        ],
+        [10, 30],
+        [30, 80],
+        460,
+        470
+      );
     }
 
     case 'heavenEarthEssence': {
-      // 从天地精华中随机选择一个
-      const allEssences = Object.values(HEAVEN_EARTH_ESSENCES);
-      const selectedEssence = selectFromArray(allEssences, index);
-
-      const stories = [
-        `你在${['探索', '修炼', '游历', '冒险', '寻宝'][index % 5]}时，突然感受到一股强大的天地之力。你循着这股力量寻找，在一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}中发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['祭坛', '石台', '玉座', '法阵', '灵池'][index % 5]}。祭坛中央悬浮着一团${selectedEssence.name}，散发着强大的道韵。你小心地将其收集，知道这正是晋升元婴所需的重要精华。`,
-        `你在一处${['古墓', '遗迹', '洞府', '秘境', '禁地'][index % 5]}的深处，发现了一处${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的天地精华汇聚之地。那里灵气浓郁得几乎要凝成实质，中央悬浮着一团${selectedEssence.name}。你感受到其中蕴含的强大力量，知道这正是晋升元婴所需的天地精华，便将其小心收集。`,
-        `你偶然遇到了一位${['隐世高人', '前辈修士', '神秘老者', '仙门长老', '散修大能'][index % 5]}，对方见你即将突破元婴，便告诉了你一处天地精华的所在。你按照指引前往，果然发现了一团${selectedEssence.name}。你将其收集，心中充满了感激和喜悦。`,
-        `你在探索一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}时，突然感受到天地间传来的强烈波动。你循着波动寻找，发现了一处${['隐蔽', '神秘', '古老', '珍贵', '稀有'][index % 5]}的所在，那里汇聚着强大的天地精华，中央悬浮着一团${selectedEssence.name}。你将其收集，知道这正是晋升元婴所需的重要精华。`,
-        `你在一处${['古墓', '遗迹', '洞府', '秘境', '禁地'][index % 5]}中，意外发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['法阵', '祭坛', '石台', '玉座', '灵池'][index % 5]}。法阵中央汇聚着强大的天地之力，凝聚成${selectedEssence.name}。你感受到其中蕴含的强大道韵，将其小心收集，知道这正是晋升元婴所需的重要精华。`,
-      ];
-
-      // 将天地精华转换为Item格式
-      const permanentEffect = convertEffectsToPermanentEffect(selectedEssence.effects);
-
-      return {
-        ...baseTemplate,
-        story: selectFromArray(stories, index),
-        hpChange: randomInt(index, 20, 50, 480),
-        expChange: randomInt(index, 50, 120, 490),
-        eventColor: 'special',
-        itemObtained: {
-          name: selectedEssence.name,
-          type: ItemType.AdvancedItem,
-          description: selectedEssence.description,
-          rarity: selectedEssence.rarity,
-          permanentEffect: Object.keys(permanentEffect).length > 0 ? permanentEffect : undefined,
-          advancedItemType: 'heavenEarthEssence',
-          advancedItemId: selectedEssence.id,
-        },
-      };
+      return generateAdvancedItemTemplate(
+        index,
+        Object.values(HEAVEN_EARTH_ESSENCES),
+        'heavenEarthEssence',
+        'heavenEarthEssence',
+        (name, idx) => [
+          `你在探索时，突然感受到一股强大的天地之力。你循着这股力量寻找，在一处${getFromConstArray(COMMON_LOCATIONS, idx)}中发现了一个${getFromConstArray(QUALITY_WORDS, idx)}的${getFromConstArray(PLATFORM_WORDS, idx)}。祭坛中央悬浮着一团${name}，散发着强大的道韵。你小心地将其收集，知道这正是晋升元婴所需的重要精华。`,
+          `你在一处${getFromConstArray(COMMON_LOCATIONS, idx)}的深处，发现了一处${getFromConstArray(QUALITY_WORDS, idx)}的天地精华汇聚之地。那里灵气浓郁得几乎要凝成实质，中央悬浮着一团${name}。你感受到其中蕴含的强大力量，知道这正是晋升元婴所需的天地精华，便将其小心收集。`,
+          `你偶然遇到了一位${getFromConstArray(ELDER_TYPES, idx)}，对方见你即将突破元婴，便告诉了你一处天地精华的所在。你按照指引前往，果然发现了一团${name}。你将其收集，心中充满了感激和喜悦。`,
+          `你在探索一处${getFromConstArray(COMMON_LOCATIONS, idx)}时，突然感受到天地间传来的强烈波动。你循着波动寻找，发现了一处${getFromConstArray(QUALITY_WORDS, idx)}的所在，那里汇聚着强大的天地精华，中央悬浮着一团${name}。你将其收集，知道这正是晋升元婴所需的重要精华。`,
+          `你在一处${getFromConstArray(COMMON_LOCATIONS, idx)}中，意外发现了一个${getFromConstArray(QUALITY_WORDS, idx)}的${getFromConstArray(PLATFORM_WORDS, idx)}。法阵中央汇聚着强大的天地之力，凝聚成${name}。你感受到其中蕴含的强大道韵，将其小心收集，知道这正是晋升元婴所需的重要精华。`,
+        ],
+        [20, 50],
+        [50, 120],
+        480,
+        490
+      );
     }
 
     case 'heavenEarthMarrow': {
-      // 从天地之髓中随机选择一个
-      const allMarrows = Object.values(HEAVEN_EARTH_MARROWS);
-      const selectedMarrow = selectFromArray(allMarrows, index);
-
-      const stories = [
-        `你在${['探索', '修炼', '游历', '冒险', '寻宝'][index % 5]}时，突然感受到一股极其强大的天地之力。你循着这股力量寻找，在一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}的最深处，发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['祭坛', '石台', '玉座', '法阵', '灵池'][index % 5]}。祭坛中央凝聚着一团${selectedMarrow.name}，散发着极其强大的道韵。你小心地将其收集，知道这正是晋升化神所需的珍贵之髓。`,
-        `你在一处${['古墓', '遗迹', '洞府', '秘境', '禁地'][index % 5]}的最深处，发现了一处${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的天地之髓汇聚之地。那里灵气浓郁得几乎要凝成实质，中央凝聚着一团${selectedMarrow.name}，散发着极其强大的力量。你感受到其中蕴含的化神之力，知道这正是晋升化神所需的天地之髓，便将其小心收集。`,
-        `你偶然遇到了一位${['隐世高人', '前辈修士', '神秘老者', '仙门长老', '散修大能'][index % 5]}，对方见你即将突破化神，便告诉了你一处天地之髓的所在。你按照指引前往，果然发现了一团${selectedMarrow.name}。你将其收集，心中充满了感激和喜悦，知道这需要经过炼化才能使用。`,
-        `你在探索一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}时，突然感受到天地间传来的极其强烈的波动。你循着波动寻找，发现了一处${['隐蔽', '神秘', '古老', '珍贵', '稀有'][index % 5]}的所在，那里汇聚着极其强大的天地之髓，中央凝聚着一团${selectedMarrow.name}。你将其收集，知道这正是晋升化神所需的重要之髓，需要经过炼化才能使用。`,
-        `你在一处${['古墓', '遗迹', '洞府', '秘境', '禁地'][index % 5]}的最深处，意外发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['法阵', '祭坛', '石台', '玉座', '灵池'][index % 5]}。法阵中央汇聚着极其强大的天地之力，经过数万年的凝聚，形成了${selectedMarrow.name}。你感受到其中蕴含的强大道韵，将其小心收集，知道这正是晋升化神所需的珍贵之髓。`,
-      ];
-
-      // 将天地之髓转换为Item格式
-      const permanentEffect = convertEffectsToPermanentEffect(selectedMarrow.effects);
-
-      return {
-        ...baseTemplate,
-        story: selectFromArray(stories, index),
-        hpChange: randomInt(index, 30, 70, 500),
-        expChange: randomInt(index, 80, 150, 510),
-        eventColor: 'special',
-        itemObtained: {
-          name: selectedMarrow.name,
-          type: ItemType.AdvancedItem,
-          description: selectedMarrow.description,
-          rarity: selectedMarrow.rarity,
-          permanentEffect: Object.keys(permanentEffect).length > 0 ? permanentEffect : undefined,
-          advancedItemType: 'heavenEarthMarrow',
-          advancedItemId: selectedMarrow.id,
-        },
-      };
+      return generateAdvancedItemTemplate(
+        index,
+        Object.values(HEAVEN_EARTH_MARROWS),
+        'heavenEarthMarrow',
+        'heavenEarthMarrow',
+        (name, idx) => [
+          `你在探索时，突然感受到一股极其强大的天地之力。你循着这股力量寻找，在一处${getFromConstArray(COMMON_LOCATIONS, idx)}的最深处，发现了一个${getFromConstArray(QUALITY_WORDS, idx)}的${getFromConstArray(PLATFORM_WORDS, idx)}。祭坛中央凝聚着一团${name}，散发着极其强大的道韵。你小心地将其收集，知道这正是晋升化神所需的珍贵之髓。`,
+          `你在一处${getFromConstArray(COMMON_LOCATIONS, idx)}的最深处，发现了一处${getFromConstArray(QUALITY_WORDS, idx)}的天地之髓汇聚之地。那里灵气浓郁得几乎要凝成实质，中央凝聚着一团${name}，散发着极其强大的力量。你感受到其中蕴含的化神之力，知道这正是晋升化神所需的天地之髓，便将其小心收集。`,
+          `你偶然遇到了一位${getFromConstArray(ELDER_TYPES, idx)}，对方见你即将突破化神，便告诉了你一处天地之髓的所在。你按照指引前往，果然发现了一团${name}。你将其收集，心中充满了感激和喜悦，知道这需要经过炼化才能使用。`,
+          `你在探索一处${getFromConstArray(COMMON_LOCATIONS, idx)}时，突然感受到天地间传来的极其强烈的波动。你循着波动寻找，发现了一处${getFromConstArray(QUALITY_WORDS, idx)}的所在，那里汇聚着极其强大的天地之髓，中央凝聚着一团${name}。你将其收集，知道这正是晋升化神所需的重要之髓，需要经过炼化才能使用。`,
+          `你在一处${getFromConstArray(COMMON_LOCATIONS, idx)}的最深处，意外发现了一个${getFromConstArray(QUALITY_WORDS, idx)}的${getFromConstArray(PLATFORM_WORDS, idx)}。法阵中央汇聚着极其强大的天地之力，经过数万年的凝聚，形成了${name}。你感受到其中蕴含的强大道韵，将其小心收集，知道这正是晋升化神所需的珍贵之髓。`,
+        ],
+        [30, 70],
+        [80, 150],
+        500,
+        510
+      );
     }
 
     case 'heavenEarthSoul': {
-      // 从天地之魄BOSS中随机选择一个
-      const allBosses = Object.values(HEAVEN_EARTH_SOUL_BOSSES);
-      const selectedBoss = selectFromArray(allBosses, index);
-
+      const selectedBoss = selectFromArray(Object.values(HEAVEN_EARTH_SOUL_BOSSES), index);
       const stories = [
-        `你在探索一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}时，突然感受到一股极其强大的威压。你循着威压寻找，在一处${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['祭坛', '石台', '玉座', '法阵', '灵池'][index % 5]}前，你看到了一个强大的存在——${selectedBoss.name}！这是天地之魄的化身，只有击败它，才能获得合道期的资格。你决定挑战这个强大的存在。`,
-        `你在一处${['古墓', '遗迹', '洞府', '秘境', '禁地'][index % 5]}的最深处，突然感受到一股极其强大的天地之力。你循着这股力量寻找，发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['法阵', '祭坛', '石台', '玉座', '灵池'][index % 5]}。法阵中央，${selectedBoss.name}缓缓显现，这是天地之魄的化身。你感受到其中蕴含的强大力量，知道只有击败它，才能获得合道期的资格。`,
-        `你在一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}的深处，突然天地变色，强大的威压从天而降。你抬头望去，${selectedBoss.name}出现在你的面前，这是天地之魄的化身。${selectedBoss.description}。你感受到这是合道期的考验，只有击败它，才能获得合道期的资格。`,
-        `你在一处${['古墓', '遗迹', '洞府', '秘境', '禁地'][index % 5]}中探索时，突然感受到天地间传来的极其强烈的波动。你循着波动寻找，发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['法阵', '祭坛', '石台', '玉座', '灵池'][index % 5]}。法阵启动，${selectedBoss.name}从法阵中显现。这是天地之魄的化身，只有击败它，才能获得合道期的资格。`,
-        `你在一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}的最深处，突然感受到一股极其强大的气息。你循着气息寻找，发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['祭坛', '石台', '玉座', '法阵', '灵池'][index % 5]}。祭坛上，${selectedBoss.name}缓缓凝聚成形。${selectedBoss.description}。这是天地之魄的化身，只有击败它，才能获得合道期的资格。你决定迎接这个挑战。`,
+        `你在探索一处${getFromConstArray(COMMON_LOCATIONS, index)}时，突然感受到一股极其强大的威压。你循着威压寻找，在一处${getFromConstArray(QUALITY_WORDS, index)}的${getFromConstArray(PLATFORM_WORDS, index)}前，你看到了一个强大的存在——${selectedBoss.name}！这是天地之魄的化身，只有击败它，才能获得合道期的资格。你决定挑战这个强大的存在。`,
+        `你在一处${getFromConstArray(COMMON_LOCATIONS, index)}的最深处，突然感受到一股极其强大的天地之力。你循着这股力量寻找，发现了一个${getFromConstArray(QUALITY_WORDS, index)}的${getFromConstArray(PLATFORM_WORDS, index)}。法阵中央，${selectedBoss.name}缓缓显现，这是天地之魄的化身。你感受到其中蕴含的强大力量，知道只有击败它，才能获得合道期的资格。`,
+        `你在一处${getFromConstArray(COMMON_LOCATIONS, index)}的深处，突然天地变色，强大的威压从天而降。你抬头望去，${selectedBoss.name}出现在你的面前，这是天地之魄的化身。${selectedBoss.description}。你感受到这是合道期的考验，只有击败它，才能获得合道期的资格。`,
+        `你在一处${getFromConstArray(COMMON_LOCATIONS, index)}中探索时，突然感受到天地间传来的极其强烈的波动。你循着波动寻找，发现了一个${getFromConstArray(QUALITY_WORDS, index)}的${getFromConstArray(PLATFORM_WORDS, index)}。法阵启动，${selectedBoss.name}从法阵中显现。这是天地之魄的化身，只有击败它，才能获得合道期的资格。`,
+        `你在一处${getFromConstArray(COMMON_LOCATIONS, index)}的最深处，突然感受到一股极其强大的气息。你循着气息寻找，发现了一个${getFromConstArray(QUALITY_WORDS, index)}的${getFromConstArray(PLATFORM_WORDS, index)}。祭坛上，${selectedBoss.name}缓缓凝聚成形。${selectedBoss.description}。这是天地之魄的化身，只有击败它，才能获得合道期的资格。你决定迎接这个挑战。`,
       ];
 
       return {
@@ -660,22 +722,19 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
         expChange: 0,
         spiritStonesChange: 0,
         eventColor: 'danger',
-        adventureType: 'dao_combining_challenge', // 标记为合道挑战类型
-        heavenEarthSoulEncounter: selectedBoss.id, // 标记遇到的BOSS ID
+        adventureType: 'dao_combining_challenge',
+        heavenEarthSoulEncounter: selectedBoss.id,
       };
     }
 
     case 'longevityRule': {
-      // 从规则之力中随机选择一个
-      const allRules = Object.values(LONGEVITY_RULES);
-      const selectedRule = selectFromArray(allRules, index);
-
+      const selectedRule = selectFromArray(Object.values(LONGEVITY_RULES), index);
       const stories = [
-        `你在${['探索', '修炼', '游历', '冒险', '寻宝'][index % 5]}时，突然感受到一股极其强大的规则之力。你循着这股力量寻找，在一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}的${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}所在，你发现了${selectedRule.name}的痕迹。这是掌控天地的规则之力，你尝试与之沟通，最终成功获得了它的认可。`,
-        `你在一处${['古墓', '遗迹', '洞府', '秘境', '禁地'][index % 5]}的最深处，突然感受到天地间传来的极其强烈的规则波动。你循着波动寻找，发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['法阵', '祭坛', '石台', '玉座', '灵池'][index % 5]}。法阵中央，${selectedRule.name}的法则显现。${selectedRule.description}。你感受到其中蕴含的强大力量，经过一番参悟，成功掌握了这道规则之力。`,
-        `你在一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}的深处，突然天地变色，强大的规则之力从虚空中显现。你抬头望去，${selectedRule.name}的法则在你面前展开。${selectedRule.description}。你沉浸在对规则的参悟中，最终成功掌握了这道规则之力，这是掌控天地的力量！`,
-        `你在一处${['古墓', '遗迹', '洞府', '秘境', '禁地'][index % 5]}中探索时，突然感受到天地间传来的极其强烈的规则波动。你循着波动寻找，发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['法阵', '祭坛', '石台', '玉座', '灵池'][index % 5]}。法阵启动，${selectedRule.name}的法则从法阵中显现。你感受到这是掌控天地的力量，经过一番参悟，成功掌握了这道规则之力。`,
-        `你在一处${['古洞府', '遗迹', '仙山', '秘境', '禁地'][index % 5]}的最深处，突然感受到一股极其强大的规则气息。你循着气息寻找，发现了一个${['残破', '古老', '神秘', '珍贵', '稀有'][index % 5]}的${['祭坛', '石台', '玉座', '法阵', '灵池'][index % 5]}。祭坛上，${selectedRule.name}的法则缓缓凝聚成形。${selectedRule.description}。你沉浸在对规则的参悟中，最终成功掌握了这道规则之力，这是掌控天地的力量！`,
+        `你在探索时，突然感受到一股极其强大的规则之力。你循着这股力量寻找，在一处${getFromConstArray(COMMON_LOCATIONS, index)}的${getFromConstArray(QUALITY_WORDS, index)}所在，你发现了${selectedRule.name}的痕迹。这是掌控天地的规则之力，你尝试与之沟通，最终成功获得了它的认可。`,
+        `你在一处${getFromConstArray(COMMON_LOCATIONS, index)}的最深处，突然感受到天地间传来的极其强烈的规则波动。你循着波动寻找，发现了一个${getFromConstArray(QUALITY_WORDS, index)}的${getFromConstArray(PLATFORM_WORDS, index)}。法阵中央，${selectedRule.name}的法则显现。${selectedRule.description}。你感受到其中蕴含的强大力量，经过一番参悟，成功掌握了这道规则之力。`,
+        `你在一处${getFromConstArray(COMMON_LOCATIONS, index)}的深处，突然天地变色，强大的规则之力从虚空中显现。你抬头望去，${selectedRule.name}的法则在你面前展开。${selectedRule.description}。你沉浸在对规则的参悟中，最终成功掌握了这道规则之力，这是掌控天地的力量！`,
+        `你在一处${getFromConstArray(COMMON_LOCATIONS, index)}中探索时，突然感受到天地间传来的极其强烈的规则波动。你循着波动寻找，发现了一个${getFromConstArray(QUALITY_WORDS, index)}的${getFromConstArray(PLATFORM_WORDS, index)}。法阵启动，${selectedRule.name}的法则从法阵中显现。你感受到这是掌控天地的力量，经过一番参悟，成功掌握了这道规则之力。`,
+        `你在一处${getFromConstArray(COMMON_LOCATIONS, index)}的最深处，突然感受到一股极其强大的规则气息。你循着气息寻找，发现了一个${getFromConstArray(QUALITY_WORDS, index)}的${getFromConstArray(PLATFORM_WORDS, index)}。祭坛上，${selectedRule.name}的法则缓缓凝聚成形。${selectedRule.description}。你沉浸在对规则的参悟中，最终成功掌握了这道规则之力，这是掌控天地的力量！`,
       ];
 
       return {
@@ -833,30 +892,54 @@ function generateSectChallengeEventTemplate(index: number): AdventureEventTempla
 }
 
 /**
+ * 效果对象接口（用于转换）
+ */
+interface EffectSource {
+  hpBonus?: number;
+  attackBonus?: number;
+  defenseBonus?: number;
+  spiritBonus?: number;
+  physiqueBonus?: number;
+  speedBonus?: number;
+}
+
+/**
  * 将effects对象转换为permanentEffect格式
  */
-function convertEffectsToPermanentEffect(effects: any): Record<string, number> {
+function convertEffectsToPermanentEffect(effects: EffectSource): Record<string, number> {
   const permanentEffect: Record<string, number> = {};
-  if (effects.hpBonus) permanentEffect.maxHp = effects.hpBonus;
-  if (effects.attackBonus) permanentEffect.attack = effects.attackBonus;
-  if (effects.defenseBonus) permanentEffect.defense = effects.defenseBonus;
-  if (effects.spiritBonus) permanentEffect.spirit = effects.spiritBonus;
-  if (effects.physiqueBonus) permanentEffect.physique = effects.physiqueBonus;
-  if (effects.speedBonus) permanentEffect.speed = effects.speedBonus;
+  if (effects.hpBonus !== undefined) permanentEffect.maxHp = effects.hpBonus;
+  if (effects.attackBonus !== undefined) permanentEffect.attack = effects.attackBonus;
+  if (effects.defenseBonus !== undefined) permanentEffect.defense = effects.defenseBonus;
+  if (effects.spiritBonus !== undefined) permanentEffect.spirit = effects.spiritBonus;
+  if (effects.physiqueBonus !== undefined) permanentEffect.physique = effects.physiqueBonus;
+  if (effects.speedBonus !== undefined) permanentEffect.speed = effects.speedBonus;
   return permanentEffect;
+}
+
+/**
+ * 效果对象接口
+ */
+interface EffectObject {
+  exp?: number;
+  hp?: number;
+  attack?: number;
+  defense?: number;
+  spirit?: number;
+  physique?: number;
+  speed?: number;
+  maxHp?: number;
+  maxLifespan?: number;
 }
 
 /**
  * 应用仙品丹药效果最小值保障
  */
 function applyImmortalPillMinValues(
-  effect: any,
+  effect: EffectObject,
   rarity: ItemRarity
 ): void {
   if (rarity !== '仙品') return;
-
-  const MIN_PILL_EFFECT = 250;
-  const MIN_PILL_EXP_EFFECT = 5000;
 
   if (effect.exp !== undefined) {
     effect.exp = Math.max(effect.exp, MIN_PILL_EXP_EFFECT);
@@ -885,11 +968,11 @@ function applyImmortalPillMinValues(
  * 根据境界调整丹药/草药的效果
  */
 function adjustPillHerbEffects(
-  effect: any | undefined,
-  permanentEffect: any | undefined,
+  effect: EffectObject | undefined,
+  permanentEffect: EffectObject | undefined,
   rarity: ItemRarity,
   realmMultiplier: number
-): { effect: any | undefined; permanentEffect: any | undefined } {
+): { effect: EffectObject | undefined; permanentEffect: EffectObject | undefined } {
   const adjustedEffect = effect ? { ...effect } : undefined;
   const adjustedPermanentEffect = permanentEffect ? { ...permanentEffect } : undefined;
 
@@ -917,7 +1000,7 @@ function adjustPillHerbEffects(
     if (adjustedPermanentEffect.spirit !== undefined) adjustedPermanentEffect.spirit = Math.floor(adjustedPermanentEffect.spirit * pillPermanentMultiplier);
     if (adjustedPermanentEffect.physique !== undefined) adjustedPermanentEffect.physique = Math.floor(adjustedPermanentEffect.physique * pillPermanentMultiplier);
     if (adjustedPermanentEffect.speed !== undefined) adjustedPermanentEffect.speed = Math.floor(adjustedPermanentEffect.speed * pillPermanentMultiplier);
-    if ((adjustedPermanentEffect as any).maxLifespan !== undefined) (adjustedPermanentEffect as any).maxLifespan = Math.floor((adjustedPermanentEffect as any).maxLifespan * pillPermanentMultiplier);
+    if (adjustedPermanentEffect.maxLifespan !== undefined) adjustedPermanentEffect.maxLifespan = Math.floor(adjustedPermanentEffect.maxLifespan * pillPermanentMultiplier);
 
     // 仙品丹药永久效果最小值保障
     applyImmortalPillMinValues(adjustedPermanentEffect, rarity);
@@ -925,10 +1008,6 @@ function adjustPillHerbEffects(
 
   return { effect: adjustedEffect, permanentEffect: adjustedPermanentEffect };
 }
-
-/**
- * 应用仙品丹药效果最小值保障
- */
 
 /**
  * 从常量池中获取随机物品
@@ -1041,11 +1120,11 @@ function generateRandomItem(rarity: ItemRarity, index: number): AdventureResult[
 
   // 添加进阶物品相关属性（如果物品是进阶物品）
   if (itemType === ItemType.AdvancedItem) {
-    if ((selectedItem as any).advancedItemType) {
-      result.advancedItemType = (selectedItem as any).advancedItemType;
+    if (selectedItem.advancedItemType) {
+      result.advancedItemType = selectedItem.advancedItemType;
     }
-    if ((selectedItem as any).advancedItemId) {
-      result.advancedItemId = (selectedItem as any).advancedItemId;
+    if (selectedItem.advancedItemId) {
+      result.advancedItemId = selectedItem.advancedItemId;
     }
   }
 
@@ -1189,6 +1268,7 @@ export function getRandomEventTemplate(
     };
 
     // 根据权重随机选择风险等级
+    // 注意：这里使用 Math.random() 而不是确定性随机数，因为每次调用都需要不同的随机结果
     const totalWeight = Object.values(riskWeights).reduce((a, b) => a + b, 0);
     let random = Math.random() * totalWeight;
     let selectedRiskLevel: '低' | '中' | '高' | '极度危险' = '低';
@@ -1244,6 +1324,7 @@ export function getRandomEventTemplate(
     });
 
     // 根据权重随机选择
+    // 注意：这里使用 Math.random() 而不是确定性随机数，因为每次调用都需要不同的随机结果
     const totalWeight = valueWeights.reduce((sum, item) => sum + item.weight, 0);
     let random = Math.random() * totalWeight;
 
@@ -1255,6 +1336,7 @@ export function getRandomEventTemplate(
     }
 
     // 如果权重选择失败，使用随机选择
+    // 注意：这里使用 Math.random() 而不是确定性随机数，因为每次调用都需要不同的随机结果
     return filtered[Math.floor(Math.random() * filtered.length)];
   }
 
@@ -1272,6 +1354,7 @@ export function getRandomEventTemplate(
     return null;
   }
 
+  // 注意：这里使用 Math.random() 而不是确定性随机数，因为每次调用都需要不同的随机结果
   return filtered[Math.floor(Math.random() * filtered.length)];
 }
 

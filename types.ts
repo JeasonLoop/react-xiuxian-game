@@ -302,6 +302,7 @@ export interface PlayerStats {
   dailyQuestProgress: Record<string, number>; // 任务ID -> 完成进度
   dailyQuestCompleted: string[]; // 今日已完成的任务ID
   lastDailyQuestResetDate: string; // 上次重置日常任务的日期（YYYY-MM-DD格式）
+  lastDailyQuestResetTime?: number; // 上次重置日常任务的时间戳（毫秒），用于判断是否需要刷新
   gameDays: number; // 游戏内天数（从开始游戏起计算）
   playTime: number; // 游戏时长（毫秒），从开始游戏起累计
 
