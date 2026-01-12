@@ -406,10 +406,11 @@ export async function executeAdventureCore({
   }
 
   // 确保事件描述被添加到日志
-  if (result.story && result.story.trim()) {
+  // 注意：如果 result 为空或未定义，也要输出默认日志
+  if (result && result.story && result.story.trim()) {
     addLog(result.story, result.eventColor || 'normal');
-  } else {
-    // 如果事件描述为空，添加默认日志
+  } else if (!result || !result.story) {
+    // 如果事件描述为空或 result 为空，添加默认日志
     addLog('你在历练途中没有遇到什么特别的事情。', 'normal');
   }
 

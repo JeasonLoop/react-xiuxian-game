@@ -37,7 +37,7 @@ export function useShopHandlers(
   const storeAddLog = useGameStore((state) => state.addLog);
   const storeCurrentShop = useUIStore((state) => state.currentShop);
   const storeSetCurrentShop = useUIStore((state) => state.setCurrentShop);
-  const storeSetIsShopOpen = useUIStore((state) => state.setIsShopOpen);
+  const storeSetModal = useUIStore((state) => state.setModal);
   const storeSetPurchaseSuccess = useUIStore((state) => state.setPurchaseSuccess);
 
   // 使用 props 或 store 的值（props 优先，用于向后兼容）
@@ -46,7 +46,7 @@ export function useShopHandlers(
   const addLog = props?.addLog ?? storeAddLog;
   const currentShop = props?.currentShop ?? storeCurrentShop;
   const setCurrentShop = props?.setCurrentShop ?? storeSetCurrentShop;
-  const setIsShopOpen = props?.setIsShopOpen ?? storeSetIsShopOpen;
+  const setIsShopOpen = props?.setIsShopOpen ?? ((open: boolean) => storeSetModal('isShopOpen', open));
   const setPurchaseSuccess = props?.setPurchaseSuccess ?? storeSetPurchaseSuccess;
   const handleOpenShop = (shopType: ShopType) => {
     const shop = SHOPS.find((s) => s.type === shopType);

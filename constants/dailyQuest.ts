@@ -4,6 +4,7 @@
 
 import { DailyQuestType, ItemRarity, RealmType, Recipe } from '../types';
 import { RARITY_MULTIPLIERS } from './items';
+import { REALM_ORDER } from './realms';
 
 // 日常任务类型配置
 export interface DailyQuestConfig {
@@ -82,11 +83,37 @@ export const DAILY_QUEST_TARGET_RANGES: Record<DailyQuestType, { min: number; ma
   other: { min: 1, max: 5 }, // 其他任务：1-5次（AI生成）
 };
 
-// 根据稀有度计算奖励
+/**
+ * 根据境界计算奖励倍数
+ * @param realm 境界类型
+ * @param realmLevel 境界等级（1-9）
+ * @returns 奖励倍数
+ */
+const calculateRealmMultiplier = (realm: RealmType, realmLevel: number): number => {
+  const realmIndex = REALM_ORDER.indexOf(realm);
+  if (realmIndex === -1) return 1; // 未知境界，返回1倍
+
+  // 验证境界等级范围（1-9）
+  const validLevel = Math.max(1, Math.min(9, realmLevel));
+
+  // 基础倍数：每个境界增加 0.5 倍
+  // 炼气期(0) = 1.0，筑基期(1) = 1.5，金丹期(2) = 2.0，元婴期(3) = 2.5，化神期(4) = 3.0，合道期(5) = 3.5，长生期(6) = 4.0
+  const baseMultiplier = 1 + realmIndex * 0.5;
+
+  // 境界等级加成：每级增加 0.15 倍
+  // 1级 = 1.0，2级 = 1.15，3级 = 1.3，...，9级 = 2.2
+  const levelMultiplier = 1 + (validLevel - 1) * 0.15;
+
+  return baseMultiplier * levelMultiplier;
+};
+
+// 根据稀有度和境界计算奖励
 export const calculateDailyQuestReward = (
   type: DailyQuestType,
   target: number,
-  rarity: ItemRarity
+  rarity: ItemRarity,
+  realm?: RealmType,
+  realmLevel?: number
 ): {
   exp?: number;
   spiritStones?: number;
@@ -94,7 +121,13 @@ export const calculateDailyQuestReward = (
 } => {
   const config = DAILY_QUEST_CONFIGS[type];
   const rarityMultiplier = RARITY_MULTIPLIERS[rarity];
-  const baseReward = target * config.rewardMultiplier * rarityMultiplier;
+
+  // 计算境界倍数（如果提供了境界信息）
+  const realmMultiplier = realm && realmLevel
+    ? calculateRealmMultiplier(realm, realmLevel)
+    : 1;
+
+  const baseReward = target * config.rewardMultiplier * rarityMultiplier * realmMultiplier;
 
   // 根据任务类型分配奖励
   switch (type) {

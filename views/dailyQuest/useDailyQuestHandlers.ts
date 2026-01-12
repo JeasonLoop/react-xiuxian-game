@@ -11,6 +11,17 @@ import {
 } from '../../constants/index';
 import { uid } from '../../utils/gameUtils';
 
+/**
+ * 获取本地日期字符串（YYYY-MM-DD格式）
+ * 使用本地时区而不是UTC，避免时区问题
+ */
+const getLocalDateString = (date: Date): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 interface UseDailyQuestHandlersProps {
   player: PlayerStats;
   setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
@@ -60,11 +71,13 @@ export function useDailyQuestHandlers({
         Math.random() * (questTemplate.targetRange.max - questTemplate.targetRange.min + 1)
       ) + questTemplate.targetRange.min;
 
-      // 计算奖励
+      // 计算奖励（根据玩家境界调整）
       const reward = calculateDailyQuestReward(
         questTemplate.type,
         target,
-        questTemplate.rarity
+        questTemplate.rarity,
+        player.realm,
+        player.realmLevel
       );
 
       selectedQuests.push({
@@ -102,7 +115,9 @@ export function useDailyQuestHandlers({
         const reward = calculateDailyQuestReward(
           questTemplate.type,
           target,
-          questTemplate.rarity
+          questTemplate.rarity,
+          player.realm,
+          player.realmLevel
         );
 
         selectedQuests.push({
@@ -124,34 +139,44 @@ export function useDailyQuestHandlers({
 
   // 重置日常任务（每天重置）
   const resetDailyQuests = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const lastReset = player.lastDailyQuestResetDate || today;
+    const now = Date.now();
+    const today = getLocalDateString(new Date());
+    const lastResetDate = player.lastDailyQuestResetDate || today;
+    const lastResetTime = player.lastDailyQuestResetTime || now;
 
-    // 如果日期变化或 dailyQuests 不存在/为空，则重置
-    if (lastReset !== today || !player.dailyQuests || player.dailyQuests.length === 0) {
-      // 只有在日期变化时才显示生成提示
-      if (lastReset !== today) {
+    // 计算上次重置时间对应的日期（使用本地时区）
+    const lastResetDateObj = new Date(lastResetTime);
+    const lastResetDateStr = getLocalDateString(lastResetDateObj);
+
+    // 判断是否需要刷新：如果时间戳是昨天或更早，或者任务不存在/为空
+    const isPastDay = lastResetDateStr !== today;
+    const needsReset = isPastDay || !player.dailyQuests || player.dailyQuests.length === 0;
+
+    if (needsReset) {
+      // 如果任务为空或日期变化，显示生成提示
+      const isEmpty = !player.dailyQuests || player.dailyQuests.length === 0;
+      if (isPastDay || isEmpty) {
         addLog('正在生成日常任务...', 'special');
       }
 
       const newQuests = generateDailyQuests();
 
-        setPlayer((prev) => {
-          const currentGameDays = prev.gameDays || 1;
-          const isNewDay = lastReset !== today;
+      setPlayer((prev) => {
+        const currentGameDays = prev.gameDays || 1;
 
-          return {
-            ...prev,
-            dailyQuests: newQuests,
-            // 如果是新的一天，重置进度和已完成列表
-            dailyQuestProgress: isNewDay ? {} : (prev.dailyQuestProgress || {}),
-            dailyQuestCompleted: isNewDay ? [] : (prev.dailyQuestCompleted || []),
-            lastDailyQuestResetDate: today,
-            gameDays: isNewDay ? currentGameDays + 1 : currentGameDays, // 只有日期变化时才增加游戏天数
-          };
-        });
+        return {
+          ...prev,
+          dailyQuests: newQuests,
+          // 如果是新的一天，重置进度和已完成列表
+          dailyQuestProgress: isPastDay ? {} : (prev.dailyQuestProgress || {}),
+          dailyQuestCompleted: isPastDay ? [] : (prev.dailyQuestCompleted || []),
+          lastDailyQuestResetDate: today,
+          lastDailyQuestResetTime: now, // 更新刷新时间戳
+          gameDays: isPastDay ? currentGameDays + 1 : currentGameDays, // 只有日期变化时才增加游戏天数
+        };
+      });
 
-      if (lastReset !== today) {
+      if (isPastDay || isEmpty) {
         addLog(`新的日常任务已刷新！今日共${newQuests.length}个任务。`, 'special');
       }
     }
@@ -159,16 +184,21 @@ export function useDailyQuestHandlers({
 
   // 初始化日常任务（如果为空）
   const initializeDailyQuests = () => {
-    const today = new Date().toISOString().split('T')[0];
-    const lastReset = player.lastDailyQuestResetDate || today;
+    const now = Date.now();
+    const today = getLocalDateString(new Date());
+    const lastResetTime = player.lastDailyQuestResetTime || now;
+
+    // 计算上次重置时间对应的日期（使用本地时区）
+    const lastResetDateObj = new Date(lastResetTime);
+    const lastResetDateStr = getLocalDateString(lastResetDateObj);
 
     // 只有在以下情况才生成任务：
     // 1. 任务不存在或为空
-    // 2. 日期变化（新的一天）
+    // 2. 时间戳对应的日期是昨天或更早（需要刷新）
     const needsReset =
       !player.dailyQuests ||
       player.dailyQuests.length === 0 ||
-      lastReset !== today;
+      lastResetDateStr !== today;
 
     if (needsReset) {
       resetDailyQuests();

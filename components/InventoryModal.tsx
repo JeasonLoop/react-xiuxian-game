@@ -77,7 +77,7 @@ interface Props {
   setItemActionLog?: (log: { text: string; type: string } | null) => void;
 }
 
-type ItemCategory = 'all' | 'equipment' | 'pill' | 'consumable' | 'recipe' | 'advancedItem';
+type ItemCategory = 'all' | 'equipment' | 'pill' | 'material' | 'herb' | 'synthesisStone' | 'recipe' | 'advancedItem';
 
 // 物品项组件 - 使用 memo 优化性能
 interface InventoryItemProps {
@@ -726,7 +726,30 @@ const InventoryModal: React.FC<Props> = ({
       if (item.type === ItemType.Pill || ['pill', 'elixir', 'potion'].includes(typeKey)) {
         return 'pill';
       }
-      return 'consumable';
+      // 判断是草药、合成石还是材料
+      const name = item.name;
+      // 优先使用 ItemType 判断
+      if (item.type === ItemType.Herb || typeKey === 'herb' || typeKey === '草药') {
+        return 'herb';
+      }
+      // 对于 Material 类型或其他类型，根据名称进一步判断
+      // 根据名称判断合成石（包含"石"、"铁"、"矿"、"炼器"等关键词）
+      if (
+        name.includes('合成石')
+      ) {
+        return 'synthesisStone';
+      }
+      // 根据名称判断草药（包含"草"、"花"、"参"、"芝"等关键词）
+      if (
+        name.includes('草') ||
+        name.includes('花') ||
+        name.includes('参') ||
+        name.includes('芝')
+      ) {
+        return 'herb';
+      }
+      // 其他材料类物品
+      return 'material';
     };
 
     let filtered = inventory;
@@ -1215,15 +1238,37 @@ const InventoryModal: React.FC<Props> = ({
                   丹药
                 </button>
                 <button
-                  onClick={() => handleCategoryChange('consumable')}
+                  onClick={() => handleCategoryChange('material')}
                   disabled={isPending}
                   className={`px-3 py-1.5 rounded text-sm border transition-colors ${
-                    selectedCategory === 'consumable'
+                    selectedCategory === 'material'
                       ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
                       : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
                   } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
                 >
-                  用品
+                  材料
+                </button>
+                <button
+                  onClick={() => handleCategoryChange('herb')}
+                  disabled={isPending}
+                  className={`px-3 py-1.5 rounded text-sm border transition-colors ${
+                    selectedCategory === 'herb'
+                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                  } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
+                >
+                  草药
+                </button>
+                <button
+                  onClick={() => handleCategoryChange('synthesisStone')}
+                  disabled={isPending}
+                  className={`px-3 py-1.5 rounded text-sm border transition-colors ${
+                    selectedCategory === 'synthesisStone'
+                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
+                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
+                  } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
+                >
+                  合成石
                 </button>
                 <button
                   onClick={() => handleCategoryChange('recipe')}

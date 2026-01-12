@@ -47,6 +47,7 @@ interface TurnBasedBattleParams {
   riskLevel?: '低' | '中' | '高' | '极度危险';
   realmMinRealm?: RealmType;
   bossId?: string;
+  onBattleInitialized?: (enemyName: string) => void; // 战斗初始化完成后的回调，用于输出日志
 }
 
 // Store 状态接口

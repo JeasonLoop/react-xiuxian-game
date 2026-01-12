@@ -166,6 +166,7 @@ export const createInitialPlayer = (
     dailyQuestProgress: {},
     dailyQuestCompleted: [],
     lastDailyQuestResetDate: new Date().toISOString().split('T')[0],
+    lastDailyQuestResetTime: Date.now(), // 日常任务刷新时间戳（毫秒）
     gameDays: 1, // 游戏内天数，从第1天开始
     playTime: 0, // 游戏时长（毫秒），从0开始
     reputation: 0, // 声望值

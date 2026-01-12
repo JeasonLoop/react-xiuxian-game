@@ -235,6 +235,14 @@ function App() {
     checkAchievements,
   } = appHandlers;
 
+  // ========== 日常任务初始化 ==========
+  // 游戏启动时，如果日常任务为空，自动刷新
+  useEffect(() => {
+    if (gameStarted && player && dailyQuestHandlers) {
+      dailyQuestHandlers.initializeDailyQuests();
+    }
+  }, [gameStarted, player, dailyQuestHandlers]);
+
   // ========== 等级提升与天劫 ==========
   const handleBreakthroughRef = useRef(breakthroughHandlers.handleBreakthrough);
   useEffect(() => {
