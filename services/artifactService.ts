@@ -130,6 +130,32 @@ export const artifactService = {
    * 装备融合逻辑：两件同类型装备 + 合成石
    */
   fuseEquipment(item1: Item, item2: Item, stone: Item, customName?: string): Item {
+    // ==================== 数值检查 ====================
+    if (!item1 || !item2 || !stone) {
+      throw new Error('融合需要两件装备和一块合成石');
+    }
+
+    if (!item1.effect || typeof item1.effect !== 'object') {
+      throw new Error(`${item1.name} 的属性数据无效，无法融合`);
+    }
+
+    if (!item2.effect || typeof item2.effect !== 'object') {
+      throw new Error(`${item2.name} 的属性数据无效，无法融合`);
+    }
+
+    // 检查属性值是否有效（必须是数字且非负数）
+    const validateEffect = (effect: any, itemName: string) => {
+      for (const [key, value] of Object.entries(effect)) {
+        if (typeof value !== 'number' || isNaN(value) || value < 0) {
+          throw new Error(`${itemName} 的属性 ${key} 数值无效（${value}），无法融合`);
+        }
+      }
+    };
+
+    validateEffect(item1.effect, item1.name);
+    validateEffect(item2.effect, item2.name);
+
+    // ==================== 类型检查 ====================
     const isSameType = item1.type === item2.type;
     const isSameSlot = item1.equipmentSlot === item2.equipmentSlot;
 
@@ -140,13 +166,13 @@ export const artifactService = {
       throw new Error('只有相同部位或同类型的特殊装备（戒指/法宝/首饰）才能融合');
     }
 
-    // 1. 决定新装备品质 (取最高)
+    // ==================== 品质计算 ====================
     const rarityOrder: ItemRarity[] = ['普通', '稀有', '传说', '仙品'];
     const r1 = rarityOrder.indexOf(item1.rarity || '普通');
     const r2 = rarityOrder.indexOf(item2.rarity || '普通');
     const resultRarity = rarityOrder[Math.max(r1, r2)];
 
-    // 2. 融合属性逻辑优化
+    // ==================== 属性融合 ====================
     const allKeys = Array.from(new Set([
       ...Object.keys(item1.effect || {}),
       ...Object.keys(item2.effect || {})
@@ -157,13 +183,8 @@ export const artifactService = {
       const val1 = (item1.effect as any)[key] || 0;
       const val2 = (item2.effect as any)[key] || 0;
 
-      if (val1 > 0 && val2 > 0) {
-        // 共有属性：取平均值并提升 (20%)
-        mergedEffect[key] = Math.floor((val1 + val2) / 2 * 1.2);
-      } else {
-        // 独有属性：继承并衰减 (80%)，防止属性项过多且过强
-        mergedEffect[key] = Math.floor((val1 + val2) * 0.8);
-      }
+      // 统一计算：两个装备数值之和 * 0.8
+      mergedEffect[key] = Math.floor((val1 + val2) * 0.8);
     });
 
     // 筛选属性：根据品级限制属性项数量 (仙品5项，其他4项)

@@ -88,7 +88,7 @@ interface ModalsContainerProps {
     handleRefineNatalArtifact: (item: Item) => void;
     handleUnrefineNatalArtifact: () => void;
     handleRefineAdvancedItem?: (item: Item) => void;
-    handleUpgradeItem: (item: Item, costStones: number, costMats: number, upgradeStones?: number) => Promise<'success' | 'failure' | 'error'>;
+    handleUpgradeItem: (item: Item, costStones: number, costMats: number, upgradeStones?: number, failurePenalty?: number) => Promise<'success' | 'failure' | 'error'>;
     // Cultivation
     handleLearnArt: (art: CultivationArt) => void;
     handleActivateArt: (art: CultivationArt) => void;

@@ -821,14 +821,14 @@ export const getItemStats = (item: Item, isNatal: boolean = false) => {
 export const generateAttributePreview = (effect: Item['effect']): string => {
   if (!effect) return '';
   const attrs: string[] = [];
-  if (effect.attack) attrs.push(`攻+${effect.attack}`);
-  if (effect.defense) attrs.push(`防+${effect.defense}`);
-  if (effect.hp) attrs.push(`血+${effect.hp}`);
-  if (effect.spirit) attrs.push(`神识+${effect.spirit}`);
-  if (effect.physique) attrs.push(`体魄+${effect.physique}`);
-  if (effect.speed) attrs.push(`速度+${effect.speed}`);
-  if(effect.exp) attrs.push(`修为+${effect.exp}`);
-  if(effect.lifespan) attrs.push(`寿命+${effect.lifespan}`);
+  if (effect.attack) attrs.push(`攻+${Math.floor(effect.attack)}`);
+  if (effect.defense) attrs.push(`防+${Math.floor(effect.defense)}`);
+  if (effect.hp) attrs.push(`血+${Math.floor(effect.hp)}`);
+  if (effect.spirit) attrs.push(`神识+${Math.floor(effect.spirit)}`);
+  if (effect.physique) attrs.push(`体魄+${Math.floor(effect.physique)}`);
+  if (effect.speed) attrs.push(`速度+${Math.floor(effect.speed)}`);
+  if(effect.exp) attrs.push(`修为+${Math.floor(effect.exp)}`);
+  if(effect.lifespan) attrs.push(`寿命+${Math.floor(effect.lifespan)}`);
   return attrs.length > 0 ? ` [${attrs.join(' ')}]` : '';
 };
 

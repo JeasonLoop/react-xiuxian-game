@@ -476,7 +476,8 @@ const TASK_TYPE_CONFIGS: Record<TaskType, TaskTypeConfig> = {
   explore: {
     realmOffset: 1,
     getReward: (rank, diff, qual, realm, quality) => {
-      const items = [{ name: '炼器石', quantity: Math.floor((1 + Math.random() * 2) * diff * qual) }];
+      // 提高炼器石数量：从 1-3 提高到 2-5
+      const items = [{ name: '炼器石', quantity: Math.floor((2 + Math.random() * 3) * diff * qual) }];
       if (quality === '传说' || quality === '仙品') {
         items.push({ name: quality === '仙品' ? '仙品材料' : '传说材料', quantity: 1 });
       }
@@ -568,7 +569,8 @@ const TASK_TYPE_CONFIGS: Record<TaskType, TaskTypeConfig> = {
   treasure_hunt: {
     realmOffset: 1,
     getReward: (rank, diff, qual, realm, quality) => {
-      const items = [{ name: '炼器石', quantity: Math.floor((2 + Math.random() * 3) * diff * qual) }];
+      // 提高炼器石数量：从 2-5 提高到 3-7
+      const items = [{ name: '炼器石', quantity: Math.floor((3 + Math.random() * 4) * diff * qual) }];
       if (quality === '传说' || quality === '仙品') {
         items.push({ name: quality === '仙品' ? '仙品法宝碎片' : '传说法宝碎片', quantity: 1 });
       }
@@ -607,7 +609,8 @@ const TASK_TYPE_CONFIGS: Record<TaskType, TaskTypeConfig> = {
     }),
     getReward: (rank, diff, qual, realm) => ({
       contribution: Math.floor((30 + Math.random() * 40) * rank * diff * qual * realm),
-      items: [{ name: '强化石', quantity: Math.floor((1 + Math.random() * 2) * diff * qual) }]
+      // 提高强化石数量：从 1-3 提高到 2-5
+      items: [{ name: '强化石', quantity: Math.floor((2 + Math.random() * 3) * diff * qual) }]
     })
   },
   spirit_beast: {

@@ -299,7 +299,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     name: '炼器石',
     type: 'item',
     rarity: '普通',
-    weight: 16,
+    weight: 24, // 提高权重：16 -> 24
     value: {
       item: {
         name: '炼器石',
@@ -315,7 +315,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     name: '炼器石x10',
     type: 'item',
     rarity: '普通',
-    weight: 10,
+    weight: 15, // 提高权重：10 -> 15
     value: {
       item: {
         name: '炼器石',
@@ -331,7 +331,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     name: '强化石',
     type: 'item',
     rarity: '稀有',
-    weight: 10,
+    weight: 15, // 提高权重：10 -> 15
     value: {
       item: {
         name: '强化石',
@@ -347,7 +347,7 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
     name: '强化石x10',
     type: 'item',
     rarity: '传说',
-    weight: 3,
+    weight: 5, // 提高权重：3 -> 5
     value: {
       item: {
         name: '强化石',

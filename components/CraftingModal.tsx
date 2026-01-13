@@ -586,10 +586,12 @@ const CraftingModal: React.FC<Props> = ({
                                   attack: '攻', defense: '防', hp: '血',
                                   spirit: '神', physique: '体', speed: '速'
                                 };
+                                // 数值取整显示
+                                const displayValue = typeof val === 'number' ? Math.floor(val) : val;
                                 return (
                                   <div key={key} className="flex justify-between text-[9px]">
                                     <span className="text-stone-500">{attrNames[key] || key}</span>
-                                    <span className="text-mystic-gold">+{val}</span>
+                                    <span className="text-mystic-gold">+{displayValue}</span>
                                   </div>
                                 );
                               })}
@@ -618,10 +620,12 @@ const CraftingModal: React.FC<Props> = ({
                                   attack: '攻', defense: '防', hp: '血',
                                   spirit: '神', physique: '体', speed: '速'
                                 };
+                                // 数值取整显示
+                                const displayValue = typeof val === 'number' ? Math.floor(val) : val;
                                 return (
                                   <div key={key} className="flex justify-between text-[9px]">
                                     <span className="text-stone-500">{attrNames[key] || key}</span>
-                                    <span className="text-mystic-gold">+{val}</span>
+                                    <span className="text-mystic-gold">+{displayValue}</span>
                                   </div>
                                 );
                               })}

@@ -23,7 +23,7 @@ interface UseAppViewHandlersProps {
   handleRefineNatalArtifact: (item: Item) => void;
   handleUnrefineNatalArtifact: (item: Item) => void;
   handleRefineAdvancedItem: (item: Item) => void;
-  handleUpgradeItem: (item: Item, costStones: number, costMats: number, upgradeStones?: number) => Promise<'success' | 'failure' | 'error'>;
+  handleUpgradeItem: (item: Item, costStones: number, costMats: number, upgradeStones?: number, failurePenalty?: number) => Promise<'success' | 'failure' | 'error'>;
   handleLearnArt: (art: any) => void;
   handleActivateArt: (art: any) => void;
   handleCraft: (recipe: any) => Promise<void>;

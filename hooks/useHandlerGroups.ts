@@ -27,7 +27,7 @@ interface CoreHandlers {
   handleRefineNatalArtifact: (item: Item) => void; // 涅槃重生
   handleUnrefineNatalArtifact: () => void; // 取消涅槃重生
   handleRefineAdvancedItem: (item: Item, materialIds: string[]) => void; // 强化高级物品
-  handleUpgradeItem: (item: Item, costStones: number, costMats: number, upgradeStones?: number) => Promise<'success' | 'failure' | 'error'>; // 升级物品
+  handleUpgradeItem: (item: Item, costStones: number, costMats: number, upgradeStones?: number, failurePenalty?: number) => Promise<'success' | 'failure' | 'error'>; // 升级物品
   handleLearnArt: (artId: string) => void; // 学习功法
   handleActivateArt: (artId: string) => void; // 激活功法
   handleCraft: (recipeId: string) => void; // 炼制丹药
@@ -177,7 +177,7 @@ interface UseHandlerGroupsProps {
     handleRefineNatalArtifact: (item: Item) => void; // 涅槃重生
     handleUnrefineNatalArtifact: () => void; // 取消涅槃重生
     handleRefineAdvancedItem: (item: Item, materialIds: string[]) => void; // 强化高级物品
-    handleUpgradeItem: (item: Item, costStones: number, costMats: number, upgradeStones?: number) => Promise<'success' | 'failure' | 'error'>;
+    handleUpgradeItem: (item: Item, costStones: number, costMats: number, upgradeStones?: number, failurePenalty?: number) => Promise<'success' | 'failure' | 'error'>;
     handleLearnArt: (artId: string) => void; // 学习功法
     handleActivateArt: (artId: string) => void; // 激活功法
     handleCraft: (recipeId: string) => void; // 炼制丹药

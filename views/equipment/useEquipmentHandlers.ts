@@ -514,7 +514,8 @@ export function useEquipmentHandlers(props?: UseEquipmentHandlersProps) {
     item: Item,
     costStones: number,
     costMats: number,
-    upgradeStones: number = 0
+    upgradeStones: number = 0,
+    failurePenalty: number = 0 // 连续失败惩罚（每次失败降低5%成功率）
   ): Promise<'success' | 'failure' | 'error'> => {
     return new Promise((resolve) => {
       setPlayer((prev) => {
@@ -552,9 +553,13 @@ export function useEquipmentHandlers(props?: UseEquipmentHandlersProps) {
         0.1,
         1 - currentLevel * 0.1 - (rarityMult - 1) * 0.15
       );
-      const successRate = Math.min(
-        1,
-        baseSuccessRate + upgradeStones * UPGRADE_STONE_SUCCESS_BONUS
+      // 应用失败惩罚：每次连续失败降低5%成功率
+      const successRate = Math.max(
+        0.05, // 最低成功率5%
+        Math.min(
+          1,
+          baseSuccessRate + upgradeStones * UPGRADE_STONE_SUCCESS_BONUS - failurePenalty * 0.05
+        )
       );
 
       // 判断是否成功

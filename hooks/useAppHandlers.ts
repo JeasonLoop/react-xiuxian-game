@@ -462,13 +462,15 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     item: Item,
     costStones: number,
     costMats: number,
-    upgradeStones: number = 0
+    upgradeStones: number = 0,
+    failurePenalty: number = 0
   ): Promise<'success' | 'failure' | 'error'> => {
     const result = await equipmentHandlers.handleUpgradeItem(
       item,
       costStones,
       costMats,
-      upgradeStones
+      upgradeStones,
+      failurePenalty
     );
     return result || 'success';
   };

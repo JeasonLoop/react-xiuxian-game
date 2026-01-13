@@ -313,7 +313,7 @@ const generateLoot = (
     const typeWeights = [
       { type: 'herbs', weight: 25, name: '草药', pool: LOOT_ITEMS.herbs },
       { type: 'pills', weight: 25, name: '丹药', pool: LOOT_ITEMS.pills },
-      { type: 'materials', weight: 12, name: '材料', pool: LOOT_ITEMS.materials },
+      { type: 'materials', weight: 20, name: '材料', pool: LOOT_ITEMS.materials }, // 提高材料掉落概率：12 -> 20
       { type: 'weapons', weight: 6, name: '武器', pool: LOOT_ITEMS.weapons },
       { type: 'armors', weight: 8, name: '护甲', pool: LOOT_ITEMS.armors },
       { type: 'accessories', weight: 5, name: '首饰', pool: LOOT_ITEMS.accessories },
