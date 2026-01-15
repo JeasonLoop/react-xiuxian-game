@@ -1,0 +1,46 @@
+name: Sync Upstream
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Sync upstream changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git remote add upstream https://github.com/JeasonLoop/react-xiuxian-game.git
+          git fetch upstream
+          
+          if git merge upstream/main --no-edit; then
+            git push origin main
+            echo "✅ 同步成功" >> $GITHUB_STEP_SUMMARY
+          else
+            git merge --abort
+            echo "⚠️ 合并冲突，需要手动处理" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+          
+      - name: 创建 Issue（如果失败）
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '⚠️ 上游同步失败',
+              body: '自动同步时发生冲突，请手动处理。\n\n上游仓库：https://github.com/JeasonLoop/react-xiuxian-game',
+              labels: ['sync', 'conflict']
+            })
