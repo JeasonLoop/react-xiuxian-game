@@ -151,10 +151,10 @@ function App() {
   // ========== 游戏效果 ==========
   const { visualEffects, createAddLog, triggerVisual } = useGameEffects();
 
-  const addLog = useCallback((message: string, type?: string) => {
+  const addLog = useCallback((message: string, type?: "normal" | "gain" | "danger" | "special") => {
     if (setLogs && createAddLog) {
       const logFunc = createAddLog(setLogs);
-      logFunc(message, type);
+      logFunc(message, type || "normal");
     }
   }, [createAddLog, setLogs]);
 
@@ -388,12 +388,12 @@ function App() {
 
   // ========== Handler Groups ==========
   const { commonHandlersParams } = useHandlerGroups({
-    appHandlers: appHandlers as any,
+    appHandlers,
     handleRebirth,
     modalSetters: {
       ...modalSetters,
       setIsSaveManagerOpen,
-    } as any,
+    },
     otherSettersAndState: {
       setItemToUpgrade,
       setCurrentShop,

@@ -13,7 +13,7 @@ interface UseAppViewHandlersProps {
   handleAdventure: () => void;
   handleEnterRealm: (realm: any) => void;
   handleUseItem: (item: Item) => void;
-  handleEquipItem: (item: Item, slot: any) => void;
+  handleEquipItem: (item: Item, slot?: any) => void;
   handleUnequipItem: (slot: any) => void;
   handleOpenUpgrade: (item: Item) => void;
   handleDiscardItem: (item: Item) => void;
