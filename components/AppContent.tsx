@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { PlayerStats, TribulationState } from '../types';
+import { PlayerStats, TribulationState, LogEntry } from '../types';
 import { SaveData } from '../utils/saveManagerUtils';
 import { BattleReplay } from '../services/battleService';
 import TribulationModal from './TribulationModal';
@@ -27,8 +27,8 @@ interface AppContentProps {
   player: PlayerStats;
 
   // 游戏状态
-  logs: Array<{ id: string; text: string; type: string; timestamp: number }>;
-  setLogs: React.Dispatch<React.SetStateAction<Array<{ id: string; text: string; type: string; timestamp: number }>>>;
+  logs: LogEntry[];
+  setLogs: React.Dispatch<React.SetStateAction<LogEntry[]>>;
   visualEffects: any[];
   loading: boolean;
   cooldown: number;
@@ -104,12 +104,14 @@ interface AppContentProps {
     fleeOnBattle: boolean;
     skipShop: boolean;
     skipReputationEvent: boolean;
+    minHpThreshold: number;
   };
   setAutoAdventureConfig: (config: {
     skipBattle: boolean;
     fleeOnBattle: boolean;
     skipShop: boolean;
     skipReputationEvent: boolean;
+    minHpThreshold: number;
   }) => void;
 
   // Handlers
