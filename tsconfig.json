@@ -6,11 +6,9 @@
     "module": "ESNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
-    "moduleResolution": "bundler",
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "allowJs": true,
+    "moduleResolution": "node",
     "jsx": "react-jsx",
+    "esModuleInterop": true,
     "paths": {
       "@/*": ["./*"]
     },

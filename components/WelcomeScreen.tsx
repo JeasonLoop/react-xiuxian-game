@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { Sparkles, Play, Upload } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { Sparkles, Play, Upload, User, LogOut } from 'lucide-react';
 import logo from '../public/assets/images/logo.png';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import {
@@ -8,7 +8,9 @@ import {
   importSave,
   ensurePlayerStatsCompatibility,
 } from '../utils/saveManagerUtils';
-import { showError, showConfirm } from '../utils/toastUtils';
+import { showError, showConfirm, showSuccess } from '../utils/toastUtils';
+import { AuthModal } from './AuthModal';
+import { apiService, User as ApiUser } from '../services/apiService';
 
 interface Props {
   hasSave: boolean;
@@ -18,6 +20,30 @@ interface Props {
 
 const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [user, setUser] = useState<ApiUser | null>(null);
+
+  useEffect(() => {
+    checkLoginStatus();
+  }, []);
+
+  const checkLoginStatus = async () => {
+    if (apiService.isLoggedIn()) {
+      try {
+        const userData = await apiService.getMe();
+        setUser(userData);
+      } catch (e) {
+        apiService.logout();
+        setUser(null);
+      }
+    }
+  };
+
+  const handleLogout = () => {
+    apiService.logout();
+    setUser(null);
+    showSuccess('已退出登录');
+  };
 
   const handleImportSave = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -49,7 +75,6 @@ const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
         ? new Date(saveData.timestamp).toLocaleString('zh-CN')
         : '未知';
 
-      onContinue();
       // 确认导入
       showConfirm(
         `确定要导入此存档吗？\n\n玩家名称: ${playerName}\n境界: ${realm}\n保存时间: ${timestamp}\n\n当前存档将被替换，页面将自动刷新。`,
@@ -70,6 +95,8 @@ const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
               showError('保存存档失败，请重试！');
               return;
             }
+            
+            onContinue();
 
             // 直接刷新页面，不需要再次确认
             // 延迟一小段时间让用户看到操作完成
@@ -101,6 +128,39 @@ const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 flex items-center justify-center z-50 overflow-hidden touch-manipulation">
+      {/* 顶部用户栏 */}
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-4">
+        {user ? (
+          <div className="flex items-center gap-3 bg-stone-800/80 backdrop-blur px-4 py-2 rounded-full border border-stone-600">
+            <span className="text-stone-300 text-sm">
+              <User size={14} className="inline mr-2" />
+              {user.nickname || user.username}
+            </span>
+            <button
+              onClick={handleLogout}
+              className="text-stone-400 hover:text-red-400 transition-colors"
+              title="退出登录"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowAuthModal(true)}
+            className="flex items-center gap-2 bg-emerald-700/80 hover:bg-emerald-600 backdrop-blur px-4 py-2 rounded-full text-white text-sm transition-colors shadow-lg"
+          >
+            <User size={16} />
+            登录 / 注册
+          </button>
+        )}
+      </div>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onLoginSuccess={checkLoginStatus}
+      />
+
       {/* 背景装饰 */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(203,161,53,0.1),transparent_70%)]" />
@@ -116,7 +176,6 @@ const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
               alt="云灵修仙传"
               className="w-[70vw] max-w-[280px] sm:w-[60vw] sm:max-w-[400px] md:max-w-[500px] lg:max-w-[600px] h-auto max-h-[30vh] sm:max-h-[35vh] md:max-h-[40vh] lg:max-h-[400px] object-contain drop-shadow-2xl relative z-10 animate-glow-pulse"
             />
-            {/* 光晕效果 */}
             {/* 光晕效果 */}
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[115%] aspect-square -z-10 opacity-20 sm:opacity-85 pointer-events-none">
               <div

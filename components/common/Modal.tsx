@@ -71,6 +71,8 @@ export interface ModalProps {
   showHeaderBorder?: boolean;
   /** 是否显示底部边框 */
   showFooterBorder?: boolean;
+  /** 自定义标题类名 */
+  titleClassName?: string;
   /** 头部内边距 */
   headerPadding?: string;
   /** 内容区内边距 */
@@ -115,6 +117,7 @@ const Modal: React.FC<ModalProps> = ({
   showFooterBorder = true,
   headerPadding = 'p-3 md:p-4',
   contentPadding = 'p-4 md:p-6',
+  titleClassName = '',
 }) => {
   // ESC 键关闭
   const handleKeyDown = useCallback(
@@ -197,7 +200,7 @@ const Modal: React.FC<ModalProps> = ({
               )}
               <h2
                 id="modal-title"
-                className="text-lg md:text-xl font-serif text-mystic-gold truncate"
+                className={`text-lg md:text-xl font-serif text-mystic-gold truncate ${titleClassName}`}
               >
                 {title}
               </h2>

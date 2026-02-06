@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './common/Modal';
-import { X, Save, Trash2, Download, Upload, Copy, RotateCcw, FileText } from 'lucide-react';
+import { X, Save, Trash2, Download, Upload, Copy, RotateCcw, FileText, Cloud, CloudUpload, CloudDownload } from 'lucide-react';
 import {
   getAllSlots,
   loadFromSlot,
@@ -19,6 +19,7 @@ import {
 import { showError, showSuccess, showConfirm, showInfo } from '../utils/toastUtils';
 import { PlayerStats, LogEntry } from '../types';
 import dayjs from 'dayjs';
+import { apiService, GameSave as CloudSave } from '../services/apiService';
 
 interface Props {
   isOpen: boolean;
@@ -42,14 +43,32 @@ const SaveManagerModal: React.FC<Props> = ({
   const [showBackups, setShowBackups] = useState<number | null>(null);
   const [backups, setBackups] = useState<SaveData[]>([]);
   const [currentSlotId, setCurrentSlotIdState] = useState<number>(1);
+  const [cloudSaves, setCloudSaves] = useState<Record<number, CloudSave>>({});
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       refreshSlots();
       setCurrentSlotIdState(getCurrentSlotId());
+      checkLoginAndFetchCloud();
     }
   }, [isOpen]);
+
+  const checkLoginAndFetchCloud = async () => {
+    const loggedIn = apiService.isLoggedIn();
+    setIsLoggedIn(loggedIn);
+    if (loggedIn) {
+      try {
+        const saves = await apiService.getCloudSaves();
+        const savesMap: Record<number, CloudSave> = {};
+        saves.forEach(s => savesMap[s.slotId] = s);
+        setCloudSaves(savesMap);
+      } catch (e) {
+        console.error('Failed to fetch cloud saves', e);
+      }
+    }
+  };
 
   const refreshSlots = () => {
     const allSlots = getAllSlots();
@@ -260,6 +279,73 @@ const SaveManagerModal: React.FC<Props> = ({
     }
   };
 
+  // Cloud Save Handlers
+  const handleUploadToCloud = async (slotId: number) => {
+    const slot = slots.find(s => s.id === slotId);
+    if (!slot || !slot.data) {
+        showError('该槽位没有存档可上传！');
+        return;
+    }
+
+    try {
+        const saveDataStr = exportSave(slot.data);
+        const summary = `${slot.playerName} - ${slot.realm} ${slot.realmLevel}层`;
+        await apiService.uploadSave(slotId, saveDataStr, summary);
+        showSuccess('云端存档上传成功！');
+        checkLoginAndFetchCloud(); // Refresh
+    } catch (e: any) {
+        showError('上传失败: ' + e.message);
+    }
+  };
+
+  const handleDownloadFromCloud = async (slotId: number) => {
+    const cloudSave = cloudSaves[slotId];
+    if (!cloudSave) {
+        showError('云端该槽位没有存档！');
+        return;
+    }
+
+    try {
+        const saveData = importSave(cloudSave.saveData);
+        if (!saveData) {
+            showError('云端存档格式错误！');
+            return;
+        }
+
+        showConfirm(
+            `确定要从云端下载到槽位${slotId}吗？\n\n云端描述: ${cloudSave.summary}\n更新时间: ${dayjs(cloudSave.updateTime).format('YYYY-MM-DD HH:mm')}\n\n本地该槽位存档将被覆盖！`,
+            '确认下载',
+            () => {
+                const success = saveToSlot(slotId, saveData.player, saveData.logs);
+                if (success) {
+                    showSuccess('云端存档下载成功！');
+                    refreshSlots();
+                } else {
+                    showError('保存到本地失败！');
+                }
+            }
+        );
+    } catch (e: any) {
+        showError('下载失败: ' + e.message);
+    }
+  };
+
+  const handleDeleteCloudSave = async (slotId: number) => {
+    showConfirm(
+        `确定要删除云端槽位${slotId}的存档吗？\n此操作不可撤销！`,
+        '确认删除',
+        async () => {
+            try {
+                await apiService.deleteCloudSave(slotId);
+                showSuccess('云端存档删除成功！');
+                checkLoginAndFetchCloud();
+            } catch (e: any) {
+                showError('删除失败: ' + e.message);
+            }
+        }
+    );
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -275,11 +361,19 @@ const SaveManagerModal: React.FC<Props> = ({
       contentClassName="bg-stone-800 space-y-4"
       contentPadding="p-4 md:p-6"
     >
+          {!isLoggedIn && (
+            <div className="bg-stone-900/50 p-2 text-center text-sm text-stone-400 rounded">
+                <Cloud size={14} className="inline mr-1" />
+                登录后可使用云存档功能
+            </div>
+          )}
+
           {/* 存档槽位列表 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {slots.map((slot) => {
               const isEmpty = !slot.data;
               const isCurrent = currentSlotId === slot.id;
+              const cloudSave = cloudSaves[slot.id];
 
               return (
                 <div
@@ -317,6 +411,22 @@ const SaveManagerModal: React.FC<Props> = ({
                         </div>
                       )}
                     </div>
+                    {/* 云存档状态指示 */}
+                    {isLoggedIn && (
+                        <div className="flex flex-col items-end">
+                            {cloudSave ? (
+                                <span className="text-xs text-emerald-400 flex items-center gap-1" title={cloudSave.summary}>
+                                    <Cloud size={12} />
+                                    已同步
+                                </span>
+                            ) : (
+                                <span className="text-xs text-stone-600 flex items-center gap-1">
+                                    <Cloud size={12} />
+                                    未同步
+                                </span>
+                            )}
+                        </div>
+                    )}
                   </div>
 
                   <div className="flex flex-wrap gap-2 mt-3">
@@ -324,28 +434,32 @@ const SaveManagerModal: React.FC<Props> = ({
                       <>
                         <button
                           onClick={() => handleLoadFromSlot(slot.id)}
-                          className="flex-1 min-w-[80px] bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1.5 rounded flex items-center justify-center gap-1"
+                          className="flex-1 min-w-[60px] bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1.5 rounded flex items-center justify-center gap-1"
+                          title="加载本地存档"
                         >
                           <Save size={14} />
                           加载
                         </button>
                         <button
                           onClick={() => handleExportSlot(slot.id)}
-                          className="flex-1 min-w-[80px] bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1.5 rounded flex items-center justify-center gap-1"
+                          className="flex-1 min-w-[60px] bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1.5 rounded flex items-center justify-center gap-1"
+                          title="导出为文件"
                         >
                           <Download size={14} />
                           导出
                         </button>
                         <button
                           onClick={() => handleDeleteSlot(slot.id)}
-                          className="flex-1 min-w-[80px] bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1.5 rounded flex items-center justify-center gap-1"
+                          className="flex-1 min-w-[60px] bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1.5 rounded flex items-center justify-center gap-1"
+                          title="删除本地存档"
                         >
                           <Trash2 size={14} />
                           删除
                         </button>
                         <button
                           onClick={() => handleShowBackups(slot.id)}
-                          className="flex-1 min-w-[80px] bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1.5 rounded flex items-center justify-center gap-1"
+                          className="flex-1 min-w-[60px] bg-purple-600 hover:bg-purple-700 text-white text-xs px-2 py-1.5 rounded flex items-center justify-center gap-1"
+                          title="查看本地备份"
                         >
                           <Copy size={14} />
                           备份
@@ -354,13 +468,14 @@ const SaveManagerModal: React.FC<Props> = ({
                     )}
                     <button
                       onClick={() => handleSaveToSlot(slot.id)}
-                      className="flex-1 min-w-[80px] bg-stone-600 hover:bg-stone-700 text-white text-xs px-2 py-1.5 rounded flex items-center justify-center gap-1"
+                      className="flex-1 min-w-[60px] bg-stone-600 hover:bg-stone-700 text-white text-xs px-2 py-1.5 rounded flex items-center justify-center gap-1"
                       disabled={!currentPlayer}
+                      title="保存到该槽位"
                     >
                       <Save size={14} />
                       {isEmpty ? '保存' : '覆盖'}
                     </button>
-                    <label className="flex-1 min-w-[80px] bg-stone-600 hover:bg-stone-700 text-white text-xs px-2 py-1.5 rounded flex items-center justify-center gap-1 cursor-pointer">
+                    <label className="flex-1 min-w-[60px] bg-stone-600 hover:bg-stone-700 text-white text-xs px-2 py-1.5 rounded flex items-center justify-center gap-1 cursor-pointer" title="从文件导入">
                       <Upload size={14} />
                       导入
                       <input
@@ -372,6 +487,39 @@ const SaveManagerModal: React.FC<Props> = ({
                       />
                     </label>
                   </div>
+
+                  {/* 云存档按钮 */}
+                  {isLoggedIn && (
+                      <div className="flex gap-2 mt-2 pt-2 border-t border-stone-700/50">
+                          <button
+                            onClick={() => handleUploadToCloud(slot.id)}
+                            className={`flex-1 text-xs px-2 py-1 rounded flex items-center justify-center gap-1 ${isEmpty ? 'bg-stone-800 text-stone-600 cursor-not-allowed' : 'bg-emerald-900/50 text-emerald-400 hover:bg-emerald-900'}`}
+                            disabled={isEmpty}
+                            title="上传本地存档到云端"
+                          >
+                            <CloudUpload size={14} />
+                            上传
+                          </button>
+                          <button
+                            onClick={() => handleDownloadFromCloud(slot.id)}
+                            className={`flex-1 text-xs px-2 py-1 rounded flex items-center justify-center gap-1 ${!cloudSave ? 'bg-stone-800 text-stone-600 cursor-not-allowed' : 'bg-blue-900/50 text-blue-400 hover:bg-blue-900'}`}
+                            disabled={!cloudSave}
+                            title="从云端下载存档覆盖本地"
+                          >
+                            <CloudDownload size={14} />
+                            下载
+                          </button>
+                           {cloudSave && (
+                                <button
+                                    onClick={() => handleDeleteCloudSave(slot.id)}
+                                    className="px-2 py-1 rounded bg-red-900/30 text-red-400 hover:bg-red-900/50"
+                                    title="删除云端存档"
+                                >
+                                    <Trash2 size={14} />
+                                </button>
+                           )}
+                      </div>
+                  )}
 
                   {/* 备份列表 */}
                   {showBackups === slot.id && (
@@ -495,4 +643,3 @@ const SaveManagerModal: React.FC<Props> = ({
 };
 
 export default SaveManagerModal;
-
