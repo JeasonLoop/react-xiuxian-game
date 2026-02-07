@@ -12,12 +12,10 @@ import { STORAGE_KEYS } from '../constants/storageKeys';
 import { TALENTS } from '../constants/index';
 import { initializeEventTemplateLibrary } from '../services/adventureTemplateService';
 import {
-  getCurrentSlotId,
-  loadFromSlot,
-  saveToSlot,
-  setCurrentSlotId,
   ensurePlayerStatsCompatibility,
 } from '../utils/saveManagerUtils';
+import { apiService } from '../services/apiService';
+import { showSuccess, showError } from '../utils/toastUtils';
 
 // 默认游戏设置
 const DEFAULT_SETTINGS: GameSettings = {
@@ -42,19 +40,9 @@ function loadInitialSettings(): GameSettings {
   return DEFAULT_SETTINGS;
 }
 
-// 检查是否有存档
+// 检查是否有存档 (不再使用本地逻辑，初始为 false)
 function checkHasSave(): boolean {
-  try {
-    const currentSlotId = getCurrentSlotId();
-    const slotSave = loadFromSlot(currentSlotId);
-    if (slotSave) {
-      return true;
-    }
-    const saved = localStorage.getItem(STORAGE_KEYS.SAVE);
-    return saved !== null;
-  } catch {
-    return false;
-  }
+  return false;
 }
 
 // Store 状态接口
@@ -82,13 +70,14 @@ interface GameState {
 
   // Actions
   addLog: (text: string, type: LogEntry['type']) => void;
-  saveGame: () => void;
-  loadGame: () => void;
+  saveGame: () => Promise<void>;
+  loadGame: () => Promise<void>;
   startNewGame: (
     playerName: string,
     talentId: string,
     difficulty: GameSettings['difficulty']
-  ) => void;
+  ) => Promise<void>;
+  checkCloudSave: () => Promise<void>;
 }
 
 // 使用 subscribeWithSelector 中间件来支持选择性订阅
@@ -96,7 +85,7 @@ export const useGameStore = create<GameState>()(
   subscribeWithSelector((set, get) => ({
     // 初始状态
     hasSave: checkHasSave(),
-    gameStarted: checkHasSave(),
+    gameStarted: false,
     player: null,
     settings: loadInitialSettings(),
     logs: [],
@@ -160,8 +149,27 @@ export const useGameStore = create<GameState>()(
       }));
     },
 
-    // 保存游戏
-    saveGame: () => {
+    // 检查云端存档
+    checkCloudSave: async () => {
+      if (!apiService.isLoggedIn()) {
+        set({ hasSave: false });
+        return;
+      }
+      try {
+        const save = await apiService.getCloudSave();
+        if (save) {
+          set({ hasSave: true });
+        } else {
+          set({ hasSave: false });
+        }
+      } catch (error) {
+        console.error('检查云存档失败:', error);
+        set({ hasSave: false });
+      }
+    },
+
+    // 保存游戏 (上传到云端)
+    saveGame: async () => {
       const state = get();
       if (!state.player) return;
 
@@ -172,12 +180,13 @@ export const useGameStore = create<GameState>()(
           timestamp: Date.now(),
         };
 
-        // 保存到当前槽位
-        const currentSlotId = getCurrentSlotId();
-        saveToSlot(currentSlotId, state.player, state.logs);
+        const saveDataStr = JSON.stringify(saveData);
+        // 生成摘要
+        const summary = `${state.player.name} - ${state.player.realm}`;
 
-        // 同时保存到旧存档系统（兼容性）
-        localStorage.setItem(STORAGE_KEYS.SAVE, JSON.stringify(saveData));
+        // 始终保存到默认槽位 (简化逻辑)
+        await apiService.uploadSave(saveDataStr, summary);
+        console.log('游戏已保存到云端');
 
         // 保存设置
         localStorage.setItem(
@@ -186,11 +195,12 @@ export const useGameStore = create<GameState>()(
         );
       } catch (error) {
         console.error('保存存档失败:', error);
+        showError('云端保存失败，请检查网络连接');
       }
     },
 
-    // 加载游戏
-    loadGame: () => {
+    // 加载游戏 (从云端下载)
+    loadGame: async () => {
       const state = get();
       if (!state.hasSave) return;
 
@@ -199,31 +209,19 @@ export const useGameStore = create<GameState>()(
         initializeEventTemplateLibrary(true);
         console.log('加载存档时重新生成事件模板库');
 
-        // 优先从多存档槽位系统加载
-        const currentSlotId = getCurrentSlotId();
-        let savedData = loadFromSlot(currentSlotId);
+        const save = await apiService.getCloudSave();
 
-        // 如果没有，尝试从旧存档系统加载（兼容性）
-        if (!savedData) {
-          const saved = localStorage.getItem(STORAGE_KEYS.SAVE);
-          if (saved) {
-            savedData = JSON.parse(saved);
-            // 如果从旧系统加载成功，迁移到槽位1
-            if (savedData) {
-              saveToSlot(1, savedData.player, savedData.logs || []);
-              setCurrentSlotId(1);
-            }
-          }
-        }
+        if (save && save.saveData) {
+            const savedData = JSON.parse(save.saveData);
 
-        if (savedData) {
-          // 使用统一的兼容性处理函数
-          const loadedPlayer = ensurePlayerStatsCompatibility(savedData.player);
-          set({
-            player: loadedPlayer,
-            logs: savedData.logs || [],
-            gameStarted: true,
-          });
+            // 使用统一的兼容性处理函数
+            const loadedPlayer = ensurePlayerStatsCompatibility(savedData.player);
+            set({
+                player: loadedPlayer,
+                logs: savedData.logs || [],
+                gameStarted: true,
+            });
+            console.log('云端存档加载成功');
         } else {
           set({
             hasSave: false,
@@ -232,6 +230,7 @@ export const useGameStore = create<GameState>()(
         }
       } catch (error) {
         console.error('加载存档失败:', error);
+        showError('加载云端存档失败');
         set({
           hasSave: false,
           gameStarted: false,
@@ -240,7 +239,7 @@ export const useGameStore = create<GameState>()(
     },
 
     // 开始新游戏
-    startNewGame: (playerName, talentId, difficulty) => {
+    startNewGame: async (playerName, talentId, difficulty) => {
       const state = get();
 
       // 重新生成事件模板库
@@ -282,9 +281,11 @@ export const useGameStore = create<GameState>()(
           logs: initialLogs,
           timestamp: Date.now(),
         };
-        const currentSlotId = getCurrentSlotId();
-        saveToSlot(currentSlotId, newPlayer, initialLogs);
-        localStorage.setItem(STORAGE_KEYS.SAVE, JSON.stringify(saveData));
+        const saveDataStr = JSON.stringify(saveData);
+        const summary = `${newPlayer.name} - ${newPlayer.realm}`;
+
+        await apiService.uploadSave(saveDataStr, summary);
+
         localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(newSettings));
       } catch (error) {
         console.error('保存游戏失败:', error);
@@ -319,9 +320,9 @@ function debouncedSave() {
     return;
   }
 
-  // 计算防抖延迟：如果距离上次保存超过5秒，使用较短的延迟
+  // 计算防抖延迟：延长到 30秒/10秒，减少后端压力
   const timeSinceLastSave = Date.now() - lastSaveTime;
-  const debounceDelay = timeSinceLastSave > 5000 ? 1000 : 3000;
+  const debounceDelay = timeSinceLastSave > 30000 ? 5000 : 10000;
 
   // 清除之前的定时器
   if (saveTimeoutId) {
@@ -335,29 +336,25 @@ function debouncedSave() {
   }, debounceDelay);
 }
 
-// 订阅 player 状态变化
+// 订阅 player 状态变化 (仅用于记录状态变化，不再触发高频防抖保存)
 useGameStore.subscribe(
   (state) => state.player,
   (player, prevPlayer) => {
-    // 只在 player 真正变化时触发（排除初始加载）
-    if (player && prevPlayer && player !== prevPlayer) {
-      debouncedSave();
-    }
+    // 可以在这里标记数据已脏，但不再直接调用 debouncedSave
+    // if (player && prevPlayer && player !== prevPlayer) {
+    //   debouncedSave();
+    // }
   },
   { equalityFn: Object.is }
 );
 
-// 订阅 logs 状态变化（可选，日志变化频繁，可以考虑不单独订阅）
-useGameStore.subscribe(
-  (state) => state.logs,
-  (logs, prevLogs) => {
-    // 只在日志真正增加时触发（不是初始加载或替换）
-    if (logs && prevLogs && logs.length > prevLogs.length) {
-      debouncedSave();
-    }
-  },
-  { equalityFn: Object.is }
-);
+// 启动定时自动保存 (每5分钟)
+if (typeof window !== 'undefined') {
+  setInterval(() => {
+    console.log('触发定时自动保存 (5分钟)');
+    performSave();
+  }, 300000); // 5分钟 = 300000ms
+}
 
 // 页面卸载前保存
 if (typeof window !== 'undefined') {
@@ -366,14 +363,13 @@ if (typeof window !== 'undefined') {
     if (saveTimeoutId) {
       clearTimeout(saveTimeoutId);
     }
-    // 立即执行保存
+    // 立即执行保存 (尝试，但不保证在关闭前完成异步请求)
     performSave();
   });
 
-  // 页面可见性变化时保存（用户切换标签页或最小化窗口时）
+  // 页面可见性变化时保存
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
-      // 清除待执行的防抖保存，立即保存
       if (saveTimeoutId) {
         clearTimeout(saveTimeoutId);
         saveTimeoutId = null;

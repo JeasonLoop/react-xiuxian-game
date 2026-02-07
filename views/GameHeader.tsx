@@ -12,6 +12,7 @@ import {
   Calendar,
   Home,
   Users,
+  Save, // 导入 Save 图标
 } from 'lucide-react';
 import { PlayerStats } from '../types';
 import { STORAGE_KEYS } from '../constants/storageKeys';
@@ -41,6 +42,7 @@ interface GameHeaderProps {
   onOpenPet: () => void;
   onOpenLottery: () => void;
   onOpenSettings: () => void;
+  onSave?: () => void; // 新增保存回调
   onOpenDailyQuest?: () => void;
   onOpenGrotto?: () => void;
   onOpenDebug?: () => void;
@@ -57,6 +59,7 @@ function GameHeader({
   onOpenPet,
   onOpenLottery,
   onOpenSettings,
+  onSave, // 新增
   onOpenDailyQuest,
   onOpenGrotto,
   onOpenDebug,
@@ -257,6 +260,16 @@ function GameHeader({
                 Lv.{player.grotto.level}
               </span>
             )}
+          </button>
+        )}
+        {onSave && (
+          <button
+            onClick={onSave}
+            className="flex items-center gap-2 px-3 py-2 bg-emerald-900/50 hover:bg-emerald-800 rounded border border-emerald-700 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center text-emerald-400"
+            title="保存存档"
+          >
+            <Save size={18} />
+            <span>保存</span>
           </button>
         )}
         <button

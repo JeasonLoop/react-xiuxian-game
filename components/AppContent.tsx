@@ -11,9 +11,7 @@ import { BattleReplay } from '../services/battleService';
 import TribulationModal from './TribulationModal';
 import DeathModal from './DeathModal';
 import GameView from '../views/GameView';
-import DebugModal from './DebugModal';
 import AlertModal from './AlertModal';
-import SaveManagerModal from './SaveManagerModal';
 import SaveCompareModal from './SaveCompareModal';
 import ModalsContainer from '../views/modals/ModalsContainer';
 import CultivationIntroModal from './CultivationIntroModal';
@@ -21,6 +19,9 @@ import AutoAdventureConfigModal from './AutoAdventureConfigModal';
 import { ensurePlayerStatsCompatibility } from '../utils/saveManagerUtils';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import { useUIStore } from '../store/uiStore';
+import { Save } from 'lucide-react';
+import { useGameStore } from '../store/gameStore';
+import { showSuccess, showError } from '../utils/toastUtils';
 
 interface AppContentProps {
   // 玩家数据
@@ -144,6 +145,8 @@ interface AppContentProps {
 export function AppContent(props: AppContentProps) {
   // 从 store 获取 setAutoAdventure
   const setAutoAdventure = useUIStore((state) => state.setAutoAdventure);
+  const saveGame = useGameStore((state) => state.saveGame);
+  const [isSaving, setIsSaving] = React.useState(false);
 
   const {
     player,
@@ -158,13 +161,11 @@ export function AppContent(props: AppContentProps) {
     deathReason,
     tribulationState,
     showCultivationIntro,
-    isSaveManagerOpen,
     isSaveCompareOpen,
     compareSave1,
     compareSave2,
     isAnyModalOpen,
     isDebugModeEnabled,
-    isDebugOpen,
     purchaseSuccess,
     lotteryRewards,
     itemActionLogValue,
@@ -175,11 +176,9 @@ export function AppContent(props: AppContentProps) {
     setDeathBattleData,
     setDeathReason,
     setShowCultivationIntro,
-    setIsSaveManagerOpen,
     setIsSaveCompareOpen,
     setCompareSave1,
     setCompareSave2,
-    setIsDebugOpen,
     setLotteryRewards,
     setItemActionLog,
     setReputationEvent,
@@ -207,6 +206,19 @@ export function AppContent(props: AppContentProps) {
     setIsMobileSidebarOpen,
     setIsMobileStatsOpen,
   } = props;
+
+  const handleManualSave = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+        await saveGame();
+        showSuccess('存档保存成功');
+    } catch (error) {
+        showError('保存失败');
+    } finally {
+        setIsSaving(false);
+    }
+  };
 
   return (
     <>
@@ -277,39 +289,15 @@ export function AppContent(props: AppContentProps) {
           setIsAlchemyOpen,
           setIsSectOpen,
         }}
-        handlers={gameViewHandlers}
-        isDebugModeEnabled={isDebugModeEnabled}
+        handlers={{
+          ...gameViewHandlers,
+          onSave: handleManualSave, // 传递手动保存函数
+        }}
+        isDebugModeEnabled={false} // 强制关闭 Debug 模式显示
       />
 
-      {/* 调试弹窗 */}
-      {player && isDebugModeEnabled && (
-        <DebugModal
-          isOpen={isDebugOpen}
-          onClose={() => setIsDebugOpen(false)}
-          player={player}
-          onUpdatePlayer={(updates) => {
-            setPlayer((prev) => {
-              if (!prev) return prev;
-              return { ...prev, ...updates };
-            });
-          }}
-          onTriggerDeath={() => {
-            setPlayer((prev) => {
-              if (!prev) return prev;
-              return { ...prev, hp: 0 };
-            });
-          }}
-          onTriggerReputationEvent={(event) => {
-            setReputationEvent(event);
-            setIsReputationEventOpen(true);
-          }}
-          onChallengeDaoCombining={() => {
-            if (adventureHandlers) {
-              adventureHandlers.executeAdventure('dao_combining_challenge', undefined, '极度危险');
-            }
-          }}
-        />
-      )}
+      {/* 手动存档按钮 - 悬浮在右上角 (在设置按钮左边) */}
+      {/* 移除旧的悬浮按钮，功能已移动到 GameHeader */}
 
       {/* Alert 提示弹窗 */}
       {alertState && (
@@ -322,26 +310,6 @@ export function AppContent(props: AppContentProps) {
           onConfirm={alertState.onConfirm}
           showCancel={alertState.showCancel}
           onCancel={alertState.onCancel}
-        />
-      )}
-
-      {/* 存档管理器 */}
-      {player && (
-        <SaveManagerModal
-          isOpen={isSaveManagerOpen}
-          onClose={() => setIsSaveManagerOpen(false)}
-          currentPlayer={player}
-          currentLogs={logs}
-          onLoadSave={(loadedPlayer, loadedLogs) => {
-            const compatiblePlayer = ensurePlayerStatsCompatibility(loadedPlayer);
-            setPlayer(compatiblePlayer);
-            setLogs(loadedLogs);
-          }}
-          onCompareSaves={(save1, save2) => {
-            setCompareSave1(save1);
-            setCompareSave2(save2);
-            setIsSaveCompareOpen(true);
-          }}
         />
       )}
 
@@ -404,4 +372,3 @@ export function AppContent(props: AppContentProps) {
     </>
   );
 }
-

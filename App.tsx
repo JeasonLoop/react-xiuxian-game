@@ -8,9 +8,9 @@ import {
   TribulationState,
   GameSettings,
 } from './types';
-import WelcomeScreen from './components/WelcomeScreen';
 import StartScreen from './components/StartScreen';
 import LoadingScreen from './components/LoadingScreen';
+import LoginPage from './components/LoginPage';
 
 import { SaveData } from './utils/saveManagerUtils';
 import { BattleReplay } from './services/battleService';
@@ -26,7 +26,6 @@ import { useDeathDetection } from './hooks/useDeathDetection';
 import { useAutoFeatures } from './hooks/useAutoFeatures';
 import { usePassiveRegeneration } from './hooks/usePassiveRegeneration';
 import { useAutoGrottoHarvest } from './hooks/useAutoGrottoHarvest';
-import { STORAGE_KEYS } from './constants/storageKeys';
 import { AUTO_ADVENTURE_CONSTANTS } from './constants/appConstants';
 import { useItemActionLog } from './hooks/useItemActionLog';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
@@ -51,15 +50,18 @@ import {
   useBattleResume,
   useRealmChangeDetection,
   useAchievementCheck,
-  useDebugModeInit,
   useTribulationComplete,
 } from './hooks/useAppLifecycle';
 import { useHandlerGroups } from './hooks/useHandlerGroups';
+import { apiService } from './services/apiService';
 
 function App() {
+  // ========== 认证状态 ==========
+  const [isLoggedIn, setIsLoggedIn] = useState(apiService.isLoggedIn());
+
   // ========== Game Store 状态 ==========
   const hasSave = useGameStore((state) => state.hasSave);
-  const setHasSave = useGameStore((state) => state.setHasSave);
+  const checkCloudSave = useGameStore((state) => state.checkCloudSave);
   const gameStarted = useGameStarted();
   const setGameStarted = useGameStore((state) => state.setGameStarted);
   const player = usePlayer();
@@ -136,7 +138,6 @@ function App() {
   } = modalSetters;
 
   // ========== 本地状态 ==========
-  const [showWelcome, setShowWelcome] = useState(true);
   const [showCultivationIntro, setShowCultivationIntro] = useState(false);
   const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
   const [isSaveCompareOpen, setIsSaveCompareOpen] = useState(false);
@@ -147,6 +148,17 @@ function App() {
   const [deathReason, setDeathReason] = useState('');
   const [tribulationState, setTribulationState] = useState<TribulationState | null>(null);
   const [autoAdventureConfig, setAutoAdventureConfig] = useState(AUTO_ADVENTURE_CONSTANTS.DEFAULT_CONFIG);
+
+  // ========== 检查登录和云存档 ==========
+  useEffect(() => {
+    if (isLoggedIn) {
+      checkCloudSave();
+    }
+  }, [isLoggedIn, checkCloudSave]);
+
+  const handleLoginSuccess = () => {
+    setIsLoggedIn(true);
+  };
 
   // ========== 游戏效果 ==========
   const { visualEffects, createAddLog, triggerVisual } = useGameEffects();
@@ -177,7 +189,7 @@ function App() {
   const { alertState, closeAlert } = useGlobalAlert();
 
   // ========== 生命周期 hooks ==========
-  useDebugModeInit({ setIsDebugModeEnabled });
+  // 移除 Debug 模式初始化
 
   useCultivationIntro({
     gameStarted,
@@ -286,7 +298,8 @@ function App() {
     setPlayer,
     setLogs,
     setGameStarted,
-    setHasSave,
+    // 移除 setHasSave，因为现在通过云端检查控制
+    setHasSave: () => {},
     setIsDead,
     setDeathBattleData,
     setDeathReason,
@@ -423,10 +436,10 @@ function App() {
 
   // ========== 游戏启动时自动加载存档 ==========
   useEffect(() => {
-    if (hasSave && !player) {
+    if (hasSave && !player && isLoggedIn) {
       loadGame();
     }
-  }, [hasSave, player, loadGame]);
+  }, [hasSave, player, loadGame, isLoggedIn]);
 
   // ========== 开始新游戏 ==========
   const handleStartGame = useCallback((
@@ -439,41 +452,26 @@ function App() {
 
   // ========== 渲染逻辑 ==========
 
-  // 显示欢迎界面
-  if (showWelcome) {
-    return (
-      <WelcomeScreen
-        hasSave={hasSave}
-        onStart={() => {
-          localStorage.removeItem(STORAGE_KEYS.SAVE);
-          setHasSave(false);
-          setGameStarted(false);
-          setPlayer(null);
-          setLogs([]);
-          setShowWelcome(false);
-        }}
-        onContinue={() => {
-          setShowWelcome(false);
-        }}
-      />
-    );
+  // 1. 未登录：显示登录页
+  if (!isLoggedIn) {
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // 加载中
+  // 2. 加载中
   if (hasSave && !player && gameStarted) {
     return <LoadingScreen />;
   }
 
-  // 开始界面
+  // 3. 开始界面（已登录但无存档，或存档未加载）
   if (!hasSave && (!gameStarted || !player)) {
     return <StartScreen onStart={handleStartGame} />;
   }
 
   if (!player) {
-    return null;
+    return <LoadingScreen />;
   }
 
-  // 主游戏界面
+  // 4. 主游戏界面
   return (
     <AppContent
       {...({

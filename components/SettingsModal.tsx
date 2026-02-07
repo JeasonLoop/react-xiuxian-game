@@ -35,6 +35,7 @@ import {
   getShortcutConfig,
   configToShortcut,
 } from '../utils/shortcutUtils';
+import { apiService, GameSave } from '../services/apiService';
 
 interface Props {
   isOpen: boolean;
@@ -55,8 +56,37 @@ const SettingsModal: React.FC<Props> = ({
   onOpenSaveManager,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cloudFileInputRef = useRef<HTMLInputElement>(null);
   const [isChangelogOpen, setIsChangelogOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [userInfo, setUserInfo] = useState<any>(null);
+  const [cloudSave, setCloudSave] = useState<GameSave | null>(null);
+  const [isCheckingCloud, setIsCheckingCloud] = useState(false);
+
+  React.useEffect(() => {
+    if (isOpen) {
+        checkUserAndCloud();
+    }
+  }, [isOpen]);
+
+  const checkUserAndCloud = async () => {
+    setIsCheckingCloud(true);
+    try {
+        if (apiService.isLoggedIn()) {
+            const user = await apiService.getMe();
+            setUserInfo(user);
+            const save = await apiService.getCloudSave();
+            setCloudSave(save);
+        } else {
+            setUserInfo(null);
+            setCloudSave(null);
+        }
+    } catch (e) {
+        console.error("Failed to fetch user info", e);
+    } finally {
+        setIsCheckingCloud(false);
+    }
+  };
 
   // 生成快捷键列表（用于显示）
   const shortcuts: KeyboardShortcut[] = Object.keys(SHORTCUT_DESCRIPTIONS).map(
@@ -118,7 +148,7 @@ const SettingsModal: React.FC<Props> = ({
         '确认导入',
         () => {
           try {
-            // 获取当前存档槽位ID，如果没有则使用槽位1
+            // 获取当前存档槽位ID (现在强制为1)
             const currentSlotId = getCurrentSlotId();
 
             // 使用新的存档系统保存到当前槽位
@@ -159,7 +189,7 @@ const SettingsModal: React.FC<Props> = ({
 
   const handleExportSave = () => {
     try {
-      // 获取当前存档槽位ID
+      // 获取当前存档槽位ID (现在强制为1)
       const currentSlotId = getCurrentSlotId();
 
       // 从当前槽位加载存档
@@ -198,6 +228,98 @@ const SettingsModal: React.FC<Props> = ({
     }
   };
 
+  const handleUploadToCloud = async () => {
+    try {
+        const currentSlotId = getCurrentSlotId();
+        const saveData = loadFromSlot(currentSlotId);
+        if (!saveData) {
+            showError('本地没有存档可上传');
+            return;
+        }
+
+        const jsonString = exportSave(saveData);
+        const summary = `${saveData.player.name} - ${saveData.player.realm} - ${dayjs().format('YYYY-MM-DD HH:mm')}`;
+
+        await apiService.uploadSave(jsonString, summary);
+        showSuccess('上传云端成功');
+        checkUserAndCloud();
+    } catch (e: any) {
+        showError('上传失败: ' + e.message);
+    }
+  };
+
+  const handleDownloadFromCloud = async () => {
+    if (!cloudSave) return;
+
+    showConfirm(
+        `确定要从云端下载存档吗？\n这将覆盖当前的本地进度。\n云端时间: ${dayjs(cloudSave.updateTime).format('YYYY-MM-DD HH:mm:ss')}`,
+        '确认下载',
+        async () => {
+             try {
+                 // 这里的 saveData 已经是 JSON 字符串，因为 getCloudSave 返回的是对象，其中 saveData 字段是字符串
+                 // 但注意，后端返回的 saveData 字段本身可能就是 JSON 字符串
+                 const saveDataStr = cloudSave.saveData;
+                 const saveData = importSave(saveDataStr);
+
+                 if (!saveData) {
+                     throw new Error('云端存档解析失败');
+                 }
+
+                 const currentSlotId = getCurrentSlotId();
+                 saveToSlot(currentSlotId, ensurePlayerStatsCompatibility(saveData.player), saveData.logs);
+
+                 showSuccess('云端存档已下载并覆盖本地');
+                 setTimeout(() => window.location.reload(), 500);
+             } catch (e: any) {
+                 showError('下载失败: ' + e.message);
+             }
+        }
+    );
+  };
+
+  const handleDeleteCloud = async () => {
+      showConfirm('确定要删除云端存档吗？此操作不可撤销。', '确认删除', async () => {
+          try {
+              await apiService.deleteCloudSave();
+              showSuccess('云端存档已删除');
+              checkUserAndCloud();
+          } catch (e: any) {
+              showError('删除失败: ' + e.message);
+          }
+      });
+  };
+
+  const handleExportCloud = async () => {
+      try {
+          const blob = await apiService.exportSaveFile();
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `cloud-save-${dayjs().format('YYYYMMDDHHmm')}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
+          showSuccess('云端导出成功');
+      } catch (e: any) {
+          showError('导出失败: ' + e.message);
+      }
+  };
+
+  const handleImportCloud = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      try {
+          await apiService.importSaveFile(file);
+          showSuccess('文件已导入到云端');
+          checkUserAndCloud();
+      } catch (err: any) {
+          showError('导入失败: ' + err.message);
+      }
+      e.target.value = '';
+  };
+
   return (
     <>
       <Modal
@@ -208,7 +330,64 @@ const SettingsModal: React.FC<Props> = ({
         height="lg"
       >
         <div className="space-y-6">
-          {/* 音效设置 */}
+          {/* 用户信息 */}
+          {userInfo && (
+            <div className="bg-stone-900/50 border border-stone-700 rounded p-4">
+               <div className="flex items-center gap-3 mb-2">
+                   <div className="w-10 h-10 rounded-full bg-mystic-gold/20 flex items-center justify-center text-mystic-gold font-bold text-xl">
+                       {userInfo.nickname?.[0] || userInfo.username?.[0] || 'U'}
+                   </div>
+                   <div>
+                       <div className="text-stone-200 font-bold">{userInfo.nickname || userInfo.username}</div>
+                       <div className="text-xs text-stone-500">ID: {userInfo.id}</div>
+                   </div>
+               </div>
+
+               <div className="mt-4 pt-4 border-t border-stone-800">
+                   <div className="flex justify-between items-center mb-2">
+                       <span className="text-sm text-stone-400">云端存档</span>
+                       <span className="text-xs text-stone-500">
+                           {cloudSave ? dayjs(cloudSave.updateTime).format('YYYY-MM-DD HH:mm') : '无存档'}
+                       </span>
+                   </div>
+
+                   <div className="grid grid-cols-2 gap-2">
+                       <button
+                           onClick={handleUploadToCloud}
+                           className="bg-stone-800 hover:bg-stone-700 text-stone-300 py-1.5 px-3 rounded text-xs border border-stone-700 transition-colors"
+                       >
+                           上传本地到云端
+                       </button>
+                       <button
+                           onClick={handleDownloadFromCloud}
+                           disabled={!cloudSave}
+                           className={`py-1.5 px-3 rounded text-xs border border-stone-700 transition-colors ${!cloudSave ? 'bg-stone-900 text-stone-600 cursor-not-allowed' : 'bg-stone-800 hover:bg-stone-700 text-stone-300'}`}
+                       >
+                           下载云端到本地
+                       </button>
+                       <button
+                           onClick={handleExportCloud}
+                           disabled={!cloudSave}
+                           className={`py-1.5 px-3 rounded text-xs border border-stone-700 transition-colors ${!cloudSave ? 'bg-stone-900 text-stone-600 cursor-not-allowed' : 'bg-stone-800 hover:bg-stone-700 text-stone-300'}`}
+                       >
+                           导出云端文件
+                       </button>
+                       <label className="bg-stone-800 hover:bg-stone-700 text-stone-300 py-1.5 px-3 rounded text-xs border border-stone-700 transition-colors text-center cursor-pointer">
+                           导入文件到云端
+                           <input type="file" className="hidden" accept=".json,.txt" onChange={handleImportCloud} ref={cloudFileInputRef} />
+                       </label>
+                   </div>
+                   {cloudSave && (
+                        <button
+                           onClick={handleDeleteCloud}
+                           className="w-full mt-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 py-1.5 px-3 rounded text-xs border border-red-900/30 transition-colors"
+                        >
+                            删除云端存档
+                        </button>
+                   )}
+               </div>
+            </div>
+          )}
           {/* <div>
             <div className="flex items-center gap-2 mb-3">
               <Volume2 size={20} className="text-stone-400" />
@@ -359,26 +538,6 @@ const SettingsModal: React.FC<Props> = ({
               <h3 className="font-bold">存档管理</h3>
             </div>
             <div className="space-y-3">
-              {onOpenSaveManager && (
-                <div>
-                  <label className="block text-sm text-stone-400 mb-2">
-                    多存档槽位管理
-                  </label>
-                  <button
-                    onClick={() => {
-                      onOpenSaveManager();
-                      onClose();
-                    }}
-                    className="w-full bg-mystic-gold hover:bg-yellow-600 text-stone-900 border border-yellow-500 rounded px-4 py-2 flex items-center justify-center transition-colors font-semibold"
-                  >
-                    <FolderOpen size={16} className="mr-2" />
-                    打开存档管理器
-                  </button>
-                  <p className="text-xs text-stone-500 mt-2">
-                    管理多个存档槽位、备份和对比存档
-                  </p>
-                </div>
-              )}
               <div>
                 <label className="block text-sm text-stone-400 mb-2">
                   导出存档

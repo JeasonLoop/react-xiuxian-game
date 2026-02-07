@@ -90,6 +90,7 @@ interface GameViewProps {
     pausedByBattle?: boolean;
     onToggleAutoMeditate: () => void;
     onToggleAutoAdventure: () => void;
+    onSave?: () => void; // 新增
   };
   isDebugModeEnabled?: boolean;
 }
@@ -147,6 +148,7 @@ function GameView({
           onOpenLottery={handlers.onOpenLottery}
           onOpenDailyQuest={handlers.onOpenDailyQuest}
           onOpenGrotto={handlers.onOpenGrotto}
+          onSave={handlers.onSave} // 传递保存回调到 Header
           onOpenSettings={handlers.onOpenSettings}
           onOpenDebug={handlers.onOpenDebug}
           isDebugModeEnabled={isDebugModeEnabled}
@@ -221,6 +223,7 @@ function GameView({
         onOpenLottery={handlers.onOpenLottery}
         onOpenSettings={handlers.onOpenSettings}
         onOpenDebug={handlers.onOpenDebug}
+        onSave={handlers.onSave} // 传递保存回调
         isDebugModeEnabled={isDebugModeEnabled}
         achievementCount={achievementCount}
         petCount={petCount}

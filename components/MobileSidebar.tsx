@@ -12,6 +12,7 @@ import {
   BarChart3,
   Bug,
   Home,
+  Save, // 导入 Save 图标
 } from 'lucide-react';
 
 interface Props {
@@ -27,6 +28,7 @@ interface Props {
   onOpenSettings: () => void;
   onOpenGrotto?: () => void;
   onOpenDebug?: () => void;
+  onSave?: () => void; // 新增保存回调类型
   isDebugModeEnabled?: boolean;
   achievementCount?: number;
   petCount?: number;
@@ -47,6 +49,7 @@ const MobileSidebar: React.FC<Props> = ({
   onOpenSettings,
   onOpenGrotto,
   onOpenDebug,
+  onSave, // 新增保存回调
   isDebugModeEnabled = false,
   achievementCount = 0,
   petCount = 0,
@@ -117,6 +120,16 @@ const MobileSidebar: React.FC<Props> = ({
         onClick: onOpenSettings,
         color: 'text-stone-400',
       },
+      ...(onSave
+        ? [
+            {
+              icon: Save,
+              label: '保存存档',
+              onClick: onSave,
+              color: 'text-emerald-400',
+            },
+          ]
+        : []),
       ...(isDebugModeEnabled && onOpenDebug
         ? [
             {

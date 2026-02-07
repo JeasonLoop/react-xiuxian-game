@@ -1,6 +1,6 @@
 /**
  * 存档管理工具函数
- * 支持多存档槽位、备份和对比功能
+ * 已修改为单存档模式
  */
 
 import { PlayerStats, LogEntry } from '../types';
@@ -94,13 +94,13 @@ export const ensurePlayerStatsCompatibility = (loadedPlayer: any): PlayerStats =
 };
 
 export interface SaveSlot {
-  id: number; // 存档槽位ID (1-10)
-  name: string; // 存档名称（用户自定义）
+  id: number; // 存档槽位ID (固定为1)
+  name: string; // 存档名称
   playerName: string; // 玩家名称
   realm: string; // 境界
   realmLevel: number; // 境界等级
   timestamp: number; // 保存时间戳
-  data: SaveData | null; // 存档数据（null表示空槽位）
+  data: SaveData | null; // 存档数据
 }
 
 export interface SaveData {
@@ -109,45 +109,45 @@ export interface SaveData {
   timestamp: number;
 }
 
+// 强制单存档槽位ID
+export const DEFAULT_SLOT_ID = 1;
+
 /**
  * 获取存档槽位的localStorage键名
  */
-const getSlotKey = (slotId: number): string => {
-  return getSlotKeyConstant(slotId);
+const getSlotKey = (slotId: number = DEFAULT_SLOT_ID): string => {
+  return getSlotKeyConstant(DEFAULT_SLOT_ID);
 };
 
 /**
  * 获取备份的localStorage键名
  */
-const getBackupKey = (slotId: number, backupIndex: number): string => {
-  return getBackupKeyConstant(slotId, backupIndex);
+const getBackupKey = (slotId: number = DEFAULT_SLOT_ID, backupIndex: number): string => {
+  return getBackupKeyConstant(DEFAULT_SLOT_ID, backupIndex);
 };
 
 /**
  * 获取当前使用的存档槽位ID
+ * 强制返回 1 (单存档模式)
  */
 export const getCurrentSlotId = (): number => {
-  try {
-    const slotId = localStorage.getItem(SAVE_SLOT_KEYS.CURRENT_SLOT);
-    return slotId ? parseInt(slotId, 10) : 1; // 默认使用槽位1
-  } catch {
-    return 1;
-  }
+  return DEFAULT_SLOT_ID;
 };
 
 /**
  * 设置当前使用的存档槽位ID
+ * 强制为 1 (单存档模式)，此处保留为了兼容旧接口调用
  */
 export const setCurrentSlotId = (slotId: number): void => {
   try {
-    localStorage.setItem(SAVE_SLOT_KEYS.CURRENT_SLOT, slotId.toString());
+    localStorage.setItem(SAVE_SLOT_KEYS.CURRENT_SLOT, DEFAULT_SLOT_ID.toString());
   } catch (error) {
     console.error('设置当前存档槽位失败:', error);
   }
 };
 
 /**
- * 保存存档到指定槽位
+ * 保存存档到指定槽位 (忽略 slotId，强制存入槽位1)
  */
 export const saveToSlot = (
   slotId: number,
@@ -156,25 +156,17 @@ export const saveToSlot = (
   slotName?: string
 ): boolean => {
   try {
-    if (slotId < 1 || slotId > SAVE_SLOT_KEYS.MAX_SLOTS) {
-      console.error(`存档槽位ID必须在1-${SAVE_SLOT_KEYS.MAX_SLOTS}之间`);
-      return false;
-    }
-
     const saveData: SaveData = {
       player,
       logs,
       timestamp: Date.now(),
     };
 
-    const slotKey = getSlotKey(slotId);
+    const slotKey = getSlotKey(DEFAULT_SLOT_ID);
     localStorage.setItem(slotKey, JSON.stringify(saveData));
 
-    // 更新当前槽位
-    setCurrentSlotId(slotId);
-
     // 自动创建备份
-    createBackup(slotId, saveData);
+    createBackup(DEFAULT_SLOT_ID, saveData);
 
     return true;
   } catch (error) {
@@ -184,16 +176,11 @@ export const saveToSlot = (
 };
 
 /**
- * 从指定槽位加载存档
+ * 从指定槽位加载存档 (忽略 slotId，强制从槽位1加载)
  */
 export const loadFromSlot = (slotId: number): SaveData | null => {
   try {
-    if (slotId < 1 || slotId > SAVE_SLOT_KEYS.MAX_SLOTS) {
-      console.error(`存档槽位ID必须在1-${SAVE_SLOT_KEYS.MAX_SLOTS}之间`);
-      return null;
-    }
-
-    const slotKey = getSlotKey(slotId);
+    const slotKey = getSlotKey(DEFAULT_SLOT_ID);
     const saved = localStorage.getItem(slotKey);
 
     if (!saved) {
@@ -201,7 +188,6 @@ export const loadFromSlot = (slotId: number): SaveData | null => {
     }
 
     const saveData: SaveData = JSON.parse(saved);
-    setCurrentSlotId(slotId);
     return saveData;
   } catch (error) {
     console.error('加载存档失败:', error);
@@ -211,61 +197,54 @@ export const loadFromSlot = (slotId: number): SaveData | null => {
 
 /**
  * 获取所有存档槽位信息
+ * 修改为只返回默认槽位
  */
 export const getAllSlots = (): SaveSlot[] => {
   const slots: SaveSlot[] = [];
+  const slotKey = getSlotKey(DEFAULT_SLOT_ID);
+  const saved = localStorage.getItem(slotKey);
 
-  for (let i = 1; i <= SAVE_SLOT_KEYS.MAX_SLOTS; i++) {
-    const slotKey = getSlotKey(i);
-    const saved = localStorage.getItem(slotKey);
-
-    if (saved) {
-      try {
-        const saveData: SaveData = JSON.parse(saved);
-        slots.push({
-          id: i,
-          name: `存档${i}`, // 默认名称，可以扩展支持自定义名称
-          playerName: saveData.player.name || '未知',
-          realm: saveData.player.realm || '未知',
-          realmLevel: saveData.player.realmLevel || 1,
-          timestamp: saveData.timestamp || Date.now(),
-          data: saveData,
-        });
-      } catch (error) {
-        console.error(`解析存档槽位${i}失败:`, error);
-      }
-    } else {
-      // 空槽位
+  if (saved) {
+    try {
+      const saveData: SaveData = JSON.parse(saved);
       slots.push({
-        id: i,
-        name: `存档${i}`,
+        id: DEFAULT_SLOT_ID,
+        name: `默认存档`,
+        playerName: saveData.player.name || '未知',
+        realm: saveData.player.realm || '未知',
+        realmLevel: saveData.player.realmLevel || 1,
+        timestamp: saveData.timestamp || Date.now(),
+        data: saveData,
+      });
+    } catch (error) {
+      console.error(`解析存档失败:`, error);
+    }
+  } else {
+      slots.push({
+        id: DEFAULT_SLOT_ID,
+        name: `默认存档`,
         playerName: '',
         realm: '',
         realmLevel: 0,
         timestamp: 0,
         data: null,
       });
-    }
   }
 
   return slots;
 };
 
 /**
- * 删除指定槽位的存档
+ * 删除指定槽位的存档 (忽略 slotId，强制删除槽位1)
  */
 export const deleteSlot = (slotId: number): boolean => {
   try {
-    if (slotId < 1 || slotId > SAVE_SLOT_KEYS.MAX_SLOTS) {
-      return false;
-    }
-
-    const slotKey = getSlotKey(slotId);
+    const slotKey = getSlotKey(DEFAULT_SLOT_ID);
     localStorage.removeItem(slotKey);
 
-    // 删除该槽位的所有备份
+    // 删除所有备份
     for (let i = 0; i < SAVE_SLOT_KEYS.MAX_BACKUPS; i++) {
-      const backupKey = getBackupKey(slotId, i);
+      const backupKey = getBackupKey(DEFAULT_SLOT_ID, i);
       localStorage.removeItem(backupKey);
     }
 
@@ -277,24 +256,11 @@ export const deleteSlot = (slotId: number): boolean => {
 };
 
 /**
- * 清除所有存档槽位（包括所有槽位和备份）
- * 用于困难模式死亡时清空所有存档
+ * 清除所有存档槽位
  */
 export const clearAllSlots = (): void => {
   try {
-    // 清除所有存档槽位
-    for (let i = 1; i <= SAVE_SLOT_KEYS.MAX_SLOTS; i++) {
-      const slotKey = getSlotKey(i);
-      localStorage.removeItem(slotKey);
-
-      // 清除该槽位的所有备份
-      for (let j = 0; j < SAVE_SLOT_KEYS.MAX_BACKUPS; j++) {
-        const backupKey = getBackupKey(i, j);
-        localStorage.removeItem(backupKey);
-      }
-    }
-
-    // 清除当前槽位标记（可选，因为下次会自动设为1）
+    deleteSlot(DEFAULT_SLOT_ID);
     localStorage.removeItem(SAVE_SLOT_KEYS.CURRENT_SLOT);
   } catch (error) {
     console.error('清除所有存档失败:', error);
@@ -302,24 +268,20 @@ export const clearAllSlots = (): void => {
 };
 
 /**
- * 创建备份
+ * 创建备份 (忽略 slotId，强制为槽位1)
  */
 export const createBackup = (slotId: number, saveData?: SaveData): boolean => {
   try {
-    if (slotId < 1 || slotId > SAVE_SLOT_KEYS.MAX_SLOTS) {
-      return false;
-    }
-
     // 如果没有提供数据，从当前槽位加载
     if (!saveData) {
-      saveData = loadFromSlot(slotId);
+      saveData = loadFromSlot(DEFAULT_SLOT_ID) || undefined;
       if (!saveData) {
         return false;
       }
     }
 
     // 获取现有备份列表
-    const backups = getBackups(slotId);
+    const backups = getBackups(DEFAULT_SLOT_ID);
 
     // 添加新备份
     backups.unshift({
@@ -332,13 +294,13 @@ export const createBackup = (slotId: number, saveData?: SaveData): boolean => {
 
     // 保存备份
     backupsToKeep.forEach((backup, index) => {
-      const backupKey = getBackupKey(slotId, index);
+      const backupKey = getBackupKey(DEFAULT_SLOT_ID, index);
       localStorage.setItem(backupKey, JSON.stringify(backup));
     });
 
     // 删除多余的备份
     for (let i = SAVE_SLOT_KEYS.MAX_BACKUPS; i < backups.length; i++) {
-      const backupKey = getBackupKey(slotId, i);
+      const backupKey = getBackupKey(DEFAULT_SLOT_ID, i);
       localStorage.removeItem(backupKey);
     }
 
@@ -350,13 +312,13 @@ export const createBackup = (slotId: number, saveData?: SaveData): boolean => {
 };
 
 /**
- * 获取指定槽位的所有备份
+ * 获取指定槽位的所有备份 (忽略 slotId，强制为槽位1)
  */
 export const getBackups = (slotId: number): SaveData[] => {
   const backups: SaveData[] = [];
 
   for (let i = 0; i < SAVE_SLOT_KEYS.MAX_BACKUPS; i++) {
-    const backupKey = getBackupKey(slotId, i);
+    const backupKey = getBackupKey(DEFAULT_SLOT_ID, i);
     const saved = localStorage.getItem(backupKey);
 
     if (saved) {
@@ -373,14 +335,14 @@ export const getBackups = (slotId: number): SaveData[] => {
 };
 
 /**
- * 从备份恢复存档
+ * 从备份恢复存档 (忽略 slotId，强制为槽位1)
  */
 export const restoreFromBackup = (
   slotId: number,
   backupIndex: number
 ): boolean => {
   try {
-    const backupKey = getBackupKey(slotId, backupIndex);
+    const backupKey = getBackupKey(DEFAULT_SLOT_ID, backupIndex);
     const saved = localStorage.getItem(backupKey);
 
     if (!saved) {
@@ -388,7 +350,7 @@ export const restoreFromBackup = (
     }
 
     const backup: SaveData = JSON.parse(saved);
-    return saveToSlot(slotId, backup.player, backup.logs);
+    return saveToSlot(DEFAULT_SLOT_ID, backup.player, backup.logs);
   } catch (error) {
     console.error('恢复备份失败:', error);
     return false;

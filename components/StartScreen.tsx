@@ -1,15 +1,9 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { DifficultyMode, ItemRarity } from '../types';
 import { TALENTS } from '../constants/index';
-import { Sparkles, Sword, Shield, Heart, Zap, User, Upload, TriangleAlert } from 'lucide-react';
+import { Sparkles, Sword, Shield, Heart, Zap, User, TriangleAlert } from 'lucide-react';
 import { showError } from '../utils/toastUtils';
 import { STORAGE_KEYS } from '../constants/storageKeys';
-import {
-  getCurrentSlotId,
-  saveToSlot,
-  importSave,
-  ensurePlayerStatsCompatibility,
-} from '../utils/saveManagerUtils';
 import { getRarityTextColor } from '../utils/rarityUtils';
 
 interface Props {
@@ -38,7 +32,6 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
     }
     return 'normal';
   });
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 只在组件首次加载时随机生成一个天赋（使用useMemo确保只执行一次）
   const initialRandomTalentId = useMemo(() => {
@@ -58,90 +51,6 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
       return;
     }
     onStart(playerName.trim(), finalTalentId, difficulty);
-  };
-
-  const handleImportSave = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // 支持 .json 和 .txt 文件
-    const fileName = file.name.toLowerCase();
-    if (!fileName.endsWith('.json') && !fileName.endsWith('.txt')) {
-      showError('请选择 .json 或 .txt 格式的存档文件！');
-      return;
-    }
-
-    try {
-      const text = await file.text();
-      // 使用 importSave 函数处理存档（支持 Base64 编码）
-      const saveData = importSave(text);
-
-      if (!saveData) {
-        showError('存档文件格式错误！请确保文件内容是有效的JSON格式。');
-        // 清空文件输入
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-        return;
-      }
-
-      // 验证存档数据格式
-      if (!saveData.player || !Array.isArray(saveData.logs)) {
-        showError('存档数据格式错误！缺少必要的数据字段。');
-        // 清空文件输入
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-        return;
-      }
-
-      // 直接导入存档，不需要确认
-      try {
-        // 获取当前存档槽位ID，如果没有则使用槽位1
-        const currentSlotId = getCurrentSlotId();
-
-        // 使用新的存档系统保存到当前槽位
-        const success = saveToSlot(
-          currentSlotId,
-          ensurePlayerStatsCompatibility(saveData.player),
-          saveData.logs || []
-        );
-
-        if (!success) {
-          showError('保存存档失败，请重试！');
-          // 清空文件输入
-          if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-          }
-          return;
-        }
-
-        window.location.reload();
-      } catch (error) {
-        console.error('保存存档失败:', error);
-        showError(`保存存档失败：${error instanceof Error ? error.message : '未知错误'}，请重试！`);
-        // 清空文件输入
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
-      }
-    } catch (error) {
-      console.error('导入存档失败:', error);
-      showError(
-        `导入存档失败！错误信息: ${error instanceof Error ? error.message : '未知错误'}，请检查文件格式是否正确。`
-      );
-    }
-
-    // 清空文件输入，以便可以重复选择同一文件
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
   };
 
   // 保存难度选择到 localStorage
@@ -373,15 +282,6 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
               * 难度模式在游戏开始后可在设置中查看，但建议在开始前选择
             </p>
           </div>
-          {/* 隐藏的文件输入 */}
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json,.txt"
-            onChange={handleImportSave}
-            className="hidden"
-            aria-label="导入存档文件"
-          />
 
           {/* 开始按钮 */}
           <button
@@ -391,15 +291,6 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
           >
             <Sparkles size={20} className="md:w-6 md:h-6" />
             开始修仙之旅
-          </button>
-
-          {/* 导入存档按钮 */}
-          <button
-            onClick={handleImportClick}
-            className="w-full py-2.5 md:py-3 bg-gradient-to-r from-stone-500 to-stone-600 active:from-stone-600 active:to-stone-500 text-stone-200 font-bold text-sm md:text-base rounded-lg transition-all duration-300 shadow-lg active:shadow-xl flex items-center justify-center gap-2 min-h-[48px] md:min-h-0 touch-manipulation border border-stone-500"
-          >
-            <Upload size={18} className="md:w-5 md:h-5" />
-            导入存档
           </button>
         </div>
       </div>

@@ -133,21 +133,81 @@ class ApiService {
   }
 
   // Cloud Save
-  async getCloudSaves(): Promise<GameSave[]> {
-    return this.request<GameSave[]>('/saves');
+  async getCloudSave(): Promise<GameSave | null> {
+    try {
+        const result = await this.request<GameSave>('/saves');
+        return result || null;
+    } catch (e) {
+        // 如果是 404 或 data 为 null，可能抛出异常，这里我们捕获并返回 null 表示没存档
+        console.warn('Get cloud save failed or empty', e);
+        return null;
+    }
   }
 
-  async uploadSave(slotId: number, saveData: string, summary: string): Promise<GameSave> {
-    return this.request<GameSave>(`/saves/${slotId}`, {
+  async uploadSave(saveData: string, summary: string): Promise<GameSave> {
+    return this.request<GameSave>('/saves', {
       method: 'POST',
       body: JSON.stringify({ saveData, summary }),
     });
   }
 
-  async deleteCloudSave(slotId: number): Promise<void> {
-    return this.request<void>(`/saves/${slotId}`, {
+  async deleteCloudSave(): Promise<void> {
+    return this.request<void>('/saves', {
         method: 'DELETE'
     });
+  }
+
+  async exportSaveFile(): Promise<Blob> {
+    const url = `${API_BASE_URL}/saves/export`;
+    const headers = this.token ? { 'Authorization': `Bearer ${this.token}` } : {};
+
+    const response = await fetch(url, { headers });
+    if (response.status === 401) {
+        if (await this.refreshTokens()) {
+            return this.exportSaveFile();
+        } else {
+            throw new Error('Unauthorized');
+        }
+    }
+
+    if (!response.ok) {
+        throw new Error('Export failed');
+    }
+
+    return response.blob();
+  }
+
+  async importSaveFile(file: File): Promise<GameSave> {
+    const url = `${API_BASE_URL}/saves/import`;
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const headers: any = {};
+    if (this.token) {
+        headers['Authorization'] = `Bearer ${this.token}`;
+    }
+    // Do NOT set Content-Type header for FormData, browser does it automatically with boundary
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: formData
+    });
+
+    if (response.status === 401) {
+        if (await this.refreshTokens()) {
+            return this.importSaveFile(file);
+        } else {
+             throw new Error('Unauthorized');
+        }
+    }
+
+    const json = await response.json();
+    if (!json.success) {
+        throw new Error(json.message || 'Import failed');
+    }
+
+    return json.data;
   }
 }
 
