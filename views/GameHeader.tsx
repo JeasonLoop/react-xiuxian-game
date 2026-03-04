@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { PlayerStats } from '../types';
 import { STORAGE_KEYS } from '../constants/storageKeys';
+import { ACHIEVEMENTS } from '../constants';
 import { useParty } from '../hooks/useParty';
 import { useAuthStore } from '../store/authStore';
 import { useGameStore } from '../store/gameStore';
@@ -229,6 +230,11 @@ function GameHeader({
         >
           <Trophy size={18} />
           <span>成就</span>
+          {ACHIEVEMENTS.length > 0 && (
+            <span className="text-xs text-stone-500 ml-0.5">
+              {player.achievements.length}/{ACHIEVEMENTS.length}
+            </span>
+          )}
           {newAchievementsCount > 0 && (
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
               {newAchievementsCount}
@@ -266,12 +272,17 @@ function GameHeader({
           >
             <Calendar size={18} />
             <span>日常</span>
-            {dailyQuestCompletedCount > 0 &&
-              (player.dailyQuests || []).length > 0 && (
-                <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {dailyQuestCompletedCount}/{(player.dailyQuests || []).length}
-                </span>
-              )}
+            {(player.dailyQuests || []).length > 0 && (
+              <span
+                className={`absolute -top-1 -right-1 text-xs rounded-full w-5 h-5 flex items-center justify-center ${
+                  dailyQuestCompletedCount === (player.dailyQuests || []).length
+                    ? 'bg-green-500 text-white'
+                    : 'bg-stone-600 text-stone-300'
+                }`}
+              >
+                {dailyQuestCompletedCount}/{(player.dailyQuests || []).length}
+              </span>
+            )}
           </button>
         )}
         {onOpenGrotto && (
@@ -293,7 +304,7 @@ function GameHeader({
           <button
             onClick={handleSaveToCloud}
             disabled={saving}
-            className="flex items-center gap-2 px-3 py-2 bg-blue-800 hover:bg-blue-700 rounded border border-blue-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center disabled:opacity-50"
+            className="flex items-center gap-2 px-3 py-2 bg-green-800 hover:bg-green-700 rounded border border-green-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center disabled:opacity-50"
             title="保存到云端"
           >
             <CloudUpload size={18} />

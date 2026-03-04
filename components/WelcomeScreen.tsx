@@ -117,7 +117,13 @@ const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
             道友：{user.username}
           </span>
           <button
-            onClick={() => logout()}
+            onClick={() => {
+              showConfirm(
+                '退出后本地进度将不再同步到该账号，确定退出？',
+                '确认退出',
+                () => logout()
+              );
+            }}
             className="p-1.5 rounded text-stone-400 hover:text-red-400 hover:bg-stone-700/80 transition-colors touch-manipulation"
             title="退出登录"
             aria-label="退出登录"

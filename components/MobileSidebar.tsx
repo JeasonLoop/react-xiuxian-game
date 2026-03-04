@@ -147,7 +147,7 @@ const MobileSidebar: React.FC<Props> = ({
               icon: CloudUpload,
               label: saving ? '保存中…' : '保存',
               onClick: handleSaveToCloud,
-              color: 'text-blue-400',
+              color: 'text-green-400',
             },
           ]
         : []),

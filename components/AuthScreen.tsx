@@ -41,6 +41,7 @@ export const AuthScreen: React.FC = () => {
           const cloudSave = await cloudSaveService.fetchSave();
           if (cloudSave) {
             useGameStore.getState().loadGame(cloudSave);
+            useAuthStore.getState().setSkipWelcomeAfterLogin(true);
           }
         } catch (saveErr) {
           console.error('Failed to load cloud save:', saveErr);

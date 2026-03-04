@@ -14,8 +14,11 @@ interface AuthState {
   refreshToken: string | null;
   user: User | null;
   isAuthenticated: boolean;
+  /** 登录并拉取云存档后为 true，用于跳过欢迎页直接进游戏 */
+  skipWelcomeAfterLogin: boolean;
   login: (token: string, refreshToken: string, user: User) => void;
   setTokens: (token: string, refreshToken: string) => void;
+  setSkipWelcomeAfterLogin: (v: boolean) => void;
   logout: () => void;
 }
 
@@ -34,6 +37,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   refreshToken: localStorage.getItem(AUTH_REFRESH_TOKEN_KEY),
   user: getStoredUser(),
   isAuthenticated: !!localStorage.getItem(AUTH_TOKEN_KEY),
+  skipWelcomeAfterLogin: false,
 
   login: (token: string, refreshToken: string, user: User) => {
     localStorage.setItem(AUTH_TOKEN_KEY, token);
@@ -48,10 +52,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ token, refreshToken });
   },
 
+  setSkipWelcomeAfterLogin: (v: boolean) => set({ skipWelcomeAfterLogin: v }),
+
   logout: () => {
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_REFRESH_TOKEN_KEY);
     localStorage.removeItem(AUTH_USER_KEY);
-    set({ token: null, refreshToken: null, user: null, isAuthenticated: false });
+    set({ token: null, refreshToken: null, user: null, isAuthenticated: false, skipWelcomeAfterLogin: false });
   },
 }));

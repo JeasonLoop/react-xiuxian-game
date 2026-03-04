@@ -8,9 +8,7 @@ import {
   Download,
   Github,
   RotateCcw,
-  FolderOpen,
   Keyboard,
-  MessageCircle,
   User,
   LogOut,
 } from 'lucide-react';
@@ -396,8 +394,14 @@ const SettingsModal: React.FC<Props> = ({
                 {user && (
                   <button
                     onClick={() => {
-                      logout();
-                      onClose();
+                      showConfirm(
+                        '退出后本地进度将不再同步到该账号，确定退出？',
+                        '确认退出',
+                        () => {
+                          logout();
+                          onClose();
+                        }
+                      );
                     }}
                     className="flex items-center gap-1 text-xs text-stone-500 hover:text-red-400 transition-colors shrink-0"
                     title="退出登录"
@@ -413,7 +417,7 @@ const SettingsModal: React.FC<Props> = ({
                 </label>
                 <button
                   onClick={handleCloudSave}
-                  className="w-full bg-blue-700 hover:bg-blue-600 text-white border border-blue-600 rounded px-4 py-2 flex items-center justify-center transition-colors font-semibold"
+                  className="w-full bg-green-700 hover:bg-green-600 text-white border border-green-600 rounded px-4 py-2 flex items-center justify-center transition-colors font-semibold"
                 >
                   <Upload size={16} className="mr-2" />
                   保存到云端
@@ -524,26 +528,6 @@ const SettingsModal: React.FC<Props> = ({
               <p className="text-xs text-stone-500">
                 查看所有可用的键盘快捷键，提高操作效率
               </p>
-            </div>
-          </div>
-
-          {/* 用户反馈交流群 */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <MessageCircle size={20} className="text-stone-400" />
-              <h3 className="font-bold">用户反馈交流群</h3>
-            </div>
-            <div className="space-y-3">
-              <div className="bg-stone-900/50 border border-stone-700 rounded p-4 flex flex-col items-center">
-                <img
-                  src="/assets/images/group.jpg"
-                  alt="云灵修仙-用户反馈交流群"
-                  className="w-full max-w-xs rounded-lg shadow-lg"
-                />
-                <p className="text-xs text-stone-400 mt-3 text-center">
-                  扫码加入微信群，反馈建议、交流心得
-                </p>
-              </div>
             </div>
           </div>
 
