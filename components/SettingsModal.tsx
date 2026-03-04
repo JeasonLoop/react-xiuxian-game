@@ -11,7 +11,10 @@ import {
   FolderOpen,
   Keyboard,
   MessageCircle,
+  User,
+  LogOut,
 } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
 import { Modal } from './common';
 import { GameSettings } from '../types';
 import dayjs from 'dayjs';
@@ -25,6 +28,8 @@ import {
   importSave,
   ensurePlayerStatsCompatibility,
 } from '../utils/saveManagerUtils';
+import { cloudSaveService } from '../services/cloudSaveService';
+import { useGameStore } from '../store/gameStore';
 import ChangelogModal from './ChangelogModal';
 import ShortcutsModal from './ShortcutsModal';
 import { KeyboardShortcut } from '../hooks/useKeyboardShortcuts';
@@ -43,7 +48,6 @@ interface Props {
   onUpdateSettings: (settings: Partial<GameSettings>) => void;
   onImportSave?: () => void;
   onRestartGame?: () => void;
-  onOpenSaveManager?: () => void;
 }
 
 const SettingsModal: React.FC<Props> = ({
@@ -52,11 +56,12 @@ const SettingsModal: React.FC<Props> = ({
   settings,
   onUpdateSettings,
   onRestartGame,
-  onOpenSaveManager,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isChangelogOpen, setIsChangelogOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
 
   // 生成快捷键列表（用于显示）
   const shortcuts: KeyboardShortcut[] = Object.keys(SHORTCUT_DESCRIPTIONS).map(
@@ -195,6 +200,26 @@ const SettingsModal: React.FC<Props> = ({
       showError(
         `导出存档失败！错误信息: ${error instanceof Error ? error.message : '未知错误'}`
       );
+    }
+  };
+
+  const handleCloudSave = async () => {
+    try {
+      const state = useGameStore.getState();
+      if (!state.player) {
+        showError('没有找到存档数据！请先开始游戏。');
+        return;
+      }
+      const saveData = {
+        player: state.player,
+        logs: state.logs,
+        timestamp: Date.now(),
+      };
+      await cloudSaveService.pushSave(saveData);
+      showSuccess('云端存档保存成功！');
+    } catch (error: any) {
+      console.error('云端存档保存失败:', error);
+      showError(`云端存档保存失败: ${error.message}`);
     }
   };
 
@@ -359,26 +384,44 @@ const SettingsModal: React.FC<Props> = ({
               <h3 className="font-bold">存档管理</h3>
             </div>
             <div className="space-y-3">
-              {onOpenSaveManager && (
-                <div>
-                  <label className="block text-sm text-stone-400 mb-2">
-                    多存档槽位管理
-                  </label>
+              {/* 当前登录用户信息 */}
+              <div className="bg-stone-900 border border-stone-700 rounded px-3 py-2.5 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <User size={16} className="text-mystic-gold shrink-0" />
+                  <span className="text-sm text-stone-400">当前登录：</span>
+                  <span className="text-stone-200 font-medium truncate">
+                    {user?.username ?? '—'}
+                  </span>
+                </div>
+                {user && (
                   <button
                     onClick={() => {
-                      onOpenSaveManager();
+                      logout();
                       onClose();
                     }}
-                    className="w-full bg-mystic-gold hover:bg-yellow-600 text-stone-900 border border-yellow-500 rounded px-4 py-2 flex items-center justify-center transition-colors font-semibold"
+                    className="flex items-center gap-1 text-xs text-stone-500 hover:text-red-400 transition-colors shrink-0"
+                    title="退出登录"
                   >
-                    <FolderOpen size={16} className="mr-2" />
-                    打开存档管理器
+                    <LogOut size={14} />
+                    退出
                   </button>
-                  <p className="text-xs text-stone-500 mt-2">
-                    管理多个存档槽位、备份和对比存档
-                  </p>
-                </div>
-              )}
+                )}
+              </div>
+              <div>
+                <label className="block text-sm text-stone-400 mb-2">
+                  云端存档
+                </label>
+                <button
+                  onClick={handleCloudSave}
+                  className="w-full bg-blue-700 hover:bg-blue-600 text-white border border-blue-600 rounded px-4 py-2 flex items-center justify-center transition-colors font-semibold"
+                >
+                  <Upload size={16} className="mr-2" />
+                  保存到云端
+                </button>
+                <p className="text-xs text-stone-500 mt-2">
+                  手动将当前进度同步到云端服务器
+                </p>
+              </div>
               <div>
                 <label className="block text-sm text-stone-400 mb-2">
                   导出存档

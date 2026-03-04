@@ -12,10 +12,15 @@ import {
   Calendar,
   Home,
   Users,
+  CloudUpload,
 } from 'lucide-react';
 import { PlayerStats } from '../types';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import { useParty } from '../hooks/useParty';
+import { useAuthStore } from '../store/authStore';
+import { useGameStore } from '../store/gameStore';
+import { cloudSaveService } from '../services/cloudSaveService';
+import { showSuccess, showError } from '../utils/toastUtils';
 
 /**
  * 游戏头部组件
@@ -63,8 +68,33 @@ function GameHeader({
   isDebugModeEnabled = false,
 }: GameHeaderProps) {
   const [clickCount, setClickCount] = useState(0);
+  const [saving, setSaving] = useState(false);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const appVersion = import.meta.env.VITE_APP_VERSION || '-';
+
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  const handleSaveToCloud = async () => {
+    if (saving) return;
+    const state = useGameStore.getState();
+    if (!state.player) {
+      showError('没有找到存档数据！请先开始游戏。');
+      return;
+    }
+    setSaving(true);
+    try {
+      await cloudSaveService.pushSave({
+        player: state.player,
+        logs: state.logs,
+        timestamp: Date.now(),
+      });
+      showSuccess('云端存档保存成功！');
+    } catch (err) {
+      showError(err instanceof Error ? err.message : '云端存档保存失败');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // 使用PartyKit连接获取在线人数
   const { onlineCount } = useParty('global');
@@ -257,6 +287,17 @@ function GameHeader({
                 Lv.{player.grotto.level}
               </span>
             )}
+          </button>
+        )}
+        {isAuthenticated && (
+          <button
+            onClick={handleSaveToCloud}
+            disabled={saving}
+            className="flex items-center gap-2 px-3 py-2 bg-blue-800 hover:bg-blue-700 rounded border border-blue-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center disabled:opacity-50"
+            title="保存到云端"
+          >
+            <CloudUpload size={18} />
+            <span>{saving ? '保存中…' : '保存'}</span>
           </button>
         )}
         <button
