@@ -83,7 +83,7 @@ interface GameState {
   // Actions
   addLog: (text: string, type: LogEntry['type']) => void;
   saveGame: () => void;
-  loadGame: () => void;
+  loadGame: (cloudSaveData?: any) => void;
   startNewGame: (
     playerName: string,
     talentId: string,
@@ -190,30 +190,38 @@ export const useGameStore = create<GameState>()(
     },
 
     // 加载游戏
-    loadGame: () => {
+    loadGame: (cloudSaveData?: any) => {
       const state = get();
-      if (!state.hasSave) return;
+      if (!state.hasSave && !cloudSaveData) return;
 
       try {
         // 重新生成事件模板库
         initializeEventTemplateLibrary(true);
         console.log('加载存档时重新生成事件模板库');
 
-        // 优先从多存档槽位系统加载
-        const currentSlotId = getCurrentSlotId();
-        let savedData = loadFromSlot(currentSlotId);
+        let savedData = cloudSaveData;
 
-        // 如果没有，尝试从旧存档系统加载（兼容性）
         if (!savedData) {
-          const saved = localStorage.getItem(STORAGE_KEYS.SAVE);
-          if (saved) {
-            savedData = JSON.parse(saved);
-            // 如果从旧系统加载成功，迁移到槽位1
-            if (savedData) {
-              saveToSlot(1, savedData.player, savedData.logs || []);
-              setCurrentSlotId(1);
+          // 优先从多存档槽位系统加载
+          const currentSlotId = getCurrentSlotId();
+          savedData = loadFromSlot(currentSlotId);
+
+          // 如果没有，尝试从旧存档系统加载（兼容性）
+          if (!savedData) {
+            const saved = localStorage.getItem(STORAGE_KEYS.SAVE);
+            if (saved) {
+              savedData = JSON.parse(saved);
+              // 如果从旧系统加载成功，迁移到槽位1
+              if (savedData) {
+                saveToSlot(1, savedData.player, savedData.logs || []);
+                setCurrentSlotId(1);
+              }
             }
           }
+        } else {
+          // 如果是云存档，保存到本地槽位1
+          saveToSlot(1, savedData.player, savedData.logs || []);
+          setCurrentSlotId(1);
         }
 
         if (savedData) {
@@ -223,6 +231,7 @@ export const useGameStore = create<GameState>()(
             player: loadedPlayer,
             logs: savedData.logs || [],
             gameStarted: true,
+            hasSave: true,
           });
         } else {
           set({

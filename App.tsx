@@ -12,7 +12,6 @@ import WelcomeScreen from './components/WelcomeScreen';
 import StartScreen from './components/StartScreen';
 import LoadingScreen from './components/LoadingScreen';
 
-import { SaveData } from './utils/saveManagerUtils';
 import { BattleReplay } from './services/battleService';
 import { useGameEffects } from './hooks/useGameEffects';
 import {
@@ -35,6 +34,9 @@ import { useGameInitialization } from './hooks/useGameInitialization';
 import { useLevelUp } from './hooks/useLevelUp';
 import { useGlobalAlert } from './hooks/useGlobalAlert';
 import { useRebirth } from './hooks/useRebirth';
+import { useAuthStore } from './store/authStore';
+import { AuthScreen } from './components/AuthScreen';
+import { useAutoCloudSave } from './hooks/useAutoCloudSave';
 
 // 导入拆分后的 hooks
 import { useAppHandlers } from './hooks/useAppHandlers';
@@ -138,10 +140,6 @@ function App() {
   // ========== 本地状态 ==========
   const [showWelcome, setShowWelcome] = useState(true);
   const [showCultivationIntro, setShowCultivationIntro] = useState(false);
-  const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
-  const [isSaveCompareOpen, setIsSaveCompareOpen] = useState(false);
-  const [compareSave1, setCompareSave1] = useState<SaveData | null>(null);
-  const [compareSave2, setCompareSave2] = useState<SaveData | null>(null);
   const [isDead, setIsDead] = useState(false);
   const [deathBattleData, setDeathBattleData] = useState<BattleReplay | null>(null);
   const [deathReason, setDeathReason] = useState('');
@@ -173,6 +171,8 @@ function App() {
     saveGame,
     logs,
   });
+
+  useAutoCloudSave();
 
   const { alertState, closeAlert } = useGlobalAlert();
 
@@ -390,10 +390,7 @@ function App() {
   const { commonHandlersParams } = useHandlerGroups({
     appHandlers,
     handleRebirth,
-    modalSetters: {
-      ...modalSetters,
-      setIsSaveManagerOpen,
-    },
+    modalSetters,
     otherSettersAndState: {
       setItemToUpgrade,
       setCurrentShop,
@@ -437,7 +434,14 @@ function App() {
     startNewGame(playerName, talentId, difficulty);
   }, [startNewGame]);
 
+  // ========== 认证状态 ==========
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+
   // ========== 渲染逻辑 ==========
+
+  if (!isAuthenticated) {
+    return <AuthScreen />;
+  }
 
   // 显示欢迎界面
   if (showWelcome) {
@@ -493,14 +497,6 @@ function App() {
         tribulationState,
         showCultivationIntro,
         setShowCultivationIntro,
-        isSaveManagerOpen,
-        setIsSaveManagerOpen,
-        isSaveCompareOpen,
-        setIsSaveCompareOpen,
-        compareSave1,
-        compareSave2,
-        setCompareSave1,
-        setCompareSave2,
         isAnyModalOpen,
         isDebugModeEnabled: modals.isDebugModeEnabled,
         isDebugOpen: modals.isDebugOpen,

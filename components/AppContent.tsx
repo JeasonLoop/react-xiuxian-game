@@ -6,19 +6,15 @@
 
 import React from 'react';
 import { PlayerStats, TribulationState, LogEntry } from '../types';
-import { SaveData } from '../utils/saveManagerUtils';
 import { BattleReplay } from '../services/battleService';
 import TribulationModal from './TribulationModal';
 import DeathModal from './DeathModal';
 import GameView from '../views/GameView';
 import DebugModal from './DebugModal';
 import AlertModal from './AlertModal';
-import SaveManagerModal from './SaveManagerModal';
-import SaveCompareModal from './SaveCompareModal';
 import ModalsContainer from '../views/modals/ModalsContainer';
 import CultivationIntroModal from './CultivationIntroModal';
 import AutoAdventureConfigModal from './AutoAdventureConfigModal';
-import { ensurePlayerStatsCompatibility } from '../utils/saveManagerUtils';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import { useUIStore } from '../store/uiStore';
 
@@ -40,10 +36,6 @@ interface AppContentProps {
   deathReason: string;
   tribulationState: TribulationState | null;
   showCultivationIntro: boolean;
-  isSaveManagerOpen: boolean;
-  isSaveCompareOpen: boolean;
-  compareSave1: SaveData | null;
-  compareSave2: SaveData | null;
   isAnyModalOpen: boolean;
   isDebugModeEnabled: boolean;
   isDebugOpen: boolean;
@@ -87,10 +79,6 @@ interface AppContentProps {
   setDeathBattleData: (data: BattleReplay | null) => void;
   setDeathReason: (reason: string) => void;
   setShowCultivationIntro: (show: boolean) => void;
-  setIsSaveManagerOpen: (open: boolean) => void;
-  setIsSaveCompareOpen: (open: boolean) => void;
-  setCompareSave1: (save: SaveData | null) => void;
-  setCompareSave2: (save: SaveData | null) => void;
   setIsDebugOpen: (open: boolean) => void;
   setLotteryRewards: (rewards: Array<{ type: string; name: string; quantity?: number }>) => void;
   setItemActionLog: (log: { text: string; type: string } | null) => void;
@@ -158,10 +146,6 @@ export function AppContent(props: AppContentProps) {
     deathReason,
     tribulationState,
     showCultivationIntro,
-    isSaveManagerOpen,
-    isSaveCompareOpen,
-    compareSave1,
-    compareSave2,
     isAnyModalOpen,
     isDebugModeEnabled,
     isDebugOpen,
@@ -175,10 +159,6 @@ export function AppContent(props: AppContentProps) {
     setDeathBattleData,
     setDeathReason,
     setShowCultivationIntro,
-    setIsSaveManagerOpen,
-    setIsSaveCompareOpen,
-    setCompareSave1,
-    setCompareSave2,
     setIsDebugOpen,
     setLotteryRewards,
     setItemActionLog,
@@ -322,40 +302,6 @@ export function AppContent(props: AppContentProps) {
           onConfirm={alertState.onConfirm}
           showCancel={alertState.showCancel}
           onCancel={alertState.onCancel}
-        />
-      )}
-
-      {/* 存档管理器 */}
-      {player && (
-        <SaveManagerModal
-          isOpen={isSaveManagerOpen}
-          onClose={() => setIsSaveManagerOpen(false)}
-          currentPlayer={player}
-          currentLogs={logs}
-          onLoadSave={(loadedPlayer, loadedLogs) => {
-            const compatiblePlayer = ensurePlayerStatsCompatibility(loadedPlayer);
-            setPlayer(compatiblePlayer);
-            setLogs(loadedLogs);
-          }}
-          onCompareSaves={(save1, save2) => {
-            setCompareSave1(save1);
-            setCompareSave2(save2);
-            setIsSaveCompareOpen(true);
-          }}
-        />
-      )}
-
-      {/* 存档对比 */}
-      {compareSave1 && compareSave2 && (
-        <SaveCompareModal
-          isOpen={isSaveCompareOpen}
-          onClose={() => {
-            setIsSaveCompareOpen(false);
-            setCompareSave1(null);
-            setCompareSave2(null);
-          }}
-          save1={compareSave1}
-          save2={compareSave2}
         />
       )}
 

@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import {
   Menu,
   X,
@@ -12,7 +12,12 @@ import {
   BarChart3,
   Bug,
   Home,
+  CloudUpload,
 } from 'lucide-react';
+import { useAuthStore } from '../store/authStore';
+import { useGameStore } from '../store/gameStore';
+import { cloudSaveService } from '../services/cloudSaveService';
+import { showSuccess, showError } from '../utils/toastUtils';
 
 interface Props {
   isOpen: boolean;
@@ -53,6 +58,31 @@ const MobileSidebar: React.FC<Props> = ({
   lotteryTickets = 0,
   player,
 }) => {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const [saving, setSaving] = useState(false);
+
+  const handleSaveToCloud = useCallback(async () => {
+    if (saving) return;
+    const state = useGameStore.getState();
+    if (!state.player) {
+      showError('没有找到存档数据！请先开始游戏。');
+      return;
+    }
+    setSaving(true);
+    try {
+      await cloudSaveService.pushSave({
+        player: state.player,
+        logs: state.logs,
+        timestamp: Date.now(),
+      });
+      showSuccess('云端存档保存成功！');
+    } catch (err) {
+      showError(err instanceof Error ? err.message : '云端存档保存失败');
+    } finally {
+      setSaving(false);
+    }
+  }, [saving]);
+
   const menuItems = useMemo(
     () => [
       {
@@ -111,6 +141,16 @@ const MobileSidebar: React.FC<Props> = ({
             },
           ]
         : []),
+      ...(isAuthenticated
+        ? [
+            {
+              icon: CloudUpload,
+              label: saving ? '保存中…' : '保存',
+              onClick: handleSaveToCloud,
+              color: 'text-blue-400',
+            },
+          ]
+        : []),
       {
         icon: Settings,
         label: '设置',
@@ -144,6 +184,9 @@ const MobileSidebar: React.FC<Props> = ({
       petCount,
       lotteryTickets,
       player,
+      isAuthenticated,
+      saving,
+      handleSaveToCloud,
     ]
   );
 
