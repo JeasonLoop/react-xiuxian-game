@@ -436,6 +436,16 @@ function App() {
 
   // ========== 认证状态 ==========
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const skipWelcomeAfterLogin = useAuthStore((state) => state.skipWelcomeAfterLogin);
+  const setSkipWelcomeAfterLogin = useAuthStore((state) => state.setSkipWelcomeAfterLogin);
+
+  // 登录并拉取云存档后跳过欢迎页，直接进游戏
+  useEffect(() => {
+    if (showWelcome && skipWelcomeAfterLogin) {
+      setShowWelcome(false);
+      setSkipWelcomeAfterLogin(false);
+    }
+  }, [showWelcome, skipWelcomeAfterLogin, setSkipWelcomeAfterLogin]);
 
   // ========== 渲染逻辑 ==========
 
