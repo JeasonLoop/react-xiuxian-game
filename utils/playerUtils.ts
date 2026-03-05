@@ -170,6 +170,8 @@ export const createInitialPlayer = (
     gameDays: 1, // 游戏内天数，从第1天开始
     playTime: 0, // 游戏时长（毫秒），从0开始
     reputation: 0, // 声望值
+    karma: 0, // 初始因果为0
+    socialRelations: [], // 初始无社交关系
     // 洞府系统
     grotto: {
       level: 0, // 未拥有洞府

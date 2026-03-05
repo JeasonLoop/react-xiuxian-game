@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Sparkles, Play, Upload, User, LogOut } from 'lucide-react';
 import logo from '../public/assets/images/logo.png';
 import { STORAGE_KEYS } from '../constants/storageKeys';
@@ -10,6 +10,7 @@ import {
 } from '../utils/saveManagerUtils';
 import { showError, showConfirm } from '../utils/toastUtils';
 import { useAuthStore } from '../store/authStore';
+import LogoutConfirmModal from './LogoutConfirmModal';
 
 interface Props {
   hasSave: boolean;
@@ -19,6 +20,7 @@ interface Props {
 
 const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
 
@@ -117,13 +119,7 @@ const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
             道友：{user.username}
           </span>
           <button
-            onClick={() => {
-              showConfirm(
-                '退出后本地进度将不再同步到该账号，确定退出？',
-                '确认退出',
-                () => logout()
-              );
-            }}
+            onClick={() => setIsLogoutModalOpen(true)}
             className="p-1.5 rounded text-stone-400 hover:text-red-400 hover:bg-stone-700/80 transition-colors touch-manipulation"
             title="退出登录"
             aria-label="退出登录"
@@ -132,6 +128,12 @@ const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
           </button>
         </div>
       )}
+
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={() => logout()}
+      />
 
       {/* 主要内容区域 */}
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full p-3 sm:p-4 md:p-6 lg:p-8">

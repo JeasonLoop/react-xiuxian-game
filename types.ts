@@ -297,6 +297,15 @@ export interface PlayerStats {
     fire: number; // 火灵根 (0-100)
     earth: number; // 土灵根 (0-100)
   };
+  // 因果系统
+  karma: number; // 因果值（正为福缘，负为业障）
+  socialRelations: Array<{
+    id: string;
+    name: string;
+    favorability: number; // 好感度 (-100 到 100)
+    description: string;
+    lastEncounterRealm: RealmType;
+  }>;
   // 日常任务系统
   dailyQuests: DailyQuest[]; // 当前日常任务列表
   dailyQuestProgress: Record<string, number>; // 任务ID -> 完成进度
@@ -546,6 +555,13 @@ export interface AdventureResult {
   triggerSecretRealm?: boolean; // 是否触发随机秘境
   longevityRuleObtained?: string; // 获得的规则之力ID
   heavenEarthSoulEncounter?: string; // 遇到的天地之魄BOSS ID
+  karmaChange?: number; // 因果值变化
+  npcRelationChange?: {
+    npcId: string;
+    npcName: string;
+    favorabilityChange: number;
+    description: string;
+  };
   adventureType?: AdventureType; // 历练类型（用于判断是否需要触发战斗等）
   itemObtained?: {
     name: string;
@@ -1069,6 +1085,12 @@ export interface BattleState {
   isPlayerTurn: boolean; // 是否玩家回合（用于UI控制）
   waitingForPlayerAction: boolean; // 是否等待玩家行动
   playerInventory: Item[]; // 玩家背包（用于使用物品）
+  // 五行领域
+  elementalField?: {
+    type: 'metal' | 'wood' | 'water' | 'fire' | 'earth';
+    intensity: number; // 强度 (1-5)
+    duration: number; // 持续回合
+  };
   // 行动次数系统
   playerActionsRemaining: number; // 玩家剩余行动次数
   enemyActionsRemaining: number; // 敌人剩余行动次数
