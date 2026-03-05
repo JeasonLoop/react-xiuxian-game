@@ -716,22 +716,48 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
         {/* 战斗区域 */}
         <div className="modal-scroll-container modal-scroll-content px-6 py-4 space-y-4">
           {/* 敌人信息 */}
-          <div className="bg-rose-900/20 border border-rose-700/40 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-rose-300 font-semibold">
-                {enemyUnit.name}
-              </span>
+          <div className="bg-rose-900/20 border border-rose-700/40 rounded-lg p-4 relative overflow-hidden">
+            {/* 五行领域背景特效 */}
+            {battleState.elementalField && (
+              <div className={`absolute inset-0 opacity-10 pointer-events-none ${
+                battleState.elementalField.type === 'metal' ? 'bg-yellow-400' :
+                battleState.elementalField.type === 'wood' ? 'bg-green-400' :
+                battleState.elementalField.type === 'water' ? 'bg-blue-400' :
+                battleState.elementalField.type === 'fire' ? 'bg-red-400' :
+                'bg-amber-600'
+              }`} />
+            )}
+            <div className="flex items-center justify-between mb-2 relative z-10">
+              <div className="flex items-center gap-2">
+                <span className="text-rose-300 font-semibold">
+                  {enemyUnit.name}
+                </span>
+                {battleState.elementalField && (
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded border font-bold ${
+                    battleState.elementalField.type === 'metal' ? 'border-yellow-500 text-yellow-400' :
+                    battleState.elementalField.type === 'wood' ? 'border-green-500 text-green-400' :
+                    battleState.elementalField.type === 'water' ? 'border-blue-500 text-blue-400' :
+                    battleState.elementalField.type === 'fire' ? 'border-red-500 text-red-400' :
+                    'border-amber-600 text-amber-500'
+                  }`}>
+                    {battleState.elementalField.type === 'metal' ? '金' :
+                     battleState.elementalField.type === 'wood' ? '木' :
+                     battleState.elementalField.type === 'water' ? '水' :
+                     battleState.elementalField.type === 'fire' ? '火' : '土'}之领域 LV.{battleState.elementalField.intensity}
+                  </span>
+                )}
+              </div>
               <span className="text-xs text-stone-400">
                 HP: {enemyHp} / {enemyMaxHp}
               </span>
             </div>
-            <div className="w-full bg-stone-800 rounded-full h-3 mb-2">
+            <div className="w-full bg-stone-800 rounded-full h-3 mb-2 relative z-10">
               <div
                 className="bg-rose-500 h-3 rounded-full transition-all duration-300"
                 style={{ width: `${enemyHpPercent}%` }}
               />
             </div>
-            <div className="flex gap-4 text-xs text-stone-400">
+            <div className="flex gap-4 text-xs text-stone-400 relative z-10">
               <span>攻击: {enemyUnit.attack}</span>
               <span>防御: {enemyUnit.defense}</span>
               <span>速度: {enemyUnit.speed}</span>

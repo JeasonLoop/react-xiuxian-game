@@ -231,29 +231,30 @@ export const getPlayerTotalStats = (player: PlayerStats): {
 
     // 加上百分比加成（如果有）
     // 注意：百分比加成通常基于当前已有的属性（基础+装备等）
-    if (effects.attackPercent) stats.attack = Math.floor(stats.attack * (1 + effects.attackPercent));
-    if (effects.defensePercent) stats.defense = Math.floor(stats.defense * (1 + effects.defensePercent));
-    if (effects.hpPercent) stats.maxHp = Math.floor(stats.maxHp * (1 + effects.hpPercent));
-    if (effects.spiritPercent) stats.spirit = Math.floor(stats.spirit * (1 + effects.spiritPercent));
-    if (effects.physiquePercent) stats.physique = Math.floor(stats.physique * (1 + effects.physiquePercent));
-    if (effects.speedPercent) stats.speed = Math.floor(stats.speed * (1 + effects.speedPercent));
+    if (effects.attackPercent) stats.attack += Math.floor(player.attack * effects.attackPercent);
+    if (effects.defensePercent) stats.defense += Math.floor(player.defense * effects.defensePercent);
+    if (effects.hpPercent) stats.maxHp += Math.floor(player.maxHp * effects.hpPercent);
+    if (effects.spiritPercent) stats.spirit += Math.floor(player.spirit * effects.spiritPercent);
+    if (effects.physiquePercent) stats.physique += Math.floor(player.physique * effects.physiquePercent);
+    if (effects.speedPercent) stats.speed += Math.floor(player.speed * effects.speedPercent);
   }
 
   // 2. 应用金丹法数属性加成（如果玩家是金丹期及以上且有金丹法数）
   if (player.goldenCoreMethodCount && player.goldenCoreMethodCount > 0) {
     const bonusMultiplier = getGoldenCoreBonusMultiplier(player.goldenCoreMethodCount);
+    const bonusFactor = bonusMultiplier - 1; // 仅计算加成部分
 
     // 引入属性协同限制机制：防止乘法叠加产生极端数值
     // 计算协同限制系数（基于玩家当前境界）
     const synergyLimitFactor = calculateSynergyLimitFactor(player);
 
     // 应用经过协同限制的属性加成
-    stats.attack = applySynergyLimitedBonus(stats.attack, bonusMultiplier, synergyLimitFactor);
-    stats.defense = applySynergyLimitedBonus(stats.defense, bonusMultiplier, synergyLimitFactor);
-    stats.maxHp = applySynergyLimitedBonus(stats.maxHp, bonusMultiplier, synergyLimitFactor);
-    stats.spirit = applySynergyLimitedBonus(stats.spirit, bonusMultiplier, synergyLimitFactor);
-    stats.physique = applySynergyLimitedBonus(stats.physique, bonusMultiplier, synergyLimitFactor);
-    stats.speed = applySynergyLimitedBonus(stats.speed, bonusMultiplier, synergyLimitFactor);
+    stats.attack += applySynergyLimitedBonus(player.attack, bonusFactor, synergyLimitFactor);
+    stats.defense += applySynergyLimitedBonus(player.defense, bonusFactor, synergyLimitFactor);
+    stats.maxHp += applySynergyLimitedBonus(player.maxHp, bonusFactor, synergyLimitFactor);
+    stats.spirit += applySynergyLimitedBonus(player.spirit, bonusFactor, synergyLimitFactor);
+    stats.physique += applySynergyLimitedBonus(player.physique, bonusFactor, synergyLimitFactor);
+    stats.speed += applySynergyLimitedBonus(player.speed, bonusFactor, synergyLimitFactor);
   }
 
   return stats;
@@ -295,18 +296,15 @@ function calculateSynergyLimitFactor(player: PlayerStats): number {
  * 应用经过协同限制的属性加成
  * 使用对数增长模式，避免极端数值
  */
-function applySynergyLimitedBonus(baseValue: number, bonusMultiplier: number, synergyLimitFactor: number): number {
-  // 原始加成倍数
-  const rawMultiplier = bonusMultiplier;
-
+function applySynergyLimitedBonus(baseValue: number, bonusFactor: number, synergyLimitFactor: number): number {
   // 应用协同限制：使用对数增长模式
   // 当加成倍数较高时，实际效果会逐渐递减
-  const effectiveMultiplier = 1 + (rawMultiplier - 1) * synergyLimitFactor;
+  const effectiveBonusFactor = bonusFactor * synergyLimitFactor;
 
-  // 进一步限制：最大加成不超过基础值的10倍
-  const maxMultiplier = Math.min(10, effectiveMultiplier);
+  // 进一步限制：最大加成不超过基础值的 5 倍
+  const maxBonusFactor = Math.min(5, effectiveBonusFactor);
 
-  return Math.floor(baseValue * maxMultiplier);
+  return Math.floor(baseValue * maxBonusFactor);
 }
 
 /**

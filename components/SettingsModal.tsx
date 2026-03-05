@@ -32,6 +32,7 @@ import ChangelogModal from './ChangelogModal';
 import ShortcutsModal from './ShortcutsModal';
 import { KeyboardShortcut } from '../hooks/useKeyboardShortcuts';
 import { KeyboardShortcutConfig } from '../types';
+import LogoutConfirmModal from './LogoutConfirmModal';
 import {
   DEFAULT_SHORTCUTS,
   SHORTCUT_DESCRIPTIONS,
@@ -58,6 +59,7 @@ const SettingsModal: React.FC<Props> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isChangelogOpen, setIsChangelogOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
 
@@ -393,16 +395,7 @@ const SettingsModal: React.FC<Props> = ({
                 </div>
                 {user && (
                   <button
-                    onClick={() => {
-                      showConfirm(
-                        '退出后本地进度将不再同步到该账号，确定退出？',
-                        '确认退出',
-                        () => {
-                          logout();
-                          onClose();
-                        }
-                      );
-                    }}
+                    onClick={() => setIsLogoutModalOpen(true)}
                     className="flex items-center gap-1 text-xs text-stone-500 hover:text-red-400 transition-colors shrink-0"
                     title="退出登录"
                   >
@@ -587,6 +580,15 @@ const SettingsModal: React.FC<Props> = ({
         shortcuts={shortcuts}
         customShortcuts={settings.keyboardShortcuts}
         onUpdateShortcuts={handleUpdateShortcuts}
+      />
+
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={() => {
+          logout();
+          onClose();
+        }}
       />
     </>
   );

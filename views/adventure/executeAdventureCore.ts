@@ -247,6 +247,39 @@ const applyResultToPlayer = (
   newState.reputation = Math.max(0, (prev.reputation || 0) + (result.reputationChange || 0));
   newState.lotteryTickets = Math.max(0, prev.lotteryTickets + (result.lotteryTicketsChange || 0));
   newState.inheritanceLevel = Math.max(0, Math.min(4, prev.inheritanceLevel + (result.inheritanceLevelChange || 0)));
+  newState.karma = (prev.karma || 0) + (result.karmaChange || 0);
+
+  // 处理 NPC 关系变化
+  if (result.npcRelationChange) {
+    const { npcId, npcName, favorabilityChange, description } = result.npcRelationChange;
+    const newSocialRelations = [...(prev.socialRelations || [])];
+    const existingIndex = newSocialRelations.findIndex(r => r.id === npcId);
+
+    if (existingIndex >= 0) {
+      newSocialRelations[existingIndex] = {
+        ...newSocialRelations[existingIndex],
+        favorability: Math.max(-100, Math.min(100, newSocialRelations[existingIndex].favorability + favorabilityChange)),
+        lastEncounterRealm: prev.realm
+      };
+    } else {
+      newSocialRelations.push({
+        id: npcId,
+        name: npcName,
+        favorability: favorabilityChange,
+        description,
+        lastEncounterRealm: prev.realm
+      });
+    }
+    newState.socialRelations = newSocialRelations;
+
+    const changeType = favorabilityChange > 0 ? '增加' : '降低';
+    addLog(`✨ 你与【${npcName}】的关系${changeType}了 ${Math.abs(favorabilityChange)} 点！`, favorabilityChange > 0 ? 'gain' : 'danger');
+  }
+
+  if (result.karmaChange) {
+    const changeType = result.karmaChange > 0 ? '增加' : '减少';
+    addLog(`✨ 你的因果值${changeType}了 ${Math.abs(result.karmaChange)} 点！`, result.karmaChange > 0 ? 'gain' : 'danger');
+  }
 
   // 寿命与灵根
   const lifespanLoss = isSecretRealm ? 1.0 : (riskLevel === '低' ? 0.3 : riskLevel === '中' ? 0.6 : riskLevel === '高' ? 1.0 : riskLevel === '极度危险' ? 1.5 : 0.4);
