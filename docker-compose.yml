@@ -13,8 +13,8 @@ services:
         VITE_PARTYKIT_HOST: ${VITE_PARTYKIT_HOST}
     container_name: react-xiuxian-game
     ports:
-      - "80:80"
-      - "443:443"
+      - "8080:80"
+      - "8443:443"
     volumes:
       # SSL证书目录映射 - 主机 ./ssl/ -> 容器 /etc/nginx/ssl/
       - ./ssl:/etc/nginx/ssl:ro
