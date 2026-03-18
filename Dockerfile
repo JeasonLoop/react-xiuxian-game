@@ -29,7 +29,7 @@ LABEL version="${VITE_APP_VERSION}"
 LABEL org.opencontainers.image.version="${VITE_APP_VERSION}"
 
 # 构建应用
-RUN npm run build
+RUN set -e && npm run build
 
 # 第二阶段：使用 nginx 提供静态文件服务
 FROM nginx:alpine
