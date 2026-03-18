@@ -16,6 +16,10 @@ RUN npm config set registry https://registry.npmmirror.com && \
     npm ci --only=production || \
     npm install --production
 
+# 强制重新编译 sqlite3，解决 Alpine musl libc 兼容性问题
+RUN cd server && \
+    npm rebuild sqlite3
+
 # 复制后端源代码
 COPY server/ ./server/
 
