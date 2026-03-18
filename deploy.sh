@@ -77,10 +77,13 @@ echo ""
 echo -e "${YELLOW}🐳 开始 Docker 构建和部署...${NC}"
 
 # 检测 docker-compose v1 vs docker compose v2
+# 有些系统 docker-compose 文件存在但损坏，所以需要验证
+DOCKER_COMPOSE="docker compose"
 if command -v docker-compose >/dev/null 2>&1; then
-    DOCKER_COMPOSE="docker-compose"
-else
-    DOCKER_COMPOSE="docker compose"
+    # 测试一下是否能正常运行
+    if docker-compose --version >/dev/null 2>&1; then
+        DOCKER_COMPOSE="docker-compose"
+    fi
 fi
 
 echo "🔍 使用命令: $DOCKER_COMPOSE"
@@ -105,17 +108,21 @@ echo "   🔀 HTTP:  http://ylxiuxian.jeasonloop.online:8080  → 自动跳转 H
 echo "   🔌 API: https://ylxiuxian.jeasonloop.online:8443/api"
 echo ""
 echo "查看日志："
-echo "   docker-compose -f docker-compose.full.yml logs -f"
-echo "   docker-compose -f docker-compose.full.yml logs -f backend  # 仅查看后端日志"
-echo "   docker-compose -f docker-compose.full.yml logs -f web     # 仅查看前端日志"
+echo "   $DOCKER_COMPOSE -f docker-compose.full.yml logs -f"
+echo "   $DOCKER_COMPOSE -f docker-compose.full.yml logs -f backend  # 仅查看后端日志"
+echo "   $DOCKER_COMPOSE -f docker-compose.full.yml logs -f web     # 仅查看前端日志"
 echo ""
 echo "停止服务："
-echo "   docker-compose -f docker-compose.full.yml down"
+echo "   $DOCKER_COMPOSE -f docker-compose.full.yml down"
 echo ""
 
 # 检测 docker-compose v1 vs docker compose v2
 if command -v docker-compose >/dev/null 2>&1; then
-    DOCKER_COMPOSE="docker-compose"
+    if docker-compose --version >/dev/null 2>&1; then
+        DOCKER_COMPOSE="docker-compose"
+    else
+        DOCKER_COMPOSE="docker compose"
+    fi
 else
     DOCKER_COMPOSE="docker compose"
 fi
