@@ -27,11 +27,15 @@ if [ ! -f "package.json" ]; then
 fi
 
 # 加载环境变量
+# 按优先级查找: .env > .env.production > .env.production.full.example
 if [ -f ".env" ]; then
     echo -e "${YELLOW}📄 加载环境变量文件 .env${NC}"
     export $(grep -v '^#' .env | xargs)
+elif [ -f ".env.production" ]; then
+    echo -e "${YELLOW}📄 加载环境变量文件 .env.production${NC}"
+    export $(grep -v '^#' .env.production | xargs)
 else
-    echo -e "${YELLOW}⚠️  .env 文件不存在，使用示例配置创建...${NC}"
+    echo -e "${YELLOW}⚠️  未找到环境变量文件，使用示例配置创建 .env...${NC}"
     cp .env.production.full.example .env
     echo -e "${YELLOW}✅ 已创建 .env，请检查并修改配置后重新部署${NC}"
     exit 1
