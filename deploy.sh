@@ -74,10 +74,19 @@ else
 fi
 
 echo ""
-echo -e "${YELLow}🐳 开始 Docker 构建和部署...${NC}"
+echo -e "${YELLOW}🐳 开始 Docker 构建和部署...${NC}"
 
-# 使用 docker-compose-full 构建并启动
-docker-compose -f docker-compose.full.yml --env-file .env up -d --build
+# 检测 docker-compose v1 vs docker compose v2
+if command -v docker-compose >/dev/null 2>&1; then
+    DOCKER_COMPOSE="docker-compose"
+else
+    DOCKER_COMPOSE="docker compose"
+fi
+
+echo "🔍 使用命令: $DOCKER_COMPOSE"
+
+# 使用 docker-compose 构建并启动
+$DOCKER_COMPOSE -f docker-compose.full.yml --env-file "$(pwd)/.env" up -d --build
 
 echo ""
 echo -e "${GREEN}===========================================${NC}"
@@ -104,6 +113,13 @@ echo "停止服务："
 echo "   docker-compose -f docker-compose.full.yml down"
 echo ""
 
+# 检测 docker-compose v1 vs docker compose v2
+if command -v docker-compose >/dev/null 2>&1; then
+    DOCKER_COMPOSE="docker-compose"
+else
+    DOCKER_COMPOSE="docker compose"
+fi
+
 # 显示容器状态
 echo -e "${YELLOW}📊 当前容器状态:${NC}"
-docker-compose -f docker-compose.full.yml ps
+$DOCKER_COMPOSE -f docker-compose.full.yml ps
