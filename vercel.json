@@ -4,8 +4,8 @@
   "installCommand": "npm install",
   "rewrites": [
     {
-      "source": "/api/v4/chat/completions",
-      "destination": "/api/proxy"
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
     }
   ]
 }

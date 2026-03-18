@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # 前端静态网站（Nginx）
+  web:
+    image: "react-xiuxian-game-frontend:${VITE_APP_VERSION:-0.3.3}"
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # 构建时参数 - 会被 Vite 打包到静态文件中
+        VITE_APP_VERSION: ${VITE_APP_VERSION:-0.3.3}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+        VITE_PARTYKIT_HOST: ${VITE_PARTYKIT_HOST}
+    container_name: react-xiuxian-game-frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # SSL证书目录映射 - 主机 ./ssl/ -> 容器 /etc/nginx/ssl/
+      - ./ssl:/etc/nginx/ssl:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 后端云存档服务（Express + SQLite）
+  backend:
+    image: "react-xiuxian-game-backend:${VITE_APP_VERSION:-0.3.3}"
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: react-xiuxian-game-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=3001
+    volumes:
+      - sqlite_data:/app/server
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3001/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  sqlite_data:
+    # 持久化存储SQLite数据库，容器重启数据不丢失

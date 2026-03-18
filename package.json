@@ -1,7 +1,7 @@
 {
   "name": "cloud-spirit-cultivation",
   "private": true,
-  "version": "0.3.2.3",
+  "version": "0.3.3",
   "type": "module",
   "scripts": {
     "dev:frontend": "vite",
@@ -30,7 +30,6 @@
     "party:deploy": "partykit deploy"
   },
   "dependencies": {
-    "@google/genai": "^1.30.0",
     "dayjs": "^1.11.19",
     "lucide-react": "^0.554.0",
     "partykit": "^0.0.115",

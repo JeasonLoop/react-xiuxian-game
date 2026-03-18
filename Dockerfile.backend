@@ -1,0 +1,20 @@
+# 后端服务 Dockerfile
+FROM node:20-alpine
+
+WORKDIR /app
+
+# 复制后端 package.json
+COPY server/package*.json ./server/
+
+# 安装生产依赖
+RUN cd server && npm ci --only=production
+
+# 复制后端源代码
+COPY server/ ./server/
+
+# 后端端口
+EXPOSE 3001
+
+WORKDIR /app/server
+
+CMD ["npm", "start"]
