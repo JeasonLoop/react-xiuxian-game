@@ -1,3 +1,7 @@
+# SSL certificates
+ssl/*
+!ssl/.gitkeep
+
 # Logs
 logs
 *.log
