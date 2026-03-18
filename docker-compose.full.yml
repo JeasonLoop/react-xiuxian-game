@@ -35,16 +35,16 @@ services:
       dockerfile: Dockerfile.backend
     container_name: react-xiuxian-game-backend
     ports:
-      - "3001:3001"
+      - "3002:3002"
     environment:
       - NODE_ENV=production
       - JWT_SECRET=${JWT_SECRET}
-      - PORT=3001
+      - PORT=3002
     volumes:
       - sqlite_data:/app/server
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3001/api/health || exit 1"]
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:3002/api/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
