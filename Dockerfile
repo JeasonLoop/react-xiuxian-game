@@ -10,11 +10,13 @@ COPY pnpm-lock.yaml* ./
 
 # 安装依赖
 # 优先使用 pnpm（如果存在 lock 文件），否则使用 npm
-RUN if [ -f pnpm-lock.yaml ]; then \
+# 增加网络超时和重试，提高构建稳定性
+RUN npm config set registry https://registry.npmmirror.com && \
+    if [ -f pnpm-lock.yaml ]; then \
       npm install -g pnpm && \
-      pnpm install --frozen-lockfile; \
+      pnpm install --frozen-lockfile || pnpm install --frozen-lockfile --network-timeout 600000; \
     else \
-      npm ci; \
+      npm ci || npm install; \
     fi
 
 # 复制源代码
