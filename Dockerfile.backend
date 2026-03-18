@@ -1,8 +1,9 @@
 # 后端服务 Dockerfile
-FROM node:20-alpine
+# 使用 Debian 基础镜像，避免 Alpine musl libc 兼容性问题
+FROM node:20
 
-# 安装编译依赖（sqlite3需要编译）和 wget（用于健康检查）
-RUN apk add --no-cache python3 make g++ wget
+# 安装编译依赖和 wget（用于健康检查）
+RUN apt-get update && apt-get install -y python3 make g++ wget && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
