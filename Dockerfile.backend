@@ -1,8 +1,8 @@
 # 后端服务 Dockerfile
 FROM node:20-alpine
 
-# 安装编译依赖（sqlite3需要编译）
-RUN apk add --no-cache python3 make g++
+# 安装编译依赖（sqlite3需要编译）和 wget（用于健康检查）
+RUN apk add --no-cache python3 make g++ wget
 
 WORKDIR /app
 
@@ -20,7 +20,7 @@ RUN npm config set registry https://registry.npmmirror.com && \
 COPY server/ ./server/
 
 # 后端端口
-EXPOSE 3001
+EXPOSE 3002
 
 WORKDIR /app/server
 
