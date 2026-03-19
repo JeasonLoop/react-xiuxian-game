@@ -6,6 +6,37 @@ import { API_URL } from '../constants/api';
 import { User, Lock, Sparkles, LogIn, UserPlus } from 'lucide-react';
 import logo from '../public/assets/images/logo.png';
 
+// 密码强度分级
+type PasswordStrength = 0 | 1 | 2; // 0=弱, 1=中, 2=强
+
+const calculatePasswordStrength = (password: string): PasswordStrength => {
+  let score = 0;
+
+  // 长度检查
+  if (password.length >= 6) score++;
+  if (password.length >= 10) score++;
+
+  // 包含字母
+  if (/[a-zA-Z]/.test(password)) score++;
+  // 包含数字
+  if (/[0-9]/.test(password)) score++;
+  // 包含特殊字符
+  if (/[^a-zA-Z0-9]/.test(password)) score++;
+
+  // 映射到三级
+  if (score < 2) return 0; // 弱
+  if (score < 4) return 1; // 中
+  return 2; // 强
+};
+
+const getStrengthText = (strength: PasswordStrength): string => {
+  switch (strength) {
+    case 0: return '弱';
+    case 1: return '中';
+    case 2: return '强';
+  }
+};
+
 export const AuthScreen: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
@@ -146,6 +177,44 @@ export const AuthScreen: React.FC = () => {
                 required
                 minLength={6}
               />
+              {/* 密码强度指示器 - 只在注册模式显示 */}
+              {!isLogin && password.length > 0 && (
+                <div className="mt-2">
+                  <div className="flex gap-2 mb-1">
+                    {[0, 1, 2].map((index) => {
+                      const strength = calculatePasswordStrength(password);
+                      const isActive = index <= strength;
+                      let bgColor = 'bg-stone-700';
+                      if (isActive) {
+                        if (strength === 0) bgColor = index === 0 ? 'bg-red-500' : 'bg-stone-700';
+                        if (strength === 1) bgColor = index <= 1 ? 'bg-yellow-500' : 'bg-stone-700';
+                        if (strength === 2) bgColor = index <= 2 ? 'bg-green-500' : 'bg-stone-700';
+                      }
+                      return (
+                        <div
+                          key={index}
+                          className={`h-2 flex-1 rounded-full transition-all duration-300 ${bgColor}`}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div className="text-xs text-stone-400 flex justify-between">
+                    <span>密码强度：</span>
+                    <span className={`font-medium ${
+                      calculatePasswordStrength(password) === 0
+                        ? 'text-red-400'
+                        : calculatePasswordStrength(password) === 1
+                        ? 'text-yellow-400'
+                        : 'text-green-400'
+                    }`}>
+                      {getStrengthText(calculatePasswordStrength(password))}
+                    </span>
+                  </div>
+                  <div className="text-xs text-stone-500 mt-1">
+                    要求：最少 6 位，必须包含字母和数字
+                  </div>
+                </div>
+              )}
             </div>
 
             <button
