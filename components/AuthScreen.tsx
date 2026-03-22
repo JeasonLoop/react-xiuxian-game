@@ -3,6 +3,7 @@ import { useAuthStore } from '../store/authStore';
 import { cloudSaveService } from '../services/cloudSaveService';
 import { useGameStore } from '../store/gameStore';
 import { API_URL } from '../constants/api';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 import { User, Lock, Sparkles, LogIn, UserPlus } from 'lucide-react';
 import logo from '../public/assets/images/logo.png';
 
@@ -41,13 +42,55 @@ export const AuthScreen: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const login = useAuthStore((state) => state.login);
 
+  // 登录成功后的处理
+  const handleLoginSuccess = async (data: any) => {
+    const refreshToken = data.refreshToken ?? data.token;
+    login(data.token, refreshToken, data.user);
+
+    try {
+      const cloudSave = await cloudSaveService.fetchSave();
+      const gameStore = useGameStore.getState();
+
+      if (cloudSave) {
+        // 有云存档，加载并跳过欢迎页
+        gameStore.loadGame(cloudSave);
+        useAuthStore.getState().setSkipWelcomeAfterLogin(true);
+      } else {
+        // 新用户无云存档，清空本地状态，进入新游戏流程
+        gameStore.setHasSave(false);
+        gameStore.setGameStarted(false);
+        gameStore.setPlayer(null);
+        gameStore.setLogs([]);
+        // 清除本地存档
+        localStorage.removeItem(STORAGE_KEYS.SAVE);
+      }
+    } catch (saveErr) {
+      console.error('Failed to load cloud save:', saveErr);
+      // 云存档拉取失败时，也清空本地状态，避免读取旧存档
+      const gameStore = useGameStore.getState();
+      gameStore.setHasSave(false);
+      gameStore.setGameStarted(false);
+      gameStore.setPlayer(null);
+      gameStore.setLogs([]);
+      localStorage.removeItem(STORAGE_KEYS.SAVE);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // 注册时验证密码确认
+    if (!isLogin && password !== confirmPassword) {
+      setError('两次输入的密码不一致');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -61,26 +104,39 @@ export const AuthScreen: React.FC = () => {
       const data = await response.json();
 
       if (!response.ok) {
+        // 登录时用户不存在，自动切换到注册模式
+        if (isLogin && response.status === 401 && data.error === 'Invalid credentials') {
+          setIsLogin(false);
+          setConfirmPassword('');
+          setError('道号不存在，请先注册');
+          setLoading(false);
+          return;
+        }
         throw new Error(data.error || 'Something went wrong');
       }
 
       if (isLogin) {
-        const refreshToken = data.refreshToken ?? data.token;
-        login(data.token, refreshToken, data.user);
-
-        try {
-          const cloudSave = await cloudSaveService.fetchSave();
-          if (cloudSave) {
-            useGameStore.getState().loadGame(cloudSave);
-            useAuthStore.getState().setSkipWelcomeAfterLogin(true);
-          }
-        } catch (saveErr) {
-          console.error('Failed to load cloud save:', saveErr);
-        }
+        await handleLoginSuccess(data);
       } else {
-        // Registration successful, switch to login
-        setIsLogin(true);
-        setError('注册成功，请登录');
+        // 注册成功后自动登录
+        setError('');
+        try {
+          const loginResponse = await fetch(`${API_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+          });
+          const loginData = await loginResponse.json();
+
+          if (loginResponse.ok) {
+            await handleLoginSuccess(loginData);
+          } else {
+            throw new Error(loginData.error || '自动登录失败');
+          }
+        } catch (autoLoginErr: any) {
+          setError(`注册成功，但自动登录失败: ${autoLoginErr.message}`);
+          setIsLogin(true);
+        }
       }
     } catch (err: any) {
       setError(err.message);
@@ -217,6 +273,32 @@ export const AuthScreen: React.FC = () => {
               )}
             </div>
 
+            {/* 确认密码 - 只在注册模式显示 */}
+            {!isLogin && (
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-stone-400 uppercase tracking-wider flex items-center gap-2">
+                  <Lock size={14} />
+                  确认真言
+                </label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={`w-full px-4 py-3 bg-stone-900/50 border rounded-lg focus:outline-none focus:ring-1 focus:ring-mystic-gold/30 text-stone-100 transition-all placeholder-stone-600 ${
+                    confirmPassword && password !== confirmPassword
+                      ? 'border-red-500/50 focus:border-red-500'
+                      : 'border-stone-700 focus:border-mystic-gold'
+                  }`}
+                  placeholder="请再次输入真言"
+                  required
+                  minLength={6}
+                />
+                {confirmPassword && password !== confirmPassword && (
+                  <p className="text-xs text-red-400">两次输入的密码不一致</p>
+                )}
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={loading}
@@ -238,6 +320,7 @@ export const AuthScreen: React.FC = () => {
               onClick={() => {
                 setIsLogin(!isLogin);
                 setError('');
+                setConfirmPassword('');
               }}
               className="text-stone-400 hover:text-mystic-gold text-sm transition-colors flex items-center justify-center gap-2 mx-auto group"
             >
