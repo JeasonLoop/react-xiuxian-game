@@ -1,5 +1,4 @@
-import { STORAGE_KEYS } from '../constants/storageKeys';
-import { clearAllSlots } from '../utils/saveManagerUtils';
+import { clearSaveData } from '../utils/saveManagerUtils';
 import { useUIStore } from '../store';
 import { PlayerStats, LogEntry } from '../types';
 
@@ -35,9 +34,8 @@ export function useRebirth({
   } = useUIStore();
 
   const handleRebirth = () => {
-    // 清除所有存档
-    clearAllSlots();
-    localStorage.removeItem(STORAGE_KEYS.SAVE);
+    // 清除本地存档
+    clearSaveData();
 
     // 重置生命周期状态
     setIsDead(false);

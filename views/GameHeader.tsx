@@ -22,6 +22,7 @@ import { useAuthStore } from '../store/authStore';
 import { useGameStore } from '../store/gameStore';
 import { cloudSaveService } from '../services/cloudSaveService';
 import { showSuccess, showError } from '../utils/toastUtils';
+import { isDebugFeatureAvailable } from '../utils/debugMode';
 
 /**
  * 游戏头部组件
@@ -72,6 +73,7 @@ function GameHeader({
   const [saving, setSaving] = useState(false);
   const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const appVersion = import.meta.env.VITE_APP_VERSION || '-';
+  const canUseDebugFeature = isDebugFeatureAvailable();
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
@@ -133,6 +135,8 @@ function GameHeader({
 
   // 处理游戏名称点击
   const handleTitleClick = () => {
+    if (!canUseDebugFeature) return;
+
     // 清除之前的超时
     if (clickTimeoutRef.current) {
       clearTimeout(clickTimeoutRef.current);
@@ -318,7 +322,7 @@ function GameHeader({
           <Settings size={18} />
           <span>设置</span>
         </button>
-        {isDebugModeEnabled && onOpenDebug && (
+        {canUseDebugFeature && isDebugModeEnabled && onOpenDebug && (
           <button
             onClick={onOpenDebug}
             className="flex items-center gap-2 px-3 py-2 bg-red-800 hover:bg-red-700 rounded border border-red-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"

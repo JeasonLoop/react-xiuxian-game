@@ -1,104 +1,45 @@
-# 📚 修仙文字游戏 - 项目文档
+# 📚 修仙文字游戏 - 文档索引
 
-欢迎来到修仙文字游戏的项目文档中心！这里包含了项目的完整技术文档、开发指南和使用说明。
+本文档索引按当前仓库实现维护。
 
-## 📖 文档导航
+## 文档导航
 
-### 🚀 入门文档
+- [开发指南](./DEVELOPMENT.md)
+- [架构设计](./ARCHITECTURE.md)
+- [模块解析](./MODULES.md)
+- [API 文档](./API.md)
+- [存档格式](./SAVE_FORMAT.md)
+- [贡献指南](./CONTRIBUTING.md)
 
-- **[开发指南](./DEVELOPMENT.md)** - 从快速开始到深入开发的完整指南
-  - 快速开始（安装、配置、运行）
-  - 开发环境搭建
-  - 调试技巧
-  - 构建和部署
-  - 代码规范
+## 当前技术基线（以代码为准）
 
-### 🏗️ 技术文档
+- 前端：React 19 + TypeScript + Vite
+- 状态管理：Zustand（`store/gameStore.ts`、`store/uiStore.ts`）
+- 后端：Express + SQLite + JWT（`server/index.ts`）
+- 存档：
+  - 本地单存档（`STORAGE_KEYS.SAVE`）
+  - 登录后可使用云存档（`/api/save`）
+- 战斗：即时结算 + 回合制并存
+- 事件系统：本地模板库驱动（`adventureTemplateService` / `templateService`）
 
-- **[架构设计](./ARCHITECTURE.md)** - 项目架构、技术栈和设计模式
-- **[模块解析](./MODULES.md)** - 详细的目录结构、模块说明和代码组织
-- **[API 文档](./API.md)** - AI 服务、战斗系统等核心 API 和配置说明
+## 目录结构（当前仓库）
 
-### 🎮 游戏文档
-
-- **[游戏玩法说明](./GAMEPLAY.md)** - 详细的游戏机制和玩法介绍
-- **[存档格式说明](./SAVE_FORMAT.md)** - 存档 JSON 格式详细说明
-
-### 👨‍💻 项目文档
-
-- **[改进计划](./IMPROVEMENTS.md)** - 战斗系统重构、灵宠系统改进等计划
-- **[贡献指南](./CONTRIBUTING.md)** - 如何参与项目贡献
-
-## 📋 文档概览
-
-### 项目简介
-
-修仙文字游戏是一款基于 React + TypeScript 开发的沉浸式文字冒险游戏。玩家将扮演一名修仙者，通过历练、修炼、突破境界等方式不断提升实力。游戏采用 AI 生成事件机制，每次历练都会遇到不同的随机事件，让每一次游戏体验都充满未知与惊喜。
-
-### 核心特性
-
-- 🎲 **AI 驱动事件系统** - 使用 AI 生成丰富的随机事件
-- 🏔️ **完整修仙体系** - 7 大境界，每个境界 10 层，共 70 层修炼之路
-- 🎒 **丰富装备系统** - 武器、护甲、首饰、戒指、法宝等多样装备
-- 🐉 **灵宠养成** - 收集、培养、进化灵宠
-- 🏛️ **宗门系统** - 加入宗门，完成宗门任务
-- 🎫 **抽奖系统** - 使用抽奖券抽取稀有奖励
-- 🏆 **成就系统** - 完成各种成就，获得称号和奖励
-- ⚔️ **战斗系统** - 回合制战斗，丰富的战斗机制
-
-### 技术栈
-
-- **前端框架**: React 19.2.0
-- **开发语言**: TypeScript 5.8.2
-- **构建工具**: Vite 6.2.0
-- **UI 图标**: Lucide React 0.554.0
-- **AI 服务**: 多提供商支持（GLM/SiliconFlow/OpenAI，默认 GLM）
-- **状态管理**: React Hooks
-- **数据持久化**: localStorage
-
-## 🗂️ 文档结构
-
-```
-doc/
-├── README.md              # 文档索引（本文件）
-├── DEVELOPMENT.md         # 开发指南（快速开始 + 开发实践）
-├── ARCHITECTURE.md        # 架构设计文档
-├── MODULES.md             # 模块和目录解析
-├── API.md                 # API 和配置文档
-├── GAMEPLAY.md            # 游戏玩法说明
-├── SAVE_FORMAT.md         # 存档格式说明
-├── IMPROVEMENTS.md        # 改进计划
-└── CONTRIBUTING.md        # 贡献指南
+```text
+react-xiuxian-game/
+├── components/
+├── constants/
+├── hooks/
+├── services/
+├── store/
+├── utils/
+├── views/
+├── server/                # Express 后端（鉴权 + 云存档）
+├── party/                 # PartyKit 实时通信
+└── doc/
 ```
 
-## 🔍 快速查找
+## 说明
 
-### 按主题查找
-
-- **想开始开发？** → [开发指南](./DEVELOPMENT.md)
-- **想了解架构？** → [架构设计文档](./ARCHITECTURE.md)
-- **想了解游戏机制？** → [游戏玩法说明](./GAMEPLAY.md)
-- **想配置 AI 服务？** → [API 文档](./API.md)
-- **想贡献代码？** → [贡献指南](./CONTRIBUTING.md)
-- **想了解改进计划？** → [改进计划](./IMPROVEMENTS.md)
-
-### 按角色查找
-
-- **新开发者** → 先阅读 [开发指南](./DEVELOPMENT.md)，然后查看 [架构设计](./ARCHITECTURE.md)
-- **游戏玩家** → 查看 [游戏玩法说明](./GAMEPLAY.md)
-- **贡献者** → 阅读 [贡献指南](./CONTRIBUTING.md) 和 [开发指南](./DEVELOPMENT.md)
-- **维护者** → 查看所有文档，特别是 [架构设计](./ARCHITECTURE.md)、[模块解析](./MODULES.md) 和 [改进计划](./IMPROVEMENTS.md)
-
-## 📝 文档更新
-
-文档会随着项目的发展持续更新。如果发现文档有误或需要补充，欢迎提交 Issue 或 Pull Request。
-
-## 🤝 获取帮助
-
-- **遇到问题？** 查看 [开发指南](./DEVELOPMENT.md) 的故障排查部分
-- **有建议？** 查看 [贡献指南](./CONTRIBUTING.md)
-- **发现 Bug？** 在 GitHub 上提交 Issue
-
----
-
-**最后更新**: 2024年
+- 当前仓库没有 `doc/GAMEPLAY.md`、`doc/IMPROVEMENTS.md`。
+- 旧文档里提到的 `config/aiConfig.ts`、`services/aiService.ts`、`api/proxy` 已不属于当前主实现路径。
+- 如文档与代码冲突，统一以代码实现为准。

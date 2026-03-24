@@ -19,9 +19,8 @@ import dayjs from 'dayjs';
 import { showError, showSuccess, showInfo, showConfirm } from '../utils/toastUtils';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import {
-  getCurrentSlotId,
-  saveToSlot,
-  loadFromSlot,
+  saveGameData,
+  loadGameData,
   exportSave,
   importSave,
   ensurePlayerStatsCompatibility,
@@ -123,12 +122,7 @@ const SettingsModal: React.FC<Props> = ({
         '确认导入',
         () => {
           try {
-            // 获取当前存档槽位ID，如果没有则使用槽位1
-            const currentSlotId = getCurrentSlotId();
-
-            // 使用新的存档系统保存到当前槽位
-            const success = saveToSlot(
-              currentSlotId,
+            const success = saveGameData(
               ensurePlayerStatsCompatibility(saveData.player),
               saveData.logs
             );
@@ -164,11 +158,7 @@ const SettingsModal: React.FC<Props> = ({
 
   const handleExportSave = () => {
     try {
-      // 获取当前存档槽位ID
-      const currentSlotId = getCurrentSlotId();
-
-      // 从当前槽位加载存档
-      const saveData = loadFromSlot(currentSlotId);
+      const saveData = loadGameData();
 
       if (!saveData) {
         showError('没有找到存档数据！请先开始游戏。');

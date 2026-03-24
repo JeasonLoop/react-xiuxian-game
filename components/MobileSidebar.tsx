@@ -18,6 +18,7 @@ import { useAuthStore } from '../store/authStore';
 import { useGameStore } from '../store/gameStore';
 import { cloudSaveService } from '../services/cloudSaveService';
 import { showSuccess, showError } from '../utils/toastUtils';
+import { isDebugFeatureAvailable } from '../utils/debugMode';
 
 interface Props {
   isOpen: boolean;
@@ -60,6 +61,7 @@ const MobileSidebar: React.FC<Props> = ({
 }) => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const [saving, setSaving] = useState(false);
+  const canUseDebugFeature = isDebugFeatureAvailable();
 
   const handleSaveToCloud = useCallback(async () => {
     if (saving) return;
@@ -157,7 +159,7 @@ const MobileSidebar: React.FC<Props> = ({
         onClick: onOpenSettings,
         color: 'text-stone-400',
       },
-      ...(isDebugModeEnabled && onOpenDebug
+      ...(canUseDebugFeature && isDebugModeEnabled && onOpenDebug
         ? [
             {
               icon: Bug,
@@ -185,6 +187,7 @@ const MobileSidebar: React.FC<Props> = ({
       lotteryTickets,
       player,
       isAuthenticated,
+      canUseDebugFeature,
       saving,
       handleSaveToCloud,
     ]

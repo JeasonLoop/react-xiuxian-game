@@ -13,6 +13,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { PlayerStats, RealmType, TribulationResult, TribulationState } from '../types';
 import { THRESHOLD_CONSTANTS, DELAY_CONSTANTS } from '../constants/appConstants';
 import { STORAGE_KEYS } from '../constants/storageKeys';
+import { isDebugFeatureAvailable } from '../utils/debugMode';
 
 interface UseNewGameDetectionProps {
   gameStarted: boolean;
@@ -69,6 +70,7 @@ export function useRealmChangeDetection({
   updateQuestProgress,
 }: UseRealmChangeDetectionProps) {
   const prevRealmRef = useRef<{ realm: string; level: number } | null>(null);
+  const lastProcessedRealmChangeRef = useRef<string | null>(null);
   const updateQuestProgressRef = useRef(updateQuestProgress);
 
   useEffect(() => {
@@ -76,17 +78,31 @@ export function useRealmChangeDetection({
   }, [updateQuestProgress]);
 
   useEffect(() => {
-    if (player && prevRealmRef.current) {
-      const prevRealm = prevRealmRef.current.realm;
-      const prevLevel = prevRealmRef.current.level;
-      if (player.realm !== prevRealm || player.realmLevel !== prevLevel) {
-        // 境界或等级变化，说明突破成功
-        updateQuestProgressRef.current('breakthrough', 1);
-        // 重置天劫触发标志
-        isTribulationTriggeredRef.current = false;
-      }
-    }
     if (player) {
+      const currentSignature = `${player.realm}-${player.realmLevel}`;
+
+      if (prevRealmRef.current) {
+        const prevRealm = prevRealmRef.current.realm;
+        const prevLevel = prevRealmRef.current.level;
+        const hasRealmChanged =
+          player.realm !== prevRealm || player.realmLevel !== prevLevel;
+
+        if (
+          hasRealmChanged &&
+          lastProcessedRealmChangeRef.current !== currentSignature
+        ) {
+          // 先更新引用，避免 updateQuestProgress 触发 setState 后重复进入
+          prevRealmRef.current = { realm: player.realm, level: player.realmLevel };
+          lastProcessedRealmChangeRef.current = currentSignature;
+
+          // 境界或等级变化，说明突破成功
+          updateQuestProgressRef.current('breakthrough', 1);
+          // 重置天劫触发标志
+          isTribulationTriggeredRef.current = false;
+          return;
+        }
+      }
+
       prevRealmRef.current = { realm: player.realm, level: player.realmLevel };
     }
   }, [player, isTribulationTriggeredRef]);
@@ -250,6 +266,13 @@ export function useDebugModeInit({ setIsDebugModeEnabled }: UseDebugModeInitProp
 
   useEffect(() => {
     if (isInitializedRef.current) return;
+
+    if (!isDebugFeatureAvailable()) {
+      localStorage.removeItem(STORAGE_KEYS.DEBUG_MODE);
+      setIsDebugModeEnabled(false);
+      isInitializedRef.current = true;
+      return;
+    }
 
     const debugMode = localStorage.getItem(STORAGE_KEYS.DEBUG_MODE) === 'true';
     if (debugMode) {

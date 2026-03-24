@@ -5,8 +5,7 @@ import { Sparkles, Sword, Shield, Heart, Zap, User, Upload, TriangleAlert } from
 import { showError } from '../utils/toastUtils';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import {
-  getCurrentSlotId,
-  saveToSlot,
+  saveGameData,
   importSave,
   ensurePlayerStatsCompatibility,
 } from '../utils/saveManagerUtils';
@@ -99,12 +98,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
 
       // 直接导入存档，不需要确认
       try {
-        // 获取当前存档槽位ID，如果没有则使用槽位1
-        const currentSlotId = getCurrentSlotId();
-
-        // 使用新的存档系统保存到当前槽位
-        const success = saveToSlot(
-          currentSlotId,
+        const success = saveGameData(
           ensurePlayerStatsCompatibility(saveData.player),
           saveData.logs || []
         );

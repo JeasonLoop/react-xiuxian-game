@@ -17,6 +17,7 @@ import CultivationIntroModal from './CultivationIntroModal';
 import AutoAdventureConfigModal from './AutoAdventureConfigModal';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import { useUIStore, useModals } from '../store/uiStore';
+import { isDebugFeatureAvailable } from '../utils/debugMode';
 
 interface AppContentProps {
   // 玩家数据
@@ -86,6 +87,7 @@ interface AppContentProps {
  * 主游戏内容组件
  */
 export function AppContent(props: AppContentProps) {
+  const canUseDebugFeature = isDebugFeatureAvailable();
   // 从 store 获取状态和方法
   const setAutoAdventure = useUIStore((state) => state.setAutoAdventure);
   const setModal = useUIStore((state) => state.setModal);
@@ -203,7 +205,7 @@ export function AppContent(props: AppContentProps) {
       />
 
       {/* 调试弹窗 */}
-      {player && modals.isDebugModeEnabled && (
+      {player && canUseDebugFeature && modals.isDebugModeEnabled && (
         <DebugModal
           isOpen={modals.isDebugOpen}
           onClose={() => setIsDebugOpen(false)}

@@ -3,8 +3,7 @@ import { Sparkles, Play, Upload, User, LogOut } from 'lucide-react';
 import logo from '../public/assets/images/logo.png';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import {
-  getCurrentSlotId,
-  saveToSlot,
+  saveGameData,
   importSave,
   ensurePlayerStatsCompatibility,
 } from '../utils/saveManagerUtils';
@@ -61,12 +60,7 @@ const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
         '确认导入',
         () => {
           try {
-            // 获取当前存档槽位ID，如果没有则使用槽位1
-            const currentSlotId = getCurrentSlotId();
-
-            // 使用新的存档系统保存到当前槽位
-            const success = saveToSlot(
-              currentSlotId,
+            const success = saveGameData(
               ensurePlayerStatsCompatibility(saveData.player),
               saveData.logs
             );

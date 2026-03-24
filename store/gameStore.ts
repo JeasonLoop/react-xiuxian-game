@@ -12,10 +12,8 @@ import { STORAGE_KEYS } from '../constants/storageKeys';
 import { TALENTS } from '../constants/index';
 import { initializeEventTemplateLibrary } from '../services/adventureTemplateService';
 import {
-  getCurrentSlotId,
-  loadFromSlot,
-  saveToSlot,
-  setCurrentSlotId,
+  loadGameData,
+  saveGameData,
   ensurePlayerStatsCompatibility,
 } from '../utils/saveManagerUtils';
 
@@ -45,9 +43,8 @@ function loadInitialSettings(): GameSettings {
 // 检查是否有存档
 function checkHasSave(): boolean {
   try {
-    const currentSlotId = getCurrentSlotId();
-    const slotSave = loadFromSlot(currentSlotId);
-    if (slotSave) {
+    const localSave = loadGameData();
+    if (localSave) {
       return true;
     }
     const saved = localStorage.getItem(STORAGE_KEYS.SAVE);
@@ -172,9 +169,7 @@ export const useGameStore = create<GameState>()(
           timestamp: Date.now(),
         };
 
-        // 保存到当前槽位
-        const currentSlotId = getCurrentSlotId();
-        saveToSlot(currentSlotId, state.player, state.logs);
+        saveGameData(state.player, state.logs);
 
         // 同时保存到旧存档系统（兼容性）
         localStorage.setItem(STORAGE_KEYS.SAVE, JSON.stringify(saveData));
@@ -202,26 +197,20 @@ export const useGameStore = create<GameState>()(
         let savedData = cloudSaveData;
 
         if (!savedData) {
-          // 优先从多存档槽位系统加载
-          const currentSlotId = getCurrentSlotId();
-          savedData = loadFromSlot(currentSlotId);
+          savedData = loadGameData();
 
           // 如果没有，尝试从旧存档系统加载（兼容性）
           if (!savedData) {
             const saved = localStorage.getItem(STORAGE_KEYS.SAVE);
             if (saved) {
               savedData = JSON.parse(saved);
-              // 如果从旧系统加载成功，迁移到槽位1
-              if (savedData) {
-                saveToSlot(1, savedData.player, savedData.logs || []);
-                setCurrentSlotId(1);
-              }
+              // 如果从旧系统加载成功，统一迁移到单存档结构
+              if (savedData) saveGameData(savedData.player, savedData.logs || []);
             }
           }
         } else {
-          // 如果是云存档，保存到本地槽位1
-          saveToSlot(1, savedData.player, savedData.logs || []);
-          setCurrentSlotId(1);
+          // 云存档落地到本地单存档
+          saveGameData(savedData.player, savedData.logs || []);
         }
 
         if (savedData) {
@@ -291,8 +280,7 @@ export const useGameStore = create<GameState>()(
           logs: initialLogs,
           timestamp: Date.now(),
         };
-        const currentSlotId = getCurrentSlotId();
-        saveToSlot(currentSlotId, newPlayer, initialLogs);
+        saveGameData(newPlayer, initialLogs);
         localStorage.setItem(STORAGE_KEYS.SAVE, JSON.stringify(saveData));
         localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(newSettings));
       } catch (error) {

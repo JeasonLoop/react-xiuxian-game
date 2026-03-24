@@ -1,578 +1,76 @@
 # 🏗️ 架构设计文档
 
-本文档详细说明项目的架构设计、技术选型和核心设计模式。
+本文档描述当前仓库的真实架构，所有内容以代码实现为准。
 
-## 📐 整体架构
+## 总体架构
 
-### 架构图
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                     浏览器客户端                          │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐ │
-│  │   React UI   │  │  状态管理     │  │  本地存储     │ │
-│  │   Components │  │  (Hooks)     │  │ (localStorage)│ │
-│  └──────────────┘  └──────────────┘  └──────────────┘ │
-└─────────────────────────────────────────────────────────┘
-                          │
-                          │ HTTP/HTTPS
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│                    Vercel Serverless                    │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │         API Proxy (api/proxy.js)                 │  │
-│  │  - 处理跨域问题                                   │  │
-│  │  - 转发 API 请求                                  │  │
-│  └──────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────┘
-                          │
-                          │ API Request
-                          ▼
-┌─────────────────────────────────────────────────────────┐
-│              AI API (多提供商支持)                        │
-│  - GLM (智谱) - 默认提供商                                │
-│  - SiliconFlow - Qwen2.5-72B-Instruct 模型              │
-│  - OpenAI - GPT 系列模型                                 │
-│  - 生成游戏事件和剧情                                   │
-└─────────────────────────────────────────────────────────┘
+```text
+Browser (React + Zustand)
+  ├─ UI/Views/Handlers
+  ├─ 本地存档（单存档）
+  ├─ 模板事件与战斗逻辑（services）
+  └─ 登录态（token/refreshToken）
+        │
+        ▼ HTTP
+Express Server (server/index.ts)
+  ├─ /api/auth/register
+  ├─ /api/auth/login
+  ├─ /api/auth/refresh
+  ├─ /api/save (GET/POST, JWT)
+  └─ SQLite (users, saves)
 ```
 
-## 🎯 技术栈
+## 分层与职责
 
-### 前端技术
+### 1) 视图与交互层
 
-| 技术         | 版本    | 用途     |
-| ------------ | ------- | -------- |
-| React        | 19.2.0  | UI 框架  |
-| TypeScript   | 5.8.2   | 类型系统 |
-| Vite         | 6.2.0   | 构建工具 |
-| Lucide React | 0.554.0 | 图标库   |
+- `components/`: 通用 UI 组件
+- `views/`: 模块化业务视图与处理器（`useXxxHandlers`）
+- `App.tsx`: 游戏生命周期编排与模块集成
 
-### 服务与 API
+### 2) 状态层
 
-| 服务             | 用途           |
-| ---------------- | -------------- |
-| AI API (多提供商) | AI 事件生成（GLM/SiliconFlow/OpenAI） |
-| Vercel Functions | API 代理和部署 |
-| localStorage     | 数据持久化     |
+- `store/gameStore.ts`: 玩家数据、日志、设置、存读档
+- `store/uiStore.ts`: 弹窗、战斗 UI、自动功能、冷却
+- `store/authStore.ts`: 登录态、token、刷新 token
 
-## 📁 项目结构
+### 3) 业务逻辑层
 
-项目采用分层架构，主要目录如下：
+- `services/battleService.ts`: 战斗判定、敌人生成、奖励计算、回合制逻辑
+- `services/adventureTemplateService.ts`: 历练事件模板库与事件生成
+- `services/templateService.ts`: 名称/描述模板
+- `services/cloudSaveService.ts`: 云存档请求封装
 
-```
-react-xiuxian-game/
-├── components/     # UI 组件层（纯展示组件）
-├── views/          # 视图层（业务逻辑 + UI 组合）
-├── hooks/          # 通用 Hooks（状态管理、副作用处理）
-├── utils/          # 工具函数
-├── services/       # 业务逻辑服务层（AI、战斗等）
-├── config/         # 配置文件（AI 配置等）
-├── api/            # API 代理层（Vercel Functions）
-├── doc/            # 项目文档
-└── assets/         # 静态资源
-```
+### 4) 基础设施层
 
-详细的目录结构和模块说明请参考 [模块解析文档](./MODULES.md)。
+- `server/index.ts`: Express API、JWT 鉴权、SQLite 存储
+- `utils/saveManagerUtils.ts`: 存档工具
+- `constants/api.ts`: 前端后端地址拼接（`VITE_API_BASE_URL`）
 
-## 🏛️ 架构层次
+## 数据流
 
-### 1. 表示层 (Presentation Layer)
+### 游戏行为流
 
-**位置**: `components/`
+`用户操作 -> views handlers -> services/utils -> Zustand 更新 -> UI 重渲染`
 
-**职责**:
+### 存档流
 
-- UI 渲染
-- 用户交互处理
-- 视觉反馈
+- 本地：`gameStore -> saveManagerUtils -> localStorage`
+- 云端：`cloudSaveService -> /api/save -> SQLite`
 
-**特点**:
+### 鉴权流
 
-- 纯函数组件（Functional Components）
-- 无业务逻辑，只负责展示
-- 通过 props 接收数据和回调
+`/api/auth/login -> access token + refresh token -> 401 时 refresh 重试`
 
-**示例组件**:
+## 当前关键特性
 
-```typescript
-// components/StatsPanel.tsx
-interface StatsPanelProps {
-  player: PlayerStats;
-  onOpenModal: (modal: string) => void;
-}
-```
+- 单存档本地保存与加载
+- 云存档（需登录）
+- 自动功能（自动打坐/自动历练）
+- 回合制战斗与旧战斗结算并存
+- PartyKit 实时连接（在线人数与消息）
 
-### 2. 视图层 (View Layer)
+## 说明
 
-**位置**: `views/`
-
-**职责**:
-
-- 组合 UI 组件
-- 处理用户交互
-- 调用业务逻辑 Handlers
-
-**特点**:
-
-- 使用自定义 Hooks (`useXxxHandlers`) 封装业务逻辑
-- 通过 Handlers 与业务逻辑层交互
-- 保持组件纯净，业务逻辑在 Handlers 中
-
-**模块化组织**:
-
-每个功能模块包含：
-
-- `index.ts` - 模块导出
-- `useXxxHandlers.ts` - 业务逻辑处理函数
-
-**示例**:
-
-```typescript
-// views/shop/useShopHandlers.ts
-export function useShopHandlers({ player, setPlayer, addLog }) {
-  const handleBuyItem = useCallback((item: Item) => {
-    // 业务逻辑
-  }, [player]);
-
-  return { handleBuyItem, handleSellItem };
-}
-```
-
-### 3. 业务逻辑层 (Business Logic Layer)
-
-**位置**: `services/`, `utils/`
-
-**职责**:
-
-- 游戏规则实现
-- AI 事件生成
-- 战斗计算
-- 数据转换和工具函数
-
-**特点**:
-
-- 纯函数或类方法
-- 无副作用（除了 API 调用）
-- 可测试性强
-
-**核心服务**:
-
-#### services/adventureTemplateService.ts
-
-- `generateEventTemplateLibrary()` - 生成事件模板库
-- `getRandomEventTemplate()` - 获取随机事件模板
-- `templateToAdventureResult()` - 将模板转换为历练结果
-
-#### services/templateService.ts
-
-- `generateBreakthroughDescriptionLibrary()` - 生成突破描述模板库
-- `getRandomBreakthroughDescription()` - 获取随机突破描述
-- `generateEnemyNameLibrary()` - 生成敌人名称模板库
-- `getRandomEnemyName()` - 获取随机敌人名称
-
-#### services/battleService.ts
-
-- `shouldTriggerBattle()` - 判断是否触发战斗
-- `resolveBattleEncounter()` - 解析战斗结果
-- `createEnemy()` - 创建敌人
-
-#### utils/
-
-- `gameUtils.ts` - 游戏通用工具函数
-- `itemUtils.ts` - 物品相关工具函数
-- `playerUtils.ts` - 玩家相关工具函数
-
-### 5. 状态管理层 (State Management Layer)
-
-**位置**: `store/`, `hooks/`
-
-**职责**:
-
-- 全局状态管理
-- 数据持久化
-- 状态同步
-
-**特点**:
-
-- 使用 Zustand 进行状态管理
-- 单一数据源（Single Source of Truth）
-- 自动保存到 localStorage
-- 使用中间件（subscribeWithSelector）优化性能
-
-**核心 Stores**:
-
-- **`store/gameStore.ts`** - 游戏核心状态管理（玩家、日志、设置、存档等）
-  - `useGameStore` - 游戏主 store
-  - `usePlayer`, `useSettings`, `useLogs`, `useGameStarted` - 便捷 hooks
-- **`store/uiStore.ts`** - UI 状态管理（弹窗、商店、战斗、自动功能等）
-  - `useUIStore` - UI 主 store
-  - `useModals`, `useAutoFeatures`, `useLoading`, `useCooldown` - 便捷 hooks
-
-**核心 Hooks**:
-
-- `useGameEffects` - 游戏副作用处理（自动保存、成就检查等）
-- `useAutoFeatures` - 自动功能（自动打坐、自动历练）
-- `useDeathDetection` - 死亡检测和处理
-- `useBattleResultHandler` - 战斗结果处理
-- `usePassiveRegeneration` - 被动回血和冷却管理
-
-### 6. 配置层 (Configuration Layer)
-
-**位置**: `config/`
-
-**职责**:
-
-- AI 服务配置
-- 环境变量管理
-- 多提供商支持
-
-**特点**:
-
-- 支持多种 AI 提供商（GLM、SiliconFlow、OpenAI 等）
-- 默认使用 GLM（智谱）作为 AI 提供商
-- 环境变量配置
-- 灵活的配置系统
-- 支持代理模式和直连模式
-
-**数据流**:
-
-```
-用户操作 → View Handlers → Features/Services → 更新状态 → 触发重渲染 → UI 更新
-                ↓
-           保存到 localStorage (通过 useGameEffects)
-```
-
-## 🔄 数据流
-
-### 状态管理流程
-
-```
-┌─────────────┐
-│  用户操作    │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│ View Layer  │ (views/*/useXxxHandlers.ts)
-│ Handlers    │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│ Feature/    │ (features/* 或 services/*)
-│ Service     │
-└──────┬──────┘
-       │
-       ▼
-┌─────────────┐
-│ 更新状态     │ (Zustand Stores)
-└──────┬──────┘
-       │
-       ├──────────────┐
-       │              │
-       ▼              ▼
-┌─────────────┐  ┌─────────────┐
-│ 触发重渲染   │  │ 自动保存     │
-│ (React)     │  │ (useGameEffects)
-└──────┬──────┘  └─────────────┘
-       │
-       ▼
-┌─────────────┐
-│  UI 更新    │ (Components)
-└─────────────┘
-```
-
-### API 调用流程
-
-```
-用户点击"历练"
-    │
-    ▼
-views/adventure/useAdventureHandlers.ts: handleAdventure()
-    │
-    ▼
-services/aiService.ts: generateAdventureEvent()
-    │
-    ▼
-config/aiConfig.ts: 获取 AI 配置（GLM/SiliconFlow/OpenAI）
-    │
-    ▼
-fetch() → Vercel Function (/api/proxy) 或直接调用 API
-    │
-    ▼
-AI API (GLM/SiliconFlow/OpenAI 等)
-    │
-    ▼
-返回 JSON 数据
-    │
-    ▼
-解析并更新游戏状态 (通过 Zustand Stores)
-```
-
-## 🎨 设计模式
-
-### 1. 组件组合模式 (Composition)
-
-使用组合而非继承来构建 UI：
-
-```typescript
-<Modal>
-  <ModalHeader />
-  <ModalBody>
-    <InventoryList />
-  </ModalBody>
-  <ModalFooter />
-</Modal>
-```
-
-### 2. 受控组件模式 (Controlled Components)
-
-所有表单输入都是受控的：
-
-```typescript
-const [playerName, setPlayerName] = useState('');
-<input
-  value={playerName}
-  onChange={(e) => setPlayerName(e.target.value)}
-/>
-```
-
-### 3. 容器/展示组件模式
-
-- **容器组件**: `App.tsx` - 协调各模块，管理全局状态
-- **视图组件**: `views/*` - 组合 UI 组件，处理用户交互
-- **展示组件**: `components/*` - 纯 UI 组件
-
-### 4. 服务层模式
-
-将业务逻辑从组件中分离到服务层和 Handlers：
-
-```typescript
-// ❌ 不好的做法：业务逻辑在组件中
-const handleAdventure = () => {
-  const result = await fetch('/api/...');
-  // 复杂的处理逻辑...
-};
-
-// ✅ 好的做法：业务逻辑在 Handlers 和服务层
-// views/adventure/useAdventureHandlers.ts
-const handleAdventure = async () => {
-  const result = await generateAdventureEvent(player);
-  // 更新状态
-  setPlayer(updatedPlayer);
-};
-```
-
-## 🔐 数据持久化
-
-### localStorage 结构
-
-```typescript
-// 存档数据
-{
-  player: PlayerStats,      // 玩家数据
-  logs: LogEntry[],        // 游戏日志
-  timestamp: number        // 保存时间戳
-}
-
-// 设置数据
-{
-  soundEnabled: boolean,
-  musicEnabled: boolean,
-  autoSave: boolean,
-  // ...
-}
-```
-
-### 自动保存机制
-
-```typescript
-useEffect(() => {
-  if (player && gameStarted && settings.autoSave) {
-    saveGame(player, logs);
-  }
-}, [player, logs, settings.autoSave]);
-```
-
-## 🌐 跨域处理
-
-### 开发环境
-
-使用 Vite 代理：
-
-```typescript
-// vite.config.ts
-server: {
-  proxy: {
-    '/api': {
-      target: 'https://spark-api-open.xf-yun.com',
-      changeOrigin: true,
-    }
-  }
-}
-```
-
-### 生产环境
-
-使用 Vercel Serverless Function：
-
-```javascript
-// api/proxy.js
-export default async function handler(req, res) {
-  // 处理 CORS
-  // 转发请求
-  // 返回结果
-}
-```
-
-## 🧪 可测试性设计
-
-### 纯函数
-
-服务层的函数都是纯函数，易于测试：
-
-```typescript
-// ✅ 可测试
-export const calcDamage = (attack: number, defense: number) => {
-  // 纯函数，无副作用
-};
-
-// ❌ 难以测试
-const handleAdventure = async () => {
-  // 依赖外部状态和 API
-};
-```
-
-### 依赖注入
-
-通过参数传递依赖，而非硬编码：
-
-```typescript
-// ✅ 可测试
-export const generateAdventureEvent = async (
-  player: PlayerStats,
-  adventureType: AdventureType
-) => {
-  // 依赖通过参数传入
-};
-
-// ❌ 难以测试
-export const generateAdventureEvent = async () => {
-  const player = getPlayerFromGlobalState(); // 硬编码依赖
-};
-```
-
-## 📊 性能优化
-
-### 1. React.memo
-
-对频繁渲染的组件使用 `React.memo`：
-
-```typescript
-export default React.memo(StatsPanel);
-```
-
-### 2. useCallback
-
-缓存回调函数：
-
-```typescript
-const handleAdventure = useCallback(async () => {
-  // ...
-}, [player, loading]);
-```
-
-### 3. useMemo
-
-缓存计算结果：
-
-```typescript
-const totalAttack = useMemo(() => {
-  return baseAttack + equipmentBonus;
-}, [baseAttack, equipmentBonus]);
-```
-
-### 4. 代码分割
-
-使用动态导入：
-
-```typescript
-const HeavyComponent = lazy(() => import('./HeavyComponent'));
-```
-
-## 🔒 安全性
-
-### 1. API Key 管理
-
-- 开发环境：可以使用硬编码（仅用于开发）
-- 生产环境：使用环境变量
-
-### 2. 输入验证
-
-所有用户输入都经过验证：
-
-```typescript
-const handleStartGame = (playerName: string) => {
-  if (!playerName || playerName.trim().length === 0) {
-    // 验证失败
-    return;
-  }
-  // ...
-};
-```
-
-### 3. XSS 防护
-
-React 自动转义用户输入，防止 XSS 攻击。
-
-## 🚀 扩展性
-
-### 添加新功能
-
-1. **添加新组件**: 在 `components/` 目录创建（纯 UI 组件）
-2. **添加新视图**: 在 `views/` 目录创建模块（包含 Handlers）
-3. **添加新 Hook**: 在 `hooks/` 目录创建（可复用功能）
-4. **添加新服务**: 在 `services/` 目录创建（业务逻辑）
-5. **添加新工具函数**: 在 `utils/` 目录创建
-6. **添加新类型**: 在 `types.ts` 中定义
-7. **添加新常量**: 在 `constants.ts` 中定义
-
-### 添加新境界
-
-```typescript
-// types.ts
-export enum RealmType {
-  // ... 现有境界
-  NewRealm = '新境界',
-}
-
-// constants.ts
-export const REALM_DATA: Record<RealmType, {...}> = {
-  // ... 现有数据
-  [RealmType.NewRealm]: { ... },
-};
-```
-
-## 📝 总结
-
-项目采用**分层架构**，清晰分离关注点：
-
-- **表示层**: 负责 UI 渲染
-- **业务逻辑层**: 负责游戏规则
-- **数据层**: 负责状态管理和持久化
-
-这种架构使得代码：
-
-- ✅ 易于维护
-- ✅ 易于测试
-- ✅ 易于扩展
-- ✅ 职责清晰
-
----
-
-**相关文档**:
-
-- [模块解析](./MODULES.md) - 详细的模块说明
-- [API 文档](./API.md) - API 使用说明
-- [开发指南](./DEVELOPMENT.md) - 开发实践
+- 旧版“Vercel `/api/proxy` 转发 AI”的说明不再代表当前主实现。
+- 事件生成目前主要使用本地模板，不依赖实时 AI 接口作为主路径。
