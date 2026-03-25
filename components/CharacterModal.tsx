@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Modal from './common/Modal';
 import { createPortal } from 'react-dom';
-import { X, Star, Award, Info, Zap, BarChart3, TrendingUp, Sparkles, BookOpen, Users, Beaker, Package } from 'lucide-react';
+import { X, Star, Award, Info, Zap, BarChart3, TrendingUp, Sparkles, BookOpen, Users, Beaker, Package, Swords, HeartPulse, RotateCcw, Layers } from 'lucide-react';
 import { PlayerStats, ItemRarity, RealmType, Title, ItemType } from '../types';
 import {
   TALENTS,
@@ -27,6 +27,8 @@ import { useInheritanceHandlers } from '../views/inheritance';
 import { getPlayerTotalStats, getActiveMentalArt, calculateTotalExpRate } from '../utils/statUtils';
 import { logger } from '../utils/logger';
 import { formatValueChange, formatNumber } from '../utils/formatUtils';
+import { getBuildArchetypeProfile } from '../utils/buildArchetypeUtils';
+import { BUILD_ARCHETYPE_LABELS } from '../constants/buildArchetypes';
 
 interface Props {
   isOpen: boolean;
@@ -216,6 +218,8 @@ const CharacterModal: React.FC<Props> = ({
   // 使用 getPlayerTotalStats 获取包含心法加成的总属性
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const totalStats = useMemo(() => getPlayerTotalStats(player), [player]);
+
+  const buildProfile = useMemo(() => getBuildArchetypeProfile(player), [player]);
 
   // 计算总修炼速度加成
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -684,6 +688,51 @@ const CharacterModal: React.FC<Props> = ({
       <div className="space-y-6">
           {activeTab === 'character' ? (
             <>
+              {/* Build 流派倾向 */}
+              <div className="rounded-lg border border-amber-600/50 bg-linear-to-r from-amber-950/60 to-stone-900/80 p-4 shadow-md">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Layers className="text-amber-400 shrink-0" size={20} />
+                    <h3 className="text-lg font-bold text-amber-100">流派倾向</h3>
+                  </div>
+                  <div className="text-sm text-amber-200/90 bg-amber-900/40 px-3 py-1 rounded-full border border-amber-700/50">
+                    当前更接近
+                    <span className="font-bold text-amber-300 mx-1">
+                      {buildProfile.dominantLabel}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-xs text-stone-400 mb-3">{buildProfile.summary}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {(
+                    [
+                      { k: 'crit' as const, Icon: Swords, color: 'bg-rose-600/80' },
+                      { k: 'sustain' as const, Icon: HeartPulse, color: 'bg-emerald-600/80' },
+                      { k: 'counter' as const, Icon: RotateCcw, color: 'bg-sky-600/80' },
+                    ] as const
+                  ).map(({ k, Icon, color }) => (
+                    <div
+                      key={k}
+                      className="rounded-md bg-stone-900/70 border border-stone-700/80 p-3"
+                    >
+                      <div className="flex items-center justify-between text-xs text-stone-400 mb-1.5">
+                        <span className="flex items-center gap-1.5">
+                          <Icon size={14} className="text-stone-300" />
+                          {BUILD_ARCHETYPE_LABELS[k]}
+                        </span>
+                        <span className="text-stone-200 font-mono">{buildProfile.percent[k]}%</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-stone-800 overflow-hidden">
+                        <div
+                          className={`h-full ${color} transition-all duration-300`}
+                          style={{ width: `${Math.min(100, buildProfile.percent[k])}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* 修炼系统信息 */}
               <div className="bg-linear-to-r from-blue-900/50 to-green-900/50 rounded-lg p-6 border-2 border-blue-500 shadow-lg" style={{ overflow: 'visible' }}>
                 <div className="flex justify-between items-center mb-4">

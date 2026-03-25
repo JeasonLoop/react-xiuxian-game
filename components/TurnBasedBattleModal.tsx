@@ -27,6 +27,7 @@ import { BATTLE_POTIONS, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EAR
 import { showConfirm } from '../utils/toastUtils';
 import { BattleSkill } from '../types';
 import { useUIStore } from '../store/uiStore';
+import BattleResultSummary from './BattleResultSummary';
 
 interface TurnBasedBattleModalProps {
   isOpen: boolean;
@@ -42,7 +43,12 @@ interface TurnBasedBattleModalProps {
       hpLoss: number;
       expChange: number;
       spiritChange: number;
-      adventureType?: 'normal' | 'lucky' | 'secret_realm' | 'sect_challenge';
+      adventureType?:
+        | 'normal'
+        | 'lucky'
+        | 'secret_realm'
+        | 'sect_challenge'
+        | 'dao_combining_challenge';
       items?: Array<{
         name: string;
         type: string;
@@ -57,6 +63,30 @@ interface TurnBasedBattleModalProps {
     },
     updatedInventory?: Item[]
   ) => void;
+}
+
+interface BattleSettlementResult {
+  victory: boolean;
+  hpLoss: number;
+  expChange: number;
+  spiritChange: number;
+  adventureType?:
+    | 'normal'
+    | 'lucky'
+    | 'secret_realm'
+    | 'sect_challenge'
+    | 'dao_combining_challenge';
+  items?: Array<{
+    name: string;
+    type: string;
+    description: string;
+    rarity?: string;
+    isEquippable?: boolean;
+    equipmentSlot?: string;
+    effect?: any;
+    permanentEffect?: any;
+  }>;
+  petSkillCooldowns?: Record<string, number>;
 }
 
 const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
@@ -78,6 +108,10 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   const [showAdvancedItems, setShowAdvancedItems] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [settlement, setSettlement] = useState<{
+    result: BattleSettlementResult;
+    updatedInventory?: Item[];
+  } | null>(null);
   // 使用 ref 来创建一个更可靠的锁，防止在状态更新期间重复点击（同步检查）
   const isActionLockedRef = useRef(false);
   // 使用状态来触发重新渲染，确保按钮禁用状态正确更新
@@ -181,8 +215,19 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
       setShowPotions(false);
       setShowAdvancedItems(false);
       setErrorMessage(null);
+      setSettlement(null);
     }
   }, [isOpen, player, adventureType, riskLevel, realmMinRealm, bossId]);
+
+  const prepareSettlement = (
+    result: BattleSettlementResult,
+    updatedInventory?: Item[]
+  ) => {
+    setSettlement({ result, updatedInventory });
+    isProcessingEnemyTurnRef.current = false;
+    setIsProcessing(false);
+    isActionLockedRef.current = false;
+  };
 
   // 监控状态，确保操作栏能正确显示（防止 isProcessing 卡住）
   useEffect(() => {
@@ -212,12 +257,6 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   }, [battleState?.waitingForPlayerAction, battleState?.playerActionsRemaining, isProcessing]);
 
   // 如果是敌方先手，自动驱动敌人行动，避免界面没有操作栏
-  // 使用 useRef 存储最新的 onClose，避免依赖项变化导致频繁触发
-  const onCloseRef = useRef(onClose);
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
-
   // 使用 ref 跟踪是否正在处理敌人回合，避免重复触发
   const isProcessingEnemyTurnRef = useRef(false);
 
@@ -286,10 +325,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
               }
             });
           }
-          isProcessingEnemyTurnRef.current = false;
-          setIsProcessing(false);
-          isActionLockedRef.current = false; // 释放锁
-          onCloseRef.current(
+          prepareSettlement(
             {
               victory,
               hpLoss,
@@ -381,9 +417,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
             }
           });
         }
-        setIsProcessing(false);
-        isActionLockedRef.current = false;
-        onClose(
+        prepareSettlement(
           {
             victory,
             hpLoss,
@@ -428,9 +462,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
               adventureType,
               riskLevel
             );
-            setIsProcessing(false);
-            isActionLockedRef.current = false; // 释放锁
-            onClose(
+            prepareSettlement(
               {
                 victory,
                 hpLoss,
@@ -517,7 +549,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
             riskLevel
           );
 
-          onClose(
+          prepareSettlement(
             {
               victory,
               hpLoss,
@@ -675,7 +707,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
       title={
         <div>
           <div className="text-[10px] text-stone-500 uppercase tracking-widest leading-none mb-1">
-            回合制战斗 · 第 {battleState.round} 回合
+            {settlement ? '战斗结算' : `回合制战斗 · 第 ${battleState.round} 回合`}
           </div>
           <div className="flex items-center gap-2 text-base md:text-lg font-serif text-mystic-gold">
             <Sword size={16} className="text-mystic-gold" />
@@ -684,7 +716,8 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
               {enemyUnit.realm}
             </span>
           </div>
-          {battleState.waitingForPlayerAction &&
+          {!settlement &&
+            battleState.waitingForPlayerAction &&
             battleState.playerActionsRemaining > 0 && (
               <div className="text-[10px] text-emerald-400 mt-1 leading-none">
                 剩余行动: {battleState.playerActionsRemaining} / {battleState.playerMaxActions}
@@ -695,7 +728,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
       titleExtra={
         <button
           onClick={handleSkipBattle}
-          disabled={isProcessing}
+          disabled={isProcessing || !!settlement}
           className="p-2 rounded border border-stone-600 text-stone-200 hover:bg-stone-700/40 disabled:opacity-50 transition-colors mr-2"
           title="跳过战斗"
         >
@@ -715,6 +748,22 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
 
         {/* 战斗区域 */}
         <div className="modal-scroll-container modal-scroll-content px-6 py-4 space-y-4">
+          {settlement && (
+            <div className="space-y-3">
+              <BattleResultSummary
+                victory={settlement.result.victory}
+                hpLoss={settlement.result.hpLoss}
+                expChange={settlement.result.expChange}
+                spiritChange={settlement.result.spiritChange}
+              />
+              <button
+                onClick={() => onClose(settlement.result, settlement.updatedInventory)}
+                className="w-full px-4 py-2 rounded border border-emerald-500 text-emerald-300 hover:bg-emerald-500/10"
+              >
+                确认并返回
+              </button>
+            </div>
+          )}
           {/* 敌人信息 */}
           <div className="bg-rose-900/20 border border-rose-700/40 rounded-lg p-4 relative overflow-hidden">
             {/* 五行领域背景特效 */}
@@ -842,7 +891,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
         </div>
 
         {/* 行动选择区域 */}
-        {battleState.waitingForPlayerAction && battleState.playerActionsRemaining > 0 && !isProcessing && (
+        {!settlement && battleState.waitingForPlayerAction && battleState.playerActionsRemaining > 0 && !isProcessing && (
           <div className="border-t border-stone-700 px-6 py-4 bg-ink-900/90">
             <div className="flex flex-wrap gap-2 mb-3">
               <button

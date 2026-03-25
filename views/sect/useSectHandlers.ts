@@ -253,7 +253,8 @@ export function useSectHandlers({
     task: RandomSectTask,
     encounterResult?: AdventureResult,
     isPerfectCompletion?: boolean
-  ) => {
+  ): boolean => {
+    let taskCompleted = false;
     setPlayer((prev) => {
       // 1. 每日任务限制逻辑
       const { limitReached, updatedCount, resetDate } = sectTaskUtils.checkDailyLimit(prev, task.id);
@@ -348,6 +349,7 @@ export function useSectHandlers({
       const newHp = encounterResult
         ? Math.max(0, Math.min(actualMaxHp, prev.hp + (encounterResult.hpChange || 0)))
         : prev.hp;
+      taskCompleted = true;
 
       return {
         ...prev,
@@ -361,6 +363,7 @@ export function useSectHandlers({
         lastCompletedTaskType: task.type,
       };
     });
+    return taskCompleted;
   };
 
   const handleSectPromote = () => {

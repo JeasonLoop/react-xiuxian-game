@@ -47,7 +47,9 @@ const DaoCombiningChallengeModal: React.FC<Props> = ({
 
     // 计算战斗结果
     const victory = currentState.enemy.hp <= 0;
-    const hpLoss = Math.max(0, battleState.player.hp - currentState.player.hp);
+    const playerHpBefore = battleState.player.hp;
+    const playerHpAfter = currentState.player.hp;
+    const hpLoss = Math.max(0, playerHpBefore - playerHpAfter);
 
     // 计算奖励
     const rewards = calculateBattleRewards(currentState, player);
@@ -55,6 +57,8 @@ const DaoCombiningChallengeModal: React.FC<Props> = ({
     return {
       victory,
       hpLoss,
+      playerHpBefore,
+      playerHpAfter,
       expChange: rewards.expChange,
       spiritChange: rewards.spiritChange,
       summary: victory ?

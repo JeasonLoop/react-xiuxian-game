@@ -1,10 +1,15 @@
-import React from 'react';
-import { AdventureResult } from '../types';
+import React, { useMemo } from 'react';
+import { AdventureResult, PlayerStats } from '../types';
 import { Modal } from './common';
+import {
+  getRealmEventRewardMultiplier,
+  scaleReputationEventChoice,
+} from '../utils/realmEventRewardScale';
 
 interface Props {
   isOpen: boolean;
   onClose: () => void;
+  player: PlayerStats;
   event: AdventureResult['reputationEvent'];
   onChoice: (choiceIndex: number) => void;
 }
@@ -12,9 +17,19 @@ interface Props {
 const ReputationEventModal: React.FC<Props> = ({
   isOpen,
   onClose,
+  player,
   event,
   onChoice,
 }) => {
+  const rewardMult = useMemo(
+    () => getRealmEventRewardMultiplier(player),
+    [player.realm, player.realmLevel]
+  );
+
+  const displayChoices = useMemo(() => {
+    if (!event?.choices?.length) return [];
+    return event.choices.map((c) => scaleReputationEventChoice(player, c));
+  }, [event, player]);
 
   if (!event) {
     return null;
@@ -56,13 +71,16 @@ const ReputationEventModal: React.FC<Props> = ({
         <p className="text-stone-300 leading-relaxed whitespace-pre-line">
           {description}
         </p>
+        <p className="text-xs text-stone-500 mt-2">
+          选项中的修为、灵石等奖励已按当前境界（×{rewardMult.toFixed(2)}）调整。
+        </p>
       </div>
 
       <div className="space-y-3">
         <h3 className="text-md font-bold text-stone-200 mb-3">
           请做出你的选择：
         </h3>
-        {event.choices.map((choice, index) => (
+        {displayChoices.map((choice, index) => (
           <button
             key={index}
             onClick={() => handleChoice(index)}

@@ -562,6 +562,11 @@ export function useGrottoHandlers({
         addLog('抱歉，找不到这个改造配置。', 'danger');
         return prev;
       }
+      const enhancementKey = `grotto-array-${enhancementId}`;
+      if (prev.achievements.includes(enhancementKey)) {
+        addLog(`【${enhancementConfig.name}】已完成改造，无需重复投入材料。`, 'normal');
+        return prev;
+      }
 
       // 检查洞府等级要求
       if (grotto.level < enhancementConfig.grottoLevelRequirement) {
@@ -623,6 +628,7 @@ export function useGrottoHandlers({
       return {
         ...prev,
         inventory: updatedInventory,
+        achievements: [...prev.achievements, enhancementKey],
         grotto: {
           ...grotto,
           spiritArrayEnhancement: newEnhancement,

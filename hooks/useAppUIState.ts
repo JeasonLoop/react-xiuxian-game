@@ -85,6 +85,8 @@ export function useGlobalState() {
       cooldown: state.cooldown,
       setLoading: state.setLoading,
       setCooldown: state.setCooldown,
+      fastBattleSettlement: state.fastBattleSettlement,
+      setFastBattleSettlement: state.setFastBattleSettlement,
     }))
   );
 }

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { Shield, Sword, SkipForward } from 'lucide-react';
 import { BattleReplay } from '../services/battleService';
 import { Modal } from './common';
+import BattleResultSummary from './BattleResultSummary';
 
 interface BattleModalProps {
   isOpen: boolean;
@@ -76,18 +77,12 @@ const BattleModal: React.FC<BattleModalProps> = ({
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="text-xs text-stone-400 space-y-1">
             <div>战斗进度：{progressText} 回合</div>
-            <div>损耗气血：{replay.hpLoss}</div>
-            <div className="text-stone-300">
-              奖励：
-              {replay.expChange >= 0
-                ? `+${replay.expChange}`
-                : replay.expChange}{' '}
-              修为 ·{' '}
-              {replay.spiritChange >= 0
-                ? `+${replay.spiritChange}`
-                : replay.spiritChange}{' '}
-              灵石
-            </div>
+            <BattleResultSummary
+              victory={replay.victory}
+              hpLoss={replay.hpLoss}
+              expChange={replay.expChange}
+              spiritChange={replay.spiritChange}
+            />
             <div>当前气血：{replay.playerHpAfter}</div>
           </div>
           <div className="flex gap-2">

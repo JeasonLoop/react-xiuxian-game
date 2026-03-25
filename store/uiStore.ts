@@ -90,6 +90,7 @@ interface UIState {
   // 全局状态
   loading: boolean;
   cooldown: number;
+  fastBattleSettlement: boolean;
 
   // Modal Setters (简化)
   setModal: <K extends keyof ModalState>(key: K, value: ModalState[K]) => void;
@@ -135,6 +136,7 @@ interface UIState {
   // 全局 Setters
   setLoading: (loading: boolean) => void;
   setCooldown: (cooldown: number) => void;
+  setFastBattleSettlement: (value: boolean) => void;
 
   // Actions
   closeCurrentModal: () => void;
@@ -190,6 +192,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   pausedByHeavenEarthSoul: false,
   loading: false,
   cooldown: 0,
+  fastBattleSettlement: false,
 
   // 通用 Modal setter
   setModal: (key, value) =>
@@ -234,6 +237,7 @@ export const useUIStore = create<UIState>((set, get) => ({
   // 全局 Setters
   setLoading: (loading) => set({ loading }),
   setCooldown: (cooldown) => set({ cooldown }),
+  setFastBattleSettlement: (value) => set({ fastBattleSettlement: value }),
 
   // 关闭当前打开的弹窗
   closeCurrentModal: () => {

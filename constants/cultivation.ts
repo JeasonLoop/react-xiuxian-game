@@ -45,6 +45,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     realmRequirement: RealmType.Foundation,
     cost: 300,
     spiritualRoot: 'fire',
+    buildAffinity: { crit: 2 },
     effects: { attack: 30 },
   },
   {
@@ -56,6 +57,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     realmRequirement: RealmType.Foundation,
     cost: 500,
     spiritualRoot: 'earth',
+    buildAffinity: { sustain: 2 },
     effects: { defense: 20, hp: 100 },
   },
   {
@@ -67,6 +69,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     realmRequirement: RealmType.GoldenCore,
     cost: 2000,
     spiritualRoot: 'fire',
+    buildAffinity: { crit: 2 },
     effects: { expRate: 0.5, attack: 50 },
   },
   {
@@ -78,6 +81,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     realmRequirement: RealmType.GoldenCore,
     cost: 3000,
     spiritualRoot: 'metal',
+    buildAffinity: { crit: 3 },
     effects: { attack: 150 },
   },
   {
@@ -89,6 +93,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     realmRequirement: RealmType.NascentSoul,
     cost: 8000,
     spiritualRoot: 'wood',
+    buildAffinity: { sustain: 3 },
     effects: { expRate: 0.6, hp: 2000 },
   },
   {
@@ -120,6 +125,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     realmRequirement: RealmType.Foundation,
     cost: 400,
     spiritualRoot: 'water',
+    buildAffinity: { counter: 2, sustain: 1 },
     effects: { expRate: 0.3, defense: 15 },
   },
   {
@@ -131,6 +137,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
     realmRequirement: RealmType.Foundation,
     cost: 600,
     spiritualRoot: 'earth',
+    buildAffinity: { sustain: 2, counter: 1 },
     effects: { defense: 40, hp: 150 },
   },
   {

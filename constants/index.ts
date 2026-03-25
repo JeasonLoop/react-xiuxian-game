@@ -19,6 +19,9 @@ export * from './realms';
 // 功法相关
 export * from './cultivation';
 
+// Build 流派关键词与标签
+export * from './buildArchetypes';
+
 // 灵根相关
 export * from './spiritualRoots';
 

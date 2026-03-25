@@ -10,6 +10,9 @@ export enum RealmType {
 
 export type ArtGrade = '天' | '地' | '玄' | '黄'; // 功法品级：天、地、玄、黄
 
+/** Build 流派三维：暴击爆发 / 站桩续航 / 反制反击 */
+export type BuildArchetypeKind = 'crit' | 'sustain' | 'counter';
+
 export interface CultivationArt {
   id: string;
   name: string;
@@ -30,6 +33,8 @@ export interface CultivationArt {
     physique?: number;
     speed?: number;
   };
+  /** 流派倾向权重（用于角色面板与后续联动，通常 1~3） */
+  buildAffinity?: Partial<Record<BuildArchetypeKind, number>>;
   effects: {
     attack?: number;
     defense?: number;
@@ -205,6 +210,8 @@ export interface TitleSetEffect {
 }
 
 export interface PlayerStats {
+  /** 可选唯一标识（如宗主传承、存档关联） */
+  id?: string;
   name: string;
   realm: RealmType;
   realmLevel: number; // 1-9
@@ -533,6 +540,15 @@ export interface AdventureResult {
       hpChange?: number; // 可能的气血变化
       expChange?: number; // 可能的修为变化
       spiritStonesChange?: number; // 可能的灵石变化
+      /** 分支策略标签（历练二段式等），用于日志与心智提示 */
+      riskTag?: '稳妥' | '激进' | '保底';
+      karmaChange?: number;
+      npcRelationChange?: {
+        npcId: string;
+        npcName: string;
+        favorabilityChange: number;
+        description: string;
+      };
     }>;
   };
   attributeReduction?: {
@@ -800,6 +816,8 @@ export interface PetTemplate {
     speed: number;
   };
   skills: PetSkill[]; // 初始技能 (幼年期)
+  /** 灵宠模板流派倾向（与技能风格一致） */
+  buildAffinity?: Partial<Record<BuildArchetypeKind, number>>;
   stageSkills?: {
     stage1?: PetSkill[]; // 成熟期新增技能组
     stage2?: PetSkill[]; // 完全体新增技能组

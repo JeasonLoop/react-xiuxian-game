@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Modal from './common/Modal';
 import { AlertTriangle, Bug, FlaskConical, Heart, Search, Sword } from 'lucide-react';
-import { ItemType, PlayerStats, RealmType } from '../types';
+import { Item, ItemType, PlayerStats, RealmType } from '../types';
 import { INITIAL_ITEMS, REALM_ORDER } from '../constants';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import { showInfo, showSuccess } from '../utils/toastUtils';
@@ -125,7 +125,7 @@ const DebugModal: React.FC<Props> = ({
   const [injectCount, setInjectCount] = useState(defaultInjectCount);
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryAll);
   const [selectedRarity, setSelectedRarity] = useState<string>(rarityAll);
-  const [templateItems, setTemplateItems] = useState<Array<(typeof INITIAL_ITEMS)[number]>>([]);
+  const [templateItems, setTemplateItems] = useState<Item[]>([]);
   const [isTemplateLoading, setIsTemplateLoading] = useState(false);
   const [playerDraft, setPlayerDraft] = useState<PlayerSettingsDraft | null>(null);
 
@@ -205,27 +205,40 @@ const DebugModal: React.FC<Props> = ({
       return ItemType.Material;
     };
 
-    const normalizeItem = (item: any) => {
+    const normalizeItem = (item: Record<string, unknown>): Item => {
+      const type = normalizeType(item.type);
+      const name = (item.name as string) || '未知物品';
+      const id =
+        typeof item.id === 'string' && item.id
+          ? item.id
+          : `tpl:${String(type)}:${name}`;
       return {
-        name: item.name || '未知物品',
-        type: normalizeType(item.type),
-        description: item.description || '无描述',
-        rarity: item.rarity || '普通',
-        effect: item.effect,
-        permanentEffect: item.permanentEffect,
-        isEquippable: item.isEquippable,
-        equipmentSlot: item.equipmentSlot,
-        advancedItemType: item.advancedItemType,
-        advancedItemId: item.advancedItemId,
+        id,
+        name,
+        type,
+        description: (item.description as string) || '无描述',
+        quantity:
+          typeof item.quantity === 'number' && Number.isFinite(item.quantity)
+            ? Math.max(1, item.quantity)
+            : 1,
+        rarity: (item.rarity as Item['rarity']) || '普通',
+        effect: item.effect as Item['effect'],
+        permanentEffect: item.permanentEffect as Item['permanentEffect'],
+        isEquippable: item.isEquippable as boolean | undefined,
+        equipmentSlot: item.equipmentSlot as Item['equipmentSlot'],
+        advancedItemType: item.advancedItemType as Item['advancedItemType'],
+        advancedItemId: item.advancedItemId as string | undefined,
       };
     };
 
     const loadTemplateItems = async () => {
       setIsTemplateLoading(true);
       try {
-        const mergedMap = new Map<string, (typeof INITIAL_ITEMS)[number]>();
+        const mergedMap = new Map<string, Item>();
 
-        const constantItems = getAllItemsFromConstants().map(normalizeItem);
+        const constantItems = getAllItemsFromConstants().map((raw) =>
+          normalizeItem(raw as unknown as Record<string, unknown>)
+        );
         constantItems.forEach((item) => {
           mergedMap.set(`${item.type}:${item.name}`, item);
         });
@@ -248,12 +261,12 @@ const DebugModal: React.FC<Props> = ({
           const data = record?.data;
           if (!data) return;
           if (data.itemObtained) {
-            const item = normalizeItem(data.itemObtained);
+            const item = normalizeItem(data.itemObtained as Record<string, unknown>);
             mergedMap.set(`${item.type}:${item.name}`, item);
           }
           if (Array.isArray(data.itemsObtained)) {
-            data.itemsObtained.forEach((raw: any) => {
-              const item = normalizeItem(raw);
+            data.itemsObtained.forEach((raw: unknown) => {
+              const item = normalizeItem(raw as Record<string, unknown>);
               mergedMap.set(`${item.type}:${item.name}`, item);
             });
           }
@@ -266,18 +279,9 @@ const DebugModal: React.FC<Props> = ({
       } catch (_) {
         // IndexedDB 不可用时，回退到常量池
         if (!isCancelled) {
-          const fallback = getAllItemsFromConstants().map((item) => ({
-            name: item.name || '未知物品',
-            type: normalizeType(item.type),
-            description: item.description || '无描述',
-            rarity: item.rarity || '普通',
-            effect: item.effect,
-            permanentEffect: item.permanentEffect,
-            isEquippable: item.isEquippable,
-            equipmentSlot: item.equipmentSlot,
-            advancedItemType: item.advancedItemType,
-            advancedItemId: item.advancedItemId,
-          }));
+          const fallback = getAllItemsFromConstants().map((item) =>
+            normalizeItem(item as unknown as Record<string, unknown>)
+          );
           setTemplateItems(fallback);
         }
       } finally {

@@ -23,6 +23,12 @@ import { showError, showConfirm } from '../utils/toastUtils';
 import { getRarityTextColor, getRarityBorder } from '../utils/rarityUtils';
 import { calculateItemSellPrice, normalizeTypeLabel } from '../utils/itemUtils';
 import { formatNumber } from '../utils/formatUtils';
+import {
+  getEffectiveBuyPrice,
+  getEffectiveSellPrice,
+  getRealmShopPriceMultiplier,
+  getRealmSellPriceMultiplier,
+} from '../utils/shopEconomy';
 
 interface Props {
   isOpen: boolean;
@@ -65,7 +71,8 @@ const ShopModal: React.FC<Props> = ({
     if (shop.reputationRequired && (player.reputation || 0) < shop.reputationRequired) {
       return false;
     }
-    if (player.spiritStones < shopItem.price) return false;
+    if (player.spiritStones < getEffectiveBuyPrice(shopItem.price, player))
+      return false;
     if (shopItem.minRealm) {
       const itemRealmIndex = REALM_ORDER.indexOf(shopItem.minRealm);
       const playerRealmIndex = REALM_ORDER.indexOf(player.realm);
@@ -198,7 +205,8 @@ const ShopModal: React.FC<Props> = ({
       const shopItem = shop.items.find((si) => si.name === item.name);
       const sellPrice = shopItem?.sellPrice || calculateItemSellPrice(item);
       // 确保 sellPrice 和 quantity 都是有效数字
-      const validSellPrice = isNaN(sellPrice) || sellPrice <= 0 ? 1 : sellPrice;
+      const rawSell = isNaN(sellPrice) || sellPrice <= 0 ? 1 : sellPrice;
+      const validSellPrice = getEffectiveSellPrice(rawSell, player);
       const validQuantity = item.quantity || 1;
       const itemPrice = validSellPrice * validQuantity;
       // 确保不是 NaN 才累加
@@ -334,6 +342,10 @@ const ShopModal: React.FC<Props> = ({
                     {shop.type}
                   </span>
                 </div>
+                <p className="text-xs text-stone-500">
+                  境界物价倍率 ×{getRealmShopPriceMultiplier(player).toFixed(2)}
+                  （购买与回收售价均随境界调整）
+                </p>
                 {/* 物品分类筛选器 */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className="flex items-center gap-2 text-stone-400 text-sm">
@@ -372,6 +384,7 @@ const ShopModal: React.FC<Props> = ({
                   </div>
                 ) : (
                   availableItems.map((shopItem) => {
+                    const unitBuy = getEffectiveBuyPrice(shopItem.price, player);
                     const canBuy = canBuyItem(shopItem);
                     return (
                       <div
@@ -438,11 +451,14 @@ const ShopModal: React.FC<Props> = ({
                             <div className="flex justify-between items-center">
                               <div className="flex items-center gap-1 text-mystic-gold">
                                 <Coins size={14} />
-                                <span className="font-bold">{formatNumber(shopItem.price)}</span>
+                                <span className="font-bold">{formatNumber(unitBuy)}</span>
                               </div>
                               {buyQuantities[shopItem.id] > 1 && (
                                 <div className="text-xs text-stone-400">
-                                  总计: {formatNumber(shopItem.price * buyQuantities[shopItem.id])}
+                                  总计:{' '}
+                                  {formatNumber(
+                                    unitBuy * buyQuantities[shopItem.id]
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -509,14 +525,12 @@ const ShopModal: React.FC<Props> = ({
                               }}
                               disabled={
                                 !canBuy ||
-                                shopItem.price *
-                                  (buyQuantities[shopItem.id] || 1) >
+                                unitBuy * (buyQuantities[shopItem.id] || 1) >
                                   player.spiritStones
                               }
                               className={`px-3 py-1.5 rounded text-sm font-bold transition-colors flex-1 min-w-[70px] ${
                                 canBuy &&
-                                shopItem.price *
-                                  (buyQuantities[shopItem.id] || 1) <=
+                                unitBuy * (buyQuantities[shopItem.id] || 1) <=
                                   player.spiritStones
                                   ? 'bg-mystic-gold/20 hover:bg-mystic-gold/30 text-mystic-gold border border-mystic-gold/50'
                                   : 'bg-stone-700 text-stone-500 cursor-not-allowed'
@@ -528,7 +542,8 @@ const ShopModal: React.FC<Props> = ({
                                     : shopItem.minRealm
                                       ? `需要境界: ${shopItem.minRealm}`
                                       : '无法购买'
-                                  : shopItem.price * (buyQuantities[shopItem.id] || 1) > player.spiritStones
+                                  : unitBuy * (buyQuantities[shopItem.id] || 1) >
+                                      player.spiritStones
                                     ? '灵石不足'
                                     : ''
                               }
@@ -557,6 +572,9 @@ const ShopModal: React.FC<Props> = ({
                     可出售物品: {sellableItems.length}
                   </span>
                 </div>
+                <p className="text-xs text-stone-500">
+                  回收价倍率 ×{getRealmSellPriceMultiplier(player).toFixed(2)}
+                </p>
                 {/* 批量操作栏 */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -660,8 +678,9 @@ const ShopModal: React.FC<Props> = ({
                     const shopItem = shop.items.find(
                       (si) => si.name === item.name
                     );
-                    const sellPrice =
+                    const rawSell =
                       shopItem?.sellPrice || calculateItemSellPrice(item);
+                    const sellPrice = getEffectiveSellPrice(rawSell, player);
                     const rarity = item.rarity || '普通';
                     const isSelected = selectedItems.has(item.id);
 

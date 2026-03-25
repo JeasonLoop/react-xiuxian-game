@@ -167,7 +167,6 @@ export function useAlchemyHandlers(
       newStats.alchemyCount = (newStats.alchemyCount || 0) + 1;
 
       if (logMessage) addLog(logMessage, logType);
-
       return {
         ...prev,
         hp: Math.max(1, prev.hp + hpChange),

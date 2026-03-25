@@ -27,6 +27,7 @@ import {
 } from '../utils/saveManagerUtils';
 import { cloudSaveService } from '../services/cloudSaveService';
 import { useGameStore } from '../store/gameStore';
+import { useUIStore } from '../store/uiStore';
 import ChangelogModal from './ChangelogModal';
 import ShortcutsModal from './ShortcutsModal';
 import { KeyboardShortcut } from '../hooks/useKeyboardShortcuts';
@@ -61,6 +62,8 @@ const SettingsModal: React.FC<Props> = ({
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const fastBattleSettlement = useUIStore((state) => state.fastBattleSettlement);
+  const setFastBattleSettlement = useUIStore((state) => state.setFastBattleSettlement);
 
   // 生成快捷键列表（用于显示）
   const shortcuts: KeyboardShortcut[] = Object.keys(SHORTCUT_DESCRIPTIONS).map(
@@ -364,6 +367,15 @@ const SettingsModal: React.FC<Props> = ({
                   难度模式在游戏开始时选择，无法更改
                 </p>
               </div>
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-stone-300">快速结算（跳过即时战斗回放）</span>
+                <input
+                  type="checkbox"
+                  checked={fastBattleSettlement}
+                  onChange={(e) => setFastBattleSettlement(e.target.checked)}
+                  className="w-5 h-5"
+                />
+              </label>
             </div>
           </div>
 

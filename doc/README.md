@@ -9,7 +9,9 @@
 - [模块解析](./MODULES.md)
 - [API 文档](./API.md)
 - [存档格式](./SAVE_FORMAT.md)
+- [可执行改进方案](./IMPROVEMENTS.md)
 - [贡献指南](./CONTRIBUTING.md)
+- [版本更新日志](../public/CHANGELOG.md)
 
 ## 当前技术基线（以代码为准）
 
@@ -40,6 +42,6 @@ react-xiuxian-game/
 
 ## 说明
 
-- 当前仓库没有 `doc/GAMEPLAY.md`、`doc/IMPROVEMENTS.md`。
+- 当前仓库没有 `doc/GAMEPLAY.md`。
 - 旧文档里提到的 `config/aiConfig.ts`、`services/aiService.ts`、`api/proxy` 已不属于当前主实现路径。
 - 如文档与代码冲突，统一以代码实现为准。

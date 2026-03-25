@@ -1,9 +1,55 @@
 import React, { useRef } from 'react';
-import { PlayerStats, Pet, ItemType} from '../../types';
+import { PlayerStats, Pet, ItemType, LotteryPrize } from '../../types';
 import { LOTTERY_PRIZES, PET_TEMPLATES } from '../../constants/index';
 import { uid } from '../../utils/gameUtils';
 import { addItemToInventory } from '../../utils/inventoryUtils';
+import { getRealmEventRewardMultiplier } from '../../utils/realmEventRewardScale';
 import { useGameStore, useUIStore } from '../../store';
+
+/** 每 N 次累计抽奖必出「传说 / 仙品」池（与每 10 次稀有保底独立，取更优池） */
+const LOTTERY_SOFT_PITY_LEGEND_INTERVAL = 50;
+const DUPLICATE_PET_SPIRIT_STONES_BASE = 8000;
+
+function convertDuplicatePetDrawsToCompensation(
+  results: LotteryPrize[],
+  player: PlayerStats
+): LotteryPrize[] {
+  const mult = getRealmEventRewardMultiplier(player);
+  const speciesSeen = new Set(player.pets.map((p) => p.species));
+  const out: LotteryPrize[] = [];
+  for (const prize of results) {
+    if (prize.type !== 'pet' || !prize.value.petId) {
+      out.push(prize);
+      continue;
+    }
+    const template = PET_TEMPLATES.find((t) => t.id === prize.value.petId);
+    if (!template) {
+      out.push(prize);
+      continue;
+    }
+    if (speciesSeen.has(template.species)) {
+      const stones = Math.max(
+        2000,
+        Math.floor(
+          DUPLICATE_PET_SPIRIT_STONES_BASE *
+            Math.min(2.6, 0.42 + mult * 0.32)
+        )
+      );
+      out.push({
+        id: `${prize.id}-dup-${out.length}`,
+        name: `${template.name}（重复·灵石补偿）`,
+        type: 'spiritStones',
+        rarity: prize.rarity,
+        weight: 0,
+        value: { spiritStones: stones },
+      });
+    } else {
+      speciesSeen.add(template.species);
+      out.push(prize);
+    }
+  }
+  return out;
+}
 
 interface UseLotteryHandlersProps {
   player?: PlayerStats;
@@ -58,27 +104,25 @@ export function useLotteryHandlers(
 
     isDrawingRef.current = true;
 
-    const results: typeof LOTTERY_PRIZES = [];
-    // 计算保底：每10次必出稀有以上
+    const results: LotteryPrize[] = [];
     const currentCount = player.lotteryCount;
-    // 找出本次抽奖中哪些位置会触发保底（每10次必出稀有以上）
-    // 优化：使用Set替代数组，提高查找效率
-    const guaranteeIndices = new Set<number>();
-    for (let i = 0; i < count; i++) {
-      const totalCount = currentCount + i + 1;
-      if (totalCount % 10 === 0) {
-        guaranteeIndices.add(i);
-      }
-    }
 
-    // 优化：预先计算稀有奖品列表和总权重，避免在循环中重复计算
     const rarePrizes = LOTTERY_PRIZES.filter((p) => p.rarity !== '普通');
+    const legendImmortalPrizes = LOTTERY_PRIZES.filter(
+      (p) => p.rarity === '传说' || p.rarity === '仙品'
+    );
     const totalWeight = LOTTERY_PRIZES.reduce((sum, p) => sum + p.weight, 0);
     const rareTotalWeight = rarePrizes.reduce((sum, p) => sum + p.weight, 0);
+    const legendTotalWeight = legendImmortalPrizes.reduce(
+      (sum, p) => sum + p.weight,
+      0
+    );
 
-    // 辅助函数：根据权重随机选择奖品
-    const selectPrizeByWeight = (prizes: typeof LOTTERY_PRIZES, weight: number) => {
-      if (weight > 0) {
+    const selectPrizeByWeight = (
+      prizes: LotteryPrize[],
+      weight: number
+    ): LotteryPrize | null => {
+      if (weight > 0 && prizes.length > 0) {
         let random = Math.random() * weight;
         for (const prize of prizes) {
           random -= prize.weight;
@@ -87,32 +131,43 @@ export function useLotteryHandlers(
           }
         }
       }
-      // 如果权重为0或没有找到，返回第一个奖品作为保底
       return prizes.length > 0 ? prizes[0] : null;
     };
 
     for (let i = 0; i < count; i++) {
-      // 检查是否应该触发保底（每10次必出稀有以上）
-      const shouldGuarantee = guaranteeIndices.has(i);
-      if (shouldGuarantee) {
-        // 保底稀有以上
+      const totalCount = currentCount + i + 1;
+      const shouldSoftLegend =
+        totalCount % LOTTERY_SOFT_PITY_LEGEND_INTERVAL === 0 &&
+        legendImmortalPrizes.length > 0 &&
+        legendTotalWeight > 0;
+      const shouldGuaranteeRare = totalCount % 10 === 0;
+
+      if (shouldSoftLegend) {
+        const prize = selectPrizeByWeight(
+          legendImmortalPrizes,
+          legendTotalWeight
+        );
+        if (prize) {
+          results.push(prize);
+        } else if (rarePrizes.length > 0) {
+          const fallback = selectPrizeByWeight(rarePrizes, rareTotalWeight);
+          if (fallback) results.push(fallback);
+        } else if (LOTTERY_PRIZES.length > 0) {
+          results.push(LOTTERY_PRIZES[0]);
+        }
+      } else if (shouldGuaranteeRare) {
         if (rarePrizes.length === 0) {
-          // 如果没有稀有以上奖品，降级使用所有奖品（防御性处理）
           const prize = selectPrizeByWeight(LOTTERY_PRIZES, totalWeight);
-          if (prize) {
-            results.push(prize);
-          }
+          if (prize) results.push(prize);
         } else {
           const prize = selectPrizeByWeight(rarePrizes, rareTotalWeight);
           if (prize) {
             results.push(prize);
           } else if (LOTTERY_PRIZES.length > 0) {
-            // 如果连稀有以上奖品都没有，降级使用第一个奖品
             results.push(LOTTERY_PRIZES[0]);
           }
         }
       } else {
-        // 普通抽奖
         const prize = selectPrizeByWeight(LOTTERY_PRIZES, totalWeight);
         if (prize) {
           results.push(prize);
@@ -120,20 +175,23 @@ export function useLotteryHandlers(
       }
     }
 
-    // 检查是否成功生成了所有奖品（防御性检查）
     if (results.length !== count) {
       console.error(`抽奖结果数量不匹配：期望 ${count} 个，实际 ${results.length} 个`);
-      // 如果结果数量不足，使用第一个奖品填充（确保每次抽奖都有结果）
       while (results.length < count && LOTTERY_PRIZES.length > 0) {
         results.push(LOTTERY_PRIZES[0]);
       }
     }
 
+    const resolvedResults = convertDuplicatePetDrawsToCompensation(
+      results,
+      player
+    );
+
     // 先统计所有获得的奖励用于弹窗显示（在setPlayer之前，避免回调被调用多次导致重复）
     const rewardMap = new Map<string, { type: string; name: string; quantity: number }>();
 
-    // 先遍历一次results，统计奖励（不修改背包状态）
-    for (const prize of results) {
+    // 先遍历一次 resolvedResults，统计奖励（不修改背包状态）
+    for (const prize of resolvedResults) {
       if (prize.type === 'spiritStones') {
         const amount = prize.value.spiritStones || 0;
         const key = 'spiritStones';
@@ -195,11 +253,15 @@ export function useLotteryHandlers(
       let newPets = [...prev.pets];
       let newTickets = prev.lotteryTickets;
 
-      for (const prize of results) {
+      for (const prize of resolvedResults) {
         if (prize.type === 'spiritStones') {
           const amount = prize.value.spiritStones || 0;
           newStones += amount;
-          addLog(`获得 ${amount} 灵石`, 'gain');
+          if (prize.name.includes('重复')) {
+            addLog(`灵宠重复：折算 ${amount} 灵石`, 'gain');
+          } else {
+            addLog(`获得 ${amount} 灵石`, 'gain');
+          }
         } else if (prize.type === 'exp') {
           const amount = prize.value.exp || 0;
           newExp += amount;

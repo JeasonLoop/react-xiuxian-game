@@ -440,6 +440,7 @@ function ModalsContainer({
           onClose={() => {
             handlers.setIsReputationEventOpen(false);
           }}
+          player={player}
           event={modalState.reputationEvent}
           onChoice={handlers.handleReputationEventChoice}
         />

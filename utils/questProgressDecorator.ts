@@ -37,7 +37,19 @@ export function withQuestProgress<T extends (...args: any[]) => any>(
 ): T {
   return ((...args: Parameters<T>) => {
     const result = handler(...args);
-    questUpdater.updateQuestProgress(questType, 1);
+
+    if (result instanceof Promise) {
+      return result.then((resolved) => {
+        if (resolved !== false) {
+          questUpdater.updateQuestProgress(questType, 1);
+        }
+        return resolved;
+      });
+    }
+
+    if (result !== false) {
+      questUpdater.updateQuestProgress(questType, 1);
+    }
     return result;
   }) as T;
 }

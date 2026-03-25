@@ -601,22 +601,28 @@ const TribulationModal: React.FC<TribulationModalProps> = ({
     <Modal
       isOpen={tribulationState.isOpen}
       onClose={handleClose}
+      title={tribulationState.tribulationLevel}
+      hideHeader
       showCloseButton={false}
       closeOnOverlayClick={false}
       closeOnEsc={false}
       size="3xl"
       height="auto"
-      containerClassName="bg-linear-to-b from-slate-900 to-stone-900 border-2 border-purple-500/50"
+      containerClassName="rounded-t-2xl md:rounded-lg bg-linear-to-b from-slate-900 to-stone-900 border-2 border-purple-500/50 overflow-hidden"
       contentClassName="p-4 sm:p-6 md:p-8"
       zIndex={200}
     >
-          {/* 标题 */}
+          {/* 标题（#modal-title 供 Modal 无障碍与顶栏隐藏时仍有关联） */}
           <div className="text-center mb-4 sm:mb-6 md:mb-8">
             <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2 sm:mb-4">
-              <Sparkles className="text-purple-400 w-6 h-6 sm:w-8 sm:h-8" />
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-purple-300">
+              <Sparkles className="text-purple-400 w-6 h-6 sm:w-8 sm:h-8" aria-hidden />
+              <h2
+                id="modal-title"
+                className="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-purple-300"
+              >
                 {tribulationState.tribulationLevel}
               </h2>
+              <Sparkles className="text-purple-400 w-6 h-6 sm:w-8 sm:h-8" aria-hidden />
               <Sparkles className="text-purple-400 w-6 h-6 sm:w-8 sm:h-8" />
             </div>
             <p className="text-sm sm:text-base md:text-lg text-stone-300">

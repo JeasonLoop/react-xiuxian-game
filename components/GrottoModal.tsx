@@ -50,15 +50,20 @@ const GrottoModal: React.FC<Props> = ({
 
   // 安全的 grotto 对象，如果不存在则使用默认值
   const grotto = useMemo(() => {
-    return player.grotto || {
-      level: 0,
-      expRateBonus: 0,
-      autoHarvest: false,
-      growthSpeedBonus: 0,
-      plantedHerbs: [],
-      lastHarvestTime: null,
-      spiritArrayEnhancement: 0,
-    };
+    return (
+      player.grotto || {
+        level: 0,
+        expRateBonus: 0,
+        autoHarvest: false,
+        growthSpeedBonus: 0,
+        plantedHerbs: [],
+        lastHarvestTime: null,
+        spiritArrayEnhancement: 0,
+        herbarium: [] as string[],
+        dailySpeedupCount: 0,
+        lastSpeedupResetDate: '',
+      }
+    );
   }, [player.grotto]);
 
   const currentConfig = useMemo(() => {
