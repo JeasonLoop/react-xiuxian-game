@@ -561,7 +561,16 @@ const SettingsModal: React.FC<Props> = ({
                 <Save size={16} />
                 <span>查看更新日志</span>
               </button>
-              <p className="text-xs text-stone-500">
+              <a
+                href="https://linux.do/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 w-full bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded px-4 py-2 transition-colors mt-2"
+              >
+                <span>本项目已认可LINUX.DO</span>
+                <span className="ml-auto text-xs text-stone-400">↗</span>
+              </a>
+              <p className="text-xs text-stone-500 mt-2">
                 一款文字修仙小游戏，欢迎 Star 和 Fork！
               </p>
             </div>
