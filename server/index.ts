@@ -202,7 +202,9 @@ app.post('/api/auth/login', (req: any, res: any) => {
       console.error('Login database error:', err);
       return res.status(500).json({ error: 'Database error' });
     }
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!user) {
+      return res.status(404).json({ error: 'User not found', code: 'USER_NOT_FOUND' });
+    }
 
     try {
       if (await bcrypt.compare(password, user.password_hash)) {
@@ -222,7 +224,7 @@ app.post('/api/auth/login', (req: any, res: any) => {
           user: { id: user.id, username: user.username },
         });
       } else {
-        res.status(401).json({ error: 'Invalid credentials' });
+        res.status(401).json({ error: 'Incorrect password', code: 'INVALID_PASSWORD' });
       }
     } catch (error) {
       console.error('Login error:', error);

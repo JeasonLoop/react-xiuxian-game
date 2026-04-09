@@ -4,7 +4,7 @@ import { cloudSaveService } from '../services/cloudSaveService';
 import { useGameStore } from '../store/gameStore';
 import { API_URL } from '../constants/api';
 import { STORAGE_KEYS } from '../constants/storageKeys';
-import { User, Lock, Sparkles, LogIn, UserPlus } from 'lucide-react';
+import { User, Lock, Sparkles, LogIn, UserPlus, Eye, EyeOff } from 'lucide-react';
 import logo from '../public/assets/images/logo.png';
 
 // 密码强度分级
@@ -43,6 +43,8 @@ export const AuthScreen: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const login = useAuthStore((state) => state.login);
@@ -104,13 +106,20 @@ export const AuthScreen: React.FC = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        // 登录时用户不存在，自动切换到注册模式
-        if (isLogin && response.status === 401 && data.error === 'Invalid credentials') {
-          setIsLogin(false);
-          setConfirmPassword('');
-          setError('道号不存在，请先注册');
-          setLoading(false);
-          return;
+        if (isLogin) {
+          if (data.code === 'USER_NOT_FOUND') {
+            setIsLogin(false);
+            setConfirmPassword('');
+            setError('道号不存在，请先注册');
+            setLoading(false);
+            return;
+          }
+
+          if (data.code === 'INVALID_PASSWORD') {
+            setError('密码错误，请重新输入');
+            setLoading(false);
+            return;
+          }
         }
         throw new Error(data.error || 'Something went wrong');
       }
@@ -224,15 +233,25 @@ export const AuthScreen: React.FC = () => {
                 <Lock size={14} />
                 真言 (密码)
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-stone-900/50 border border-stone-700 rounded-lg focus:outline-none focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/30 text-stone-100 transition-all placeholder-stone-600"
-                placeholder="请输入真言"
-                required
-                minLength={6}
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 pr-12 bg-stone-900/50 border border-stone-700 rounded-lg focus:outline-none focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/30 text-stone-100 transition-all placeholder-stone-600"
+                  placeholder="请输入真言"
+                  required
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-mystic-gold transition-colors"
+                  aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
               {/* 密码强度指示器 - 只在注册模式显示 */}
               {!isLogin && password.length > 0 && (
                 <div className="mt-2">
@@ -280,19 +299,29 @@ export const AuthScreen: React.FC = () => {
                   <Lock size={14} />
                   确认真言
                 </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className={`w-full px-4 py-3 bg-stone-900/50 border rounded-lg focus:outline-none focus:ring-1 focus:ring-mystic-gold/30 text-stone-100 transition-all placeholder-stone-600 ${
-                    confirmPassword && password !== confirmPassword
-                      ? 'border-red-500/50 focus:border-red-500'
-                      : 'border-stone-700 focus:border-mystic-gold'
-                  }`}
-                  placeholder="请再次输入真言"
-                  required
-                  minLength={6}
-                />
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={`w-full px-4 py-3 pr-12 bg-stone-900/50 border rounded-lg focus:outline-none focus:ring-1 focus:ring-mystic-gold/30 text-stone-100 transition-all placeholder-stone-600 ${
+                      confirmPassword && password !== confirmPassword
+                        ? 'border-red-500/50 focus:border-red-500'
+                        : 'border-stone-700 focus:border-mystic-gold'
+                    }`}
+                    placeholder="请再次输入真言"
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-mystic-gold transition-colors"
+                    aria-label={showConfirmPassword ? '隐藏确认密码' : '显示确认密码'}
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
                 {confirmPassword && password !== confirmPassword && (
                   <p className="text-xs text-red-400">两次输入的密码不一致</p>
                 )}
