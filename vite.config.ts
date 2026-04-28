@@ -3,6 +3,8 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { codeInspectorPlugin } from 'code-inspector-plugin';
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 // 从环境变量获取代理目标，默认使用 SiliconFlow
 const getProxyTarget = () => {
   const customUrl = process.env.VITE_AI_API_URL;
@@ -46,13 +48,10 @@ export default defineConfig({
       },
     },
   },
-  plugins: [
-    codeInspectorPlugin({
-      bundler: 'vite',
-      hotKeys: ['altKey'],
-    }),
-    react(),
-  ],
+  plugins: [codeInspectorPlugin({
+    bundler: 'vite',
+    hotKeys: ['altKey'],
+  }), react(), cloudflare()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),
