@@ -141,6 +141,7 @@ export const useWorldStore = create<WorldStoreState>((set, get) => ({
           maxHp: player.maxHp,
           spiritStones: player.spiritStones,
           lifespan: player.lifespan,
+          luck: player.luck,
           cultivationMult,
           inventoryNames: player.inventory.map((i) => i.name),
         },
@@ -165,6 +166,22 @@ export const useWorldStore = create<WorldStoreState>((set, get) => ({
           return { ...prev, exp, hp, spiritStones, lifespan, gameDays };
         });
       }
+      // 物品落地到背包
+      if (outcome.itemsGranted && outcome.itemsGranted.length) {
+        const grants = outcome.itemsGranted;
+        gameStore.setPlayer((prev) => {
+          if (!prev) return prev;
+          const inv = prev.inventory.map((it) => ({ ...it }));
+          for (const g of grants) {
+            const ex = inv.find((it) => it.name === g.name && String(it.type) === g.type);
+            if (ex) ex.quantity += g.quantity;
+            else inv.push({ id: `canon-${g.name}-${Date.now()}-${Math.floor(Math.random() * 1e6)}`, name: g.name, type: g.type as any, description: g.description, quantity: g.quantity, rarity: g.rarity as any } as any);
+          }
+          return { ...prev, inventory: inv };
+        });
+        gameStore.addLog(`【獲得】${grants.map((g) => `${g.name}×${g.quantity}（${g.rarity}）`).join('、')}`, 'gain');
+      }
+
       // 敘事入日誌
       gameStore.addLog(outcome.result.narrative, outcome.result.logType);
 

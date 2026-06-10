@@ -14,6 +14,7 @@ import { evolveWorld } from './worldEvolution';
 import { allLocationNames, allNpcNames, eventsInWindow, getNpc, getRegion, resolveNpcAtDay, spoilerBudget } from './canonLoader';
 import { generateRegion, isUnknownDestination } from './worldExpansion';
 import { buildReminders, makeMemory, recall } from './reminderRecall';
+import { catalyzeHerb, rollExploreLoot, type ItemGrant } from './loot';
 import { narrate } from './gmService';
 
 export interface TurnContext {
@@ -28,6 +29,7 @@ export interface TurnContext {
     maxHp: number;
     spiritStones: number;
     lifespan: number;
+    luck: number;
     cultivationMult: number; // 由靈根決定的修煉倍率
     inventoryNames: string[];
   };
@@ -54,6 +56,7 @@ export interface TurnOutcome {
   playerDeltas: PlayerDeltas;
   newMemory?: MemoryEntry;
   battle?: BattleTrigger; // 若本回合應開啟回合制戰鬥
+  itemsGranted?: ItemGrant[]; // 本回合落地到背包的物品
 }
 
 function cultivateExpPerDay(maxExp: number, mult: number): number {
@@ -122,6 +125,7 @@ export async function runTurn(rawText: string, ctx: TurnContext): Promise<TurnOu
   let gfRuntime = w.goldenFingerRuntime;
   let memoryNote: { summary: string; tags: string[]; important: boolean } | null = null;
   let battle: BattleTrigger | undefined;
+  let itemsGranted: ItemGrant[] | undefined;
 
   const newDay = oldDay + days;
 
@@ -154,7 +158,9 @@ export async function runTurn(rawText: string, ctx: TurnContext): Promise<TurnOu
         } else if (eff.hook === 'herbMaturation') {
           const stones = Math.round(20 * eff.magnitude * (1 + dayToChapter(newDay) / 200));
           playerDeltas.spiritStones = stones;
-          mechanical = `你以「${w.goldenFinger.name}」催熟一批靈藥，售與坊市，得靈石 +${stones}。`;
+          const herb = catalyzeHerb(ctx.player.realmType, eff.magnitude);
+          itemsGranted = [herb];
+          mechanical = `你以「${w.goldenFinger.name}」催熟靈藥，得「${herb.name}×${herb.quantity}」入袋，餘藥售與坊市得靈石 +${stones}。`;
         } else if (eff.hook === 'luckBonus') {
           mechanical = `「${w.goldenFinger.name}」之力流轉周身，冥冥中氣運攀升，近日諸事似有貴人相助。`;
         } else if (eff.hook === 'appraise') {
@@ -229,7 +235,10 @@ export async function runTurn(rawText: string, ctx: TurnContext): Promise<TurnOu
       const expGain = Math.round(cultivateExpPerDay(ctx.player.maxExp, 1) * days * 0.3);
       playerDeltas.spiritStones = stones;
       playerDeltas.exp = expGain;
-      mechanical = `你在${getRegion(w.currentLocationId)?.name || '此地'}遊歷查探${days}日，略有所獲（靈石 +${stones}，修為 +${expGain}）。`;
+      const tier = getRegion(w.currentLocationId)?.tier || 'human';
+      itemsGranted = rollExploreLoot(tier, ctx.player.realmType, ctx.player.luck);
+      const lootTxt = itemsGranted.length ? ` 途中尋得：${itemsGranted.map((g) => `${g.name}×${g.quantity}`).join('、')}。` : '';
+      mechanical = `你在${getRegion(w.currentLocationId)?.name || '此地'}遊歷查探${days}日，略有所獲（靈石 +${stones}，修為 +${expGain}）。${lootTxt}`;
       memoryNote = { summary: `於${w.currentLocationId}歷練`, tags: ['歷練', w.currentLocationId], important: false };
       break;
     }
@@ -339,5 +348,5 @@ export async function runTurn(rawText: string, ctx: TurnContext): Promise<TurnOu
     reminders,
     logType,
   };
-  return { result, worldPatch, playerDeltas, newMemory, battle };
+  return { result, worldPatch, playerDeltas, newMemory, battle, itemsGranted };
 }
