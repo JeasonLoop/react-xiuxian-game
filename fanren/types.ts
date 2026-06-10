@@ -376,6 +376,18 @@ export interface RegionDef {
   unlockChapter: number; // 進度章號 ≥ 此值才解鎖/可知
 }
 
+/** 詳細世界地圖節點（由網路爬取彙整，100+ 節點，階層式）。 */
+export interface WorldMapNode {
+  id: string; // 拼音 id（樹狀結構用）
+  name: string; // 中文名（顯示/旅行用）
+  tier: 'human' | 'spirit' | 'demon' | 'immortal';
+  parentId?: string;
+  description: string;
+  factions?: string[];
+  connections?: string[];
+  firstVolume?: number;
+}
+
 export interface CanonNpcSource {
   id: string;
   name: string;

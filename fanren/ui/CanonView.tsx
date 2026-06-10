@@ -4,6 +4,7 @@ import { useUIStore } from '../../store/uiStore';
 import { useWorldStore } from '../worldStore';
 import ChroniclePanel from './ChroniclePanel';
 import CreatePanel from './CreatePanel';
+import MapPanel from './MapPanel';
 import { formatTime } from '../engine/clock';
 import { buildReminders } from '../engine/reminderRecall';
 import { getRegion } from '../engine/canonLoader';
@@ -49,6 +50,7 @@ const CanonView: React.FC = () => {
   const [input, setInput] = useState('');
   const [showChronicle, setShowChronicle] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const logEndRef = useRef<HTMLDivElement>(null);
 
   const pendingChoice = world.pendingChoice;
@@ -109,6 +111,12 @@ const CanonView: React.FC = () => {
             className="rounded-lg border border-rose-700/60 bg-rose-950/30 px-2.5 py-1 text-xs text-rose-200 transition hover:border-rose-400"
           >
             ✦ 自創
+          </button>
+          <button
+            onClick={() => setShowMap(true)}
+            className="rounded-lg border border-emerald-700/60 bg-emerald-950/30 px-2.5 py-1 text-xs text-emerald-200 transition hover:border-emerald-400"
+          >
+            🗺️ 地圖
           </button>
           {SYSTEM_TABS.map((t) => (
             <button
@@ -244,6 +252,7 @@ const CanonView: React.FC = () => {
     </div>
     {showChronicle && <ChroniclePanel world={world} player={player} onClose={() => setShowChronicle(false)} />}
     {showCreate && <CreatePanel onClose={() => setShowCreate(false)} />}
+    {showMap && <MapPanel onClose={() => setShowMap(false)} onTravel={(nm) => submitAction(`前往${nm}`)} />}
     </>
   );
 };

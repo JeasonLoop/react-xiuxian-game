@@ -8,6 +8,7 @@ import type {
 import { CANON_NPCS } from '../data/canonNpcs';
 import { CANON_EVENTS } from '../data/canonTimeline';
 import { REGIONS } from '../data/regions';
+import { WORLD_MAP } from '../data/worldMap';
 import { chapterToDay } from './clock';
 
 // 境界排序（含原著靈界以上境界，供 minRealm 門檻比較）
@@ -25,8 +26,25 @@ export function realmRank(realm: string | undefined): number {
 }
 
 // ── 索引 ──
+// 卷次 → 約略解鎖章號（供詳細地圖節點換算 unlockChapter）
+const VOL_FIRST_CHAPTER: Record<number, number> = {
+  1: 1, 2: 100, 3: 160, 4: 500, 5: 760, 6: 900, 7: 1180, 8: 1300, 9: 1500, 10: 1900, 11: 2350, 12: 2400, 13: 2440,
+};
 const REGION_MAP: Record<string, RegionDef> = {};
 for (const r of REGIONS) REGION_MAP[r.id] = r;
+// 併入詳細世界地圖（以中文名為鍵；不覆蓋既有地點）
+for (const n of WORLD_MAP) {
+  if (!REGION_MAP[n.name]) {
+    REGION_MAP[n.name] = {
+      id: n.name,
+      name: n.name,
+      tier: n.tier,
+      parentId: n.parentId,
+      description: n.description,
+      unlockChapter: VOL_FIRST_CHAPTER[n.firstVolume || 1] || 1,
+    };
+  }
+}
 
 const NPC_MAP: Record<string, CanonNpcSource> = {};
 for (const n of CANON_NPCS) {
@@ -50,7 +68,7 @@ export function allNpcNames(): string[] {
   return CANON_NPCS.map((n) => n.name);
 }
 export function allLocationNames(): string[] {
-  return REGIONS.map((r) => r.name);
+  return Array.from(new Set([...REGIONS.map((r) => r.name), ...WORLD_MAP.map((n) => n.name)]));
 }
 export function getNpc(idOrName: string): CanonNpcSource | undefined {
   return NPC_MAP[idOrName];
