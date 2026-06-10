@@ -58,8 +58,24 @@ fanren/
 - **數值權威**：引擎決定數值結果，GM-AI 僅負責敘事化（系統提示明令不得推翻/加碼），杜絕 LLM 開掛。
 - **離線可玩**：無 `VITE_AI_KEY` 時自動使用確定性後備敘事；設定金鑰（GLM/SiliconFlow，見根目錄 README）後自動改用 LLM 富化敘事。
 
-## 後續可擴充（roadmap）
-- 正史事件在玩家所在地時轉為**互動式介入選項**（`TurnChoice` 已備型別，接 `worldStore.pendingChoice` + UI）。
-- 戰鬥意圖接既有 `TurnBasedBattleModal` 回合制戰鬥。
-- 由 `CanonView` 開啟既有背包/功法/煉丹等 Modal（傳入既有 handler）。
-- 分歧後果的連鎖重算（下游正史事件依分歧重新編排）。
+## 已完成（里程碑）
+- ✅ 正史事件在玩家所在地時轉為**互動式介入選項**（旁觀→照常／介入→分歧）。
+- ✅ 戰鬥意圖與戰鬥型介入接既有 `TurnBasedBattleModal`。
+- ✅ **canon 模式接通全部既有系統**：`App.tsx` canon 分支渲染 `ModalsContainer`＋
+  `CanonView` 工具列，背包/角色/功法/煉丹/洞府/宗門/靈寵/境界/成就皆可用；天劫
+  經 `useLevelUp`→`TribulationModal` 於 canon 自動觸發。
+- ✅ **史冊面板**（`ChroniclePanel`）：我的修仙史／改寫的命運／天下大勢／勢力榜。
+- ✅ **金手指覺醒**：依使用次數里程碑提升威能（`goldenFinger.ts` AWAKEN_*）。
+- ✅ **探索真實掉落**（`loot.ts`）：探索／催熟靈藥落地真實物品，接通煉丹經濟。
+
+## 後續路線圖（取自 game_db/game/system/research/ROADMAP.md）
+**近期高 CP 值**
+- 宗門正史連動（七玄門被滅等對玩家產生實際影響）、戰鬥敵人正名為實際 NPC。
+- 地圖面板（45 地點文字拓撲，可點選旅行）。
+- 探索事件豐富化（接 `adventureTemplateService` 模板庫，多分支奇遇）。
+- NPC 關係值 UI＋關係事件（人情/恩怨/道侶/收徒）。
+**進階**
+- 韓立軌跡干涉（搶先/相遇/撿遺物三模式）、NPC 輓歌日誌、境界面具（隱藏實力）。
+- 氣運積分（小綠瓶式複利機緣）、宣告式事件 JSON（資料驅動可擴充）。
+**夢幻**
+- 道統傳承多周目、歷史漣漪互動地圖、AI GM 跨 session 個人化記憶、「我的修仙史」可分享生命冊。
