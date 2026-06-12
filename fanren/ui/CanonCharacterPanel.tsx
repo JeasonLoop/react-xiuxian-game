@@ -56,6 +56,7 @@ const CanonCharacterPanel: React.FC<{ world: FanrenWorldState; player: PlayerSta
   const comp = player.comprehension ?? 50;
   const dh = player.daoHeart ?? 50;
   const agi = player.agility ?? 0;
+  const creationAlloc = world.creationAllocation;
   const roots = player.spiritualRoots || { metal: 0, wood: 0, water: 0, fire: 0, earth: 0 };
   const variant = player.variantRoot;
   const cultMult = cultivationMultFromRoots(roots, variant?.value || 0);
@@ -66,12 +67,12 @@ const CanonCharacterPanel: React.FC<{ world: FanrenWorldState; player: PlayerSta
   const expPct = Math.round((player.exp / Math.max(1, player.maxExp)) * 100);
   const hpPct = Math.round((player.hp / Math.max(1, player.maxHp)) * 100);
 
-  const combat: { label: string; v: number; hint: string }[] = [
-    { label: '攻擊', v: player.attack, hint: '近戰威能；與神識比決定遠/近取向' },
-    { label: '神識', v: player.spirit, hint: '術法威能・戰鬥先機・感知傳音' },
-    { label: '防禦', v: player.defense, hint: '減傷（主要作用於遭遇戰結算）' },
-    { label: '體魄', v: player.physique, hint: '壯氣血上限、近戰扛傷' },
-    { label: '速度', v: player.speed, hint: '出手快慢（旅行/逃離見「遁速」）' },
+  const combat: { key: 'attack' | 'defense' | 'spirit' | 'physique' | 'speed'; label: string; v: number; hint: string }[] = [
+    { key: 'attack', label: '攻擊', v: player.attack, hint: '近戰威能；與神識比決定遠/近取向' },
+    { key: 'spirit', label: '神識', v: player.spirit, hint: '術法威能・戰鬥先機・感知傳音' },
+    { key: 'defense', label: '防禦', v: player.defense, hint: '減傷（主要作用於遭遇戰結算）' },
+    { key: 'physique', label: '體魄', v: player.physique, hint: '壯氣血上限、近戰扛傷' },
+    { key: 'speed', label: '速度', v: player.speed, hint: '出手快慢（旅行/逃離見「遁速」）' },
   ];
 
   return (
@@ -141,14 +142,22 @@ const CanonCharacterPanel: React.FC<{ world: FanrenWorldState; player: PlayerSta
           <div className={h}>戰力 · 五屬</div>
           <div className="mb-2 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm md:grid-cols-3">
             {combat.map((c) => (
-              <Stat key={c.label} label={c.label} value={Math.round(c.v)} hint={c.hint} />
+              <Stat
+                key={c.label}
+                label={c.label}
+                value={Math.round(c.v)}
+                hint={`${creationAlloc ? `創角投入 ${creationAlloc[c.key]} 點；` : ''}${c.hint}`}
+              />
             ))}
           </div>
           <div className="space-y-1 text-xs">
             <div className="flex items-center gap-2"><span className="w-10 text-zinc-500">氣血</span><Bar pct={hpPct} color="bg-rose-500" /><span className="w-20 text-right text-zinc-500">{Math.floor(player.hp)}/{player.maxHp}</span></div>
             <div className="flex items-center gap-2"><span className="w-10 text-zinc-500">修為</span><Bar pct={expPct} color="bg-amber-400" /><span className="w-20 text-right text-zinc-500">{expPct}%</span></div>
           </div>
-          <div className="mt-2 text-[10px] text-zinc-600">概略戰力階 ≈ {power >= 1e6 ? power.toExponential(1) : Math.round(power).toLocaleString()}（境界為主，子境與稟賦為輔；跨大境界呈指數輾壓）。</div>
+          <div className="mt-2 text-[10px] text-zinc-600">
+            面板數字是「境界基礎值 × 稟賦換算」後的實際戰力，不等同創角投入點。
+            概略戰力階 ≈ {power >= 1e6 ? power.toExponential(1) : Math.round(power).toLocaleString()}（境界為主，子境與稟賦為輔；跨大境界呈指數輾壓）。
+          </div>
         </div>
 
         {/* 5) 功法 */}

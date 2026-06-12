@@ -4,6 +4,8 @@ import { ORIGINS, DAO_HEARTS, FORTUNE_TIERS, getFortune, VARIANT_ROOTS, getVaria
 import { GOLDEN_FINGER_ARCHETYPES } from '../data/goldenFingerArchetypes';
 import { parseGoldenFinger } from '../engine/goldenFinger';
 import { extrapolateMechanicSync } from '../engine/extrapolate';
+import { passiveStatBonus } from '../engine/mechanics';
+import { getCanonStartingStatPreview } from '../engine/charBuild';
 import { cultivationMultFromRoots } from '../worldStore';
 import { comprehensionMult } from '../engine/aptitude';
 import { SealMark } from './Brand';
@@ -65,7 +67,7 @@ const CanonCreation: React.FC<Props> = ({ onComplete, onBack }) => {
   const [difficulty, setDifficulty] = useState<'easy' | 'normal' | 'hard'>('normal');
 
   const abilityPreview = useMemo(
-    () => (abilityText.trim().length >= 4 ? extrapolateMechanicSync(abilityText, 'ability') : null),
+    () => (abilityText.trim().length >= 4 ? extrapolateMechanicSync(abilityText, 'ability', 'born') : null),
     [abilityText]
   );
 
@@ -137,6 +139,24 @@ const CanonCreation: React.FC<Props> = ({ onComplete, onBack }) => {
     [gfText, name]
   );
 
+  const startingPreview = useMemo(() => {
+    const creation: CharacterCreation = {
+      name: name.trim() || '無名修士',
+      appearance: { gender, age, descriptors: [], freeText: appearance.trim() || undefined },
+      originId,
+      fortuneId,
+      allocation: alloc,
+      daoHeartId: daoId,
+      startingArtIds: origin?.startingArtIds || [],
+      startingItemRefs: origin?.startingItemRefs || [],
+      goldenFinger: gfPreview,
+      abilityText: abilityText.trim() || undefined,
+      difficulty,
+    };
+    const passive = abilityPreview ? passiveStatBonus(abilityPreview) : {};
+    return getCanonStartingStatPreview(creation, passive);
+  }, [name, gender, age, appearance, originId, fortuneId, alloc, daoId, origin, gfPreview, abilityText, difficulty, abilityPreview]);
+
   const canStart = name.trim().length >= 1 && !!origin && remaining >= 0;
 
   const handleStart = () => {
@@ -158,7 +178,7 @@ const CanonCreation: React.FC<Props> = ({ onComplete, onBack }) => {
   };
 
   // 加減點列
-  const StepRow = ({ cn, value, onMinus, onPlus, colorCls, hint }: { cn: string; value: number; onMinus: (d: number) => void; onPlus: (d: number) => void; colorCls?: string; hint?: string }) => (
+  const StepRow = ({ cn, value, onMinus, onPlus, colorCls, hint, previewValue }: { cn: string; value: number; onMinus: (d: number) => void; onPlus: (d: number) => void; colorCls?: string; hint?: string; previewValue?: number }) => (
     <div className="flex items-center gap-1.5 py-1">
       <span className={`w-16 shrink-0 rounded border px-1 text-center text-xs ${colorCls || 'border-zinc-600/40 bg-zinc-700/20 text-zinc-200'}`}>{cn}</span>
       <button onClick={() => onMinus(100)} disabled={value <= 0} className="rounded border border-zinc-700 px-1 text-[10px] text-zinc-400 disabled:opacity-30" title="清空">清</button>
@@ -168,6 +188,7 @@ const CanonCreation: React.FC<Props> = ({ onComplete, onBack }) => {
         <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-700 to-amber-400" style={{ width: `${value}%` }} />
       </div>
       <span className="w-8 text-right text-xs text-amber-200">{value}</span>
+      {previewValue !== undefined && <span className="w-20 shrink-0 text-right text-[11px] text-rose-200">→ 開局 {Math.round(previewValue)}</span>}
       <button onClick={() => onPlus(1)} disabled={remaining <= 0 || value >= 100} className="rounded border border-zinc-700 px-1.5 text-xs text-zinc-300 disabled:opacity-30">＋</button>
       <button onClick={() => onPlus(10)} disabled={remaining <= 0 || value >= 100} className="rounded border border-zinc-700 px-1.5 text-xs text-zinc-300 disabled:opacity-30">＋10</button>
       <button onClick={() => onPlus(100)} disabled={remaining <= 0 || value >= 100} className="rounded border border-amber-700/60 px-1 text-[10px] text-amber-300/90 disabled:opacity-30" title="盡量拉滿">滿</button>
@@ -290,10 +311,27 @@ const CanonCreation: React.FC<Props> = ({ onComplete, onBack }) => {
 
             {/* 戰鬥五屬 */}
             <div className="mt-3">
-              <div className="mb-1 text-xs font-semibold text-rose-300">戰鬥屬性（疊加於境界基礎值，拉滿約 3 倍）</div>
+              <div className="mb-1 text-xs font-semibold text-rose-300">戰鬥稟賦點（0–100 為投入點；「開局」是進入角色面板後的實際值）</div>
               {COMBAT_KEYS.map((c) => (
-                <StepRow key={c.key} cn={c.cn} value={alloc[c.key]} onMinus={(d) => adjFlat(c.key, -d)} onPlus={(d) => adjFlat(c.key, d)} hint={c.hint} />
+                <StepRow
+                  key={c.key}
+                  cn={c.cn}
+                  value={alloc[c.key]}
+                  previewValue={startingPreview[c.key]}
+                  onMinus={(d) => adjFlat(c.key, -d)}
+                  onPlus={(d) => adjFlat(c.key, d)}
+                  hint={c.hint}
+                />
               ))}
+              <div className="mt-1.5 rounded-lg border border-rose-900/30 bg-rose-950/10 px-3 py-1.5 text-[11px] text-zinc-400">
+                進遊戲實值：攻擊 <span className="text-rose-200">{Math.round(startingPreview.attack)}</span>・
+                防禦 <span className="text-rose-200">{Math.round(startingPreview.defense)}</span>・
+                神識 <span className="text-rose-200">{Math.round(startingPreview.spirit)}</span>・
+                體魄 <span className="text-rose-200">{Math.round(startingPreview.physique)}</span>・
+                速度 <span className="text-rose-200">{Math.round(startingPreview.speed)}</span>・
+                氣血 <span className="text-rose-200">{Math.round(startingPreview.hp)}/{Math.round(startingPreview.maxHp)}</span>
+                {abilityPreview && <span className="ml-1 text-violet-300/80">（已含天生異能被動）</span>}
+              </div>
             </div>
             {maxRoot === 0 && <div className="mt-2 text-[11px] text-rose-300/80">※ 未分配靈根則無法修仙，僅能以凡夫之軀苟活——除非你另有奇遇。</div>}
           </div>

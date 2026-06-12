@@ -240,6 +240,9 @@ export const useWorldStore = create<WorldStoreState>((set, get) => ({
       fortuneId: creation.fortuneId,
       gender: creation.appearance?.gender,
       age: creation.appearance?.age,
+      creationAllocation: creation.allocation
+        ? { ...creation.allocation, roots: { ...creation.allocation.roots } }
+        : undefined,
       npcStates: buildInitialNpcStates(startDay),
       factionStates: Object.fromEntries(CANON_FACTIONS.map((f) => [f.id, { ...f }])),
       discoveredLocationIds: initialDiscoveries(origin?.startRegionId || '七玄門'),

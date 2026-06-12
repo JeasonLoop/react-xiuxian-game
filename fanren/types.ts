@@ -412,6 +412,7 @@ export interface FanrenWorldState {
   fortuneId?: string;
   gender?: 'male' | 'female' | 'unset';
   age?: number;
+  creationAllocation?: AttrAllocation; // 創角投入點原值，供角色面板與實際換算值對照
   npcStates: Record<string, NpcRuntimeState>;
   worldEventStates: Record<string, WorldEventState>;
   /** 主要 NPC 結局里程碑觸發記錄（key＝NPC id）。 */
@@ -971,4 +972,3 @@ export interface MechanicSpec {
   dailyByEffect: Record<string, number>;
   lastDay: number;
 }
-
