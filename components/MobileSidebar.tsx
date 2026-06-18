@@ -13,12 +13,14 @@ import {
   Bug,
   Home,
   CloudUpload,
+  Lock,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useGameStore } from '../store/gameStore';
 import { cloudSaveService } from '../services/cloudSaveService';
 import { showSuccess, showError } from '../utils/toastUtils';
 import { isDebugFeatureAvailable } from '../utils/debugMode';
+import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../constants/featureUnlock';
 
 interface Props {
   isOpen: boolean;
@@ -98,6 +100,8 @@ const MobileSidebar: React.FC<Props> = ({
         label: '功法',
         onClick: onOpenCultivation,
         color: 'text-blue-400',
+        locked: !isFeatureUnlocked(FeatureId.CULTIVATION_ARTS, player?.realm),
+        requirement: getFeatureRequirementText(FeatureId.CULTIVATION_ARTS),
       },
       {
         icon: Backpack,
@@ -117,6 +121,8 @@ const MobileSidebar: React.FC<Props> = ({
         onClick: onOpenAchievement,
         color: 'text-purple-400',
         badge: achievementCount > 0 ? achievementCount : undefined,
+        locked: !isFeatureUnlocked(FeatureId.ACHIEVEMENT, player?.realm),
+        requirement: getFeatureRequirementText(FeatureId.ACHIEVEMENT),
       },
       {
         icon: Sparkles,
@@ -124,6 +130,8 @@ const MobileSidebar: React.FC<Props> = ({
         onClick: onOpenPet,
         color: 'text-cyan-400',
         badge: petCount > 0 ? petCount : undefined,
+        locked: !isFeatureUnlocked(FeatureId.PET, player?.realm),
+        requirement: getFeatureRequirementText(FeatureId.PET),
       },
       {
         icon: Gift,
@@ -131,6 +139,8 @@ const MobileSidebar: React.FC<Props> = ({
         onClick: onOpenLottery,
         color: 'text-orange-400',
         badge: lotteryTickets > 0 ? lotteryTickets : undefined,
+        locked: !isFeatureUnlocked(FeatureId.LOTTERY, player?.realm),
+        requirement: getFeatureRequirementText(FeatureId.LOTTERY),
       },
       ...(onOpenGrotto
         ? [
@@ -140,6 +150,8 @@ const MobileSidebar: React.FC<Props> = ({
               onClick: onOpenGrotto,
               color: 'text-purple-400',
               badge: player?.grotto?.level > 0 ? `Lv.${player.grotto.level}` : undefined,
+              locked: !isFeatureUnlocked(FeatureId.GROTTO, player?.realm),
+              requirement: getFeatureRequirementText(FeatureId.GROTTO),
             },
           ]
         : []),
@@ -233,8 +245,26 @@ const MobileSidebar: React.FC<Props> = ({
 
           {/* Menu Items */}
           <div className="flex-1 overflow-y-auto p-2">
-            {menuItems.map((item, index) => {
+            {menuItems.map((item: any, index: number) => {
               const Icon = item.icon;
+              if (item.locked) {
+                return (
+                  <div
+                    key={index}
+                    className="w-full flex items-center gap-3 px-4 py-4 bg-stone-900 rounded border border-stone-800 mb-2 min-h-[56px] opacity-40 relative"
+                    title={item.requirement}
+                  >
+                    <Lock size={10} className="absolute top-1 right-2 text-stone-600" />
+                    <Icon size={22} className="text-stone-600" />
+                    <span className="text-stone-500 font-medium flex-1 text-left">
+                      {item.label}
+                    </span>
+                    <span className="text-[10px] text-stone-600">
+                      {item.requirement}
+                    </span>
+                  </div>
+                );
+              }
               return (
                 <button
                   key={index}

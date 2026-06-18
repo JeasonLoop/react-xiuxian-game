@@ -105,6 +105,7 @@ export interface Item {
   purity?: number; // 丹药纯度 (0-100)，影响丹药效果
   advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule' | 'soulArt'; // 进阶物品类型（仅当type为AdvancedItem时使用）
   advancedItemId?: string; // 进阶物品ID（用于炼化）
+  locked?: boolean; // 锁定物品，锁定后不可丢弃、不可分解
   effect?: {
     hp?: number;
     exp?: number;
@@ -262,6 +263,8 @@ export interface PlayerStats {
   // 抽奖系统
   lotteryTickets: number; // 抽奖券
   lotteryCount: number; // 累计抽奖次数（用于保底）
+  // 突破失败积累系统
+  breakthroughFailCount: number; // 当前境界突破失败次数，每失败一次增加下次成功率
   // 传承系统（仅保留突破境界功能）
   inheritanceLevel: number; // 传承等级（0-4，每次传承可突破1-4个境界）
   // 每日任务系统

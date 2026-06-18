@@ -136,6 +136,7 @@ export const createInitialPlayer = (
     activePetId: null,
     lotteryTickets: 10, // 开局十连抽
     lotteryCount: 0,
+    breakthroughFailCount: 0, // 突破失败积累初始为0
     inheritanceLevel: 0,
     dailyTaskCount: {},
     lastTaskResetDate: new Date().toISOString().split('T')[0],

@@ -124,6 +124,10 @@ export function usePetHandlers(
         addLog('物品不存在或数量不足', 'danger');
         return;
       }
+      if (item.locked) {
+        addLog(`🔒 【${item.name}】已锁定，无法用于喂养！`, 'danger');
+        return;
+      }
       canFeed = true;
       costMessage = `消耗了 1 个【${item.name}】`;
     } else if (feedType === 'exp') {
@@ -445,7 +449,7 @@ export function usePetHandlers(
       // 计算所有物品的总经验值
       itemCounts.forEach((count, itemId) => {
         const item = prev.inventory.find((i) => i.id === itemId);
-        if (item && item.quantity > 0) {
+        if (item && item.quantity > 0 && !item.locked) {
           // 计算这个物品提供的经验（复用喂养逻辑）
           let baseExp = 200; // 基础经验值从100提升到200
           const realmIndex = REALM_ORDER.indexOf(prev.realm);

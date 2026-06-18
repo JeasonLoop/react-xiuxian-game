@@ -4,11 +4,14 @@
  * 从 App.tsx 中提取了所有游戏内容的渲染逻辑
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlayerStats, TribulationState, LogEntry } from '../types';
 import { BattleReplay } from '../services/battleService';
 import TribulationModal from './TribulationModal';
 import DeathModal from './DeathModal';
+import DungeonModal from './DungeonModal';
+import NPCRelationsModal from './NPCRelationsModal';
+import RebirthModal, { canRebirth, getRebirthBonuses } from './RebirthModal';
 import GameView from '../views/GameView';
 import DebugModal from './DebugModal';
 import AlertModal from './AlertModal';
@@ -16,7 +19,10 @@ import ModalsContainer from '../views/modals/ModalsContainer';
 import CultivationIntroModal from './CultivationIntroModal';
 import AutoAdventureConfigModal from './AutoAdventureConfigModal';
 import { STORAGE_KEYS } from '../constants/storageKeys';
+import { REALM_DATA } from '../constants/index';
+import { createInitialPlayer } from '../utils/playerUtils';
 import { useUIStore, useModals } from '../store/uiStore';
+import { useGameStore } from '../store/gameStore';
 import { isDebugFeatureAvailable } from '../utils/debugMode';
 
 interface AppContentProps {
@@ -134,6 +140,112 @@ export function AppContent(props: AppContentProps) {
   const setIsDebugOpen = (open: boolean) => setModal('isDebugOpen', open);
   const setIsReputationEventOpen = (open: boolean) => setModal('isReputationEventOpen', open);
   const setIsAutoAdventureConfigOpen = (open: boolean) => setModal('isAutoAdventureConfigOpen', open);
+  const setIsDungeonOpen = (open: boolean) => setModal('isDungeonOpen', open);
+
+  // NPC 人物志弹窗
+  const [isRelationsOpen, setIsRelationsOpen] = useState(false);
+  useEffect(() => {
+    const handler = () => setIsRelationsOpen(true);
+    window.addEventListener('open-npc-relations', handler);
+    return () => window.removeEventListener('open-npc-relations', handler);
+  }, []);
+
+  // 转世重修
+  const [isRebirthOpen, setIsRebirthOpen] = useState(false);
+  useEffect(() => {
+    const handler = () => setIsRebirthOpen(true);
+    window.addEventListener('open-rebirth', handler);
+    return () => window.removeEventListener('open-rebirth', handler);
+  }, []);
+
+  // 批量分解装备
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { stoneCount } = (e as CustomEvent).detail;
+      setPlayer((prev: any) => {
+        if (!prev) return prev;
+        const inv = [...prev.inventory];
+        const stone = inv.find((i: any) => i.name === '炼器石');
+        if (stone) { stone.quantity += stoneCount; }
+        else { inv.push({ id: `refining-stone-${Date.now()}`, name: '炼器石', type: 'Material', quantity: stoneCount, description: '用于强化法宝和装备', rarity: '普通' }); }
+        return { ...prev, inventory: inv };
+      });
+    };
+    window.addEventListener('dismantle-equip', handler);
+    return () => window.removeEventListener('dismantle-equip', handler);
+  }, [setPlayer]);
+
+  // 物品锁定切换
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { itemId } = (e as CustomEvent).detail;
+      setPlayer((prev: any) => {
+        if (!prev) return prev;
+        const inv = prev.inventory.map((i: any) =>
+          i.id === itemId ? { ...i, locked: !i.locked } : i
+        );
+        return { ...prev, inventory: inv };
+      });
+    };
+    window.addEventListener('toggle-item-lock', handler);
+    return () => window.removeEventListener('toggle-item-lock', handler);
+  }, [setPlayer]);
+  const doRebirth = () => {
+    if (!player) return;
+    const nextLevel = (player.inheritanceLevel || 0) + 1;
+    const bonuses = getRebirthBonuses(nextLevel - 1);
+    
+    setPlayer(prev => {
+      if (!prev) return prev;
+      // 保留功法（选品级最高的）
+      const sortedArts = [...(prev.cultivationArts || [])].sort(() => Math.random() - 0.5).slice(0, bonuses.keepArts);
+      // 提升灵根
+      const roots = { ...prev.spiritualRoots };
+      for (const k of Object.keys(roots) as Array<keyof typeof roots>) {
+        roots[k] = Math.min(100, (roots[k] || 0) + bonuses.rootBoost);
+      }
+      
+      const realmData = REALM_DATA[prev.realm]; // 取当前境界数据但不直接用
+      // 创建新玩家，重置境界但保留关键数据
+      const newPlayer = createInitialPlayer(prev.name, prev.talentId || 'talent-balanced');
+      return {
+        ...newPlayer,
+        name: prev.name,
+        spiritualRoots: roots,
+        unlockedArts: [...new Set([...(prev.unlockedArts || []), ...sortedArts])],
+        cultivationArts: [],
+        activeArtId: null,
+        pets: prev.pets,
+        achievements: prev.achievements,
+        viewedAchievements: prev.viewedAchievements || [],
+        unlockedTitles: prev.unlockedTitles || [],
+        titleId: prev.titleId,
+        talentId: prev.talentId,
+        inheritanceLevel: nextLevel,
+        luck: prev.luck + 2,
+        // 应用转世属性加成
+        attack: Math.floor(newPlayer.attack * (1 + bonuses.statBonus)),
+        defense: Math.floor(newPlayer.defense * (1 + bonuses.statBonus)),
+        maxHp: Math.floor(newPlayer.maxHp * (1 + bonuses.statBonus)),
+        hp: Math.floor(newPlayer.maxHp * (1 + bonuses.statBonus)),
+        spirit: Math.floor(newPlayer.spirit * (1 + bonuses.statBonus)),
+        physique: Math.floor(newPlayer.physique * (1 + bonuses.statBonus)),
+        speed: Math.floor(newPlayer.speed * (1 + bonuses.statBonus)),
+        // 传承记忆：保留部分灵石
+        spiritStones: 0,
+        inventory: [],
+        equippedItems: {},
+        sectId: null,
+        sectRank: '外门弟子' as any,
+        sectContribution: 0,
+        grotto: { level: 0, expRateBonus: 0, autoHarvest: false, growthSpeedBonus: 0, plantedHerbs: [], lastHarvestTime: null, spiritArrayEnhancement: 0, herbarium: prev.grotto?.herbarium || [], dailySpeedupCount: 0, lastSpeedupResetDate: new Date().toISOString().split('T')[0] },
+        lotteryTickets: prev.lotteryTickets + 10,
+      };
+    });
+    
+    useGameStore.getState().addLog(`🌟 你抛弃凡躯，转世重修！第 ${nextLevel} 次转世，全属性 +${Math.round(bonuses.statBonus * 100)}%，修炼速度 +${Math.round(bonuses.expBonus * 100)}%`, 'special');
+    setIsRebirthOpen(false);
+  };
 
   // 模态框 Setters
   const modalSetters = {
@@ -290,6 +402,42 @@ export function AppContent(props: AppContentProps) {
         }}
         currentConfig={autoAdventureConfig}
       />
+
+      {/* 秘境 Roguelike 地宫探索 */}
+      {player && (
+        <DungeonModal
+          isOpen={modals.isDungeonOpen}
+          onClose={() => setIsDungeonOpen(false)}
+          player={player}
+          setPlayer={setPlayer as any}
+          addLog={(text: string, type?: string) => {
+            useGameStore.getState().addLog(text, (type || 'normal') as any);
+          }}
+        />
+      )}
+
+      {/* NPC 人物志 */}
+      {player && (
+        <NPCRelationsModal
+          isOpen={isRelationsOpen}
+          onClose={() => setIsRelationsOpen(false)}
+          player={player}
+          setPlayer={setPlayer as any}
+          addLog={(text: string, type?: string) => {
+            useGameStore.getState().addLog(text, (type || 'normal') as any);
+          }}
+        />
+      )}
+
+      {/* 转世重修 */}
+      {player && (
+        <RebirthModal
+          isOpen={isRebirthOpen}
+          onClose={() => setIsRebirthOpen(false)}
+          player={player}
+          onRebirth={doRebirth}
+        />
+      )}
     </>
   );
 }

@@ -1,5 +1,5 @@
 import { PlayerStats, CultivationArt, ArtGrade } from '../types';
-import { CULTIVATION_ARTS, TALENTS, TITLES, calculateSpiritualRootArtBonus } from '../constants/index';
+import { CULTIVATION_ARTS, TALENTS, TITLES, calculateSpiritualRootArtBonus, getActiveSynergies, calculateSynergyEffects } from '../constants/index';
 import { getGoldenCoreBonusMultiplier } from './cultivationUtils';
 import { getItemStats } from './itemUtils';
 import { calculateTitleEffects } from './titleUtils';
@@ -41,6 +41,16 @@ export function calculatePlayerBonuses(player: PlayerStats): {
     }
   });
 
+  // 1.5 功法羁绊套装加成
+  const activeSynergies = getActiveSynergies(player.cultivationArts);
+  const synergyEffects = calculateSynergyEffects(activeSynergies);
+  if (synergyEffects.attack) bonusAttack += synergyEffects.attack;
+  if (synergyEffects.defense) bonusDefense += synergyEffects.defense;
+  if (synergyEffects.hp) bonusHp += synergyEffects.hp;
+  if (synergyEffects.spirit) bonusSpirit += (synergyEffects as any).spirit || 0;
+  if (synergyEffects.physique) bonusPhysique += (synergyEffects as any).physique || 0;
+  if (synergyEffects.speed) bonusSpeed += (synergyEffects as any).speed || 0;
+
   // 2. 装备加成（应用软上限机制）
   const equippedItems = Object.values(player.equippedItems).map(itemId =>
     player.inventory.find((i) => i.id === itemId)
@@ -68,6 +78,24 @@ export function calculatePlayerBonuses(player: PlayerStats): {
   bonusSpirit = applyEquipmentSoftCap(bonusSpirit, softCapFactor);
   bonusPhysique = applyEquipmentSoftCap(bonusPhysique, softCapFactor);
   bonusSpeed = applyEquipmentSoftCap(bonusSpeed, softCapFactor);
+
+  // 2.5 装备套装效果：累计装备稀有度评分
+  const equippedRarities = equippedItems.map(eq => eq?.rarity || '普通');
+  const rarityCounts: Record<string, number> = {};
+  for (const r of equippedRarities) { rarityCounts[r] = (rarityCounts[r] || 0) + 1; }
+  // 套装规则：4件传说 → +10%攻防；6件传说 → +15%全属性；4件仙品 → +20%全属性；8件稀有+ → +8%全属性
+  const rarityBonus = (count: number, threshold: number, pct: number) => count >= threshold ? pct : 0;
+  let setBonus = 0;
+  setBonus += rarityBonus((rarityCounts['传说'] || 0), 4, 0.10);
+  setBonus += rarityBonus((rarityCounts['传说'] || 0), 6, 0.05);
+  setBonus += rarityBonus((rarityCounts['仙品'] || 0), 4, 0.20);
+  const rarePlus = (rarityCounts['稀有'] || 0) + (rarityCounts['传说'] || 0) + (rarityCounts['仙品'] || 0);
+  setBonus += rarityBonus(rarePlus, 8, 0.08);
+  if (setBonus > 0) {
+    bonusAttack = Math.floor(bonusAttack * (1 + setBonus));
+    bonusDefense = Math.floor(bonusDefense * (1 + setBonus));
+    bonusHp = Math.floor(bonusHp * (1 + setBonus));
+  }
 
   // 3. 天赋加成
   const talent = TALENTS.find((t) => t.id === player.talentId);
@@ -121,6 +149,8 @@ export function calculateTotalExpRate(player: PlayerStats): {
   talent: number;
   title: number;
   grotto: number;
+  synergy: number;
+  npc: number;
   spiritualRootBonus: number;
 } {
   let artBonus = 0;
@@ -168,10 +198,24 @@ export function calculateTotalExpRate(player: PlayerStats): {
     grottoBonus = (player.grotto.expRateBonus || 0) + (player.grotto.spiritArrayEnhancement || 0);
   }
 
-  // 总加成 = (1 + 心法 * 灵根) * (1 + 天赋) * (1 + 称号) * (1 + 洞府) - 1
+  // 5. 功法羁绊修炼加成
+  const synergies = getActiveSynergies(player.cultivationArts);
+  const synergyExpRate = calculateSynergyEffects(synergies).expRate || 0;
+  let synergyBonus = synergyExpRate;
+
+  // 6. NPC 好感度加成
+  let npcExpBonus = 0;
+  if (player.socialRelations) {
+    for (const r of player.socialRelations) {
+      if (r.favorability >= 80) npcExpBonus += 0.10;
+      else if (r.favorability >= 50) npcExpBonus += 0.05;
+    }
+  }
+
+  // 总加成 = (1 + 心法 * 灵根) * (1 + 天赋) * (1 + 称号) * (1 + 洞府) * (1 + 羁绊) * (1 + 关系) - 1
   // 注意：这里的计算逻辑应与 useMeditationHandlers.ts 保持一致
   // 目前 useMeditationHandlers.ts 中的逻辑是连乘，且灵根仅作用于心法的 expRate
-  const totalMultiplier = (1 + artBonus * spiritualRootBonus) * (1 + talentBonus) * (1 + titleBonus) * (1 + grottoBonus);
+  const totalMultiplier = (1 + artBonus * spiritualRootBonus) * (1 + talentBonus) * (1 + titleBonus) * (1 + grottoBonus) * (1 + synergyBonus) * (1 + npcExpBonus);
 
   return {
     total: totalMultiplier - 1,
@@ -179,6 +223,8 @@ export function calculateTotalExpRate(player: PlayerStats): {
     talent: talentBonus,
     title: titleBonus,
     grotto: grottoBonus,
+    synergy: synergyBonus,
+    npc: npcExpBonus,
     spiritualRootBonus,
   };
 }

@@ -43,3 +43,7 @@ dist-ssr
 .trellis
 .cursor
 .claude
+.reasonix
+
+# Cloudflare
+.wrangler/

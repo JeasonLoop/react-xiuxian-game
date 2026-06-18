@@ -81,6 +81,7 @@ export const ensurePlayerStatsCompatibility = (loadedPlayer: any): PlayerStats =
     },
     unlockedTitles: loadedPlayer.unlockedTitles || (loadedPlayer.titleId ? [loadedPlayer.titleId] : ['title-novice']),
     reputation: loadedPlayer.reputation || 0,
+    breakthroughFailCount: loadedPlayer.breakthroughFailCount ?? 0,
     // 宗门追杀系统
     betrayedSects: loadedPlayer.betrayedSects || [],
     sectHuntEndTime: loadedPlayer.sectHuntEndTime || null,
@@ -119,6 +120,7 @@ export interface SaveData {
   player: PlayerStats;
   logs: LogEntry[];
   timestamp: number;
+  lastActiveTime?: number; // 上次活跃时间（用于离线收益计算）
 }
 
 /**
@@ -133,6 +135,7 @@ export const saveGameData = (
       player,
       logs,
       timestamp: Date.now(),
+      lastActiveTime: Date.now(), // 记录最后活跃时间
     };
     localStorage.setItem(STORAGE_KEYS.SAVE, JSON.stringify(saveData));
     localStorage.setItem(STORAGE_KEYS.SAVE_BACKUP, JSON.stringify(saveData));

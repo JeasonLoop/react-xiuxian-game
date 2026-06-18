@@ -26,11 +26,15 @@ import {
   Search,
   Filter,
   SlidersHorizontal,
+  Wand,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 import { REALM_ORDER, SPIRITUAL_ROOT_NAMES, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES, CULTIVATION_ARTS } from '../constants/index';
 import EquipmentPanel from './EquipmentPanel';
 import BatchDiscardModal from './BatchDiscardModal';
 import BatchUseModal from './BatchUseModal';
+import BatchDismantleModal from './BatchDismantleModal';
 import {
   getRarityNameClasses,
   getRarityBorder,
@@ -39,7 +43,7 @@ import {
   getRarityDisplayName,
   normalizeRarityValue,
 } from '../utils/rarityUtils';
-import { getItemStats, normalizeTypeLabel } from '../utils/itemUtils';
+import { getItemStats, normalizeTypeLabel, calculateItemPower } from '../utils/itemUtils';
 import {
   findEmptyEquipmentSlot,
   isItemEquipped as checkItemEquipped,
@@ -50,6 +54,20 @@ import {
 import { useDebounce } from '../hooks/useDebounce';
 import { showConfirm } from '../utils/toastUtils';
 import { formatValueChange, formatNumber } from '../utils/formatUtils';
+
+// 模块级：避免每次渲染重新创建
+const getItemCategory = (item: Item): ItemCategory => {
+  const typeKey = String(item.type).toLowerCase();
+  if (item.type === ItemType.Recipe || typeKey === 'recipe') return 'recipe';
+  if (item.type === ItemType.AdvancedItem || typeKey === 'advanceditem' || typeKey === '进阶物品') return 'advancedItem';
+  if (item.isEquippable || item.type === ItemType.Weapon || item.type === ItemType.Armor || item.type === ItemType.Artifact || item.type === ItemType.Accessory || item.type === ItemType.Ring || ['weapon', 'armor', 'artifact', 'accessory', 'ring'].includes(typeKey)) return 'equipment';
+  if (item.type === ItemType.Pill || ['pill', 'elixir', 'potion'].includes(typeKey)) return 'pill';
+  if (item.type === ItemType.Herb || typeKey === 'herb' || typeKey === '草药') return 'herb';
+  const name = item.name;
+  if (name.includes('合成石')) return 'synthesisStone';
+  if (name.includes('草') || name.includes('花') || name.includes('参') || name.includes('芝')) return 'herb';
+  return 'material';
+};
 
 interface Props {
   isOpen: boolean;
@@ -141,6 +159,7 @@ const InventoryItem = memo<InventoryItemProps>(
     return (
       <div
         className={`p-3 rounded border flex flex-col justify-between relative transition-colors ${isEquipped ? 'bg-ink-800 border-mystic-gold shadow-md' : `bg-ink-800 hover:bg-ink-700 ${getRarityBorder(rarity)}`}`}
+        style={{ contain: 'layout style' }}
         onMouseEnter={() => onHover(item)}
         onMouseLeave={() => onHover(null)}
       >
@@ -433,9 +452,17 @@ const InventoryItem = memo<InventoryItemProps>(
                 <Hammer size={14} />
               </button>
               <button
+                onClick={() => window.dispatchEvent(new CustomEvent('toggle-item-lock', { detail: { itemId: item.id } }))}
+                className={`px-3 text-xs py-2 rounded transition-colors border ${item.locked ? 'bg-amber-900/30 border-amber-600 text-amber-300' : 'bg-stone-700 hover:bg-stone-600 text-stone-400 border-stone-500'}`}
+                title={item.locked ? '解锁' : '锁定（锁定后不可丢弃/分解）'}
+              >
+                {item.locked ? <Lock size={14} /> : <Unlock size={14} />}
+              </button>
+              <button
                 onClick={() => onDiscardItem(item)}
-                className="px-3 bg-red-900 hover:bg-red-800 text-red-200 text-xs py-2 rounded transition-colors border border-red-700"
-                title="丢弃"
+                disabled={!!item.locked}
+                className={`px-3 text-xs py-2 rounded transition-colors border ${item.locked ? 'bg-stone-800 text-stone-600 border-stone-700 cursor-not-allowed' : 'bg-red-900 hover:bg-red-800 text-red-200 border-red-700'}`}
+                title={item.locked ? '已锁定，无法丢弃' : '丢弃'}
               >
                 <Trash2 size={14} />
               </button>
@@ -557,9 +584,17 @@ const InventoryItem = memo<InventoryItemProps>(
                 );
               })()}
               <button
+                onClick={() => window.dispatchEvent(new CustomEvent('toggle-item-lock', { detail: { itemId: item.id } }))}
+                className={`px-3 text-xs py-2 rounded transition-colors border ${item.locked ? 'bg-amber-900/30 border-amber-600 text-amber-300' : 'bg-stone-700 hover:bg-stone-600 text-stone-400 border-stone-500'}`}
+                title={item.locked ? '解锁' : '锁定（锁定后不可丢弃/分解）'}
+              >
+                {item.locked ? <Lock size={14} /> : <Unlock size={14} />}
+              </button>
+              <button
                 onClick={() => onDiscardItem(item)}
-                className="px-3 bg-red-900 hover:bg-red-800 text-red-200 text-xs py-2 rounded transition-colors border border-red-700"
-                title="丢弃"
+                disabled={!!item.locked}
+                className={`px-3 text-xs py-2 rounded transition-colors border ${item.locked ? 'bg-stone-800 text-stone-600 border-stone-700 cursor-not-allowed' : 'bg-red-900 hover:bg-red-800 text-red-200 border-red-700'}`}
+                title={item.locked ? '已锁定，无法丢弃' : '丢弃'}
               >
                 <Trash2 size={14} />
               </button>
@@ -577,6 +612,7 @@ const InventoryItem = memo<InventoryItemProps>(
       prevProps.item.level === nextProps.item.level &&
       prevProps.item.rarity === nextProps.item.rarity &&
       prevProps.item.reviveChances === nextProps.item.reviveChances &&
+      prevProps.item.locked === nextProps.item.locked &&
       prevProps.isEquipped === nextProps.isEquipped &&
       prevProps.isNatal === nextProps.isNatal &&
       prevProps.canRefine === nextProps.canRefine &&
@@ -626,6 +662,7 @@ const InventoryModal: React.FC<Props> = ({
   const [sortByRarity, setSortByRarity] = useState(true);
   const [isBatchDiscardOpen, setIsBatchDiscardOpen] = useState(false);
   const [isBatchUseOpen, setIsBatchUseOpen] = useState(false);
+  const [isBatchDismantleOpen, setIsBatchDismantleOpen] = useState(false);
   const [mobileActiveTab, setMobileActiveTab] = useState<
     'equipment' | 'inventory'
   >('inventory');
@@ -692,6 +729,60 @@ const InventoryModal: React.FC<Props> = ({
     }
   }, [equippedItems, onUnequipItem]);
 
+  // 一键装备：遍历所有槽位，自动装备最强装备
+  const handleAutoEquip = useCallback(() => {
+    if (!inventory || inventory.length === 0) return;
+    const allSlots: EquipmentSlot[] = [
+      EquipmentSlot.Weapon, EquipmentSlot.Head, EquipmentSlot.Shoulder,
+      EquipmentSlot.Chest, EquipmentSlot.Gloves, EquipmentSlot.Legs, EquipmentSlot.Boots,
+      EquipmentSlot.Ring1, EquipmentSlot.Ring2, EquipmentSlot.Ring3, EquipmentSlot.Ring4,
+      EquipmentSlot.Accessory1, EquipmentSlot.Accessory2,
+      EquipmentSlot.Artifact1, EquipmentSlot.Artifact2,
+    ];
+    const slotGroup = (s: EquipmentSlot): string =>
+      s.startsWith('戒指') ? 'Ring' : s.startsWith('首饰') ? 'Accessory' : s.startsWith('法宝') ? 'Artifact' : s;
+    const itemFitsSlot = (item: Item, slot: EquipmentSlot): boolean => {
+      const slots = getEquipmentSlotsByType(item.type);
+      return slots.length > 0 ? slots.includes(slot) : item.equipmentSlot === slot;
+    };
+    const groupSlots = (slot: EquipmentSlot): EquipmentSlot[] => {
+      const t = slotGroup(slot);
+      if (t === 'Ring') return [EquipmentSlot.Ring1, EquipmentSlot.Ring2, EquipmentSlot.Ring3, EquipmentSlot.Ring4];
+      if (t === 'Accessory') return [EquipmentSlot.Accessory1, EquipmentSlot.Accessory2];
+      if (t === 'Artifact') return [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2];
+      return [slot];
+    };
+    const done = new Set<string>();
+    const actions: Array<{ item: Item; slot: EquipmentSlot }> = [];
+    for (const slot of allSlots) {
+      const gk = slotGroup(slot);
+      if (done.has(gk)) continue; done.add(gk);
+      const gs = groupSlots(slot);
+      let candidates = inventory.filter(i => i.isEquippable && i.effect && !checkItemEquipped(i, equippedItems) && itemFitsSlot(i, gs[0]));
+      candidates.sort((a, b) => calculateItemPower(b, b.id === natalArtifactId) - calculateItemPower(a, a.id === natalArtifactId));
+      const cur: Array<{ slot: EquipmentSlot; itemId: string; power: number }> = [];
+      for (const s of gs) { const eid = equippedItems[s]; if (eid) { const ei = inventory.find(i => i.id === eid); if (ei) cur.push({ slot: s, itemId: eid, power: calculateItemPower(ei, eid === natalArtifactId) }); } }
+      cur.sort((a, b) => a.power - b.power);
+      if (gs.length === 1) {
+        if (candidates.length > 0 && calculateItemPower(candidates[0], candidates[0].id === natalArtifactId) > (cur[0]?.power || 0)) {
+          actions.push({ item: candidates[0], slot: gs[0] });
+        }
+      } else {
+        let idx = 0;
+        for (const s of gs) {
+          const ce = cur.find(e => e.slot === s);
+          if (idx < candidates.length && calculateItemPower(candidates[idx], candidates[idx].id === natalArtifactId) > (ce?.power || 0)) {
+            actions.push({ item: candidates[idx], slot: s });
+            if (ce) { const oi = inventory.find(i => i.id === ce.itemId); if (oi) { candidates.push(oi); candidates.sort((a, b) => calculateItemPower(b, b.id === natalArtifactId) - calculateItemPower(a, a.id === natalArtifactId)); } }
+            idx++;
+          }
+        }
+      }
+    }
+    if (actions.length > 0) { actions.forEach(a => onEquipItem(a.item, a.slot)); setItemActionLog?.({ text: `✨ 一键装备完成！已自动装备 ${actions.length} 件最优装备`, type: 'gain' }); }
+    else setItemActionLog?.({ text: '当前装备已是最优配置', type: 'normal' });
+  }, [inventory, equippedItems, natalArtifactId, onEquipItem, setItemActionLog]);
+
   // 预计算物品装备状态映射，避免在渲染时重复计算
   const itemEquippedMap = useMemo(() => {
     const map = new Map<string, boolean>();
@@ -703,55 +794,6 @@ const InventoryModal: React.FC<Props> = ({
 
   // 过滤和排序物品
   const filteredAndSortedInventory = useMemo(() => {
-    // 判断物品分类
-    const getItemCategory = (item: Item): ItemCategory => {
-      const typeKey = String(item.type).toLowerCase();
-      if (item.type === ItemType.Recipe || typeKey === 'recipe') {
-        return 'recipe'; // 丹方单独分类
-      }
-      if (item.type === ItemType.AdvancedItem || typeKey === 'advanceditem' || typeKey === '进阶物品') {
-        return 'advancedItem'; // 进阶物品单独分类
-      }
-      if (
-        item.isEquippable ||
-        item.type === ItemType.Weapon ||
-        item.type === ItemType.Armor ||
-        item.type === ItemType.Artifact ||
-        item.type === ItemType.Accessory ||
-        item.type === ItemType.Ring ||
-        ['weapon', 'armor', 'artifact', 'accessory', 'ring'].includes(typeKey)
-      ) {
-        return 'equipment';
-      }
-      if (item.type === ItemType.Pill || ['pill', 'elixir', 'potion'].includes(typeKey)) {
-        return 'pill';
-      }
-      // 判断是草药、合成石还是材料
-      const name = item.name;
-      // 优先使用 ItemType 判断
-      if (item.type === ItemType.Herb || typeKey === 'herb' || typeKey === '草药') {
-        return 'herb';
-      }
-      // 对于 Material 类型或其他类型，根据名称进一步判断
-      // 根据名称判断合成石（包含"石"、"铁"、"矿"、"炼器"等关键词）
-      if (
-        name.includes('合成石')
-      ) {
-        return 'synthesisStone';
-      }
-      // 根据名称判断草药（包含"草"、"花"、"参"、"芝"等关键词）
-      if (
-        name.includes('草') ||
-        name.includes('花') ||
-        name.includes('参') ||
-        name.includes('芝')
-      ) {
-        return 'herb';
-      }
-      // 其他材料类物品
-      return 'material';
-    };
-
     let filtered = inventory;
 
     // 按分类过滤
@@ -901,11 +943,21 @@ const InventoryModal: React.FC<Props> = ({
       containerClassName="md:max-w-6xl bg-paper-800 border-stone-600"
       headerClassName="bg-ink-800 border-b border-stone-600"
       contentClassName="bg-paper-800"
-      disableScroll={true}
+      disableScroll={false}
       showHeaderBorder={false}
       showFooterBorder={false}
       titleExtra={
         <div className="flex gap-2 items-center ml-auto md:ml-4">
+            <button
+              onClick={handleAutoEquip}
+              className="px-2 md:px-3 py-1.5 md:py-1 rounded text-xs md:text-sm border transition-colors min-h-11 md:min-h-0 touch-manipulation bg-mystic-gold/20 border-mystic-gold text-mystic-gold hover:bg-mystic-gold/30"
+              title="自动为每个槽位装备背包中战斗力最高的装备"
+            >
+              <div className="flex items-center">
+                <Wand size={14} className="inline mr-1" />
+                <span>一键装备</span>
+              </div>
+            </button>
             {onOrganizeInventory && (
               <button
                 onClick={() => {
@@ -939,6 +991,15 @@ const InventoryModal: React.FC<Props> = ({
               <div className="flex items-center">
                 <Trash size={14} className="inline mr-1" />
                 <span>批量丢弃</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setIsBatchDismantleOpen(true)}
+              className="px-2 md:px-3 py-1.5 md:py-1 rounded text-xs md:text-sm border transition-colors min-h-11 md:min-h-0 touch-manipulation bg-amber-900/20 border-amber-700 text-amber-300 hover:bg-amber-900/30"
+              title="选择闲置装备分解为炼器石"
+            >
+              <div className="flex items-center">
+                ⚒️ <span>批量分解</span>
               </div>
             </button>
             <button
@@ -981,66 +1042,66 @@ const InventoryModal: React.FC<Props> = ({
           </div>
         </div>
       }
-      footer={
-          <div className="flex items-center justify-center gap-4 min-h-12 text-sm font-serif w-full">
-          {comparison ? (
-            <div className="flex items-center gap-4">
-              <span className="text-stone-400">装备预览:</span>
-              {comparison.attack !== 0 && (
-                <span
-                  className={`${comparison.attack > 0 ? 'text-mystic-jade' : 'text-mystic-blood'}`}
-                >
-                  攻击 {formatValueChange(calculateTotalEquippedStats.attack, calculateTotalEquippedStats.attack + comparison.attack)}
-                </span>
-              )}
-              {comparison.defense !== 0 && (
-                <span
-                  className={`${comparison.defense > 0 ? 'text-mystic-jade' : 'text-mystic-blood'}`}
-                >
-                  防御 {formatValueChange(calculateTotalEquippedStats.defense, calculateTotalEquippedStats.defense + comparison.defense)}
-                </span>
-              )}
-              {comparison.hp !== 0 && (
-                <span
-                  className={`${comparison.hp > 0 ? 'text-mystic-jade' : 'text-mystic-blood'}`}
-                >
-                  气血 {formatValueChange(calculateTotalEquippedStats.hp, calculateTotalEquippedStats.hp + comparison.hp)}
-                </span>
-              )}
-              {comparison.attack === 0 &&
-                comparison.defense === 0 &&
-                comparison.hp === 0 && (
-                  <span className="text-stone-500">属性无变化</span>
-                )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-4">
-              <span className="text-stone-400">装备预览:</span>
-              {calculateTotalEquippedStats.attack > 0 && (
-                <span className="text-mystic-jade">
-                  攻击 {formatNumber(calculateTotalEquippedStats.attack)}
-                </span>
-              )}
-              {calculateTotalEquippedStats.defense > 0 && (
-                <span className="text-mystic-jade">
-                  防御 {formatNumber(calculateTotalEquippedStats.defense)}
-                </span>
-              )}
-              {calculateTotalEquippedStats.hp > 0 && (
-                <span className="text-mystic-jade">
-                  气血 {formatNumber(calculateTotalEquippedStats.hp)}
-                </span>
-              )}
-              {calculateTotalEquippedStats.attack === 0 &&
-                calculateTotalEquippedStats.defense === 0 &&
-                calculateTotalEquippedStats.hp === 0 && (
-                  <span className="text-stone-500">暂无装备</span>
-                )}
-            </div>
-          )}
-          </div>
-      }
-      footerClassName="p-3 border-t border-stone-600 bg-ink-900 rounded-b"
+      // footer={
+      //     <div className="flex items-center justify-center gap-4 min-h-12 text-sm font-serif w-full">
+      //     {comparison ? (
+      //       <div className="flex items-center gap-4">
+      //         <span className="text-stone-400">装备预览:</span>
+      //         {comparison.attack !== 0 && (
+      //           <span
+      //             className={`${comparison.attack > 0 ? 'text-mystic-jade' : 'text-mystic-blood'}`}
+      //           >
+      //             攻击 {formatValueChange(calculateTotalEquippedStats.attack, calculateTotalEquippedStats.attack + comparison.attack)}
+      //           </span>
+      //         )}
+      //         {comparison.defense !== 0 && (
+      //           <span
+      //             className={`${comparison.defense > 0 ? 'text-mystic-jade' : 'text-mystic-blood'}`}
+      //           >
+      //             防御 {formatValueChange(calculateTotalEquippedStats.defense, calculateTotalEquippedStats.defense + comparison.defense)}
+      //           </span>
+      //         )}
+      //         {comparison.hp !== 0 && (
+      //           <span
+      //             className={`${comparison.hp > 0 ? 'text-mystic-jade' : 'text-mystic-blood'}`}
+      //           >
+      //             气血 {formatValueChange(calculateTotalEquippedStats.hp, calculateTotalEquippedStats.hp + comparison.hp)}
+      //           </span>
+      //         )}
+      //         {comparison.attack === 0 &&
+      //           comparison.defense === 0 &&
+      //           comparison.hp === 0 && (
+      //             <span className="text-stone-500">属性无变化</span>
+      //           )}
+      //       </div>
+      //     ) : (
+      //       <div className="flex items-center gap-4">
+      //         <span className="text-stone-400">装备预览:</span>
+      //         {calculateTotalEquippedStats.attack > 0 && (
+      //           <span className="text-mystic-jade">
+      //             攻击 {formatNumber(calculateTotalEquippedStats.attack)}
+      //           </span>
+      //         )}
+      //         {calculateTotalEquippedStats.defense > 0 && (
+      //           <span className="text-mystic-jade">
+      //             防御 {formatNumber(calculateTotalEquippedStats.defense)}
+      //           </span>
+      //         )}
+      //         {calculateTotalEquippedStats.hp > 0 && (
+      //           <span className="text-mystic-jade">
+      //             气血 {formatNumber(calculateTotalEquippedStats.hp)}
+      //           </span>
+      //         )}
+      //         {calculateTotalEquippedStats.attack === 0 &&
+      //           calculateTotalEquippedStats.defense === 0 &&
+      //           calculateTotalEquippedStats.hp === 0 && (
+      //             <span className="text-stone-500">暂无装备</span>
+      //           )}
+      //       </div>
+      //     )}
+      //     </div>
+      // }
+      // footerClassName="p-3 border-t border-stone-600 bg-ink-900 rounded-b"
     >
         <div className="flex-1 overflow-hidden flex flex-col md:flex-row h-full">
           {/* 装备面板 */}
@@ -1061,410 +1122,44 @@ const InventoryModal: React.FC<Props> = ({
 
           {/* 物品列表 */}
           <div
-            className={`${showEquipment ? 'w-full md:w-1/2' : 'w-full'} modal-scroll-container modal-scroll-content p-4 flex flex-col ${
+            className={`${showEquipment ? 'w-full md:w-1/2' : 'w-full'} modal-scroll-container modal-scroll-content p-4 mb-6 flex flex-col ${
               mobileActiveTab !== 'inventory' ? 'hidden md:flex' : ''
             }`}
           >
             {/* 搜索和筛选 */}
-            <div className="mb-4 flex flex-col gap-3">
-              {/* 搜索框 */}
+            <div className="mb-2 flex flex-col gap-2">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400" size={18} />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="搜索物品名称或描述..."
-                  className="w-full pl-10 pr-4 py-2 bg-stone-700 border border-stone-600 rounded text-stone-200 placeholder-stone-500 focus:outline-none focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold"
-                />
-                {searchQuery && (
-                  <button
-                    title="清除搜索"
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-stone-400 hover:text-stone-200"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
+                <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="搜索物品..." className="w-full pl-10 pr-4 py-2 bg-stone-700 border border-stone-600 rounded text-stone-200 placeholder-stone-500 focus:outline-none focus:border-mystic-gold text-sm" />
+                {searchQuery && (<button title="清除搜索" onClick={() => setSearchQuery('')} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-stone-400 hover:text-stone-200"><X size={16} /></button>)}
               </div>
-
-              {/* 筛选工具栏 */}
-              <div className="flex gap-2 items-center flex-wrap">
-                {/* 高级筛选按钮 */}
-                <button
-                  onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
-                  className={`px-3 py-1.5 rounded text-sm border transition-colors flex items-center gap-2 ${
-                    showAdvancedFilter || rarityFilter !== 'all' || statFilter !== 'all'
-                      ? 'bg-purple-900/20 border-purple-600 text-purple-300'
-                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                  }`}
-                >
-                  <SlidersHorizontal size={16} />
-                  高级筛选
-                  {(rarityFilter !== 'all' || statFilter !== 'all') && (
-                    <span className="bg-purple-600 text-white text-xs px-1.5 py-0.5 rounded">
-                      已启用
-                    </span>
-                  )}
-                </button>
-
-                {/* 稀有度快速筛选 */}
-                <div className="flex gap-1">
-                  {(['all', '普通', '稀有', '传说', '仙品'] as const).map((rarity) => (
-                    <button
-                      key={rarity}
-                      onClick={() => setRarityFilter(rarity)}
-                      className={`px-2 py-1 rounded text-xs border transition-colors ${
-                        rarityFilter === rarity
-                          ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                          : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                      }`}
-                    >
-                      {rarity === 'all' ? '全部品质' : rarity}
-                    </button>
-                  ))}
-                </div>
-
-                {/* 排序按钮 */}
-                <button
-                  onClick={() => setSortByRarity(!sortByRarity)}
-                  className={`ml-auto px-3 py-1.5 rounded text-sm border transition-colors flex items-center gap-2 ${
-                    sortByRarity
-                      ? 'bg-blue-900/20 border-blue-600 text-blue-300'
-                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                  }`}
-                >
-                  <ArrowUpDown size={16} />
-                  {sortByRarity ? '按品质排序' : '不排序'}
-                </button>
+              <div className="flex gap-1.5 flex-wrap items-center">
+                {(['all','equipment','pill','material','herb','synthesisStone','recipe','advancedItem'] as const).map(cat => {
+                  const lbl: Record<string,string> = {all:'全部',equipment:'装备',pill:'丹药',material:'材料',herb:'草药',synthesisStone:'合成',recipe:'丹方',advancedItem:'进阶'};
+                  return <button key={cat} onClick={() => handleCategoryChange(cat)} disabled={isPending} className={`px-2 py-1 rounded text-xs border transition-colors ${selectedCategory===cat?'bg-mystic-gold/20 border-mystic-gold text-mystic-gold':'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'} ${isPending?'opacity-50':''}`}>{lbl[cat]}</button>;
+                })}
+                <span className="text-xs text-stone-500 ml-auto">{filteredAndSortedInventory.length} 件</span>
+                <button onClick={() => setShowAdvancedFilter(!showAdvancedFilter)} className={`px-2 py-1 rounded text-xs border transition-colors flex items-center gap-1 ${showAdvancedFilter||rarityFilter!=='all'||statFilter!=='all'?'bg-purple-900/30 border-purple-600 text-purple-300':'bg-stone-700 border-stone-600 text-stone-400 hover:text-stone-200'}`}><SlidersHorizontal size={12} />筛选{(rarityFilter!=='all'||statFilter!=='all')&&<span className="bg-purple-600 text-white text-[10px] px-1 rounded">●</span>}</button>
               </div>
-
-              {/* 高级筛选面板 */}
               {showAdvancedFilter && (
-                <div className="bg-stone-800 rounded p-4 border border-stone-600">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Filter size={16} className="text-purple-400" />
-                    <h4 className="text-sm font-bold text-purple-300">高级筛选</h4>
+                <div className="bg-stone-800 rounded p-3 border border-stone-600 space-y-2">
+                  <div className="flex gap-1 items-center"><span className="text-xs text-stone-500 shrink-0 mr-1">品质:</span>{(['all','普通','稀有','传说','仙品'] as const).map(r => <button key={r} onClick={() => setRarityFilter(r)} className={`px-2 py-0.5 rounded text-[11px] border ${rarityFilter===r?'bg-mystic-gold/20 border-mystic-gold text-mystic-gold':'bg-stone-700 border-stone-600 text-stone-400 hover:text-stone-200'}`}>{r==='all'?'全部':r}</button>)}</div>
+                  <div className="flex gap-1 items-center flex-wrap"><span className="text-xs text-stone-500 shrink-0 mr-1">属性:</span><select value={statFilter} onChange={e => setStatFilter(e.target.value as any)} className="px-2 py-0.5 bg-stone-700 border border-stone-600 rounded text-xs text-stone-200"><option value="all">全部</option><option value="attack">攻击</option><option value="defense">防御</option><option value="hp">气血</option><option value="spirit">神识</option><option value="physique">体魄</option><option value="speed">速度</option></select>{statFilter!=='all'&&<input type="number" min={0} value={statFilterMin} onChange={e => setStatFilterMin(Math.max(0,parseInt(e.target.value)||0))} placeholder="最小" className="w-14 px-2 py-0.5 bg-stone-700 border border-stone-600 rounded text-xs text-stone-200" />}</div>
+                  <div className="flex gap-2 items-center">
+                    <button onClick={() => setSortByRarity(!sortByRarity)} className={`px-2 py-0.5 rounded text-[11px] border flex items-center gap-1 ${sortByRarity?'bg-blue-900/20 border-blue-600 text-blue-300':'bg-stone-700 border-stone-600 text-stone-400'}`}><ArrowUpDown size={12} />{sortByRarity?'品质':'默认'}</button>
+                    <button onClick={() => {setRarityFilter('all');setStatFilter('all');setStatFilterMin(0);}} className="px-2 py-0.5 rounded text-[11px] bg-red-900/20 border border-red-700 text-red-300 hover:bg-red-900/30">清除</button>
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="block text-xs text-stone-400 mb-2">属性筛选</label>
-                    <div className="flex items-center gap-2">
-                      {/* 属性筛选 */}
-                      <div>
-                        <div className="flex gap-2 mb-2">
-                          <select
-                            title="属性筛选"
-                            value={statFilter}
-                            onChange={(e) => {
-                              setStatFilter(e.target.value as typeof statFilter);
-                              if (e.target.value === 'all') setStatFilterMin(0);
-                            }}
-                            className="flex-1 px-2 py-1.5 bg-stone-700 border border-stone-600 rounded text-sm text-stone-200"
-                          >
-                            <option value="all">全部属性</option>
-                            <option value="attack">攻击力</option>
-                            <option value="defense">防御力</option>
-                            <option value="hp">气血</option>
-                            <option value="spirit">神识</option>
-                            <option value="physique">体魄</option>
-                            <option value="speed">速度</option>
-                          </select>
-                        </div>
-                        {statFilter !== 'all' && (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              min={0}
-                              value={statFilterMin}
-                              onChange={(e) => setStatFilterMin(Math.max(0, parseInt(e.target.value) || 0))}
-                              placeholder="最小值"
-                              className="w-full px-2 py-1.5 bg-stone-700 border border-stone-600 rounded text-sm text-stone-200"
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* 清除筛选按钮 */}
-                      <div className="flex items-start" style={{ marginTop: '-10px' }}>
-                        <button
-                          onClick={() => {
-                            setRarityFilter('all');
-                            setStatFilter('all');
-                            setStatFilterMin(0);
-                          }}
-                          className="w-full px-3 py-2 bg-red-900/20 hover:bg-red-900/30 border border-red-700 text-red-300 rounded text-sm transition-colors"
-                        >
-                          清除所有筛选
-                        </button>
-                      </div>
+                  {selectedCategory==='equipment'&&(
+                    <div className="flex gap-1 flex-wrap"><span className="text-xs text-stone-500 shrink-0 mr-1">部位:</span>
+                      {([EquipmentSlot.Weapon,EquipmentSlot.Head,EquipmentSlot.Shoulder,EquipmentSlot.Chest,EquipmentSlot.Gloves,EquipmentSlot.Legs,EquipmentSlot.Boots,'ring','accessory','artifact'] as const).map(s => {const sl = s==='ring'?'戒指':s==='accessory'?'首饰':s==='artifact'?'法宝':s;return <button key={s} onClick={() => handleEquipmentSlotChange(s as any)} disabled={isPending} className={`px-1.5 py-0.5 rounded text-[10px] border ${selectedEquipmentSlot===s?'bg-mystic-gold/20 border-mystic-gold text-mystic-gold':'bg-stone-700 border-stone-600 text-stone-400 hover:text-stone-200'} ${isPending?'opacity-50':''}`}>{sl}</button>;})}
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
-
-              {/* 分类标签 */}
-              <div className="flex gap-2 flex-wrap">
-                <button
-                  onClick={() => handleCategoryChange('all')}
-                  disabled={isPending}
-                  className={`px-3 py-1.5 rounded text-sm border transition-colors ${
-                    selectedCategory === 'all'
-                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                  } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                >
-                  全部
-                </button>
-                <button
-                  onClick={() => handleCategoryChange('equipment')}
-                  disabled={isPending}
-                  className={`px-3 py-1.5 rounded text-sm border transition-colors ${
-                    selectedCategory === 'equipment'
-                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                  } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                >
-                  装备
-                </button>
-                <button
-                  onClick={() => handleCategoryChange('pill')}
-                  disabled={isPending}
-                  className={`px-3 py-1.5 rounded text-sm border transition-colors ${
-                    selectedCategory === 'pill'
-                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                  } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                >
-                  丹药
-                </button>
-                <button
-                  onClick={() => handleCategoryChange('material')}
-                  disabled={isPending}
-                  className={`px-3 py-1.5 rounded text-sm border transition-colors ${
-                    selectedCategory === 'material'
-                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                  } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                >
-                  材料
-                </button>
-                <button
-                  onClick={() => handleCategoryChange('herb')}
-                  disabled={isPending}
-                  className={`px-3 py-1.5 rounded text-sm border transition-colors ${
-                    selectedCategory === 'herb'
-                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                  } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                >
-                  草药
-                </button>
-                <button
-                  onClick={() => handleCategoryChange('synthesisStone')}
-                  disabled={isPending}
-                  className={`px-3 py-1.5 rounded text-sm border transition-colors ${
-                    selectedCategory === 'synthesisStone'
-                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                  } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                >
-                  合成石
-                </button>
-                <button
-                  onClick={() => handleCategoryChange('recipe')}
-                  disabled={isPending}
-                  className={`px-3 py-1.5 rounded text-sm border transition-colors ${
-                    selectedCategory === 'recipe'
-                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                  } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                >
-                  丹方
-                </button>
-                <button
-                  onClick={() => handleCategoryChange('advancedItem')}
-                  disabled={isPending}
-                  className={`px-3 py-1.5 rounded text-sm border transition-colors ${
-                    selectedCategory === 'advancedItem'
-                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                  } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                >
-                  进阶物品
-                </button>
-              </div>
-              {/* 装备部位细分（仅在装备分类时显示） */}
-              {selectedCategory === 'equipment' && (
-                <div className="flex gap-2 flex-wrap">
-                  <button
-                    onClick={() => handleEquipmentSlotChange('all')}
-                    disabled={isPending}
-                    className={`px-2 py-1 rounded text-xs border transition-colors ${
-                      selectedEquipmentSlot === 'all'
-                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                    } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                  >
-                    全部装备
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleEquipmentSlotChange(EquipmentSlot.Weapon)
-                    }
-                    disabled={isPending}
-                    className={`px-2 py-1 rounded text-xs border transition-colors ${
-                      selectedEquipmentSlot === EquipmentSlot.Weapon
-                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                    } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                  >
-                    武器
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleEquipmentSlotChange(EquipmentSlot.Head)
-                    }
-                    disabled={isPending}
-                    className={`px-2 py-1 rounded text-xs border transition-colors ${
-                      selectedEquipmentSlot === EquipmentSlot.Head
-                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                    } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                  >
-                    头部
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleEquipmentSlotChange(EquipmentSlot.Shoulder)
-                    }
-                    disabled={isPending}
-                    className={`px-2 py-1 rounded text-xs border transition-colors ${
-                      selectedEquipmentSlot === EquipmentSlot.Shoulder
-                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                    } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                  >
-                    肩部
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleEquipmentSlotChange(EquipmentSlot.Chest)
-                    }
-                    disabled={isPending}
-                    className={`px-2 py-1 rounded text-xs border transition-colors ${
-                      selectedEquipmentSlot === EquipmentSlot.Chest
-                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                    } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                  >
-                    胸甲
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleEquipmentSlotChange(EquipmentSlot.Gloves)
-                    }
-                    disabled={isPending}
-                    className={`px-2 py-1 rounded text-xs border transition-colors ${
-                      selectedEquipmentSlot === EquipmentSlot.Gloves
-                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                    } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                  >
-                    手套
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleEquipmentSlotChange(EquipmentSlot.Legs)
-                    }
-                    disabled={isPending}
-                    className={`px-2 py-1 rounded text-xs border transition-colors ${
-                      selectedEquipmentSlot === EquipmentSlot.Legs
-                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                    } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                  >
-                    裤腿
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleEquipmentSlotChange(EquipmentSlot.Boots)
-                    }
-                    disabled={isPending}
-                    className={`px-2 py-1 rounded text-xs border transition-colors ${
-                      selectedEquipmentSlot === EquipmentSlot.Boots
-                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                    } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                  >
-                    鞋子
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleEquipmentSlotChange(EquipmentSlot.Ring1)
-                    }
-                    disabled={isPending}
-                    className={`px-2 py-1 rounded text-xs border transition-colors ${
-                      selectedEquipmentSlot === EquipmentSlot.Ring1 ||
-                      selectedEquipmentSlot === EquipmentSlot.Ring2 ||
-                      selectedEquipmentSlot === EquipmentSlot.Ring3 ||
-                      selectedEquipmentSlot === EquipmentSlot.Ring4
-                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                    } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                  >
-                    戒指
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleEquipmentSlotChange(EquipmentSlot.Accessory1)
-                    }
-                    disabled={isPending}
-                    className={`px-2 py-1 rounded text-xs border transition-colors ${
-                      selectedEquipmentSlot === EquipmentSlot.Accessory1 ||
-                      selectedEquipmentSlot === EquipmentSlot.Accessory2
-                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                    } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                  >
-                    首饰
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleEquipmentSlotChange(EquipmentSlot.Artifact1)
-                    }
-                    disabled={isPending}
-                    className={`px-2 py-1 rounded text-xs border transition-colors ${
-                      selectedEquipmentSlot === EquipmentSlot.Artifact1 ||
-                      selectedEquipmentSlot === EquipmentSlot.Artifact2
-                        ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                        : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                    } ${isPending ? 'opacity-50 cursor-wait' : ''}`}
-                  >
-                    法宝
-                  </button>
-                </div>
-              )}
-              {/* 排序按钮 */}
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setSortByRarity(!sortByRarity)}
-                  className={`px-3 py-1.5 rounded text-sm border transition-colors flex items-center gap-1.5 ${
-                    sortByRarity
-                      ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold'
-                      : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'
-                  }`}
-                >
-                  <ArrowUpDown size={14} />
-                  {sortByRarity ? '按品级排序' : '原始顺序'}
-                </button>
-                <span className="text-xs text-stone-500">
-                  {filteredAndSortedInventory.length} 件物品
-                </span>
-              </div>
             </div>
 
             {/* 物品网格 */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1 overflow-y-auto min-h-0">
               {filteredAndSortedInventory.length === 0 ? (
                 <div className="col-span-full text-center text-stone-500 py-10 font-serif">
                   {selectedCategory === 'all'
@@ -1522,6 +1217,19 @@ const InventoryModal: React.FC<Props> = ({
           inventory={inventory}
           equippedItems={equippedItems}
           onUseItems={handleBatchUse}
+        />
+      )}
+      {isBatchDismantleOpen && (
+        <BatchDismantleModal
+          isOpen={isBatchDismantleOpen}
+          onClose={() => setIsBatchDismantleOpen(false)}
+          inventory={inventory}
+          equippedItems={equippedItems}
+          onDismantle={(itemIds, stoneCount) => {
+            onBatchDiscard(itemIds);
+            window.dispatchEvent(new CustomEvent('dismantle-equip', { detail: { stoneCount } }));
+            setItemActionLog?.({ text: `⚒️ 分解完成，获得 ${stoneCount} 个炼器石`, type: 'gain' });
+          }}
         />
       )}
     </>

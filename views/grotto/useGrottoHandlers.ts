@@ -235,6 +235,7 @@ export function useGrottoHandlers({
       // 严格过滤：只包含草药类型，排除丹药等其他类型
       let seedItem = prev.inventory.find(
         (item) => {
+          if (item.locked) return false;
           if (item.type !== ItemType.Herb) return false;
           // 1. 精确名称匹配
           if (item.name === targetHerbName) return true;

@@ -16,6 +16,7 @@ import {
   saveGameData,
   ensurePlayerStatsCompatibility,
 } from '../utils/saveManagerUtils';
+import { calculateOfflineEarnings, applyOfflineEarnings, getOfflineEarningsLog } from '../utils/offlineEarnings';
 
 // 默认游戏设置
 const DEFAULT_SETTINGS: GameSettings = {
@@ -167,6 +168,7 @@ export const useGameStore = create<GameState>()(
           player: state.player,
           logs: state.logs,
           timestamp: Date.now(),
+          lastActiveTime: Date.now(),
         };
 
         saveGameData(state.player, state.logs);
@@ -216,9 +218,30 @@ export const useGameStore = create<GameState>()(
         if (savedData) {
           // 使用统一的兼容性处理函数
           const loadedPlayer = ensurePlayerStatsCompatibility(savedData.player);
+
+          // 计算离线收益
+          const lastActiveTime = savedData.lastActiveTime || savedData.timestamp || Date.now();
+          const elapsedMs = Date.now() - lastActiveTime;
+          let finalPlayer = loadedPlayer;
+          let offlineLog: string | null = null;
+
+          if (elapsedMs > 30000) {
+            // 离线超过 30 秒才计算
+            const earnings = calculateOfflineEarnings(loadedPlayer, elapsedMs);
+            finalPlayer = applyOfflineEarnings(loadedPlayer, earnings);
+            offlineLog = getOfflineEarningsLog(earnings);
+          }
+
+          const offlineLogEntry: LogEntry | null = offlineLog ? {
+            id: `offline-${Date.now()}`,
+            text: offlineLog,
+            type: 'gain' as const,
+            timestamp: Date.now(),
+          } : null;
+
           set({
-            player: loadedPlayer,
-            logs: savedData.logs || [],
+            player: finalPlayer,
+            logs: offlineLogEntry ? [...(savedData.logs || []), offlineLogEntry] : (savedData.logs || []),
             gameStarted: true,
             hasSave: true,
           });
@@ -279,6 +302,7 @@ export const useGameStore = create<GameState>()(
           player: newPlayer,
           logs: initialLogs,
           timestamp: Date.now(),
+          lastActiveTime: Date.now(),
         };
         saveGameData(newPlayer, initialLogs);
         localStorage.setItem(STORAGE_KEYS.SAVE, JSON.stringify(saveData));

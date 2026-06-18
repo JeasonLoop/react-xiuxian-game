@@ -13,10 +13,13 @@ import {
   Home,
   Users,
   CloudUpload,
+  Lock,
 } from 'lucide-react';
 import { PlayerStats } from '../types';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import { ACHIEVEMENTS } from '../constants';
+import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../constants/featureUnlock';
+import { REALM_ORDER } from '../constants/index';
 import { useParty } from '../hooks/useParty';
 import { useAuthStore } from '../store/authStore';
 import { useGameStore } from '../store/gameStore';
@@ -128,6 +131,47 @@ function GameHeader({
     [player.lotteryTickets]
   );
 
+  // 境界解锁辅助：生成锁定按钮的样式和属性
+  const lockedBtnClass =
+    'opacity-40 cursor-not-allowed bg-stone-900 border-stone-800';
+
+  const LockedFeatureBtn = ({
+    locked,
+    requirement,
+    onClick,
+    className,
+    children,
+  }: {
+    locked: boolean;
+    requirement: string;
+    onClick: () => void;
+    className?: string;
+    children: React.ReactNode;
+  }) => {
+    if (locked) {
+      return (
+        <div
+          className={`flex items-center gap-1 px-3 py-2 rounded border text-sm min-w-[44px] min-h-[44px] justify-center relative group ${lockedBtnClass} ${className || ''}`}
+          title={requirement}
+        >
+          <Lock size={12} className="absolute top-0.5 right-0.5 text-stone-600" />
+          {children}
+          <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-stone-500 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            {requirement}
+          </span>
+        </div>
+      );
+    }
+    return (
+      <button
+        onClick={onClick}
+        className={`flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center ${className || ''}`}
+      >
+        {children}
+      </button>
+    );
+  };
+
   const dailyQuestCompletedCount = useMemo(
     () => (player.dailyQuests || []).filter((q) => q.completed).length,
     [player.dailyQuests]
@@ -187,6 +231,17 @@ function GameHeader({
           >
             v{appVersion}
           </span>
+          {/* 当前目标提示 */}
+          {(() => {
+            const idx = REALM_ORDER.indexOf(player.realm);
+            if (idx < REALM_ORDER.length - 1) {
+              const next = REALM_ORDER[idx + 1];
+              const features = getFeatureRequirementText(FeatureId.CULTIVATION_ARTS);
+              if (idx === 0) return <span className="hidden md:inline text-[10px] text-stone-600 bg-stone-800/50 px-2 py-1 rounded">目标：修炼至{next}解锁更多功能</span>;
+              return <span className="hidden md:inline text-[10px] text-stone-600 bg-stone-800/50 px-2 py-1 rounded">下一境界：{next}</span>;
+            }
+            return null;
+          })()}
           {onlineCount > 0 && (
             <span
               className="text-xs md:text-sm text-green-400 font-mono px-2 py-1 bg-green-900/30 rounded border border-green-700 flex items-center gap-1"
@@ -207,13 +262,14 @@ function GameHeader({
       </button>
       {/* Desktop Buttons */}
       <div className="hidden md:flex gap-2 flex-wrap">
-        <button
+        <LockedFeatureBtn
+          locked={!isFeatureUnlocked(FeatureId.CULTIVATION_ARTS, player.realm)}
+          requirement={getFeatureRequirementText(FeatureId.CULTIVATION_ARTS)}
           onClick={onOpenCultivation}
-          className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
         >
           <BookOpen size={18} />
           <span>功法</span>
-        </button>
+        </LockedFeatureBtn>
         <button
           onClick={onOpenInventory}
           className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
@@ -228,55 +284,65 @@ function GameHeader({
           <Star size={18} />
           <span>角色</span>
         </button>
-        <button
+        <LockedFeatureBtn
+          locked={!isFeatureUnlocked(FeatureId.ACHIEVEMENT, player.realm)}
+          requirement={getFeatureRequirementText(FeatureId.ACHIEVEMENT)}
           onClick={onOpenAchievement}
-          className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm relative min-w-[44px] min-h-[44px] justify-center"
+          className="relative"
         >
           <Trophy size={18} />
           <span>成就</span>
-          {ACHIEVEMENTS.length > 0 && (
-            <span className="text-xs text-stone-500 ml-0.5">
-              {player.achievements.length}/{ACHIEVEMENTS.length}
-            </span>
+          {!isFeatureUnlocked(FeatureId.ACHIEVEMENT, player.realm) ? null : (
+            <>
+              {ACHIEVEMENTS.length > 0 && (
+                <span className="text-xs text-stone-500 ml-0.5">
+                  {player.achievements.length}/{ACHIEVEMENTS.length}
+                </span>
+              )}
+              {newAchievementsCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {newAchievementsCount}
+                </span>
+              )}
+            </>
           )}
-          {newAchievementsCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-              {newAchievementsCount}
-            </span>
-          )}
-        </button>
-        <button
+        </LockedFeatureBtn>
+        <LockedFeatureBtn
+          locked={!isFeatureUnlocked(FeatureId.PET, player.realm)}
+          requirement={getFeatureRequirementText(FeatureId.PET)}
           onClick={onOpenPet}
-          className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
         >
           <Sparkles size={18} />
           <span>灵宠</span>
-          {petsCount > 0 && (
+          {isFeatureUnlocked(FeatureId.PET, player.realm) && petsCount > 0 && (
             <span className="text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded">
               {petsCount}
             </span>
           )}
-        </button>
-        <button
+        </LockedFeatureBtn>
+        <LockedFeatureBtn
+          locked={!isFeatureUnlocked(FeatureId.LOTTERY, player.realm)}
+          requirement={getFeatureRequirementText(FeatureId.LOTTERY)}
           onClick={onOpenLottery}
-          className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
         >
           <Gift size={18} />
           <span>抽奖</span>
-          {lotteryTickets > 0 && (
+          {isFeatureUnlocked(FeatureId.LOTTERY, player.realm) && lotteryTickets > 0 && (
             <span className="text-xs bg-yellow-500 text-black px-1.5 py-0.5 rounded">
               {lotteryTickets}
             </span>
           )}
-        </button>
+        </LockedFeatureBtn>
         {onOpenDailyQuest && (
-          <button
+          <LockedFeatureBtn
+            locked={!isFeatureUnlocked(FeatureId.DAILY_QUEST, player.realm)}
+            requirement={getFeatureRequirementText(FeatureId.DAILY_QUEST)}
             onClick={onOpenDailyQuest}
-            className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm relative min-w-[44px] min-h-[44px] justify-center"
+            className="relative"
           >
             <Calendar size={18} />
             <span>日常</span>
-            {(player.dailyQuests || []).length > 0 && (
+            {isFeatureUnlocked(FeatureId.DAILY_QUEST, player.realm) && (player.dailyQuests || []).length > 0 && (
               <span
                 className={`absolute -top-1 -right-1 text-xs rounded-full w-5 h-5 flex items-center justify-center ${
                   dailyQuestCompletedCount === (player.dailyQuests || []).length
@@ -287,22 +353,22 @@ function GameHeader({
                 {dailyQuestCompletedCount}/{(player.dailyQuests || []).length}
               </span>
             )}
-          </button>
+          </LockedFeatureBtn>
         )}
         {onOpenGrotto && (
-          <button
+          <LockedFeatureBtn
+            locked={!isFeatureUnlocked(FeatureId.GROTTO, player.realm)}
+            requirement={getFeatureRequirementText(FeatureId.GROTTO)}
             onClick={onOpenGrotto}
-            className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
-            title="洞府"
           >
             <Home size={18} />
             <span>洞府</span>
-            {player.grotto && player.grotto.level > 0 && (
+            {isFeatureUnlocked(FeatureId.GROTTO, player.realm) && player.grotto && player.grotto.level > 0 && (
               <span className="text-xs bg-purple-500 text-white px-1.5 py-0.5 rounded">
                 Lv.{player.grotto.level}
               </span>
             )}
-          </button>
+          </LockedFeatureBtn>
         )}
         {isAuthenticated && (
           <button
@@ -321,6 +387,19 @@ function GameHeader({
         >
           <Settings size={18} />
           <span>设置</span>
+        </button>
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent('open-npc-relations'))}
+          className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
+          title="人物志"
+        >
+          <Users size={18} />
+          <span>人物</span>
+          {player.socialRelations?.length > 0 && (
+            <span className="text-xs bg-blue-500 text-white px-1.5 py-0.5 rounded">
+              {player.socialRelations.length}
+            </span>
+          )}
         </button>
         {canUseDebugFeature && isDebugModeEnabled && onOpenDebug && (
           <button

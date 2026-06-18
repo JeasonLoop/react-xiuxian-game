@@ -257,39 +257,42 @@ export function generateEventTemplateLibrary(): AdventureEventTemplate[] {
 function generateNormalEventTemplate(index: number): AdventureEventTemplate {
   // 增加功法和灵宠的出现频率，提高获得概率
   const eventTypes = [
-    'battle', // 妖兽战斗
-    'herb', // 发现灵草
-    'cultivator', // 遇到修士
-    'cave', // 小型洞府
-    'enlightenment', // 顿悟
-    'cultivationArt', // 功法解锁（提高概率）
-    'cultivationArt', // 功法解锁（重复一次，提高概率）
-    'danger', // 危险
-    'spiritStone', // 灵石矿脉
-    'rescue', // 救助
-    'spiritSpring', // 灵泉
-    'pet', // 灵宠（提高概率）
-    'pet', // 灵宠（重复一次，提高概率）
-    'pet', // 灵宠（再次提高概率）
-    'petOpportunity', // 灵宠机缘
-    'petOpportunity', // 灵宠机缘（重复一次，提高概率）
-    'foundationTreasure', // 筑基奇物
-    'heavenEarthEssence', // 天地精华
-    'heavenEarthMarrow', // 天地之髓
-    'heavenEarthMarrow', // 天地之髓（重复一次，提高概率）
-    'heavenEarthSoul', // 天地之魄（化神期及以上，提高概率）
-    'heavenEarthSoul', // 天地之魄（重复，提高概率）
-    'heavenEarthSoul', // 天地之魄（再次重复，进一步提高概率）
-    'heavenEarthSoul', // 天地之魄（再次提高概率）
-    'longevityRule', // 规则之力（长生境）
-    'trap', // 陷阱
-    'evilCultivator', // 邪修魔修
-    'reputation', // 声望事件（提高概率）
-    'reputation', // 声望事件（重复，提高概率）
-    'reputation', // 声望事件（再次重复，进一步提高概率）
-    'branchChoice', // 分支抉择事件（普通历练主流程）
-    'branchChoice', // 分支抉择事件（提高触发率）
-    'lottery', // 抽奖券
+    'battle',
+    'herb',
+    'cultivator',
+    'cultivator',
+    'cultivator',
+    'cave',
+    'enlightenment',
+    'cultivationArt',
+    'cultivationArt',
+    'danger',
+    'spiritStone',
+    'rescue',
+    'rescue',
+    'spiritSpring',
+    'pet',
+    'pet',
+    'pet',
+    'petOpportunity',
+    'petOpportunity',
+    'foundationTreasure',
+    'heavenEarthEssence',
+    'heavenEarthMarrow',
+    'heavenEarthMarrow',
+    'heavenEarthSoul',
+    'heavenEarthSoul',
+    'heavenEarthSoul',
+    'heavenEarthSoul',
+    'longevityRule',
+    'trap',
+    'evilCultivator',
+    'reputation',
+    'reputation',
+    'reputation',
+    'branchChoice',
+    'branchChoice',
+    'lottery',
   ];
 
   const eventType = selectFromArray(eventTypes, index);
@@ -367,6 +370,8 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
         `在探索途中，你遇到了一位${['同门', '道友', '前辈', '后辈', '陌生人'][index % 5]}，对方见你独自一人，便主动上前打招呼。你们互相交流，谈论着各自的见闻和经历。对方见多识广，分享了许多有用的信息，包括一些危险区域的注意事项和机缘所在。`,
         `你在一处客栈中休息时，正坐在窗边看着外面的风景，突然一位${['神秘人', '老者', '少年', '女子', '僧人'][index % 5]}走了过来，询问是否可以同坐。你们交谈后，发现对方见识不凡，对修炼之道有着独到的理解。对方分享了一些人生感悟和修炼心得，你获得了一些启发，对未来的修炼之路有了更清晰的认识。`,
       ];
+      const npcNames = ['散修道友', '宗门弟子', '游方道士', '隐世高人', '商队护卫', '老修士', '年轻剑客', '炼丹师', '阵法师', '符箓师', '同门师兄', '前辈修士', '神秘旅人'];
+      const npcName = npcNames[index % npcNames.length];
       return {
         ...baseTemplate,
         story: selectFromArray(stories, index),
@@ -375,6 +380,12 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
         spiritStonesChange: randomChance(index, 0.5, 80) ? randomInt(index, 20, 70, 90) : 0,
         eventColor: 'normal',
         itemObtained: randomChance(index, 0.2, 100) ? generateRandomItem(rarity, index) : undefined,
+        npcRelationChange: {
+          npcId: `npc-adventure-${npcName}-${index}`,
+          npcName,
+          favorabilityChange: randomInt(index, 5, 15, 100),
+          description: `在一次历练中结识的${npcName}`,
+        },
       };
     }
 
@@ -412,6 +423,13 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
         expChange: randomInt(index, 50, 130, 150),
         spiritStonesChange: 0,
         eventColor: 'gain',
+        // 顿悟时偶尔遇到前辈灵识
+        npcRelationChange: randomChance(index, 0.3, 160) ? {
+          npcId: `npc-enlighten-${index}`,
+          npcName: ['隐世前辈', '古修残魂', '道韵化身', '灵识投影'][index % 4],
+          favorabilityChange: randomInt(index, 3, 10, 170),
+          description: '在顿悟中感应到的一缕灵识',
+        } : undefined,
       };
     }
 
@@ -477,6 +495,8 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
         `你在路上遇到了一位需要帮助的人，对方看起来十分狼狈，显然是遭遇了什么危险。你见对方需要帮助，便主动上前询问。对方见你愿意相助，眼中闪过一丝感激，向你说明了情况。你出手相助，帮助对方解决了困难，对方感激地给了你一些报酬，虽然不多，但也是一番心意。`,
         `你在一处${['险地', '禁地', '危险区域', '魔域', '死地'][index % 5]}中遇到了一位需要帮助的人，对方看起来十分危险，显然是遭遇了什么意外。你见对方需要帮助，便主动上前相助。你运转功法，帮助对方解决了困难，对方感激不尽，连连道谢，还告诉了你一些关于这个区域的注意事项。`,
       ];
+      const rescueNames = ['受伤的修士', '被困的商人', '遇险的村民', '受伤的散修', '遇险的旅人'];
+      const rescueName = rescueNames[index % rescueNames.length];
       return {
         ...baseTemplate,
         story: selectFromArray(stories, index),
@@ -486,6 +506,12 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
         eventColor: 'gain',
         reputationChange: randomInt(index, 10, 30, 260),
         itemObtained: randomChance(index, 0.3, 270) ? generateRandomItem(rarity, index) : undefined,
+        npcRelationChange: {
+          npcId: `npc-rescue-${rescueName}-${index}`,
+          npcName: rescueName,
+          favorabilityChange: randomInt(index, 10, 25, 280),
+          description: `曾在危难中得到你的帮助`,
+        },
       };
     }
 
@@ -503,6 +529,13 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
         hpChange: randomInt(index, 20, 50, 280),
         expChange: randomInt(index, 25, 65, 290),
         eventColor: 'gain',
+        // 灵泉处偶尔遇到其他修士
+        npcRelationChange: randomChance(index, 0.35, 300) ? {
+          npcId: `npc-spring-${index}`,
+          npcName: ['灵泉守护者', '采药修士', '同修道人', '散修旅人'][index % 4],
+          favorabilityChange: randomInt(index, 5, 12, 310),
+          description: '在灵泉旁结识的道友',
+        } : undefined,
       };
     }
 

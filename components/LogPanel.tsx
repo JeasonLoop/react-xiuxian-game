@@ -146,6 +146,22 @@ const LogPanel: React.FC<Props> = ({ logs, playerName, className, onClearLogs })
     <div
       className={`flex-1 bg-ink-900 relative min-h-[200px] md:min-h-[300px] ${className || ''}`}
     >
+      {/* 日志上限提示 */}
+      {logs.length >= 900 && (
+        <div className="absolute top-1 right-2 z-20 flex items-center gap-2">
+          <span className="text-[10px] text-amber-400">
+            {logs.length >= 1000 ? '⚠ 日志已满，旧日志已自动清理' : `⚠ 日志 ${logs.length}/1000，建议清理`}
+          </span>
+          {onClearLogs && (
+            <button
+              onClick={onClearLogs}
+              className="text-[10px] px-2 py-0.5 bg-red-900/50 hover:bg-red-800/50 border border-red-700/50 text-red-300 rounded transition-colors"
+            >
+              清空日志
+            </button>
+          )}
+        </div>
+      )}
       {/* 顶部遮罩 */}
       <div className="absolute top-0 left-0 w-full h-8 md:h-12 bg-gradient-to-b from-ink-900 to-transparent pointer-events-none z-10" />
 

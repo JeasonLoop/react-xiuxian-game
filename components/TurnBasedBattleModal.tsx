@@ -24,7 +24,6 @@ import {
   calculateBattleRewards,
 } from '../services/battleService';
 import { BATTLE_POTIONS, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES, CULTIVATION_ARTS } from '../constants/index';
-import { showConfirm } from '../utils/toastUtils';
 import { BattleSkill } from '../types';
 import { useUIStore } from '../store/uiStore';
 import BattleResultSummary from './BattleResultSummary';
@@ -502,21 +501,15 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   const handleSkipBattle = () => {
     if (!battleState || isProcessing) return;
 
-    // 二次确认提示
-    showConfirm(
-      '跳过战斗等同小觑对手，请谨慎选择',
-      '确认跳过战斗',
-      () => {
-        // 用户确认后执行跳过战斗逻辑
-        setIsProcessing(true);
-        let currentState = { ...battleState };
-        let isBattleEnded = false;
-        let loopCount = 0;
-        const MAX_LOOPS = 200; // 防止死循环
+    setIsProcessing(true);
+    let currentState = { ...battleState };
+    let isBattleEnded = false;
+    let loopCount = 0;
+    const MAX_LOOPS = 200;
 
-        try {
-          while (!isBattleEnded && loopCount < MAX_LOOPS) {
-            loopCount++;
+    try {
+      while (!isBattleEnded && loopCount < MAX_LOOPS) {
+        loopCount++;
 
             // 玩家回合
             if (
@@ -565,11 +558,6 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
           setErrorMessage('跳过战斗出错');
           setIsProcessing(false);
         }
-      },
-      () => {
-        // 用户取消，不做任何操作
-      }
-    );
   };
 
   // 获取所有可用技能（仅检查冷却和MP，不检查搜索/类型过滤）

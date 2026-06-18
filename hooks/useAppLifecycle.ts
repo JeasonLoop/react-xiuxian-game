@@ -14,6 +14,7 @@ import { PlayerStats, RealmType, TribulationResult, TribulationState } from '../
 import { THRESHOLD_CONSTANTS, DELAY_CONSTANTS } from '../constants/appConstants';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import { isDebugFeatureAvailable } from '../utils/debugMode';
+import { useUIStore } from '../store/uiStore';
 
 interface UseNewGameDetectionProps {
   gameStarted: boolean;
@@ -240,6 +241,8 @@ export function useTribulationComplete({
           addLog(result.description, 'gain');
         }
         setTribulationState(null);
+        // 清除天劫暂停状态，恢复自动历练
+        useUIStore.getState().setPausedByTribulation(false);
       } else {
         // 渡劫失败，触发死亡
         setDeathReason(result.description);
@@ -248,6 +251,8 @@ export function useTribulationComplete({
           return { ...prev, hp: 0 };
         });
         setTribulationState(null);
+        // 清除天劫暂停状态
+        useUIStore.getState().setPausedByTribulation(false);
       }
     },
     [setPlayer, setTribulationState, setDeathReason, addLog, handleBreakthroughRef]

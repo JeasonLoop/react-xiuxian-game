@@ -33,6 +33,12 @@ const applyItemEffect = (
 ): PlayerStats => {
   const { addLog, setItemActionLog, isBatch = false } = options;
 
+  // 锁定物品不可使用
+  if (item.locked) {
+    addLog(`🔒 【${item.name}】已锁定，无法使用！`, 'danger');
+    return prev;
+  }
+
   // 基础数据克隆
   let newStats = { ...prev };
   let newInv = prev.inventory

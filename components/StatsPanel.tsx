@@ -346,8 +346,12 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
         </div>
 
         {/* 社交关系简述 */}
-        {player.socialRelations && player.socialRelations.length > 0 && (
-          <div className="bg-ink-800 p-2 md:p-3 rounded border border-stone-700">
+        {player.socialRelations && player.socialRelations.length > 0 ? (
+          <div
+            className="bg-ink-800 p-2 md:p-3 rounded border border-stone-700 cursor-pointer hover:border-stone-500 transition-colors"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-npc-relations'))}
+            title="点击查看人物志"
+          >
             <div className="text-[10px] md:text-xs text-stone-500 mb-2">人际关系</div>
             <div className="space-y-1">
               {player.socialRelations.slice(0, 3).map(rel => (
@@ -362,6 +366,15 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
                 <div className="text-[10px] text-stone-500 text-center mt-1">...等 {player.socialRelations.length} 位道友</div>
               )}
             </div>
+          </div>
+        ) : (
+          <div
+            className="bg-ink-800 p-2 md:p-3 rounded border border-stone-700 cursor-pointer hover:border-stone-500 transition-colors"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-npc-relations'))}
+            title="查看人物志"
+          >
+            <div className="text-[10px] md:text-xs text-stone-500">人物志</div>
+            <div className="text-[10px] text-stone-600 mt-1">尚未结识道友</div>
           </div>
         )}
 

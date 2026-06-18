@@ -218,6 +218,10 @@ export function useShopHandlers(
         addLog('无法出售已装备的物品！请先卸下。', 'danger');
         return prev;
       }
+      if (item.locked) {
+        addLog(`🔒 【${item.name}】已锁定，无法出售！`, 'danger');
+        return prev;
+      }
 
       // 找到对应的商店物品来计算出售价格
       const shopItem = currentShop.items.find((si) => si.name === item.name);

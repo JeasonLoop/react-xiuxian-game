@@ -22,10 +22,12 @@ interface UseAutoFeaturesParams {
   pausedByBattle: boolean;
   pausedByReputationEvent: boolean;
   pausedByHeavenEarthSoul: boolean;
+  pausedByTribulation: boolean;
   setPausedByShop: (paused: boolean) => void;
   setPausedByBattle: (paused: boolean) => void;
   setPausedByReputationEvent: (paused: boolean) => void;
   setPausedByHeavenEarthSoul: (paused: boolean) => void;
+  setPausedByTribulation: (paused: boolean) => void;
   handleMeditate: () => void;
   handleAdventure: () => void;
   setCooldown: (cooldown: number) => void;
@@ -51,6 +53,7 @@ export function useAutoFeatures({
   pausedByBattle,
   pausedByReputationEvent,
   pausedByHeavenEarthSoul,
+  pausedByTribulation,
   handleMeditate,
   handleAdventure,
   setCooldown,
@@ -87,6 +90,7 @@ export function useAutoFeatures({
     pausedByBattle,
     pausedByReputationEvent,
     pausedByHeavenEarthSoul,
+    pausedByTribulation,
   });
 
   // 统一更新所有 refs
@@ -108,6 +112,7 @@ export function useAutoFeatures({
       pausedByBattle,
       pausedByReputationEvent,
       pausedByHeavenEarthSoul,
+      pausedByTribulation,
     };
     playerRef.current = player;
   }, [
@@ -124,6 +129,7 @@ export function useAutoFeatures({
     pausedByBattle,
     pausedByReputationEvent,
     pausedByHeavenEarthSoul,
+    pausedByTribulation,
     handleMeditate,
     handleAdventure,
     setCooldown,
@@ -183,6 +189,7 @@ export function useAutoFeatures({
       state.pausedByBattle ||
       state.pausedByReputationEvent ||
       state.pausedByHeavenEarthSoul ||
+      state.pausedByTribulation ||
       state.autoMeditate || // 自动打坐时暂停自动历练
       isExecutingAdventureRef.current
     );

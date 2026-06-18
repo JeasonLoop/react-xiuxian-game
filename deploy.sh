@@ -1,132 +1,98 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -e
 
-# ============================================
-# 云灵修仙传 - 一键部署脚本 (腾讯云)
-# 用途：自动化部署全栈应用（前端 + 后端云存档）
-# 特性：依赖缓存，仅在依赖变化时重新安装
-# ============================================
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
+log()  { echo -e "${CYAN}[$(date +%H:%M:%S)]${NC} $1"; }
+ok()   { echo -e "${GREEN}[$(date +%H:%M:%S)] ✓${NC} $1"; }
+warn() { echo -e "${YELLOW}[$(date +%H:%M:%S)] ⚠${NC} $1"; }
+err()  { echo -e "${RED}[$(date +%H:%M:%S)] ✗${NC} $1"; }
 
-# 颜色定义
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# ══════════════════════════════════════════
+# 配置区
+# ══════════════════════════════════════════
+FRONTEND_DOMAIN="xiuxian.jeasonloop.online"
+API_DOMAIN="xiuxian-api.jeasonloop.online"
+PAGES_PROJECT="xiuxian-game"
+WORKER_NAME="xiuxian-game-api"
+# ══════════════════════════════════════════
 
-echo -e "${GREEN}===========================================${NC}"
-echo -e "${GREEN}   云灵修仙传 一键部署脚本${NC}"
-echo -e "${GREEN}   域名: ylxiuxian.jeasonloop.online${NC}"
-echo -e "${GREEN}===========================================${NC}"
+FRONTEND_URL="https://${FRONTEND_DOMAIN}"
+API_URL="https://${API_DOMAIN}"
+
+echo ""
+echo -e "${CYAN}  ⛩️  云灵修仙 — Cloudflare 一键部署${NC}"
+echo -e "  前端: ${FRONTEND_URL}"
+echo -e "  API:  ${API_URL}"
 echo ""
 
-# 检查是否在项目根目录
-if [ ! -f "package.json" ]; then
-    echo -e "${RED}❌ 错误: 请在项目根目录运行此脚本${NC}"
-    echo "   当前目录: $(pwd)"
-    exit 1
+# ── 检查环境 ──
+log "检查环境..."
+command -v node &>/dev/null || { err "请安装 Node.js: https://nodejs.org"; exit 1; }
+
+if ! npx wrangler --version &>/dev/null 2>&1; then
+  warn "安装 wrangler..."
+  npm install -g wrangler | tail -3
+  ok "wrangler 安装完成"
 fi
 
-# 加载环境变量
-# 按优先级查找: .env > .env.production > .env.production.full.example
-if [ -f ".env" ]; then
-    echo -e "${YELLOW}📄 加载环境变量文件 .env${NC}"
-    export $(grep -v '^#' .env | xargs)
-elif [ -f ".env.production" ]; then
-    echo -e "${YELLOW}📄 加载环境变量文件 .env.production${NC}"
-    export $(grep -v '^#' .env.production | xargs)
+if ! npx wrangler whoami &>/dev/null 2>&1; then
+  warn "Cloudflare 未登录，正在跳转浏览器..."
+  npx wrangler login
+fi
+ok "环境就绪"
+
+# ── 检查域名 ──
+log "检查域名 DNS..."
+if npx wrangler dns list --json 2>/dev/null | grep -q "jeasonloop.online"; then
+  ok "域名 jeasonloop.online 已在 Cloudflare DNS 中"
 else
-    echo -e "${YELLOW}⚠️  未找到环境变量文件，使用示例配置创建 .env...${NC}"
-    cp .env.production.full.example .env
-    echo -e "${YELLOW}✅ 已创建 .env，请检查并修改配置后重新部署${NC}"
-    exit 1
+  warn "域名 jeasonloop.online 可能未添加到 Cloudflare DNS"
+  warn "请先在 Cloudflare Dashboard → Websites → Add Site 添加域名"
 fi
 
+# ── 安装依赖 ──
+log "安装依赖..."
+npm install --silent
+ok "依赖就绪"
+
+# ── 构建前端（注入 API 地址） ──
+log "构建前端..."
+VITE_API_BASE_URL="${API_URL}" npm run build 2>&1 | while IFS= read -r line; do
+  if   echo "$line" | grep -qiE "error|fail";   then echo -e "  ${RED}$line${NC}"
+  elif echo "$line" | grep -qiE "✓|built|done"; then echo -e "  ${GREEN}$line${NC}"
+  else echo "  $line"; fi
+done
+ok "前端构建完成 → dist/ (API 地址: ${API_URL}/api)"
+
+# ── 部署前端到 Pages ──
+log "部署前端到 Cloudflare Pages..."
+npx wrangler pages deploy dist \
+  --project-name="${PAGES_PROJECT}" \
+  --commit-dirty=true \
+  2>&1 | while IFS= read -r line; do
+    echo "  $line"
+  done
+ok "前端部署完成"
+
+# ── 部署后端 Worker ──
+log "部署后端 API Worker..."
+npx wrangler deploy 2>&1 | while IFS= read -r line; do
+  echo "  $line"
+done
+ok "后端 API 部署完成"
+
+# ── 完成 ──
 echo ""
-echo -e "${YELLOW}🔍 检查依赖是否需要更新...${NC}"
-
-# 检查是否需要重新安装依赖
-# 对比 package.json 和 node_modules 的修改时间
-NEED_INSTALL=false
-if [ ! -d "node_modules" ]; then
-    NEED_INSTALL=true
-elif [ "package.json" -nt "node_modules" ]; then
-    NEED_INSTALL=true
-fi
-
-# 检查 server/package.json
-if [ -d "server" ]; then
-    if [ ! -d "server/node_modules" ]; then
-        NEED_INSTALL=true
-    elif [ "server/package.json" -nt "server/node_modules" ]; then
-        NEED_INSTALL=true
-    fi
-fi
-
-if [ "$NEED_INSTALL" = true ]; then
-    echo -e "${YELLOW}📦 依赖已变化，执行 npm install...${NC}"
-    npm install
-    if [ -d "server" ]; then
-        cd server && npm install && cd ..
-    fi
-    echo -e "${GREEN}✅ 依赖安装完成${NC}"
-else
-    echo -e "${GREEN}✅ 依赖未变化，跳过 npm install${NC}"
-fi
-
+echo -e "${GREEN}╔══════════════════════════════════════════╗${NC}"
+echo -e "${GREEN}║         部署完成！                       ║${NC}"
+echo -e "${GREEN}╚══════════════════════════════════════════╝${NC}"
 echo ""
-echo -e "${YELLOW}🐳 开始 Docker 构建和部署...${NC}"
-
-# 检测 docker-compose v1 vs docker compose v2
-# 有些系统 docker-compose 文件存在但损坏，所以需要验证
-DOCKER_COMPOSE="docker compose"
-if command -v docker-compose >/dev/null 2>&1; then
-    # 测试一下是否能正常运行
-    if docker-compose --version >/dev/null 2>&1; then
-        DOCKER_COMPOSE="docker-compose"
-    fi
-fi
-
-echo "🔍 使用命令: $DOCKER_COMPOSE"
-
-# 使用 docker-compose 构建并启动
-$DOCKER_COMPOSE -f docker-compose.full.yml --env-file "$(pwd)/.env" up -d --build
-
+echo -e "  前端入口:  ${CYAN}${FRONTEND_URL}${NC}"
+echo -e "  API 地址:  ${CYAN}${API_URL}/api${NC}"
 echo ""
-echo -e "${GREEN}===========================================${NC}"
-echo -e "${GREEN}✅ 部署完成！${NC}"
-echo -e "${GREEN}===========================================${NC}"
+echo -e "  ${YELLOW}⚠ 还需要在 Cloudflare Dashboard 完成以下步骤:${NC}"
 echo ""
-echo "SSL证书要求："
-echo "   请将你的SSL证书上传到项目 ssl/ 目录："
-echo "   - ssl/fullchain.crt  (证书链)"
-echo "   - ssl/privkey.key   (私钥)"
-echo "   上传后重新运行 ./deploy.sh 即可生效"
+echo -e "  ${CYAN}1.${NC} Pages → ${PAGES_PROJECT} → Custom Domains → 添加 ${CYAN}${FRONTEND_DOMAIN}${NC}"
+echo -e "  ${CYAN}2.${NC} Workers → ${WORKER_NAME} → Custom Domains → 添加 ${CYAN}${API_DOMAIN}${NC}"
+echo -e "  ${CYAN}3.${NC} 设置 JWT 密钥:  ${CYAN}npx wrangler secret put JWT_SECRET${NC}"
 echo ""
-echo "访问地址："
-echo "   🌐 HTTPS: https://ylxiuxian.jeasonloop.online:18443"
-echo "   🔀 HTTP:  http://ylxiuxian.jeasonloop.online:18080  → 自动跳转 HTTPS"
-echo "   🔌 API: https://ylxiuxian.jeasonloop.online:18443/api"
-echo ""
-echo "查看日志："
-echo "   $DOCKER_COMPOSE -f docker-compose.full.yml logs -f"
-echo "   $DOCKER_COMPOSE -f docker-compose.full.yml logs -f backend  # 仅查看后端日志"
-echo "   $DOCKER_COMPOSE -f docker-compose.full.yml logs -f web     # 仅查看前端日志"
-echo ""
-echo "停止服务："
-echo "   $DOCKER_COMPOSE -f docker-compose.full.yml down"
-echo ""
-
-# 检测 docker-compose v1 vs docker compose v2
-if command -v docker-compose >/dev/null 2>&1; then
-    if docker-compose --version >/dev/null 2>&1; then
-        DOCKER_COMPOSE="docker-compose"
-    else
-        DOCKER_COMPOSE="docker compose"
-    fi
-else
-    DOCKER_COMPOSE="docker compose"
-fi
-
-# 显示容器状态
-echo -e "${YELLOW}📊 当前容器状态:${NC}"
-$DOCKER_COMPOSE -f docker-compose.full.yml ps

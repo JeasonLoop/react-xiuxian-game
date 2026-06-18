@@ -1164,6 +1164,13 @@ const CharacterModal: React.FC<Props> = ({
                         使用传承突破境界
                       </button>
                     )}
+                    {/* 转世重修入口 */}
+                    <button
+                      onClick={() => window.dispatchEvent(new CustomEvent('open-rebirth'))}
+                      className="w-full mt-2 px-4 py-2 bg-yellow-700/30 hover:bg-yellow-700/50 rounded border border-yellow-600/50 text-yellow-400 text-sm font-bold transition-all"
+                    >
+                      🌟 转世重修（元婴期9层可触发）
+                    </button>
                   </div>
                 ) : (
                   <p className="text-sm text-stone-400 mb-3">
@@ -1976,8 +1983,10 @@ const CharacterModal: React.FC<Props> = ({
                     return (
                       <button
                         key={item.id}
+                        disabled={!!(item as any).locked}
                         onClick={() => {
                           if (!player.heavenEarthMarrow) return;
+                          if ((item as any).locked) return;
 
                           const currentProgress = player.marrowRefiningProgress || 0;
                           const newProgress = Math.min(100, currentProgress + progressGain);
