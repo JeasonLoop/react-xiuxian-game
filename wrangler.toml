@@ -2,6 +2,10 @@ name = "xiuxian-game-api"
 main = "functions/api.ts"
 compatibility_date = "2024-12-01"
 
+[[kv_namespaces]]
+binding = "RANKINGS_STORE"
+id = "79e26cacaae94204983297aad7134ef6"
+
 [vars]
 JWT_SECRET = "change-this-to-a-random-secret-in-production"
 LINUXDO_CLIENT_ID = "YOUR_LINUXDO_CLIENT_ID"

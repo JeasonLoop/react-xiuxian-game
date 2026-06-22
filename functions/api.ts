@@ -7,6 +7,7 @@ export interface Env {
   JWT_SECRET?: string;
   LINUXDO_CLIENT_ID?: string;
   LINUXDO_CLIENT_SECRET?: string;
+  RANKINGS_STORE?: KVNamespace;
 }
 
 const users = new Map<string, { id: string; username: string; passwordHash: string; linuxdoId?: string }>();
@@ -27,24 +28,87 @@ interface RankingEntry {
   play_time: number;
   updated_at: number;
 }
-const rankings = new Map<string, RankingEntry>();
+// KV 持久化排行榜数据（跨节点共享，冷启动不丢）
+const RANKINGS_KV_KEY = 'rankings_data';
+const SAVE_KV_PREFIX = 'save:';
+
+async function readRankingsFromKV(env: Env): Promise<Map<string, RankingEntry>> {
+  const map = new Map<string, RankingEntry>();
+  if (!env.RANKINGS_STORE) return map;
+  try {
+    const raw = await env.RANKINGS_STORE.get(RANKINGS_KV_KEY, 'json');
+    if (raw && Array.isArray(raw)) {
+      for (const entry of raw) {
+        if (entry.user_id) map.set(entry.user_id, entry);
+      }
+    }
+  } catch (e) {
+    console.error('readRankingsFromKV error:', e);
+  }
+  return map;
+}
+
+async function writeRankingsToKV(env: Env, rankings: Map<string, RankingEntry>): Promise<void> {
+  if (!env.RANKINGS_STORE) return;
+  try {
+    const arr = Array.from(rankings.values());
+    await env.RANKINGS_STORE.put(RANKINGS_KV_KEY, JSON.stringify(arr));
+  } catch (e) {
+    console.error('writeRankingsToKV error:', e);
+  }
+}
+
+
+// KV 持久化：存档
+async function readSaveFromKV(env: Env, userId: string): Promise<any> {
+  if (!env.RANKINGS_STORE) return null;
+  try { return await env.RANKINGS_STORE.get(SAVE_KV_PREFIX + userId, 'json'); } catch { return null; }
+}
+async function writeSaveToKV(env: Env, userId: string, saveData: any): Promise<void> {
+  if (!env.RANKINGS_STORE) return;
+  try { await env.RANKINGS_STORE.put(SAVE_KV_PREFIX + userId, JSON.stringify(saveData)); } catch (e) { console.error('writeSaveToKV error:', e); }
+}
+async function syncUserRanking(env: Env, userId: string, username: string, saveData: any): Promise<void> {
+  const rankings = await readRankingsFromKV(env);
+  rankings.set(userId, extractRankingData(userId, username, saveData));
+  await writeRankingsToKV(env, rankings);
+}
 
 const REALM_NAMES = ['炼气期', '筑基期', '金丹期', '元婴期', '化神期', '合道期', '长生境'];
 
-// 从存档数据中提取排行榜字段
+// 从存档数据中提取排行榜字段（与服务端 server/index.ts 保持一致）
 function extractRankingData(userId: string, username: string, saveData: any): RankingEntry {
   const p = saveData?.player || saveData || {};
+
+  // 战斗力公式：攻击 + 防御 + 血量/10 + 神识 + 速度
+  const attack = Number(p.attack) || 0;
+  const defense = Number(p.defense) || 0;
+  const maxHp = Number(p.maxHp) || 0;
+  const spirit = Number(p.spirit) || 0;
+  const speed = Number(p.speed) || 0;
+  const combatPower = Math.floor(attack + defense + maxHp / 10 + spirit + speed);
+
+  // 境界映射：支持 realm 字符串或 realmIndex 数字
+  const REALM_ORDER = ['炼气期', '筑基期', '金丹期', '元婴期', '化神期', '合道期', '长生境'];
+  let realmIndex = 0;
+  if (typeof p.realm === 'string') {
+    const idx = REALM_ORDER.indexOf(p.realm);
+    realmIndex = idx >= 0 ? idx : 0;
+  } else if (typeof p.realmIndex === 'number') {
+    realmIndex = p.realmIndex;
+  }
+
   return {
     user_id: userId,
     username,
-    realm_index: typeof p.realmIndex === 'number' ? p.realmIndex : 0,
+    realm_index: realmIndex,
     realm_level: typeof p.realmLevel === 'number' ? p.realmLevel : 1,
     exp: typeof p.exp === 'number' ? p.exp : 0,
-    combat_power: typeof p.combatPower === 'number' ? p.combatPower : 0,
+    combat_power: combatPower,
     spirit_stones: typeof p.spiritStones === 'number' ? p.spiritStones : 0,
     reputation: typeof p.reputation === 'number' ? p.reputation : 0,
-    achievement_count: Array.isArray(p.unlockedAchievements) ? p.unlockedAchievements.length : 0,
-    kill_count: typeof p.killCount === 'number' ? p.killCount : 0,
+    achievement_count: Array.isArray(p.achievements) ? p.achievements.length : (Array.isArray(p.unlockedAchievements) ? p.unlockedAchievements.length : 0),
+    kill_count: typeof p.statistics?.killCount === 'number' ? p.statistics.killCount : (typeof p.killCount === 'number' ? p.killCount : 0),
     play_time: typeof p.playTime === 'number' ? p.playTime : 0,
     updated_at: Date.now(),
   };
@@ -140,7 +204,19 @@ export default {
       if (!auth) return json({ error: '未登录' }, 401);
       const p = await verifyToken(auth.replace('Bearer ', ''), secret);
       if (!p) return json({ error: '登录已过期' }, 401);
-      return json(saves.get(p.id) || null);
+      // 先从内存取，没有则从 KV 恢复
+      let saveData = saves.get(p.id);
+      if (!saveData) {
+        saveData = await readSaveFromKV(env, p.id);
+        if (saveData) saves.set(p.id, saveData);
+      }
+      // 有存档就同步排行榜（保证冷启动后排行榜不丢人）
+      if (saveData) {
+        const user = users.get(p.id);
+        const username = user?.username || p.username || '未知';
+        await syncUserRanking(env, p.id, username, saveData);
+      }
+      return json(saveData || null);
     }
 
     // 上传存档
@@ -151,10 +227,14 @@ export default {
       if (!p) return json({ error: '登录已过期' }, 401);
       const saveData = await request.json();
       saves.set(p.id, saveData);
-      // 同步排行榜数据
+      // 持久化存档到 KV
+      await writeSaveToKV(env, p.id, saveData);
+      // 同步排行榜数据到 KV
       const user = users.get(p.id);
       const username = user?.username || p.username || '未知';
+      const rankings = await readRankingsFromKV(env);
       rankings.set(p.id, extractRankingData(p.id, username, saveData));
+      await writeRankingsToKV(env, rankings);
       return json({ success: true });
     }
 
@@ -170,6 +250,7 @@ export default {
       const offset = Math.max(parseInt(url.searchParams.get('offset') || '0') || 0, 0);
 
       try {
+        const rankings = await readRankingsFromKV(env);
         const all = Array.from(rankings.values());
         all.sort((a, b) => {
           if (sort === 'combat') return b.combat_power - a.combat_power || b.realm_index - a.realm_index || b.realm_level - a.realm_level;
@@ -208,6 +289,7 @@ export default {
       const p = await verifyToken(auth.replace('Bearer ', ''), secret);
       if (!p) return json({ found: false, message: '登录已过期' });
 
+      const rankings = await readRankingsFromKV(env);
       const myRow = rankings.get(p.id);
       if (!myRow) return json({ found: false, message: '您尚未上传存档，无法查看排名' });
 
