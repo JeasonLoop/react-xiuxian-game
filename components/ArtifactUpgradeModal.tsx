@@ -487,17 +487,17 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
             <div className="text-stone-500 text-xs mb-1">当前 (+{currentLevel})</div>
             {currentEffect.attack !== undefined && (
               <div className="text-stone-400 flex items-center justify-end gap-1">
-                {currentEffect.attack} <Zap size={14} />
+                {Math.floor(currentEffect.attack)} <Zap size={14} />
               </div>
             )}
             {currentEffect.defense !== undefined && (
               <div className="text-stone-400 flex items-center justify-end gap-1">
-                {currentEffect.defense} <Shield size={14} />
+                {Math.floor(currentEffect.defense)} <Shield size={14} />
               </div>
             )}
             {currentEffect.hp !== undefined && (
               <div className="text-stone-400 flex items-center justify-end gap-1">
-                {currentEffect.hp} <Heart size={14} />
+                {Math.floor(currentEffect.hp)} <Heart size={14} />
               </div>
             )}
           </div>
@@ -517,17 +517,17 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
             <>
               {currentEffect.attack !== undefined && (
                 <div className="text-mystic-jade flex items-center gap-1">
-                  <Zap size={14} /> {targetEffect.attack}
+                  <Zap size={14} /> {Math.floor(targetEffect.attack ?? 0)}
                 </div>
               )}
               {currentEffect.defense !== undefined && (
                 <div className="text-mystic-jade flex items-center gap-1">
-                  <Shield size={14} /> {targetEffect.defense}
+                  <Shield size={14} /> {Math.floor(targetEffect.defense ?? 0)}
                 </div>
               )}
               {currentEffect.hp !== undefined && (
                 <div className="text-mystic-jade flex items-center gap-1">
-                  <Heart size={14} /> {targetEffect.hp}
+                  <Heart size={14} /> {Math.floor(targetEffect.hp ?? 0)}
                 </div>
               )}
             </>

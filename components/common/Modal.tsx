@@ -27,6 +27,7 @@ const heightClasses = {
   md: 'h-[70vh] md:h-auto md:max-h-[70vh]',
   lg: 'h-[80vh] md:h-auto md:max-h-[80vh]',
   xl: 'h-[85vh] md:h-auto md:max-h-[85vh]',
+  '2xl': 'h-[88vh] md:h-auto md:max-h-[88vh]',
   full: 'h-[90vh] md:h-auto md:max-h-[90vh]',
 };
 
@@ -75,6 +76,10 @@ export interface ModalProps {
   headerPadding?: string;
   /** 内容区内边距 */
   contentPadding?: string;
+  /** 为 true 时内容区不单独滚动（由外层布局控制） */
+  disableScroll?: boolean;
+  /** 为 true 时不渲染顶栏标题区（用于内容区自有标题；请保证内容内有 #modal-title 或等价可访问名称） */
+  hideHeader?: boolean;
 }
 
 /**
@@ -115,6 +120,8 @@ const Modal: React.FC<ModalProps> = ({
   showFooterBorder = true,
   headerPadding = 'p-3 md:p-4',
   contentPadding = 'p-4 md:p-6',
+  disableScroll = false,
+  hideHeader = false,
 }) => {
   // ESC 键关闭
   const handleKeyDown = useCallback(
@@ -179,6 +186,7 @@ const Modal: React.FC<ModalProps> = ({
         onClick={handleContentClick}
       >
         {/* 头部区域 */}
+        {!hideHeader && (
         <div
           className={`
             bg-stone-800
@@ -214,6 +222,7 @@ const Modal: React.FC<ModalProps> = ({
             </button>
           )}
         </div>
+        )}
 
         {/* 次级头部（Tab 栏等） */}
         {subHeader && (
@@ -225,7 +234,7 @@ const Modal: React.FC<ModalProps> = ({
         {/* 内容区域 */}
         <div
           className={`
-            modal-scroll-container modal-scroll-content
+            ${disableScroll ? 'overflow-hidden' : 'modal-scroll-container modal-scroll-content'}
             ${contentPadding}
             flex-1 min-h-0
             ${contentClassName}

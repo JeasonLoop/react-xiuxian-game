@@ -2,21 +2,22 @@ version: '3.8'
 
 services:
   web:
-    image: "react-xiuxian-game:${VITE_APP_VERSION:-0.3.2.3}"
+    image: "react-xiuxian-game:${VITE_APP_VERSION:-0.3.3}"
     build:
       context: .
       dockerfile: Dockerfile
       args:
         # 构建时参数 - 会被 Vite 打包到静态文件中
-        VITE_AI_KEY: ${VITE_AI_KEY}
-        VITE_AI_MODEL: ${VITE_AI_MODEL}
-        VITE_AI_API_URL: ${VITE_AI_API_URL}
-        VITE_AI_PROVIDER: ${VITE_AI_PROVIDER:-glm}
-        VITE_AI_USE_PROXY: ${VITE_AI_USE_PROXY}
-        VITE_APP_VERSION: ${VITE_APP_VERSION:-0.3.2.3}
+        VITE_APP_VERSION: ${VITE_APP_VERSION:-0.3.3}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+        VITE_PARTYKIT_HOST: ${VITE_PARTYKIT_HOST}
     container_name: react-xiuxian-game
     ports:
-      - "3000:80"
+      - "18080:80"
+      - "18443:443"
+    volumes:
+      # SSL证书目录映射 - 主机 ./ssl/ -> 容器 /etc/nginx/ssl/
+      - ./ssl:/etc/nginx/ssl:ro
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]

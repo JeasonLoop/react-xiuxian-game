@@ -1,0 +1,8 @@
+name = "xiuxian-game-api"
+main = "functions/api.ts"
+compatibility_date = "2024-12-01"
+
+[vars]
+JWT_SECRET = "change-this-to-a-random-secret-in-production"
+LINUXDO_CLIENT_ID = "YOUR_LINUXDO_CLIENT_ID"
+LINUXDO_CLIENT_SECRET = "YOUR_LINUXDO_CLIENT_SECRET"

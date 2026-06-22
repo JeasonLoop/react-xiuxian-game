@@ -39,6 +39,7 @@ interface ModalState {
   isReputationEventOpen: boolean;
   isTreasureVaultOpen: boolean;
   isAutoAdventureConfigOpen: boolean;
+  isDungeonOpen: boolean;
 }
 
 // 回合制战斗参数
@@ -86,10 +87,12 @@ interface UIState {
   pausedByBattle: boolean;
   pausedByReputationEvent: boolean;
   pausedByHeavenEarthSoul: boolean;
+  pausedByTribulation: boolean;
 
   // 全局状态
   loading: boolean;
   cooldown: number;
+  fastBattleSettlement: boolean;
 
   // Modal Setters (简化)
   setModal: <K extends keyof ModalState>(key: K, value: ModalState[K]) => void;
@@ -131,10 +134,12 @@ interface UIState {
   setPausedByBattle: (value: boolean) => void;
   setPausedByReputationEvent: (value: boolean) => void;
   setPausedByHeavenEarthSoul: (value: boolean) => void;
+  setPausedByTribulation: (value: boolean) => void;
 
   // 全局 Setters
   setLoading: (loading: boolean) => void;
   setCooldown: (cooldown: number) => void;
+  setFastBattleSettlement: (value: boolean) => void;
 
   // Actions
   closeCurrentModal: () => void;
@@ -167,6 +172,7 @@ const defaultModalState: ModalState = {
   isReputationEventOpen: false,
   isTreasureVaultOpen: false,
   isAutoAdventureConfigOpen: false,
+  isDungeonOpen: false,
 };
 
 export const useUIStore = create<UIState>((set, get) => ({
@@ -188,8 +194,10 @@ export const useUIStore = create<UIState>((set, get) => ({
   pausedByBattle: false,
   pausedByReputationEvent: false,
   pausedByHeavenEarthSoul: false,
+  pausedByTribulation: false,
   loading: false,
   cooldown: 0,
+  fastBattleSettlement: false,
 
   // 通用 Modal setter
   setModal: (key, value) =>
@@ -230,10 +238,13 @@ export const useUIStore = create<UIState>((set, get) => ({
     set({ pausedByReputationEvent: value }),
   setPausedByHeavenEarthSoul: (value) =>
     set({ pausedByHeavenEarthSoul: value }),
+  setPausedByTribulation: (value) =>
+    set({ pausedByTribulation: value }),
 
   // 全局 Setters
   setLoading: (loading) => set({ loading }),
   setCooldown: (cooldown) => set({ cooldown }),
+  setFastBattleSettlement: (value) => set({ fastBattleSettlement: value }),
 
   // 关闭当前打开的弹窗
   closeCurrentModal: () => {

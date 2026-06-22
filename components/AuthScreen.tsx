@@ -1,22 +1,109 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { cloudSaveService } from '../services/cloudSaveService';
 import { useGameStore } from '../store/gameStore';
 import { API_URL } from '../constants/api';
-import { User, Lock, Sparkles, LogIn, UserPlus } from 'lucide-react';
+import { STORAGE_KEYS } from '../constants/storageKeys';
+import { User, Lock, Sparkles, LogIn, UserPlus, Eye, EyeOff } from 'lucide-react';
 import logo from '../public/assets/images/logo.png';
+
+// 密码强度分级
+type PasswordStrength = 0 | 1 | 2; // 0=弱, 1=中, 2=强
+
+const calculatePasswordStrength = (password: string): PasswordStrength => {
+  let score = 0;
+
+  // 长度检查
+  if (password.length >= 6) score++;
+  if (password.length >= 10) score++;
+
+  // 包含字母
+  if (/[a-zA-Z]/.test(password)) score++;
+  // 包含数字
+  if (/[0-9]/.test(password)) score++;
+  // 包含特殊字符
+  if (/[^a-zA-Z0-9]/.test(password)) score++;
+
+  // 映射到三级
+  if (score < 2) return 0; // 弱
+  if (score < 4) return 1; // 中
+  return 2; // 强
+};
+
+const getStrengthText = (strength: PasswordStrength): string => {
+  switch (strength) {
+    case 0: return '弱';
+    case 1: return '中';
+    case 2: return '强';
+  }
+};
 
 export const AuthScreen: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const login = useAuthStore((state) => state.login);
 
+  // OAuth 回调（弹窗被拦截时的回退方案）
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthToken = params.get('token');
+    const oauthUser = params.get('username');
+    if (oauthToken && oauthUser) {
+      window.history.replaceState({}, '', window.location.pathname);
+      handleLoginSuccess({ token: oauthToken, refreshToken: oauthToken, user: { id: '', username: oauthUser } });
+    }
+  }, []);
+
+  // 登录成功后的处理
+  const handleLoginSuccess = async (data: any) => {
+    const refreshToken = data.refreshToken ?? data.token;
+    login(data.token, refreshToken, data.user);
+
+    try {
+      const cloudSave = await cloudSaveService.fetchSave();
+      const gameStore = useGameStore.getState();
+
+      if (cloudSave) {
+        // 有云存档，加载并跳过欢迎页
+        gameStore.loadGame(cloudSave);
+        useAuthStore.getState().setSkipWelcomeAfterLogin(true);
+      } else {
+        // 新用户无云存档，清空本地状态，进入新游戏流程
+        gameStore.setHasSave(false);
+        gameStore.setGameStarted(false);
+        gameStore.setPlayer(null);
+        gameStore.setLogs([]);
+        // 清除本地存档
+        localStorage.removeItem(STORAGE_KEYS.SAVE);
+      }
+    } catch (saveErr) {
+      console.error('Failed to load cloud save:', saveErr);
+      // 云存档拉取失败时，也清空本地状态，避免读取旧存档
+      const gameStore = useGameStore.getState();
+      gameStore.setHasSave(false);
+      gameStore.setGameStarted(false);
+      gameStore.setPlayer(null);
+      gameStore.setLogs([]);
+      localStorage.removeItem(STORAGE_KEYS.SAVE);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // 注册时验证密码确认
+    if (!isLogin && password !== confirmPassword) {
+      setError('两次输入的密码不一致');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -30,26 +117,46 @@ export const AuthScreen: React.FC = () => {
       const data = await response.json();
 
       if (!response.ok) {
+        if (isLogin) {
+          if (data.code === 'USER_NOT_FOUND') {
+            setIsLogin(false);
+            setConfirmPassword('');
+            setError('道号不存在，请先注册');
+            setLoading(false);
+            return;
+          }
+
+          if (data.code === 'INVALID_PASSWORD') {
+            setError('密码错误，请重新输入');
+            setLoading(false);
+            return;
+          }
+        }
         throw new Error(data.error || 'Something went wrong');
       }
 
       if (isLogin) {
-        const refreshToken = data.refreshToken ?? data.token;
-        login(data.token, refreshToken, data.user);
-
-        try {
-          const cloudSave = await cloudSaveService.fetchSave();
-          if (cloudSave) {
-            useGameStore.getState().loadGame(cloudSave);
-            useAuthStore.getState().setSkipWelcomeAfterLogin(true);
-          }
-        } catch (saveErr) {
-          console.error('Failed to load cloud save:', saveErr);
-        }
+        await handleLoginSuccess(data);
       } else {
-        // Registration successful, switch to login
-        setIsLogin(true);
-        setError('注册成功，请登录');
+        // 注册成功后自动登录
+        setError('');
+        try {
+          const loginResponse = await fetch(`${API_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+          });
+          const loginData = await loginResponse.json();
+
+          if (loginResponse.ok) {
+            await handleLoginSuccess(loginData);
+          } else {
+            throw new Error(loginData.error || '自动登录失败');
+          }
+        } catch (autoLoginErr: any) {
+          setError(`注册成功，但自动登录失败: ${autoLoginErr.message}`);
+          setIsLogin(true);
+        }
       }
     } catch (err: any) {
       setError(err.message);
@@ -137,16 +244,100 @@ export const AuthScreen: React.FC = () => {
                 <Lock size={14} />
                 真言 (密码)
               </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 bg-stone-900/50 border border-stone-700 rounded-lg focus:outline-none focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/30 text-stone-100 transition-all placeholder-stone-600"
-                placeholder="请输入真言"
-                required
-                minLength={6}
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 pr-12 bg-stone-900/50 border border-stone-700 rounded-lg focus:outline-none focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/30 text-stone-100 transition-all placeholder-stone-600"
+                  placeholder="请输入真言"
+                  required
+                  minLength={6}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-mystic-gold transition-colors"
+                  aria-label={showPassword ? '隐藏密码' : '显示密码'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {/* 密码强度指示器 - 只在注册模式显示 */}
+              {!isLogin && password.length > 0 && (
+                <div className="mt-2">
+                  <div className="flex gap-2 mb-1">
+                    {[0, 1, 2].map((index) => {
+                      const strength = calculatePasswordStrength(password);
+                      const isActive = index <= strength;
+                      let bgColor = 'bg-stone-700';
+                      if (isActive) {
+                        if (strength === 0) bgColor = index === 0 ? 'bg-red-500' : 'bg-stone-700';
+                        if (strength === 1) bgColor = index <= 1 ? 'bg-yellow-500' : 'bg-stone-700';
+                        if (strength === 2) bgColor = index <= 2 ? 'bg-green-500' : 'bg-stone-700';
+                      }
+                      return (
+                        <div
+                          key={index}
+                          className={`h-2 flex-1 rounded-full transition-all duration-300 ${bgColor}`}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div className="text-xs text-stone-400 flex justify-between">
+                    <span>密码强度：</span>
+                    <span className={`font-medium ${
+                      calculatePasswordStrength(password) === 0
+                        ? 'text-red-400'
+                        : calculatePasswordStrength(password) === 1
+                        ? 'text-yellow-400'
+                        : 'text-green-400'
+                    }`}>
+                      {getStrengthText(calculatePasswordStrength(password))}
+                    </span>
+                  </div>
+                  <div className="text-xs text-stone-500 mt-1">
+                    要求：最少 6 位，必须包含字母和数字
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* 确认密码 - 只在注册模式显示 */}
+            {!isLogin && (
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-stone-400 uppercase tracking-wider flex items-center gap-2">
+                  <Lock size={14} />
+                  确认真言
+                </label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={`w-full px-4 py-3 pr-12 bg-stone-900/50 border rounded-lg focus:outline-none focus:ring-1 focus:ring-mystic-gold/30 text-stone-100 transition-all placeholder-stone-600 ${
+                      confirmPassword && password !== confirmPassword
+                        ? 'border-red-500/50 focus:border-red-500'
+                        : 'border-stone-700 focus:border-mystic-gold'
+                    }`}
+                    placeholder="请再次输入真言"
+                    required
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-stone-400 hover:text-mystic-gold transition-colors"
+                    aria-label={showConfirmPassword ? '隐藏确认密码' : '显示确认密码'}
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                {confirmPassword && password !== confirmPassword && (
+                  <p className="text-xs text-red-400">两次输入的密码不一致</p>
+                )}
+              </div>
+            )}
 
             <button
               type="submit"
@@ -164,11 +355,45 @@ export const AuthScreen: React.FC = () => {
             </button>
           </form>
 
-          <div className="mt-8 text-center">
+          <div className="mt-8 text-center space-y-4">
+            {/* LinuxDo 快捷登录 */}
+            <button
+              type="button"
+              onClick={() => {
+                const popup = window.open(
+                  `${API_URL}/auth/linuxdo`,
+                  'linuxdo-auth',
+                  'width=600,height=700'
+                );
+                if (!popup) {
+                  setError('请允许弹窗以完成 LinuxDo 登录');
+                  return;
+                }
+                const handler = (e: MessageEvent) => {
+                  if (e.data?.type !== 'linuxdo-auth') return;
+                  window.removeEventListener('message', handler);
+                  if (!popup.closed) popup.close();
+                  if (e.data?.token) {
+                    handleLoginSuccess({
+                      token: e.data.token,
+                      refreshToken: e.data.token,
+                      user: { id: '', username: e.data.username },
+                    });
+                  }
+                };
+                window.addEventListener('message', handler);
+              }}
+              className="w-full py-3 rounded-lg border border-stone-600 bg-stone-800 hover:bg-stone-700 text-stone-200 text-sm transition-all flex items-center justify-center gap-2.5"
+            >
+              <img src="/assets/images/linuxdo.png" alt="" className="w-5 h-5 rounded" />
+              LinuxDo 快捷登录
+            </button>
+
             <button
               onClick={() => {
                 setIsLogin(!isLogin);
                 setError('');
+                setConfirmPassword('');
               }}
               className="text-stone-400 hover:text-mystic-gold text-sm transition-colors flex items-center justify-center gap-2 mx-auto group"
             >

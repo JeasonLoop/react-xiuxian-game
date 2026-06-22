@@ -4,30 +4,54 @@ import { showError } from '../utils/toastUtils';
 
 const LOGIN_EXPIRED_MSG = '登录已过期，请重新登录';
 
+/** 防止并发刷新：同一时间只允许一个 refresh 请求 */
+let refreshPromise: Promise<string> | null = null;
+
 async function refreshAccessToken(): Promise<string> {
-  const { refreshToken, setTokens, logout } = useAuthStore.getState();
-  if (!refreshToken) {
-    logout();
-    showError(LOGIN_EXPIRED_MSG);
-    throw new Error(LOGIN_EXPIRED_MSG);
-  }
+  // 如果已有刷新在进行中，复用同一个 Promise
+  if (refreshPromise) return refreshPromise;
 
-  const response = await fetch(`${API_URL}/auth/refresh`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken }),
-  });
+  // 快照当前 token，用于后续比较（检测是否有新登录插入）
+  const snap = useAuthStore.getState();
+  const capturedRefreshToken = snap.refreshToken;
 
-  const data = await response.json().catch(() => ({}));
+  refreshPromise = (async () => {
+    try {
+      if (!capturedRefreshToken) {
+        useAuthStore.getState().logout();
+        showError(LOGIN_EXPIRED_MSG);
+        throw new Error(LOGIN_EXPIRED_MSG);
+      }
 
-  if (!response.ok) {
-    useAuthStore.getState().logout();
-    showError(data.error || LOGIN_EXPIRED_MSG);
-    throw new Error(LOGIN_EXPIRED_MSG);
-  }
+      const response = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refreshToken: capturedRefreshToken }),
+      });
 
-  setTokens(data.token, data.refreshToken);
-  return data.token;
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        // 检查是否 tokens 已被新登录替换
+        const cur = useAuthStore.getState();
+        if (cur.refreshToken !== capturedRefreshToken) {
+          // 新登录已写入新 token，静默放弃
+          return '';
+        }
+        useAuthStore.getState().logout();
+        showError(data.error || LOGIN_EXPIRED_MSG);
+        throw new Error(LOGIN_EXPIRED_MSG);
+      }
+
+      // 成功：写入新 token
+      useAuthStore.getState().setTokens(data.token, data.refreshToken);
+      return data.token;
+    } finally {
+      refreshPromise = null;
+    }
+  })();
+
+  return refreshPromise;
 }
 
 /**
@@ -37,15 +61,16 @@ async function fetchWithAuth(
   url: string,
   options: RequestInit & { _retry?: boolean } = {}
 ): Promise<Response> {
-  const { token } = useAuthStore.getState();
-  if (!token) throw new Error('Not authenticated');
+  const state = useAuthStore.getState();
+  const capturedToken = state.token;
+  if (!capturedToken) throw new Error('Not authenticated');
 
   const { _retry, ...fetchOptions } = options;
   const res = await fetch(url, {
     ...fetchOptions,
     headers: {
       ...(fetchOptions.headers as Record<string, string>),
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${capturedToken}`,
     },
   });
 
@@ -55,6 +80,11 @@ async function fetchWithAuth(
   }
 
   if (res.status === 401 || res.status === 403) {
+    // 检查 token 是否已被新登录替换
+    const cur = useAuthStore.getState();
+    if (cur.token !== capturedToken) {
+      throw new Error('Token changed, request aborted');
+    }
     useAuthStore.getState().logout();
     showError(LOGIN_EXPIRED_MSG);
     throw new Error(LOGIN_EXPIRED_MSG);

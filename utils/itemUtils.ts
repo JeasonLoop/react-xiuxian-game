@@ -816,6 +816,22 @@ export const getItemStats = (item: Item, isNatal: boolean = false) => {
   };
 };
 
+/**
+ * 计算装备战斗力评分（用于一键装备的自动比较）
+ * 权重：攻击×2 + 防御×1.5 + 生命×0.5 + 神识×1.5 + 体魄×1.5 + 速度×2
+ */
+export const calculateItemPower = (item: Item, isNatal: boolean = false): number => {
+  const stats = getItemStats(item, isNatal);
+  return (
+    stats.attack * 2 +
+    stats.defense * 1.5 +
+    stats.hp * 0.5 +
+    stats.spirit * 1.5 +
+    stats.physique * 1.5 +
+    stats.speed * 2
+  );
+};
+
 
 // 生成属性预览文本
 export const generateAttributePreview = (effect: Item['effect']): string => {

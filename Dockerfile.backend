@@ -1,0 +1,33 @@
+# 后端服务 Dockerfile
+# 使用 Debian 基础镜像，避免 Alpine musl libc 兼容性问题
+FROM node:20
+
+# 安装编译依赖和 wget（用于健康检查）
+RUN apt-get update && apt-get install -y python3 make g++ wget && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# 复制后端 package.json
+COPY server/package*.json ./server/
+
+# 安装生产依赖
+# 使用国内镜像源，增加失败重试，提高构建稳定性
+RUN npm config set registry https://registry.npmmirror.com && \
+    cd server && \
+    npm ci --only=production || \
+    npm install --production
+
+# 强制重新编译原生模块，解决兼容性问题
+RUN cd server && \
+    npm rebuild sqlite3 && \
+    npm rebuild bcrypt
+
+# 复制后端源代码
+COPY server/ ./server/
+
+# 后端端口
+EXPOSE 3002
+
+WORKDIR /app/server
+
+CMD ["npm", "start"]

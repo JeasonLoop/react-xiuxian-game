@@ -5,6 +5,7 @@ import { REALM_ORDER, TRIBULATION_CONFIG } from '../constants/index';
 import { checkBreakthroughConditions } from '../utils/cultivationUtils';
 import { shouldTriggerTribulation, createTribulationState } from '../utils/tribulationUtils';
 import { showConfirm } from '../utils/toastUtils';
+import { useUIStore } from '../store/uiStore';
 
 interface UseLevelUpParams {
   player: PlayerStats | null;
@@ -67,7 +68,7 @@ export function useLevelUp({
       }
 
       // 检查是否需要渡劫
-      const isRealmUpgrade = player.realmLevel >= 9 && player.exp > player.maxExp;
+      const isRealmUpgrade = player.realmLevel >= 9 && player.exp >= player.maxExp;
       let targetRealm = player.realm;
       if (isRealmUpgrade) {
         const currentIndex = REALM_ORDER.indexOf(player.realm);
@@ -103,6 +104,11 @@ export function useLevelUp({
           `你的${tribulationName}来了，是否现在渡劫？`,
           '确认渡劫',
           () => {
+            // 停止自动历练，防止天劫期间后台继续冒险
+            const uiState = useUIStore.getState();
+            if (uiState.autoAdventure) {
+              useUIStore.setState({ autoAdventure: false, pausedByTribulation: true });
+            }
             const newTribulationState = createTribulationState(player, targetRealm);
             setTribulationState(newTribulationState);
           },

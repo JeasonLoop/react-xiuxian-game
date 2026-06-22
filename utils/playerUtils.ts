@@ -1,20 +1,22 @@
 import { PlayerStats, RealmType, SectRank } from '../types';
 import { REALM_DATA, INITIAL_ITEMS, TALENTS } from '../constants/index';
 import { clampSpiritualRoot } from './numberUtils';
+import { combineTalentEffects } from './talentUtils';
 
 // 创建初始玩家数据
 export const createInitialPlayer = (
   name: string,
-  talentId: string
+  talentIds: string[]
 ): PlayerStats => {
-  const initialTalent = TALENTS.find((t) => t.id === talentId);
-  const talentAttack = initialTalent?.effects.attack || 0;
-  const talentDefense = initialTalent?.effects.defense || 0;
-  const talentHp = initialTalent?.effects.hp || 0;
-  const talentSpirit = initialTalent?.effects.spirit || 0;
-  const talentPhysique = initialTalent?.effects.physique || 0;
-  const talentSpeed = initialTalent?.effects.speed || 0;
-  const talentLuck = initialTalent?.effects.luck || 0;
+  const talents = talentIds.map((id) => TALENTS.find((t) => t.id === id)).filter(Boolean);
+  const combinedEffects = combineTalentEffects(talents);
+  const talentAttack = combinedEffects.attack || 0;
+  const talentDefense = combinedEffects.defense || 0;
+  const talentHp = combinedEffects.hp || 0;
+  const talentSpirit = combinedEffects.spirit || 0;
+  const talentPhysique = combinedEffects.physique || 0;
+  const talentSpeed = combinedEffects.speed || 0;
+  const talentLuck = combinedEffects.luck || 0;
 
   const realmData = REALM_DATA[RealmType.QiRefining];
 
@@ -126,7 +128,7 @@ export const createInitialPlayer = (
     sectHuntLevel: 0, // 追杀强度等级
     sectHuntSectId: null, // 正在追杀玩家的宗门ID
     sectHuntSectName: null, // 正在追杀玩家的宗门名称
-    talentId: talentId,
+    talentIds: talentIds,
     titleId: 'title-novice', // 初始称号：初入仙途
     unlockedTitles: ['title-novice'], // 初始已解锁的称号
     attributePoints: 0,
@@ -136,6 +138,7 @@ export const createInitialPlayer = (
     activePetId: null,
     lotteryTickets: 10, // 开局十连抽
     lotteryCount: 0,
+    breakthroughFailCount: 0, // 突破失败积累初始为0
     inheritanceLevel: 0,
     dailyTaskCount: {},
     lastTaskResetDate: new Date().toISOString().split('T')[0],

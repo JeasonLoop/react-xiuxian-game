@@ -62,6 +62,10 @@ export function useAlchemyHandlers(
           showError(`材料不足：${req.name}`);
           return prev;
         }
+        if ((newInventory[itemIdx] as any).locked) {
+          showError(`🔒 【${req.name}】已锁定，无法作为炼丹材料！`);
+          return prev;
+        }
 
         newInventory[itemIdx] = {
           ...newInventory[itemIdx],
@@ -167,7 +171,6 @@ export function useAlchemyHandlers(
       newStats.alchemyCount = (newStats.alchemyCount || 0) + 1;
 
       if (logMessage) addLog(logMessage, logType);
-
       return {
         ...prev,
         hp: Math.max(1, prev.hp + hpChange),
@@ -184,6 +187,11 @@ export function useAlchemyHandlers(
    * 炼器逻辑：材料合成
    */
   const handleCraftArtifact = async (materials: Item[], customName: string, selectedSlot?: string) => {
+    const locked = materials.find(m => (m as any).locked);
+    if (locked) {
+      showError(`🔒 【${locked.name}】已锁定，无法作为炼器材料！`);
+      return;
+    }
     if (triggerVisual) {
       triggerVisual('alchemy', '⚒️ 炼器中...', 'text-stone-400');
     }

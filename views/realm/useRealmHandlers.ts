@@ -40,8 +40,8 @@ export function useRealmHandlers({
   setIsRealmOpen,
   executeAdventure,
 }: UseRealmHandlersProps) {
-  const handleEnterRealm = async (realm: SecretRealm) => {
-    if (loading || cooldown > 0 || !player) return;
+  const handleEnterRealm = async (realm: SecretRealm): Promise<boolean> => {
+    if (loading || cooldown > 0 || !player) return false;
 
     // 使用实际最大血量（包含金丹法数加成等）来判断气血不足
     const totalStats = getPlayerTotalStats(player);
@@ -51,12 +51,12 @@ export function useRealmHandlers({
       if (setItemActionLog) {
         setItemActionLog({ text: message, type: 'danger' });
       }
-      return;
+      return false;
     }
 
     if (player.spiritStones < realm.cost) {
       addLog('囊中羞涩，无法支付开启秘境的灵石。', 'danger');
-      return;
+      return false;
     }
 
     setPlayer((prev) => ({
@@ -67,6 +67,7 @@ export function useRealmHandlers({
 
     // Secret Realm Adventure - 传递秘境的完整信息
     await executeAdventure('secret_realm', realm.name, realm.riskLevel, realm.minRealm, realm.description);
+    return true;
   };
 
   return {

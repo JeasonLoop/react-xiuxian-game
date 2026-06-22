@@ -10,6 +10,9 @@ export enum RealmType {
 
 export type ArtGrade = '天' | '地' | '玄' | '黄'; // 功法品级：天、地、玄、黄
 
+/** Build 流派三维：暴击爆发 / 站桩续航 / 反制反击 */
+export type BuildArchetypeKind = 'crit' | 'sustain' | 'counter';
+
 export interface CultivationArt {
   id: string;
   name: string;
@@ -30,6 +33,8 @@ export interface CultivationArt {
     physique?: number;
     speed?: number;
   };
+  /** 流派倾向权重（用于角色面板与后续联动，通常 1~3） */
+  buildAffinity?: Partial<Record<BuildArchetypeKind, number>>;
   effects: {
     attack?: number;
     defense?: number;
@@ -100,6 +105,7 @@ export interface Item {
   purity?: number; // 丹药纯度 (0-100)，影响丹药效果
   advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule' | 'soulArt'; // 进阶物品类型（仅当type为AdvancedItem时使用）
   advancedItemId?: string; // 进阶物品ID（用于炼化）
+  locked?: boolean; // 锁定物品，锁定后不可丢弃、不可分解
   effect?: {
     hp?: number;
     exp?: number;
@@ -149,12 +155,32 @@ export interface SecretRealm {
   drops: string[]; // Description of potential drops
 }
 
+// 天赋类别
+export type TalentCategory = '体质' | '悟性' | '战斗' | '气运' | '特殊';
+
+// 天赋专属技能/事件
+export interface TalentSpecialAbility {
+  id: string;
+  name: string;
+  description: string;
+  type: 'skill' | 'event' | 'passive';
+  unlockRealm?: string; // 解锁所需境界，undefined 表示初始解锁
+  effects?: {
+    damageMultiplier?: number;
+    healPercent?: number;
+    triggerChance?: number; // 0-1 触发概率
+    eventId?: string; // 关联的事件ID
+  };
+}
+
 // 角色系统扩展
 export interface Talent {
   id: string;
   name: string;
   description: string;
+  category: TalentCategory; // 天赋类别
   rarity: ItemRarity;
+  fateCost: number; // 命运点消耗（普通=1, 稀有=2, 传说=4, 仙品=6）
   effects: {
     attack?: number;
     defense?: number;
@@ -165,7 +191,11 @@ export interface Talent {
     expRate?: number;
     luck?: number; // 幸运值，影响奇遇和掉落
   };
+  specialAbility?: TalentSpecialAbility; // 专属技能/事件
 }
+
+// 命运点常量
+export const FATE_POINTS_TOTAL = 15;
 
 export interface Title {
   id: string;
@@ -205,6 +235,8 @@ export interface TitleSetEffect {
 }
 
 export interface PlayerStats {
+  /** 可选唯一标识（如宗主传承、存档关联） */
+  id?: string;
   name: string;
   realm: RealmType;
   realmLevel: number; // 1-9
@@ -242,7 +274,7 @@ export interface PlayerStats {
   sectHuntSectName: string | null; // 正在追杀玩家的宗门名称
   sectMasterId: string | null; // 当前宗门的宗主ID (如果玩家是宗主，则为玩家自己的ID)
   // 角色系统扩展
-  talentId: string | null; // 天赋ID（游戏开始时随机生成，之后不可修改）
+  talentIds: string[]; // 天赋ID列表（命运点分配制，可选择多个天赋）
   titleId: string | null; // 当前装备的称号ID
   unlockedTitles: string[]; // 已解锁的称号ID列表
   attributePoints: number; // 可分配属性点
@@ -255,6 +287,8 @@ export interface PlayerStats {
   // 抽奖系统
   lotteryTickets: number; // 抽奖券
   lotteryCount: number; // 累计抽奖次数（用于保底）
+  // 突破失败积累系统
+  breakthroughFailCount: number; // 当前境界突破失败次数，每失败一次增加下次成功率
   // 传承系统（仅保留突破境界功能）
   inheritanceLevel: number; // 传承等级（0-4，每次传承可突破1-4个境界）
   // 每日任务系统
@@ -533,6 +567,15 @@ export interface AdventureResult {
       hpChange?: number; // 可能的气血变化
       expChange?: number; // 可能的修为变化
       spiritStonesChange?: number; // 可能的灵石变化
+      /** 分支策略标签（历练二段式等），用于日志与心智提示 */
+      riskTag?: '稳妥' | '激进' | '保底';
+      karmaChange?: number;
+      npcRelationChange?: {
+        npcId: string;
+        npcName: string;
+        favorabilityChange: number;
+        description: string;
+      };
     }>;
   };
   attributeReduction?: {
@@ -800,6 +843,8 @@ export interface PetTemplate {
     speed: number;
   };
   skills: PetSkill[]; // 初始技能 (幼年期)
+  /** 灵宠模板流派倾向（与技能风格一致） */
+  buildAffinity?: Partial<Record<BuildArchetypeKind, number>>;
   stageSkills?: {
     stage1?: PetSkill[]; // 成熟期新增技能组
     stage2?: PetSkill[]; // 完全体新增技能组

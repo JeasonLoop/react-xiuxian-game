@@ -2,8 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { PlayerStats, RealmType, SecretRealm } from '../types';
 import { REALM_ORDER } from '../constants/index';
 import { generateRandomRealms } from '../services/randomService';
-import { Mountain, Gem, Ticket, RefreshCw } from 'lucide-react';
+import { Mountain, Gem, Ticket, RefreshCw, Map } from 'lucide-react';
 import { Modal } from './common';
+import { useUIStore } from '../store/uiStore';
 
 interface Props {
   isOpen: boolean;
@@ -53,6 +54,29 @@ const SecretRealmModal: React.FC<Props> = ({
       headerClassName="bg-purple-900/20 border-purple-900"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+        {/* 地宫探索入口 */}
+        <div
+          className="col-span-full bg-gradient-to-r from-purple-900/40 to-amber-900/40 border-2 border-amber-700/60 rounded-lg p-4 cursor-pointer hover:border-amber-500 transition-all"
+          onClick={() => {
+            const setModal = useUIStore.getState().setModal;
+            setModal('isDungeonOpen', true);
+            // 关闭当前秘境窗口
+            setModal('isRealmOpen', false);
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <Map size={28} className="text-amber-400" />
+            <div>
+              <h4 className="text-amber-300 font-serif font-bold text-base">
+                🏰 秘境 Roguelike 探索
+              </h4>
+              <p className="text-stone-400 text-xs mt-0.5">
+                多层地宫 · 3选1路径 · 奖励递增 · 可随时退出
+              </p>
+            </div>
+          </div>
+        </div>
+
         {availableRealms.map((realm) => {
           const playerRealmIndex = getRealmIndex(player.realm);
           const reqRealmIndex = getRealmIndex(realm.minRealm);

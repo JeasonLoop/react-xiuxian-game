@@ -187,6 +187,7 @@ function GameView({
           pausedByBattle={handlers.pausedByBattle}
           onToggleAutoMeditate={handlers.onToggleAutoMeditate}
           onToggleAutoAdventure={handlers.onToggleAutoAdventure}
+          realm={player.realm}
         />
       </main>
 

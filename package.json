@@ -1,7 +1,7 @@
 {
   "name": "cloud-spirit-cultivation",
   "private": true,
-  "version": "0.3.2.3",
+  "version": "0.3.3.1",
   "type": "module",
   "scripts": {
     "dev:frontend": "vite",
@@ -10,6 +10,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "npm run build && npx gh-pages -d dist",
+    "deploy:cf": "node scripts/deploy-cf.mjs",
     "vercel-build": "npm run build",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
@@ -30,7 +31,6 @@
     "party:deploy": "partykit deploy"
   },
   "dependencies": {
-    "@google/genai": "^1.30.0",
     "dayjs": "^1.11.19",
     "lucide-react": "^0.554.0",
     "partykit": "^0.0.115",

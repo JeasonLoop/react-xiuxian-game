@@ -17,6 +17,7 @@ import {
   ShopType,
   PlayerStats,
   SecretRealm,
+  Recipe,
 } from '../types';
 import { BattleReplay } from '../services/battleService';
 import { withQuestProgress } from '../utils/questProgressDecorator';
@@ -363,8 +364,21 @@ export function useAppHandlers(props: UseAppHandlersProps) {
   const handleActivateArt = cultivationHandlers.handleActivateArt;
 
   const handleCraft = useCallback(
-    withQuestProgress(alchemyHandlers.handleCraft, 'alchemy', dailyQuestHandlers),
-    [alchemyHandlers.handleCraft, dailyQuestHandlers]
+    async (recipe: Recipe) => {
+      const canAfford = !!player && player.spiritStones >= recipe.cost;
+      const hasAllMaterials =
+        !!player &&
+        recipe.ingredients.every((req) => {
+          const invItem = player.inventory.find((i) => i.name === req.name);
+          return !!invItem && invItem.quantity >= req.qty;
+        });
+
+      await alchemyHandlers.handleCraft(recipe);
+      if (canAfford && hasAllMaterials) {
+        dailyQuestHandlers.updateQuestProgress('alchemy', 1);
+      }
+    },
+    [alchemyHandlers.handleCraft, dailyQuestHandlers, player]
   );
 
   const handleSelectTalent = characterHandlers.handleSelectTalent;
@@ -447,8 +461,10 @@ export function useAppHandlers(props: UseAppHandlersProps) {
 
   const handleEnterRealm = useCallback(
     async (realm: SecretRealm) => {
-      await realmHandlers.handleEnterRealm(realm);
-      dailyQuestHandlers.updateQuestProgress('realm', 1);
+      const entered = await realmHandlers.handleEnterRealm(realm);
+      if (entered) {
+        dailyQuestHandlers.updateQuestProgress('realm', 1);
+      }
     },
     [realmHandlers.handleEnterRealm, dailyQuestHandlers]
   );

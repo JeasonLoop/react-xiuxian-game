@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlayerStats } from '../../types';
-import { REALM_DATA, REALM_ORDER } from '../../constants/index';
+import { REALM_DATA, REALM_ORDER, getNewlyUnlockedFeatures } from '../../constants/index';
 import { getRandomBreakthroughDescription } from '../../services/templateService';
 import { getRealmIndex, calculateBreakthroughAttributePoints } from '../../utils/attributeUtils';
 import { checkBreakthroughConditions, calculateGoldenCoreMethodCount } from '../../utils/cultivationUtils';
@@ -53,7 +53,12 @@ export function useBreakthroughHandlers({
       }
     }
 
-    const successChance = isRealmUpgrade ? 0.6 : 0.9;
+    const baseSuccessChance = isRealmUpgrade ? 0.6 : 0.9;
+    // 突破失败积累：每次失败增加5%成功率（大境界）或3%（小境界），上限30%
+    const failBonus = isRealmUpgrade 
+      ? Math.min(player.breakthroughFailCount * 0.05, 0.30)
+      : Math.min(player.breakthroughFailCount * 0.03, 0.30);
+    const successChance = Math.min(baseSuccessChance + failBonus, 0.95);
 
     // 如果跳过成功率检查（天劫成功后），直接执行突破
     const isSuccess = skipSuccessCheck || Math.random() < successChance;
@@ -180,6 +185,15 @@ export function useBreakthroughHandlers({
           );
         }
 
+        // 境界升级时检查新解锁的功能
+        if (isRealmUpgrade) {
+          const newFeatures = getNewlyUnlockedFeatures(player.realm, nextRealm);
+          if (newFeatures.length > 0) {
+            const featureNames = newFeatures.map((f) => f.name).join('、');
+            addLog(`🔓 突破至 ${nextRealm}，解锁新功能：${featureNames}！`, 'special');
+          }
+        }
+
         // 先计算基础属性 + 固定加成 + 分配的属性点
         const baseAttack = Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack + allocatedAttack;
         const baseDefense = Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense + allocatedDefense;
@@ -231,6 +245,7 @@ export function useBreakthroughHandlers({
           lifespan: newLifespan,
           goldenCoreMethodCount, // 设置金丹法数
           hp: Math.max(0, actualMaxHp - hpLoss), // 应用渡劫产生的扣血
+          breakthroughFailCount: 0, // 突破成功后重置失败计数
           statistics: {
             ...playerStats,
             breakthroughCount: playerStats.breakthroughCount + 1,
@@ -239,11 +254,17 @@ export function useBreakthroughHandlers({
       });
       setLoading(false);
     } else {
-      addLog('你尝试冲击瓶颈，奈何根基不稳，惨遭反噬！', 'danger');
+      const newFailCount = player.breakthroughFailCount + 1;
+      const newChance = Math.min((isRealmUpgrade ? 0.6 : 0.9) + (isRealmUpgrade ? newFailCount * 0.05 : newFailCount * 0.03), 0.95);
+      const insightMsg = isRealmUpgrade
+        ? `你在失败中积累了一丝感悟，下次突破成功率提升至 ${Math.round(newChance * 100)}%`
+        : `虽未突破，但你稳固了根基，下次成功率提升至 ${Math.round(newChance * 100)}%`;
+      addLog(`你尝试冲击瓶颈，奈何根基不稳，惨遭反噬！\n${insightMsg}`, 'danger');
       setPlayer((prev) => ({
         ...prev,
         exp: Math.floor(prev.exp * 0.7),
         hp: Math.floor(prev.hp * 0.5),
+        breakthroughFailCount: newFailCount,
       }));
       setLoading(false); // 突破失败时也要重置loading状态
     }

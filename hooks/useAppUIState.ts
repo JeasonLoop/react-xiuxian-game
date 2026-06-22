@@ -85,6 +85,8 @@ export function useGlobalState() {
       cooldown: state.cooldown,
       setLoading: state.setLoading,
       setCooldown: state.setCooldown,
+      fastBattleSettlement: state.fastBattleSettlement,
+      setFastBattleSettlement: state.setFastBattleSettlement,
     }))
   );
 }
@@ -151,12 +153,14 @@ export function useAutoFeaturesState() {
       pausedByBattle: state.pausedByBattle,
       pausedByReputationEvent: state.pausedByReputationEvent,
       pausedByHeavenEarthSoul: state.pausedByHeavenEarthSoul,
+      pausedByTribulation: state.pausedByTribulation,
       setAutoMeditate: state.setAutoMeditate,
       setAutoAdventure: state.setAutoAdventure,
       setPausedByShop: state.setPausedByShop,
       setPausedByBattle: state.setPausedByBattle,
       setPausedByReputationEvent: state.setPausedByReputationEvent,
       setPausedByHeavenEarthSoul: state.setPausedByHeavenEarthSoul,
+      setPausedByTribulation: state.setPausedByTribulation,
     }))
   );
 }

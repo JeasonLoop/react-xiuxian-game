@@ -19,15 +19,15 @@ import dayjs from 'dayjs';
 import { showError, showSuccess, showInfo, showConfirm } from '../utils/toastUtils';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import {
-  getCurrentSlotId,
-  saveToSlot,
-  loadFromSlot,
+  saveGameData,
+  loadGameData,
   exportSave,
   importSave,
   ensurePlayerStatsCompatibility,
 } from '../utils/saveManagerUtils';
 import { cloudSaveService } from '../services/cloudSaveService';
 import { useGameStore } from '../store/gameStore';
+import { useUIStore } from '../store/uiStore';
 import ChangelogModal from './ChangelogModal';
 import ShortcutsModal from './ShortcutsModal';
 import { KeyboardShortcut } from '../hooks/useKeyboardShortcuts';
@@ -62,6 +62,8 @@ const SettingsModal: React.FC<Props> = ({
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const fastBattleSettlement = useUIStore((state) => state.fastBattleSettlement);
+  const setFastBattleSettlement = useUIStore((state) => state.setFastBattleSettlement);
 
   // 生成快捷键列表（用于显示）
   const shortcuts: KeyboardShortcut[] = Object.keys(SHORTCUT_DESCRIPTIONS).map(
@@ -123,12 +125,7 @@ const SettingsModal: React.FC<Props> = ({
         '确认导入',
         () => {
           try {
-            // 获取当前存档槽位ID，如果没有则使用槽位1
-            const currentSlotId = getCurrentSlotId();
-
-            // 使用新的存档系统保存到当前槽位
-            const success = saveToSlot(
-              currentSlotId,
+            const success = saveGameData(
               ensurePlayerStatsCompatibility(saveData.player),
               saveData.logs
             );
@@ -164,11 +161,7 @@ const SettingsModal: React.FC<Props> = ({
 
   const handleExportSave = () => {
     try {
-      // 获取当前存档槽位ID
-      const currentSlotId = getCurrentSlotId();
-
-      // 从当前槽位加载存档
-      const saveData = loadFromSlot(currentSlotId);
+      const saveData = loadGameData();
 
       if (!saveData) {
         showError('没有找到存档数据！请先开始游戏。');
@@ -374,6 +367,15 @@ const SettingsModal: React.FC<Props> = ({
                   难度模式在游戏开始时选择，无法更改
                 </p>
               </div>
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-stone-300">快速结算（跳过即时战斗回放）</span>
+                <input
+                  type="checkbox"
+                  checked={fastBattleSettlement}
+                  onChange={(e) => setFastBattleSettlement(e.target.checked)}
+                  className="w-5 h-5"
+                />
+              </label>
             </div>
           </div>
 
@@ -559,7 +561,16 @@ const SettingsModal: React.FC<Props> = ({
                 <Save size={16} />
                 <span>查看更新日志</span>
               </button>
-              <p className="text-xs text-stone-500">
+              <a
+                href="https://linux.do/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 w-full bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded px-4 py-2 transition-colors mt-2"
+              >
+                <span>本项目已认可LINUX.DO</span>
+                <span className="ml-auto text-xs text-stone-400">↗</span>
+              </a>
+              <p className="text-xs text-stone-500 mt-2">
                 一款文字修仙小游戏，欢迎 Star 和 Fork！
               </p>
             </div>

@@ -6,6 +6,7 @@ import { calculateItemSellPrice } from '../../utils/itemUtils';
 import { generateShopItems } from '../../services/shopService';
 import { useGameStore, useUIStore } from '../../store';
 import { addItemToInventory } from '../../utils/inventoryUtils';
+import { getEffectiveBuyPrice, getEffectiveSellPrice } from '../../utils/shopEconomy';
 
 interface UseShopHandlersProps {
   player?: PlayerStats;
@@ -84,7 +85,8 @@ export function useShopHandlers(
         return prev;
       }
 
-      const totalPrice = shopItem.price * quantity;
+      const unitPrice = getEffectiveBuyPrice(shopItem.price, prev);
+      const totalPrice = unitPrice * quantity;
       if (prev.spiritStones < totalPrice) {
         addLog('灵石不足！', 'danger');
         return prev;
@@ -216,13 +218,18 @@ export function useShopHandlers(
         addLog('无法出售已装备的物品！请先卸下。', 'danger');
         return prev;
       }
+      if (item.locked) {
+        addLog(`🔒 【${item.name}】已锁定，无法出售！`, 'danger');
+        return prev;
+      }
 
       // 找到对应的商店物品来计算出售价格
       const shopItem = currentShop.items.find((si) => si.name === item.name);
       const sellPrice = shopItem?.sellPrice || calculateItemSellPrice(item);
 
       // 确保 sellPrice 是有效数字
-      const validSellPrice = isNaN(sellPrice) || sellPrice <= 0 ? 1 : sellPrice;
+      const rawSell = isNaN(sellPrice) || sellPrice <= 0 ? 1 : sellPrice;
+      const validSellPrice = getEffectiveSellPrice(rawSell, prev);
 
       // 确定要出售的数量（默认为1，但不超过物品的实际数量）
       const sellQuantity = quantity !== undefined

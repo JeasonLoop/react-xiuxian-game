@@ -100,12 +100,14 @@ function App() {
     pausedByBattle,
     pausedByReputationEvent,
     pausedByHeavenEarthSoul,
+    pausedByTribulation,
     setAutoMeditate,
     setAutoAdventure,
     setPausedByShop,
     setPausedByBattle,
     setPausedByReputationEvent,
     setPausedByHeavenEarthSoul,
+    setPausedByTribulation,
     closeCurrentModal,
     openTurnBasedBattle,
     resetAutoStates,
@@ -339,10 +341,12 @@ function App() {
     pausedByBattle,
     pausedByReputationEvent,
     pausedByHeavenEarthSoul,
+    pausedByTribulation,
     setPausedByShop,
     setPausedByBattle,
     setPausedByReputationEvent,
     setPausedByHeavenEarthSoul,
+    setPausedByTribulation,
     handleMeditate,
     handleAdventure,
     setCooldown,
@@ -428,10 +432,10 @@ function App() {
   // ========== 开始新游戏 ==========
   const handleStartGame = useCallback((
     playerName: string,
-    talentId: string,
+    talentIds: string[],
     difficulty: GameSettings['difficulty']
   ) => {
-    startNewGame(playerName, talentId, difficulty);
+    startNewGame(playerName, talentIds, difficulty);
   }, [startNewGame]);
 
   // ========== 认证状态 ==========

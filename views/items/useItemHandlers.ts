@@ -33,6 +33,12 @@ const applyItemEffect = (
 ): PlayerStats => {
   const { addLog, setItemActionLog, isBatch = false } = options;
 
+  // 锁定物品不可使用
+  if (item.locked) {
+    addLog(`🔒 【${item.name}】已锁定，无法使用！`, 'danger');
+    return prev;
+  }
+
   // 基础数据克隆
   let newStats = { ...prev };
   let newInv = prev.inventory
@@ -450,14 +456,15 @@ export function useItemHandlers(props?: UseItemHandlersProps) {
   const storeSetPlayer = useGameStore((state) => state.setPlayer);
   const storeAddLog = useGameStore((state) => state.addLog);
   const storeSetItemActionLog = useUIStore((state) => state.setItemActionLog);
-  const storeSetIsTreasureVaultOpen = useUIStore((state) => state.setIsTreasureVaultOpen);
+  const setModal = useUIStore((state) => state.setModal);
 
   // 使用 props 或 store 的值（props 优先，用于向后兼容）
   const player = props?.player ?? storePlayer;
   const setPlayer = props?.setPlayer ?? storeSetPlayer;
   const addLog = props?.addLog ?? storeAddLog;
   const setItemActionLog = props?.setItemActionLog ?? storeSetItemActionLog;
-  const onOpenTreasureVault = props?.onOpenTreasureVault ?? (() => storeSetIsTreasureVaultOpen(true));
+  const onOpenTreasureVault =
+    props?.onOpenTreasureVault ?? (() => setModal('isTreasureVaultOpen', true));
 
   // 如果 player 为 null，返回空的 handlers（防御性编程）
   if (!player) {

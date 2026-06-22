@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Modal from './common/Modal';
 import { createPortal } from 'react-dom';
-import { X, Star, Award, Info, Zap, BarChart3, TrendingUp, Sparkles, BookOpen, Users, Beaker, Package } from 'lucide-react';
+import { X, Star, Award, Info, Zap, BarChart3, TrendingUp, Sparkles, BookOpen, Users, Beaker, Package, Swords, HeartPulse, RotateCcw, Layers } from 'lucide-react';
 import { PlayerStats, ItemRarity, RealmType, Title, ItemType } from '../types';
 import {
   TALENTS,
@@ -27,6 +27,8 @@ import { useInheritanceHandlers } from '../views/inheritance';
 import { getPlayerTotalStats, getActiveMentalArt, calculateTotalExpRate } from '../utils/statUtils';
 import { logger } from '../utils/logger';
 import { formatValueChange, formatNumber } from '../utils/formatUtils';
+import { getBuildArchetypeProfile } from '../utils/buildArchetypeUtils';
+import { BUILD_ARCHETYPE_LABELS } from '../constants/buildArchetypes';
 
 interface Props {
   isOpen: boolean;
@@ -217,6 +219,8 @@ const CharacterModal: React.FC<Props> = ({
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const totalStats = useMemo(() => getPlayerTotalStats(player), [player]);
 
+  const buildProfile = useMemo(() => getBuildArchetypeProfile(player), [player]);
+
   // 计算总修炼速度加成
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const expRateInfo = useMemo(() => calculateTotalExpRate(player), [player]);
@@ -270,7 +274,15 @@ const CharacterModal: React.FC<Props> = ({
     }
     return cache;
   }, [player?.inventory, player?.equippedItems, showMarrowFeedModal]);
-  const currentTalent = TALENTS.find((t) => t.id === player.talentId);
+  const activeTalentIds: string[] =
+    Array.isArray(player.talentIds) && player.talentIds.length > 0
+      ? player.talentIds
+      : (player as any).talentId
+        ? [(player as any).talentId]
+        : [];
+  const currentTalents = activeTalentIds
+    .map((id) => TALENTS.find((t) => t.id === id))
+    .filter((t): t is NonNullable<typeof t> => !!t);
   const currentTitle = TITLES.find((t) => t.id === player.titleId);
 
   // 检查称号是否满足解锁条件
@@ -381,14 +393,14 @@ const CharacterModal: React.FC<Props> = ({
       speed: 0,
     };
 
-    // 天赋加成
-    if (currentTalent) {
-      baseStats.attack += currentTalent.effects.attack || 0;
-      baseStats.defense += currentTalent.effects.defense || 0;
-      baseStats.hp += currentTalent.effects.hp || 0;
-      baseStats.spirit += currentTalent.effects.spirit || 0;
-      baseStats.physique += currentTalent.effects.physique || 0;
-      baseStats.speed += currentTalent.effects.speed || 0;
+    // 天赋加成（多个天赋叠加）
+    for (const talent of currentTalents) {
+      baseStats.attack += talent.effects.attack || 0;
+      baseStats.defense += talent.effects.defense || 0;
+      baseStats.hp += talent.effects.hp || 0;
+      baseStats.spirit += talent.effects.spirit || 0;
+      baseStats.physique += talent.effects.physique || 0;
+      baseStats.speed += talent.effects.speed || 0;
     }
 
     // 称号加成（包括套装效果）
@@ -684,6 +696,51 @@ const CharacterModal: React.FC<Props> = ({
       <div className="space-y-6">
           {activeTab === 'character' ? (
             <>
+              {/* Build 流派倾向 */}
+              <div className="rounded-lg border border-amber-600/50 bg-linear-to-r from-amber-950/60 to-stone-900/80 p-4 shadow-md">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <Layers className="text-amber-400 shrink-0" size={20} />
+                    <h3 className="text-lg font-bold text-amber-100">流派倾向</h3>
+                  </div>
+                  <div className="text-sm text-amber-200/90 bg-amber-900/40 px-3 py-1 rounded-full border border-amber-700/50">
+                    当前更接近
+                    <span className="font-bold text-amber-300 mx-1">
+                      {buildProfile.dominantLabel}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-xs text-stone-400 mb-3">{buildProfile.summary}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {(
+                    [
+                      { k: 'crit' as const, Icon: Swords, color: 'bg-rose-600/80' },
+                      { k: 'sustain' as const, Icon: HeartPulse, color: 'bg-emerald-600/80' },
+                      { k: 'counter' as const, Icon: RotateCcw, color: 'bg-sky-600/80' },
+                    ] as const
+                  ).map(({ k, Icon, color }) => (
+                    <div
+                      key={k}
+                      className="rounded-md bg-stone-900/70 border border-stone-700/80 p-3"
+                    >
+                      <div className="flex items-center justify-between text-xs text-stone-400 mb-1.5">
+                        <span className="flex items-center gap-1.5">
+                          <Icon size={14} className="text-stone-300" />
+                          {BUILD_ARCHETYPE_LABELS[k]}
+                        </span>
+                        <span className="text-stone-200 font-mono">{buildProfile.percent[k]}%</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-stone-800 overflow-hidden">
+                        <div
+                          className={`h-full ${color} transition-all duration-300`}
+                          style={{ width: `${Math.min(100, buildProfile.percent[k])}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* 修炼系统信息 */}
               <div className="bg-linear-to-r from-blue-900/50 to-green-900/50 rounded-lg p-6 border-2 border-blue-500 shadow-lg" style={{ overflow: 'visible' }}>
                 <div className="flex justify-between items-center mb-4">
@@ -1115,6 +1172,13 @@ const CharacterModal: React.FC<Props> = ({
                         使用传承突破境界
                       </button>
                     )}
+                    {/* 转世重修入口 */}
+                    <button
+                      onClick={() => window.dispatchEvent(new CustomEvent('open-rebirth'))}
+                      className="w-full mt-2 px-4 py-2 bg-yellow-700/30 hover:bg-yellow-700/50 rounded border border-yellow-600/50 text-yellow-400 text-sm font-bold transition-all"
+                    >
+                      🌟 转世重修（元婴期9层可触发）
+                    </button>
                   </div>
                 ) : (
                   <p className="text-sm text-stone-400 mb-3">
@@ -1193,9 +1257,9 @@ const CharacterModal: React.FC<Props> = ({
                       </div>
                       <div>
                         <span className="text-stone-400">天赋:</span> 攻击{' '}
-                        {currentTalent?.effects.attack || 0}, 防御{' '}
-                        {currentTalent?.effects.defense || 0}, 气血{' '}
-                        {currentTalent?.effects.hp || 0}
+                        {attributeSources.talent.attack}, 防御{' '}
+                        {attributeSources.talent.defense}, 气血{' '}
+                        {attributeSources.talent.hp}
                       </div>
                       <div>
                         <span className="text-stone-400">称号:</span> 攻击{' '}
@@ -1360,29 +1424,33 @@ const CharacterModal: React.FC<Props> = ({
               <div>
                 <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
                   <Star className="text-purple-400" size={20} />
-                  天赋
+                  天赋{currentTalents.length > 1 && <span className="text-xs text-stone-500">({currentTalents.length})</span>}
                 </h3>
-                {currentTalent ? (
-                  <div className="bg-stone-900 rounded p-4 border border-stone-700">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span
-                            className={`font-bold ${getRarityTextColor(currentTalent.rarity as ItemRarity)}`}
-                          >
-                            {currentTalent.name}
-                          </span>
-                          <span className="text-xs text-stone-500">
-                            ({currentTalent.rarity})
-                          </span>
-                        </div>
-                        <p className="text-sm text-stone-400 mb-2">
-                          {currentTalent.description}
-                        </p>
-                        <div className="text-xs text-stone-500 italic">
-                          * 天赋在游戏开始时随机生成，之后不可修改
+                {currentTalents.length > 0 ? (
+                  <div className="space-y-2">
+                    {currentTalents.map((talent) => (
+                      <div key={talent.id} className="bg-stone-900 rounded p-4 border border-stone-700">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span
+                                className={`font-bold ${getRarityTextColor(talent.rarity as ItemRarity)}`}
+                              >
+                                {talent.name}
+                              </span>
+                              <span className="text-xs text-stone-500">
+                                ({talent.rarity})
+                              </span>
+                            </div>
+                            <p className="text-sm text-stone-400 mb-2">
+                              {talent.description}
+                            </p>
+                          </div>
                         </div>
                       </div>
+                    ))}
+                    <div className="text-xs text-stone-500 italic px-1">
+                      * 天赋在游戏开始时随机生成，之后不可修改
                     </div>
                   </div>
                 ) : (
@@ -1927,8 +1995,10 @@ const CharacterModal: React.FC<Props> = ({
                     return (
                       <button
                         key={item.id}
+                        disabled={!!(item as any).locked}
                         onClick={() => {
                           if (!player.heavenEarthMarrow) return;
+                          if ((item as any).locked) return;
 
                           const currentProgress = player.marrowRefiningProgress || 0;
                           const newProgress = Math.min(100, currentProgress + progressGain);

@@ -28,6 +28,7 @@ import { getAllArtifacts } from '../../utils/itemConstantsUtils';
 import { normalizeRarityValue } from '../../utils/rarityUtils';
 import { getPlayerTotalStats } from '../../utils/statUtils';
 import { addItemToInventory } from '../../utils/inventoryUtils';
+import { useUIStore } from '../../store/uiStore';
 
 interface ExecuteAdventureCoreProps {
   result: AdventureResult;
@@ -468,7 +469,8 @@ export async function executeAdventureCore({
   items.forEach(i => { if (i?.name) addLog(`获得物品: ${normalizeRarityValue(i.rarity) ? `【${normalizeRarityValue(i.rarity)}】` : ''}${i.name}`, 'gain'); });
 
   // 战斗弹窗延迟2秒后打开（如果跳过了战斗则不打开弹窗）
-  if (battleContext && !skipBattle) {
+  const fastBattleSettlement = useUIStore.getState().fastBattleSettlement;
+  if (battleContext && !skipBattle && !fastBattleSettlement) {
     setTimeout(() => {
       onOpenBattleModal(battleContext);
     }, 2000);

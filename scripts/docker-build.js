@@ -82,12 +82,9 @@ for (const envFile of envFiles) {
 
 // 需要传递给 Docker 的环境变量列表
 const dockerEnvVars = [
-  'VITE_AI_KEY',
-  'VITE_AI_PROVIDER',
-  'VITE_AI_MODEL',
-  'VITE_AI_API_URL',
-  'VITE_AI_USE_PROXY',
   'VITE_APP_VERSION',
+  'VITE_API_BASE_URL',
+  'VITE_PARTYKIT_HOST',
 ];
 
 // 合并环境变量：系统环境变量 > .env 文件 > 默认值
@@ -96,20 +93,14 @@ for (const key of dockerEnvVars) {
   // 优先使用系统环境变量，然后是 .env 文件中的值
   finalEnv[key] = process.env[key] || envVars[key] || (key === 'VITE_APP_VERSION' ? version : undefined);
 
-  // 显示已设置的环境变量（隐藏敏感信息）
+  // 显示已设置的环境变量
   if (finalEnv[key]) {
-    const displayValue = key === 'VITE_AI_KEY'
-      ? `${finalEnv[key].substring(0, 8)}...`
-      : finalEnv[key];
-    console.log(`🔧 ${key}=${displayValue}`);
+    console.log(`🔧 ${key}=${finalEnv[key]}`);
   }
 }
 
 // 检查必需的环境变量
-if (!finalEnv.VITE_AI_KEY) {
-  console.warn('⚠️  警告: VITE_AI_KEY 未设置，构建可能失败');
-  console.warn('💡 提示: 请在 .env 文件中设置 VITE_AI_KEY，或在系统环境变量中设置');
-}
+// 现在没有必需的AI环境变量，构建可以继续
 
 // 获取命令行参数
 const args = process.argv.slice(2);

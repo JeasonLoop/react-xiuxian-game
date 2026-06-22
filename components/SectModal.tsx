@@ -16,7 +16,11 @@ interface Props {
   onJoinSect: (sectId: string, sectName?: string, sectInfo?: { exitCost?: { spiritStones?: number; items?: { name: string; quantity: number }[] } }) => void;
   onLeaveSect: () => void;
   onSafeLeaveSect: () => void;
-  onTask: (task: RandomSectTask, encounterResult?: AdventureResult) => void;
+  onTask: (
+    task: RandomSectTask,
+    encounterResult?: AdventureResult,
+    isPerfectCompletion?: boolean
+  ) => void;
   onPromote: () => void;
   onBuy: (item: Partial<Item>, cost: number, quantity?: number) => void;
   onLearnArt: (art: CultivationArt) => void;

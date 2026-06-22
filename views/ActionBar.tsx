@@ -7,7 +7,10 @@ import {
   Scroll,
   Play,
   Pause,
+  Lock,
 } from 'lucide-react';
+import { RealmType } from '../types';
+import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../constants/featureUnlock';
 /**
  * 操作按钮栏组件
  * 包含打坐、历练、秘境、炼丹、宗门五个按钮
@@ -30,6 +33,7 @@ interface ActionBarProps {
   pausedByBattle?: boolean; // 是否因战斗暂停
   onToggleAutoMeditate: () => void;
   onToggleAutoAdventure: () => void;
+  realm: RealmType; // 当前境界（用于解锁判断）
 }
 
 function ActionBar({
@@ -45,7 +49,17 @@ function ActionBar({
   pausedByBattle = false,
   onToggleAutoMeditate,
   onToggleAutoAdventure,
+  realm,
 }: ActionBarProps) {
+  // 境界解锁检查
+  const sectLocked = !isFeatureUnlocked(FeatureId.SECT, realm);
+  const alchemyLocked = !isFeatureUnlocked(FeatureId.ALCHEMY, realm);
+  const realmLocked = !isFeatureUnlocked(FeatureId.SECRET_REALM, realm);
+
+  // 锁定按钮样式
+  const lockedCls =
+    'opacity-35 cursor-not-allowed bg-stone-900 border-stone-800';
+
   return (
     <div className="bg-paper-800 p-3 md:p-4 border-t border-stone-700 grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 shrink-0 fixed md:relative bottom-0 left-0 right-0 md:left-auto md:right-auto z-50 shadow-lg md:shadow-none">
       <div className="relative">
@@ -72,11 +86,6 @@ function ActionBar({
           <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">
             修炼 · 心法
           </span>
-          {cooldown > 0 && (
-            <span className="text-xs text-amber-400 font-mono mt-0.5" aria-hidden>
-              {cooldown}s
-            </span>
-          )}
         </button>
         <button
           onClick={(e) => {
@@ -125,11 +134,6 @@ function ActionBar({
           <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">
             机缘 · 战斗
           </span>
-          {cooldown > 0 && (
-            <span className="text-xs text-amber-400 font-mono mt-0.5" aria-hidden>
-              {cooldown}s
-            </span>
-          )}
         </button>
         <button
           onClick={(e) => {
@@ -156,6 +160,24 @@ function ActionBar({
         </button>
       </div>
 
+      {realmLocked ? (
+        <div
+          className={`flex flex-col items-center justify-center p-4 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[90px] md:min-h-[100px] relative ${lockedCls}`}
+          title={getFeatureRequirementText(FeatureId.SECRET_REALM)}
+        >
+          <Lock size={10} className="absolute top-1 right-1 text-stone-600" />
+          <Mountain
+            size={24}
+            className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-stone-600"
+          />
+          <span className="font-serif font-bold text-base md:text-base text-stone-500">
+            秘境
+          </span>
+          <span className="text-[10px] text-stone-600 mt-0.5">
+            {getFeatureRequirementText(FeatureId.SECRET_REALM)}
+          </span>
+        </div>
+      ) : (
       <button
         onClick={onOpenRealm}
         disabled={loading}
@@ -179,7 +201,26 @@ function ActionBar({
           探险 · 夺宝
         </span>
       </button>
+      )}
 
+      {alchemyLocked ? (
+        <div
+          className={`flex flex-col items-center justify-center p-4 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[90px] md:min-h-[100px] relative ${lockedCls}`}
+          title={getFeatureRequirementText(FeatureId.ALCHEMY)}
+        >
+          <Lock size={10} className="absolute top-1 right-1 text-stone-600" />
+          <Sparkles
+            size={24}
+            className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-stone-600"
+          />
+          <span className="font-serif font-bold text-base md:text-base text-stone-500">
+            炼丹 · 炼器
+          </span>
+          <span className="text-[10px] text-stone-600 mt-0.5">
+            {getFeatureRequirementText(FeatureId.ALCHEMY)}
+          </span>
+        </div>
+      ) : (
       <button
         onClick={onOpenAlchemy}
         disabled={loading}
@@ -203,7 +244,26 @@ function ActionBar({
           神丹 · 神兵
         </span>
       </button>
+      )}
 
+      {sectLocked ? (
+        <div
+          className={`flex flex-col items-center justify-center p-4 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[90px] md:min-h-[100px] relative ${lockedCls}`}
+          title={getFeatureRequirementText(FeatureId.SECT)}
+        >
+          <Lock size={10} className="absolute top-1 right-1 text-stone-600" />
+          <Scroll
+            size={24}
+            className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-stone-600"
+          />
+          <span className="font-serif font-bold text-base md:text-base text-stone-500">
+            宗门
+          </span>
+          <span className="text-[10px] text-stone-600 mt-0.5">
+            {getFeatureRequirementText(FeatureId.SECT)}
+          </span>
+        </div>
+      ) : (
       <button
         onClick={onOpenSect}
         className={`
@@ -226,6 +286,7 @@ function ActionBar({
           任务 · 晋升
         </span>
       </button>
+      )}
       <p className="col-span-2 md:col-span-5 text-center text-[10px] md:text-xs text-stone-500 mt-1">
         快捷键见设置
       </p>

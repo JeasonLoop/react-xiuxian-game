@@ -12,12 +12,11 @@ import { STORAGE_KEYS } from '../constants/storageKeys';
 import { TALENTS } from '../constants/index';
 import { initializeEventTemplateLibrary } from '../services/adventureTemplateService';
 import {
-  getCurrentSlotId,
-  loadFromSlot,
-  saveToSlot,
-  setCurrentSlotId,
+  loadGameData,
+  saveGameData,
   ensurePlayerStatsCompatibility,
 } from '../utils/saveManagerUtils';
+import { calculateOfflineEarnings, applyOfflineEarnings, getOfflineEarningsLog } from '../utils/offlineEarnings';
 
 // 默认游戏设置
 const DEFAULT_SETTINGS: GameSettings = {
@@ -45,9 +44,8 @@ function loadInitialSettings(): GameSettings {
 // 检查是否有存档
 function checkHasSave(): boolean {
   try {
-    const currentSlotId = getCurrentSlotId();
-    const slotSave = loadFromSlot(currentSlotId);
-    if (slotSave) {
+    const localSave = loadGameData();
+    if (localSave) {
       return true;
     }
     const saved = localStorage.getItem(STORAGE_KEYS.SAVE);
@@ -86,7 +84,7 @@ interface GameState {
   loadGame: (cloudSaveData?: any) => void;
   startNewGame: (
     playerName: string,
-    talentId: string,
+    talentIds: string[],
     difficulty: GameSettings['difficulty']
   ) => void;
 }
@@ -170,11 +168,10 @@ export const useGameStore = create<GameState>()(
           player: state.player,
           logs: state.logs,
           timestamp: Date.now(),
+          lastActiveTime: Date.now(),
         };
 
-        // 保存到当前槽位
-        const currentSlotId = getCurrentSlotId();
-        saveToSlot(currentSlotId, state.player, state.logs);
+        saveGameData(state.player, state.logs);
 
         // 同时保存到旧存档系统（兼容性）
         localStorage.setItem(STORAGE_KEYS.SAVE, JSON.stringify(saveData));
@@ -202,34 +199,49 @@ export const useGameStore = create<GameState>()(
         let savedData = cloudSaveData;
 
         if (!savedData) {
-          // 优先从多存档槽位系统加载
-          const currentSlotId = getCurrentSlotId();
-          savedData = loadFromSlot(currentSlotId);
+          savedData = loadGameData();
 
           // 如果没有，尝试从旧存档系统加载（兼容性）
           if (!savedData) {
             const saved = localStorage.getItem(STORAGE_KEYS.SAVE);
             if (saved) {
               savedData = JSON.parse(saved);
-              // 如果从旧系统加载成功，迁移到槽位1
-              if (savedData) {
-                saveToSlot(1, savedData.player, savedData.logs || []);
-                setCurrentSlotId(1);
-              }
+              // 如果从旧系统加载成功，统一迁移到单存档结构
+              if (savedData) saveGameData(savedData.player, savedData.logs || []);
             }
           }
         } else {
-          // 如果是云存档，保存到本地槽位1
-          saveToSlot(1, savedData.player, savedData.logs || []);
-          setCurrentSlotId(1);
+          // 云存档落地到本地单存档
+          saveGameData(savedData.player, savedData.logs || []);
         }
 
         if (savedData) {
           // 使用统一的兼容性处理函数
           const loadedPlayer = ensurePlayerStatsCompatibility(savedData.player);
+
+          // 计算离线收益
+          const lastActiveTime = savedData.lastActiveTime || savedData.timestamp || Date.now();
+          const elapsedMs = Date.now() - lastActiveTime;
+          let finalPlayer = loadedPlayer;
+          let offlineLog: string | null = null;
+
+          if (elapsedMs > 30000) {
+            // 离线超过 30 秒才计算
+            const earnings = calculateOfflineEarnings(loadedPlayer, elapsedMs);
+            finalPlayer = applyOfflineEarnings(loadedPlayer, earnings);
+            offlineLog = getOfflineEarningsLog(earnings);
+          }
+
+          const offlineLogEntry: LogEntry | null = offlineLog ? {
+            id: `offline-${Date.now()}`,
+            text: offlineLog,
+            type: 'gain' as const,
+            timestamp: Date.now(),
+          } : null;
+
           set({
-            player: loadedPlayer,
-            logs: savedData.logs || [],
+            player: finalPlayer,
+            logs: offlineLogEntry ? [...(savedData.logs || []), offlineLogEntry] : (savedData.logs || []),
             gameStarted: true,
             hasSave: true,
           });
@@ -249,15 +261,19 @@ export const useGameStore = create<GameState>()(
     },
 
     // 开始新游戏
-    startNewGame: (playerName, talentId, difficulty) => {
+    startNewGame: (playerName, talentIds, difficulty) => {
       const state = get();
 
       // 重新生成事件模板库
       initializeEventTemplateLibrary(true);
       console.log('开始新游戏时重新生成事件模板库');
 
-      const newPlayer = createInitialPlayer(playerName, talentId);
-      const initialTalent = TALENTS.find((t) => t.id === talentId);
+      const newPlayer = createInitialPlayer(playerName, talentIds);
+      const selectedTalents = talentIds
+        .map((id) => TALENTS.find((t) => t.id === id))
+        .filter(Boolean);
+      const talentNames = selectedTalents.map((t) => t!.name).join('、');
+      const talentDescriptions = selectedTalents.map((t) => `【${t!.name}】${t!.description}`).join('；');
 
       const initialLogs: LogEntry[] = [
         {
@@ -268,7 +284,7 @@ export const useGameStore = create<GameState>()(
         },
         {
           id: `${Date.now()}-2-${Math.random().toString(36).substr(2, 9)}`,
-          text: `你天生拥有【${initialTalent?.name}】天赋。${initialTalent?.description}`,
+          text: `你天生拥有天赋：${talentNames}。${talentDescriptions}`,
           type: 'special',
           timestamp: Date.now(),
         },
@@ -290,9 +306,9 @@ export const useGameStore = create<GameState>()(
           player: newPlayer,
           logs: initialLogs,
           timestamp: Date.now(),
+          lastActiveTime: Date.now(),
         };
-        const currentSlotId = getCurrentSlotId();
-        saveToSlot(currentSlotId, newPlayer, initialLogs);
+        saveGameData(newPlayer, initialLogs);
         localStorage.setItem(STORAGE_KEYS.SAVE, JSON.stringify(saveData));
         localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(newSettings));
       } catch (error) {

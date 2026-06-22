@@ -78,6 +78,8 @@ interface AdventureEventTemplate {
   lotteryTicketsChange?: number;
   longevityRuleObtained?: string; // 获得的规则之力ID
   heavenEarthSoulEncounter?: string; // 遇到的天地之魄BOSS ID
+  karmaChange?: number;
+  npcRelationChange?: AdventureResult['npcRelationChange'];
 }
 
 /**
@@ -255,37 +257,42 @@ export function generateEventTemplateLibrary(): AdventureEventTemplate[] {
 function generateNormalEventTemplate(index: number): AdventureEventTemplate {
   // 增加功法和灵宠的出现频率，提高获得概率
   const eventTypes = [
-    'battle', // 妖兽战斗
-    'herb', // 发现灵草
-    'cultivator', // 遇到修士
-    'cave', // 小型洞府
-    'enlightenment', // 顿悟
-    'cultivationArt', // 功法解锁（提高概率）
-    'cultivationArt', // 功法解锁（重复一次，提高概率）
-    'danger', // 危险
-    'spiritStone', // 灵石矿脉
-    'rescue', // 救助
-    'spiritSpring', // 灵泉
-    'pet', // 灵宠（提高概率）
-    'pet', // 灵宠（重复一次，提高概率）
-    'pet', // 灵宠（再次提高概率）
-    'petOpportunity', // 灵宠机缘
-    'petOpportunity', // 灵宠机缘（重复一次，提高概率）
-    'foundationTreasure', // 筑基奇物
-    'heavenEarthEssence', // 天地精华
-    'heavenEarthMarrow', // 天地之髓
-    'heavenEarthMarrow', // 天地之髓（重复一次，提高概率）
-    'heavenEarthSoul', // 天地之魄（化神期及以上，提高概率）
-    'heavenEarthSoul', // 天地之魄（重复，提高概率）
-    'heavenEarthSoul', // 天地之魄（再次重复，进一步提高概率）
-    'heavenEarthSoul', // 天地之魄（再次提高概率）
-    'longevityRule', // 规则之力（长生境）
-    'trap', // 陷阱
-    'evilCultivator', // 邪修魔修
-    'reputation', // 声望事件（提高概率）
-    'reputation', // 声望事件（重复，提高概率）
-    'reputation', // 声望事件（再次重复，进一步提高概率）
-    'lottery', // 抽奖券
+    'battle',
+    'herb',
+    'cultivator',
+    'cultivator',
+    'cultivator',
+    'cave',
+    'enlightenment',
+    'cultivationArt',
+    'cultivationArt',
+    'danger',
+    'spiritStone',
+    'rescue',
+    'rescue',
+    'spiritSpring',
+    'pet',
+    'pet',
+    'pet',
+    'petOpportunity',
+    'petOpportunity',
+    'foundationTreasure',
+    'heavenEarthEssence',
+    'heavenEarthMarrow',
+    'heavenEarthMarrow',
+    'heavenEarthSoul',
+    'heavenEarthSoul',
+    'heavenEarthSoul',
+    'heavenEarthSoul',
+    'longevityRule',
+    'trap',
+    'evilCultivator',
+    'reputation',
+    'reputation',
+    'reputation',
+    'branchChoice',
+    'branchChoice',
+    'lottery',
   ];
 
   const eventType = selectFromArray(eventTypes, index);
@@ -363,6 +370,8 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
         `在探索途中，你遇到了一位${['同门', '道友', '前辈', '后辈', '陌生人'][index % 5]}，对方见你独自一人，便主动上前打招呼。你们互相交流，谈论着各自的见闻和经历。对方见多识广，分享了许多有用的信息，包括一些危险区域的注意事项和机缘所在。`,
         `你在一处客栈中休息时，正坐在窗边看着外面的风景，突然一位${['神秘人', '老者', '少年', '女子', '僧人'][index % 5]}走了过来，询问是否可以同坐。你们交谈后，发现对方见识不凡，对修炼之道有着独到的理解。对方分享了一些人生感悟和修炼心得，你获得了一些启发，对未来的修炼之路有了更清晰的认识。`,
       ];
+      const npcNames = ['散修道友', '宗门弟子', '游方道士', '隐世高人', '商队护卫', '老修士', '年轻剑客', '炼丹师', '阵法师', '符箓师', '同门师兄', '前辈修士', '神秘旅人'];
+      const npcName = npcNames[index % npcNames.length];
       return {
         ...baseTemplate,
         story: selectFromArray(stories, index),
@@ -371,6 +380,12 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
         spiritStonesChange: randomChance(index, 0.5, 80) ? randomInt(index, 20, 70, 90) : 0,
         eventColor: 'normal',
         itemObtained: randomChance(index, 0.2, 100) ? generateRandomItem(rarity, index) : undefined,
+        npcRelationChange: {
+          npcId: `npc-adventure-${npcName}-${index}`,
+          npcName,
+          favorabilityChange: randomInt(index, 5, 15, 100),
+          description: `在一次历练中结识的${npcName}`,
+        },
       };
     }
 
@@ -408,6 +423,13 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
         expChange: randomInt(index, 50, 130, 150),
         spiritStonesChange: 0,
         eventColor: 'gain',
+        // 顿悟时偶尔遇到前辈灵识
+        npcRelationChange: randomChance(index, 0.3, 160) ? {
+          npcId: `npc-enlighten-${index}`,
+          npcName: ['隐世前辈', '古修残魂', '道韵化身', '灵识投影'][index % 4],
+          favorabilityChange: randomInt(index, 3, 10, 170),
+          description: '在顿悟中感应到的一缕灵识',
+        } : undefined,
       };
     }
 
@@ -473,6 +495,8 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
         `你在路上遇到了一位需要帮助的人，对方看起来十分狼狈，显然是遭遇了什么危险。你见对方需要帮助，便主动上前询问。对方见你愿意相助，眼中闪过一丝感激，向你说明了情况。你出手相助，帮助对方解决了困难，对方感激地给了你一些报酬，虽然不多，但也是一番心意。`,
         `你在一处${['险地', '禁地', '危险区域', '魔域', '死地'][index % 5]}中遇到了一位需要帮助的人，对方看起来十分危险，显然是遭遇了什么意外。你见对方需要帮助，便主动上前相助。你运转功法，帮助对方解决了困难，对方感激不尽，连连道谢，还告诉了你一些关于这个区域的注意事项。`,
       ];
+      const rescueNames = ['受伤的修士', '被困的商人', '遇险的村民', '受伤的散修', '遇险的旅人'];
+      const rescueName = rescueNames[index % rescueNames.length];
       return {
         ...baseTemplate,
         story: selectFromArray(stories, index),
@@ -482,6 +506,12 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
         eventColor: 'gain',
         reputationChange: randomInt(index, 10, 30, 260),
         itemObtained: randomChance(index, 0.3, 270) ? generateRandomItem(rarity, index) : undefined,
+        npcRelationChange: {
+          npcId: `npc-rescue-${rescueName}-${index}`,
+          npcName: rescueName,
+          favorabilityChange: randomInt(index, 10, 25, 280),
+          description: `曾在危难中得到你的帮助`,
+        },
       };
     }
 
@@ -499,6 +529,13 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
         hpChange: randomInt(index, 20, 50, 280),
         expChange: randomInt(index, 25, 65, 290),
         eventColor: 'gain',
+        // 灵泉处偶尔遇到其他修士
+        npcRelationChange: randomChance(index, 0.35, 300) ? {
+          npcId: `npc-spring-${index}`,
+          npcName: ['灵泉守护者', '采药修士', '同修道人', '散修旅人'][index % 4],
+          favorabilityChange: randomInt(index, 5, 12, 310),
+          description: '在灵泉旁结识的道友',
+        } : undefined,
       };
     }
 
@@ -633,6 +670,96 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
             { text: '视而不见', reputationChange: -20, description: '你选择了无视，名声受损。' },
           ],
         },
+        {
+          title: '古井中的呼救',
+          description: '你在荒村古井旁听见求救声，井下似乎有人被困。',
+          choices: [
+            { text: '稳妥救援（绳索+护体）', reputationChange: 12, expChange: 25, hpChange: -5, description: '你花了些时间布置，成功救人并获得感谢。', riskTag: '稳妥' as const },
+            { text: '直接跃下强救（高风险）', reputationChange: 18, expChange: 40, hpChange: -25, description: '你强行跃下，虽受伤但救援成功，村民口口称赞。', riskTag: '激进' as const },
+            { text: '请村民自救并留下药包（保底）', reputationChange: 4, spiritStonesChange: 20, description: '你未亲自下井，但留下物资，至少避免了最坏结果。', riskTag: '保底' as const },
+          ],
+        },
+        {
+          title: '黑市来的邀请',
+          description: '神秘商人邀你参与一笔“稳赚不赔”的黑市交易。',
+          choices: [
+            { text: '拒绝交易并上报线索', reputationChange: 15, expChange: 20, description: '你将线索交给执法修士，声望大增。', riskTag: '稳妥' as const },
+            { text: '试探性参与（中风险）', reputationChange: -6, spiritStonesChange: 90, description: '你拿到收益，但消息外泄，名声受损。', riskTag: '激进' as const },
+            { text: '只卖情报不碰赃物（保底）', reputationChange: 1, spiritStonesChange: 35, description: '你没有深入涉险，获得少量收益且风险可控。', riskTag: '保底' as const },
+          ],
+        },
+        {
+          title: '宗门弟子冲突',
+          description: '两名宗门弟子因功法归属争执，局势逐渐失控。',
+          choices: [
+            { text: '调解并公开比试规则', reputationChange: 14, expChange: 30, description: '你制定公正规则，双方接受，冲突平息。', riskTag: '稳妥' as const },
+            { text: '偏袒强者换取好处', reputationChange: -12, spiritStonesChange: 70, description: '你拿到报酬，但被围观者记恨。', riskTag: '激进' as const },
+            { text: '维持秩序后抽身（保底）', reputationChange: 5, hpChange: -8, description: '你压制了冲突，虽有消耗但避免了更大祸端。', riskTag: '保底' as const },
+          ],
+        },
+        {
+          title: '遗迹入口封印',
+          description: '遗迹封印松动，附近散修请求你协助稳固法阵。',
+          choices: [
+            { text: '协助稳固封印（稳妥）', reputationChange: 16, expChange: 35, hpChange: -10, description: '你参与维稳，众修士对你评价大幅提升。', riskTag: '稳妥' as const },
+            { text: '趁乱入内抢先机缘（高风险）', reputationChange: -15, expChange: 55, spiritStonesChange: 80, hpChange: -20, description: '你收获不菲，但“趁火打劫”的名声传开。', riskTag: '激进' as const },
+            { text: '提供材料后离开（保底）', reputationChange: 6, spiritStonesChange: -15, description: '你捐出材料后撤离，虽有成本但维护了声望。', riskTag: '保底' as const },
+          ],
+        },
+        {
+          title: '误伤灵兽幼崽',
+          description: '你与妖兽交战时误伤了一只灵兽幼崽，母兽在远处警惕观望。',
+          choices: [
+            { text: '疗伤并归还幼崽', reputationChange: 13, expChange: 22, spiritStonesChange: -10, description: '你耗费丹药救治，化解了冲突。', riskTag: '稳妥' as const },
+            { text: '驱赶母兽强行离去', reputationChange: -14, hpChange: -18, description: '你脱身成功，但留下恶名。', riskTag: '激进' as const },
+            { text: '留药离开（保底）', reputationChange: 3, description: '你未彻底解决问题，但至少表达了善意。', riskTag: '保底' as const },
+          ],
+        },
+        {
+          title: '悬赏令上的旧友',
+          description: '你发现悬赏目标竟是昔日同伴，对方解释自己被冤。',
+          choices: [
+            { text: '调查真相再决定', reputationChange: 12, expChange: 28, description: '你查明其清白并提交证据，名望提升。', riskTag: '稳妥' as const },
+            { text: '直接缉拿领赏', reputationChange: -10, spiritStonesChange: 120, description: '你换得巨额灵石，但遭受道义质疑。', riskTag: '激进' as const },
+            { text: '放其离开并警告（保底）', reputationChange: 4, description: '你没有彻底介入，但保住了基本名声。', riskTag: '保底' as const },
+          ],
+        },
+        {
+          title: '坊市假丹风波',
+          description: '坊市流通假丹导致修士受伤，商铺老板求你暂时压下消息。',
+          choices: [
+            { text: '公开真相并协助追责', reputationChange: 17, expChange: 26, description: '你推动清查，修士们对你更信任。', riskTag: '稳妥' as const },
+            { text: '收封口费保持沉默', reputationChange: -18, spiritStonesChange: 130, description: '你短期获利，但信誉严重下滑。', riskTag: '激进' as const },
+            { text: '私下提醒熟人（保底）', reputationChange: 5, spiritStonesChange: 15, description: '你没有正面冲突，但尽力降低损害。', riskTag: '保底' as const },
+          ],
+        },
+        {
+          title: '护送凡人车队',
+          description: '商队请你护送凡人穿越妖兽活动区，路程漫长且危险。',
+          choices: [
+            { text: '全程护送（稳妥）', reputationChange: 15, expChange: 32, hpChange: -12, description: '你安全完成护送，获得众人敬重。', riskTag: '稳妥' as const },
+            { text: '半途离队追击妖兽', reputationChange: -9, expChange: 45, spiritStonesChange: 60, description: '你击杀妖兽有收获，但车队遭到损失。', riskTag: '激进' as const },
+            { text: '教其避险路线后离开（保底）', reputationChange: 6, description: '你提供了关键建议，车队虽艰难但保全大半。', riskTag: '保底' as const },
+          ],
+        },
+        {
+          title: '古碑机缘归属',
+          description: '多人同时发现古碑传承，争执谁有资格先参悟。',
+          choices: [
+            { text: '抽签轮流参悟', reputationChange: 14, expChange: 24, description: '你提出公平方案，冲突显著降温。', riskTag: '稳妥' as const },
+            { text: '以力压人独占机缘', reputationChange: -16, expChange: 60, hpChange: -15, description: '你抢到先机却得罪众人。', riskTag: '激进' as const },
+            { text: '放弃争夺换取补偿（保底）', reputationChange: 7, spiritStonesChange: 40, description: '你避免冲突并获得补偿，整体收益稳定。', riskTag: '保底' as const },
+          ],
+        },
+        {
+          title: '夜巡中的误会',
+          description: '夜巡队误把你当成邪修，局势一触即发。',
+          choices: [
+            { text: '主动配合盘查并解释', reputationChange: 11, expChange: 18, description: '误会解除，巡逻队对你态度转好。', riskTag: '稳妥' as const },
+            { text: '强闯离开（高风险）', reputationChange: -13, hpChange: -20, spiritStonesChange: 50, description: '你脱身但冲突升级，名声受损。', riskTag: '激进' as const },
+            { text: '留身份玉简后撤离（保底）', reputationChange: 4, description: '你避免正面冲突，后续影响被控制在较小范围。', riskTag: '保底' as const },
+          ],
+        },
       ];
       const event = selectFromArray(reputationEvents, index);
       return {
@@ -640,6 +767,48 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
         story: `你遇到了一个需要做出选择的情况：${event.description}`,
         hpChange: 0,
         expChange: randomInt(index, 20, 50, 440),
+        eventColor: 'normal',
+        reputationEvent: event,
+      };
+    }
+
+    case 'branchChoice': {
+      const branchEvents = [
+        {
+          title: '迷雾岔路',
+          description: '你在山脉迷雾中遇到岔路，一条平缓，一条灵气波动强烈。',
+          choices: [
+            { text: '走平缓路（稳妥）', reputationChange: 0, expChange: 25, hpChange: -5, description: '你稳步前进，虽收获一般但很安全。', riskTag: '稳妥' as const },
+            { text: '闯灵气强烈区（激进）', reputationChange: 0, expChange: 55, spiritStonesChange: 45, hpChange: -25, description: '你顶住压力闯入深处，收获更高但受了伤。', riskTag: '激进' as const },
+            { text: '原地布阵探查（保底）', reputationChange: 0, expChange: 12, spiritStonesChange: 18, description: '你谨慎探查后离开，收益不高但几乎无损。', riskTag: '保底' as const },
+          ],
+        },
+        {
+          title: '破损洞府',
+          description: '洞府残阵不稳，宝光时隐时现，稍有不慎就会触发反噬。',
+          choices: [
+            { text: '慢速拆阵（稳妥）', reputationChange: 0, expChange: 30, spiritStonesChange: 20, description: '你按部就班拆解阵纹，稳定拿到资源。', riskTag: '稳妥' as const },
+            { text: '强行破阵夺宝（激进）', reputationChange: 0, expChange: 65, spiritStonesChange: 70, hpChange: -30, description: '你一击破阵，夺得更多战利品但遭到反噬。', riskTag: '激进' as const },
+            { text: '放弃核心区拿外围（保底）', reputationChange: 0, expChange: 15, spiritStonesChange: 28, description: '你只取外围资源，虽保守但不亏。', riskTag: '保底' as const },
+          ],
+        },
+        {
+          title: '古木灵果',
+          description: '古木上结着灵果，但附近妖兽气息明显。',
+          choices: [
+            { text: '驱散妖兽后采摘（稳妥）', reputationChange: 0, expChange: 42, spiritStonesChange: 22, hpChange: -6, description: '你先稳住局势再采摘灵果，收益扎实且损耗较低。', riskTag: '稳妥' as const },
+            { text: '趁妖兽混战抢果（激进）', reputationChange: 0, expChange: 78, spiritStonesChange: 62, hpChange: -20, description: '你抓住乱局一口气夺下大量灵果，代价是经脉受创。', riskTag: '激进' as const },
+            { text: '仅取落果（保底）', reputationChange: 0, expChange: 24, spiritStonesChange: 32, description: '你不争主果，专收落果与残枝，稳稳带走一笔资源。', riskTag: '保底' as const },
+          ],
+        },
+      ];
+      const event = selectFromArray(branchEvents, index);
+      return {
+        ...baseTemplate,
+        story: `你遇到抉择：${event.description}`,
+        hpChange: 0,
+        expChange: randomInt(index, 10, 25, 905),
+        spiritStonesChange: randomInt(index, 5, 20, 906),
         eventColor: 'normal',
         reputationEvent: event,
       };
@@ -796,6 +965,18 @@ function generateLuckyEventTemplate(index: number): AdventureEventTemplate {
 
   const rarity: ItemRarity = randomChance(index, 0.5, 460) ? '传说' : '仙品';
 
+  const luckyBranchEvents = [
+    {
+      title: '机缘共鸣',
+      description: '你触发了一处高阶机缘节点，灵光与煞气并存。',
+      choices: [
+        { text: '稳住心神缓慢吸收（稳妥）', reputationChange: 0, expChange: 120, hpChange: -10, description: '你稳扎稳打，机缘转化稳定。', riskTag: '稳妥' as const },
+        { text: '强行满载吸收（激进）', reputationChange: 0, expChange: 220, spiritStonesChange: 120, hpChange: -45, description: '你短时间吞纳大量灵气，收益巨大但经脉受创。', riskTag: '激进' as const },
+        { text: '截取部分机缘离场（保底）', reputationChange: 0, expChange: 70, spiritStonesChange: 60, description: '你见好就收，收益不错且风险可控。', riskTag: '保底' as const },
+      ],
+    },
+  ];
+
   return {
     story: selectFromArray(stories, index),
     hpChange: randomInt(index, 30, 80, 470),
@@ -806,6 +987,7 @@ function generateLuckyEventTemplate(index: number): AdventureEventTemplate {
     itemObtained: randomChance(index, 0.7, 500) ? generateRandomItem(rarity, index) : undefined,
     inheritanceLevelChange: randomChance(index, 0.1, 510) ? 1 : undefined, // 传承等级每次只能增加1级
     triggerSecretRealm: randomChance(index, 0.05, 530),
+    reputationEvent: randomChance(index, 0.18, 531) ? selectFromArray(luckyBranchEvents, index) : undefined,
   };
 }
 
@@ -841,6 +1023,27 @@ function generateSecretRealmEventTemplate(index: number): AdventureEventTemplate
 
   const rewards = baseRewards[riskLevel];
 
+  const secretBranchEvents = [
+    {
+      title: '秘境禁制核心',
+      description: '你发现了秘境禁制核心，处理方式将影响最终收益。',
+      choices: [
+        { text: '逐层拆解禁制（稳妥）', reputationChange: 0, expChange: 100, spiritStonesChange: 90, hpChange: -12, description: '你稳步拆解，收益扎实。', riskTag: '稳妥' as const },
+        { text: '直接冲击核心（激进）', reputationChange: 0, expChange: 190, spiritStonesChange: 180, hpChange: -55, description: '你一举冲破核心，收益极高但损耗巨大。', riskTag: '激进' as const },
+        { text: '记录阵纹后撤离（保底）', reputationChange: 0, expChange: 65, spiritStonesChange: 50, description: '你未强闯核心，保留了后续再来机会。', riskTag: '保底' as const },
+      ],
+    },
+    {
+      title: '秘境守卫谈判',
+      description: '守卫灵体苏醒，对你提出试炼或代价交换。',
+      choices: [
+        { text: '接受正式试炼（稳妥）', reputationChange: 0, expChange: 110, hpChange: -18, description: '你通过试炼，得到认可与奖励。', riskTag: '稳妥' as const },
+        { text: '强行斩灭守卫（激进）', reputationChange: 0, expChange: 170, spiritStonesChange: 140, hpChange: -40, description: '你以力破局，夺得重宝但付出伤势代价。', riskTag: '激进' as const },
+        { text: '交付材料换通行（保底）', reputationChange: 0, spiritStonesChange: 70, description: '你以代价换取通行，收益中规中矩。', riskTag: '保底' as const },
+      ],
+    },
+  ];
+
   return {
     story: selectFromArray(stories, index),
     hpChange: riskLevel === '极度危险'
@@ -852,6 +1055,7 @@ function generateSecretRealmEventTemplate(index: number): AdventureEventTemplate
     adventureType: 'secret_realm',
     riskLevel,
     itemObtained: randomChance(index, 0.6, 580) ? generateRandomItem(rarity, index) : undefined,
+    reputationEvent: randomChance(index, 0.22, 581) ? selectFromArray(secretBranchEvents, index) : undefined,
     attributeReduction: riskLevel === '极度危险' && randomChance(index, 0.3, 590) ? {
       attack: randomInt(index, 20, 70, 600),
       defense: randomInt(index, 15, 45, 610),

@@ -19,6 +19,9 @@ export * from './realms';
 // 功法相关
 export * from './cultivation';
 
+// Build 流派关键词与标签
+export * from './buildArchetypes';
+
 // 灵根相关
 export * from './spiritualRoots';
 
@@ -82,3 +85,12 @@ export * from './storageKeys';
 
 // 表情包相关
 export * from './emojis';
+
+// 境界解锁相关
+export * from './featureUnlock';
+
+// 功法羁绊相关
+export * from './artSynergy';
+
+// 秘境 Roguelike 地宫
+export * from './dungeon';

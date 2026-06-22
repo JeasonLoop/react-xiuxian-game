@@ -7,7 +7,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import { PlayerStats, Item, EquipmentSlot, GameSettings } from '../types';
 import { BattleReplay } from '../services/battleService';
 import { STORAGE_KEYS } from '../constants/storageKeys';
-import { clearAllSlots } from '../utils/saveManagerUtils';
+import { clearSaveData } from '../utils/saveManagerUtils';
 
 
 /**
@@ -165,7 +165,7 @@ export function useDeathDetection({
       const baseReason = lifespanReasons[Math.floor(Math.random() * lifespanReasons.length)];
 
       if (settings.difficulty === 'hard') {
-        // 困难模式：死亡惩罚 - 清除所有存档
+        // 困难模式：死亡惩罚 - 清除本地存档
         setIsDead(true);
         setPlayer((prev) => {
           if (!prev) return prev;
@@ -176,9 +176,7 @@ export function useDeathDetection({
         });
         setDeathReason(baseReason);
         setDeathBattleData(null);
-        // 清除所有存档槽位和旧存档
-        clearAllSlots();
-        localStorage.removeItem(STORAGE_KEYS.SAVE);
+        clearSaveData();
         setIsBattleModalOpen(false);
         setAutoMeditate(false);
         setAutoAdventure(false);
@@ -272,12 +270,10 @@ export function useDeathDetection({
       const difficulty = settings.difficulty || 'normal';
 
       if (difficulty === 'hard') {
-        // 困难模式：清除所有存档
+        // 困难模式：清除本地存档
         setIsDead(true);
         setDeathBattleData(lastBattleReplay);
-        // 清除所有存档槽位和旧存档
-        clearAllSlots();
-        localStorage.removeItem(STORAGE_KEYS.SAVE);
+        clearSaveData();
 
         setIsBattleModalOpen(false);
 

@@ -79,6 +79,7 @@ export const PET_TEMPLATES: PetTemplate[] = [
       stage1: '🦊',
       stage2: '🎑',
     },
+    buildAffinity: { sustain: 2, crit: 1 },
     baseStats: { attack: 50, defense: 25, hp: 500, speed: 30 },
     skills: [
       {
@@ -145,6 +146,7 @@ export const PET_TEMPLATES: PetTemplate[] = [
       stage1: '🐆',
       stage2: '⚡',
     },
+    buildAffinity: { crit: 3 },
     baseStats: { attack: 100, defense: 50, hp: 1000, speed: 40 },
     skills: [
       {
@@ -409,6 +411,7 @@ export const PET_TEMPLATES: PetTemplate[] = [
       stage1: '🛡️',
       stage2: '⛰️',
     },
+    buildAffinity: { sustain: 3 },
     baseStats: { attack: 30, defense: 50, hp: 500, speed: 20 },
     skills: [
       {

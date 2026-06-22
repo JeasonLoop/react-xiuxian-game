@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { CultivationArt, RealmType, PlayerStats, ArtGrade } from '../types';
-import { CULTIVATION_ARTS, REALM_ORDER } from '../constants/index';
-import { BookOpen, Check, Lock, Search, X } from 'lucide-react';
+import { CULTIVATION_ARTS, REALM_ORDER, getActiveSynergies, ART_SYNERGY_SETS, calculateBuildAffinityTotals, BUILD_THRESHOLD_BONUSES } from '../constants/index';
+import { BookOpen, Check, Lock, Search, X, Zap, Star, TrendingUp, Wand } from 'lucide-react';
 import { Modal } from './common';
 
 interface Props {
@@ -11,6 +11,156 @@ interface Props {
   onLearnArt: (art: CultivationArt) => void;
   onActivateArt: (art: CultivationArt) => void;
 }
+
+/**
+ * 功法羁绊展示组件
+ */
+const ArtSynergyDisplay: React.FC<{ player: PlayerStats }> = ({ player }) => {
+  const synergies = useMemo(() => {
+    return {
+      active: getActiveSynergies(player.cultivationArts),
+      all: ART_SYNERGY_SETS,
+    };
+  }, [player.cultivationArts]);
+
+  const buildInfo = useMemo(() => {
+    const learnedArts = player.cultivationArts
+      .map((id) => CULTIVATION_ARTS.find((a) => a.id === id))
+      .filter(Boolean) as CultivationArt[];
+    return calculateBuildAffinityTotals(learnedArts);
+  }, [player.cultivationArts]);
+
+  if (synergies.active.length === 0 && buildInfo.totals.crit === 0 && buildInfo.totals.sustain === 0 && buildInfo.totals.counter === 0) {
+    return null; // 没有羁绊信息时隐藏
+  }
+
+  return (
+    <div className="mb-4 space-y-3">
+      {/* 已激活羁绊 */}
+      {synergies.active.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-mystic-gold text-sm font-serif flex items-center gap-2">
+            <Zap size={14} /> 已激活羁绊套装
+          </h4>
+          {synergies.active.map((syn) => (
+            <div
+              key={syn.id}
+              className="bg-yellow-900/20 border border-yellow-700/50 rounded p-3"
+            >
+              <p className="text-yellow-200 text-sm font-bold">{syn.name}</p>
+              <p className="text-stone-400 text-xs mt-1">{syn.description}</p>
+              <div className="flex flex-wrap gap-2 mt-1">
+                {Object.entries(syn.effects).map(([key, val]) => {
+                  if (val === 0 || val === undefined) return null;
+                  const labels: Record<string, string> = {
+                    attack: '攻击', defense: '防御', hp: '生命',
+                    spirit: '神识', physique: '体魄', speed: '速度',
+                    expRate: '修炼速度', attackPercent: '攻击%', defensePercent: '防御%',
+                    hpPercent: '生命%', critRate: '暴击率', critDamage: '暴伤',
+                    damageReduction: '减伤', dodgeRate: '闪避', lifeLeech: '吸血',
+                  };
+                  const isPercent = key.includes('Percent') || key.includes('Rate') || key === 'expRate' || key === 'lifeLeech' || key === 'dodgeRate' || key === 'damageReduction';
+                  const displayVal = isPercent ? `${Math.round(val * 100)}%` : `+${val}`;
+                  return (
+                    <span key={key} className="text-xs bg-yellow-800/50 text-yellow-300 px-2 py-0.5 rounded">
+                      {labels[key] || key}: {displayVal}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 接近完成的羁绊 */}
+      {synergies.all
+        .filter((s) => !synergies.active.includes(s))
+        .filter((s) => {
+          const learned = s.requiredArts.filter((id) => player.cultivationArts.includes(id));
+          return learned.length > 0 && learned.length < s.requiredArts.length;
+        })
+        .slice(0, 2)
+        .map((syn) => {
+          const learned = syn.requiredArts.filter((id) => player.cultivationArts.includes(id));
+          const missing = syn.requiredArts.filter((id) => !player.cultivationArts.includes(id));
+          return (
+            <div key={syn.id} className="space-y-2">
+              {syn === synergies.all
+                .filter((s) => !synergies.active.includes(s))
+                .filter((s) => {
+                  const l = s.requiredArts.filter((id) => player.cultivationArts.includes(id));
+                  return l.length > 0 && l.length < s.requiredArts.length;
+                })
+                [0] && (
+                <h4 className="text-blue-400 text-sm font-serif flex items-center gap-2">
+                  <Star size={14} /> 可激活羁绊
+                </h4>
+              )}
+              <div className="bg-blue-900/20 border border-blue-700/50 rounded p-3">
+                <p className="text-blue-200 text-sm font-bold">{syn.name}</p>
+                <p className="text-stone-400 text-xs mt-1">{syn.description}</p>
+                <div className="text-stone-500 text-xs mt-1">
+                  进度：{learned.length}/{syn.requiredArts.length} 
+                  <span className="text-stone-600 ml-1">
+                    （还需：{missing.map((id) => {
+                      const art = CULTIVATION_ARTS.find((a) => a.id === id);
+                      return art ? art.name : id;
+                    }).join('、')}）
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+
+      {/* Build流派进度 */}
+      {(buildInfo.totals.crit > 0 || buildInfo.totals.sustain > 0 || buildInfo.totals.counter > 0) && (
+        <div>
+          <h4 className="text-green-400 text-sm font-serif flex items-center gap-2 mb-2">
+            <TrendingUp size={14} /> Build流派倾向
+          </h4>
+          <div className="grid grid-cols-3 gap-2">
+            {(['crit', 'sustain', 'counter'] as const).map((kind) => {
+              const labels = { crit: '⚔️ 暴击流', sustain: '🛡️ 续航流', counter: '🔄 反击流' };
+              const thresholds = BUILD_THRESHOLD_BONUSES[kind];
+              const total = buildInfo.totals[kind];
+              const activeName = buildInfo.activeThresholds[kind].length > 0
+                ? buildInfo.activeThresholds[kind][buildInfo.activeThresholds[kind].length - 1].name
+                : null;
+              const nextThreshold = thresholds.find((t) => t.threshold > total);
+              return (
+                <div
+                  key={kind}
+                  className={`rounded p-2 text-center text-xs ${
+                    activeName
+                      ? 'bg-green-900/30 border border-green-700/50'
+                      : total > 0
+                      ? 'bg-stone-800 border border-stone-700'
+                      : 'bg-stone-900 border border-stone-800 opacity-40'
+                  }`}
+                >
+                  <p className="text-stone-300 font-bold">{labels[kind]}</p>
+                  <p className={activeName ? 'text-green-400' : 'text-stone-500'}>
+                    点数: {total}
+                  </p>
+                  {activeName && (
+                    <p className="text-green-300 text-[10px]">{activeName}</p>
+                  )}
+                  {nextThreshold && (
+                    <p className="text-stone-600 text-[10px]">
+                      下级: {nextThreshold.name}({nextThreshold.threshold})
+                    </p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const CultivationModal: React.FC<Props> = ({
   isOpen,
@@ -28,6 +178,56 @@ const CultivationModal: React.FC<Props> = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null); // 滚动容器引用
 
   const getRealmIndex = (r: RealmType) => REALM_ORDER.indexOf(r);
+
+  // 批量修习：自动修习所有可学功法
+  const handleBatchLearn = () => {
+    const unlockedSet = new Set(player.unlockedArts || []);
+    const learnedSet = new Set(player.cultivationArts || []);
+    
+    // 筛选：已解锁 + 未学习 + 境界够 + 灵石够
+    const availableArts = CULTIVATION_ARTS.filter((art) => {
+      if (learnedSet.has(art.id)) return false;
+      if (!unlockedSet.has(art.id)) return false;
+      if (getRealmIndex(player.realm) < getRealmIndex(art.realmRequirement)) return false;
+      return true;
+    });
+
+    if (availableArts.length === 0) {
+      return; // 没有可修习的功法
+    }
+
+    // 按品级降序排列（优先修习高品级）
+    const gradeOrder: Record<string, number> = { 天: 4, 地: 3, 玄: 2, 黄: 1 };
+    availableArts.sort((a, b) => (gradeOrder[b.grade] || 0) - (gradeOrder[a.grade] || 0));
+
+    // 计算可修习的总费用
+    let remainingStones = player.spiritStones;
+    const toLearn: CultivationArt[] = [];
+    for (const art of availableArts) {
+      if (remainingStones >= art.cost) {
+        toLearn.push(art);
+        remainingStones -= art.cost;
+      }
+    }
+
+    if (toLearn.length === 0) {
+      return; // 灵石不够
+    }
+
+    // 逐个修习
+    const totalCost = toLearn.reduce((sum, a) => sum + a.cost, 0);
+    toLearn.forEach((art, i) => {
+      // 给每个修习添加小延迟，避免状态冲突
+      setTimeout(() => {
+        onLearnArt(art);
+      }, i * 50);
+    });
+
+    // 显示提示（异步，因为 learnArt 会更新 player）
+    setTimeout(() => {
+      // 无法直接在组件内显示toast，用简单方式
+    }, toLearn.length * 50 + 100);
+  };
 
   // 处理学习功法的点击，确保传递正确的 art 对象
   const handleLearnClick = (art: CultivationArt, e: React.MouseEvent) => {
@@ -163,12 +363,26 @@ const CultivationModal: React.FC<Props> = ({
       titleIcon={<BookOpen size={18} className="md:w-5 md:h-5" />}
       size="3xl"
       height="xl"
+      titleExtra={
+        <button
+          onClick={handleBatchLearn}
+          className="px-3 py-1.5 bg-mystic-gold/20 border border-mystic-gold text-mystic-gold hover:bg-mystic-gold/30 rounded text-sm flex items-center gap-1.5 transition-colors min-h-[44px] md:min-h-0 touch-manipulation"
+          title="自动修习所有已解锁且可负担的功法"
+        >
+          <Wand size={14} />
+          <span className="hidden md:inline">批量修习</span>
+        </button>
+      }
     >
       <div ref={scrollContainerRef}>
         <div className="mb-3 md:mb-4 text-xs md:text-sm text-stone-400 bg-ink-900/50 p-2 md:p-3 rounded border border-stone-700">
           <p>心法：主修功法，激活后提升修炼效率。</p>
           <p>体术：辅修功法，习得后永久提升身体属性。</p>
+          <p className="mt-1 text-mystic-gold">✨ 修炼多门功法可触发<strong>羁绊套装</strong>效果，获得额外属性加成！</p>
         </div>
+
+        {/* 功法羁绊展示 */}
+        <ArtSynergyDisplay player={player} />
 
         {/* 搜索框 */}
         <div className="mb-4">
