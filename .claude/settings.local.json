@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(xargs grep:*)",
+      "Bash(git:*)",
+      "Bash(/tmp/urls.txt:*)",
+      "Read(//tmp/**)",
+      "Bash(find . -type f \\\\\\( -name \"*.ts\" -o -name \"*.tsx\" \\\\\\) -exec wc -l {} +)",
+      "Bash(wc:*)",
+      "Bash(find . -maxdepth 2 -not -path */node_modules/* -not -path */dist/* -type d)",
+      "Bash(npm outdated:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}
