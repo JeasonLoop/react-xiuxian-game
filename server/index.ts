@@ -443,44 +443,63 @@ app.get('/api/leaderboard', (req: any, res: any) => {
       break;
   }
 
-  db.all(
-    `SELECT user_id, username, realm_index, realm_level, exp, combat_power, spirit_stones, reputation, achievement_count, kill_count, play_time, updated_at
-     FROM rankings
-     ORDER BY ${orderBy}
-     LIMIT ? OFFSET ?`,
-    [limit, offset],
-    (err, rows: any[]) => {
-      if (err) {
-        console.error('Leaderboard query error:', err);
-        return res.status(500).json({ error: 'Error querying leaderboard' });
+  try {
+    db.all(
+      `SELECT user_id, username, realm_index, realm_level, exp, combat_power, spirit_stones, reputation, achievement_count, kill_count, play_time, updated_at
+       FROM rankings
+       ORDER BY ${orderBy}
+       LIMIT ? OFFSET ?`,
+      [limit, offset],
+      (err, rows: any[]) => {
+        // 查询失败或表不存在时，返回空数组而非报错
+        if (err) {
+          console.error('Leaderboard query error:', err.message);
+          return res.json({
+            sort,
+            limit,
+            offset,
+            total: 0,
+            rankings: [],
+          });
+        }
+
+        const result = (rows || []).map((row, index) => ({
+          rank: offset + index + 1,
+          user_id: row.user_id,
+          username: row.username,
+          realm: REALM_NAMES[row.realm_index] || '未知',
+          realm_index: row.realm_index,
+          realm_level: row.realm_level,
+          exp: row.exp,
+          combat_power: row.combat_power,
+          spirit_stones: row.spirit_stones,
+          reputation: row.reputation,
+          achievement_count: row.achievement_count,
+          kill_count: row.kill_count,
+          play_time: row.play_time,
+          updated_at: row.updated_at,
+        }));
+
+        res.json({
+          sort,
+          limit,
+          offset,
+          total: result.length,
+          rankings: result,
+        });
       }
-
-      const result = (rows || []).map((row, index) => ({
-        rank: offset + index + 1,
-        user_id: row.user_id,
-        username: row.username,
-        realm: REALM_NAMES[row.realm_index] || '未知',
-        realm_index: row.realm_index,
-        realm_level: row.realm_level,
-        exp: row.exp,
-        combat_power: row.combat_power,
-        spirit_stones: row.spirit_stones,
-        reputation: row.reputation,
-        achievement_count: row.achievement_count,
-        kill_count: row.kill_count,
-        play_time: row.play_time,
-        updated_at: row.updated_at,
-      }));
-
-      res.json({
-        sort,
-        limit,
-        offset,
-        total: result.length, // SQLite doesn't give total easily; frontend checks hasMore
-        rankings: result,
-      });
-    }
-  );
+    );
+  } catch (err: any) {
+    // 极端情况（如同步异常），也返回空数组
+    console.error('Leaderboard unexpected error:', err.message);
+    return res.json({
+      sort,
+      limit,
+      offset,
+      total: 0,
+      rankings: [],
+    });
+  }
 });
 
 // GET /api/leaderboard/me — 获取当前登录用户的排名
@@ -490,7 +509,11 @@ app.get('/api/leaderboard/me', authenticateToken, (req: any, res: any) => {
     'SELECT * FROM rankings WHERE user_id = ?',
     [req.user.id],
     (err, myRow: any) => {
-      if (err) return res.status(500).json({ error: 'Database error' });
+      // 数据库错误或无数据时，返回 found: false，不报错
+      if (err) {
+        console.error('Leaderboard/me query error:', err.message);
+        return res.json({ found: false, message: '暂无排名数据' });
+      }
       if (!myRow) return res.json({ found: false, message: '您尚未上传存档，无法查看排名' });
 
       // 查询三种排序的排名

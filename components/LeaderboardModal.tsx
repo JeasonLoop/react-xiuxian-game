@@ -98,18 +98,26 @@ const LeaderboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
       const url = `${API_URL}/leaderboard?sort=${sort}&limit=${PAGE_SIZE}&offset=${pageOffset}`;
       const res = await fetch(url);
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error || '获取排行榜失败');
+        // 服务器返回错误码时，不抛错，直接用空数据展示
+        console.warn('Leaderboard fetch returned', res.status);
+        if (!append) setRankings([]);
+        setHasMore(false);
+        return;
       }
       const data: LeaderboardResponse = await res.json();
+      // 防御：确保 rankings 是数组
+      const safeRankings = Array.isArray(data?.rankings) ? data.rankings : [];
       if (append) {
-        setRankings((prev) => [...prev, ...data.rankings]);
+        setRankings((prev) => [...prev, ...safeRankings]);
       } else {
-        setRankings(data.rankings);
+        setRankings(safeRankings);
       }
-      setHasMore(data.total >= PAGE_SIZE);
+      setHasMore(safeRankings.length >= PAGE_SIZE);
     } catch (e: any) {
-      setError(e.message || '网络错误');
+      // 网络错误等异常，也展示空状态而非报错
+      console.warn('Leaderboard fetch error:', e.message);
+      if (!append) setRankings([]);
+      setHasMore(false);
     } finally {
       setLoading(false);
     }
