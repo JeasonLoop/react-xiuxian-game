@@ -133,6 +133,7 @@ interface ModalSettersGroup {
   setIsReputationEventOpen: (open: boolean) => void; // 打开声望事件界面
   setIsTreasureVaultOpen: (open: boolean) => void; // 打开宝库界面
   setIsAutoAdventureConfigOpen: (open: boolean) => void; // 打开自动历练配置界面
+  setIsLeaderboardOpen: (open: boolean) => void; // 打开排行榜界面
 }
 
 /**

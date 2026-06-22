@@ -80,6 +80,28 @@ const db = new sqlite3.Database(dbPath, (err) => {
 
       // 添加索引加速查询
       db.run(`CREATE INDEX IF NOT EXISTS idx_saves_user_id ON saves(user_id)`);
+
+      // 排行榜表：存储从存档中提取的可排序字段
+      db.run(`
+        CREATE TABLE IF NOT EXISTS rankings (
+          user_id INTEGER PRIMARY KEY,
+          username TEXT NOT NULL,
+          realm_index INTEGER NOT NULL DEFAULT 0,
+          realm_level INTEGER NOT NULL DEFAULT 1,
+          exp INTEGER NOT NULL DEFAULT 0,
+          combat_power INTEGER NOT NULL DEFAULT 0,
+          spirit_stones INTEGER NOT NULL DEFAULT 0,
+          reputation INTEGER NOT NULL DEFAULT 0,
+          achievement_count INTEGER NOT NULL DEFAULT 0,
+          kill_count INTEGER NOT NULL DEFAULT 0,
+          play_time INTEGER NOT NULL DEFAULT 0,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+      `);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_rankings_realm ON rankings(realm_index DESC, realm_level DESC, exp DESC)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_rankings_combat ON rankings(combat_power DESC)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_rankings_stones ON rankings(spirit_stones DESC)`);
     });
   }
 });
@@ -98,6 +120,74 @@ const authenticateToken = (req: any, res: any, next: any) => {
     next();
   });
 };
+
+// ── 排行榜辅助函数：从存档JSON中提取排名字段 ──
+const REALM_ORDER_FOR_RANKING = ['炼气期', '筑基期', '金丹期', '元婴期', '化神期', '合道期', '长生境'];
+
+function extractRankingData(saveData: any): {
+  realm_index: number;
+  realm_level: number;
+  exp: number;
+  combat_power: number;
+  spirit_stones: number;
+  reputation: number;
+  achievement_count: number;
+  kill_count: number;
+  play_time: number;
+} | null {
+  try {
+    const player = saveData?.player;
+    if (!player) return null;
+
+    const realmIndex = REALM_ORDER_FOR_RANKING.indexOf(player.realm);
+    const attack = Number(player.attack) || 0;
+    const defense = Number(player.defense) || 0;
+    const maxHp = Number(player.maxHp) || 0;
+    const spirit = Number(player.spirit) || 0;
+    const speed = Number(player.speed) || 0;
+    const combatPower = Math.floor(attack + defense + maxHp / 10 + spirit + speed);
+
+    return {
+      realm_index: realmIndex >= 0 ? realmIndex : 0,
+      realm_level: Number(player.realmLevel) || 1,
+      exp: Number(player.exp) || 0,
+      combat_power: combatPower,
+      spirit_stones: Number(player.spiritStones) || 0,
+      reputation: Number(player.reputation) || 0,
+      achievement_count: Array.isArray(player.achievements) ? player.achievements.length : 0,
+      kill_count: Number(player.statistics?.killCount) || 0,
+      play_time: Number(player.playTime) || 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function upsertRanking(userId: number, username: string, saveData: any): void {
+  const data = extractRankingData(saveData);
+  if (!data) return;
+
+  db.run(
+    `INSERT INTO rankings (user_id, username, realm_index, realm_level, exp, combat_power, spirit_stones, reputation, achievement_count, kill_count, play_time, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+     ON CONFLICT(user_id) DO UPDATE SET
+       username = excluded.username,
+       realm_index = excluded.realm_index,
+       realm_level = excluded.realm_level,
+       exp = excluded.exp,
+       combat_power = excluded.combat_power,
+       spirit_stones = excluded.spirit_stones,
+       reputation = excluded.reputation,
+       achievement_count = excluded.achievement_count,
+       kill_count = excluded.kill_count,
+       play_time = excluded.play_time,
+       updated_at = CURRENT_TIMESTAMP`,
+    [userId, username, data.realm_index, data.realm_level, data.exp, data.combat_power, data.spirit_stones, data.reputation, data.achievement_count, data.kill_count, data.play_time],
+    (err) => {
+      if (err) console.error('排行榜同步失败:', err.message);
+    }
+  );
+}
 
 // 敏感词列表 - 禁止包含这些词的用户名
 const BANNED_USERNAME_WORDS = [
@@ -296,23 +386,29 @@ app.post('/api/save', authenticateToken, (req: any, res: any) => {
     if (err) return res.status(500).json({ error: 'Database error' });
 
     if (row) {
-      // Update existing save
       db.run(
         'UPDATE saves SET save_data = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
         [saveDataString, req.user.id],
         (updateErr) => {
           if (updateErr) return res.status(500).json({ error: 'Error updating save' });
           res.json({ message: 'Save updated successfully' });
+          // 响应已发送，异步同步排行榜
+          setImmediate(() => {
+            try { upsertRanking(req.user.id, req.user.username, saveData); } catch {}
+          });
         }
       );
     } else {
-      // Create new save
       db.run(
         'INSERT INTO saves (user_id, save_data) VALUES (?, ?)',
         [req.user.id, saveDataString],
         (insertErr) => {
           if (insertErr) return res.status(500).json({ error: 'Error creating save' });
           res.json({ message: 'Save created successfully' });
+          // 响应已发送，异步同步排行榜
+          setImmediate(() => {
+            try { upsertRanking(req.user.id, req.user.username, saveData); } catch {}
+          });
         }
       );
     }
@@ -322,6 +418,114 @@ app.post('/api/save', authenticateToken, (req: any, res: any) => {
 // 健康检查端点（用于Docker健康检查）
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Backend is running' });
+});
+
+// ── 排行榜 API ──
+const REALM_NAMES = ['炼气期', '筑基期', '金丹期', '元婴期', '化神期', '合道期', '长生境'];
+
+// GET /api/leaderboard?sort=realm|combat|stones&limit=50&offset=0
+app.get('/api/leaderboard', (req: any, res: any) => {
+  const sort = (req.query.sort as string) || 'realm';
+  const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 50, 1), 200);
+  const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
+
+  let orderBy: string;
+  switch (sort) {
+    case 'combat':
+      orderBy = 'combat_power DESC, realm_index DESC, realm_level DESC';
+      break;
+    case 'stones':
+      orderBy = 'spirit_stones DESC, realm_index DESC, realm_level DESC';
+      break;
+    case 'realm':
+    default:
+      orderBy = 'realm_index DESC, realm_level DESC, exp DESC';
+      break;
+  }
+
+  db.all(
+    `SELECT user_id, username, realm_index, realm_level, exp, combat_power, spirit_stones, reputation, achievement_count, kill_count, play_time, updated_at
+     FROM rankings
+     ORDER BY ${orderBy}
+     LIMIT ? OFFSET ?`,
+    [limit, offset],
+    (err, rows: any[]) => {
+      if (err) {
+        console.error('Leaderboard query error:', err);
+        return res.status(500).json({ error: 'Error querying leaderboard' });
+      }
+
+      const result = (rows || []).map((row, index) => ({
+        rank: offset + index + 1,
+        user_id: row.user_id,
+        username: row.username,
+        realm: REALM_NAMES[row.realm_index] || '未知',
+        realm_index: row.realm_index,
+        realm_level: row.realm_level,
+        exp: row.exp,
+        combat_power: row.combat_power,
+        spirit_stones: row.spirit_stones,
+        reputation: row.reputation,
+        achievement_count: row.achievement_count,
+        kill_count: row.kill_count,
+        play_time: row.play_time,
+        updated_at: row.updated_at,
+      }));
+
+      res.json({
+        sort,
+        limit,
+        offset,
+        total: result.length, // SQLite doesn't give total easily; frontend checks hasMore
+        rankings: result,
+      });
+    }
+  );
+});
+
+// GET /api/leaderboard/me — 获取当前登录用户的排名
+app.get('/api/leaderboard/me', authenticateToken, (req: any, res: any) => {
+  // 获取用户自己的排名数据
+  db.get(
+    'SELECT * FROM rankings WHERE user_id = ?',
+    [req.user.id],
+    (err, myRow: any) => {
+      if (err) return res.status(500).json({ error: 'Database error' });
+      if (!myRow) return res.json({ found: false, message: '您尚未上传存档，无法查看排名' });
+
+      // 查询三种排序的排名
+      const queries = [
+        { sort: 'realm', condition: `(realm_index > ?) OR (realm_index = ? AND realm_level > ?) OR (realm_index = ? AND realm_level = ? AND exp > ?)` },
+        { sort: 'combat', condition: `combat_power > ?` },
+        { sort: 'stones', condition: `spirit_stones > ?` },
+      ];
+
+      const results: any = { found: true, username: myRow.username };
+
+      let completed = 0;
+      queries.forEach(({ sort, condition }) => {
+        const params = sort === 'realm'
+          ? [myRow.realm_index, myRow.realm_index, myRow.realm_level, myRow.realm_index, myRow.realm_level, myRow.exp]
+          : sort === 'combat'
+          ? [myRow.combat_power]
+          : [myRow.spirit_stones];
+
+        db.get(
+          `SELECT COUNT(*) as cnt FROM rankings WHERE ${condition}`,
+          params,
+          (err2, countRow: any) => {
+            completed++;
+            if (!err2 && countRow) {
+              results[`${sort}_rank`] = (countRow.cnt || 0) + 1;
+            }
+            if (completed === queries.length) {
+              res.json(results);
+            }
+          }
+        );
+      });
+    }
+  );
 });
 
 // ── LinuxDo OAuth ──

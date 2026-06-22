@@ -8,6 +8,9 @@ export default defineConfig({
   server: {
     port: 5174,
     strictPort: false, // 端口被占用时自动切换到下一个可用端口
+    watch: {
+      ignored: ['**/database.sqlite', '**/database.sqlite-*'],
+    },
   },
   plugins: [
     codeInspectorPlugin({

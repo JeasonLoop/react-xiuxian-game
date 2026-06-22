@@ -154,7 +154,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
           return;
         }
 
-        window.location.reload();
+        // window.location.reload();
       } catch (error) {
         console.error('保存存档失败:', error);
         showError(`保存存档失败：${error instanceof Error ? error.message : '未知错误'}，请重试！`);

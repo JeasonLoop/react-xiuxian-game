@@ -501,8 +501,8 @@ export async function executeAdventureCore({
         const defaultSrResult: AdventureResult = {
           story: '你在秘境深处探索，但没有发现什么特别的东西。',
           hpChange: 0,
-          expChange: Math.floor(50 * (1 + REALM_ORDER.indexOf(player.realm) * 0.3)),
-          spiritStonesChange: Math.floor(100 * (1 + REALM_ORDER.indexOf(player.realm) * 0.3)),
+          expChange: Math.floor(200 * (1 + REALM_ORDER.indexOf(player.realm) * 0.5)),
+          spiritStonesChange: Math.floor(150 * (1 + REALM_ORDER.indexOf(player.realm) * 0.5)),
           eventColor: 'normal',
         };
         setPlayer(prev => applyResultToPlayer(prev, defaultSrResult, { isSecretRealm: true, adventureType: 'secret_realm', addLog, triggerVisual }));

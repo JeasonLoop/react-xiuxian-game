@@ -874,7 +874,7 @@ export const createEnemy = async (
     const realmBaseSpirit = REALM_DATA[realm]?.baseSpirit || 0;
     baseSpirit = basePlayerStats.spirit * 0.3 + realmBaseSpirit * 0.5 + basePlayerStats.level * 1;
     baseMaxHp = basePlayerStats.maxHp * (0.7 + Math.random() * 0.2);
-    baseSpeed = basePlayerStats.speed;
+    baseSpeed = Math.max(6, Math.round(basePlayerStats.speed * (0.6 + Math.random() * 0.8))); // 60%-140% 玩家速度
   }
 
   // 天地之魄挑战：根据玩家战斗力动态调整BOSS属性
@@ -1999,8 +1999,8 @@ function executeNormalAttack(
   const speedBonus = (attackerSpeed / speedSum) * 0.10;
   critChance += speedBonus;
 
-  // 设置暴击率上限为20%（除非Buff本身加成很高）
-  critChance = Math.min(0.2, Math.max(0, critChance));
+  // 设置暴击率上限为35%（原20%过于严苛，Buff可突破上限）
+  critChance = Math.min(0.35, Math.max(0, critChance));
   const isCrit = Math.random() < critChance;
   const finalDamage = Math.round((isCrit ? baseDamage * critMultiplier : baseDamage) * elementalMultiplier);
 
@@ -2015,6 +2015,11 @@ function executeNormalAttack(
     if (buff.damageReduction && buff.damageReduction > maxDamageReduction) maxDamageReduction = buff.damageReduction;
     if (buff.reflectDamage && buff.reflectDamage > maxReflectRatio) maxReflectRatio = buff.reflectDamage;
   });
+
+  // 速度提供基础闪避率：每点速度差提供0.05%闪避，上限15%
+  const speedDiff = Math.max(0, (Number(target.speed) || 0) - (Number(attacker.speed) || 0));
+  const baseDodgeFromSpeed = Math.min(0.15, speedDiff * 0.0005);
+  maxDodge = Math.max(maxDodge, baseDodgeFromSpeed);
 
   // 检查闪避
   const isDodged = maxDodge > 0 && Math.random() < maxDodge;
@@ -2192,31 +2197,14 @@ function executeSkill(
     const randomMultiplier = 0.9 + Math.random() * 0.2; // 0.9-1.1之间的随机数
     damage = Math.round(damage * randomMultiplier);
 
-    // 应用防御（保留技能伤害的特殊处理逻辑）
-    if (skill.damage.type === 'physical') {
-      // 物理伤害：如果伤害值大于目标防御，造成伤害；否则造成很少的穿透伤害
-      if (damage > target.defense) {
-        damage = damage - target.defense * 0.5; // 正常减伤
-      } else {
-        // 伤害小于防御，造成少量穿透伤害
-        damage = Math.max(1, Math.round(damage * 0.1));
-      }
-    } else {
-      // 法术伤害：如果伤害值大于目标神识，造成伤害；否则造成很少的穿透伤害
-      // 应用法术防御buff
-      let effectiveSpirit = target.spirit;
+    // 应用法术防御buff（仅对法术技能生效）
+    if (skill.damage.type === 'magical') {
       if (target.buffs.some(buff => buff.magicDefense && buff.magicDefense > 0)) {
         const maxMagicDefense = Math.max(...target.buffs
           .filter(buff => buff.magicDefense && buff.magicDefense > 0)
           .map(buff => buff.magicDefense!));
-        effectiveSpirit = Math.floor(target.spirit * (1 + maxMagicDefense));
-      }
-
-      if (damage > effectiveSpirit) {
-        damage = damage - effectiveSpirit * 0.3; // 正常减伤
-      } else {
-        // 伤害小于神识，造成少量穿透伤害
-        damage = Math.max(1, Math.round(damage * 0.1));
+        // 法术防御buff提供百分比减伤，直接作用于最终伤害
+        damage = Math.round(damage * (1 - maxMagicDefense));
       }
     }
 
@@ -2225,10 +2213,18 @@ function executeSkill(
 
     // 检查闪避
     let isDodged = false;
+    let maxDodge = 0;
+    // 速度提供基础闪避率：每点速度差提供0.05%闪避，上限15%
+    const speedDiff = Math.max(0, (Number(target.speed) || 0) - (Number(caster.speed) || 0));
+    maxDodge = Math.min(0.15, speedDiff * 0.0005);
+    // Buff闪避
     if (target.buffs.some(buff => buff.dodge && buff.dodge > 0)) {
-      const maxDodge = Math.max(...target.buffs
+      const buffDodge = Math.max(...target.buffs
         .filter(buff => buff.dodge && buff.dodge > 0)
         .map(buff => buff.dodge!));
+      maxDodge = Math.max(maxDodge, buffDodge);
+    }
+    if (maxDodge > 0) {
       isDodged = Math.random() < maxDodge;
     }
 

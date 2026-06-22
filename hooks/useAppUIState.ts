@@ -36,6 +36,7 @@ export interface ModalSetters {
   setIsReputationEventOpen: (open: boolean) => void;
   setIsTreasureVaultOpen: (open: boolean) => void;
   setIsAutoAdventureConfigOpen: (open: boolean) => void;
+  setIsLeaderboardOpen: (open: boolean) => void;
 }
 
 /**
@@ -70,6 +71,7 @@ export function useModalSetters(): ModalSetters {
       setIsReputationEventOpen: (open) => setModal('isReputationEventOpen', open),
       setIsTreasureVaultOpen: (open) => setModal('isTreasureVaultOpen', open),
       setIsAutoAdventureConfigOpen: (open) => setModal('isAutoAdventureConfigOpen', open),
+      setIsLeaderboardOpen: (open) => setModal('isLeaderboardOpen', open),
     }),
     [setModal]
   );
@@ -201,7 +203,8 @@ export function useIsAnyModalOpen(): boolean {
     modals.isBattleModalOpen ||
     modals.isTurnBasedBattleOpen ||
     modals.isReputationEventOpen ||
-    modals.isTreasureVaultOpen
+    modals.isTreasureVaultOpen ||
+    modals.isLeaderboardOpen
   );
 }
 

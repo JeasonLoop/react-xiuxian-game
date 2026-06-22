@@ -130,21 +130,21 @@ itemTypes.forEach(type => {
       switch (rarity) {
         case '普通':
           price = 50 + Math.floor(Math.random() * 100);
-          sellPrice = Math.floor(price * 0.3);
+          sellPrice = Math.floor(price * 0.5);
           break;
         case '稀有':
           price = 200 + Math.floor(Math.random() * 300);
-          sellPrice = Math.floor(price * 0.3);
+          sellPrice = Math.floor(price * 0.45);
           minRealm = RealmType.QiRefining;
           break;
         case '传说':
           price = 1000 + Math.floor(Math.random() * 2000);
-          sellPrice = Math.floor(price * 0.25);
+          sellPrice = Math.floor(price * 0.4);
           minRealm = RealmType.Foundation;
           break;
         case '仙品':
           price = 5000 + Math.floor(Math.random() * 10000);
-          sellPrice = Math.floor(price * 0.2);
+          sellPrice = Math.floor(price * 0.35);
           minRealm = RealmType.GoldenCore;
           break;
       }
@@ -152,10 +152,10 @@ itemTypes.forEach(type => {
       // 根据物品类型调整价格
       if (type === ItemType.Weapon || type === ItemType.Armor) {
         price = Math.floor(price * 1.5);
-        sellPrice = Math.floor(price * 0.3);
+        sellPrice = Math.floor(price * 0.5);
       } else if (type === ItemType.Artifact) {
         price = Math.floor(price * 2);
-        sellPrice = Math.floor(price * 0.25);
+        sellPrice = Math.floor(price * 0.4);
       }
 
       GENERATED_SHOP_ITEMS.push({

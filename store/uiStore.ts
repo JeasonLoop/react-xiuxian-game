@@ -40,6 +40,7 @@ interface ModalState {
   isTreasureVaultOpen: boolean;
   isAutoAdventureConfigOpen: boolean;
   isDungeonOpen: boolean;
+  isLeaderboardOpen: boolean;
 }
 
 // 回合制战斗参数
@@ -173,6 +174,7 @@ const defaultModalState: ModalState = {
   isTreasureVaultOpen: false,
   isAutoAdventureConfigOpen: false,
   isDungeonOpen: false,
+  isLeaderboardOpen: false,
 };
 
 export const useUIStore = create<UIState>((set, get) => ({

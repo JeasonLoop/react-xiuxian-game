@@ -93,6 +93,7 @@ interface UseAppViewHandlersProps {
   setIsReputationEventOpen: (open: boolean) => void;
   setIsTreasureVaultOpen: (open: boolean) => void;
   setIsAutoAdventureConfigOpen: (open: boolean) => void;
+  setIsLeaderboardOpen: (open: boolean) => void;
   setItemToUpgrade: (item: Item | null) => void;
   setCurrentShop: (shop: any | null) => void;
   setBattleReplay: (replay: any | null) => void;
@@ -147,6 +148,7 @@ export function useGameViewHandlers(props: UseAppViewHandlersProps) {
     setPausedByBattle,
     setPausedByReputationEvent,
     setIsAutoAdventureConfigOpen,
+    setIsLeaderboardOpen,
   } = props;
 
   return useMemo(() => ({
@@ -172,6 +174,7 @@ export function useGameViewHandlers(props: UseAppViewHandlersProps) {
     onOpenGrotto: () => setIsGrottoOpen(true),
     onOpenSettings: () => setIsSettingsOpen(true),
     onOpenDebug: () => setIsDebugOpen(true),
+    onOpenLeaderboard: () => setIsLeaderboardOpen(true),
     onOpenStats: () => setIsMobileStatsOpen(true),
     onUpdateViewedAchievements: () => {
       setPlayer((prev) => (prev ? {
@@ -228,6 +231,7 @@ export function useGameViewHandlers(props: UseAppViewHandlersProps) {
     setPausedByBattle,
     setPausedByReputationEvent,
     setIsAutoAdventureConfigOpen,
+    setIsLeaderboardOpen,
   ]);
 }
 
@@ -327,6 +331,7 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     setPausedByBattle,
     setPausedByShop,
     setPausedByReputationEvent,
+    setIsLeaderboardOpen,
   } = props;
 
   return useMemo(() => ({
@@ -437,6 +442,7 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     setIsTreasureVaultOpen: (open: boolean) => setIsTreasureVaultOpen(open),
     handleTakeTreasureVaultItem,
     handleUpdateVault,
+    setIsLeaderboardOpen,
     setIsTurnBasedBattleOpen: (open: boolean) => {
       setIsTurnBasedBattleOpen(open);
       if (!open) {
@@ -490,6 +496,7 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     autoAdventure, pausedByShop, setCurrentShop,
     setPausedByBattle, setPausedByShop,
     setPausedByReputationEvent,
+    setIsLeaderboardOpen,
   ]);
 }
 

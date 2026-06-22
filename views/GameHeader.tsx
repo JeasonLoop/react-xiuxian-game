@@ -53,6 +53,7 @@ interface GameHeaderProps {
   onOpenSettings: () => void;
   onOpenDailyQuest?: () => void;
   onOpenGrotto?: () => void;
+  onOpenLeaderboard?: () => void;
   onOpenDebug?: () => void;
   isDebugModeEnabled?: boolean;
 }
@@ -69,6 +70,7 @@ function GameHeader({
   onOpenSettings,
   onOpenDailyQuest,
   onOpenGrotto,
+  onOpenLeaderboard,
   onOpenDebug,
   isDebugModeEnabled = false,
 }: GameHeaderProps) {
@@ -80,7 +82,9 @@ function GameHeader({
 
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  const handleSaveToCloud = async () => {
+  const handleSaveToCloud = async (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     if (saving) return;
     const state = useGameStore.getState();
     if (!state.player) {
@@ -370,6 +374,7 @@ function GameHeader({
         )}
         {isAuthenticated && (
           <button
+            type="button"
             onClick={handleSaveToCloud}
             disabled={saving}
             className="flex items-center gap-2 px-3 py-2 bg-green-800 hover:bg-green-700 rounded border border-green-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center disabled:opacity-50"
@@ -379,13 +384,16 @@ function GameHeader({
             <span>{saving ? '保存中…' : '保存'}</span>
           </button>
         )}
-        <button
-          onClick={onOpenSettings}
-          className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
-        >
-          <Settings size={18} />
-          <span>设置</span>
-        </button>
+        {onOpenLeaderboard && (
+          <button
+            onClick={onOpenLeaderboard}
+            className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-yellow-600/50 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
+            title="排行榜"
+          >
+            <Trophy size={18} className="text-yellow-400" />
+            <span>排行</span>
+          </button>
+        )}
         <button
           onClick={() => window.dispatchEvent(new CustomEvent('open-npc-relations'))}
           className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
@@ -398,6 +406,13 @@ function GameHeader({
               {player.socialRelations.length}
             </span>
           )}
+        </button>
+        <button
+          onClick={onOpenSettings}
+          className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
+        >
+          <Settings size={18} />
+          <span>设置</span>
         </button>
         {canUseDebugFeature && isDebugModeEnabled && onOpenDebug && (
           <button

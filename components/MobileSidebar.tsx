@@ -34,6 +34,7 @@ interface Props {
   onOpenLottery: () => void;
   onOpenSettings: () => void;
   onOpenGrotto?: () => void;
+  onOpenLeaderboard?: () => void;
   onOpenDebug?: () => void;
   isDebugModeEnabled?: boolean;
   achievementCount?: number;
@@ -52,6 +53,7 @@ const MobileSidebar: React.FC<Props> = ({
   onOpenAchievement,
   onOpenPet,
   onOpenLottery,
+  onOpenLeaderboard,
   onOpenSettings,
   onOpenGrotto,
   onOpenDebug,
@@ -65,7 +67,8 @@ const MobileSidebar: React.FC<Props> = ({
   const [saving, setSaving] = useState(false);
   const canUseDebugFeature = isDebugFeatureAvailable();
 
-  const handleSaveToCloud = useCallback(async () => {
+  const handleSaveToCloud = useCallback(async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
     if (saving) return;
     const state = useGameStore.getState();
     if (!state.player) {
@@ -142,6 +145,16 @@ const MobileSidebar: React.FC<Props> = ({
         locked: !isFeatureUnlocked(FeatureId.LOTTERY, player?.realm),
         requirement: getFeatureRequirementText(FeatureId.LOTTERY),
       },
+      ...(onOpenLeaderboard
+        ? [
+            {
+              icon: Trophy,
+              label: '排行',
+              onClick: onOpenLeaderboard,
+              color: 'text-yellow-400',
+            },
+          ]
+        : []),
       ...(onOpenGrotto
         ? [
             {
@@ -162,6 +175,7 @@ const MobileSidebar: React.FC<Props> = ({
               label: saving ? '保存中…' : '保存',
               onClick: handleSaveToCloud,
               color: 'text-green-400',
+              keepOpenOnClick: true,
             },
           ]
         : []),
@@ -190,6 +204,7 @@ const MobileSidebar: React.FC<Props> = ({
       onOpenAchievement,
       onOpenPet,
       onOpenLottery,
+      onOpenLeaderboard,
       onOpenSettings,
       onOpenGrotto,
       onOpenDebug,
@@ -206,9 +221,11 @@ const MobileSidebar: React.FC<Props> = ({
   );
 
   const handleItemClick = useCallback(
-    (onClick: () => void) => {
+    (onClick: () => void, keepOpenOnClick?: boolean) => {
       onClick();
-      onClose();
+      if (!keepOpenOnClick) {
+        onClose();
+      }
     },
     [onClose]
   );
@@ -267,8 +284,9 @@ const MobileSidebar: React.FC<Props> = ({
               }
               return (
                 <button
+                  type="button"
                   key={index}
-                  onClick={() => handleItemClick(item.onClick)}
+                  onClick={() => handleItemClick(item.onClick, item.keepOpenOnClick)}
                   className="w-full flex items-center gap-3 px-4 py-4 bg-ink-800 hover:bg-ink-700 active:bg-ink-600 rounded border border-stone-700 mb-2 transition-colors touch-manipulation min-h-[56px]"
                 >
                   <Icon size={22} className={item.color} />

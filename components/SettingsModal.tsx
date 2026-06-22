@@ -541,7 +541,7 @@ const SettingsModal: React.FC<Props> = ({
                   </span>
                 </div>
                 <div className="text-xs text-stone-500">
-                  最后更新: 2026-01-07
+                  最后更新: 2026-06-22
                 </div>
               </div>
               <a

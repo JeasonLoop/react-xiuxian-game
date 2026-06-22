@@ -264,6 +264,7 @@ export function AppContent(props: AppContentProps) {
     setIsSectOpen: (open: boolean) => setModal('isSectOpen', open),
     setIsMobileSidebarOpen: (open: boolean) => setModal('isMobileSidebarOpen', open),
     setIsMobileStatsOpen: (open: boolean) => setModal('isMobileStatsOpen', open),
+    setIsLeaderboardOpen: (open: boolean) => setModal('isLeaderboardOpen', open),
   };
 
   return (

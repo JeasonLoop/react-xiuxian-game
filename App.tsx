@@ -137,6 +137,7 @@ function App() {
     setIsReputationEventOpen,
     setIsTreasureVaultOpen,
     setIsAutoAdventureConfigOpen,
+    setIsLeaderboardOpen,
   } = modalSetters;
 
   // ========== 本地状态 ==========

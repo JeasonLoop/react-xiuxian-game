@@ -5,6 +5,7 @@ import { getRandomBreakthroughDescription } from '../../services/templateService
 import { getRealmIndex, calculateBreakthroughAttributePoints } from '../../utils/attributeUtils';
 import { checkBreakthroughConditions, calculateGoldenCoreMethodCount } from '../../utils/cultivationUtils';
 import { getPlayerTotalStats, calculatePlayerBonuses } from '../../utils/statUtils';
+import { calculateSpiritualRootBreakthroughBonus } from '../../constants/spiritualRoots';
 
 interface UseBreakthroughHandlersProps {
   player: PlayerStats;
@@ -58,7 +59,22 @@ export function useBreakthroughHandlers({
     const failBonus = isRealmUpgrade 
       ? Math.min(player.breakthroughFailCount * 0.05, 0.30)
       : Math.min(player.breakthroughFailCount * 0.03, 0.30);
-    const successChance = Math.min(baseSuccessChance + failBonus, 0.95);
+    
+    // 天赋加成：「道心坚定」失败后下次突破+15%（仅当有失败记录时生效）
+    let talentBonus = 0;
+    if (player.talentIds?.includes('talent-firm-heart') && player.breakthroughFailCount > 0) {
+      talentBonus += 0.15;
+    }
+    // 天赋加成：「天纵之才」永久+10%突破成功率
+    if (player.talentIds?.includes('talent-prodigy')) {
+      talentBonus += 0.10;
+    }
+    // 灵根突破加成：每个灵根点+0.05%
+    const spiritualRootBonus = player.spiritualRoots 
+      ? calculateSpiritualRootBreakthroughBonus(player.spiritualRoots) 
+      : 0;
+    
+    const successChance = Math.min(baseSuccessChance + failBonus + talentBonus + spiritualRootBonus, 0.95);
 
     // 如果跳过成功率检查（天劫成功后），直接执行突破
     const isSuccess = skipSuccessCheck || Math.random() < successChance;
@@ -255,7 +271,18 @@ export function useBreakthroughHandlers({
       setLoading(false);
     } else {
       const newFailCount = player.breakthroughFailCount + 1;
-      const newChance = Math.min((isRealmUpgrade ? 0.6 : 0.9) + (isRealmUpgrade ? newFailCount * 0.05 : newFailCount * 0.03), 0.95);
+      // 重新计算包含天赋和灵根加成的下次成功率
+      let newTalentBonus = 0;
+      if (player.talentIds?.includes('talent-firm-heart') && newFailCount > 0) {
+        newTalentBonus += 0.15;
+      }
+      if (player.talentIds?.includes('talent-prodigy')) {
+        newTalentBonus += 0.10;
+      }
+      const newSpiritualBonus = player.spiritualRoots 
+        ? calculateSpiritualRootBreakthroughBonus(player.spiritualRoots) 
+        : 0;
+      const newChance = Math.min((isRealmUpgrade ? 0.6 : 0.9) + (isRealmUpgrade ? newFailCount * 0.05 : newFailCount * 0.03) + newTalentBonus + newSpiritualBonus, 0.95);
       const insightMsg = isRealmUpgrade
         ? `你在失败中积累了一丝感悟，下次突破成功率提升至 ${Math.round(newChance * 100)}%`
         : `虽未突破，但你稳固了根基，下次成功率提升至 ${Math.round(newChance * 100)}%`;

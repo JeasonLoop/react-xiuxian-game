@@ -30,6 +30,7 @@ import ShopModal from '../../components/ShopModal';
 import ReputationEventModal from '../../components/ReputationEventModal';
 import GrottoModal from '../../components/GrottoModal';
 import SectTreasureVaultModal from '../../components/SectTreasureVaultModal';
+import LeaderboardModal from '../../components/LeaderboardModal';
 
 import { BattleReplay } from '../../services/battleService';
 import { RandomSectTask } from '../../services/randomService';
@@ -181,6 +182,8 @@ interface ModalsContainerProps {
     setIsTreasureVaultOpen: (open: boolean) => void;
     handleTakeTreasureVaultItem: (item: Item) => void;
     handleUpdateVault?: (vault: { items: Item[]; takenItemIds: string[] }) => void;
+    // Leaderboard
+    setIsLeaderboardOpen: (open: boolean) => void;
   };
 }
 
@@ -468,6 +471,13 @@ function ModalsContainer({
           player={player}
           onTakeItem={handlers.handleTakeTreasureVaultItem}
           onUpdateVault={handlers.handleUpdateVault}
+        />
+      )}
+
+      {modals.isLeaderboardOpen && (
+        <LeaderboardModal
+          isOpen={modals.isLeaderboardOpen}
+          onClose={() => handlers.setIsLeaderboardOpen(false)}
         />
       )}
     </>

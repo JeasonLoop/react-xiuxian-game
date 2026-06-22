@@ -1629,7 +1629,9 @@ export function templateToAdventureResult(
 ): AdventureResult {
   // 计算境界倍数
   const realmIndex = REALM_ORDER.indexOf(player.realm);
-  const realmBaseMultipliers = [1, 2, 4, 8, 16, 32, 64];
+  // 修复：奖励倍率增长应接近EXP需求增长(5×)，避免后期几百次冒险才能升级
+  // 原值[1,2,4,8,16,32,64]导致后期升级需要240×次数
+  const realmBaseMultipliers = [1, 3, 9, 27, 81, 243, 729];
   const realmBaseMultiplier = realmBaseMultipliers[realmIndex] || 1;
   const levelMultiplier = 1 + (player.realmLevel - 1) * 0.3;
   const realmMultiplier = realmBaseMultiplier * levelMultiplier;
