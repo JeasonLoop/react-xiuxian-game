@@ -12,6 +12,44 @@ export interface Env {
 const users = new Map<string, { id: string; username: string; passwordHash: string; linuxdoId?: string }>();
 const saves = new Map<string, { player: any; logs: any[]; timestamp: number }>();
 
+// 排行榜数据：从存档中提取的可排序字段
+interface RankingEntry {
+  user_id: string;
+  username: string;
+  realm_index: number;
+  realm_level: number;
+  exp: number;
+  combat_power: number;
+  spirit_stones: number;
+  reputation: number;
+  achievement_count: number;
+  kill_count: number;
+  play_time: number;
+  updated_at: number;
+}
+const rankings = new Map<string, RankingEntry>();
+
+const REALM_NAMES = ['炼气期', '筑基期', '金丹期', '元婴期', '化神期', '合道期', '长生境'];
+
+// 从存档数据中提取排行榜字段
+function extractRankingData(userId: string, username: string, saveData: any): RankingEntry {
+  const p = saveData?.player || saveData || {};
+  return {
+    user_id: userId,
+    username,
+    realm_index: typeof p.realmIndex === 'number' ? p.realmIndex : 0,
+    realm_level: typeof p.realmLevel === 'number' ? p.realmLevel : 1,
+    exp: typeof p.exp === 'number' ? p.exp : 0,
+    combat_power: typeof p.combatPower === 'number' ? p.combatPower : 0,
+    spirit_stones: typeof p.spiritStones === 'number' ? p.spiritStones : 0,
+    reputation: typeof p.reputation === 'number' ? p.reputation : 0,
+    achievement_count: Array.isArray(p.unlockedAchievements) ? p.unlockedAchievements.length : 0,
+    kill_count: typeof p.killCount === 'number' ? p.killCount : 0,
+    play_time: typeof p.playTime === 'number' ? p.playTime : 0,
+    updated_at: Date.now(),
+  };
+}
+
 // LinuxDo OAuth 配置
 const LINUXDO_AUTH = 'https://connect.linux.do/oauth2/authorize';
 const LINUXDO_TOKEN = 'https://connect.linux.do/oauth2/token';
@@ -111,12 +149,90 @@ export default {
       if (!auth) return json({ error: '未登录' }, 401);
       const p = await verifyToken(auth.replace('Bearer ', ''), secret);
       if (!p) return json({ error: '登录已过期' }, 401);
-      saves.set(p.id, await request.json());
+      const saveData = await request.json();
+      saves.set(p.id, saveData);
+      // 同步排行榜数据
+      const user = users.get(p.id);
+      const username = user?.username || p.username || '未知';
+      rankings.set(p.id, extractRankingData(p.id, username, saveData));
       return json({ success: true });
     }
 
     // 健康检查
     if (path === '/health') return json({ status: 'ok' });
+
+    // ── 排行榜 ──
+
+    // GET /api/leaderboard?sort=realm|combat|stones&limit=50&offset=0
+    if (path === '/leaderboard' && request.method === 'GET') {
+      const sort = url.searchParams.get('sort') || 'realm';
+      const limit = Math.min(Math.max(parseInt(url.searchParams.get('limit') || '50') || 50, 1), 200);
+      const offset = Math.max(parseInt(url.searchParams.get('offset') || '0') || 0, 0);
+
+      try {
+        const all = Array.from(rankings.values());
+        all.sort((a, b) => {
+          if (sort === 'combat') return b.combat_power - a.combat_power || b.realm_index - a.realm_index || b.realm_level - a.realm_level;
+          if (sort === 'stones') return b.spirit_stones - a.spirit_stones || b.realm_index - a.realm_index || b.realm_level - a.realm_level;
+          return b.realm_index - a.realm_index || b.realm_level - a.realm_level || b.exp - a.exp;
+        });
+
+        const page = all.slice(offset, offset + limit).map((row, i) => ({
+          rank: offset + i + 1,
+          user_id: row.user_id,
+          username: row.username,
+          realm: REALM_NAMES[row.realm_index] || '未知',
+          realm_index: row.realm_index,
+          realm_level: row.realm_level,
+          exp: row.exp,
+          combat_power: row.combat_power,
+          spirit_stones: row.spirit_stones,
+          reputation: row.reputation,
+          achievement_count: row.achievement_count,
+          kill_count: row.kill_count,
+          play_time: row.play_time,
+          updated_at: new Date(row.updated_at).toISOString(),
+        }));
+
+        return json({ sort, limit, offset, total: page.length, rankings: page });
+      } catch (e: any) {
+        console.error('Leaderboard error:', e.message);
+        return json({ sort, limit, offset, total: 0, rankings: [] });
+      }
+    }
+
+    // GET /api/leaderboard/me — 获取当前登录用户的排名
+    if (path === '/leaderboard/me' && request.method === 'GET') {
+      const auth = request.headers.get('Authorization');
+      if (!auth) return json({ found: false, message: '未登录' });
+      const p = await verifyToken(auth.replace('Bearer ', ''), secret);
+      if (!p) return json({ found: false, message: '登录已过期' });
+
+      const myRow = rankings.get(p.id);
+      if (!myRow) return json({ found: false, message: '您尚未上传存档，无法查看排名' });
+
+      try {
+        const all = Array.from(rankings.values());
+        const realmRank = all.filter(r =>
+          r.realm_index > myRow.realm_index ||
+          (r.realm_index === myRow.realm_index && r.realm_level > myRow.realm_level) ||
+          (r.realm_index === myRow.realm_index && r.realm_level === myRow.realm_level && r.exp > myRow.exp)
+        ).length + 1;
+        const combatRank = all.filter(r => r.combat_power > myRow.combat_power).length + 1;
+        const stonesRank = all.filter(r => r.spirit_stones > myRow.spirit_stones).length + 1;
+
+        return json({
+          found: true,
+          username: myRow.username,
+          realm_rank: realmRank,
+          combat_rank: combatRank,
+          stones_rank: stonesRank,
+        });
+      } catch (e: any) {
+        console.error('Leaderboard/me error:', e.message);
+        return json({ found: false, message: '暂无排名数据' });
+      }
+    }
 
     // ── LinuxDo OAuth ──
 
