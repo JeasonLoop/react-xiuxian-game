@@ -5,10 +5,17 @@
 
 export interface Env {
   JWT_SECRET?: string;
+  LINUXDO_CLIENT_ID?: string;
+  LINUXDO_CLIENT_SECRET?: string;
 }
 
-const users = new Map<string, { id: string; username: string; passwordHash: string }>();
+const users = new Map<string, { id: string; username: string; passwordHash: string; linuxdoId?: string }>();
 const saves = new Map<string, { player: any; logs: any[]; timestamp: number }>();
+
+// LinuxDo OAuth 配置
+const LINUXDO_AUTH = 'https://connect.linux.do/oauth2/authorize';
+const LINUXDO_TOKEN = 'https://connect.linux.do/oauth2/token';
+const LINUXDO_USER = 'https://connect.linux.do/api/user';
 
 async function signToken(payload: any, secret: string): Promise<string> {
   const header = { alg: 'HS256', typ: 'JWT' };
@@ -110,6 +117,72 @@ export default {
 
     // 健康检查
     if (path === '/health') return json({ status: 'ok' });
+
+    // ── LinuxDo OAuth ──
+
+    // GET /api/auth/linuxdo → 跳转到 LinuxDo 授权页
+    if (path === '/auth/linuxdo' && request.method === 'GET') {
+      const redirectUri = url.origin + '/api/auth/linuxdo/callback';
+      const clientId = env.LINUXDO_CLIENT_ID || 'YOUR_LINUXDO_CLIENT_ID';
+      const authUrl = `${LINUXDO_AUTH}?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=read`;
+      return Response.redirect(authUrl, 302);
+    }
+
+    // GET /api/auth/linuxdo/callback?code=xxx → 处理回调
+    if (path === '/auth/linuxdo/callback' && request.method === 'GET') {
+      const code = url.searchParams.get('code');
+      if (!code) return json({ error: '缺少授权码' }, 400);
+
+      try {
+        const redirectUri = url.origin + '/api/auth/linuxdo/callback';
+        const clientId = env.LINUXDO_CLIENT_ID || 'YOUR_LINUXDO_CLIENT_ID';
+        const clientSecret = env.LINUXDO_CLIENT_SECRET || 'YOUR_LINUXDO_CLIENT_SECRET';
+
+        // 1. 用 code 换 token
+        const tokenRes = await fetch(LINUXDO_TOKEN, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ grant_type: 'authorization_code', code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri }),
+        });
+        const tokenData = await tokenRes.json() as any;
+        if (!tokenRes.ok || !tokenData.access_token) {
+          return json({ error: 'OAuth 授权失败' }, 401);
+        }
+
+        // 2. 获取用户信息
+        const userRes = await fetch(LINUXDO_USER, {
+          headers: { Authorization: `Bearer ${tokenData.access_token}` },
+        });
+        const linuxdoUser = await userRes.json() as any;
+        if (!linuxdoUser.username) {
+          return json({ error: '获取用户信息失败' }, 500);
+        }
+
+        // 3. 查找或创建用户
+        const linuxdoId = String(linuxdoUser.id);
+        let user = Array.from(users.values()).find(u => u.linuxdoId === linuxdoId);
+
+        if (!user) {
+          // 检查用户名冲突
+          let username = linuxdoUser.username;
+          if (Array.from(users.values()).some(u => u.username === username && u.linuxdoId !== linuxdoId)) {
+            username = `${linuxdoUser.username}_ld`;
+          }
+          const id = crypto.randomUUID();
+          user = { id, username, passwordHash: '', linuxdoId };
+          users.set(id, user);
+        }
+
+        // 4. 签发 JWT 并重定向到前端
+        const token = await signToken({ id: user.id, username: user.username }, secret);
+        // 通过 postMessage 或 URL hash 传 token 给前端
+        const frontendUrl = url.origin;
+        const html = `<!DOCTYPE html><html><head><script>window.opener ? (window.opener.postMessage({type:'linuxdo-auth',token:'${token}',username:'${user.username}'},'*'),window.close()) : window.location.replace('${frontendUrl}?token=${token}&username=${encodeURIComponent(user.username)}')</script></head><body><p>登录成功，正在跳转...</p></body></html>`;
+        return new Response(html, { headers: { 'Content-Type': 'text/html' } });
+      } catch (e: any) {
+        return json({ error: `OAuth 错误: ${e.message}` }, 500);
+      }
+    }
 
     return json({ error: 'Not Found' }, 404);
   },

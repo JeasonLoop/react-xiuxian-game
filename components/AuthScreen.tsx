@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { cloudSaveService } from '../services/cloudSaveService';
 import { useGameStore } from '../store/gameStore';
@@ -48,6 +48,17 @@ export const AuthScreen: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const login = useAuthStore((state) => state.login);
+
+  // OAuth 回调（弹窗被拦截时的回退方案）
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const oauthToken = params.get('token');
+    const oauthUser = params.get('username');
+    if (oauthToken && oauthUser) {
+      window.history.replaceState({}, '', window.location.pathname);
+      handleLoginSuccess({ token: oauthToken, refreshToken: oauthToken, user: { id: '', username: oauthUser } });
+    }
+  }, []);
 
   // 登录成功后的处理
   const handleLoginSuccess = async (data: any) => {
@@ -344,7 +355,40 @@ export const AuthScreen: React.FC = () => {
             </button>
           </form>
 
-          <div className="mt-8 text-center">
+          <div className="mt-8 text-center space-y-4">
+            {/* LinuxDo 快捷登录 */}
+            <button
+              type="button"
+              onClick={() => {
+                const popup = window.open(
+                  `${API_URL}/auth/linuxdo`,
+                  'linuxdo-auth',
+                  'width=600,height=700'
+                );
+                if (!popup) {
+                  setError('请允许弹窗以完成 LinuxDo 登录');
+                  return;
+                }
+                const handler = (e: MessageEvent) => {
+                  if (e.data?.type !== 'linuxdo-auth') return;
+                  window.removeEventListener('message', handler);
+                  if (!popup.closed) popup.close();
+                  if (e.data?.token) {
+                    handleLoginSuccess({
+                      token: e.data.token,
+                      refreshToken: e.data.token,
+                      user: { id: '', username: e.data.username },
+                    });
+                  }
+                };
+                window.addEventListener('message', handler);
+              }}
+              className="w-full py-3 rounded-lg border border-stone-600 bg-stone-800 hover:bg-stone-700 text-stone-200 text-sm transition-all flex items-center justify-center gap-2.5"
+            >
+              <img src="/assets/images/linuxdo.png" alt="" className="w-5 h-5 rounded" />
+              LinuxDo 快捷登录
+            </button>
+
             <button
               onClick={() => {
                 setIsLogin(!isLogin);

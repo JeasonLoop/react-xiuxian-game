@@ -56,9 +56,13 @@ const db = new sqlite3.Database(dbPath, (err) => {
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           username TEXT UNIQUE NOT NULL,
           password_hash TEXT NOT NULL,
+          linuxdo_id TEXT UNIQUE,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
       `);
+
+      // migration: 添加 linuxdo_id 字段（如果旧表没有）
+      try { db.run('ALTER TABLE users ADD COLUMN linuxdo_id TEXT UNIQUE'); } catch {}
 
       db.run(`
         CREATE TABLE IF NOT EXISTS saves (
@@ -314,6 +318,70 @@ app.post('/api/save', authenticateToken, (req: any, res: any) => {
 // 健康检查端点（用于Docker健康检查）
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Backend is running' });
+});
+
+// ── LinuxDo OAuth ──
+const LINUXDO_AUTH_URL = 'https://connect.linux.do/oauth2/authorize';
+const LINUXDO_TOKEN_URL = 'https://connect.linux.do/oauth2/token';
+const LINUXDO_USER_URL = 'https://connect.linux.do/api/user';
+const LINUXDO_CLIENT_ID = process.env.LINUXDO_CLIENT_ID || 'YOUR_LINUXDO_CLIENT_ID';
+const LINUXDO_CLIENT_SECRET = process.env.LINUXDO_CLIENT_SECRET || 'YOUR_LINUXDO_CLIENT_SECRET';
+
+// GET /api/auth/linuxdo → 跳转授权
+app.get('/api/auth/linuxdo', (req, res) => {
+  const protocol = req.headers['x-forwarded-proto'] as string || req.protocol;
+  const redirectUri = `${protocol}://${req.get('host')}/api/auth/linuxdo/callback`;
+  res.redirect(`${LINUXDO_AUTH_URL}?client_id=${LINUXDO_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=read`);
+});
+
+// GET /api/auth/linuxdo/callback?code=xxx
+app.get('/api/auth/linuxdo/callback', async (req, res) => {
+  const code = req.query.code as string;
+  if (!code) return res.status(400).json({ error: '缺少授权码' });
+
+  try {
+    const protocol = req.headers['x-forwarded-proto'] as string || req.protocol;
+    const redirectUri = `${protocol}://${req.get('host')}/api/auth/linuxdo/callback`;
+
+    // 1. 换 token
+    const tokenRes = await fetch(LINUXDO_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ grant_type: 'authorization_code', code, client_id: LINUXDO_CLIENT_ID, client_secret: LINUXDO_CLIENT_SECRET, redirect_uri: redirectUri }),
+    });
+    const tokenData = await tokenRes.json() as any;
+    if (!tokenRes.ok || !tokenData.access_token) return res.status(401).json({ error: 'OAuth 授权失败' });
+
+    // 2. 获取用户信息
+    const userRes = await fetch(LINUXDO_USER_URL, { headers: { Authorization: `Bearer ${tokenData.access_token}` } });
+    const ldUser = await userRes.json() as any;
+    if (!ldUser.username) return res.status(500).json({ error: '获取用户信息失败' });
+
+    // 3. 查找或创建用户
+    const linuxdoId = String(ldUser.id);
+    const existing = db.prepare('SELECT * FROM users WHERE linuxdo_id = ?').get(linuxdoId) as any;
+
+    let userId: number;
+    let username: string;
+    if (existing) {
+      userId = existing.id;
+      username = existing.username;
+    } else {
+      username = ldUser.username;
+      if (db.prepare('SELECT id FROM users WHERE username = ? AND linuxdo_id IS NULL').get(username)) {
+        username = `${ldUser.username}_ld`;
+      }
+      const result = db.prepare('INSERT INTO users (username, password_hash, linuxdo_id) VALUES (?, ?, ?)').run(username, '', linuxdoId);
+      userId = (result as any).lastInsertRowid as number;
+    }
+
+    // 4. JWT
+    const token = jwt.sign({ id: String(userId), username, type: 'access' }, JWT_SECRET_USED, { expiresIn: ACCESS_TOKEN_EXPIRY });
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    res.send(`<!DOCTYPE html><html><head><script>window.opener?(window.opener.postMessage({type:'linuxdo-auth',token:'${token}',username:'${username}'},'*'),window.close()):window.location.replace('${frontendUrl}?token=${token}&username=${encodeURIComponent(username)}')</script></head><body>登录成功，正在跳转...</body></html>`);
+  } catch (e: any) {
+    res.status(500).json({ error: `OAuth 错误: ${e.message}` });
+  }
 });
 
 app.listen(PORT, () => {
