@@ -74,7 +74,8 @@ export default {
     if (path === '/auth/login' && request.method === 'POST') {
       const { username, password } = await request.json() as any;
       const user = Array.from(users.values()).find(u => u.username === username);
-      if (!user || await hashPassword(password) !== user.passwordHash) return json({ error: '用户名或密码错误' }, 401);
+      if (!user) return json({ error: '道号不存在，请先注册', code: 'USER_NOT_FOUND' }, 404);
+      if (await hashPassword(password) !== user.passwordHash) return json({ error: '密码错误，请重新输入', code: 'INVALID_PASSWORD' }, 401);
       const token = await signToken({ id: user.id, username }, secret);
       return json({ token, refreshToken: token, user: { id: user.id, username } });
     }
