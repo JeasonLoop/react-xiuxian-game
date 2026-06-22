@@ -236,8 +236,6 @@ function GameHeader({
             const idx = REALM_ORDER.indexOf(player.realm);
             if (idx < REALM_ORDER.length - 1) {
               const next = REALM_ORDER[idx + 1];
-              const features = getFeatureRequirementText(FeatureId.CULTIVATION_ARTS);
-              if (idx === 0) return <span className="hidden md:inline text-[10px] text-stone-600 bg-stone-800/50 px-2 py-1 rounded">目标：修炼至{next}解锁更多功能</span>;
               return <span className="hidden md:inline text-[10px] text-stone-600 bg-stone-800/50 px-2 py-1 rounded">下一境界：{next}</span>;
             }
             return null;
