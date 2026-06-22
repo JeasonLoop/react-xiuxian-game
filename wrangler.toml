@@ -6,7 +6,7 @@ compatibility_date = "2024-12-01"
 binding = "RANKINGS_STORE"
 id = "79e26cacaae94204983297aad7134ef6"
 
-[vars]
-JWT_SECRET = "change-this-to-a-random-secret-in-production"
-LINUXDO_CLIENT_ID = "YOUR_LINUXDO_CLIENT_ID"
-LINUXDO_CLIENT_SECRET = "YOUR_LINUXDO_CLIENT_SECRET"
+# ⚠️ 敏感变量通过 wrangler secret 管理，不要在此处填写真实值
+# 部署前运行: npx wrangler secret put JWT_SECRET
+#            npx wrangler secret put LINUXDO_CLIENT_ID
+#            npx wrangler secret put LINUXDO_CLIENT_SECRET

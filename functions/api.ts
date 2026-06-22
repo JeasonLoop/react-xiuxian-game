@@ -162,7 +162,12 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname.replace('/api', '');
-    const secret = env.JWT_SECRET || 'your-jwt-secret';
+    const secret = env.JWT_SECRET;
+
+    // 安全检查：缺少必要密钥时拒绝服务
+    if (!secret) {
+      return json({ error: 'Server not configured: missing JWT_SECRET' }, 500);
+    }
 
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type,Authorization' } });
@@ -320,8 +325,9 @@ export default {
 
     // GET /api/auth/linuxdo → 跳转到 LinuxDo 授权页
     if (path === '/auth/linuxdo' && request.method === 'GET') {
+      const clientId = env.LINUXDO_CLIENT_ID;
+      if (!clientId) return json({ error: 'LinuxDo OAuth not configured' }, 500);
       const redirectUri = url.origin + '/api/auth/linuxdo/callback';
-      const clientId = env.LINUXDO_CLIENT_ID || 'YOUR_LINUXDO_CLIENT_ID';
       const authUrl = `${LINUXDO_AUTH}?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=read`;
       return Response.redirect(authUrl, 302);
     }
@@ -333,8 +339,8 @@ export default {
 
       try {
         const redirectUri = url.origin + '/api/auth/linuxdo/callback';
-        const clientId = env.LINUXDO_CLIENT_ID || 'YOUR_LINUXDO_CLIENT_ID';
-        const clientSecret = env.LINUXDO_CLIENT_SECRET || 'YOUR_LINUXDO_CLIENT_SECRET';
+        const clientId = env.LINUXDO_CLIENT_ID;
+        const clientSecret = env.LINUXDO_CLIENT_SECRET;
 
         // 1. 用 code 换 token
         const tokenRes = await fetch(LINUXDO_TOKEN, {

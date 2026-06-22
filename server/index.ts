@@ -555,11 +555,14 @@ app.get('/api/leaderboard/me', authenticateToken, (req: any, res: any) => {
 const LINUXDO_AUTH_URL = 'https://connect.linux.do/oauth2/authorize';
 const LINUXDO_TOKEN_URL = 'https://connect.linux.do/oauth2/token';
 const LINUXDO_USER_URL = 'https://connect.linux.do/api/user';
-const LINUXDO_CLIENT_ID = process.env.LINUXDO_CLIENT_ID || 'YOUR_LINUXDO_CLIENT_ID';
-const LINUXDO_CLIENT_SECRET = process.env.LINUXDO_CLIENT_SECRET || 'YOUR_LINUXDO_CLIENT_SECRET';
+const LINUXDO_CLIENT_ID = process.env.LINUXDO_CLIENT_ID;
+const LINUXDO_CLIENT_SECRET = process.env.LINUXDO_CLIENT_SECRET;
 
 // GET /api/auth/linuxdo → 跳转授权
 app.get('/api/auth/linuxdo', (req, res) => {
+  if (!LINUXDO_CLIENT_ID) {
+    return res.status(500).json({ error: 'LinuxDo OAuth not configured: missing LINUXDO_CLIENT_ID' });
+  }
   const protocol = req.headers['x-forwarded-proto'] as string || req.protocol;
   const redirectUri = `${protocol}://${req.get('host')}/api/auth/linuxdo/callback`;
   res.redirect(`${LINUXDO_AUTH_URL}?client_id=${LINUXDO_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=read`);
