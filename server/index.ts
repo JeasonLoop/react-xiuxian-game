@@ -61,8 +61,12 @@ const db = new sqlite3.Database(dbPath, (err) => {
         )
       `);
 
-      // migration: 添加 linuxdo_id 字段（如果旧表没有）
-      try { db.run('ALTER TABLE users ADD COLUMN linuxdo_id TEXT UNIQUE'); } catch {}
+      // migration: 添加 linuxdo_id 字段（已有则跳过）
+      db.all("PRAGMA table_info(users)", (err, rows: any[]) => {
+        if (!err && rows && !rows.some((r) => r.name === 'linuxdo_id')) {
+          db.exec('ALTER TABLE users ADD COLUMN linuxdo_id TEXT');
+        }
+      });
 
       db.run(`
         CREATE TABLE IF NOT EXISTS saves (

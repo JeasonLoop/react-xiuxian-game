@@ -97,68 +97,68 @@ export const FEATURE_UNLOCK_DEFS: FeatureUnlockDef[] = [
     minRealm: RealmType.QiRefining,
   },
 
-  // ===== 筑基期 — 功法与社交 =====
+  // ===== 炼气期 — 功法 =====
   {
     featureId: FeatureId.CULTIVATION_ARTS,
     name: '功法修炼',
     description: '学习与修炼高深功法，提升实力',
-    minRealm: RealmType.Foundation,
+    minRealm: RealmType.QiRefining,
   },
   {
     featureId: FeatureId.SECT,
     name: '加入宗门',
     description: '拜入仙门，获得宗门资源与庇护',
-    minRealm: RealmType.Foundation,
+    minRealm: RealmType.QiRefining,
   },
   {
     featureId: FeatureId.PET,
     name: '灵宠系统',
     description: '收服灵宠，培养战斗伙伴',
-    minRealm: RealmType.Foundation,
+    minRealm: RealmType.QiRefining,
   },
-  {
-    featureId: FeatureId.LOTTERY,
-    name: '仙缘抽奖',
-    description: '消耗抽奖券，博取天材地宝',
-    minRealm: RealmType.Foundation,
-  },
+  // {
+  //   featureId: FeatureId.LOTTERY,
+  //   name: '仙缘抽奖',
+  //   description: '消耗抽奖券，博取天材地宝',
+  //   minRealm: RealmType.QiRefining,
+  // },
   {
     featureId: FeatureId.ACHIEVEMENT,
     name: '成就系统',
     description: '记录修仙路上的伟业与里程碑',
-    minRealm: RealmType.Foundation,
+    minRealm: RealmType.QiRefining,
   },
 
   // ===== 金丹期 — 深度系统 =====
-  {
-    featureId: FeatureId.SECRET_REALM,
-    name: '秘境探索',
-    description: '深入秘境，挑战强敌，夺取稀世珍宝',
-    minRealm: RealmType.GoldenCore,
-  },
-  {
-    featureId: FeatureId.ALCHEMY,
-    name: '炼丹术',
-    description: '炼制灵丹妙药，辅助修炼',
-    minRealm: RealmType.GoldenCore,
-  },
+  // {
+  //   featureId: FeatureId.SECRET_REALM,
+  //   name: '秘境探索',
+  //   description: '深入秘境，挑战强敌，夺取稀世珍宝',
+  //   minRealm: RealmType.QiRefining,
+  // },
+  // {
+  //   featureId: FeatureId.ALCHEMY,
+  //   name: '炼丹术',
+  //   description: '炼制灵丹妙药，辅助修炼',
+  //   minRealm: RealmType.QiRefining,
+  // },
   {
     featureId: FeatureId.GROTTO,
     name: '洞府',
     description: '开辟洞府，种植灵草，建造聚灵阵',
-    minRealm: RealmType.GoldenCore,
+    minRealm: RealmType.QiRefining,
   },
   {
     featureId: FeatureId.DAILY_QUEST,
     name: '日常任务',
     description: '完成每日任务，获取稳定资源',
-    minRealm: RealmType.GoldenCore,
+    minRealm: RealmType.QiRefining,
   },
   {
     featureId: FeatureId.EQUIPMENT_UPGRADE,
     name: '装备强化',
     description: '强化法宝装备，百炼成仙',
-    minRealm: RealmType.GoldenCore,
+    minRealm: RealmType.QiRefining,
   },
 
   // ===== 元婴期 — 高级能力 =====
@@ -166,7 +166,7 @@ export const FEATURE_UNLOCK_DEFS: FeatureUnlockDef[] = [
     featureId: FeatureId.NATAL_ARTIFACT,
     name: '本命法宝',
     description: '炼制本命法宝，人宝合一',
-    minRealm: RealmType.NascentSoul,
+    minRealm: RealmType.QiRefining,
   },
 
   // ===== 化神期 — 终局内容 =====
@@ -174,13 +174,13 @@ export const FEATURE_UNLOCK_DEFS: FeatureUnlockDef[] = [
     featureId: FeatureId.TREASURE_VAULT,
     name: '宗门宝库',
     description: '开启宗门宝库，获取镇派之宝',
-    minRealm: RealmType.SpiritSevering,
+    minRealm: RealmType.QiRefining,
   },
   {
     featureId: FeatureId.INHERITANCE,
     name: '传承之力',
     description: '觉醒前世传承，突破境界桎梏',
-    minRealm: RealmType.SpiritSevering,
+    minRealm: RealmType.QiRefining,
   },
 ];
 

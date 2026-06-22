@@ -26,8 +26,17 @@ export const ensurePlayerStatsCompatibility = (loadedPlayer: any): PlayerStats =
   const safeExp = Math.min(Math.max(0, sanitizeNumber(loadedPlayer.exp, 0)), safeMaxExp);
   const safeRealmLevel = Math.min(9, Math.max(1, Math.floor(sanitizeNumber(loadedPlayer.realmLevel, 1))));
 
+  // 天赋迁移：旧存档 talentId (string) -> 新存档 talentIds (string[])
+  const migratedTalentIds: string[] =
+    Array.isArray(loadedPlayer.talentIds) && loadedPlayer.talentIds.length > 0
+      ? loadedPlayer.talentIds
+      : loadedPlayer.talentId
+        ? [loadedPlayer.talentId]
+        : [];
+
   return {
     ...loadedPlayer,
+    talentIds: migratedTalentIds,
     realmLevel: safeRealmLevel,
     exp: safeExp,
     maxExp: safeMaxExp,

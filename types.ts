@@ -155,12 +155,32 @@ export interface SecretRealm {
   drops: string[]; // Description of potential drops
 }
 
+// 天赋类别
+export type TalentCategory = '体质' | '悟性' | '战斗' | '气运' | '特殊';
+
+// 天赋专属技能/事件
+export interface TalentSpecialAbility {
+  id: string;
+  name: string;
+  description: string;
+  type: 'skill' | 'event' | 'passive';
+  unlockRealm?: string; // 解锁所需境界，undefined 表示初始解锁
+  effects?: {
+    damageMultiplier?: number;
+    healPercent?: number;
+    triggerChance?: number; // 0-1 触发概率
+    eventId?: string; // 关联的事件ID
+  };
+}
+
 // 角色系统扩展
 export interface Talent {
   id: string;
   name: string;
   description: string;
+  category: TalentCategory; // 天赋类别
   rarity: ItemRarity;
+  fateCost: number; // 命运点消耗（普通=1, 稀有=2, 传说=4, 仙品=6）
   effects: {
     attack?: number;
     defense?: number;
@@ -171,7 +191,11 @@ export interface Talent {
     expRate?: number;
     luck?: number; // 幸运值，影响奇遇和掉落
   };
+  specialAbility?: TalentSpecialAbility; // 专属技能/事件
 }
+
+// 命运点常量
+export const FATE_POINTS_TOTAL = 15;
 
 export interface Title {
   id: string;
@@ -250,7 +274,7 @@ export interface PlayerStats {
   sectHuntSectName: string | null; // 正在追杀玩家的宗门名称
   sectMasterId: string | null; // 当前宗门的宗主ID (如果玩家是宗主，则为玩家自己的ID)
   // 角色系统扩展
-  talentId: string | null; // 天赋ID（游戏开始时随机生成，之后不可修改）
+  talentIds: string[]; // 天赋ID列表（命运点分配制，可选择多个天赋）
   titleId: string | null; // 当前装备的称号ID
   unlockedTitles: string[]; // 已解锁的称号ID列表
   attributePoints: number; // 可分配属性点

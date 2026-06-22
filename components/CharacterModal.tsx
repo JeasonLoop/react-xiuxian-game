@@ -274,7 +274,15 @@ const CharacterModal: React.FC<Props> = ({
     }
     return cache;
   }, [player?.inventory, player?.equippedItems, showMarrowFeedModal]);
-  const currentTalent = TALENTS.find((t) => t.id === player.talentId);
+  const activeTalentIds: string[] =
+    Array.isArray(player.talentIds) && player.talentIds.length > 0
+      ? player.talentIds
+      : (player as any).talentId
+        ? [(player as any).talentId]
+        : [];
+  const currentTalents = activeTalentIds
+    .map((id) => TALENTS.find((t) => t.id === id))
+    .filter((t): t is NonNullable<typeof t> => !!t);
   const currentTitle = TITLES.find((t) => t.id === player.titleId);
 
   // 检查称号是否满足解锁条件
@@ -385,14 +393,14 @@ const CharacterModal: React.FC<Props> = ({
       speed: 0,
     };
 
-    // 天赋加成
-    if (currentTalent) {
-      baseStats.attack += currentTalent.effects.attack || 0;
-      baseStats.defense += currentTalent.effects.defense || 0;
-      baseStats.hp += currentTalent.effects.hp || 0;
-      baseStats.spirit += currentTalent.effects.spirit || 0;
-      baseStats.physique += currentTalent.effects.physique || 0;
-      baseStats.speed += currentTalent.effects.speed || 0;
+    // 天赋加成（多个天赋叠加）
+    for (const talent of currentTalents) {
+      baseStats.attack += talent.effects.attack || 0;
+      baseStats.defense += talent.effects.defense || 0;
+      baseStats.hp += talent.effects.hp || 0;
+      baseStats.spirit += talent.effects.spirit || 0;
+      baseStats.physique += talent.effects.physique || 0;
+      baseStats.speed += talent.effects.speed || 0;
     }
 
     // 称号加成（包括套装效果）
@@ -1249,9 +1257,9 @@ const CharacterModal: React.FC<Props> = ({
                       </div>
                       <div>
                         <span className="text-stone-400">天赋:</span> 攻击{' '}
-                        {currentTalent?.effects.attack || 0}, 防御{' '}
-                        {currentTalent?.effects.defense || 0}, 气血{' '}
-                        {currentTalent?.effects.hp || 0}
+                        {attributeSources.talent.attack}, 防御{' '}
+                        {attributeSources.talent.defense}, 气血{' '}
+                        {attributeSources.talent.hp}
                       </div>
                       <div>
                         <span className="text-stone-400">称号:</span> 攻击{' '}
@@ -1416,29 +1424,33 @@ const CharacterModal: React.FC<Props> = ({
               <div>
                 <h3 className="text-lg font-bold mb-3 flex items-center gap-2">
                   <Star className="text-purple-400" size={20} />
-                  天赋
+                  天赋{currentTalents.length > 1 && <span className="text-xs text-stone-500">({currentTalents.length})</span>}
                 </h3>
-                {currentTalent ? (
-                  <div className="bg-stone-900 rounded p-4 border border-stone-700">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span
-                            className={`font-bold ${getRarityTextColor(currentTalent.rarity as ItemRarity)}`}
-                          >
-                            {currentTalent.name}
-                          </span>
-                          <span className="text-xs text-stone-500">
-                            ({currentTalent.rarity})
-                          </span>
-                        </div>
-                        <p className="text-sm text-stone-400 mb-2">
-                          {currentTalent.description}
-                        </p>
-                        <div className="text-xs text-stone-500 italic">
-                          * 天赋在游戏开始时随机生成，之后不可修改
+                {currentTalents.length > 0 ? (
+                  <div className="space-y-2">
+                    {currentTalents.map((talent) => (
+                      <div key={talent.id} className="bg-stone-900 rounded p-4 border border-stone-700">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span
+                                className={`font-bold ${getRarityTextColor(talent.rarity as ItemRarity)}`}
+                              >
+                                {talent.name}
+                              </span>
+                              <span className="text-xs text-stone-500">
+                                ({talent.rarity})
+                              </span>
+                            </div>
+                            <p className="text-sm text-stone-400 mb-2">
+                              {talent.description}
+                            </p>
+                          </div>
                         </div>
                       </div>
+                    ))}
+                    <div className="text-xs text-stone-500 italic px-1">
+                      * 天赋在游戏开始时随机生成，之后不可修改
                     </div>
                   </div>
                 ) : (

@@ -207,7 +207,10 @@ export function AppContent(props: AppContentProps) {
       
       const realmData = REALM_DATA[prev.realm]; // 取当前境界数据但不直接用
       // 创建新玩家，重置境界但保留关键数据
-      const newPlayer = createInitialPlayer(prev.name, prev.talentId || 'talent-balanced');
+      const prevTalentIds = Array.isArray(prev.talentIds) && prev.talentIds.length > 0
+        ? prev.talentIds
+        : (prev as any).talentId ? [(prev as any).talentId] : ['talent-balanced'];
+      const newPlayer = createInitialPlayer(prev.name, prevTalentIds);
       return {
         ...newPlayer,
         name: prev.name,
@@ -220,7 +223,7 @@ export function AppContent(props: AppContentProps) {
         viewedAchievements: prev.viewedAchievements || [],
         unlockedTitles: prev.unlockedTitles || [],
         titleId: prev.titleId,
-        talentId: prev.talentId,
+        talentIds: prevTalentIds,
         inheritanceLevel: nextLevel,
         luck: prev.luck + 2,
         // 应用转世属性加成

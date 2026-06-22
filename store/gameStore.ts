@@ -84,7 +84,7 @@ interface GameState {
   loadGame: (cloudSaveData?: any) => void;
   startNewGame: (
     playerName: string,
-    talentId: string,
+    talentIds: string[],
     difficulty: GameSettings['difficulty']
   ) => void;
 }
@@ -261,15 +261,19 @@ export const useGameStore = create<GameState>()(
     },
 
     // 开始新游戏
-    startNewGame: (playerName, talentId, difficulty) => {
+    startNewGame: (playerName, talentIds, difficulty) => {
       const state = get();
 
       // 重新生成事件模板库
       initializeEventTemplateLibrary(true);
       console.log('开始新游戏时重新生成事件模板库');
 
-      const newPlayer = createInitialPlayer(playerName, talentId);
-      const initialTalent = TALENTS.find((t) => t.id === talentId);
+      const newPlayer = createInitialPlayer(playerName, talentIds);
+      const selectedTalents = talentIds
+        .map((id) => TALENTS.find((t) => t.id === id))
+        .filter(Boolean);
+      const talentNames = selectedTalents.map((t) => t!.name).join('、');
+      const talentDescriptions = selectedTalents.map((t) => `【${t!.name}】${t!.description}`).join('；');
 
       const initialLogs: LogEntry[] = [
         {
@@ -280,7 +284,7 @@ export const useGameStore = create<GameState>()(
         },
         {
           id: `${Date.now()}-2-${Math.random().toString(36).substr(2, 9)}`,
-          text: `你天生拥有【${initialTalent?.name}】天赋。${initialTalent?.description}`,
+          text: `你天生拥有天赋：${talentNames}。${talentDescriptions}`,
           type: 'special',
           timestamp: Date.now(),
         },

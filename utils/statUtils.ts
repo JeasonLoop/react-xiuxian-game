@@ -97,15 +97,18 @@ export function calculatePlayerBonuses(player: PlayerStats): {
     bonusHp = Math.floor(bonusHp * (1 + setBonus));
   }
 
-  // 3. 天赋加成
-  const talent = TALENTS.find((t) => t.id === player.talentId);
-  if (talent) {
-    bonusAttack += talent.effects.attack || 0;
-    bonusDefense += talent.effects.defense || 0;
-    bonusHp += talent.effects.hp || 0;
-    bonusSpirit += talent.effects.spirit || 0;
-    bonusPhysique += talent.effects.physique || 0;
-    bonusSpeed += talent.effects.speed || 0;
+  // 3. 天赋加成（支持多天赋叠加）
+  const talentIds = player.talentIds || [];
+  for (const tid of talentIds) {
+    const talent = TALENTS.find((t) => t.id === tid);
+    if (talent) {
+      bonusAttack += talent.effects.attack || 0;
+      bonusDefense += talent.effects.defense || 0;
+      bonusHp += talent.effects.hp || 0;
+      bonusSpirit += talent.effects.spirit || 0;
+      bonusPhysique += talent.effects.physique || 0;
+      bonusSpeed += talent.effects.speed || 0;
+    }
   }
 
   // 4. 称号加成
@@ -181,10 +184,13 @@ export function calculateTotalExpRate(player: PlayerStats): {
     spiritualRootBonus = calculateSpiritualRootArtBonus(activeArt, spiritualRoots);
   }
 
-  // 2. 天赋加成
-  const talent = TALENTS.find((t) => t.id === player.talentId);
-  if (talent && talent.effects.expRate) {
-    talentBonus = talent.effects.expRate;
+  // 2. 天赋加成（支持多天赋叠加）
+  const talentIds = player.talentIds || [];
+  for (const tid of talentIds) {
+    const talent = TALENTS.find((t) => t.id === tid);
+    if (talent && talent.effects.expRate) {
+      talentBonus += talent.effects.expRate;
+    }
   }
 
   // 3. 称号加成

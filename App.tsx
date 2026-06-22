@@ -432,10 +432,10 @@ function App() {
   // ========== 开始新游戏 ==========
   const handleStartGame = useCallback((
     playerName: string,
-    talentId: string,
+    talentIds: string[],
     difficulty: GameSettings['difficulty']
   ) => {
-    startNewGame(playerName, talentId, difficulty);
+    startNewGame(playerName, talentIds, difficulty);
   }, [startNewGame]);
 
   // ========== 认证状态 ==========
