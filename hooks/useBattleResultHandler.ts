@@ -13,13 +13,20 @@ import {
 } from '../constants/index';
 import { getPlayerTotalStats } from '../utils/statUtils';
 
-// 战斗结果类型（可能不包含所有字段）
+  // 战斗结果类型（可能不包含所有字段）
 interface BattleResultData {
   victory: boolean;
   hpLoss: number;
   expChange: number;
   spiritChange: number;
   adventureType?: string;
+  karmaChange?: number;
+  npcRelationChange?: {
+    npcId: string;
+    npcName: string;
+    favorabilityChange: number;
+    description: string;
+  };
   items?: Array<{
     name: string;
     type?: string;
@@ -162,6 +169,39 @@ export function useBattleResultHandler({
 
         addLog(rewardText, result.victory ? 'gain' : 'danger');
 
+        // 处理因果和 NPC 关系变化
+        let newKarma = (prev.karma || 0) + (result.karmaChange || 0);
+        let newSocialRelations = [...(prev.socialRelations || [])];
+
+        if (result.npcRelationChange) {
+          const { npcId, npcName, favorabilityChange, description } = result.npcRelationChange;
+          const existingIndex = newSocialRelations.findIndex(r => r.id === npcId);
+
+          if (existingIndex >= 0) {
+            newSocialRelations[existingIndex] = {
+              ...newSocialRelations[existingIndex],
+              favorability: Math.max(-100, Math.min(100, newSocialRelations[existingIndex].favorability + favorabilityChange)),
+              lastEncounterRealm: prev.realm
+            };
+          } else {
+            newSocialRelations.push({
+              id: npcId,
+              name: npcName,
+              favorability: favorabilityChange,
+              description,
+              lastEncounterRealm: prev.realm
+            });
+          }
+
+          const changeType = favorabilityChange > 0 ? '增加' : '降低';
+          addLog(`✨ 你与【${npcName}】的关系${changeType}了 ${Math.abs(favorabilityChange)} 点！`, favorabilityChange > 0 ? 'gain' : 'danger');
+        }
+
+        if (result.karmaChange) {
+          const changeType = result.karmaChange > 0 ? '增加' : '减少';
+          addLog(`✨ 你的因果值${changeType}了 ${Math.abs(result.karmaChange)} 点！`, result.karmaChange > 0 ? 'gain' : 'danger');
+        }
+
         // 特殊处理：宗主挑战结果
         let newSectRank = prev.sectRank;
         let finalSectMasterId = prev.sectMasterId;
@@ -303,7 +343,9 @@ export function useBattleResultHandler({
           sectMasterId: finalSectMasterId,
           sectContribution: finalSectContribution,
           daoCombiningChallenged: newDaoCombiningChallenged,
-          unlockedArts: newUnlockedArts
+          unlockedArts: newUnlockedArts,
+          karma: newKarma,
+          socialRelations: newSocialRelations,
         };
       });
     }

@@ -31,7 +31,11 @@ export function useAchievementHandlers({
     if (checkingAchievementsRef.current) return; // 防止重复触发
     checkingAchievementsRef.current = true;
 
-    if (!ACHIEVEMENTS?.length) return;
+    if (!ACHIEVEMENTS?.length) {
+      // 如果成就列表为空，立即释放检查锁，避免后续无法再次触发
+      checkingAchievementsRef.current = false;
+      return;
+    }
 
     setPlayer((prev) => {
       if (!prev) {

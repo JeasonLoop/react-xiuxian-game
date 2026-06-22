@@ -13,7 +13,7 @@ interface UseAppViewHandlersProps {
   handleAdventure: () => void;
   handleEnterRealm: (realm: any) => void;
   handleUseItem: (item: Item) => void;
-  handleEquipItem: (item: Item, slot: any) => void;
+  handleEquipItem: (item: Item, slot?: any) => void;
   handleUnequipItem: (slot: any) => void;
   handleOpenUpgrade: (item: Item) => void;
   handleDiscardItem: (item: Item) => void;
@@ -92,7 +92,6 @@ interface UseAppViewHandlersProps {
   setIsMobileStatsOpen: (open: boolean) => void;
   setIsReputationEventOpen: (open: boolean) => void;
   setIsTreasureVaultOpen: (open: boolean) => void;
-  setIsSaveManagerOpen: (open: boolean) => void;
   setIsAutoAdventureConfigOpen: (open: boolean) => void;
   setItemToUpgrade: (item: Item | null) => void;
   setCurrentShop: (shop: any | null) => void;
@@ -301,7 +300,6 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     handleDraw,
     handleUpdateSettings,
     handleRebirth,
-    setIsSaveManagerOpen,
     handleClaimQuestReward,
     handleUpgradeGrotto,
     handlePlantHerb,
@@ -414,7 +412,6 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     handleDraw,
     handleUpdateSettings,
     handleRestartGame: handleRebirth,
-    onOpenSaveManager: () => setIsSaveManagerOpen(true),
     handleClaimQuestReward,
     handleUpgradeGrotto,
     handlePlantHerb,
@@ -482,7 +479,7 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     handleAllocateAllAttributes, handleUseInheritance, setPlayer, addLog,
     handleActivatePet, handleDeactivatePet, handleFeedPet, handleBatchFeedItems,
     handleBatchFeedHp, handleEvolvePet, handleReleasePet, handleBatchReleasePets,
-    handleDraw, handleUpdateSettings, handleRebirth, setIsSaveManagerOpen,
+    handleDraw, handleUpdateSettings, handleRebirth,
     handleClaimQuestReward, handleUpgradeGrotto, handlePlantHerb,
     handleHarvestHerb, handleHarvestAll, handleEnhanceSpiritArray,
     handleToggleAutoHarvest, handleSpeedupHerb, handleBuyItem, handleSellItem,

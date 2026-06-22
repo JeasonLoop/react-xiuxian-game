@@ -12,7 +12,6 @@ import WelcomeScreen from './components/WelcomeScreen';
 import StartScreen from './components/StartScreen';
 import LoadingScreen from './components/LoadingScreen';
 
-import { SaveData } from './utils/saveManagerUtils';
 import { BattleReplay } from './services/battleService';
 import { useGameEffects } from './hooks/useGameEffects';
 import {
@@ -35,6 +34,9 @@ import { useGameInitialization } from './hooks/useGameInitialization';
 import { useLevelUp } from './hooks/useLevelUp';
 import { useGlobalAlert } from './hooks/useGlobalAlert';
 import { useRebirth } from './hooks/useRebirth';
+import { useAuthStore } from './store/authStore';
+import { AuthScreen } from './components/AuthScreen';
+import { useAutoCloudSave } from './hooks/useAutoCloudSave';
 
 // 导入拆分后的 hooks
 import { useAppHandlers } from './hooks/useAppHandlers';
@@ -138,10 +140,6 @@ function App() {
   // ========== 本地状态 ==========
   const [showWelcome, setShowWelcome] = useState(true);
   const [showCultivationIntro, setShowCultivationIntro] = useState(false);
-  const [isSaveManagerOpen, setIsSaveManagerOpen] = useState(false);
-  const [isSaveCompareOpen, setIsSaveCompareOpen] = useState(false);
-  const [compareSave1, setCompareSave1] = useState<SaveData | null>(null);
-  const [compareSave2, setCompareSave2] = useState<SaveData | null>(null);
   const [isDead, setIsDead] = useState(false);
   const [deathBattleData, setDeathBattleData] = useState<BattleReplay | null>(null);
   const [deathReason, setDeathReason] = useState('');
@@ -151,10 +149,10 @@ function App() {
   // ========== 游戏效果 ==========
   const { visualEffects, createAddLog, triggerVisual } = useGameEffects();
 
-  const addLog = useCallback((message: string, type?: string) => {
+  const addLog = useCallback((message: string, type?: "normal" | "gain" | "danger" | "special") => {
     if (setLogs && createAddLog) {
       const logFunc = createAddLog(setLogs);
-      logFunc(message, type);
+      logFunc(message, type || "normal");
     }
   }, [createAddLog, setLogs]);
 
@@ -173,6 +171,8 @@ function App() {
     saveGame,
     logs,
   });
+
+  useAutoCloudSave();
 
   const { alertState, closeAlert } = useGlobalAlert();
 
@@ -388,12 +388,9 @@ function App() {
 
   // ========== Handler Groups ==========
   const { commonHandlersParams } = useHandlerGroups({
-    appHandlers: appHandlers as any,
+    appHandlers,
     handleRebirth,
-    modalSetters: {
-      ...modalSetters,
-      setIsSaveManagerOpen,
-    } as any,
+    modalSetters,
     otherSettersAndState: {
       setItemToUpgrade,
       setCurrentShop,
@@ -437,7 +434,24 @@ function App() {
     startNewGame(playerName, talentId, difficulty);
   }, [startNewGame]);
 
+  // ========== 认证状态 ==========
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const skipWelcomeAfterLogin = useAuthStore((state) => state.skipWelcomeAfterLogin);
+  const setSkipWelcomeAfterLogin = useAuthStore((state) => state.setSkipWelcomeAfterLogin);
+
+  // 登录并拉取云存档后跳过欢迎页，直接进游戏
+  useEffect(() => {
+    if (showWelcome && skipWelcomeAfterLogin) {
+      setShowWelcome(false);
+      setSkipWelcomeAfterLogin(false);
+    }
+  }, [showWelcome, skipWelcomeAfterLogin, setSkipWelcomeAfterLogin]);
+
   // ========== 渲染逻辑 ==========
+
+  if (!isAuthenticated) {
+    return <AuthScreen />;
+  }
 
   // 显示欢迎界面
   if (showWelcome) {
@@ -476,68 +490,40 @@ function App() {
   // 主游戏界面
   return (
     <AppContent
-      {...({
-        player,
-        logs,
-        setLogs,
-        visualEffects,
-        loading,
-        cooldown,
-        settings,
-        isDead,
-        setIsDead,
-        deathBattleData,
-        setDeathBattleData,
-        deathReason,
-        setDeathReason,
-        tribulationState,
-        showCultivationIntro,
-        setShowCultivationIntro,
-        isSaveManagerOpen,
-        setIsSaveManagerOpen,
-        isSaveCompareOpen,
-        setIsSaveCompareOpen,
-        compareSave1,
-        compareSave2,
-        setCompareSave1,
-        setCompareSave2,
-        isAnyModalOpen,
-        isDebugModeEnabled: modals.isDebugModeEnabled,
-        isDebugOpen: modals.isDebugOpen,
-        setIsDebugOpen,
-        purchaseSuccess,
-        lotteryRewards,
-        setLotteryRewards,
-        itemActionLogValue,
-        setItemActionLog,
-        autoAdventure,
-        modals,
-        setPlayer,
-        setReputationEvent,
-        setIsReputationEventOpen,
-        setIsAutoAdventureConfigOpen,
-        autoAdventureConfig,
-        setAutoAdventureConfig,
-        handleTribulationComplete,
-        handleRebirth,
-        closeAlert,
-        alertState,
-        gameViewHandlers,
-        modalsHandlers,
-        adventureHandlers,
-      } as any)}
-      setIsInventoryOpen={setIsInventoryOpen}
-      setIsCultivationOpen={setIsCultivationOpen}
-      setIsCharacterOpen={setIsCharacterOpen}
-      setIsAchievementOpen={setIsAchievementOpen}
-      setIsPetOpen={setIsPetOpen}
-      setIsLotteryOpen={setIsLotteryOpen}
-      setIsSettingsOpen={setIsSettingsOpen}
-      setIsRealmOpen={setIsRealmOpen}
-      setIsAlchemyOpen={setIsAlchemyOpen}
-      setIsSectOpen={setIsSectOpen}
-      setIsMobileSidebarOpen={setIsMobileSidebarOpen}
-      setIsMobileStatsOpen={setIsMobileStatsOpen}
+      player={player}
+      logs={logs}
+      setLogs={setLogs}
+      visualEffects={visualEffects}
+      loading={loading}
+      cooldown={cooldown}
+      settings={settings}
+      isDead={isDead}
+      setIsDead={setIsDead}
+      deathBattleData={deathBattleData}
+      setDeathBattleData={setDeathBattleData}
+      deathReason={deathReason}
+      setDeathReason={setDeathReason}
+      tribulationState={tribulationState}
+      showCultivationIntro={showCultivationIntro}
+      setShowCultivationIntro={setShowCultivationIntro}
+      isAnyModalOpen={isAnyModalOpen}
+      purchaseSuccess={purchaseSuccess}
+      lotteryRewards={lotteryRewards}
+      setLotteryRewards={setLotteryRewards}
+      itemActionLogValue={itemActionLogValue}
+      setItemActionLog={setItemActionLog}
+      autoAdventure={autoAdventure}
+      setPlayer={setPlayer}
+      setReputationEvent={setReputationEvent}
+      autoAdventureConfig={autoAdventureConfig}
+      setAutoAdventureConfig={setAutoAdventureConfig}
+      handleTribulationComplete={handleTribulationComplete}
+      handleRebirth={handleRebirth}
+      closeAlert={closeAlert}
+      alertState={alertState}
+      gameViewHandlers={gameViewHandlers}
+      modalsHandlers={modalsHandlers}
+      adventureHandlers={adventureHandlers}
     />
   );
 }

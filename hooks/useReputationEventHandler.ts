@@ -49,6 +49,37 @@ export function useReputationEventHandler({
         let newHp = prev.hp;
         let newExp = prev.exp;
         let newSpiritStones = prev.spiritStones;
+        let newKarma = (prev.karma || 0) + (choice.karmaChange || 0);
+        let newSocialRelations = [...(prev.socialRelations || [])];
+
+        if (choice.npcRelationChange) {
+          const { npcId, npcName, favorabilityChange, description } = choice.npcRelationChange;
+          const existingIndex = newSocialRelations.findIndex(r => r.id === npcId);
+
+          if (existingIndex >= 0) {
+            newSocialRelations[existingIndex] = {
+              ...newSocialRelations[existingIndex],
+              favorability: Math.max(-100, Math.min(100, newSocialRelations[existingIndex].favorability + favorabilityChange)),
+              lastEncounterRealm: prev.realm
+            };
+          } else {
+            newSocialRelations.push({
+              id: npcId,
+              name: npcName,
+              favorability: favorabilityChange,
+              description,
+              lastEncounterRealm: prev.realm
+            });
+          }
+
+          const changeType = favorabilityChange > 0 ? '增加' : '降低';
+          addLog(`✨ 你与【${npcName}】的关系${changeType}了 ${Math.abs(favorabilityChange)} 点！`, favorabilityChange > 0 ? 'gain' : 'danger');
+        }
+
+        if (choice.karmaChange) {
+          const changeType = choice.karmaChange > 0 ? '增加' : '减少';
+          addLog(`✨ 你的因果值${changeType}了 ${Math.abs(choice.karmaChange)} 点！`, choice.karmaChange > 0 ? 'gain' : 'danger');
+        }
 
         if (choice.hpChange !== undefined) {
           const totalStats = getPlayerTotalStats(prev);
@@ -94,6 +125,8 @@ export function useReputationEventHandler({
           hp: newHp,
           exp: newExp,
           spiritStones: newSpiritStones,
+          karma: newKarma,
+          socialRelations: newSocialRelations,
         };
       });
 

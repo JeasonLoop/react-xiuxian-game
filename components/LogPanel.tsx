@@ -80,26 +80,18 @@ const LogPanel: React.FC<Props> = ({ logs, playerName, className, onClearLogs })
     return distanceFromBottom <= 50;
   }, [displayedLogs.length]);
 
-  // 当有新日志时，如果用户在底部，自动滚动到底部
+  // 当有新日志时自动滚动到底部
+  const lastLogId = logs.length > 0 ? logs[logs.length - 1].id : null;
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container || logs.length === 0) return;
-
+    if (logs.length === 0) return;
     const lastLog = logs[logs.length - 1];
     const hasNewLog = lastLog.id !== lastLogIdRef.current;
-
-    if (hasNewLog) {
-      lastLogIdRef.current = lastLog.id;
-
-      // 只要有新日志，就强制滚动到底部
-      requestAnimationFrame(() => {
-        endRef.current?.scrollIntoView({ behavior: 'smooth' });
-      });
-    }
-
-    // 只有当日志真的增加时才去更新滚动按钮状态
-    // 这里的 timer 逻辑其实可以优化，只在滚动事件或新日志时触发
-  }, [logs.length, checkIfAtBottom]); // 依赖 logs.length 而不是 logs 数组引用
+    if (!hasNewLog) return;
+    lastLogIdRef.current = lastLog.id;
+    requestAnimationFrame(() => {
+      endRef.current?.scrollIntoView({ behavior: 'smooth' });
+    });
+  }, [lastLogId]);
 
   useEffect(() => {
     const container = containerRef.current;

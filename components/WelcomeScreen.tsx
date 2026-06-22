@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { Sparkles, Play, Upload } from 'lucide-react';
+import React, { useRef, useState } from 'react';
+import { Sparkles, Play, Upload, User, LogOut } from 'lucide-react';
 import logo from '../public/assets/images/logo.png';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import {
@@ -9,6 +9,8 @@ import {
   ensurePlayerStatsCompatibility,
 } from '../utils/saveManagerUtils';
 import { showError, showConfirm } from '../utils/toastUtils';
+import { useAuthStore } from '../store/authStore';
+import LogoutConfirmModal from './LogoutConfirmModal';
 
 interface Props {
   hasSave: boolean;
@@ -18,6 +20,9 @@ interface Props {
 
 const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
 
   const handleImportSave = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -105,6 +110,30 @@ const WelcomeScreen: React.FC<Props> = ({ hasSave, onStart, onContinue }) => {
       <div className="absolute inset-0 opacity-20">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(203,161,53,0.1),transparent_70%)]" />
       </div>
+
+      {/* 右上角：登录用户信息 */}
+      {user && (
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-2 sm:gap-3 px-3 py-2 sm:px-4 sm:py-2.5 bg-stone-800/90 border border-stone-600 rounded-lg shadow-lg animate-fade-in">
+          <User size={18} className="text-mystic-gold shrink-0" />
+          <span className="text-stone-200 text-sm sm:text-base font-medium truncate max-w-[120px] sm:max-w-[180px]" title={user.username}>
+            道友：{user.username}
+          </span>
+          <button
+            onClick={() => setIsLogoutModalOpen(true)}
+            className="p-1.5 rounded text-stone-400 hover:text-red-400 hover:bg-stone-700/80 transition-colors touch-manipulation"
+            title="退出登录"
+            aria-label="退出登录"
+          >
+            <LogOut size={18} />
+          </button>
+        </div>
+      )}
+
+      <LogoutConfirmModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={() => logout()}
+      />
 
       {/* 主要内容区域 */}
       <div className="relative z-10 flex flex-col items-center justify-center w-full h-full p-3 sm:p-4 md:p-6 lg:p-8">
