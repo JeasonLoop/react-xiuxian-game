@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { PlayerStats, LogEntry } from '../types';
 import StatsPanel from '../components/StatsPanel';
 import LogPanel from '../components/LogPanel';
@@ -11,6 +11,7 @@ import {
   LotteryRewardsToast,
   ItemActionToast,
 } from './NotificationToast';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 /**
  * 游戏视图组件
@@ -126,6 +127,20 @@ function GameView({
     [player.lotteryTickets]
   );
 
+  const [showActionBarGuide, setShowActionBarGuide] = useState(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!localStorage.getItem(STORAGE_KEYS.ACTION_BAR_GUIDE_SHOWN)) {
+      setShowActionBarGuide(true);
+    }
+  }, []);
+  const closeActionBarGuide = () => {
+    setShowActionBarGuide(false);
+    try {
+      localStorage.setItem(STORAGE_KEYS.ACTION_BAR_GUIDE_SHOWN, 'true');
+    } catch (_) {}
+  };
+
   return (
     <div className="flex flex-col md:flex-row h-screen bg-stone-900 text-stone-200 overflow-hidden relative">
       {/* Visual Effects Layer */}
@@ -174,6 +189,35 @@ function GameView({
           onToggleAutoAdventure={handlers.onToggleAutoAdventure}
         />
       </main>
+
+      {/* 首次进入主界面：打坐/历练引导（仅一次） */}
+      {showActionBarGuide && (
+        <div
+          className="fixed inset-0 z-[60] flex items-end justify-center p-4 pb-24 md:pb-8"
+          onClick={closeActionBarGuide}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && closeActionBarGuide()}
+          aria-label="关闭引导"
+        >
+          <div className="absolute inset-0 bg-black/50" />
+          <div
+            className="relative bg-paper-800 border border-stone-600 rounded-lg shadow-xl max-w-sm w-full p-4 text-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-stone-200 font-serif text-sm md:text-base mb-4">
+              先打坐积累修为，再历练获取机缘
+            </p>
+            <button
+              type="button"
+              onClick={closeActionBarGuide}
+              className="px-4 py-2 bg-mystic-jade/80 hover:bg-mystic-jade text-stone-900 rounded font-medium text-sm"
+            >
+              知道了
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 自动历练提示 */}
       {handlers.autoAdventure && (

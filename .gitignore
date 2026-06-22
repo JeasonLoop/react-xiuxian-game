@@ -34,4 +34,8 @@ dist-ssr
 *.sln
 *.sw?
 
+.trellis
+.cursor
+.claude
+
 .reasonix

@@ -6,7 +6,7 @@
  */
 import { useMemo } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
-import type { Item, PlayerStats, ShopItem, SecretRealm } from '../types';
+import type { Item, PlayerStats, ShopItem, SecretRealm, BattleResult } from '../types';
 import type { BattleReplay } from '../services/battleService';
 
 /**
@@ -17,20 +17,20 @@ interface CoreHandlers {
   handleAdventure: () => Promise<void>; // 历练
   handleEnterRealm: (realm: SecretRealm) => Promise<void>; // 进入境界
   handleUseItem: (item: Item) => void; // 使用物品
-  handleEquipItem: (item: Item) => void; // 装备物品
-  handleUnequipItem: (slot: string) => void; // 卸下物品
+  handleEquipItem: (item: Item, slot?: any) => void; // 装备物品
+  handleUnequipItem: (slot: any) => void; // 卸下物品
   handleOpenUpgrade: (item: Item) => void; // 打开升级界面
   handleDiscardItem: (item: Item) => void; // 丢弃物品
   handleBatchDiscard: (itemIds: string[]) => void; // 批量丢弃物品
   handleBatchUse: (itemIds: string[]) => void; // 批量使用物品
   handleOrganizeInventory: () => void; // 整理背包
   handleRefineNatalArtifact: (item: Item) => void; // 涅槃重生
-  handleUnrefineNatalArtifact: () => void; // 取消涅槃重生
-  handleRefineAdvancedItem: (item: Item, materialIds: string[]) => void; // 强化高级物品
+  handleUnrefineNatalArtifact: (item: Item) => void; // 取消涅槃重生
+  handleRefineAdvancedItem: (item: Item) => void; // 强化高级物品
   handleUpgradeItem: (item: Item, costStones: number, costMats: number, upgradeStones?: number, failurePenalty?: number) => Promise<'success' | 'failure' | 'error'>; // 升级物品
-  handleLearnArt: (artId: string) => void; // 学习功法
-  handleActivateArt: (artId: string) => void; // 激活功法
-  handleCraft: (recipeId: string) => void; // 炼制丹药
+  handleLearnArt: (art: any) => void;
+  handleActivateArt: (art: any) => void;
+  handleCraft: (recipe: any) => Promise<void>;
   handleCraftArtifact: (materials: Item[], customName: string, selectedSlot?: string) => Promise<void>; // 炼制法宝
   handleFuseArtifact: (item1: Item, item2: Item, stone: Item, customName?: string) => Promise<void>; // 融合法宝
 }
@@ -42,10 +42,11 @@ interface SectHandlers {
   handleJoinSect: (sectId: string) => void; // 加入宗门
   handleLeaveSect: () => void; // 离开宗门
   handleSafeLeaveSect: () => void; // 安全离开宗门
-  handleSectTask: () => void; // 宗门任务
+  handleSectTask: (task: any, encounterResult?: any) => void;
   handleSectPromote: () => void; // 宗门晋升
-  handleSectBuy: (itemId: string) => void; // 宗门购买
-  handleChallengeLeader: () => void; // 挑战宗门领袖
+  handleSectBuy: (itemTemplate: Partial<Item>, cost: number, quantity?: number) => void;
+  handleChallengeLeader: (params: any) => void;
+  handleSectLearnArt: (art: any) => void;
 }
 
 /**
@@ -54,8 +55,8 @@ interface SectHandlers {
 interface CharacterHandlers {
   handleSelectTalent: (talentId: string) => void; // 选择天赋
   handleSelectTitle: (titleId: string) => void; // 选择称号
-  handleAllocateAttribute: (attr: string, amount: number) => void; // 分配属性
-  handleAllocateAllAttributes: (distribution: Record<string, number>) => void; // 分配所有属性
+  handleAllocateAttribute: (attribute: string, amount: number) => void;
+  handleAllocateAllAttributes: (type: 'attack' | 'defense' | 'hp' | 'spirit' | 'physique' | 'speed') => void;
   handleUseInheritance: () => void; // 使用传承
 }
 
@@ -65,7 +66,7 @@ interface CharacterHandlers {
 interface PetHandlers {
   handleActivatePet: (petId: string) => void; // 激活灵宠
   handleDeactivatePet: (petId: string) => void; // 解除灵宠
-  handleFeedPet: (petId: string, itemId: string) => void; // 喂养灵宠
+  handleFeedPet: (petId: string, feedType: 'hp' | 'item' | 'exp', itemId?: string) => void;
   handleBatchFeedItems: (petId: string, itemIds: string[]) => void; // 批量喂养灵宠
   handleBatchFeedHp: (petId: string, hpAmount: number) => void; // 批量喂养灵宠
   handleEvolvePet: (petId: string) => void; // 进化灵宠
@@ -77,26 +78,27 @@ interface PetHandlers {
  * 洞府相关 handlers
  */
 interface GrottoHandlers {
-  handleUpgradeGrotto: () => void; // 升级洞府
-  handlePlantHerb: (slotIndex: number, herbId: string) => void; // 种植草药
-  handleHarvestHerb: (slotIndex: number) => void; // 收获草药
+  handleUpgradeGrotto: (targetLevel: number) => void;
+  handlePlantHerb: (herbId: string, slot: number) => void;
+  handleHarvestHerb: (slot: number) => void;
   handleHarvestAll: () => void; // 收获所有草药
-  handleEnhanceSpiritArray: () => void; // 增强灵力
+  handleEnhanceSpiritArray: (enhancementId: string) => void;
   handleToggleAutoHarvest: () => void; // 切换自动收获
-  handleSpeedupHerb: (slotIndex: number) => void; // 加速草药收获
+  handleSpeedupHerb: (slot: number) => void; // 加速草药收获
 }
 
 /**
  * 商店和战斗相关 handlers
  */
 interface ShopAndBattleHandlers {
-  handleBuyItem: (item: ShopItem) => void; // 购买物品
-  handleSellItem: (item: Item) => void; // 出售物品
-  handleRefreshShop: (newItems: ShopItem[]) => void; // 刷新商店
+  handleBuyItem: (shopItem: ShopItem, quantity?: number) => void;
+  handleSellItem: (item: Item, quantity?: number) => void;
+  handleRefreshShop: (newItems: any[]) => void;
   handleReputationEventChoice: (choiceIndex: number) => void; // 选择声望事件
   handleTakeTreasureVaultItem: (item: Item) => void; // 领取宝库物品
-  handleUpdateVault: (vault: { items: Item[]; takenItemIds: string[] }) => void; // 更新宝库
-  handleBattleResult: (result: any) => void; // 战斗结果
+  handleUpdateVault: (vault: any) => void;
+  handleBattleResult: (result: any, updatedInventory?: Item[]) => void;
+  handleTurnBasedBattleClose: (result: BattleResult | null, updatedInventory?: Item[]) => void;
   handleSkipBattleLogs: () => void; // 跳过战斗日志
   handleCloseBattleModal: () => void; // 关闭战斗模态框
   handleDraw: (count: number) => void; // 抽取
@@ -130,7 +132,6 @@ interface ModalSettersGroup {
   setIsMobileStatsOpen: (open: boolean) => void; // 打开移动统计界面
   setIsReputationEventOpen: (open: boolean) => void; // 打开声望事件界面
   setIsTreasureVaultOpen: (open: boolean) => void; // 打开宝库界面
-  setIsSaveManagerOpen: (open: boolean) => void; // 打开存档管理器界面
   setIsAutoAdventureConfigOpen: (open: boolean) => void; // 打开自动历练配置界面
 }
 
@@ -167,30 +168,30 @@ interface UseHandlerGroupsProps {
     handleAdventure: () => Promise<void>; // 历练
     handleEnterRealm: (realm: SecretRealm) => Promise<void>; // 进入境界
     handleUseItem: (item: Item) => void; // 使用物品
-    handleEquipItem: (item: Item) => void; // 装备物品
-    handleUnequipItem: (slot: string) => void; // 卸下物品
+    handleEquipItem: (item: Item, slot?: any) => void; // 装备物品
+    handleUnequipItem: (slot: any) => void; // 卸下物品
     handleOpenUpgrade: (item: Item) => void; // 打开升级界面
     handleDiscardItem: (item: Item) => void; // 丢弃物品
     handleBatchDiscard: (itemIds: string[]) => void; // 批量丢弃物品
     handleBatchUse: (itemIds: string[]) => void; // 批量使用物品
     handleOrganizeInventory: () => void; // 整理背包
     handleRefineNatalArtifact: (item: Item) => void; // 涅槃重生
-    handleUnrefineNatalArtifact: () => void; // 取消涅槃重生
-    handleRefineAdvancedItem: (item: Item, materialIds: string[]) => void; // 强化高级物品
+    handleUnrefineNatalArtifact: (item: Item) => void; // 取消涅槃重生
+    handleRefineAdvancedItem: (item: Item) => void; // 强化高级物品
     handleUpgradeItem: (item: Item, costStones: number, costMats: number, upgradeStones?: number, failurePenalty?: number) => Promise<'success' | 'failure' | 'error'>;
-    handleLearnArt: (artId: string) => void; // 学习功法
-    handleActivateArt: (artId: string) => void; // 激活功法
-    handleCraft: (recipeId: string) => void; // 炼制丹药
+    handleLearnArt: (art: any) => void; // 学习功法
+    handleActivateArt: (art: any) => void; // 激活功法
+    handleCraft: (recipe: any) => Promise<void>; // 炼制丹药
     handleCraftArtifact: (materials: Item[], customName: string, selectedSlot?: string) => Promise<void>; // 炼制法宝
-    handleFuseArtifact: (item1: Item, item2: Item, stone: Item) => Promise<void>; // 融合法宝
+    handleFuseArtifact: (item1: Item, item2: Item, stone: Item, customName?: string) => Promise<void>; // 融合法宝
     handleSelectTalent: (talentId: string) => void; // 选择天赋
     handleSelectTitle: (titleId: string) => void; // 选择称号
     handleAllocateAttribute: (attr: string, amount: number) => void; // 分配属性
-    handleAllocateAllAttributes: (distribution: Record<string, number>) => void; // 分配所有属性
+    handleAllocateAllAttributes: (type: 'attack' | 'defense' | 'hp' | 'spirit' | 'physique' | 'speed') => void; // 分配所有属性
     handleUseInheritance: () => void; // 使用传承
     handleActivatePet: (petId: string) => void; // 激活灵宠
     handleDeactivatePet: (petId: string) => void; // 解除灵宠
-    handleFeedPet: (petId: string, itemId: string) => void; // 喂养灵宠
+    handleFeedPet: (petId: string, feedType: 'hp' | 'item' | 'exp', itemId?: string) => void; // 喂养灵宠
     handleBatchFeedItems: (petId: string, itemIds: string[]) => void; // 批量喂养灵宠
     handleBatchFeedHp: (petId: string, hpAmount: number) => void; // 批量喂养灵宠
     handleEvolvePet: (petId: string) => void; // 进化灵宠
@@ -199,33 +200,32 @@ interface UseHandlerGroupsProps {
     handleJoinSect: (sectId: string) => void; // 加入宗门
     handleLeaveSect: () => void; // 离开宗门
     handleSafeLeaveSect: () => void; // 安全离开宗门
-    handleSectTask: () => void; // 宗门任务
+    handleSectTask: (task: any, encounterResult?: any) => void; // 宗门任务
     handleSectPromote: () => void; // 宗门晋升
-    handleSectBuy: (itemId: string) => void; // 宗门购买
-    handleChallengeLeader: () => void; // 挑战宗门领袖
-    handleBuyItem: (item: ShopItem) => void;
-    handleSellItem: (item: Item) => void; // 出售物品
-    handleRefreshShop: (newItems: ShopItem[]) => void; // 刷新商店
+    handleSectBuy: (itemTemplate: Partial<Item>, cost: number, quantity?: number) => void; // 宗门购买
+    handleChallengeLeader: (params: any) => void; // 挑战宗门领袖
+    handleSectLearnArt: (art: any) => void;
+    handleUpdateVault?: (vault: any) => void;
+    handleBuyItem: (shopItem: ShopItem, quantity?: number) => void;
+    handleSellItem: (item: Item, quantity?: number) => void; // 出售物品
+    handleRefreshShop: (newItems: any[]) => void; // 刷新商店
     handleReputationEventChoice: (choiceIndex: number) => void; // 选择声望事件
     handleTakeTreasureVaultItem: (item: Item) => void; // 领取宝库物品
-    handleUpdateVault: (vault: { items: Item[]; takenItemIds: string[] }) => void; // 更新宝库
-    handleBattleResult: (result: any) => void; // 战斗结果
+    handleBattleResult: (result: any, updatedInventory?: Item[]) => void; // 战斗结果
     handleSkipBattleLogs: () => void; // 跳过战斗日志
     handleCloseBattleModal: () => void; // 关闭战斗模态框
     handleDraw: (count: number) => void; // 抽取
     handleUpdateSettings: (settings: any) => void; // 更新设置
-    handleRebirth: () => void; // 涅槃重生
-    handleClaimQuestReward: (questId: string) => void; // 领取任务奖励
+    claimQuestReward: (questId: string) => void; // 领取任务奖励
     checkAchievements: () => void; // 检查成就
     // 洞府相关
-    handleUpgradeGrotto: () => void; // 升级洞府
-    handlePlantHerb: (slotIndex: number, herbId: string) => void; // 种植草药
-    handleHarvestHerb: (slotIndex: number) => void; // 收获草药
+    handleUpgradeGrotto: (targetLevel: number) => void; // 升级洞府
+    handlePlantHerb: (herbId: string, slot: number) => void; // 种植草药
+    handleHarvestHerb: (slot: number) => void; // 收获草药
     handleHarvestAll: () => void; // 收获所有草药
-    handleEnhanceSpiritArray: () => void; // 增强灵力
+    handleEnhanceSpiritArray: (enhancementId: string) => void; // 增强灵力
     handleToggleAutoHarvest: () => void; // 切换自动收获
-    handleSpeedupHerb: (slotIndex: number) => void; // 加速草药收获
-    claimQuestReward: (questId: string) => void; // 领取任务奖励（别名）
+    handleSpeedupHerb: (slot: number) => void; // 加速草药收获
   };
 
   // 额外的 handlers
@@ -303,6 +303,7 @@ export function useSectHandlersGroup(appHandlers: UseHandlerGroupsProps['appHand
       handleSectPromote: appHandlers.handleSectPromote,
       handleSectBuy: appHandlers.handleSectBuy,
       handleChallengeLeader: appHandlers.handleChallengeLeader,
+      handleSectLearnArt: appHandlers.handleSectLearnArt,
     }),
     [
       appHandlers.handleJoinSect,
@@ -312,6 +313,7 @@ export function useSectHandlersGroup(appHandlers: UseHandlerGroupsProps['appHand
       appHandlers.handleSectPromote,
       appHandlers.handleSectBuy,
       appHandlers.handleChallengeLeader,
+      appHandlers.handleSectLearnArt,
     ]
   );
 }
@@ -408,6 +410,10 @@ export function useShopAndBattleHandlersGroup(
       handleTakeTreasureVaultItem: appHandlers.handleTakeTreasureVaultItem,
       handleUpdateVault: appHandlers.handleUpdateVault,
       handleBattleResult: appHandlers.handleBattleResult,
+      handleTurnBasedBattleClose: (result: BattleResult | null, updatedInventory?: Item[]) => {
+        // 这里的逻辑可以根据需要实现，或者直接传递 appHandlers 中的对应方法
+        // 考虑到 useModalsHandlers 已经有具体实现，这里可以先留空或简单调用
+      },
       handleSkipBattleLogs: appHandlers.handleSkipBattleLogs,
       handleCloseBattleModal: appHandlers.handleCloseBattleModal,
       handleDraw: appHandlers.handleDraw,
@@ -481,4 +487,3 @@ export function useHandlerGroups(props: UseHandlerGroupsProps) {
     commonHandlersParams,
   };
 }
-

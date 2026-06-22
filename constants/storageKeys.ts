@@ -15,6 +15,8 @@ export const STORAGE_KEYS = {
   DEBUG_MODE: 'xiuxian-debug-mode',
   /** 是否已显示修仙法门弹窗 */
   CULTIVATION_INTRO_SHOWN: 'xiuxian-cultivation-intro-shown',
+  /** 是否已显示打坐/历练操作栏引导 */
+  ACTION_BAR_GUIDE_SHOWN: 'xiuxian-action-bar-guide-shown',
 } as const;
 
 /**

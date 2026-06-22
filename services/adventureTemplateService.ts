@@ -1446,6 +1446,19 @@ export function templateToAdventureResult(
     result.hpChange = result.hpChange > 0 ? maxHpChange : -maxHpChange;
   }
 
+  // 调整因果变化（受境界影响较小，但随境界略微提升）
+  if (template.karmaChange !== undefined) {
+    result.karmaChange = Math.floor(template.karmaChange * (1 + realmIndex * 0.1));
+  }
+
+  // 调整 NPC 关系变化
+  if (template.npcRelationChange !== undefined) {
+    result.npcRelationChange = {
+      ...template.npcRelationChange,
+      favorabilityChange: Math.floor(template.npcRelationChange.favorabilityChange * (1 + realmIndex * 0.05))
+    };
+  }
+
   // 根据境界调整物品稀有度
   if (template.itemObtained !== undefined) {
     // 使用物品名称和类型作为种子，确保相同物品的稀有度调整是确定的
@@ -1602,6 +1615,8 @@ export function templateToAdventureResult(
   if (template.spiritualRootsChange !== undefined) result.spiritualRootsChange = template.spiritualRootsChange;
   if (template.lifespanChange !== undefined) result.lifespanChange = template.lifespanChange;
   if (template.lotteryTicketsChange !== undefined) result.lotteryTicketsChange = template.lotteryTicketsChange;
+  if (template.karmaChange !== undefined) result.karmaChange = template.karmaChange;
+  if (template.npcRelationChange !== undefined) result.npcRelationChange = template.npcRelationChange;
   if (template.longevityRuleObtained !== undefined) result.longevityRuleObtained = template.longevityRuleObtained;
   if (template.heavenEarthSoulEncounter !== undefined) result.heavenEarthSoulEncounter = template.heavenEarthSoulEncounter;
   if (template.adventureType !== undefined) result.adventureType = template.adventureType;

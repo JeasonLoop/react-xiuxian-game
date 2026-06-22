@@ -142,7 +142,6 @@ interface ModalsContainerProps {
     // Settings
     handleUpdateSettings: (newSettings: Partial<GameSettings>) => void;
     handleRestartGame?: () => void;
-    onOpenSaveManager?: () => void;
     // Daily Quest
     handleClaimQuestReward?: (questId: string) => void;
     // Grotto
@@ -407,7 +406,6 @@ function ModalsContainer({
           settings={settings}
           onUpdateSettings={handlers.handleUpdateSettings}
           onRestartGame={handlers.handleRestartGame}
-          onOpenSaveManager={handlers.onOpenSaveManager}
         />
       )}
 

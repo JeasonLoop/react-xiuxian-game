@@ -925,7 +925,7 @@ const calcDamage = (attack: number, defense: number) => {
   // 2. 当防御=0时，伤害=攻击力
   // 3. 当防御=攻击时，伤害约为攻击力的33%（k=0.5时）
   // 4. 当防御远大于攻击时，伤害会趋近于0，但不会完全为0
-  const k = 0.5; // 调整系数，控制防御收益曲线
+  const k = 0.8; // 增加 k 值，使防御力的减伤曲线更平滑，避免低防御时减伤过高
   const denominator = validDefense + validAttack * k;
 
   // 避免除零
@@ -936,8 +936,8 @@ const calcDamage = (attack: number, defense: number) => {
   // 计算基础伤害
   const baseDamage = validAttack * (1 - validDefense / denominator);
 
-  // 优化：提高最小伤害到攻击力的15%，确保高防御时仍能造成有效伤害
-  const minDamage = validAttack > 0 ? Math.max(1, Math.floor(validAttack * 0.15)) : 0;
+  // 优化：提高最小伤害到攻击力的 5%，确保高防御时仍能造成一定伤害，但不会过高
+  const minDamage = validAttack > 0 ? Math.max(1, Math.floor(validAttack * 0.05)) : 0;
 
   // 随机波动范围（伤害在一定范围内浮动）
   const baseRandomRange = 0.2; // 基础±10%波动（即0.9~1.1倍）
@@ -1474,8 +1474,57 @@ export const initializeTurnBasedBattle = async (
     bossId, // 保存BOSS ID
     activePet, // 保存激活的灵宠
     petSkillCooldowns, // 保存灵宠技能冷却
+    elementalField: initializeElementalField(player, enemyUnit), // 初始化五行领域
   };
 };
+
+/**
+ * 初始化五行领域
+ * 根据玩家和敌人的灵根属性决定初始领域
+ */
+function initializeElementalField(player: PlayerStats, enemy: BattleUnit): BattleState['elementalField'] {
+  const roots = player.spiritualRoots;
+  const types: Array<'metal' | 'wood' | 'water' | 'fire' | 'earth'> = ['metal', 'wood', 'water', 'fire', 'earth'];
+
+  // 找到最强的灵根
+  let maxType = types[0];
+  let maxValue = roots[maxType];
+
+  types.forEach(type => {
+    if (roots[type] > maxValue) {
+      maxValue = roots[type];
+      maxType = type;
+    }
+  });
+
+  // 如果最强灵根超过 30，有概率开启领域
+  if (maxValue > 30 && Math.random() < (maxValue / 100)) {
+    return {
+      type: maxType,
+      intensity: Math.ceil(maxValue / 20),
+      duration: 3 + Math.floor(maxValue / 25)
+    };
+  }
+
+  return undefined;
+}
+
+/**
+ * 计算五行克制倍率
+ */
+function getElementalMultiplier(attackerType: string, defenderType: string): number {
+  const relations: Record<string, string> = {
+    metal: 'wood',  // 金克木
+    wood: 'earth',  // 木克土
+    earth: 'water', // 土克水
+    water: 'fire',  // 水克火
+    fire: 'metal'   // 火克金
+  };
+
+  if (relations[attackerType] === defenderType) return 1.3; // 克制增加 30% 伤害
+  if (relations[defenderType] === attackerType) return 0.7; // 被克制减少 30% 伤害
+  return 1.0;
+}
 
 /**
  * 为没有配置技能的功法生成默认技能
@@ -1914,9 +1963,24 @@ function executeNormalAttack(
   // 计算基础伤害
   const baseDamage = calcDamage(attacker.attack, target.defense);
 
+  // 应用五行领域加成
+  let elementalMultiplier = 1.0;
+  if (battleState.elementalField) {
+    const field = battleState.elementalField;
+    // 假设玩家属性与领域相同有加成
+    if (attackerId === 'player') {
+      elementalMultiplier += (field.intensity * 0.05); // 每级强度增加 5% 伤害
+    }
+  }
+
   // 计算暴击（优化：统一暴击率计算，设置上限）
   let critChance = 0.10; // 基础暴击率10%
   let critMultiplier = 1.5; // 基础暴击伤害倍率
+
+  // 领域对暴击的影响
+  if (battleState.elementalField?.type === 'fire') {
+    critChance += (battleState.elementalField.intensity * 0.02);
+  }
 
   // 预先收集攻击者增益
   attacker.buffs.forEach((buff) => {
@@ -1938,7 +2002,7 @@ function executeNormalAttack(
   // 设置暴击率上限为20%（除非Buff本身加成很高）
   critChance = Math.min(0.2, Math.max(0, critChance));
   const isCrit = Math.random() < critChance;
-  const finalDamage = isCrit ? Math.round(baseDamage * critMultiplier) : baseDamage;
+  const finalDamage = Math.round((isCrit ? baseDamage * critMultiplier : baseDamage) * elementalMultiplier);
 
   // 预先收集目标增益/减益
   let maxDodge = 0;
@@ -2739,6 +2803,23 @@ function updateBattleStateAfterAction(
         return { ...buff, duration: buff.duration === -1 ? -1 : buff.duration - 1 };
       })
       .filter((buff) => buff.duration === -1 || buff.duration > 0);
+
+    // 更新五行领域
+    if (newState.elementalField) {
+      newState.elementalField.duration -= 1;
+      if (newState.elementalField.duration <= 0) {
+        newState.elementalField = undefined;
+        newState.history.push({
+          id: randomId(),
+          round: newState.round,
+          turn: 'player',
+          actor: 'system',
+          actionType: 'attack',
+          result: {},
+          description: '✨ 五行领域能量耗尽，逐渐消散了。'
+        } as any);
+      }
+    }
 
     // 更新冷却时间
     Object.keys(unit.cooldowns).forEach((skillId) => {

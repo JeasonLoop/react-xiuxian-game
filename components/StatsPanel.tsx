@@ -296,12 +296,20 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
 
         {/* 灵根显示 */}
         <div className="bg-ink-800 p-2 md:p-3 rounded border border-stone-700">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles
-              size={14}
-              className="md:w-[18px] md:h-[18px] text-purple-400"
-            />
-            <div className="text-[10px] md:text-xs text-stone-500">灵根</div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Sparkles
+                size={14}
+                className="md:w-[18px] md:h-[18px] text-purple-400"
+              />
+              <div className="text-[10px] md:text-xs text-stone-500">灵根 & 因果</div>
+            </div>
+            <div className="text-[10px] md:text-xs">
+              <span className="text-stone-500">因果: </span>
+              <span className={player.karma >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                {player.karma > 0 ? `+${player.karma}` : player.karma}
+              </span>
+            </div>
           </div>
           <div className="grid grid-cols-5 gap-1">
             {(['metal', 'wood', 'water', 'fire', 'earth'] as const).map((root) => {
@@ -336,6 +344,26 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
             })}
           </div>
         </div>
+
+        {/* 社交关系简述 */}
+        {player.socialRelations && player.socialRelations.length > 0 && (
+          <div className="bg-ink-800 p-2 md:p-3 rounded border border-stone-700">
+            <div className="text-[10px] md:text-xs text-stone-500 mb-2">人际关系</div>
+            <div className="space-y-1">
+              {player.socialRelations.slice(0, 3).map(rel => (
+                <div key={rel.id} className="flex justify-between text-[10px] md:text-xs">
+                  <span className="text-stone-300">{rel.name}</span>
+                  <span className={rel.favorability >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                    {rel.favorability > 0 ? '友善' : rel.favorability < 0 ? '敌对' : '中立'}
+                  </span>
+                </div>
+              ))}
+              {player.socialRelations.length > 3 && (
+                <div className="text-[10px] text-stone-500 text-center mt-1">...等 {player.socialRelations.length} 位道友</div>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="hidden md:block mt-auto pt-6 border-t border-stone-700 text-xs text-stone-500 italic text-center">
           "道可道，非常道。"

@@ -5,30 +5,26 @@
  */
 
 import React from 'react';
-import { PlayerStats, TribulationState } from '../types';
-import { SaveData } from '../utils/saveManagerUtils';
+import { PlayerStats, TribulationState, LogEntry } from '../types';
 import { BattleReplay } from '../services/battleService';
 import TribulationModal from './TribulationModal';
 import DeathModal from './DeathModal';
 import GameView from '../views/GameView';
 import DebugModal from './DebugModal';
 import AlertModal from './AlertModal';
-import SaveManagerModal from './SaveManagerModal';
-import SaveCompareModal from './SaveCompareModal';
 import ModalsContainer from '../views/modals/ModalsContainer';
 import CultivationIntroModal from './CultivationIntroModal';
 import AutoAdventureConfigModal from './AutoAdventureConfigModal';
-import { ensurePlayerStatsCompatibility } from '../utils/saveManagerUtils';
 import { STORAGE_KEYS } from '../constants/storageKeys';
-import { useUIStore } from '../store/uiStore';
+import { useUIStore, useModals } from '../store/uiStore';
 
 interface AppContentProps {
   // 玩家数据
   player: PlayerStats;
 
   // 游戏状态
-  logs: Array<{ id: string; text: string; type: string; timestamp: number }>;
-  setLogs: React.Dispatch<React.SetStateAction<Array<{ id: string; text: string; type: string; timestamp: number }>>>;
+  logs: LogEntry[];
+  setLogs: React.Dispatch<React.SetStateAction<LogEntry[]>>;
   visualEffects: any[];
   loading: boolean;
   cooldown: number;
@@ -40,13 +36,7 @@ interface AppContentProps {
   deathReason: string;
   tribulationState: TribulationState | null;
   showCultivationIntro: boolean;
-  isSaveManagerOpen: boolean;
-  isSaveCompareOpen: boolean;
-  compareSave1: SaveData | null;
-  compareSave2: SaveData | null;
   isAnyModalOpen: boolean;
-  isDebugModeEnabled: boolean;
-  isDebugOpen: boolean;
 
   // 通知状态
   purchaseSuccess: { item: string; quantity: number } | null;
@@ -56,47 +46,15 @@ interface AppContentProps {
   // 自动功能状态
   autoAdventure: boolean;
 
-  // 模态框状态
-  modals: {
-    isInventoryOpen: boolean;
-    isCultivationOpen: boolean;
-    isAlchemyOpen: boolean;
-    isUpgradeOpen: boolean;
-    isSectOpen: boolean;
-    isRealmOpen: boolean;
-    isCharacterOpen: boolean;
-    isAchievementOpen: boolean;
-    isPetOpen: boolean;
-    isLotteryOpen: boolean;
-    isSettingsOpen: boolean;
-    isDailyQuestOpen: boolean;
-    isShopOpen: boolean;
-    isGrottoOpen: boolean;
-    isBattleModalOpen: boolean;
-    isTurnBasedBattleOpen: boolean;
-    isMobileSidebarOpen: boolean;
-    isMobileStatsOpen: boolean;
-    isReputationEventOpen: boolean;
-    isTreasureVaultOpen: boolean;
-    isAutoAdventureConfigOpen: boolean;
-  };
-
   // Setters
   setPlayer: React.Dispatch<React.SetStateAction<PlayerStats | null>>;
   setIsDead: (dead: boolean) => void;
   setDeathBattleData: (data: BattleReplay | null) => void;
   setDeathReason: (reason: string) => void;
   setShowCultivationIntro: (show: boolean) => void;
-  setIsSaveManagerOpen: (open: boolean) => void;
-  setIsSaveCompareOpen: (open: boolean) => void;
-  setCompareSave1: (save: SaveData | null) => void;
-  setCompareSave2: (save: SaveData | null) => void;
-  setIsDebugOpen: (open: boolean) => void;
   setLotteryRewards: (rewards: Array<{ type: string; name: string; quantity?: number }>) => void;
   setItemActionLog: (log: { text: string; type: string } | null) => void;
   setReputationEvent: (event: any | null) => void;
-  setIsReputationEventOpen: (open: boolean) => void;
-  setIsAutoAdventureConfigOpen: (open: boolean) => void;
 
   // Auto adventure config
   autoAdventureConfig: {
@@ -104,13 +62,15 @@ interface AppContentProps {
     fleeOnBattle: boolean;
     skipShop: boolean;
     skipReputationEvent: boolean;
+    minHpThreshold: number;
   };
-  setAutoAdventureConfig: (config: {
+  setAutoAdventureConfig: React.Dispatch<React.SetStateAction<{
     skipBattle: boolean;
     fleeOnBattle: boolean;
     skipShop: boolean;
     skipReputationEvent: boolean;
-  }) => void;
+    minHpThreshold: number;
+  }>>;
 
   // Handlers
   handleTribulationComplete: (result: any) => void;
@@ -120,28 +80,16 @@ interface AppContentProps {
   gameViewHandlers: any;
   modalsHandlers: any;
   adventureHandlers: any;
-
-  // Modal setters
-  setIsInventoryOpen: (open: boolean) => void;
-  setIsCultivationOpen: (open: boolean) => void;
-  setIsCharacterOpen: (open: boolean) => void;
-  setIsAchievementOpen: (open: boolean) => void;
-  setIsPetOpen: (open: boolean) => void;
-  setIsLotteryOpen: (open: boolean) => void;
-  setIsSettingsOpen: (open: boolean) => void;
-  setIsRealmOpen: (open: boolean) => void;
-  setIsAlchemyOpen: (open: boolean) => void;
-  setIsSectOpen: (open: boolean) => void;
-  setIsMobileSidebarOpen: (open: boolean) => void;
-  setIsMobileStatsOpen: (open: boolean) => void;
 }
 
 /**
  * 主游戏内容组件
  */
 export function AppContent(props: AppContentProps) {
-  // 从 store 获取 setAutoAdventure
+  // 从 store 获取状态和方法
   const setAutoAdventure = useUIStore((state) => state.setAutoAdventure);
+  const setModal = useUIStore((state) => state.setModal);
+  const modals = useModals();
 
   const {
     player,
@@ -156,33 +104,19 @@ export function AppContent(props: AppContentProps) {
     deathReason,
     tribulationState,
     showCultivationIntro,
-    isSaveManagerOpen,
-    isSaveCompareOpen,
-    compareSave1,
-    compareSave2,
     isAnyModalOpen,
-    isDebugModeEnabled,
-    isDebugOpen,
     purchaseSuccess,
     lotteryRewards,
     itemActionLogValue,
     autoAdventure,
-    modals,
     setPlayer,
     setIsDead,
     setDeathBattleData,
     setDeathReason,
     setShowCultivationIntro,
-    setIsSaveManagerOpen,
-    setIsSaveCompareOpen,
-    setCompareSave1,
-    setCompareSave2,
-    setIsDebugOpen,
     setLotteryRewards,
     setItemActionLog,
     setReputationEvent,
-    setIsReputationEventOpen,
-    setIsAutoAdventureConfigOpen,
     autoAdventureConfig,
     setAutoAdventureConfig,
     handleTribulationComplete,
@@ -192,19 +126,28 @@ export function AppContent(props: AppContentProps) {
     gameViewHandlers,
     modalsHandlers,
     adventureHandlers,
-    setIsInventoryOpen,
-    setIsCultivationOpen,
-    setIsCharacterOpen,
-    setIsAchievementOpen,
-    setIsPetOpen,
-    setIsLotteryOpen,
-    setIsSettingsOpen,
-    setIsRealmOpen,
-    setIsAlchemyOpen,
-    setIsSectOpen,
-    setIsMobileSidebarOpen,
-    setIsMobileStatsOpen,
   } = props;
+
+  // 快捷方法
+  const setIsDebugOpen = (open: boolean) => setModal('isDebugOpen', open);
+  const setIsReputationEventOpen = (open: boolean) => setModal('isReputationEventOpen', open);
+  const setIsAutoAdventureConfigOpen = (open: boolean) => setModal('isAutoAdventureConfigOpen', open);
+
+  // 模态框 Setters
+  const modalSetters = {
+    setIsInventoryOpen: (open: boolean) => setModal('isInventoryOpen', open),
+    setIsCultivationOpen: (open: boolean) => setModal('isCultivationOpen', open),
+    setIsCharacterOpen: (open: boolean) => setModal('isCharacterOpen', open),
+    setIsAchievementOpen: (open: boolean) => setModal('isAchievementOpen', open),
+    setIsPetOpen: (open: boolean) => setModal('isPetOpen', open),
+    setIsLotteryOpen: (open: boolean) => setModal('isLotteryOpen', open),
+    setIsSettingsOpen: (open: boolean) => setModal('isSettingsOpen', open),
+    setIsRealmOpen: (open: boolean) => setModal('isRealmOpen', open),
+    setIsAlchemyOpen: (open: boolean) => setModal('isAlchemyOpen', open),
+    setIsSectOpen: (open: boolean) => setModal('isSectOpen', open),
+    setIsMobileSidebarOpen: (open: boolean) => setModal('isMobileSidebarOpen', open),
+    setIsMobileStatsOpen: (open: boolean) => setModal('isMobileStatsOpen', open),
+  };
 
   return (
     <>
@@ -252,37 +195,17 @@ export function AppContent(props: AppContentProps) {
         isMobileSidebarOpen={modals.isMobileSidebarOpen}
         isMobileStatsOpen={modals.isMobileStatsOpen}
         modals={{
-          isInventoryOpen: modals.isInventoryOpen,
-          isCultivationOpen: modals.isCultivationOpen,
-          isCharacterOpen: modals.isCharacterOpen,
-          isAchievementOpen: modals.isAchievementOpen,
-          isPetOpen: modals.isPetOpen,
-          isLotteryOpen: modals.isLotteryOpen,
-          isSettingsOpen: modals.isSettingsOpen,
-          isRealmOpen: modals.isRealmOpen,
-          isAlchemyOpen: modals.isAlchemyOpen,
-          isSectOpen: modals.isSectOpen,
-          setIsMobileSidebarOpen,
-          setIsMobileStatsOpen,
-          setIsInventoryOpen,
-          setIsCultivationOpen,
-          setIsCharacterOpen,
-          setIsAchievementOpen,
-          setIsPetOpen,
-          setIsLotteryOpen,
-          setIsSettingsOpen,
-          setIsRealmOpen,
-          setIsAlchemyOpen,
-          setIsSectOpen,
+          ...modals,
+          ...modalSetters,
         }}
         handlers={gameViewHandlers}
-        isDebugModeEnabled={isDebugModeEnabled}
+        isDebugModeEnabled={modals.isDebugModeEnabled}
       />
 
       {/* 调试弹窗 */}
-      {player && isDebugModeEnabled && (
+      {player && modals.isDebugModeEnabled && (
         <DebugModal
-          isOpen={isDebugOpen}
+          isOpen={modals.isDebugOpen}
           onClose={() => setIsDebugOpen(false)}
           player={player}
           onUpdatePlayer={(updates) => {
@@ -320,40 +243,6 @@ export function AppContent(props: AppContentProps) {
           onConfirm={alertState.onConfirm}
           showCancel={alertState.showCancel}
           onCancel={alertState.onCancel}
-        />
-      )}
-
-      {/* 存档管理器 */}
-      {player && (
-        <SaveManagerModal
-          isOpen={isSaveManagerOpen}
-          onClose={() => setIsSaveManagerOpen(false)}
-          currentPlayer={player}
-          currentLogs={logs}
-          onLoadSave={(loadedPlayer, loadedLogs) => {
-            const compatiblePlayer = ensurePlayerStatsCompatibility(loadedPlayer);
-            setPlayer(compatiblePlayer);
-            setLogs(loadedLogs);
-          }}
-          onCompareSaves={(save1, save2) => {
-            setCompareSave1(save1);
-            setCompareSave2(save2);
-            setIsSaveCompareOpen(true);
-          }}
-        />
-      )}
-
-      {/* 存档对比 */}
-      {compareSave1 && compareSave2 && (
-        <SaveCompareModal
-          isOpen={isSaveCompareOpen}
-          onClose={() => {
-            setIsSaveCompareOpen(false);
-            setCompareSave1(null);
-            setCompareSave2(null);
-          }}
-          save1={compareSave1}
-          save2={compareSave2}
         />
       )}
 

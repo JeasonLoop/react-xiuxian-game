@@ -72,6 +72,11 @@ function ActionBar({
           <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">
             修炼 · 心法
           </span>
+          {cooldown > 0 && (
+            <span className="text-xs text-amber-400 font-mono mt-0.5" aria-hidden>
+              {cooldown}s
+            </span>
+          )}
         </button>
         <button
           onClick={(e) => {
@@ -120,6 +125,11 @@ function ActionBar({
           <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">
             机缘 · 战斗
           </span>
+          {cooldown > 0 && (
+            <span className="text-xs text-amber-400 font-mono mt-0.5" aria-hidden>
+              {cooldown}s
+            </span>
+          )}
         </button>
         <button
           onClick={(e) => {
@@ -216,6 +226,9 @@ function ActionBar({
           任务 · 晋升
         </span>
       </button>
+      <p className="col-span-2 md:col-span-5 text-center text-[10px] md:text-xs text-stone-500 mt-1">
+        快捷键见设置
+      </p>
     </div>
   );
 }
