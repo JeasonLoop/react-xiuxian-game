@@ -379,7 +379,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
               />
 
               {/* 天赋卡片网格 */}
-              <div className="max-h-[220px] md:max-h-[280px] overflow-y-auto pr-1 mt-2 scrollbar-thin scrollbar-thumb-stone-600 scrollbar-track-stone-800">
+              <div className="max-h-[260px] md:max-h-[340px] overflow-y-auto pr-1 mt-2 scrollbar-thin scrollbar-thumb-stone-600 scrollbar-track-stone-800">
                 <TalentGrid
                   talents={filteredTalents}
                   selectedIds={selectedTalentIds}

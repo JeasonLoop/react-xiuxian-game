@@ -27,7 +27,7 @@ const TalentGrid: React.FC<TalentGridProps> = ({ talents, selectedIds, remaining
   });
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-1 min-[560px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
       {talents.map((talent) => {
         const isSelected = selectedIds.includes(talent.id);
         const isImmortalTier = talent.rarity === '仙品';

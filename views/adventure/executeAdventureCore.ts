@@ -238,6 +238,20 @@ const applyResultToPlayer = (
       statistics.petCount += 1;
       const storyHasPet = result.story && /灵兽|灵宠|建立了联系|愿意跟随/.test(result.story);
       if (!storyHasPet) addLog(`✨ 你获得了灵宠【${newPet.name}】！`, 'special');
+    } else if (template) {
+      const duplicatePet = newPets.find(p => p.species === template.species);
+      if (duplicatePet) {
+        newPets = newPets.map(p => (
+          p.id === duplicatePet.id
+            ? {
+                ...p,
+                exp: Math.min(p.maxExp, p.exp + 40),
+                affection: Math.min(100, p.affection + 8),
+              }
+            : p
+        ));
+        addLog(`你已经拥有【${duplicatePet.name}】，这次灵宠机缘转化为亲密度 +8、经验 +40。`, 'gain');
+      }
     }
   }
   newState.pets = newPets;
@@ -313,9 +327,11 @@ const applyResultToPlayer = (
   }
 
   // 7. 计算血量 (基于 getPlayerTotalStats)
+  const previousTotalStats = getPlayerTotalStats(prev);
+  const previousActualMaxHp = Math.max(1, previousTotalStats.maxHp);
   const totalStats = getPlayerTotalStats(newState);
   const actualMaxHp = totalStats.maxHp;
-  const hpRatio = (prev.maxHp || 1) > 0 ? (prev.hp / prev.maxHp) : 0;
+  const hpRatio = prev.hp / previousActualMaxHp;
   const adjustedHp = Math.floor(actualMaxHp * hpRatio);
 
   newState.hp = Math.max(0, Math.min(actualMaxHp, adjustedHp + (result.hpChange || 0)));
