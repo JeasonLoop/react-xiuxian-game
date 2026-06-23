@@ -12,6 +12,7 @@ import {
   ItemActionToast,
 } from './NotificationToast';
 import { STORAGE_KEYS } from '../constants/storageKeys';
+import { getUnviewedGlobalAchievementIds } from '../utils/achievementUtils';
 
 /**
  * 游戏视图组件
@@ -116,7 +117,7 @@ function GameView({
   // 缓存成就数量计算
   const achievementCount = useMemo(
     () =>
-      player.achievements.filter((a) => !player.viewedAchievements.includes(a))
+      getUnviewedGlobalAchievementIds(player.achievements, player.viewedAchievements)
         .length,
     [player.achievements, player.viewedAchievements]
   );

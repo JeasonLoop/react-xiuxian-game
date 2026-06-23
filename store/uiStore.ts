@@ -8,9 +8,11 @@ import { useShallow } from 'zustand/react/shallow';
 import {
   Item,
   Shop,
+  MarketItem,
   AdventureType,
   RealmType,
   AdventureResult,
+  DifficultyMode,
 } from '../types';
 import { BattleReplay } from '../services/battleService';
 
@@ -39,6 +41,7 @@ interface ModalState {
   isReputationEventOpen: boolean;
   isTreasureVaultOpen: boolean;
   isAutoAdventureConfigOpen: boolean;
+  isTradeMarketOpen: boolean;
   isDungeonOpen: boolean;
   isLeaderboardOpen: boolean;
 }
@@ -49,6 +52,7 @@ interface TurnBasedBattleParams {
   riskLevel?: '低' | '中' | '高' | '极度危险';
   realmMinRealm?: RealmType;
   bossId?: string;
+  difficulty?: DifficultyMode;
   onBattleInitialized?: (enemyName: string) => void; // 战斗初始化完成后的回调，用于输出日志
 }
 
@@ -56,6 +60,9 @@ interface TurnBasedBattleParams {
 interface UIState {
   // Modal 状态
   modals: ModalState;
+
+  // 拍卖行状态
+  marketItems: MarketItem[];
 
   // 商店状态
   currentShop: Shop | null;
@@ -100,6 +107,9 @@ interface UIState {
 
   // 商店 Setters
   setCurrentShop: (shop: Shop | null) => void;
+
+  // 拍卖行 Setters
+  setMarketItems: (items: MarketItem[]) => void;
 
   // 升级 Setters
   setItemToUpgrade: (item: Item | null) => void;
@@ -173,6 +183,7 @@ const defaultModalState: ModalState = {
   isReputationEventOpen: false,
   isTreasureVaultOpen: false,
   isAutoAdventureConfigOpen: false,
+  isTradeMarketOpen: false,
   isDungeonOpen: false,
   isLeaderboardOpen: false,
 };
@@ -180,6 +191,7 @@ const defaultModalState: ModalState = {
 export const useUIStore = create<UIState>((set, get) => ({
   // 初始状态
   modals: { ...defaultModalState },
+  marketItems: [],
   currentShop: null,
   itemToUpgrade: null,
   purchaseSuccess: null,
@@ -209,6 +221,9 @@ export const useUIStore = create<UIState>((set, get) => ({
 
   // 商店 Setters
   setCurrentShop: (shop) => set({ currentShop: shop }),
+
+  // 拍卖行 Setters
+  setMarketItems: (items) => set({ marketItems: items }),
 
   // 升级 Setters
   setItemToUpgrade: (item) => set({ itemToUpgrade: item }),
@@ -262,6 +277,10 @@ export const useUIStore = create<UIState>((set, get) => ({
       set((s) => ({
         modals: { ...s.modals, isShopOpen: false },
         currentShop: null,
+      }));
+    } else if (modals.isTradeMarketOpen) {
+      set((s) => ({
+        modals: { ...s.modals, isTradeMarketOpen: false },
       }));
     } else if (modals.isInventoryOpen) {
       set((s) => ({ modals: { ...s.modals, isInventoryOpen: false } }));
@@ -334,6 +353,7 @@ export const useUIStore = create<UIState>((set, get) => ({
     set({
       modals: { ...defaultModalState },
       currentShop: null,
+      marketItems: [],
       itemToUpgrade: null,
     });
   },

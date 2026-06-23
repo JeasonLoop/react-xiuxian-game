@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlayerStats, Item, Pet, ItemType, ItemRarity, RealmType } from '../../types';
-import { PET_TEMPLATES, DISCOVERABLE_RECIPES, getRandomPetName, REALM_ORDER,} from '../../constants/index';
+import { PET_TEMPLATES, DISCOVERABLE_RECIPES, getRandomPetName, REALM_ORDER, REALM_DATA } from '../../constants/index';
 import { uid } from '../../utils/gameUtils';
 import { showConfirm } from '../../utils/toastUtils';
 import { LOOT_ITEMS } from '../../services/battleService';
@@ -17,6 +17,44 @@ interface UseItemHandlersProps {
   setItemActionLog?: (log: { text: string; type: string } | null) => void;
   onOpenTreasureVault?: () => void; // 打开宗门宝库弹窗的回调
 }
+
+type PermanentStatKey = 'attack' | 'defense' | 'spirit' | 'physique' | 'speed' | 'maxHp';
+
+const getPermanentStatBudget = (player: PlayerStats, stat: PermanentStatKey): number => {
+  const realmData = REALM_DATA[player.realm] || REALM_DATA[RealmType.QiRefining];
+  const realmLevel = Math.max(1, player.realmLevel || 1);
+  const levelFactor = 1 + (realmLevel - 1) * 0.14;
+  const baseValue =
+    stat === 'maxHp'
+      ? realmData.baseMaxHp
+      : stat === 'attack'
+        ? realmData.baseAttack
+        : stat === 'defense'
+          ? realmData.baseDefense
+          : stat === 'spirit'
+            ? realmData.baseSpirit
+            : stat === 'physique'
+              ? realmData.basePhysique
+              : realmData.baseSpeed;
+
+  const floor = stat === 'maxHp' ? 300 : 60;
+  return Math.max(floor, Math.floor(baseValue * 1.35 * levelFactor));
+};
+
+const getDiminishedPermanentGain = (
+  player: PlayerStats,
+  stat: PermanentStatKey,
+  rawGain: number
+): number => {
+  if (!Number.isFinite(rawGain) || rawGain <= 0) return 0;
+
+  const currentValue = Number(player[stat]) || 0;
+  const budget = getPermanentStatBudget(player, stat);
+  if (currentValue <= budget) return Math.floor(rawGain);
+
+  const efficiency = Math.max(0.25, Math.min(1, budget / currentValue));
+  return Math.max(1, Math.floor(rawGain * efficiency));
+};
 
 /**
  * 辅助函数：应用单个物品效果
@@ -140,15 +178,36 @@ const applyItemEffect = (
   if (item.permanentEffect && !item.isEquippable) {
     const permLogs: string[] = [];
     const pe = item.permanentEffect;
-    if (pe.attack) { newStats.attack += pe.attack; permLogs.push(`攻击力永久 +${pe.attack}`); }
-    if (pe.defense) { newStats.defense += pe.defense; permLogs.push(`防御力永久 +${pe.defense}`); }
-    if (pe.spirit) { newStats.spirit += pe.spirit; permLogs.push(`神识永久 +${pe.spirit}`); }
-    if (pe.physique) { newStats.physique += pe.physique; permLogs.push(`体魄永久 +${pe.physique}`); }
-    if (pe.speed) { newStats.speed += pe.speed; permLogs.push(`速度永久 +${pe.speed}`); }
+    if (pe.attack) {
+      const gain = getDiminishedPermanentGain(newStats, 'attack', pe.attack);
+      newStats.attack += gain;
+      permLogs.push(`攻击力永久 +${gain}`);
+    }
+    if (pe.defense) {
+      const gain = getDiminishedPermanentGain(newStats, 'defense', pe.defense);
+      newStats.defense += gain;
+      permLogs.push(`防御力永久 +${gain}`);
+    }
+    if (pe.spirit) {
+      const gain = getDiminishedPermanentGain(newStats, 'spirit', pe.spirit);
+      newStats.spirit += gain;
+      permLogs.push(`神识永久 +${gain}`);
+    }
+    if (pe.physique) {
+      const gain = getDiminishedPermanentGain(newStats, 'physique', pe.physique);
+      newStats.physique += gain;
+      permLogs.push(`体魄永久 +${gain}`);
+    }
+    if (pe.speed) {
+      const gain = getDiminishedPermanentGain(newStats, 'speed', pe.speed);
+      newStats.speed += gain;
+      permLogs.push(`速度永久 +${gain}`);
+    }
     if (pe.maxHp) {
-      newStats.maxHp += pe.maxHp;
-      newStats.hp += pe.maxHp;
-      permLogs.push(`气血上限永久 +${pe.maxHp}`);
+      const gain = getDiminishedPermanentGain(newStats, 'maxHp', pe.maxHp);
+      newStats.maxHp += gain;
+      newStats.hp += gain;
+      permLogs.push(`气血上限永久 +${gain}`);
     }
     if (pe.maxLifespan) {
       newStats.maxLifespan = (newStats.maxLifespan ?? 100) + pe.maxLifespan;

@@ -3,6 +3,7 @@ import { Trophy, Star } from 'lucide-react';
 import { PlayerStats, Achievement, ItemRarity } from '../types';
 import { ACHIEVEMENTS } from '../constants/index';
 import { getRarityTextColor, getRarityBorder } from '../utils/rarityUtils';
+import { getGlobalAchievementIds } from '../utils/achievementUtils';
 import { Modal } from './common';
 
 interface Props {
@@ -59,11 +60,12 @@ const AchievementModal: React.FC<Props> = ({ isOpen, onClose, player }) => {
     return unitMap[type] || '';
   };
 
+  const completedGlobalAchievementIds = getGlobalAchievementIds(player.achievements);
   const completedAchievements = ACHIEVEMENTS.filter((a) =>
-    player.achievements.includes(a.id)
+    completedGlobalAchievementIds.includes(a.id)
   );
   const incompleteAchievements = ACHIEVEMENTS.filter(
-    (a) => !player.achievements.includes(a.id)
+    (a) => !completedGlobalAchievementIds.includes(a.id)
   );
 
   return (

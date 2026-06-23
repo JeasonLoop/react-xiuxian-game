@@ -74,6 +74,7 @@ interface UseAppHandlersProps {
     riskLevel?: '低' | '中' | '高' | '极度危险';
     realmMinRealm?: any;
     bossId?: string;
+    difficulty?: any;
   }) => void;
   autoAdventureConfig?: {
     skipBattle: boolean;
@@ -270,6 +271,7 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     skipReputationEvent: autoAdventureConfig?.skipReputationEvent || false,
     useTurnBasedBattle: true,
     autoAdventure,
+    difficulty: settings.difficulty || 'normal',
     setAutoAdventure,
     setAutoAdventurePausedByHeavenEarthSoul: setPausedByHeavenEarthSoul,
   });
@@ -281,7 +283,10 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     setIsSectOpen: setters.setIsSectOpen,
     setPurchaseSuccess,
     setItemActionLog,
-    onChallengeLeader: handleOpenTurnBasedBattle,
+    onChallengeLeader: (params) => handleOpenTurnBasedBattle({
+      ...params,
+      difficulty: settings.difficulty || 'normal',
+    }),
   });
 
   const achievementHandlers = useAchievementHandlers({
@@ -402,6 +407,11 @@ export function useAppHandlers(props: UseAppHandlersProps) {
   const handleEvolvePet = useCallback(
     withQuestProgress(petHandlers.handleEvolvePet, 'pet', dailyQuestHandlers),
     [petHandlers.handleEvolvePet, dailyQuestHandlers]
+  );
+
+  const handlePetExpedition = useCallback(
+    withQuestProgress(petHandlers.handlePetExpedition, 'pet', dailyQuestHandlers),
+    [petHandlers.handlePetExpedition, dailyQuestHandlers]
   );
 
   const handleReleasePet = petHandlers.handleReleasePet;
@@ -550,6 +560,7 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     handleBatchFeedItems,
     handleBatchFeedHp,
     handleEvolvePet,
+    handlePetExpedition,
     handleReleasePet,
     handleBatchReleasePets,
 

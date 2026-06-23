@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useGameStore } from '../store/gameStore';
+import { useUIStore } from '../store/uiStore';
 import { useAuthStore } from '../store/authStore';
 import { cloudSaveService } from '../services/cloudSaveService';
 import { showError } from '../utils/toastUtils';
@@ -22,6 +23,7 @@ export function useAutoCloudSave() {
         .pushSave({
           player: state.player,
           logs: state.logs,
+          marketItems: useUIStore.getState().marketItems,
           timestamp: Date.now(),
         })
         .catch((err) => {

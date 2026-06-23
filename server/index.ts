@@ -45,9 +45,13 @@ app.use((req, res, next) => {
 });
 
 // SQLite database setup
+const defaultDbDir = path.basename(__dirname) === 'server'
+  ? __dirname
+  : path.resolve(process.cwd(), 'server');
+const defaultDbPath = path.join(defaultDbDir, 'database.sqlite');
 const dbPath = process.env.DATABASE_PATH
   ? path.resolve(process.env.DATABASE_PATH)
-  : path.resolve(__dirname, 'database.sqlite');
+  : defaultDbPath;
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('Error opening database', err.message);
@@ -107,6 +111,32 @@ const db = new sqlite3.Database(dbPath, (err) => {
       db.run(`CREATE INDEX IF NOT EXISTS idx_rankings_realm ON rankings(realm_index DESC, realm_level DESC, exp DESC)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_rankings_combat ON rankings(combat_power DESC)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_rankings_stones ON rankings(spirit_stones DESC)`);
+
+      // 交易行表：玩家上架物品
+      db.run(`
+        CREATE TABLE IF NOT EXISTS market_listings (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          seller_id INTEGER NOT NULL,
+          seller_name TEXT NOT NULL,
+          item_name TEXT NOT NULL,
+          item_type TEXT NOT NULL,
+          item_description TEXT DEFAULT '',
+          item_rarity TEXT NOT NULL DEFAULT '普通',
+          price INTEGER NOT NULL,
+          quantity INTEGER DEFAULT 1,
+          is_equippable INTEGER DEFAULT 0,
+          equipment_slot TEXT,
+          effect_json TEXT,
+          item_source_json TEXT NOT NULL,
+          status TEXT DEFAULT 'active',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          sold_at DATETIME,
+          buyer_id INTEGER,
+          FOREIGN KEY (seller_id) REFERENCES users (id)
+        )
+      `);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_market_status ON market_listings(status)`);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_market_seller ON market_listings(seller_id)`);
     });
   }
 });
@@ -428,31 +458,72 @@ app.get('/api/health', (req, res) => {
 // ── 排行榜 API ──
 const REALM_NAMES = ['炼气期', '筑基期', '金丹期', '元婴期', '化神期', '合道期', '长生境'];
 
+const LEADERBOARD_SORTS: Record<string, { orderBy: string; aheadCondition: string; getParams: (row: any) => any[] }> = {
+  realm: {
+    orderBy: 'realm_index DESC, realm_level DESC, exp DESC, updated_at DESC, user_id ASC',
+    aheadCondition: `
+      (realm_index > ?)
+      OR (realm_index = ? AND realm_level > ?)
+      OR (realm_index = ? AND realm_level = ? AND exp > ?)
+      OR (realm_index = ? AND realm_level = ? AND exp = ? AND updated_at > ?)
+      OR (realm_index = ? AND realm_level = ? AND exp = ? AND updated_at = ? AND user_id < ?)
+    `,
+    getParams: (row) => [
+      row.realm_index,
+      row.realm_index, row.realm_level,
+      row.realm_index, row.realm_level, row.exp,
+      row.realm_index, row.realm_level, row.exp, row.updated_at,
+      row.realm_index, row.realm_level, row.exp, row.updated_at, row.user_id,
+    ],
+  },
+  combat: {
+    orderBy: 'combat_power DESC, realm_index DESC, realm_level DESC, updated_at DESC, user_id ASC',
+    aheadCondition: `
+      (combat_power > ?)
+      OR (combat_power = ? AND realm_index > ?)
+      OR (combat_power = ? AND realm_index = ? AND realm_level > ?)
+      OR (combat_power = ? AND realm_index = ? AND realm_level = ? AND updated_at > ?)
+      OR (combat_power = ? AND realm_index = ? AND realm_level = ? AND updated_at = ? AND user_id < ?)
+    `,
+    getParams: (row) => [
+      row.combat_power,
+      row.combat_power, row.realm_index,
+      row.combat_power, row.realm_index, row.realm_level,
+      row.combat_power, row.realm_index, row.realm_level, row.updated_at,
+      row.combat_power, row.realm_index, row.realm_level, row.updated_at, row.user_id,
+    ],
+  },
+  stones: {
+    orderBy: 'spirit_stones DESC, realm_index DESC, realm_level DESC, updated_at DESC, user_id ASC',
+    aheadCondition: `
+      (spirit_stones > ?)
+      OR (spirit_stones = ? AND realm_index > ?)
+      OR (spirit_stones = ? AND realm_index = ? AND realm_level > ?)
+      OR (spirit_stones = ? AND realm_index = ? AND realm_level = ? AND updated_at > ?)
+      OR (spirit_stones = ? AND realm_index = ? AND realm_level = ? AND updated_at = ? AND user_id < ?)
+    `,
+    getParams: (row) => [
+      row.spirit_stones,
+      row.spirit_stones, row.realm_index,
+      row.spirit_stones, row.realm_index, row.realm_level,
+      row.spirit_stones, row.realm_index, row.realm_level, row.updated_at,
+      row.spirit_stones, row.realm_index, row.realm_level, row.updated_at, row.user_id,
+    ],
+  },
+};
+
 // GET /api/leaderboard?sort=realm|combat|stones&limit=50&offset=0
 app.get('/api/leaderboard', (req: any, res: any) => {
   const sort = (req.query.sort as string) || 'realm';
   const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 50, 1), 200);
   const offset = Math.max(parseInt(req.query.offset as string) || 0, 0);
-
-  let orderBy: string;
-  switch (sort) {
-    case 'combat':
-      orderBy = 'combat_power DESC, realm_index DESC, realm_level DESC';
-      break;
-    case 'stones':
-      orderBy = 'spirit_stones DESC, realm_index DESC, realm_level DESC';
-      break;
-    case 'realm':
-    default:
-      orderBy = 'realm_index DESC, realm_level DESC, exp DESC';
-      break;
-  }
+  const sortConfig = LEADERBOARD_SORTS[sort] || LEADERBOARD_SORTS.realm;
 
   try {
     db.all(
       `SELECT user_id, username, realm_index, realm_level, exp, combat_power, spirit_stones, reputation, achievement_count, kill_count, play_time, updated_at
        FROM rankings
-       ORDER BY ${orderBy}
+       ORDER BY ${sortConfig.orderBy}
        LIMIT ? OFFSET ?`,
       [limit, offset],
       (err, rows: any[]) => {
@@ -521,26 +592,20 @@ app.get('/api/leaderboard/me', authenticateToken, (req: any, res: any) => {
       }
       if (!myRow) return res.json({ found: false, message: '您尚未上传存档，无法查看排名' });
 
-      // 查询三种排序的排名
+      // 查询三种排序的排名：必须和 /api/leaderboard 的 ORDER BY 完全一致
       const queries = [
-        { sort: 'realm', condition: `(realm_index > ?) OR (realm_index = ? AND realm_level > ?) OR (realm_index = ? AND realm_level = ? AND exp > ?)` },
-        { sort: 'combat', condition: `combat_power > ?` },
-        { sort: 'stones', condition: `spirit_stones > ?` },
+        { sort: 'realm', config: LEADERBOARD_SORTS.realm },
+        { sort: 'combat', config: LEADERBOARD_SORTS.combat },
+        { sort: 'stones', config: LEADERBOARD_SORTS.stones },
       ];
 
       const results: any = { found: true, username: myRow.username };
 
       let completed = 0;
-      queries.forEach(({ sort, condition }) => {
-        const params = sort === 'realm'
-          ? [myRow.realm_index, myRow.realm_index, myRow.realm_level, myRow.realm_index, myRow.realm_level, myRow.exp]
-          : sort === 'combat'
-          ? [myRow.combat_power]
-          : [myRow.spirit_stones];
-
+      queries.forEach(({ sort, config }) => {
         db.get(
-          `SELECT COUNT(*) as cnt FROM rankings WHERE ${condition}`,
-          params,
+          `SELECT COUNT(*) as cnt FROM rankings WHERE ${config.aheadCondition}`,
+          config.getParams(myRow),
           (err2, countRow: any) => {
             completed++;
             if (!err2 && countRow) {
@@ -555,6 +620,176 @@ app.get('/api/leaderboard/me', authenticateToken, (req: any, res: any) => {
     }
   );
 });
+
+// ── 交易行 API ──
+
+// GET /api/market/items — 获取在售商品列表（分页+分类+搜索）
+app.get('/api/market/items', (req: any, res: any) => {
+  const page = Math.max(1, parseInt(req.query.page as string) || 1);
+  const limit = Math.min(Math.max(1, parseInt(req.query.limit as string) || 10), 100);
+  const offset = (page - 1) * limit;
+  const category = (req.query.category as string) || 'all';
+  const search = (req.query.search as string) || '';
+
+  let where = "WHERE status = 'active'";
+  const params: any[] = [];
+
+  if (category && category !== 'all') {
+    where += ' AND item_type = ?';
+    params.push(category);
+  }
+  if (search.trim()) {
+    where += ' AND item_name LIKE ?';
+    params.push(`%${search.trim()}%`);
+  }
+
+  // 查总数
+  db.get(`SELECT COUNT(*) as total FROM market_listings ${where}`, params, (err, row: any) => {
+    if (err) return res.json({ items: [], total: 0, page, limit: 0 });
+    const total = row?.total || 0;
+
+    // 查分页
+    db.all(
+      `SELECT id, seller_id, seller_name, item_name as name, item_type as type, item_description as description,
+              item_rarity as rarity, price, quantity, is_equippable, equipment_slot, effect_json, created_at
+       FROM market_listings ${where}
+       ORDER BY created_at DESC
+       LIMIT ? OFFSET ?`,
+      [...params, limit, offset],
+      (err2, rows: any[]) => {
+        if (err2) return res.json({ items: [], total: 0, page, limit });
+        const items = (rows || []).map((r) => ({
+          id: `market-${r.id}`,
+          name: r.name,
+          type: r.type,
+          description: r.description || '',
+          rarity: r.rarity,
+          price: r.price,
+          quantity: r.quantity || 1,
+          isEquippable: !!r.is_equippable,
+          equipmentSlot: r.equipment_slot || undefined,
+          effect: r.effect_json ? JSON.parse(r.effect_json) : undefined,
+          sellerName: r.seller_name,
+          sellerId: 'system',
+          createdAt: r.created_at,
+        }));
+        res.json({ items, total, page, limit });
+      }
+    );
+  });
+});
+
+// POST /api/market/list — 上架物品
+app.post('/api/market/list', authenticateToken, (req: any, res: any) => {
+  const { itemName, itemType, description, rarity, price, quantity, effect, isEquippable, equipmentSlot, itemSourceJson } = req.body;
+
+  if (!itemName || !price || price <= 0) {
+    return res.status(400).json({ error: '物品名称和有效价格是必填项' });
+  }
+
+  db.run(
+    `INSERT INTO market_listings (seller_id, seller_name, item_name, item_type, item_description, item_rarity, price, quantity, is_equippable, equipment_slot, effect_json, item_source_json)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      req.user.id,
+      req.user.username,
+      itemName,
+      itemType || '材料',
+      description || '',
+      rarity || '普通',
+      price,
+      quantity || 1,
+      isEquippable ? 1 : 0,
+      equipmentSlot || null,
+      effect ? JSON.stringify(effect) : null,
+      itemSourceJson || '',
+    ],
+    function (err) {
+      if (err) {
+        console.error('上架失败:', err.message);
+        return res.status(500).json({ error: '上架失败' });
+      }
+      res.json({ success: true, listingId: this.lastID });
+    }
+  );
+});
+
+// POST /api/market/purchase — 购买物品（先查库存再扣）
+app.post('/api/market/purchase', authenticateToken, (req: any, res: any) => {
+  const { listingId } = req.body;
+  if (!listingId) return res.status(400).json({ error: '缺少 listingId' });
+
+  const numericId = parseInt(listingId.toString().replace('market-', ''));
+
+  db.get('SELECT * FROM market_listings WHERE id = ? AND status = ?', [numericId, 'active'], (err, listing: any) => {
+    if (err || !listing) {
+      return res.status(404).json({ error: '商品不存在或已售出' });
+    }
+    if (listing.seller_id === req.user.id) {
+      return res.status(400).json({ error: '不能购买自己的商品' });
+    }
+
+    // 返回商品信息（真实扣款在客户端完成，服务端只做库存检查和锁定）
+    // 实际扣款由客户端调用 purchase/confirm 完成
+    res.json({
+      success: true,
+      listing: {
+        id: listing.id,
+        name: listing.item_name,
+        type: listing.item_type,
+        description: listing.item_description,
+        rarity: listing.item_rarity,
+        price: listing.price,
+        quantity: listing.quantity || 1,
+        isEquippable: !!listing.is_equippable,
+        equipmentSlot: listing.equipment_slot,
+        effect: listing.effect_json ? JSON.parse(listing.effect_json) : undefined,
+        itemSourceJson: listing.item_source_json,
+      },
+    });
+  });
+});
+
+// POST /api/market/purchase/confirm — 确认购买（扣库存+记录买家）
+app.post('/api/market/purchase/confirm', authenticateToken, (req: any, res: any) => {
+  const { listingId } = req.body;
+  if (!listingId) return res.status(400).json({ error: '缺少 listingId' });
+
+  const numericId = parseInt(listingId.toString().replace('market-', ''));
+
+  db.run(
+    `UPDATE market_listings SET status = 'sold', buyer_id = ?, sold_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'active' AND seller_id != ?`,
+    [req.user.id, numericId, req.user.id],
+    function (err) {
+      if (err) return res.status(500).json({ error: '购买失败' });
+      if (this.changes === 0) return res.status(409).json({ error: '商品已被他人买走' });
+      res.json({ success: true });
+    }
+  );
+});
+
+// POST /api/market/cancel — 下架自己的商品
+app.post('/api/market/cancel', authenticateToken, (req: any, res: any) => {
+  const { listingId } = req.body;
+  if (!listingId) return res.status(400).json({ error: '缺少 listingId' });
+
+  const numericId = parseInt(listingId.toString().replace('market-', ''));
+
+  db.get('SELECT item_source_json FROM market_listings WHERE id = ? AND seller_id = ? AND status = ?',
+    [numericId, req.user.id, 'active'],
+    (err, listing: any) => {
+      if (err || !listing) return res.status(404).json({ error: '商品不存在或无权操作' });
+
+      db.run('UPDATE market_listings SET status = ? WHERE id = ?', ['cancelled', numericId], (err2) => {
+        if (err2) return res.status(500).json({ error: '下架失败' });
+        // 返回原始物品数据用于客户端还原
+        const sourceItem = listing.item_source_json ? JSON.parse(listing.item_source_json) : null;
+        res.json({ success: true, item: sourceItem });
+      });
+    }
+  );
+});
+
 
 // ── LinuxDo OAuth ──
 const LINUXDO_AUTH_URL = 'https://connect.linux.do/oauth2/authorize';

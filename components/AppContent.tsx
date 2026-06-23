@@ -4,7 +4,7 @@
  * 从 App.tsx 中提取了所有游戏内容的渲染逻辑
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PlayerStats, TribulationState, LogEntry } from '../types';
 import { BattleReplay } from '../services/battleService';
 import TribulationModal from './TribulationModal';
@@ -24,6 +24,8 @@ import { createInitialPlayer } from '../utils/playerUtils';
 import { useUIStore, useModals } from '../store/uiStore';
 import { useGameStore } from '../store/gameStore';
 import { isDebugFeatureAvailable } from '../utils/debugMode';
+import AuctionHouseModal from './AuctionHouseModal';
+import { useTradeMarketHandlers } from '../views/auctionHouse/useAuctionHouseHandlers';
 
 interface AppContentProps {
   // 玩家数据
@@ -98,6 +100,7 @@ export function AppContent(props: AppContentProps) {
   const setAutoAdventure = useUIStore((state) => state.setAutoAdventure);
   const setModal = useUIStore((state) => state.setModal);
   const modals = useModals();
+  const marketItems = useUIStore((state) => state.marketItems);
 
   const {
     player,
@@ -142,12 +145,31 @@ export function AppContent(props: AppContentProps) {
   const setIsAutoAdventureConfigOpen = (open: boolean) => setModal('isAutoAdventureConfigOpen', open);
   const setIsDungeonOpen = (open: boolean) => setModal('isDungeonOpen', open);
 
+  // 交易行
+  const tradeMarketHandlers = useTradeMarketHandlers({
+    player: player || undefined,
+    setPlayer: setPlayer as React.Dispatch<React.SetStateAction<PlayerStats>>,
+    addLog: (text, type) => useGameStore.getState().addLog(text, (type || 'normal') as any),
+    setIsTradeMarketOpen: (open) => setModal('isTradeMarketOpen', open),
+  });
+
   // NPC 人物志弹窗
   const [isRelationsOpen, setIsRelationsOpen] = useState(false);
   useEffect(() => {
     const handler = () => setIsRelationsOpen(true);
     window.addEventListener('open-npc-relations', handler);
     return () => window.removeEventListener('open-npc-relations', handler);
+  }, []);
+
+  // 交易行：收到事件后同步市场数据
+  const tradeMarketHandlerRef = useRef(tradeMarketHandlers);
+  tradeMarketHandlerRef.current = tradeMarketHandlers;
+  useEffect(() => {
+    const handler = () => {
+      tradeMarketHandlerRef.current.handleOpenTradeMarket();
+    };
+    window.addEventListener('open-trade-market', handler);
+    return () => window.removeEventListener('open-trade-market', handler);
   }, []);
 
   // 转世重修
@@ -265,6 +287,7 @@ export function AppContent(props: AppContentProps) {
     setIsMobileSidebarOpen: (open: boolean) => setModal('isMobileSidebarOpen', open),
     setIsMobileStatsOpen: (open: boolean) => setModal('isMobileStatsOpen', open),
     setIsLeaderboardOpen: (open: boolean) => setModal('isLeaderboardOpen', open),
+    setIsTradeMarketOpen: (open: boolean) => setModal('isTradeMarketOpen', open),
   };
 
   return (
@@ -371,6 +394,21 @@ export function AppContent(props: AppContentProps) {
           setItemActionLog={setItemActionLog}
           autoAdventure={autoAdventure}
           handlers={modalsHandlers}
+        />
+      )}
+
+      {/* 交易行弹窗 */}
+      {player && (
+        <AuctionHouseModal
+          isOpen={modals.isTradeMarketOpen}
+          onClose={() => setModal('isTradeMarketOpen', false)}
+          player={player}
+          items={marketItems}
+          onPurchase={tradeMarketHandlers.handlePurchase}
+          onRefresh={tradeMarketHandlers.handleRefresh}
+          onSyncMarket={tradeMarketHandlers.handleSyncMarket}
+          onListItem={tradeMarketHandlers.handleListItem}
+          onCancelListing={tradeMarketHandlers.handleCancelListing}
         />
       )}
 

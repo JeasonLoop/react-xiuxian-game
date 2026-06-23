@@ -12,6 +12,7 @@ import {
   Layers,
   Trash2,
   AlertTriangle,
+  Compass,
 } from 'lucide-react';
 import { PlayerStats, Pet, ItemRarity } from '../types';
 import { PET_TEMPLATES, RARITY_MULTIPLIERS, REALM_ORDER } from '../constants/index';
@@ -33,6 +34,7 @@ interface Props {
   onBatchFeedItems?: (petId: string, itemIds: string[]) => void;
   onBatchFeedHp?: (petId: string) => void;
   onEvolvePet: (petId: string) => void;
+  onPetExpedition?: (petId: string) => void;
   onReleasePet?: (petId: string) => void;
   onBatchReleasePets?: (petIds: string[]) => void;
 }
@@ -47,6 +49,7 @@ const PetModal: React.FC<Props> = ({
   onBatchFeedItems,
   onBatchFeedHp,
   onEvolvePet,
+  onPetExpedition,
   onReleasePet,
   onBatchReleasePets,
 }) => {
@@ -329,6 +332,19 @@ const PetModal: React.FC<Props> = ({
                 >
                   喂养
                 </button>
+                {onPetExpedition && (
+                  <button
+                    onClick={() => onPetExpedition(activePet.id)}
+                    className="flex-1 px-4 py-2 bg-teal-900 hover:bg-teal-800 rounded border border-teal-700 text-sm flex items-center justify-center gap-2"
+                    title={`灵兽秘径 - 消耗 ${Math.floor(3000 + Math.max(0, REALM_ORDER.indexOf(player.realm)) * 4500 + activePet.evolutionStage * 9000)} 灵石 + ${Math.max(200, Math.floor(player.maxHp * (0.18 + activePet.evolutionStage * 0.07)))} 气血 + ${Math.max(100, Math.floor(player.maxExp * (0.08 + activePet.evolutionStage * 0.04)))} 修为`}
+                  >
+                    <Compass size={16} />
+                    <span>秘径</span>
+                    <span className="text-yellow-400 text-[10px] ml-1">
+                      💰{Math.floor(3000 + Math.max(0, REALM_ORDER.indexOf(player.realm)) * 4500 + activePet.evolutionStage * 9000)}
+                    </span>
+                  </button>
+                )}
                 {onBatchFeedItems && (
                   <button
                     onClick={() => {
@@ -602,6 +618,17 @@ const PetModal: React.FC<Props> = ({
                       >
                         喂养
                       </button>
+                      {onPetExpedition && (
+                        <button
+                          onClick={() => onPetExpedition(pet.id)}
+                          className="flex-1 px-3 py-1.5 bg-teal-900 hover:bg-teal-800 rounded border border-teal-700 text-xs flex items-center justify-center gap-1"
+                          title={`灵兽秘径 - 消耗 ${Math.floor(3000 + Math.max(0, REALM_ORDER.indexOf(player.realm)) * 4500 + pet.evolutionStage * 9000)} 灵石 + ${Math.max(200, Math.floor(player.maxHp * (0.18 + pet.evolutionStage * 0.07)))} 气血 + ${Math.max(100, Math.floor(player.maxExp * (0.08 + pet.evolutionStage * 0.04)))} 修为`}
+                        >
+                          <Compass size={14} />
+                          秘径
+                          <span className="text-yellow-400">💰{Math.floor(3000 + Math.max(0, REALM_ORDER.indexOf(player.realm)) * 4500 + pet.evolutionStage * 9000)}</span>
+                        </button>
+                      )}
                       {onBatchFeedItems && (
                         <button
                           onClick={() => {

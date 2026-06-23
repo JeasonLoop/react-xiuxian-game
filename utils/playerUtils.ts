@@ -1,5 +1,5 @@
 import { PlayerStats, RealmType, SectRank } from '../types';
-import { REALM_DATA, INITIAL_ITEMS, TALENTS } from '../constants/index';
+import { REALM_DATA, INITIAL_ITEMS, TALENTS, getRealmMaxExp } from '../constants/index';
 import { clampSpiritualRoot } from './numberUtils';
 import { combineTalentEffects } from './talentUtils';
 
@@ -106,7 +106,7 @@ export const createInitialPlayer = (
     realm: RealmType.QiRefining,
     realmLevel: 1,
     exp: 0,
-    maxExp: realmData.maxExpBase,
+    maxExp: getRealmMaxExp(RealmType.QiRefining, 1),
     hp: realmData.baseMaxHp + talentHp,
     maxHp: realmData.baseMaxHp + talentHp,
     attack: realmData.baseAttack + talentAttack,

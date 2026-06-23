@@ -1,10 +1,13 @@
 import React from 'react';
-import { PlayerStats, ItemRarity } from '../../types';
+import { PlayerStats, ItemRarity, Item } from '../../types';
 import {
+  INITIAL_ITEMS,
+  PET_EVOLUTION_MATERIALS_ITEMS,
   PET_TEMPLATES,
   REALM_ORDER,
 } from '../../constants/index';
 import { useGameStore, useUIStore } from '../../store';
+import { uid } from '../../utils/gameUtils';
 
 interface UsePetHandlersProps {
   player?: PlayerStats;
@@ -426,6 +429,138 @@ export function usePetHandlers(
     });
   };
 
+  const handlePetExpedition = (petId: string) => {
+    if (!player) return;
+
+    const pet = player.pets.find((p) => p.id === petId);
+    if (!pet) {
+      addLog('找不到该灵宠，无法进入灵兽秘径。', 'danger');
+      return;
+    }
+
+    const realmIndex = Math.max(0, REALM_ORDER.indexOf(player.realm));
+    const expeditionStoneCost = Math.floor(3000 + realmIndex * 4500 + pet.evolutionStage * 9000);
+    const expeditionHpCost = Math.max(200, Math.floor(player.maxHp * (0.18 + pet.evolutionStage * 0.07)));
+    const expeditionExpCost = Math.max(100, Math.floor(player.maxExp * (0.08 + pet.evolutionStage * 0.04)));
+    if (player.spiritStones < expeditionStoneCost) {
+      addLog(`灵石不足！进入灵兽秘径需要 ${expeditionStoneCost} 灵石（当前持有 ${player.spiritStones}）。`, 'danger');
+      return;
+    }
+    if (player.hp <= expeditionHpCost) {
+      addLog(`气血不足！进入灵兽秘径至少需要消耗 ${expeditionHpCost} 气血，并保留 1 点气血脱身。`, 'danger');
+      return;
+    }
+    if (player.exp < expeditionExpCost) {
+      addLog(`修为不足！进入灵兽秘径需要献祭 ${expeditionExpCost} 修为（当前 ${player.exp}）。`, 'danger');
+      return;
+    }
+
+    const template = PET_TEMPLATES.find((t) => t.species === pet.species);
+    const nextStage = Math.min(2, pet.evolutionStage + 1);
+    const requirements = template?.evolutionRequirements
+      ? nextStage === 1
+        ? template.evolutionRequirements.stage1 || template.evolutionRequirements
+        : template.evolutionRequirements.stage2 || template.evolutionRequirements
+      : undefined;
+
+    const materialPool = [
+      ...INITIAL_ITEMS.filter((item) => item.name === '聚灵草'),
+      ...PET_EVOLUTION_MATERIALS_ITEMS,
+    ];
+
+    const missingMaterialNames = (requirements?.items || [])
+      .filter((req) => {
+        const owned = player.inventory.find((item) => item.name === req.name)?.quantity || 0;
+        return owned < req.quantity;
+      })
+      .map((req) => req.name);
+
+    const targetedPool = materialPool.filter((item) => missingMaterialNames.includes(item.name));
+    const stagePool = materialPool.filter((item) => {
+      if (pet.evolutionStage === 0) return item.rarity === '普通' || item.rarity === '稀有';
+      if (pet.evolutionStage === 1) return item.rarity === '稀有' || item.rarity === '传说';
+      return item.rarity === '传说' || item.rarity === '仙品';
+    });
+    const fallbackPool = stagePool.length > 0 ? stagePool : materialPool;
+    const rewardPool = targetedPool.length > 0 ? targetedPool : fallbackPool;
+
+    // 高额投入对应高回报：保底 1 个，高概率获得 2-3 个
+    const rewardCount = 1 + (Math.random() < 0.55 + pet.evolutionStage * 0.12 ? 1 : 0) + (Math.random() < 0.2 + pet.evolutionStage * 0.08 ? 1 : 0);
+    const rewards: Item[] = [];
+    for (let i = 0; i < rewardCount; i++) {
+      const picked = rewardPool[Math.floor(Math.random() * rewardPool.length)];
+      if (!picked) continue;
+      const quantity = picked.rarity === '普通'
+        ? 3 + Math.floor(Math.random() * 3)  // 普通材料给 3-5 个
+        : picked.rarity === '稀有'
+          ? 2 + Math.floor(Math.random() * 2) // 稀有给 2-3 个
+          : 1 + (Math.random() < 0.35 ? 1 : 0); // 传说/仙品 1-2 个
+      rewards.push({
+        ...picked,
+        id: `pet-expedition-${uid()}`,
+        quantity,
+      });
+    }
+
+    // 高消耗对应高经验和高亲密度回报
+    const petExpGain = Math.floor((360 + realmIndex * 280) * (1 + pet.evolutionStage * 0.6));
+    const affectionGain = 5 + Math.floor(Math.random() * 6);
+
+    setPlayer((prev) => {
+      if (!prev) return prev;
+
+      let newInventory = [...prev.inventory];
+      rewards.forEach((reward) => {
+        const existingIndex = newInventory.findIndex((item) => item.name === reward.name && item.rarity === reward.rarity);
+        if (existingIndex >= 0) {
+          newInventory[existingIndex] = {
+            ...newInventory[existingIndex],
+            quantity: newInventory[existingIndex].quantity + reward.quantity,
+          };
+        } else {
+          newInventory.push(reward);
+        }
+      });
+
+      const newPets = prev.pets.map((p) => {
+        if (p.id !== petId) return p;
+
+        let petNewExp = p.exp + petExpGain;
+        let petNewLevel = p.level;
+        let petNewMaxExp = p.maxExp;
+        let leveledUp = false;
+
+        while (petNewExp >= petNewMaxExp && petNewLevel < 100) {
+          petNewExp -= petNewMaxExp;
+          petNewLevel += 1;
+          petNewMaxExp = Math.floor(petNewMaxExp * 1.2);
+          leveledUp = true;
+        }
+
+        return {
+          ...p,
+          level: petNewLevel,
+          exp: petNewExp,
+          maxExp: petNewMaxExp,
+          affection: Math.min(100, p.affection + affectionGain),
+          stats: leveledUp ? (calculatePetStats(p.species, petNewLevel, p.evolutionStage) || p.stats) : p.stats,
+        };
+      });
+
+      return {
+        ...prev,
+        spiritStones: Math.max(0, prev.spiritStones - expeditionStoneCost),
+        hp: Math.max(1, prev.hp - expeditionHpCost),
+        exp: Math.max(0, prev.exp - expeditionExpCost),
+        inventory: newInventory,
+        pets: newPets,
+      };
+    });
+
+    const rewardText = rewards.map((item) => `${item.name} x${item.quantity}`).join('、');
+    addLog(`【${pet.name}】耗费 ${expeditionStoneCost} 灵石、${expeditionHpCost} 气血、${expeditionExpCost} 修为闯入灵兽秘径，带回 ${rewardText || '大量灵气'}，并获得 ${petExpGain} 点经验、亲密度 +${affectionGain}。`, 'gain');
+  };
+
   const handleBatchFeedItems = (petId: string, itemIds: string[]) => {
     if (!player || itemIds.length === 0) return;
 
@@ -764,6 +899,7 @@ export function usePetHandlers(
     handleBatchFeedItems,
     handleBatchFeedHp,
     handleEvolvePet,
+    handlePetExpedition,
     handleReleasePet,
     handleBatchReleasePets,
   };

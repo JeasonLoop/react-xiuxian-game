@@ -47,6 +47,7 @@ interface UseAppViewHandlersProps {
   handleBatchFeedItems: (petId: string, itemIds: string[]) => void;
   handleBatchFeedHp: (petId: string, amount: number) => void;
   handleEvolvePet: (petId: string) => void;
+  handlePetExpedition: (petId: string) => void;
   handleReleasePet: (petId: string) => void;
   handleBatchReleasePets: (petIds: string[]) => void;
   handleDraw: (count: number) => void;
@@ -299,6 +300,7 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     handleBatchFeedItems,
     handleBatchFeedHp,
     handleEvolvePet,
+    handlePetExpedition,
     handleReleasePet,
     handleBatchReleasePets,
     handleDraw,
@@ -412,6 +414,7 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     handleBatchFeedItems,
     handleBatchFeedHp,
     handleEvolvePet,
+    handlePetExpedition,
     handleReleasePet,
     handleBatchReleasePets,
     handleDraw,
@@ -484,7 +487,7 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     handleEnterRealm, handleSelectTalent, handleSelectTitle, handleAllocateAttribute,
     handleAllocateAllAttributes, handleUseInheritance, setPlayer, addLog,
     handleActivatePet, handleDeactivatePet, handleFeedPet, handleBatchFeedItems,
-    handleBatchFeedHp, handleEvolvePet, handleReleasePet, handleBatchReleasePets,
+    handleBatchFeedHp, handleEvolvePet, handlePetExpedition, handleReleasePet, handleBatchReleasePets,
     handleDraw, handleUpdateSettings, handleRebirth,
     handleClaimQuestReward, handleUpgradeGrotto, handlePlantHerb,
     handleHarvestHerb, handleHarvestAll, handleEnhanceSpiritArray,

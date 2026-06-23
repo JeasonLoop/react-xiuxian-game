@@ -17,6 +17,7 @@ import {
   Pet,
   PetSkill,
   SectRank,
+  DifficultyMode,
 } from '../types';
 import {
   REALM_ORDER,
@@ -34,6 +35,7 @@ import {
   HEAVEN_EARTH_MARROWS,
   LONGEVITY_RULES,
 } from '../constants/index';
+import { getAdventureBalance, getDifficultyBalance } from '../constants/balance';
 import { getPlayerTotalStats } from '../utils/statUtils';
 import { getRandomEnemyName } from './templateService';
 import { logger } from '../utils/logger';
@@ -144,8 +146,13 @@ const getRiskRewardMultiplier = (riskLevel?: '低' | '中' | '高' | '极度危�
 const getBattleDifficulty = (
 
   adventureType: AdventureType,
-  riskLevel?: '低' | '中' | '高' | '极度危险'
+  riskLevel?: '低' | '中' | '高' | '极度危险',
+  difficultyMode: DifficultyMode = 'normal'
 ): number => {
+  const difficultyBalance = getDifficultyBalance(difficultyMode);
+  const adventureBalance = getAdventureBalance(adventureType);
+  const balanceMultiplier = difficultyBalance.enemyPower * adventureBalance.enemyPower;
+
   if (adventureType === 'secret_realm' && riskLevel) {
     // 秘境根据风险等级调整难度（扩大差异使风险等级名称与实际难度匹配）
     const riskMultipliers = {
@@ -154,7 +161,7 @@ const getBattleDifficulty = (
       高: 1.5,       // 提高难度，增加挑战
       极度危险: 2.2, // 大幅提高难度，名副其实的"极度危险"
     };
-    return riskMultipliers[riskLevel];
+    return riskMultipliers[riskLevel] * balanceMultiplier;
   }
   // 非秘境使用固定难度
   const baseDifficulty: Record<AdventureType, number> = {
@@ -164,7 +171,7 @@ const getBattleDifficulty = (
     sect_challenge: 1.5, // 宗主挑战难度稍微下调，从2.0降至1.8
     dao_combining_challenge: 2.0, // 天地之魄挑战难度
   };
-  return baseDifficulty[adventureType];
+  return baseDifficulty[adventureType] * balanceMultiplier;
 };
 
 const baseBattleChance: Record<AdventureType, number> = {
@@ -536,14 +543,16 @@ function handlePetAction(
   const petLevel = Number(activePet.level) || 0;
   const petAffection = Number(activePet.affection) || 0;
   const evolutionStage = Number(activePet.evolutionStage) || 0;
-  const evolutionMultiplier = 1.0 + evolutionStage * 0.5;
-  const affectionBonusFactor = 1 + petAffection / 200;
+  const evolutionMultiplier = 1.0 + evolutionStage * 0.75;
+  const affectionBonusFactor = 1 + petAffection / 140;
+  const ownerAttack = Number(player.attack) || 0;
 
   // 决定灵宠行动：根据亲密度和等级动态调整技能释放概率
-  const baseProbability = 0.3;
-  const affectionBonus = (petAffection / 100) * 0.2;
-  const levelBonus = (petLevel / 100) * 0.1;
-  const skillProbability = Math.min(0.7, baseProbability + affectionBonus + levelBonus);
+  const baseProbability = 0.42;
+  const affectionBonus = (petAffection / 100) * 0.25;
+  const levelBonus = (petLevel / 100) * 0.18;
+  const stageBonus = evolutionStage * 0.08;
+  const skillProbability = Math.min(0.85, baseProbability + affectionBonus + levelBonus + stageBonus);
   const useSkill = Math.random() < skillProbability;
 
   let usedSkill: PetSkill | null = null;
@@ -573,20 +582,22 @@ function handlePetAction(
     if (usedSkill.effect.damage || usedSkill.effect.damageMultiplier) {
       const baseSkillDamage = Number(usedSkill.effect.damage) || 0;
       const damageMultiplier = Number(usedSkill.effect.damageMultiplier) || 0;
-      const attackMultiplier = 1.0 + (petLevel / 50);
+      const attackMultiplier = 1.0 + (petLevel / 40);
       const baseAttack = Number(activePet.stats?.attack) || 0;
+      const ownerAssistDamage = ownerAttack * (0.08 + evolutionStage * 0.04);
 
       let skillDamage = baseSkillDamage;
       if (damageMultiplier > 0) {
-        skillDamage += baseAttack * damageMultiplier * evolutionMultiplier * attackMultiplier;
+        skillDamage += (baseAttack + ownerAssistDamage) * damageMultiplier * evolutionMultiplier * attackMultiplier;
       } else {
-        skillDamage += baseAttack * evolutionMultiplier * attackMultiplier;
+        skillDamage += (baseAttack + ownerAssistDamage) * evolutionMultiplier * attackMultiplier;
       }
 
-      const lBonus = Math.floor(petLevel * 5);
-      const aBonus = Math.floor(petAffection * 0.8);
+      const lBonus = Math.floor(petLevel * 10);
+      const aBonus = Math.floor(petAffection * 2.5);
       const finalSkillDamage = (skillDamage + lBonus + aBonus) * affectionBonusFactor;
-      petDamage = calcDamage(finalSkillDamage, enemy.defense);
+      const minPetDamage = Math.floor((baseAttack + ownerAssistDamage) * (0.35 + evolutionStage * 0.18) + petLevel * 6 + petAffection);
+      petDamage = Math.max(minPetDamage, calcDamage(finalSkillDamage, enemy.defense));
       enemyHp = Math.max(0, enemyHp - petDamage);
     }
 
@@ -658,11 +669,13 @@ function handlePetAction(
   } else {
     // 普通攻击
     const baseAttack = Number(activePet.stats?.attack) || 0;
-    const attackMultiplier = 1.0 + (petLevel / 50);
-    const levelBonus = Math.floor(petLevel * 8);
-    const affectionBonus = Math.floor(petAffection * 1.5);
-    const petAttackDamage = Math.floor(baseAttack * evolutionMultiplier * attackMultiplier) + levelBonus + affectionBonus;
-    petDamage = calcDamage(petAttackDamage, enemy.defense);
+    const attackMultiplier = 1.0 + (petLevel / 45);
+    const ownerAssistDamage = ownerAttack * (0.06 + evolutionStage * 0.03);
+    const levelBonus = Math.floor(petLevel * 12);
+    const affectionBonus = Math.floor(petAffection * 2);
+    const petAttackDamage = Math.floor((baseAttack + ownerAssistDamage) * evolutionMultiplier * attackMultiplier) + levelBonus + affectionBonus;
+    const minPetDamage = Math.floor((baseAttack + ownerAssistDamage) * (0.25 + evolutionStage * 0.15) + petLevel * 5 + petAffection * 0.8);
+    petDamage = Math.max(minPetDamage, calcDamage(petAttackDamage, enemy.defense));
     enemyHp = Math.max(0, enemyHp - petDamage);
 
     return {
@@ -694,7 +707,8 @@ export const createEnemy = async (
   realmMinRealm?: RealmType,
   huntSectId?: string | null,
   huntLevel?: number,
-  bossId?: string // 指定的天地之魄BOSS ID（用于事件模板）
+  bossId?: string, // 指定的天地之魄BOSS ID（用于事件模板）
+  difficultyMode: DifficultyMode = 'normal'
 ): Promise<{
   name: string;
   title: string;
@@ -763,7 +777,7 @@ export const createEnemy = async (
     if (!fallbackRealm) throw new Error('REALM_ORDER is empty');
     return { name: '未知敌人', title: '神秘的', realm: fallbackRealm, attack: 10, defense: 8, maxHp: 50, speed: 10, spirit: 5, strengthMultiplier: 1 };
   }
-  const baseDifficulty = getBattleDifficulty(adventureType, riskLevel);
+  const baseDifficulty = getBattleDifficulty(adventureType, riskLevel, difficultyMode);
   const strengthRoll = Math.random();
 
   // 强度等级系数配置
@@ -948,7 +962,8 @@ const calcDamage = (attack: number, defense: number) => {
 // 战斗触发
 export const shouldTriggerBattle = (
   player: PlayerStats,
-  adventureType: AdventureType
+  adventureType: AdventureType,
+  difficultyMode: DifficultyMode = 'normal'
 ): boolean => {
   // 挑战类型（宗主挑战、天地之魄挑战）总是触发战斗
   if (adventureType === 'sect_challenge' || adventureType === 'dao_combining_challenge') {
@@ -959,7 +974,10 @@ export const shouldTriggerBattle = (
   const realmBonus = REALM_ORDER.indexOf(player.realm) * 0.02; // 境界加成（从0.015提高到0.02）
   const speedBonus = (player.speed || 0) * 0.0005; // 速度加成（从0.0004提高到0.0005）
   const luckMitigation = (player.luck || 0) * 0.00015; // 幸运减成（从0.0002降低到0.00015，减少影响）
-  const chance = Math.min(0.6, base + realmBonus + speedBonus - luckMitigation); // 保持上限适中
+  const balanceMultiplier =
+    getDifficultyBalance(difficultyMode).battleChance *
+    getAdventureBalance(adventureType).battleChance;
+  const chance = Math.min(0.7, (base + realmBonus + speedBonus - luckMitigation) * balanceMultiplier); // 保持上限适中
   return Math.random() < Math.max(0.1, chance); // 确保不会过低也不过高
   // return true; // 调试战斗打开
 };
@@ -972,16 +990,20 @@ function getExpAndStoneRewards(
   adventureType: AdventureType,
   difficulty: number,
   rewardMultiplier: number,
-  enemyStrengthMultiplier: number = 1.0
+  enemyStrengthMultiplier: number = 1.0,
+  difficultyMode: DifficultyMode = 'normal'
 ): { exp: number, stones: number } {
   const realmIndex = REALM_ORDER.indexOf(player.realm);
   // 统一使用较为稳健的倍数，防止数值膨胀
-  const realmBaseMultipliers = [1, 1.5, 2.5, 4, 6, 10, 16];
+  const realmBaseMultipliers = [1, 1.25, 1.75, 2.5, 3.5, 5.0, 7.0];
   const realmBaseMultiplier = realmBaseMultipliers[realmIndex] || 1;
 
   // 综合强度倍数：敌人越强，奖励越多
   const strengthRewardMultiplier = 0.8 + enemyStrengthMultiplier * 0.4;
-  const totalMultiplier = difficulty * rewardMultiplier * strengthRewardMultiplier;
+  const balanceReward =
+    getDifficultyBalance(difficultyMode).reward *
+    getAdventureBalance(adventureType).reward;
+  const totalMultiplier = difficulty * rewardMultiplier * strengthRewardMultiplier * balanceReward;
 
   const levelMultiplier = 1 + (player.realmLevel - 1) * 0.15;
   const baseExp = Math.round(realmBaseMultiplier * (50 + player.realmLevel * 25) * levelMultiplier);
@@ -1002,6 +1024,7 @@ export const resolveBattleEncounter = async (
   huntSectId?: string | null,
   huntLevel?: number,
   bossId?: string, // 指定的天地之魄BOSS ID（用于事件模板）
+  difficultyMode: DifficultyMode = 'normal'
 ): Promise<BattleResolution> => {
   const enemy = await createEnemy(
     player,
@@ -1010,9 +1033,10 @@ export const resolveBattleEncounter = async (
     realmMinRealm,
     huntSectId,
     huntLevel,
-    bossId
+    bossId,
+    difficultyMode
   );
-  const difficulty = getBattleDifficulty(adventureType, riskLevel);
+  const difficulty = getBattleDifficulty(adventureType, riskLevel, difficultyMode);
   // 使用getPlayerTotalStats计算实际最大血量（包含金丹法数、心法等加成）
   const totalStats = getPlayerTotalStats(player);
   const actualMaxHp = totalStats.maxHp;
@@ -1126,7 +1150,8 @@ export const resolveBattleEncounter = async (
     adventureType,
     difficulty,
     rewardMultiplier,
-    enemy.strengthMultiplier
+    enemy.strengthMultiplier,
+    difficultyMode
   );
 
   const expChange = victory
@@ -1236,7 +1261,8 @@ export const calculateBattleRewards = (
   battleState: BattleState,
   player: PlayerStats,
   adventureType?: AdventureType,
-  riskLevel?: '低' | '中' | '高' | '极度危险'
+  riskLevel?: '低' | '中' | '高' | '极度危险',
+  difficultyMode: DifficultyMode = 'normal'
 ): {
   expChange: number;
   spiritChange: number;
@@ -1245,7 +1271,7 @@ export const calculateBattleRewards = (
   const victory = battleState.enemy.hp <= 0;
   const actualAdventureType = adventureType || battleState.adventureType;
   const actualRiskLevel = riskLevel || battleState.riskLevel;
-  const difficulty = getBattleDifficulty(actualAdventureType, actualRiskLevel);
+  const difficulty = getBattleDifficulty(actualAdventureType, actualRiskLevel, difficultyMode);
 
   // 根据敌人强度计算奖励倍数（敌人越强，奖励越多）
   const enemyStrength = battleState.enemyStrengthMultiplier || 1.0;
@@ -1260,7 +1286,8 @@ export const calculateBattleRewards = (
     actualAdventureType,
     difficulty,
     riskRewardMultiplier,
-    enemyStrength
+    enemyStrength,
+    difficultyMode
   );
 
   // 宗门挑战特殊奖励（只有战胜宗主才给特殊奖励）
@@ -1370,12 +1397,13 @@ export const initializeTurnBasedBattle = async (
   riskLevel?: '低' | '中' | '高' | '极度危险',
   realmMinRealm?: RealmType,
   sectMasterId?: string | null,
-  bossId?: string // 指定的天地之魄BOSS ID（用于事件模板）
+  bossId?: string, // 指定的天地之魄BOSS ID（用于事件模板）
+  difficultyMode: DifficultyMode = 'normal'
 ): Promise<BattleState> => {
   // 创建敌人（如果是追杀战斗，从 player 对象中获取追杀参数）
   const huntSectId = adventureType === 'sect_challenge' && player.sectId === null ? player.sectHuntSectId : undefined;
   const huntLevel = adventureType === 'sect_challenge' && player.sectId === null ? player.sectHuntLevel : undefined;
-  const enemyData = await createEnemy(player, adventureType, riskLevel, realmMinRealm, huntSectId, huntLevel, bossId);
+  const enemyData = await createEnemy(player, adventureType, riskLevel, realmMinRealm, huntSectId, huntLevel, bossId, difficultyMode);
 
   // 创建玩家战斗单位
   const playerUnit = createBattleUnitFromPlayer(player);

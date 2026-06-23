@@ -3,8 +3,8 @@
  * 计算玩家离线期间的修行收益，在上线时结算展示
  */
 
-import { PlayerStats, RealmType } from '../types';
-import { REALM_ORDER, REALM_DATA } from '../constants/realms';
+import { PlayerStats } from '../types';
+import { REALM_ORDER } from '../constants/realms';
 
 export interface OfflineEarnings {
   elapsedSeconds: number;
@@ -48,8 +48,7 @@ export function calculateOfflineEarnings(
 
   // 修行经验收益：基础打坐收益 × 离线系数(0.2) × 小时数
   const realmIdx = REALM_ORDER.indexOf(player.realm);
-  const realmData = REALM_DATA[player.realm];
-  const baseMeditationExp = realmData.maxExpBase * 0.02; // 每次打坐大约获得 2% 的 maxExp
+  const baseMeditationExp = (player.maxExp || 100) * 0.004; // 离线修炼约为当前进阶需求的 4.8% / 小时
   const meditationExp = Math.floor(baseMeditationExp * 0.2 * cappedHours * 60); // 0.2倍效率，按分钟计
 
   // 灵石收入：基于境界的固定时薪

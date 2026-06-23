@@ -3,12 +3,13 @@
  */
 
 import { Item, ItemType, Recipe, ItemRarity, EquipmentSlot } from '../types';
+import { getEquipmentUpgradeGrowth } from './balance';
 
 export const RARITY_MULTIPLIERS: Record<ItemRarity, number> = {
   普通: 1,
-  稀有: 1.5,
-  传说: 2.5,
-  仙品: 6.0,
+  稀有: 1.35,
+  传说: 2.0,
+  仙品: 3.2,
 };
 
 // 初始化物品
@@ -730,17 +731,7 @@ export const BASE_UPGRADE_COST_MATS = 2;
 export const UPGRADE_STONE_SUCCESS_BONUS = 0.1; // 每颗强化石提高10%成功率
 
 // Returns percentage increase (0.1 = 10%)
-export const getUpgradeMultiplier = (rarity: ItemRarity = '普通') => {
-  switch (rarity) {
-    case '普通':
-      return 0.1;
-    case '稀有':
-      return 0.15;
-    case '传说':
-      return 0.2;
-    case '仙品':
-      return 0.25;
-    default:
-      return 0.1;
-  }
-};
+export const getUpgradeMultiplier = (
+  rarity: ItemRarity = '普通',
+  currentLevel = 0
+) => getEquipmentUpgradeGrowth(rarity, currentLevel);

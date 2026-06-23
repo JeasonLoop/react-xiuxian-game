@@ -136,6 +136,7 @@ interface ModalsContainerProps {
     handleBatchFeedItems?: (petId: string, itemIds: string[]) => void;
     handleBatchFeedHp?: (petId: string) => void;
     handleEvolvePet: (petId: string) => void;
+    handlePetExpedition?: (petId: string) => void;
     handleReleasePet?: (petId: string) => void;
     handleBatchReleasePets?: (petIds: string[]) => void;
     // Lottery
@@ -252,6 +253,7 @@ function ModalsContainer({
           riskLevel={modalState.turnBasedBattleParams.riskLevel}
           realmMinRealm={modalState.turnBasedBattleParams.realmMinRealm}
           bossId={modalState.turnBasedBattleParams.bossId}
+          difficulty={modalState.turnBasedBattleParams.difficulty}
           autoAdventure={autoAdventure}
           onClose={(result, updatedInventory) => {
             if (handlers.setIsTurnBasedBattleOpen) {
@@ -388,6 +390,7 @@ function ModalsContainer({
           onBatchFeedItems={handlers.handleBatchFeedItems}
           onBatchFeedHp={handlers.handleBatchFeedHp}
           onEvolvePet={handlers.handleEvolvePet}
+          onPetExpedition={handlers.handlePetExpedition}
           onReleasePet={handlers.handleReleasePet}
           onBatchReleasePets={handlers.handleBatchReleasePets}
         />

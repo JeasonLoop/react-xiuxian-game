@@ -968,6 +968,31 @@ export interface Shop {
   reputationRequired?: number; // 所需声望值（声望商店用）
 }
 
+// ==================== 交易行系统类型定义 ====================
+
+export interface MarketItem {
+  id: string;
+  name: string;
+  type: ItemType;
+  description: string;
+  rarity: ItemRarity;
+  /** 售价（一口价） */
+  price: number;
+  /** 物品效果 */
+  effect?: Record<string, number>;
+  isEquippable?: boolean;
+  equipmentSlot?: EquipmentSlot;
+  quantity: number;
+  /** 由哪位NPC/玩家上架 */
+  sellerName?: string;
+  /** 卖家ID：'system'=系统/NPC，'player'=玩家自己 */
+  sellerId?: 'system' | 'player';
+  /** 来源物品ID（玩家上架时记录原物品ID，用于下架找回） */
+  sourceItemId?: string;
+  /** 完整原始物品JSON（用于下架时精准还原，避免字段丢失） */
+  sellerItemData?: string;
+}
+
 // ==================== 回合制战斗系统类型定义 ====================
 
 // 状态效果

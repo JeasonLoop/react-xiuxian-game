@@ -50,3 +50,5 @@ dist-ssr
 
 # Cloudflare
 .wrangler/
+
+*.sqlite

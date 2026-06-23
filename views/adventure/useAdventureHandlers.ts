@@ -1,6 +1,7 @@
 import React from 'react';
-import { PlayerStats, AdventureType, ShopType, RealmType, AdventureResult } from '../../types';
+import { PlayerStats, AdventureType, ShopType, RealmType, AdventureResult, DifficultyMode } from '../../types';
 import { REALM_ORDER, HEAVEN_EARTH_SOUL_BOSSES } from '../../constants/index';
+import { getDifficultyBalance } from '../../constants/balance';
 import {
   shouldTriggerBattle,
   resolveBattleEncounter,
@@ -49,6 +50,7 @@ interface UseAdventureHandlersProps {
     riskLevel?: '低' | '中' | '高' | '极度危险';
     realmMinRealm?: RealmType;
     bossId?: string; // 指定的天地之魄BOSS ID（用于事件模板）
+    difficulty?: DifficultyMode;
     onBattleInitialized?: (enemyName: string) => void; // 战斗初始化完成后的回调
   }) => void; // 打开回合制战斗
   skipBattle?: boolean; // 是否跳过战斗（自动模式下）
@@ -58,6 +60,7 @@ interface UseAdventureHandlersProps {
   useTurnBasedBattle?: boolean; // 是否使用回合制战斗系统
   onReputationEvent?: (event: AdventureResult['reputationEvent']) => void; // 声望事件回调
   autoAdventure?: boolean; // 是否正在自动历练
+  difficulty?: DifficultyMode;
   setAutoAdventurePausedByHeavenEarthSoul?: (paused: boolean) => void; // 设置天地之魄暂停状态
   setAutoAdventure?: (value: boolean) => void; // 设置自动历练状态
 }
@@ -81,6 +84,7 @@ export function useAdventureHandlers({
   useTurnBasedBattle = true, // 默认使用新的回合制战斗系统
   onReputationEvent,
   autoAdventure = false,
+  difficulty = 'normal',
   setAutoAdventurePausedByHeavenEarthSoul,
   setAutoAdventure,
 }: UseAdventureHandlersProps) {
@@ -89,6 +93,23 @@ export function useAdventureHandlers({
   const effectiveFleeOnBattle = autoAdventure && fleeOnBattle;
   const effectiveSkipShop = autoAdventure && skipShop;
   const effectiveSkipReputationEvent = autoAdventure && skipReputationEvent;
+  const skippedBattleRewardMultiplier = getDifficultyBalance(difficulty).skippedBattleReward;
+
+  const applySkippedBattleRewardPenalty = React.useCallback((result: AdventureResult): AdventureResult => {
+    if (!effectiveSkipBattle || skippedBattleRewardMultiplier >= 1) {
+      return result;
+    }
+
+    return {
+      ...result,
+      expChange: result.expChange && result.expChange > 0
+        ? Math.max(1, Math.floor(result.expChange * skippedBattleRewardMultiplier))
+        : result.expChange,
+      spiritStonesChange: result.spiritStonesChange && result.spiritStonesChange > 0
+        ? Math.max(1, Math.floor(result.spiritStonesChange * skippedBattleRewardMultiplier))
+        : result.spiritStonesChange,
+    };
+  }, [effectiveSkipBattle, skippedBattleRewardMultiplier]);
 
   /**
    * 暂停自动历练回调（用于天地之魄等特殊事件）
@@ -137,9 +158,10 @@ export function useAdventureHandlers({
         undefined,
         huntSectId,
         huntLevel,
-        bossId
+        bossId,
+        difficulty
       );
-      const battleResult = battleResolution.adventureResult;
+      const battleResult = applySkippedBattleRewardPenalty(battleResolution.adventureResult);
       const battleCtx = battleResolution.replay;
       const petSkillCooldowns = battleResolution.petSkillCooldowns;
       // 自动历练时跳过战斗，不打开战斗弹窗，直接返回结果
@@ -153,6 +175,7 @@ export function useAdventureHandlers({
         riskLevel,
         realmMinRealm,
         bossId,
+        difficulty,
         onBattleInitialized: (enemyName: string) => {
           // 战斗初始化完成后输出遭遇敌人的提示
           addLog(`⚠️ 你遭遇了【${enemyName}】！战斗即将开始...`, 'danger');
@@ -173,7 +196,8 @@ export function useAdventureHandlers({
         undefined,
         huntSectId,
         huntLevel,
-        bossId
+        bossId,
+        difficulty
       );
       return {
         result: battleResolution.adventureResult,
@@ -242,7 +266,7 @@ export function useAdventureHandlers({
         result = battleRes.result;
         battleContext = battleRes.battleContext;
         petSkillCooldowns = battleRes.petSkillCooldowns;
-      } else if (shouldTriggerBattle(player, adventureType)) {
+      } else if (shouldTriggerBattle(player, adventureType, difficulty)) {
         // 如果配置了逃跑，直接跳过战斗
         if (effectiveFleeOnBattle) {
           addLog('你选择避开战斗，继续历练...', 'normal');
@@ -364,6 +388,7 @@ export function useAdventureHandlers({
                         riskLevel,
                         realmMinRealm: player.realm,
                         bossId,
+                        difficulty,
                       });
                     }, 300);
                     setLoading(false);
