@@ -65,11 +65,11 @@ function ActionBar({
       <div className="relative">
         <button
           onClick={onMeditate}
-          disabled={loading || cooldown > 0}
+          disabled={loading || cooldown > 0 || autoAdventure}
           className={`
             flex flex-col items-center justify-center p-4 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[90px] md:min-h-[100px] w-full
             ${
-              loading || cooldown > 0
+              loading || cooldown > 0 || autoAdventure
                 ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed'
                 : 'bg-ink-800 border-stone-600 active:border-mystic-jade active:bg-ink-700 text-stone-200'
             }
@@ -109,11 +109,11 @@ function ActionBar({
       <div className="relative">
         <button
           onClick={onAdventure}
-          disabled={loading || cooldown > 0}
+          disabled={loading || cooldown > 0 || autoMeditate}
           className={`
             flex flex-col items-center justify-center p-4 md:p-4 rounded-lg border-2 transition-all duration-200 group touch-manipulation min-h-[90px] md:min-h-[100px] w-full
             ${
-              loading || cooldown > 0
+              loading || cooldown > 0 || autoMeditate
                 ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed'
                 : 'bg-ink-800 border-stone-600 active:border-mystic-gold active:bg-ink-700 text-stone-200'
             }

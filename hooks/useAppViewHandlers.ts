@@ -188,6 +188,7 @@ export function useGameViewHandlers(props: UseAppViewHandlersProps) {
     pausedByBattle,
     onToggleAutoMeditate: () => {
       setAutoMeditate(!autoMeditate);
+      if (!autoMeditate && autoAdventure) setAutoAdventure(false);
     },
     onToggleAutoAdventure: () => {
       // 如果因战斗暂停，点击应该关闭自动历练并清除暂停状态
@@ -200,7 +201,8 @@ export function useGameViewHandlers(props: UseAppViewHandlersProps) {
         // 如果正在自动历练，直接关闭
         setAutoAdventure(false);
       } else {
-        // 如果未开启，打开配置弹窗
+        // 如果未开启，关闭打坐后打开配置弹窗
+        if (autoMeditate) setAutoMeditate(false);
         setIsAutoAdventureConfigOpen(true);
       }
     },

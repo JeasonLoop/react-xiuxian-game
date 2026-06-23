@@ -29,6 +29,8 @@ import { cloudSaveService } from '../services/cloudSaveService';
 import { useGameStore } from '../store/gameStore';
 import { useUIStore } from '../store/uiStore';
 import ChangelogModal from './ChangelogModal';
+
+/** 版本更新提示组件 */
 import ShortcutsModal from './ShortcutsModal';
 import { KeyboardShortcut } from '../hooks/useKeyboardShortcuts';
 import { KeyboardShortcutConfig } from '../types';

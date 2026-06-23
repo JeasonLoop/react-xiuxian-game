@@ -101,7 +101,10 @@ export function useAppKeyboardShortcuts(props: UseAppKeyboardShortcutsProps): Ke
       configToShortcut(
         toggleAutoMeditateConfig,
         () => {
-          setAutoMeditate((prev) => !prev);
+          setAutoMeditate((prev) => {
+            if (!prev && autoAdventure) setAutoAdventure(false);
+            return !prev;
+          });
         },
         '切换自动打坐',
         '基础操作'
@@ -138,7 +141,8 @@ export function useAppKeyboardShortcuts(props: UseAppKeyboardShortcutsProps): Ke
         // 如果正在自动历练，直接关闭
         setAutoAdventure(false);
       } else {
-        // 如果未开启，打开配置弹窗
+        // 如果未开启，关闭打坐后打开配置弹窗
+        if (store.autoMeditate) setAutoMeditate(false);
         setIsAutoAdventureConfigOpen(true);
       }
     };

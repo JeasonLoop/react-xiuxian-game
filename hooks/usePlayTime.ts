@@ -17,90 +17,57 @@ export function usePlayTime({
   saveGame,
   logs,
 }: UsePlayTimeProps) {
-  const playTimeIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const lastPlayTimeSaveRef = useRef<number>(0);
-  const playerRef = useRef(player);
-  const logsRef = useRef(logs);
-  
-  // 记录当前 session 开始的时间戳
-  const sessionStartTimeRef = useRef<number>(0);
-  // 记录当前 session 的累计时长（用于处理 effect 重启）
-  const sessionAccumulatedTimeRef = useRef<number>(0);
-
-  // 保持 refs 与状态同步
-  useEffect(() => {
-    playerRef.current = player;
-  }, [player]);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  /** session 开始时的时钟时间 */
+  const sessionStartRef = useRef<number>(0);
+  /** session 开始时的存档 playTime 基准值（只取一次，不随 setPlayer 更新） */
+  const basePlayTimeRef = useRef<number>(0);
+  const inSessionRef = useRef(false);
 
   useEffect(() => {
-    logsRef.current = logs;
-  }, [logs]);
-
-  useEffect(() => {
-    // 游戏未开始或没有玩家数据时，停止计时
     if (!gameStarted || !player) {
-      if (playTimeIntervalRef.current) {
-        clearInterval(playTimeIntervalRef.current);
-        playTimeIntervalRef.current = null;
-        sessionStartTimeRef.current = 0;
-        sessionAccumulatedTimeRef.current = 0;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
       }
+      inSessionRef.current = false;
       return;
     }
 
-    // 初始化 playTime（如果未定义）
-    const basePlayTime = player.playTime ?? 0;
-    
-    // 记录当前 session 开始时间
-    sessionStartTimeRef.current = Date.now();
-    sessionAccumulatedTimeRef.current = 0;
-    lastPlayTimeSaveRef.current = Date.now();
+    // 新 session：记录基准值
+    if (!inSessionRef.current) {
+      inSessionRef.current = true;
+      basePlayTimeRef.current = player.playTime || 0;
+      sessionStartRef.current = Date.now();
+    }
 
-    playTimeIntervalRef.current = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       setPlayer((prev) => {
         if (!prev) return null;
-
-        const now = Date.now();
-        // 计算当前 session 的经过时间
-        const sessionElapsed = now - sessionStartTimeRef.current;
-        // 新的游戏时长 = 基础时长 + session 累计时长 + 当前 session 经过时间
-        const newPlayTime = basePlayTime + sessionAccumulatedTimeRef.current + sessionElapsed;
-
-        // 每 10 秒保存一次
-        if (now - lastPlayTimeSaveRef.current >= 10000) {
-          lastPlayTimeSaveRef.current = now;
-          sessionAccumulatedTimeRef.current += sessionElapsed;
-          sessionStartTimeRef.current = now;
-
-          const currentPlayer = playerRef.current;
-          const currentLogs = logsRef.current;
-          if (currentPlayer) {
-            saveGame({ ...currentPlayer, playTime: newPlayTime }, currentLogs);
-          }
-        }
-
+        // playTime = 存档基准值 + 从 session 开始经过的毫秒数
+        const newPlayTime = basePlayTimeRef.current + (Date.now() - sessionStartRef.current);
         return { ...prev, playTime: newPlayTime };
       });
     }, 1000);
 
     return () => {
-      if (playTimeIntervalRef.current) {
-        clearInterval(playTimeIntervalRef.current);
-        playTimeIntervalRef.current = null;
-        
-        // 清理时保存最后的游戏时长
-        if (playerRef.current && gameStarted) {
-          const now = Date.now();
-          const sessionElapsed = now - sessionStartTimeRef.current;
-          const finalPlayTime = basePlayTime + sessionAccumulatedTimeRef.current + sessionElapsed;
-          saveGame({ ...playerRef.current, playTime: finalPlayTime }, logsRef.current);
-        }
-        
-        sessionStartTimeRef.current = 0;
-        sessionAccumulatedTimeRef.current = 0;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      if (player && inSessionRef.current) {
+        inSessionRef.current = false;
+        const finalPlayTime = basePlayTimeRef.current + (Date.now() - sessionStartRef.current);
+        try {
+          const saveData = {
+            player: { ...player, playTime: finalPlayTime },
+            logs,
+            timestamp: Date.now(),
+            lastActiveTime: Date.now(),
+          };
+          localStorage.setItem('xiuxian-save', JSON.stringify(saveData));
+        } catch {}
       }
     };
-    // 只依赖 gameStarted，避免频繁重启计时器
-  }, [gameStarted, saveGame]);
+  }, [gameStarted]);
 }
-

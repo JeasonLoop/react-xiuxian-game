@@ -45,10 +45,15 @@ export default function TradeMarketModal({
   const onBuySearchChange = (v: string) => { setBuySearch(v); setPage(1); };
   const onCategoryChange = (v: ItemCategory) => { setCategoryFilter(v); setPage(1); };
 
-  // 切换到购买tab时自动同步市场数据
+  // 切换到购买tab时自动同步市场数据（跳过初始挂载，避免和 handleOpenTradeMarket 重复）
   const syncRef = useRef(onSyncMarket);
   syncRef.current = onSyncMarket;
+  const isFirstRender = useRef(true);
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
     if (activeTab === 'buy') {
       syncRef.current();
     }

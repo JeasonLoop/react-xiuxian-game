@@ -192,8 +192,10 @@ export const artifactService = {
       const val1 = effect1[key] || 0;
       const val2 = effect2[key] || 0;
 
-      // 统一计算：两个装备数值之和 * 0.8
-      mergedEffect[key] = Math.floor((val1 + val2) * 0.8);
+      // 融合公式：保留较高值，较低值按比例附加，确保融合后只增不降
+      const higher = Math.max(val1, val2);
+      const lower = Math.min(val1, val2);
+      mergedEffect[key] = Math.floor(higher + lower * 0.5);
     });
 
     // 筛选属性：根据品级限制属性项数量 (仙品5项，其他4项)

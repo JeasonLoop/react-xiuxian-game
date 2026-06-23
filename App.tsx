@@ -30,6 +30,7 @@ import { AUTO_ADVENTURE_CONSTANTS } from './constants/appConstants';
 import { useItemActionLog } from './hooks/useItemActionLog';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { usePlayTime } from './hooks/usePlayTime';
+import { useVersionCheck } from './hooks/useVersionCheck';
 import { useGameInitialization } from './hooks/useGameInitialization';
 import { useLevelUp } from './hooks/useLevelUp';
 import { useGlobalAlert } from './hooks/useGlobalAlert';
@@ -176,6 +177,7 @@ function App() {
   });
 
   useAutoCloudSave();
+  useVersionCheck();
 
   const { alertState, closeAlert } = useGlobalAlert();
 
