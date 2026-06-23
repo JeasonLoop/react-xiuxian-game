@@ -181,18 +181,23 @@ export function useTradeMarketHandlers(
   };
 
   /** 玩家上架自己的物品 */
-  const handleListItem = async (itemId: string, price: number) => {
+  const handleListItem = async (itemId: string, price: number, quantity: number = 1) => {
     if (!player || price <= 0) return;
 
     const inventory = player.inventory;
     const sourceItem = inventory.find((i) => i.id === itemId);
     if (!sourceItem) { addLog('背包中找不到该物品。', 'danger'); return; }
     if (sourceItem.locked) { addLog(`🔒 【${sourceItem.name}】已锁定，无法上架。`, 'danger'); return; }
+    const listingQuantity = Math.floor(Number(quantity) || 0);
+    if (listingQuantity < 1 || listingQuantity > (sourceItem.quantity || 1)) {
+      addLog(`上架数量需在 1-${sourceItem.quantity || 1} 之间。`, 'danger');
+      return;
+    }
 
     const isEquipped = Object.values(player.equippedItems).includes(sourceItem.id);
     if (isEquipped) { addLog('已装备的物品无法上架！', 'danger'); return; }
 
-    const listing = createPlayerListing(sourceItem, price);
+    const listing = createPlayerListing(sourceItem, price, listingQuantity);
 
     // API 模式：调用上架接口
     if (isAuthenticated()) {
@@ -202,11 +207,11 @@ export function useTradeMarketHandlers(
         description: sourceItem.description || '',
         rarity: sourceItem.rarity || '普通',
         price,
-        quantity: sourceItem.quantity || 1,
+        quantity: listingQuantity,
         effect: sourceItem.effect as Record<string, number> | undefined,
         isEquippable: sourceItem.isEquippable,
         equipmentSlot: sourceItem.equipmentSlot as string | undefined,
-        itemSourceJson: JSON.stringify(sourceItem),
+        itemSourceJson: JSON.stringify({ ...sourceItem, quantity: listingQuantity }),
       };
       const res = await marketApi.listItem(data);
       if (!res.success) {
@@ -223,14 +228,14 @@ export function useTradeMarketHandlers(
       return {
         ...prev,
         inventory: prev.inventory
-          .map((i) => (i.id === itemId ? { ...i, quantity: i.quantity - listing.quantity } : i))
+          .map((i) => (i.id === itemId ? { ...i, quantity: (i.quantity || 1) - listingQuantity } : i))
           .filter((i) => i.quantity > 0),
       };
     });
 
     // 添加到交易行
     setItems([...getItems(), listing]);
-    addLog(`你成功将【${sourceItem.name}】上架，售价 ${price} 灵石。`, 'gain');
+    addLog(`你成功将【${sourceItem.name}】x${listingQuantity} 上架，售价 ${price} 灵石。`, 'gain');
   };
 
   /** 玩家下架自己的物品 */

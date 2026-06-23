@@ -17,7 +17,7 @@ interface Props {
   onPurchase: (itemId: string) => void;
   onRefresh: () => void;
   onSyncMarket: () => void;
-  onListItem: (itemId: string, price: number) => void;
+  onListItem: (itemId: string, price: number, quantity: number) => void;
   onCancelListing: (marketItemId: string) => void;
 }
 
@@ -35,6 +35,7 @@ export default function TradeMarketModal({
   const [activeTab, setActiveTab] = useState<TabType>('buy');
   const [categoryFilter, setCategoryFilter] = useState<ItemCategory>('all');
   const [listingPrice, setListingPrice] = useState<Record<string, string>>({});
+  const [listingQuantity, setListingQuantity] = useState<Record<string, string>>({});
   const [buySearch, setBuySearch] = useState('');
   const [sellSearch, setSellSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -77,12 +78,10 @@ export default function TradeMarketModal({
 
   // 上架 tab：分类 + 搜索（背包物品）
   const listableInventory = useMemo(() => {
-    const listedItemIds = new Set(playerListings.map((l) => l.sourceItemId));
     let result = player.inventory.filter((item) => {
       if (item.locked) return false;
       const isEquipped = Object.values(player.equippedItems).includes(item.id);
       if (isEquipped) return false;
-      if (listedItemIds.has(item.id)) return false;
       return true;
     });
     // 分类
@@ -95,7 +94,7 @@ export default function TradeMarketModal({
       result = result.filter((i) => i.name.toLowerCase().includes(q));
     }
     return result;
-  }, [player.inventory, player.equippedItems, playerListings, categoryFilter, sellSearch]);
+  }, [player.inventory, player.equippedItems, categoryFilter, sellSearch]);
 
   return (
     <Modal
@@ -405,7 +404,11 @@ export default function TradeMarketModal({
                 {listableInventory.map((item) => {
                   const priceKey = item.id;
                   const priceVal = listingPrice[priceKey] || '';
+                  const quantityVal = listingQuantity[priceKey] || '1';
                   const priceNum = parseInt(priceVal) || 0;
+                  const maxQuantity = Math.max(1, item.quantity || 1);
+                  const quantityNum = Math.max(1, Math.min(parseInt(quantityVal) || 1, maxQuantity));
+                  const unitPrice = quantityNum > 0 ? Math.floor(priceNum / quantityNum) : 0;
 
                   return (
                     <div key={item.id} className="bg-stone-900 rounded-lg p-3 border border-stone-700">
@@ -421,33 +424,54 @@ export default function TradeMarketModal({
                         </span>
                       </div>
                       <div className="text-xs text-stone-500 mb-2">{item.type}</div>
-                      <div className="flex items-center gap-2">
+                      <div className="grid grid-cols-[minmax(0,1fr)_92px_auto] gap-2 items-center">
                         <div className="flex items-center flex-1 bg-stone-800 rounded border border-stone-600 px-2 py-1">
                           <Coins size={14} className="text-mystic-gold shrink-0" />
                           <input
                             type="number"
                             min="1"
-                            placeholder="售价"
+                            placeholder="总价"
                             value={priceVal}
                             onChange={(e) => setListingPrice((prev) => ({ ...prev, [priceKey]: e.target.value }))}
                             className="w-full bg-transparent text-stone-200 text-sm text-right focus:outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                         </div>
+                        <input
+                          type="number"
+                          min="1"
+                          max={maxQuantity}
+                          value={quantityVal}
+                          onChange={(e) => {
+                            const raw = parseInt(e.target.value) || 1;
+                            const next = Math.max(1, Math.min(raw, maxQuantity));
+                            setListingQuantity((prev) => ({ ...prev, [priceKey]: String(next) }));
+                          }}
+                          onBlur={() => {
+                            setListingQuantity((prev) => ({ ...prev, [priceKey]: String(quantityNum) }));
+                          }}
+                          className="w-full bg-stone-800 border border-stone-600 rounded px-2 py-1 text-stone-200 text-sm text-center focus:outline-none focus:border-mystic-gold/60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          title={`上架数量，最多 ${maxQuantity}`}
+                        />
                         <button
                           onClick={() => {
-                            if (priceNum <= 0) return;
-                            onListItem(item.id, priceNum);
+                            if (priceNum <= 0 || quantityNum <= 0) return;
+                            onListItem(item.id, priceNum, quantityNum);
                             setListingPrice((prev) => ({ ...prev, [priceKey]: '' }));
+                            setListingQuantity((prev) => ({ ...prev, [priceKey]: '1' }));
                           }}
-                          disabled={priceNum <= 0}
+                          disabled={priceNum <= 0 || quantityNum <= 0}
                           className={`px-3 py-1.5 rounded text-xs font-bold transition-colors shrink-0 ${
-                            priceNum > 0
+                            priceNum > 0 && quantityNum > 0
                               ? 'bg-green-900/50 text-green-400 border border-green-700 hover:bg-green-900/70'
                               : 'bg-stone-800 text-stone-600 border border-stone-700 cursor-not-allowed'
                           }`}
                         >
                           上架
                         </button>
+                      </div>
+                      <div className="mt-1 text-[11px] text-stone-600 text-right">
+                        上架 x{quantityNum} / {maxQuantity}
+                        {priceNum > 0 && quantityNum > 1 ? `，约 ${formatNumber(unitPrice)} 灵石/个` : ''}
                       </div>
                     </div>
                   );

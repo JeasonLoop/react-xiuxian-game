@@ -686,6 +686,7 @@ app.post('/api/market/list', authenticateToken, (req: any, res: any) => {
   if (!itemName || !price || price <= 0) {
     return res.status(400).json({ error: '物品名称和有效价格是必填项' });
   }
+  const listingQuantity = Math.max(1, Math.floor(Number(quantity) || 1));
 
   db.run(
     `INSERT INTO market_listings (seller_id, seller_name, item_name, item_type, item_description, item_rarity, price, quantity, is_equippable, equipment_slot, effect_json, item_source_json)
@@ -698,7 +699,7 @@ app.post('/api/market/list', authenticateToken, (req: any, res: any) => {
       description || '',
       rarity || '普通',
       price,
-      quantity || 1,
+      listingQuantity,
       isEquippable ? 1 : 0,
       equipmentSlot || null,
       effect ? JSON.stringify(effect) : null,

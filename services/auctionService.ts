@@ -52,8 +52,15 @@ function templateToMarketItem(
 /** 玩家上架自己的物品 → 创建 MarketItem */
 export function createPlayerListing(
   item: Item,
-  price: number
+  price: number,
+  quantity: number = item.quantity || 1
 ): MarketItem {
+  const listingQuantity = Math.max(1, Math.min(Math.floor(quantity), item.quantity || 1));
+  const listingItemData = {
+    ...item,
+    quantity: listingQuantity,
+  };
+
   return {
     id: `market-${uid()}`,
     name: item.name,
@@ -64,11 +71,11 @@ export function createPlayerListing(
     effect: item.effect,
     isEquippable: item.isEquippable,
     equipmentSlot: item.equipmentSlot,
-    quantity: item.quantity || 1,
+    quantity: listingQuantity,
     sellerName: '我',
     sellerId: 'player',
     sourceItemId: item.id,
-    sellerItemData: JSON.stringify(item), // 存完整数据用于精准还原
+    sellerItemData: JSON.stringify(listingItemData), // 存完整数据用于精准还原
   };
 }
 
@@ -77,7 +84,11 @@ export function restoreFromListing(marketItem: MarketItem): Item {
   // 优先使用完整数据还原
   if (marketItem.sellerItemData) {
     try {
-      return JSON.parse(marketItem.sellerItemData);
+      const restored = JSON.parse(marketItem.sellerItemData);
+      return {
+        ...restored,
+        quantity: marketItem.quantity || restored.quantity || 1,
+      };
     } catch {}
   }
 

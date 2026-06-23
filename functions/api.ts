@@ -493,12 +493,13 @@ export default {
       const body = await request.json() as any;
       const { itemName, itemType, description, rarity, price, quantity, effect, isEquippable, equipmentSlot, itemSourceJson } = body;
       if (!itemName || !price || price <= 0) return json({ error: '参数错误' }, 400);
+      const listingQuantity = Math.max(1, Math.floor(Number(quantity) || 1));
 
       const id = marketNextId++;
       const listing: MarketListing = {
         id, seller_id: p.id, seller_name: p.username,
         item_name: itemName, item_type: itemType || '材料', item_description: description || '',
-        item_rarity: rarity || '普通', price, quantity: quantity || 1,
+        item_rarity: rarity || '普通', price, quantity: listingQuantity,
         is_equippable: !!isEquippable, equipment_slot: equipmentSlot || undefined,
         effect_json: effect ? JSON.stringify(effect) : undefined,
         item_source_json: itemSourceJson || '',
