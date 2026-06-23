@@ -22,6 +22,9 @@ export * from './cultivation';
 // Build 流派关键词与标签
 export * from './buildArchetypes';
 
+// 游戏平衡配置
+export * from './balance';
+
 // 灵根相关
 export * from './spiritualRoots';
 
@@ -94,3 +97,6 @@ export * from './artSynergy';
 
 // 秘境 Roguelike 地宫
 export * from './dungeon';
+
+// 拍卖行
+export * from './auctionHouse';

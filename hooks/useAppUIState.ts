@@ -26,6 +26,7 @@ export interface ModalSetters {
   setIsSettingsOpen: (open: boolean) => void;
   setIsDailyQuestOpen: (open: boolean) => void;
   setIsShopOpen: (open: boolean) => void;
+  setIsTradeMarketOpen: (open: boolean) => void;
   setIsGrottoOpen: (open: boolean) => void;
   setIsDebugOpen: (open: boolean) => void;
   setIsBattleModalOpen: (open: boolean) => void;
@@ -61,6 +62,7 @@ export function useModalSetters(): ModalSetters {
       setIsSettingsOpen: (open) => setModal('isSettingsOpen', open),
       setIsDailyQuestOpen: (open) => setModal('isDailyQuestOpen', open),
       setIsShopOpen: (open) => setModal('isShopOpen', open),
+      setIsTradeMarketOpen: (open) => setModal('isTradeMarketOpen', open),
       setIsGrottoOpen: (open) => setModal('isGrottoOpen', open),
       setIsDebugOpen: (open) => setModal('isDebugOpen', open),
       setIsBattleModalOpen: (open) => setModal('isBattleModalOpen', open),

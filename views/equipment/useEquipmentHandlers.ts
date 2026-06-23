@@ -592,26 +592,16 @@ export function useEquipmentHandlers(props?: UseEquipmentHandlersProps) {
       }
 
       // 成功：提升属性
-      const growthRate = getUpgradeMultiplier(rarity);
+      const growthRate = getUpgradeMultiplier(rarity, currentLevel);
       const getNextStat = (val: number) => Math.floor(val * (1 + growthRate));
 
-      const newEffect = {
-        ...item.effect,
-        attack: item.effect?.attack
-          ? getNextStat(item.effect.attack)
-          : undefined,
-        defense: item.effect?.defense
-          ? getNextStat(item.effect.defense)
-          : undefined,
-        hp: item.effect?.hp ? getNextStat(item.effect.hp) : undefined,
-        spirit: item.effect?.spirit
-          ? getNextStat(item.effect.spirit)
-          : undefined,
-        physique: item.effect?.physique
-          ? getNextStat(item.effect.physique)
-          : undefined,
-        speed: item.effect?.speed ? getNextStat(item.effect.speed) : undefined,
-      };
+      const newEffect: Item['effect'] = {};
+      (['attack', 'defense', 'hp', 'spirit', 'physique', 'speed'] as const).forEach((key) => {
+        const value = item.effect?.[key];
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          newEffect[key] = getNextStat(value);
+        }
+      });
 
       const finalInventory = newInventory.map((i) => {
         if (i.id === item.id) {

@@ -3,7 +3,8 @@
  * 单存档模式：仅使用 STORAGE_KEYS.SAVE 存储当前存档
  */
 
-import { PlayerStats, LogEntry } from '../types';
+import { PlayerStats, LogEntry, RealmType, MarketItem } from '../types';
+import { REALM_DATA, getRealmMaxExp } from '../constants/realms';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 
 const sanitizeNumber = (value: unknown, fallback: number): number => {
@@ -22,9 +23,14 @@ export const ensurePlayerStatsCompatibility = (loadedPlayer: any): PlayerStats =
   const safeSpeed = sanitizeNumber(loadedPlayer.speed, 10);
   const safeMaxHp = Math.max(1, sanitizeNumber(loadedPlayer.maxHp, 100));
   const safeHp = Math.min(Math.max(0, sanitizeNumber(loadedPlayer.hp, safeMaxHp)), safeMaxHp);
-  const safeMaxExp = Math.max(1, sanitizeNumber(loadedPlayer.maxExp, 100));
-  const safeExp = Math.min(Math.max(0, sanitizeNumber(loadedPlayer.exp, 0)), safeMaxExp);
   const safeRealmLevel = Math.min(9, Math.max(1, Math.floor(sanitizeNumber(loadedPlayer.realmLevel, 1))));
+  const safeRealm =
+    loadedPlayer.realm && REALM_DATA[loadedPlayer.realm as RealmType]
+      ? (loadedPlayer.realm as RealmType)
+      : RealmType.QiRefining;
+  const curveMaxExp = getRealmMaxExp(safeRealm, safeRealmLevel);
+  const safeMaxExp = Math.max(curveMaxExp, sanitizeNumber(loadedPlayer.maxExp, curveMaxExp));
+  const safeExp = Math.min(Math.max(0, sanitizeNumber(loadedPlayer.exp, 0)), safeMaxExp);
 
   // 天赋迁移：旧存档 talentId (string) -> 新存档 talentIds (string[])
   const migratedTalentIds: string[] =
@@ -37,6 +43,7 @@ export const ensurePlayerStatsCompatibility = (loadedPlayer: any): PlayerStats =
   return {
     ...loadedPlayer,
     talentIds: migratedTalentIds,
+    realm: safeRealm,
     realmLevel: safeRealmLevel,
     exp: safeExp,
     maxExp: safeMaxExp,
@@ -130,6 +137,7 @@ export interface SaveData {
   logs: LogEntry[];
   timestamp: number;
   lastActiveTime?: number; // 上次活跃时间（用于离线收益计算）
+  marketItems?: MarketItem[]; // 交易行上架物品
 }
 
 /**
@@ -137,14 +145,16 @@ export interface SaveData {
  */
 export const saveGameData = (
   player: PlayerStats,
-  logs: LogEntry[]
+  logs: LogEntry[],
+  marketItems?: MarketItem[]
 ): boolean => {
   try {
     const saveData: SaveData = {
       player,
       logs,
       timestamp: Date.now(),
-      lastActiveTime: Date.now(), // 记录最后活跃时间
+      lastActiveTime: Date.now(),
+      marketItems,
     };
     localStorage.setItem(STORAGE_KEYS.SAVE, JSON.stringify(saveData));
     localStorage.setItem(STORAGE_KEYS.SAVE_BACKUP, JSON.stringify(saveData));

@@ -35,6 +35,9 @@ export const FeatureId = {
   // 化神期解锁
   TREASURE_VAULT: 'treasure_vault',
   INHERITANCE: 'inheritance',
+
+  // 交易行
+  TRADE_MARKET: 'trade_market',
 } as const;
 
 export type FeatureIdType = (typeof FeatureId)[keyof typeof FeatureId];
@@ -181,6 +184,12 @@ export const FEATURE_UNLOCK_DEFS: FeatureUnlockDef[] = [
     name: '传承之力',
     description: '觉醒前世传承，突破境界桎梏',
     minRealm: RealmType.QiRefining,
+  },
+  {
+    featureId: FeatureId.TRADE_MARKET,
+    name: '交易行',
+    description: '浏览各路修士寄售的奇珍异宝',
+    minRealm: RealmType.Foundation,
   },
 ];
 

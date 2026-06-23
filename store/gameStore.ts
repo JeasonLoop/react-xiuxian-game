@@ -6,7 +6,7 @@
 
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import { PlayerStats, LogEntry, GameSettings } from '../types';
+import { PlayerStats, LogEntry, GameSettings, MarketItem } from '../types';
 import { createInitialPlayer } from '../utils/playerUtils';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import { TALENTS } from '../constants/index';
@@ -17,6 +17,7 @@ import {
   ensurePlayerStatsCompatibility,
 } from '../utils/saveManagerUtils';
 import { calculateOfflineEarnings, applyOfflineEarnings, getOfflineEarningsLog } from '../utils/offlineEarnings';
+import { useUIStore } from './uiStore';
 
 // 默认游戏设置
 const DEFAULT_SETTINGS: GameSettings = {
@@ -171,7 +172,7 @@ export const useGameStore = create<GameState>()(
           lastActiveTime: Date.now(),
         };
 
-        saveGameData(state.player, state.logs);
+        saveGameData(state.player, state.logs, useUIStore.getState().marketItems);
 
         // 同时保存到旧存档系统（兼容性）
         localStorage.setItem(STORAGE_KEYS.SAVE, JSON.stringify(saveData));
@@ -245,6 +246,11 @@ export const useGameStore = create<GameState>()(
             gameStarted: true,
             hasSave: true,
           });
+
+          // 恢复交易行数据
+          if (savedData.marketItems) {
+            useUIStore.getState().setMarketItems(savedData.marketItems);
+          }
         } else {
           set({
             hasSave: false,

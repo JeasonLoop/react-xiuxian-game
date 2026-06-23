@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlayerStats } from '../../types';
-import { REALM_DATA, REALM_ORDER, getNewlyUnlockedFeatures } from '../../constants/index';
+import { REALM_DATA, REALM_ORDER, getNewlyUnlockedFeatures, getRealmMaxExp } from '../../constants/index';
 import { getRandomBreakthroughDescription } from '../../services/templateService';
 import { getRealmIndex, calculateBreakthroughAttributePoints } from '../../utils/attributeUtils';
 import { checkBreakthroughConditions, calculateGoldenCoreMethodCount } from '../../utils/cultivationUtils';
@@ -145,7 +145,7 @@ export function useBreakthroughHandlers({
         const allocatedSpeed = Math.max(0, prev.speed - oldBaseWithFixedBonusSpeed);
 
         const newBaseMaxHp = Math.floor(stats.baseMaxHp * levelMultiplier);
-        const newMaxExp = Math.floor(stats.maxExpBase * levelMultiplier * 1.5);
+        const newMaxExp = getRealmMaxExp(nextRealm, nextLevel);
         const newBaseMaxLifespan = stats.baseMaxLifespan;
 
         // 计算超出当前境界的经验值，保留到下一个境界
@@ -385,7 +385,7 @@ export function useBreakthroughHandlers({
         const allocatedSpeed = Math.max(0, prev.speed - oldBaseWithFixedBonusSpeed);
 
         const newBaseMaxHp = Math.floor(stats.baseMaxHp * levelMultiplier);
-        const newMaxExp = Math.floor(stats.maxExpBase * levelMultiplier * 1.5);
+        const newMaxExp = getRealmMaxExp(currentRealm, currentLevel);
         const newBaseMaxLifespan = stats.baseMaxLifespan;
 
         // 计算超出当前境界的经验值，保留到下一个境界

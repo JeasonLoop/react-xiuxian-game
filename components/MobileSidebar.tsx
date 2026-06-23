@@ -14,12 +14,14 @@ import {
   Home,
   CloudUpload,
   Lock,
+  Store,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useGameStore } from '../store/gameStore';
 import { cloudSaveService } from '../services/cloudSaveService';
 import { showSuccess, showError } from '../utils/toastUtils';
 import { isDebugFeatureAvailable } from '../utils/debugMode';
+import { useUIStore } from '../store/uiStore';
 import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../constants/featureUnlock';
 
 interface Props {
@@ -111,6 +113,16 @@ const MobileSidebar: React.FC<Props> = ({
         label: '储物袋',
         onClick: onOpenInventory,
         color: 'text-green-400',
+      },
+      {
+        icon: Store,
+        label: '交易行',
+        onClick: () => {
+          useUIStore.getState().setMarketItems([]);
+          useUIStore.getState().setModal('isTradeMarketOpen', true);
+          window.dispatchEvent(new CustomEvent('open-trade-market'));
+        },
+        color: 'text-amber-400',
       },
       {
         icon: Star,

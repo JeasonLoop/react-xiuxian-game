@@ -144,16 +144,25 @@ export const artifactService = {
     }
 
     // 检查属性值是否有效（必须是数字且非负数）
-    const validateEffect = (effect: any, itemName: string) => {
+    const sanitizeEffect = (effect: any, itemName: string): Record<string, number> => {
+      const cleaned: Record<string, number> = {};
       for (const [key, value] of Object.entries(effect)) {
-        if (typeof value !== 'number' || isNaN(value) || value < 0) {
+        if (value === undefined || value === null) {
+          continue;
+        }
+        if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
           throw new Error(`${itemName} 的属性 ${key} 数值无效（${value}），无法融合`);
         }
+        cleaned[key] = value;
       }
+      if (Object.keys(cleaned).length === 0) {
+        throw new Error(`${itemName} has no valid attributes for fusion`);
+      }
+      return cleaned;
     };
 
-    validateEffect(item1.effect, item1.name);
-    validateEffect(item2.effect, item2.name);
+    const effect1 = sanitizeEffect(item1.effect, item1.name);
+    const effect2 = sanitizeEffect(item2.effect, item2.name);
 
     // ==================== 类型检查 ====================
     const isSameType = item1.type === item2.type;
@@ -174,14 +183,14 @@ export const artifactService = {
 
     // ==================== 属性融合 ====================
     const allKeys = Array.from(new Set([
-      ...Object.keys(item1.effect || {}),
-      ...Object.keys(item2.effect || {})
+      ...Object.keys(effect1),
+      ...Object.keys(effect2)
     ]));
 
     const mergedEffect: any = {};
     allKeys.forEach(key => {
-      const val1 = (item1.effect as any)[key] || 0;
-      const val2 = (item2.effect as any)[key] || 0;
+      const val1 = effect1[key] || 0;
+      const val2 = effect2[key] || 0;
 
       // 统一计算：两个装备数值之和 * 0.8
       mergedEffect[key] = Math.floor((val1 + val2) * 0.8);
@@ -193,8 +202,8 @@ export const artifactService = {
 
     // 优先级排序：共有属性 > 攻击/防御/气血 > 其他
     const sortedKeys = allKeys.sort((a, b) => {
-      const isACommon = (item1.effect as any)[a] && (item2.effect as any)[a];
-      const isBCommon = (item1.effect as any)[b] && (item2.effect as any)[b];
+      const isACommon = effect1[a] && effect2[a];
+      const isBCommon = effect1[b] && effect2[b];
       if (isACommon && !isBCommon) return -1;
       if (!isACommon && isBCommon) return 1;
 

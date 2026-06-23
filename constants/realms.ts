@@ -35,7 +35,7 @@ export const REALM_DATA: Record<
     baseSpirit: 5,
     basePhysique: 10,
     baseSpeed: 10,
-    maxExpBase: 250, // 降低为5倍增长，提升升级体验
+    maxExpBase: 600,
     baseMaxLifespan: 120, // 炼气期基础寿命120年
   },
   [RealmType.Foundation]: {
@@ -45,7 +45,7 @@ export const REALM_DATA: Record<
     baseSpirit: 25,
     basePhysique: 50,
     baseSpeed: 30,
-    maxExpBase: 1250, // 降低为5倍增长，提升升级体验
+    maxExpBase: 3900,
     baseMaxLifespan: 300, // 筑基期基础寿命300年
   },
   [RealmType.GoldenCore]: {
@@ -55,7 +55,7 @@ export const REALM_DATA: Record<
     baseSpirit: 100,
     basePhysique: 200,
     baseSpeed: 50,
-    maxExpBase: 6250, // 降低为5倍增长，提升升级体验
+    maxExpBase: 25350,
     baseMaxLifespan: 800, // 金丹期基础寿命800年
   },
   [RealmType.NascentSoul]: {
@@ -65,7 +65,7 @@ export const REALM_DATA: Record<
     baseSpirit: 500,
     basePhysique: 1000,
     baseSpeed: 100,
-    maxExpBase: 31250, // 降低为5倍增长，提升升级体验
+    maxExpBase: 164800,
     baseMaxLifespan: 2000, // 元婴期基础寿命2000年
   },
   [RealmType.SpiritSevering]: {
@@ -75,7 +75,7 @@ export const REALM_DATA: Record<
     baseSpirit: 2500,
     basePhysique: 5000,
     baseSpeed: 800,
-    maxExpBase: 156250,
+    maxExpBase: 1071000,
     baseMaxLifespan: 5000, // 化神期基础寿命5000年
   },
   [RealmType.DaoCombining]: {
@@ -85,7 +85,7 @@ export const REALM_DATA: Record<
     baseSpirit: 12500,
     basePhysique: 25000,
     baseSpeed: 4000,
-    maxExpBase: 781250,
+    maxExpBase: 6962000,
     baseMaxLifespan: 12500, // 合道期基础寿命12500年
   },
   [RealmType.LongevityRealm]: {
@@ -95,7 +95,15 @@ export const REALM_DATA: Record<
     baseSpirit: 62500,
     basePhysique: 125000,
     baseSpeed: 20000,
-    maxExpBase: 3906250,
+    maxExpBase: 45250000,
     baseMaxLifespan: 31250, // 长生期基础寿命31250年
   },
+};
+
+export const REALM_EXP_LEVEL_GROWTH = 0.24;
+
+export const getRealmMaxExp = (realm: RealmType, realmLevel = 1): number => {
+  const stats = REALM_DATA[realm] || REALM_DATA[RealmType.QiRefining];
+  const level = Math.min(9, Math.max(1, Math.floor(realmLevel)));
+  return Math.floor(stats.maxExpBase * (1 + (level - 1) * REALM_EXP_LEVEL_GROWTH));
 };

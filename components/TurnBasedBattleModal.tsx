@@ -15,6 +15,7 @@ import {
   Item,
   PlayerStats,
   RealmType,
+  DifficultyMode,
 } from '../types';
 import {
   executePlayerAction,
@@ -35,6 +36,7 @@ interface TurnBasedBattleModalProps {
   riskLevel?: '低' | '中' | '高' | '极度危险';
   realmMinRealm?: RealmType;
   bossId?: string; // 指定的天地之魄BOSS ID（用于事件模板）
+  difficulty?: DifficultyMode;
   autoAdventure?: boolean; // 是否在自动历练模式下
   onClose: (
     result?: {
@@ -95,6 +97,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   riskLevel,
   realmMinRealm,
   bossId,
+  difficulty = 'normal',
   autoAdventure = false,
   onClose,
 }) => {
@@ -150,7 +153,8 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
         riskLevel,
         realmMinRealm as any,
         undefined,
-        bossId
+        bossId,
+        difficulty
       )
         .then((state) => {
           if (hasInitTimedOutRef.current || !isInitializedRef.current) {
@@ -216,7 +220,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
       setErrorMessage(null);
       setSettlement(null);
     }
-  }, [isOpen, player, adventureType, riskLevel, realmMinRealm, bossId]);
+  }, [isOpen, player, adventureType, riskLevel, realmMinRealm, bossId, difficulty]);
 
   const prepareSettlement = (
     result: BattleSettlementResult,
@@ -313,7 +317,8 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
             newState,
             player,
             adventureType,
-            riskLevel
+            riskLevel,
+            difficulty
           );
           const finalPetSkillCooldowns: Record<string, number> = {};
           if (newState.petSkillCooldowns) {
@@ -405,7 +410,8 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
           newState,
           player,
           adventureType,
-          riskLevel
+          riskLevel,
+          difficulty
         );
         // 清理冷却时间为0的技能冷却
         const finalPetSkillCooldowns: Record<string, number> = {};
@@ -459,7 +465,8 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
               newState,
               player,
               adventureType,
-              riskLevel
+              riskLevel,
+              difficulty
             );
             prepareSettlement(
               {
@@ -539,7 +546,8 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
             currentState,
             player,
             adventureType,
-            riskLevel
+            riskLevel,
+            difficulty
           );
 
           prepareSettlement(

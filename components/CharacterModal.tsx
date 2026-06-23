@@ -29,6 +29,7 @@ import { logger } from '../utils/logger';
 import { formatValueChange, formatNumber } from '../utils/formatUtils';
 import { getBuildArchetypeProfile } from '../utils/buildArchetypeUtils';
 import { BUILD_ARCHETYPE_LABELS } from '../constants/buildArchetypes';
+import { getGlobalAchievementIds } from '../utils/achievementUtils';
 
 interface Props {
   isOpen: boolean;
@@ -218,6 +219,11 @@ const CharacterModal: React.FC<Props> = ({
   // 使用 getPlayerTotalStats 获取包含心法加成的总属性
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const totalStats = useMemo(() => getPlayerTotalStats(player), [player]);
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const completedAchievementCount = useMemo(
+    () => getGlobalAchievementIds(player.achievements).length,
+    [player.achievements]
+  );
 
   const buildProfile = useMemo(() => getBuildArchetypeProfile(player), [player]);
 
@@ -1882,11 +1888,11 @@ const CharacterModal: React.FC<Props> = ({
                         完成成就
                       </div>
                       <div className="text-xl font-bold text-yellow-400">
-                        {player.achievements.length} / {ACHIEVEMENTS.length}
+                        {completedAchievementCount} / {ACHIEVEMENTS.length}
                       </div>
                       <div className="text-xs text-stone-500">
                         {(
-                          (player.achievements.length / ACHIEVEMENTS.length) *
+                          (completedAchievementCount / ACHIEVEMENTS.length) *
                           100
                         ).toFixed(1)}
                         % 完成度

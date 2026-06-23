@@ -14,6 +14,7 @@ import {
   Users,
   CloudUpload,
   Lock,
+  Store,
 } from 'lucide-react';
 import { PlayerStats } from '../types';
 import { STORAGE_KEYS } from '../constants/storageKeys';
@@ -26,6 +27,11 @@ import { useGameStore } from '../store/gameStore';
 import { cloudSaveService } from '../services/cloudSaveService';
 import { showSuccess, showError } from '../utils/toastUtils';
 import { isDebugFeatureAvailable } from '../utils/debugMode';
+import { useUIStore } from '../store/uiStore';
+import {
+  getGlobalAchievementIds,
+  getUnviewedGlobalAchievementIds,
+} from '../utils/achievementUtils';
 
 /**
  * 游戏头部组件
@@ -109,14 +115,17 @@ function GameHeader({
   // 使用PartyKit连接获取在线人数
   const { onlineCount } = useParty('global');
 
+  const globalAchievementIds = useMemo(
+    () => getGlobalAchievementIds(player.achievements),
+    [player.achievements]
+  );
+
   const newAchievements = useMemo(
     () =>
-      Array.isArray(player.achievements) &&
-      Array.isArray(player.viewedAchievements)
-        ? player.achievements.filter(
-            (a) => !player.viewedAchievements.includes(a)
-          )
-        : [],
+      getUnviewedGlobalAchievementIds(
+        player.achievements,
+        player.viewedAchievements
+      ),
     [player.achievements, player.viewedAchievements]
   );
 
@@ -280,6 +289,17 @@ function GameHeader({
           <span>储物袋</span>
         </button>
         <button
+          onClick={() => {
+            useUIStore.getState().setMarketItems([]);
+            useUIStore.getState().setModal('isTradeMarketOpen', true);
+            window.dispatchEvent(new CustomEvent('open-trade-market'));
+          }}
+          className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
+        >
+          <Store size={18} />
+          <span>交易行</span>
+        </button>
+        <button
           onClick={onOpenCharacter}
           className="flex items-center gap-2 px-3 py-2 bg-ink-800 hover:bg-stone-700 rounded border border-stone-600 transition-colors text-sm min-w-[44px] min-h-[44px] justify-center"
         >
@@ -298,7 +318,7 @@ function GameHeader({
             <>
               {ACHIEVEMENTS.length > 0 && (
                 <span className="text-xs text-stone-500 ml-0.5">
-                  {player.achievements.length}/{ACHIEVEMENTS.length}
+                  {globalAchievementIds.length}/{ACHIEVEMENTS.length}
                 </span>
               )}
               {newAchievementsCount > 0 && (

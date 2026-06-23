@@ -70,6 +70,7 @@ interface PetHandlers {
   handleBatchFeedItems: (petId: string, itemIds: string[]) => void; // 批量喂养灵宠
   handleBatchFeedHp: (petId: string, hpAmount: number) => void; // 批量喂养灵宠
   handleEvolvePet: (petId: string) => void; // 进化灵宠
+  handlePetExpedition: (petId: string) => void; // 灵兽秘径
   handleReleasePet: (petId: string) => void; // 释放灵宠
   handleBatchReleasePets: (petIds: string[]) => void; // 批量释放灵宠
 }
@@ -196,6 +197,7 @@ interface UseHandlerGroupsProps {
     handleBatchFeedItems: (petId: string, itemIds: string[]) => void; // 批量喂养灵宠
     handleBatchFeedHp: (petId: string, hpAmount: number) => void; // 批量喂养灵宠
     handleEvolvePet: (petId: string) => void; // 进化灵宠
+    handlePetExpedition: (petId: string) => void; // 灵兽秘径
     handleReleasePet: (petId: string) => void; // 释放灵宠
     handleBatchReleasePets: (petIds: string[]) => void; // 批量释放灵宠
     handleJoinSect: (sectId: string) => void; // 加入宗门
@@ -353,6 +355,7 @@ export function usePetHandlersGroup(appHandlers: UseHandlerGroupsProps['appHandl
       handleBatchFeedItems: appHandlers.handleBatchFeedItems,
       handleBatchFeedHp: appHandlers.handleBatchFeedHp,
       handleEvolvePet: appHandlers.handleEvolvePet,
+      handlePetExpedition: appHandlers.handlePetExpedition,
       handleReleasePet: appHandlers.handleReleasePet,
       handleBatchReleasePets: appHandlers.handleBatchReleasePets,
     }),
@@ -363,6 +366,7 @@ export function usePetHandlersGroup(appHandlers: UseHandlerGroupsProps['appHandl
       appHandlers.handleBatchFeedItems,
       appHandlers.handleBatchFeedHp,
       appHandlers.handleEvolvePet,
+      appHandlers.handlePetExpedition,
       appHandlers.handleReleasePet,
       appHandlers.handleBatchReleasePets,
     ]

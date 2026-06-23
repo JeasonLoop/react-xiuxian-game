@@ -5,31 +5,29 @@ import { getItemFromConstants } from './itemConstantsUtils';
 // 共享的装备数值配置（统一管理，避免重复定义）
 // 调整属性浮动范围，缩小差距，使装备属性更稳定
 export const EQUIPMENT_RARITY_PERCENTAGES: Record<ItemRarity, { min: number; max: number }> = {
-  普通: { min: 0.25, max: 0.40 },  // 普通装备：25%-40%基础属性
-  稀有: { min: 0.50, max: 0.80 },  // 稀有装备：50%-80%基础属性（约1.3倍普通）
-  传说: { min: 0.90, max: 1.40 },  // 传说装备：90%-140%基础属性（约1.8倍普通）
-  仙品: { min: 1.20, max: 1.80 },  // 仙品装备：120%-180%基础属性（约2倍普通）
-  // 优化：缩小稀有度差距，仙品装备范围从150%-220%调整为120%-180%
+  普通: { min: 0.18, max: 0.32 },
+  稀有: { min: 0.36, max: 0.58 },
+  传说: { min: 0.62, max: 0.95 },
+  仙品: { min: 0.90, max: 1.30 },
 };
 
 export const EQUIPMENT_MIN_STATS: Record<ItemRarity, { attack: number; defense: number; hp: number; spirit: number; physique: number; speed: number }> = {
-  普通: { attack: 50, defense: 50, hp: 50, spirit: 50, physique: 50, speed: 50 },
-  稀有: { attack: 200, defense: 200, hp: 200, spirit: 200, physique: 200, speed: 200 },
-  传说: { attack: 400, defense: 400, hp: 400, spirit: 400, physique: 400, speed: 400 },
-  仙品: { attack: 1000, defense: 1000, hp: 1000, spirit: 1000, physique: 1000, speed: 1000 },
+  普通: { attack: 20, defense: 20, hp: 60, spirit: 20, physique: 20, speed: 12 },
+  稀有: { attack: 60, defense: 60, hp: 180, spirit: 60, physique: 60, speed: 30 },
+  传说: { attack: 140, defense: 140, hp: 420, spirit: 140, physique: 140, speed: 70 },
+  仙品: { attack: 300, defense: 300, hp: 900, spirit: 300, physique: 300, speed: 150 },
 };
 
 // 丹药/草药保底属性
 export const CONSUMABLE_MIN_STATS: Record<ItemRarity, { hp?: number; exp?: number; spirit?: number; physique?: number; maxHp?: number }> = {
-  普通: { hp: 100, exp: 50, spirit: 5, physique: 5, maxHp: 10 },
-  稀有: { hp: 500, exp: 300, spirit: 20, physique: 20, maxHp: 50 },
-  传说: { hp: 2000, exp: 1500, spirit: 100, physique: 100, maxHp: 200 },
-  仙品: { hp: 8000, exp: 6000, spirit: 1500, physique: 1500, maxHp: 1000 },
+  普通: { hp: 80, exp: 40, spirit: 3, physique: 3, maxHp: 8 },
+  稀有: { hp: 280, exp: 180, spirit: 12, physique: 12, maxHp: 35 },
+  传说: { hp: 900, exp: 700, spirit: 55, physique: 55, maxHp: 120 },
+  仙品: { hp: 2600, exp: 2200, spirit: 180, physique: 180, maxHp: 380 },
 };
 
 // 境界指数增长倍数（统一管理，防止数值膨胀）
-// 从 [1, 1.5, 2.5, 4, 6, 10, 16] 改为 [1, 1.3, 2.0, 3.0, 4.5, 6.5, 10]
-export const REALM_BASE_MULTIPLIERS = [1, 1.3, 2.0, 3.0, 4.5, 6.5, 10];
+export const REALM_BASE_MULTIPLIERS = [1, 1.25, 1.75, 2.5, 3.5, 5.0, 7.0];
 
 // 预编译正则规则，提升推断效率
 const INFER_RULES = {
@@ -714,6 +712,8 @@ export const adjustItemStatsByRealm = (
   // 降低层数加成：从10%降低到8%，与装备调整保持一致
   const levelMultiplier = 1 + (realmLevel - 1) * 0.08;
   const totalMultiplier = realmMultiplier * levelMultiplier;
+  const permanentMultiplier = Math.sqrt(realmMultiplier) * (1 + (realmLevel - 1) * 0.04);
+  const rootPermanentMultiplier = Math.min(1.5, permanentMultiplier);
 
 
   const adjustedEffect: Item['effect'] = {};
@@ -749,19 +749,19 @@ export const adjustItemStatsByRealm = (
 
   // 调整永久效果
   if (permanentEffect) {
-    if (permanentEffect.attack !== undefined) adjustedPermanentEffect.attack = Math.floor(permanentEffect.attack * totalMultiplier);
-    if (permanentEffect.defense !== undefined) adjustedPermanentEffect.defense = Math.floor(permanentEffect.defense * totalMultiplier);
+    if (permanentEffect.attack !== undefined) adjustedPermanentEffect.attack = Math.floor(permanentEffect.attack * permanentMultiplier);
+    if (permanentEffect.defense !== undefined) adjustedPermanentEffect.defense = Math.floor(permanentEffect.defense * permanentMultiplier);
     if (permanentEffect.spirit !== undefined) {
-      const val = Math.floor(permanentEffect.spirit * totalMultiplier);
+      const val = Math.floor(permanentEffect.spirit * permanentMultiplier);
       adjustedPermanentEffect.spirit = minConsumableStats.spirit ? Math.max(val, minConsumableStats.spirit) : val;
     }
     if (permanentEffect.physique !== undefined) {
-      const val = Math.floor(permanentEffect.physique * totalMultiplier);
+      const val = Math.floor(permanentEffect.physique * permanentMultiplier);
       adjustedPermanentEffect.physique = minConsumableStats.physique ? Math.max(val, minConsumableStats.physique) : val;
     }
-    if (permanentEffect.speed !== undefined) adjustedPermanentEffect.speed = Math.floor(permanentEffect.speed * totalMultiplier);
+    if (permanentEffect.speed !== undefined) adjustedPermanentEffect.speed = Math.floor(permanentEffect.speed * permanentMultiplier);
     if (permanentEffect.maxHp !== undefined) {
-      const val = Math.floor(permanentEffect.maxHp * totalMultiplier);
+      const val = Math.floor(permanentEffect.maxHp * permanentMultiplier);
       adjustedPermanentEffect.maxHp = minConsumableStats.maxHp ? Math.max(val, minConsumableStats.maxHp) : val;
     }
     // 最大寿命不受境界调整影响
@@ -770,11 +770,11 @@ export const adjustItemStatsByRealm = (
     if (permanentEffect.spiritualRoots) {
       adjustedPermanentEffect.spiritualRoots = {};
       const roots = permanentEffect.spiritualRoots;
-      if (roots.metal !== undefined) adjustedPermanentEffect.spiritualRoots.metal = Math.floor(roots.metal * totalMultiplier);
-      if (roots.wood !== undefined) adjustedPermanentEffect.spiritualRoots.wood = Math.floor(roots.wood * totalMultiplier);
-      if (roots.water !== undefined) adjustedPermanentEffect.spiritualRoots.water = Math.floor(roots.water * totalMultiplier);
-      if (roots.fire !== undefined) adjustedPermanentEffect.spiritualRoots.fire = Math.floor(roots.fire * totalMultiplier);
-      if (roots.earth !== undefined) adjustedPermanentEffect.spiritualRoots.earth = Math.floor(roots.earth * totalMultiplier);
+      if (roots.metal !== undefined) adjustedPermanentEffect.spiritualRoots.metal = Math.floor(roots.metal * rootPermanentMultiplier);
+      if (roots.wood !== undefined) adjustedPermanentEffect.spiritualRoots.wood = Math.floor(roots.wood * rootPermanentMultiplier);
+      if (roots.water !== undefined) adjustedPermanentEffect.spiritualRoots.water = Math.floor(roots.water * rootPermanentMultiplier);
+      if (roots.fire !== undefined) adjustedPermanentEffect.spiritualRoots.fire = Math.floor(roots.fire * rootPermanentMultiplier);
+      if (roots.earth !== undefined) adjustedPermanentEffect.spiritualRoots.earth = Math.floor(roots.earth * rootPermanentMultiplier);
     }
   }
 

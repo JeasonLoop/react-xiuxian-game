@@ -13,6 +13,31 @@ export interface Env {
 const users = new Map<string, { id: string; username: string; passwordHash: string; linuxdoId?: string }>();
 const saves = new Map<string, { player: any; logs: any[]; timestamp: number }>();
 
+// 交易行数据：内存 + KV 持久化
+interface MarketListing {
+  id: number;
+  seller_id: string;
+  seller_name: string;
+  item_name: string;
+  item_type: string;
+  item_description: string;
+  item_rarity: string;
+  price: number;
+  quantity: number;
+  is_equippable: boolean;
+  equipment_slot?: string;
+  effect_json?: string;
+  item_source_json: string;
+  status: 'active' | 'sold' | 'cancelled';
+  created_at: number;
+  sold_at?: number;
+  buyer_id?: string;
+}
+let marketListings = new Map<number, MarketListing>();
+let marketNextId = 1;
+const MARKET_KV_KEY = 'market_listings';
+let marketInitialized = false;
+
 // 排行榜数据：从存档中提取的可排序字段
 interface RankingEntry {
   user_id: string;
@@ -72,6 +97,35 @@ async function syncUserRanking(env: Env, userId: string, username: string, saveD
   const rankings = await readRankingsFromKV(env);
   rankings.set(userId, extractRankingData(userId, username, saveData));
   await writeRankingsToKV(env, rankings);
+}
+
+// ── 交易行 KV 持久化 ──
+async function readMarketFromKV(env: Env): Promise<Map<number, MarketListing>> {
+  const map = new Map<number, MarketListing>();
+  if (!env.RANKINGS_STORE) return map;
+  try {
+    const raw = await env.RANKINGS_STORE.get(MARKET_KV_KEY, 'json');
+    if (raw && Array.isArray(raw)) {
+      for (const entry of raw) {
+        if (entry.id != null) map.set(entry.id, entry);
+      }
+    }
+  } catch {}
+  return map;
+}
+async function writeMarketToKV(env: Env): Promise<void> {
+  if (!env.RANKINGS_STORE) return;
+  try {
+    await env.RANKINGS_STORE.put(MARKET_KV_KEY, JSON.stringify(Array.from(marketListings.values())));
+  } catch {}
+}
+// 启动时从 KV 恢复
+async function initMarketFromKV(env: Env): Promise<void> {
+  const loaded = await readMarketFromKV(env);
+  if (loaded.size > 0) {
+    marketListings = loaded;
+    marketNextId = Math.max(...Array.from(loaded.keys()), 0) + 1;
+  }
 }
 
 const REALM_NAMES = ['炼气期', '筑基期', '金丹期', '元婴期', '化神期', '合道期', '长生境'];
@@ -163,6 +217,12 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname.replace('/api', '');
     const secret = env.JWT_SECRET;
+
+    // 冷启动时从 KV 恢复交易行数据
+    if (!marketInitialized) {
+      await initMarketFromKV(env);
+      marketInitialized = true;
+    }
 
     // 安全检查：缺少必要密钥时拒绝服务
     if (!secret) {
@@ -386,6 +446,133 @@ export default {
       } catch (e: any) {
         return json({ error: `OAuth 错误: ${e.message}` }, 500);
       }
+    }
+
+    // ── 交易行 API ──
+
+    // GET /api/market/items — 分页列表
+    if (path === '/market/items' && request.method === 'GET') {
+      const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
+      const limit = Math.min(Math.max(1, parseInt(url.searchParams.get('limit') || '10')), 100);
+      const offset = (page - 1) * limit;
+      const category = url.searchParams.get('category') || 'all';
+      const search = (url.searchParams.get('search') || '').trim().toLowerCase();
+
+      const all = Array.from(marketListings.values()).filter((l) => l.status === 'active');
+      let filtered = all;
+      if (category && category !== 'all') filtered = filtered.filter((l) => l.item_type === category);
+      if (search) filtered = filtered.filter((l) => l.item_name.toLowerCase().includes(search));
+
+      filtered.sort((a, b) => b.created_at - a.created_at);
+      const total = filtered.length;
+      const pageItems = filtered.slice(offset, offset + limit).map((r) => ({
+        id: `market-${r.id}`,
+        name: r.item_name,
+        type: r.item_type,
+        description: r.item_description || '',
+        rarity: r.item_rarity,
+        price: r.price,
+        quantity: r.quantity || 1,
+        isEquippable: !!r.is_equippable,
+        equipmentSlot: r.equipment_slot || undefined,
+        effect: r.effect_json ? JSON.parse(r.effect_json) : undefined,
+        sellerName: r.seller_name,
+        sellerId: 'system',
+      }));
+
+      return json({ items: pageItems, total, page, limit });
+    }
+
+    // POST /api/market/list — 上架
+    if (path === '/market/list' && request.method === 'POST') {
+      const auth = request.headers.get('Authorization');
+      if (!auth) return json({ error: '未登录' }, 401);
+      const p = await verifyToken(auth.replace('Bearer ', ''), secret);
+      if (!p) return json({ error: '登录已过期' }, 401);
+
+      const body = await request.json() as any;
+      const { itemName, itemType, description, rarity, price, quantity, effect, isEquippable, equipmentSlot, itemSourceJson } = body;
+      if (!itemName || !price || price <= 0) return json({ error: '参数错误' }, 400);
+
+      const id = marketNextId++;
+      const listing: MarketListing = {
+        id, seller_id: p.id, seller_name: p.username,
+        item_name: itemName, item_type: itemType || '材料', item_description: description || '',
+        item_rarity: rarity || '普通', price, quantity: quantity || 1,
+        is_equippable: !!isEquippable, equipment_slot: equipmentSlot || undefined,
+        effect_json: effect ? JSON.stringify(effect) : undefined,
+        item_source_json: itemSourceJson || '',
+        status: 'active', created_at: Date.now(),
+      };
+      marketListings.set(id, listing);
+      await writeMarketToKV(env);
+      return json({ success: true, listingId: id });
+    }
+
+    // POST /api/market/purchase — 查库存
+    if (path === '/market/purchase' && request.method === 'POST') {
+      const auth = request.headers.get('Authorization');
+      if (!auth) return json({ error: '未登录' }, 401);
+      const p = await verifyToken(auth.replace('Bearer ', ''), secret);
+      if (!p) return json({ error: '登录已过期' }, 401);
+
+      const { listingId } = await request.json() as any;
+      const numericId = parseInt((listingId || '').toString().replace('market-', ''));
+      const listing = marketListings.get(numericId);
+      if (!listing || listing.status !== 'active') return json({ error: '商品不存在或已售出' }, 404);
+      if (listing.seller_id === p.id) return json({ error: '不能购买自己的商品' }, 400);
+
+      return json({
+        success: true,
+        listing: {
+          id: listing.id, name: listing.item_name, type: listing.item_type,
+          description: listing.item_description, rarity: listing.item_rarity,
+          price: listing.price, quantity: listing.quantity || 1,
+          isEquippable: listing.is_equippable, equipmentSlot: listing.equipment_slot,
+          effect: listing.effect_json ? JSON.parse(listing.effect_json) : undefined,
+          itemSourceJson: listing.item_source_json,
+        },
+      });
+    }
+
+    // POST /api/market/purchase/confirm — 确认购买
+    if (path === '/market/purchase/confirm' && request.method === 'POST') {
+      const auth = request.headers.get('Authorization');
+      if (!auth) return json({ error: '未登录' }, 401);
+      const p = await verifyToken(auth.replace('Bearer ', ''), secret);
+      if (!p) return json({ error: '登录已过期' }, 401);
+
+      const { listingId } = await request.json() as any;
+      const numericId = parseInt((listingId || '').toString().replace('market-', ''));
+      const listing = marketListings.get(numericId);
+      if (!listing || listing.status !== 'active') return json({ error: '商品不存在' }, 404);
+      if (listing.seller_id === p.id) return json({ error: '不能购买自己的商品' }, 400);
+
+      listing.status = 'sold';
+      listing.buyer_id = p.id;
+      listing.sold_at = Date.now();
+      await writeMarketToKV(env);
+      return json({ success: true });
+    }
+
+    // POST /api/market/cancel — 下架
+    if (path === '/market/cancel' && request.method === 'POST') {
+      const auth = request.headers.get('Authorization');
+      if (!auth) return json({ error: '未登录' }, 401);
+      const p = await verifyToken(auth.replace('Bearer ', ''), secret);
+      if (!p) return json({ error: '登录已过期' }, 401);
+
+      const { listingId } = await request.json() as any;
+      const numericId = parseInt((listingId || '').toString().replace('market-', ''));
+      const listing = marketListings.get(numericId);
+      if (!listing || listing.seller_id !== p.id || listing.status !== 'active') {
+        return json({ error: '无权操作' }, 403);
+      }
+
+      listing.status = 'cancelled';
+      await writeMarketToKV(env);
+      const sourceItem = listing.item_source_json ? JSON.parse(listing.item_source_json) : null;
+      return json({ success: true, item: sourceItem });
     }
 
     return json({ error: 'Not Found' }, 404);
