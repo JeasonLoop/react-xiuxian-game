@@ -152,6 +152,8 @@ export function useTradeMarketHandlers(
             name: item.name, type: item.type, description: item.description,
             rarity: item.rarity, isEquippable: item.isEquippable,
             equipmentSlot: item.equipmentSlot, effect: item.effect,
+            advancedItemType: item.advancedItemType,
+            advancedItemId: item.advancedItemId,
           },
           item.quantity || 1,
           { realm: prev.realm, realmLevel: prev.realmLevel }
@@ -211,6 +213,8 @@ export function useTradeMarketHandlers(
         effect: sourceItem.effect as Record<string, number> | undefined,
         isEquippable: sourceItem.isEquippable,
         equipmentSlot: sourceItem.equipmentSlot as string | undefined,
+        advancedItemType: sourceItem.advancedItemType,
+        advancedItemId: sourceItem.advancedItemId,
         itemSourceJson: JSON.stringify({ ...sourceItem, quantity: listingQuantity }),
       };
       const res = await marketApi.listItem(data);

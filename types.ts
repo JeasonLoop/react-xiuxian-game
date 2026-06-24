@@ -980,6 +980,8 @@ export interface MarketItem {
   price: number;
   /** 物品效果 */
   effect?: Record<string, number>;
+  advancedItemType?: Item['advancedItemType'];
+  advancedItemId?: string;
   isEquippable?: boolean;
   equipmentSlot?: EquipmentSlot;
   quantity: number;

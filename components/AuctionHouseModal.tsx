@@ -8,6 +8,37 @@ import { CATEGORY_LIST, getItemCategory } from '../utils/itemCategoryUtils';
 import type { ItemCategory } from '../utils/itemCategoryUtils';
 
 type TabType = 'buy' | 'sell';
+type AdvancedItemType = NonNullable<MarketItem['advancedItemType']>;
+
+const ADVANCED_ITEM_TYPE_LABELS: Record<AdvancedItemType, string> = {
+  foundationTreasure: '筑基奇物',
+  heavenEarthEssence: '天地精华',
+  heavenEarthMarrow: '天地之髓',
+  longevityRule: '长生规则',
+  soulArt: '天地之魄',
+};
+
+function getMarketItemTypeLabel(item: {
+  type: MarketItem['type'];
+  advancedItemType?: MarketItem['advancedItemType'];
+  sellerItemData?: string;
+}): string {
+  let advancedItemType = item.advancedItemType;
+
+  if (!advancedItemType && item.sellerItemData) {
+    try {
+      advancedItemType = JSON.parse(item.sellerItemData)?.advancedItemType;
+    } catch {
+      advancedItemType = undefined;
+    }
+  }
+
+  if (advancedItemType && ADVANCED_ITEM_TYPE_LABELS[advancedItemType]) {
+    return ADVANCED_ITEM_TYPE_LABELS[advancedItemType];
+  }
+
+  return item.type;
+}
 
 interface Props {
   isOpen: boolean;
@@ -242,7 +273,7 @@ export default function TradeMarketModal({
                         <h4 className={`font-bold truncate ${getRarityTextColor(item.rarity)}`}>
                           {item.name}
                         </h4>
-                        <span className="text-xs text-stone-500">{item.type}</span>
+                        <span className="text-xs text-stone-500">{getMarketItemTypeLabel(item)}</span>
                       </div>
                       <span className={`text-xs px-2 py-1 rounded shrink-0 ml-2 ${getRarityBorder(item.rarity)} ${getRarityTextColor(item.rarity)}`}>
                         {item.rarity}
@@ -428,7 +459,7 @@ export default function TradeMarketModal({
                           {item.rarity}
                         </span>
                       </div>
-                      <div className="text-xs text-stone-500 mb-2">{item.type}</div>
+                      <div className="text-xs text-stone-500 mb-2">{getMarketItemTypeLabel(item)}</div>
                       <div className="grid grid-cols-[minmax(0,1fr)_92px_auto] gap-2 items-center">
                         <div className="flex items-center flex-1 bg-stone-800 rounded border border-stone-600 px-2 py-1">
                           <Coins size={14} className="text-mystic-gold shrink-0" />

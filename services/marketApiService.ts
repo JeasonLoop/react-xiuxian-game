@@ -48,6 +48,8 @@ export async function listItem(data: {
   effect?: Record<string, number>;
   isEquippable?: boolean;
   equipmentSlot?: string;
+  advancedItemType?: string;
+  advancedItemId?: string;
   itemSourceJson: string;
 }): Promise<{ success: boolean; listingId?: number; error?: string }> {
   const res = await fetch(`${API_URL}/market/list`, {

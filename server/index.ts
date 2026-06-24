@@ -625,6 +625,15 @@ app.get('/api/leaderboard/me', authenticateToken, (req: any, res: any) => {
 // ── 交易行 API ──
 
 // GET /api/market/items — 获取在售商品列表（分页+分类+搜索）
+function parseMarketSourceItem(itemSourceJson?: string | null): any | null {
+  if (!itemSourceJson) return null;
+  try {
+    return JSON.parse(itemSourceJson);
+  } catch {
+    return null;
+  }
+}
+
 app.get('/api/market/items', (req: any, res: any) => {
   const page = Math.max(1, parseInt(req.query.page as string) || 1);
   const limit = Math.min(Math.max(1, parseInt(req.query.limit as string) || 10), 100);
@@ -652,28 +661,34 @@ app.get('/api/market/items', (req: any, res: any) => {
     // 查分页
     db.all(
       `SELECT id, seller_id, seller_name, item_name as name, item_type as type, item_description as description,
-              item_rarity as rarity, price, quantity, is_equippable, equipment_slot, effect_json, created_at
+              item_rarity as rarity, price, quantity, is_equippable, equipment_slot, effect_json, item_source_json, created_at
        FROM market_listings ${where}
        ORDER BY created_at DESC
        LIMIT ? OFFSET ?`,
       [...params, limit, offset],
       (err2, rows: any[]) => {
         if (err2) return res.json({ items: [], total: 0, page, limit });
-        const items = (rows || []).map((r) => ({
-          id: `market-${r.id}`,
-          name: r.name,
-          type: r.type,
-          description: r.description || '',
-          rarity: r.rarity,
-          price: r.price,
-          quantity: r.quantity || 1,
-          isEquippable: !!r.is_equippable,
-          equipmentSlot: r.equipment_slot || undefined,
-          effect: r.effect_json ? JSON.parse(r.effect_json) : undefined,
-          sellerName: r.seller_name,
-          sellerId: 'system',
-          createdAt: r.created_at,
-        }));
+        const items = (rows || []).map((r) => {
+          const sourceItem = parseMarketSourceItem(r.item_source_json);
+          return {
+            id: `market-${r.id}`,
+            name: r.name,
+            type: r.type,
+            description: r.description || '',
+            rarity: r.rarity,
+            price: r.price,
+            quantity: r.quantity || 1,
+            advancedItemType: sourceItem?.advancedItemType,
+            advancedItemId: sourceItem?.advancedItemId,
+            isEquippable: !!r.is_equippable,
+            equipmentSlot: r.equipment_slot || undefined,
+            effect: r.effect_json ? JSON.parse(r.effect_json) : undefined,
+            sellerName: r.seller_name,
+            sellerId: 'system',
+            sellerItemData: r.item_source_json || undefined,
+            createdAt: r.created_at,
+          };
+        });
         res.json({ items, total, page, limit });
       }
     );
@@ -733,6 +748,7 @@ app.post('/api/market/purchase', authenticateToken, (req: any, res: any) => {
 
     // 返回商品信息（真实扣款在客户端完成，服务端只做库存检查和锁定）
     // 实际扣款由客户端调用 purchase/confirm 完成
+    const sourceItem = parseMarketSourceItem(listing.item_source_json);
     res.json({
       success: true,
       listing: {
@@ -743,6 +759,8 @@ app.post('/api/market/purchase', authenticateToken, (req: any, res: any) => {
         rarity: listing.item_rarity,
         price: listing.price,
         quantity: listing.quantity || 1,
+        advancedItemType: sourceItem?.advancedItemType,
+        advancedItemId: sourceItem?.advancedItemId,
         isEquippable: !!listing.is_equippable,
         equipmentSlot: listing.equipment_slot,
         effect: listing.effect_json ? JSON.parse(listing.effect_json) : undefined,

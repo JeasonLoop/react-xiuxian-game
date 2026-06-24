@@ -128,6 +128,15 @@ async function initMarketFromKV(env: Env): Promise<void> {
   }
 }
 
+function parseMarketSourceItem(itemSourceJson?: string): any | null {
+  if (!itemSourceJson) return null;
+  try {
+    return JSON.parse(itemSourceJson);
+  } catch {
+    return null;
+  }
+}
+
 const REALM_NAMES = ['炼气期', '筑基期', '金丹期', '元婴期', '化神期', '合道期', '长生境'];
 
 // 从存档数据中提取排行榜字段（与服务端 server/index.ts 保持一致）
@@ -465,20 +474,26 @@ export default {
 
       filtered.sort((a, b) => b.created_at - a.created_at);
       const total = filtered.length;
-      const pageItems = filtered.slice(offset, offset + limit).map((r) => ({
-        id: `market-${r.id}`,
-        name: r.item_name,
-        type: r.item_type,
-        description: r.item_description || '',
-        rarity: r.item_rarity,
-        price: r.price,
-        quantity: r.quantity || 1,
-        isEquippable: !!r.is_equippable,
-        equipmentSlot: r.equipment_slot || undefined,
-        effect: r.effect_json ? JSON.parse(r.effect_json) : undefined,
-        sellerName: r.seller_name,
-        sellerId: 'system',
-      }));
+      const pageItems = filtered.slice(offset, offset + limit).map((r) => {
+        const sourceItem = parseMarketSourceItem(r.item_source_json);
+        return {
+          id: `market-${r.id}`,
+          name: r.item_name,
+          type: r.item_type,
+          description: r.item_description || '',
+          rarity: r.item_rarity,
+          price: r.price,
+          quantity: r.quantity || 1,
+          advancedItemType: sourceItem?.advancedItemType,
+          advancedItemId: sourceItem?.advancedItemId,
+          isEquippable: !!r.is_equippable,
+          equipmentSlot: r.equipment_slot || undefined,
+          effect: r.effect_json ? JSON.parse(r.effect_json) : undefined,
+          sellerName: r.seller_name,
+          sellerId: 'system',
+          sellerItemData: r.item_source_json || undefined,
+        };
+      });
 
       return json({ items: pageItems, total, page, limit });
     }
@@ -523,12 +538,15 @@ export default {
       if (!listing || listing.status !== 'active') return json({ error: '商品不存在或已售出' }, 404);
       if (listing.seller_id === p.id) return json({ error: '不能购买自己的商品' }, 400);
 
+      const sourceItem = parseMarketSourceItem(listing.item_source_json);
       return json({
         success: true,
         listing: {
           id: listing.id, name: listing.item_name, type: listing.item_type,
           description: listing.item_description, rarity: listing.item_rarity,
           price: listing.price, quantity: listing.quantity || 1,
+          advancedItemType: sourceItem?.advancedItemType,
+          advancedItemId: sourceItem?.advancedItemId,
           isEquippable: listing.is_equippable, equipmentSlot: listing.equipment_slot,
           effect: listing.effect_json ? JSON.parse(listing.effect_json) : undefined,
           itemSourceJson: listing.item_source_json,
