@@ -198,30 +198,37 @@ function extractRankingData(saveData: any): {
   }
 }
 
-function upsertRanking(userId: number, username: string, saveData: any): void {
+function upsertRanking(userId: number, username: string, saveData: any): Promise<boolean> {
   const data = extractRankingData(saveData);
-  if (!data) return;
+  if (!data) return Promise.resolve(false);
 
-  db.run(
-    `INSERT INTO rankings (user_id, username, realm_index, realm_level, exp, combat_power, spirit_stones, reputation, achievement_count, kill_count, play_time, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-     ON CONFLICT(user_id) DO UPDATE SET
-       username = excluded.username,
-       realm_index = excluded.realm_index,
-       realm_level = excluded.realm_level,
-       exp = excluded.exp,
-       combat_power = excluded.combat_power,
-       spirit_stones = excluded.spirit_stones,
-       reputation = excluded.reputation,
-       achievement_count = excluded.achievement_count,
-       kill_count = excluded.kill_count,
-       play_time = excluded.play_time,
-       updated_at = CURRENT_TIMESTAMP`,
-    [userId, username, data.realm_index, data.realm_level, data.exp, data.combat_power, data.spirit_stones, data.reputation, data.achievement_count, data.kill_count, data.play_time],
-    (err) => {
-      if (err) console.error('排行榜同步失败:', err.message);
-    }
-  );
+  return new Promise((resolve) => {
+    db.run(
+      `INSERT INTO rankings (user_id, username, realm_index, realm_level, exp, combat_power, spirit_stones, reputation, achievement_count, kill_count, play_time, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+       ON CONFLICT(user_id) DO UPDATE SET
+         username = excluded.username,
+         realm_index = excluded.realm_index,
+         realm_level = excluded.realm_level,
+         exp = excluded.exp,
+         combat_power = excluded.combat_power,
+         spirit_stones = excluded.spirit_stones,
+         reputation = excluded.reputation,
+         achievement_count = excluded.achievement_count,
+         kill_count = excluded.kill_count,
+         play_time = excluded.play_time,
+         updated_at = CURRENT_TIMESTAMP`,
+      [userId, username, data.realm_index, data.realm_level, data.exp, data.combat_power, data.spirit_stones, data.reputation, data.achievement_count, data.kill_count, data.play_time],
+      (err) => {
+        if (err) {
+          console.error('Leaderboard sync failed:', err.message);
+          resolve(false);
+          return;
+        }
+        resolve(true);
+      }
+    );
+  });
 }
 
 // 敏感词列表 - 禁止包含这些词的用户名
@@ -424,26 +431,20 @@ app.post('/api/save', authenticateToken, (req: any, res: any) => {
       db.run(
         'UPDATE saves SET save_data = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
         [saveDataString, req.user.id],
-        (updateErr) => {
+        async (updateErr) => {
           if (updateErr) return res.status(500).json({ error: 'Error updating save' });
-          res.json({ message: 'Save updated successfully' });
-          // 响应已发送，异步同步排行榜
-          setImmediate(() => {
-            try { upsertRanking(req.user.id, req.user.username, saveData); } catch {}
-          });
+          const rankingSynced = await upsertRanking(req.user.id, req.user.username, saveData);
+          res.json({ message: 'Save updated successfully', rankingSynced });
         }
       );
     } else {
       db.run(
         'INSERT INTO saves (user_id, save_data) VALUES (?, ?)',
         [req.user.id, saveDataString],
-        (insertErr) => {
+        async (insertErr) => {
           if (insertErr) return res.status(500).json({ error: 'Error creating save' });
-          res.json({ message: 'Save created successfully' });
-          // 响应已发送，异步同步排行榜
-          setImmediate(() => {
-            try { upsertRanking(req.user.id, req.user.username, saveData); } catch {}
-          });
+          const rankingSynced = await upsertRanking(req.user.id, req.user.username, saveData);
+          res.json({ message: 'Save created successfully', rankingSynced });
         }
       );
     }
