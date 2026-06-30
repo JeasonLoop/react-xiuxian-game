@@ -173,7 +173,6 @@ function App() {
     player,
     setPlayer,
     saveGame,
-    logs,
   });
 
   useAutoCloudSave();

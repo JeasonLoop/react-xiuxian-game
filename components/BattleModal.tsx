@@ -29,20 +29,41 @@ const BattleModal: React.FC<BattleModalProps> = ({
     });
   }, [revealedRounds, replay]);
 
-  const { visibleRounds, isResolved, progressText } = useMemo(() => {
+  const { visibleRounds, isResolved, progressText, damageStats } = useMemo(() => {
     if (!replay) {
       return {
         visibleRounds: [],
         isResolved: true,
         progressText: '0 / 0',
+        damageStats: {
+          playerDamage: 0,
+          petDamage: 0,
+          enemyDamage: 0,
+          crits: 0,
+        },
       };
     }
     const total = replay.rounds.length || 1;
     const progress = Math.min(revealedRounds, total);
+    const shownRounds = replay.rounds.slice(0, progress);
     return {
-      visibleRounds: replay.rounds.slice(0, progress),
+      visibleRounds: shownRounds,
       isResolved: progress >= total,
       progressText: `${progress} / ${total}`,
+      damageStats: shownRounds.reduce(
+        (stats, round) => {
+          if (round.attacker === 'enemy') {
+            stats.enemyDamage += round.damage || 0;
+          } else if (/【.+】/.test(round.description)) {
+            stats.petDamage += round.damage || 0;
+          } else {
+            stats.playerDamage += round.damage || 0;
+          }
+          if (round.crit) stats.crits += 1;
+          return stats;
+        },
+        { playerDamage: 0, petDamage: 0, enemyDamage: 0, crits: 0 }
+      ),
     };
   }, [replay, revealedRounds]);
 
@@ -53,6 +74,17 @@ const BattleModal: React.FC<BattleModalProps> = ({
     if (round.attacker !== 'player') return '敌方出手';
     return /【.+】/.test(round.description) ? '灵宠出手' : '你的出手';
   };
+  const getRoundDamageTags = (round: BattleReplay['rounds'][number]) => [
+    {
+      text: `伤害 ${round.damage || 0}`,
+      className: round.attacker === 'enemy'
+        ? 'border-rose-500/60 text-rose-300'
+        : 'border-emerald-500/60 text-emerald-300',
+    },
+    ...(round.crit
+      ? [{ text: '暴击', className: 'border-yellow-500/70 text-yellow-300' }]
+      : []),
+  ];
 
   return (
     <Modal
@@ -131,6 +163,24 @@ const BattleModal: React.FC<BattleModalProps> = ({
         >
           {replay.summary}
         </p>
+        <div className="mt-3 grid grid-cols-2 gap-2 text-xs md:grid-cols-4">
+          <div className="rounded border border-emerald-700/40 bg-emerald-950/20 px-3 py-2">
+            <div className="text-stone-500">本体伤害</div>
+            <div className="text-emerald-300 font-semibold">{damageStats.playerDamage}</div>
+          </div>
+          <div className="rounded border border-cyan-700/40 bg-cyan-950/20 px-3 py-2">
+            <div className="text-stone-500">灵宠伤害</div>
+            <div className="text-cyan-300 font-semibold">{damageStats.petDamage}</div>
+          </div>
+          <div className="rounded border border-rose-700/40 bg-rose-950/20 px-3 py-2">
+            <div className="text-stone-500">承受伤害</div>
+            <div className="text-rose-300 font-semibold">{damageStats.enemyDamage}</div>
+          </div>
+          <div className="rounded border border-yellow-700/40 bg-yellow-950/20 px-3 py-2">
+            <div className="text-stone-500">暴击次数</div>
+            <div className="text-yellow-300 font-semibold">{damageStats.crits}</div>
+          </div>
+        </div>
       </div>
 
       {/* 战斗日志 */}
@@ -143,34 +193,41 @@ const BattleModal: React.FC<BattleModalProps> = ({
             战斗记录准备中...
           </div>
         ) : (
-          visibleRounds.map((round, idx) => (
-            <div
-              key={round.id}
-              className={`p-3 rounded border text-stone-200 ${
-                round.attacker === 'player'
-                  ? 'bg-emerald-900/10 border-emerald-700/40'
-                  : 'bg-rose-900/15 border-rose-700/40'
-              }`}
-            >
-              <div className="flex justify-between text-[11px] text-stone-400 mb-1">
-                <span>
-                  第 {idx + 1} 回合 ·{' '}
-                  {getRoundActorLabel(round)}
-                </span>
-                <span>
-                  伤害 {round.damage}
-                  {round.crit && (
-                    <span className="text-mystic-gold ml-1">· 暴击</span>
-                  )}
-                </span>
+          visibleRounds.map((round, idx) => {
+            const detailTags = getRoundDamageTags(round);
+            return (
+              <div
+                key={round.id}
+                className={`p-3 rounded border text-stone-200 ${
+                  round.attacker === 'player'
+                    ? 'bg-emerald-900/10 border-emerald-700/40'
+                    : 'bg-rose-900/15 border-rose-700/40'
+                }`}
+              >
+                <div className="flex justify-between gap-2 text-[11px] text-stone-400 mb-1">
+                  <span>
+                    第 {idx + 1} 回合 ·{' '}
+                    {getRoundActorLabel(round)}
+                  </span>
+                  <span className="flex flex-wrap justify-end gap-1">
+                    {detailTags.map((tag) => (
+                      <span
+                        key={tag.text}
+                        className={`rounded border px-1.5 py-0.5 ${tag.className}`}
+                      >
+                        {tag.text}
+                      </span>
+                    ))}
+                  </span>
+                </div>
+                <p>{round.description}</p>
+                <div className="mt-2 flex items-center justify-between text-[11px] text-stone-400">
+                  <span>你的气血：{round.playerHpAfter}</span>
+                  <span>敌方气血：{round.enemyHpAfter}</span>
+                </div>
               </div>
-              <p>{round.description}</p>
-              <div className="mt-2 flex items-center justify-between text-[11px] text-stone-400">
-                <span>你的气血：{round.playerHpAfter}</span>
-                <span>敌方气血：{round.enemyHpAfter}</span>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </Modal>

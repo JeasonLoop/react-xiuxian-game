@@ -118,6 +118,37 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   const isActionLockedRef = useRef(false);
   // 使用状态来触发重新渲染，确保按钮禁用状态正确更新
 
+  const getActionActorLabel = (action: BattleState['history'][number]) => {
+    if (action.turn === 'enemy') return '敌方出手';
+    if (action.actionType === 'item') return '丹药生效';
+    if (action.actionType === 'defend') return '防御姿态';
+    if (action.actor === 'player' && action.description.startsWith('【')) return '灵宠出手';
+    return '你的出手';
+  };
+
+  const getActionDetailTags = (action: BattleState['history'][number]) => {
+    const tags: Array<{ text: string; className: string }> = [];
+    if (action.result.miss) {
+      tags.push({ text: '闪避', className: 'border-stone-500 text-stone-300' });
+    }
+    if (action.result.damage && action.result.damage > 0) {
+      tags.push({ text: `伤害 ${action.result.damage}`, className: 'border-rose-500/60 text-rose-300' });
+    }
+    if (action.result.heal && action.result.heal > 0) {
+      tags.push({ text: `治疗 ${action.result.heal}`, className: 'border-emerald-500/60 text-emerald-300' });
+    }
+    if (action.result.crit) {
+      tags.push({ text: '暴击', className: 'border-yellow-500/70 text-yellow-300' });
+    }
+    if (action.result.reflectedDamage && action.result.reflectedDamage > 0) {
+      tags.push({ text: `反弹 ${action.result.reflectedDamage}`, className: 'border-cyan-500/60 text-cyan-300' });
+    }
+    if (action.result.manaCost && action.result.manaCost > 0) {
+      tags.push({ text: `灵力 -${action.result.manaCost}`, className: 'border-blue-500/60 text-blue-300' });
+    }
+    return tags;
+  };
+
   // 初始化战斗 - 使用 ref 防止重复初始化
   const isInitializedRef = useRef(false);
   // 用于跟踪初始化是否已超时
@@ -869,18 +900,36 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
             <div className="bg-ink-800/60 rounded-lg p-4 max-h-40 overflow-y-auto">
               <div className="text-xs text-stone-400 mb-2">战斗日志</div>
               <div className="space-y-2">
-                {battleState.history.slice(-5).map((action) => (
-                  <div
-                    key={action.id}
-                    className={`text-sm ${
-                      action.turn === 'player'
-                        ? 'text-emerald-300'
-                        : 'text-rose-300'
-                    }`}
-                  >
-                    {action.description}
-                  </div>
-                ))}
+                {battleState.history.slice(-5).map((action) => {
+                  const detailTags = getActionDetailTags(action);
+                  return (
+                    <div
+                      key={action.id}
+                      className={`rounded border px-3 py-2 text-sm ${
+                        action.turn === 'player'
+                          ? 'border-emerald-700/40 bg-emerald-950/20 text-emerald-200'
+                          : 'border-rose-700/40 bg-rose-950/20 text-rose-200'
+                      }`}
+                    >
+                      <div className="mb-1 flex items-center justify-between gap-2 text-[11px] text-stone-400">
+                        <span>第 {action.round} 回合 · {getActionActorLabel(action)}</span>
+                        {detailTags.length > 0 && (
+                          <span className="flex flex-wrap justify-end gap-1">
+                            {detailTags.map((tag) => (
+                              <span
+                                key={tag.text}
+                                className={`rounded border px-1.5 py-0.5 ${tag.className}`}
+                              >
+                                {tag.text}
+                              </span>
+                            ))}
+                          </span>
+                        )}
+                      </div>
+                      <div>{action.description}</div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

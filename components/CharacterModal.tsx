@@ -522,6 +522,8 @@ const CharacterModal: React.FC<Props> = ({
       return `${days}天 ${hoursRemainder}小时 ${minutes}分钟`;
     } else if (hours > 0) {
       return `${hours}小时 ${minutes}分钟`;
+    } else if (minutes <= 0) {
+      return '不到1分钟';
     } else {
       return `${minutes}分钟`;
     }
