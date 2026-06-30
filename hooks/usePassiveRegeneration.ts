@@ -89,7 +89,7 @@ export function usePassiveRegeneration({
         if (!prev) return prev;
 
         // 计算基础回血量（基于实际最大血量）
-        const baseRegen = Math.max(1, Math.floor(actualMaxHp * 0.01));
+        const baseRegen = Math.max(1, Math.floor(actualMaxHp * 0.0025));
 
         // 判断是否需要回血（使用实际最大血量）
         if (prev.hp < actualMaxHp) {

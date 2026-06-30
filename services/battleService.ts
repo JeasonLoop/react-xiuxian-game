@@ -271,9 +271,9 @@ const generateLoot = (
       // 秘境：根据风险等级调整稀有度概率
       if (riskLevel === '极度危险') {
         // 极度危险：更高概率获得顶级物品（降低基础概率防止通胀）
-        if (roll < 0.05 + realmBonusImmortal) return '仙品'; // 降低10%
-        if (roll < 0.20 + realmBonusLegend) return '传说'; // 降低30%
-        if (roll < 0.70 + realmBonusRare) return '稀有'; // 降低15%
+        if (roll < 0.15 + realmBonusImmortal) return '仙品';
+        if (roll < 0.45 + realmBonusLegend) return '传说';
+        if (roll < 0.82 + realmBonusRare) return '稀有';
         return '普通';
       } else if (riskLevel === '高') {
         // 高风险：较高概率
@@ -546,6 +546,8 @@ function handlePetAction(
   const evolutionMultiplier = 1.0 + evolutionStage * 0.75;
   const affectionBonusFactor = 1 + petAffection / 140;
   const ownerAttack = Number(player.attack) || 0;
+  const capPetDamage = (damage: number, hpRatio: number, attackRatio: number) =>
+    Math.min(damage, Math.max(1, Math.floor(Math.max(enemy.maxHp * hpRatio, ownerAttack * attackRatio))));
 
   // 决定灵宠行动：根据亲密度和等级动态调整技能释放概率
   const baseProbability = 0.42;
@@ -597,7 +599,7 @@ function handlePetAction(
       const aBonus = Math.floor(petAffection * 2.5);
       const finalSkillDamage = (skillDamage + lBonus + aBonus) * affectionBonusFactor;
       const minPetDamage = Math.floor((baseAttack + ownerAssistDamage) * (0.35 + evolutionStage * 0.18) + petLevel * 6 + petAffection);
-      petDamage = Math.max(minPetDamage, calcDamage(finalSkillDamage, enemy.defense));
+      petDamage = capPetDamage(Math.max(minPetDamage, calcDamage(finalSkillDamage, enemy.defense)), 0.28, 1.2);
       enemyHp = Math.max(0, enemyHp - petDamage);
     }
 
@@ -675,7 +677,7 @@ function handlePetAction(
     const affectionBonus = Math.floor(petAffection * 2);
     const petAttackDamage = Math.floor((baseAttack + ownerAssistDamage) * evolutionMultiplier * attackMultiplier) + levelBonus + affectionBonus;
     const minPetDamage = Math.floor((baseAttack + ownerAssistDamage) * (0.25 + evolutionStage * 0.15) + petLevel * 5 + petAffection * 0.8);
-    petDamage = Math.max(minPetDamage, calcDamage(petAttackDamage, enemy.defense));
+    petDamage = capPetDamage(Math.max(minPetDamage, calcDamage(petAttackDamage, enemy.defense)), 0.18, 0.8);
     enemyHp = Math.max(0, enemyHp - petDamage);
 
     return {
@@ -849,18 +851,26 @@ export const createEnemy = async (
   }
 
   // 属性计算基准
-  let basePlayerStats = { attack: player.attack, defense: player.defense, maxHp: player.maxHp, speed: player.speed || 10, spirit: player.spirit || 0, level: player.realmLevel };
+  const playerTotalStats = getPlayerTotalStats(player);
+  let basePlayerStats = {
+    attack: playerTotalStats.attack,
+    defense: playerTotalStats.defense,
+    maxHp: playerTotalStats.maxHp,
+    speed: playerTotalStats.speed || 10,
+    spirit: playerTotalStats.spirit || 0,
+    level: player.realmLevel,
+  };
 
   if (adventureType === 'secret_realm' && realmMinRealm) {
     const realmMinIndex = REALM_ORDER.indexOf(realmMinRealm);
     if (currentRealmIndex > realmMinIndex) {
       const ratio = 0.4 + (realmMinIndex / (REALM_ORDER.length || 1)) * 0.3;
       basePlayerStats = {
-        attack: player.attack * ratio,
-        defense: player.defense * ratio,
-        maxHp: player.maxHp * (ratio - 0.1),
-        speed: (player.speed || 10) * (ratio + 0.1),
-        spirit: (player.spirit || 0) * ratio,
+        attack: playerTotalStats.attack * ratio,
+        defense: playerTotalStats.defense * ratio,
+        maxHp: playerTotalStats.maxHp * (ratio - 0.1),
+        speed: (playerTotalStats.speed || 10) * (ratio + 0.1),
+        spirit: (playerTotalStats.spirit || 0) * ratio,
         level: Math.max(1, player.realmLevel - (currentRealmIndex - realmMinIndex))
       };
     }
@@ -1040,18 +1050,23 @@ export const resolveBattleEncounter = async (
   // 使用getPlayerTotalStats计算实际最大血量（包含金丹法数、心法等加成）
   const totalStats = getPlayerTotalStats(player);
   const actualMaxHp = totalStats.maxHp;
+  const battlePlayer = {
+    ...player,
+    attack: totalStats.attack,
+    defense: totalStats.defense,
+    maxHp: actualMaxHp,
+    speed: totalStats.speed,
+    spirit: totalStats.spirit,
+  };
   // 确保初始值为有效数字，防止NaN
   // 按比例调整血量：如果功法增加了最大血量，当前血量也应该按比例增加
-  const baseMaxHp = Number(player.maxHp) || 1; // 避免除零
-  const currentHp = Number(player.hp) || 0;
-  const hpRatio = baseMaxHp > 0 ? currentHp / baseMaxHp : 0; // 计算血量比例
   const initialPlayerHp = getScaledValue(safeNumber(player.maxHp, 1), safeNumber(player.hp, 0), actualMaxHp);
   const initialMaxHp = actualMaxHp;
   let playerHp = Math.max(0, Math.min(initialPlayerHp, initialMaxHp));
   let enemyHp = safeNumber(enemy.maxHp);
   const rounds: BattleRoundLog[] = [];
   let attacker: 'player' | 'enemy' =
-    (player.speed || 0) >= enemy.speed ? 'player' : 'enemy';
+    (battlePlayer.speed || 0) >= enemy.speed ? 'player' : 'enemy';
 
   // 获取激活的灵宠
   const activePet = player.activePetId
@@ -1069,11 +1084,11 @@ export const resolveBattleEncounter = async (
   while (playerHp > 0 && enemyHp > 0 && rounds.length < 40) {
     const isPlayerTurn = attacker === 'player';
     const damage = calcDamage(
-      isPlayerTurn ? player.attack : enemy.attack,
-      isPlayerTurn ? enemy.defense : player.defense
+      isPlayerTurn ? battlePlayer.attack : enemy.attack,
+      isPlayerTurn ? enemy.defense : battlePlayer.defense
     );
     // 确保速度值是有效数字，防止NaN
-    const playerSpeed = Number(player.speed) || 0;
+    const playerSpeed = Number(battlePlayer.speed) || 0;
     const enemySpeed = Number(enemy.speed) || 0;
     const speedSum = Math.max(1, playerSpeed + enemySpeed); // 确保至少为1，避免除零
     const critSpeed = isPlayerTurn ? playerSpeed : enemySpeed;
@@ -1113,7 +1128,7 @@ export const resolveBattleEncounter = async (
 
       const { action, updatedEnemyHp, updatedPlayerHp, updatedCooldowns } = handlePetAction(
         activePet,
-        { ...player, hp: playerHp } as PlayerStats,
+        { ...battlePlayer, hp: playerHp } as PlayerStats,
         { hp: enemyHp, maxHp: enemy.maxHp, defense: enemy.defense, name: enemy.name, title: enemy.title },
         petSkillCooldowns,
         randomId,

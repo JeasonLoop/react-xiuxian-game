@@ -5,7 +5,6 @@ import { getDifficultyBalance } from '../../constants/balance';
 import {
   shouldTriggerBattle,
   resolveBattleEncounter,
-  createEnemy,
   BattleReplay,
 } from '../../services/battleService';
 import { executeAdventureCore } from './executeAdventureCore';
@@ -81,7 +80,6 @@ export function useAdventureHandlers({
   fleeOnBattle = false,
   skipShop = false,
   skipReputationEvent = false,
-  useTurnBasedBattle = true, // 默认使用新的回合制战斗系统
   onReputationEvent,
   autoAdventure = false,
   difficulty = 'normal',
@@ -166,10 +164,9 @@ export function useAdventureHandlers({
       const petSkillCooldowns = battleResolution.petSkillCooldowns;
       // 自动历练时跳过战斗，不打开战斗弹窗，直接返回结果
       return { result: battleResult, battleContext: battleCtx, shouldReturn: false };
-    } else if (useTurnBasedBattle && onOpenTurnBasedBattle && !effectiveSkipBattle) {
-      // 如果使用回合制战斗系统，打开回合制战斗界面
-      // 注意：不在打开前调用 createEnemy，避免敌人信息不一致
-      // 敌人信息将在战斗弹窗初始化完成后通过回调输出
+    }
+
+    if (!autoAdventure && onOpenTurnBasedBattle) {
       onOpenTurnBasedBattle({
         adventureType: battleType,
         riskLevel,
@@ -177,35 +174,31 @@ export function useAdventureHandlers({
         bossId,
         difficulty,
         onBattleInitialized: (enemyName: string) => {
-          // 战斗初始化完成后输出遭遇敌人的提示
           addLog(`⚠️ 你遭遇了【${enemyName}】！战斗即将开始...`, 'danger');
-          // 初始化完成后关闭 loading
           setLoading(false);
         },
       });
-      // 保持 loading 状态直到战斗弹窗初始化完成
       setCooldown(2);
       return { result: {} as AdventureResult, battleContext: null, shouldReturn: true };
-    } else {
-      // 否则使用旧的自动战斗系统
-      const battleResolution = await resolveBattleEncounter(
-        player,
-        battleType,
-        riskLevel,
-        realmMinRealm,
-        undefined,
-        huntSectId,
-        huntLevel,
-        bossId,
-        difficulty
-      );
-      return {
-        result: battleResolution.adventureResult,
-        battleContext: battleResolution.replay,
-        petSkillCooldowns: battleResolution.petSkillCooldowns,
-        shouldReturn: false,
-      };
     }
+
+    const battleResolution = await resolveBattleEncounter(
+      player,
+      battleType,
+      riskLevel,
+      realmMinRealm,
+      undefined,
+      huntSectId,
+      huntLevel,
+      bossId,
+      difficulty
+    );
+    return {
+      result: battleResolution.adventureResult,
+      battleContext: battleResolution.replay,
+      petSkillCooldowns: battleResolution.petSkillCooldowns,
+      shouldReturn: false,
+    };
   };
 
   const executeAdventure = async (
@@ -381,18 +374,51 @@ export function useAdventureHandlers({
                 () => {
                   // 玩家选择挑战
                   addLog(`你决定挑战${boss.name}！`, 'warning');
-
-                   setTimeout(() => {
-                      onOpenTurnBasedBattle({
-                        adventureType: actualAdventureType,
-                        riskLevel,
-                        realmMinRealm: player.realm,
-                        bossId,
-                        difficulty,
-                      });
-                    }, 300);
+                  if (!autoAdventure && onOpenTurnBasedBattle) {
+                    onOpenTurnBasedBattle({
+                      adventureType: actualAdventureType,
+                      riskLevel,
+                      realmMinRealm: player.realm,
+                      bossId,
+                      difficulty,
+                    });
                     setLoading(false);
                     setCooldown(2);
+                    return;
+                  }
+
+                  resolveBattleEncounter(
+                    player,
+                    actualAdventureType,
+                    riskLevel || '极度危险',
+                    player.realm,
+                    undefined,
+                    undefined,
+                    undefined,
+                    bossId,
+                    difficulty
+                  ).then(async (battleResolution) => {
+                    await executeAdventureCore({
+                      result: battleResolution.adventureResult,
+                      battleContext: battleResolution.replay,
+                      petSkillCooldowns: battleResolution.petSkillCooldowns,
+                      player,
+                      setPlayer,
+                      addLog,
+                      triggerVisual,
+                      onOpenBattleModal,
+                      realmName,
+                      adventureType: actualAdventureType,
+                      skipBattle: effectiveSkipBattle,
+                      riskLevel,
+                      skipReputationEvent: effectiveSkipReputationEvent,
+                      onReputationEvent,
+                      onPauseAutoAdventure: handlePauseAutoAdventure,
+                    });
+                  }).finally(() => {
+                    setLoading(false);
+                    setCooldown(2);
+                  });
                 },
                 () => {
                   // 玩家选择放弃

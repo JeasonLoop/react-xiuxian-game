@@ -39,6 +39,10 @@ export function usePetHandlers(
   const setPlayer = props?.setPlayer ?? storeSetPlayer;
   const addLog = props?.addLog ?? storeAddLog;
   const setItemActionLog = props?.setItemActionLog ?? storeSetItemActionLog;
+  const showActionNotice = (message: string, type: 'normal' | 'gain' | 'danger' | 'special') => {
+    addLog(message, type);
+    setItemActionLog?.({ text: message, type });
+  };
 
   /**
    * 辅助函数：根据等级和进化阶段精确计算灵宠属性
@@ -443,15 +447,15 @@ export function usePetHandlers(
     const expeditionHpCost = Math.max(200, Math.floor(player.maxHp * (0.18 + pet.evolutionStage * 0.07)));
     const expeditionExpCost = Math.max(100, Math.floor(player.maxExp * (0.08 + pet.evolutionStage * 0.04)));
     if (player.spiritStones < expeditionStoneCost) {
-      addLog(`灵石不足！进入灵兽秘径需要 ${expeditionStoneCost} 灵石（当前持有 ${player.spiritStones}）。`, 'danger');
+      showActionNotice(`灵石不足！进入灵兽秘径需要 ${expeditionStoneCost} 灵石（当前持有 ${player.spiritStones}）`, 'danger');
       return;
     }
     if (player.hp <= expeditionHpCost) {
-      addLog(`气血不足！进入灵兽秘径至少需要消耗 ${expeditionHpCost} 气血，并保留 1 点气血脱身。`, 'danger');
+      showActionNotice(`气血不足！进入灵兽秘径需要消耗 ${expeditionHpCost} 气血，并保留 1 点气血`, 'danger');
       return;
     }
     if (player.exp < expeditionExpCost) {
-      addLog(`修为不足！进入灵兽秘径需要献祭 ${expeditionExpCost} 修为（当前 ${player.exp}）。`, 'danger');
+      showActionNotice(`修为不足！进入灵兽秘径需要 ${expeditionExpCost} 修为（当前 ${player.exp}）`, 'danger');
       return;
     }
 

@@ -149,7 +149,7 @@ const handleArtUnlocks = (
   let artUnlocked = false;
 
   const storyHasArtKeywords = result.story && /功法|残卷|秘籍|领悟|传授|传承/.test(result.story);
-  const artChance = storyHasArtKeywords ? 1.0 : (isSecretRealm ? 0.08 : (adventureType === 'lucky' ? 0.10 : 0.04));
+  const artChance = storyHasArtKeywords ? 0.2 : (isSecretRealm ? 0.08 : (adventureType === 'lucky' ? 0.10 : 0.04));
 
   const storyHash = result.story ? result.story.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) : 0;
   const deterministicSeed = storyHash + (player.exp || 0) + (player.spiritStones || 0);

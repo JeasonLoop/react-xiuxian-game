@@ -49,6 +49,10 @@ const BattleModal: React.FC<BattleModalProps> = ({
   if (!replay) return null;
 
   const closeDisabled = !isResolved;
+  const getRoundActorLabel = (round: BattleReplay['rounds'][number]) => {
+    if (round.attacker !== 'player') return '敌方出手';
+    return /【.+】/.test(round.description) ? '灵宠出手' : '你的出手';
+  };
 
   return (
     <Modal
@@ -151,7 +155,7 @@ const BattleModal: React.FC<BattleModalProps> = ({
               <div className="flex justify-between text-[11px] text-stone-400 mb-1">
                 <span>
                   第 {idx + 1} 回合 ·{' '}
-                  {round.attacker === 'player' ? '你的出手' : '敌方出手'}
+                  {getRoundActorLabel(round)}
                 </span>
                 <span>
                   伤害 {round.damage}
