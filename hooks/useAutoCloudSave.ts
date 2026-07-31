@@ -18,13 +18,15 @@ export function useAutoCloudSave() {
     const interval = setInterval(() => {
       const state = useGameStore.getState();
       if (!state.player) return;
+      const now = Date.now();
 
       cloudSaveService
         .pushSave({
           player: state.player,
           logs: state.logs,
           marketItems: useUIStore.getState().marketItems,
-          timestamp: Date.now(),
+          timestamp: now,
+          lastActiveTime: now,
         })
         .catch((err) => {
           const now = Date.now();

@@ -16,7 +16,7 @@ export function usePlayTime({
   saveGame,
 }: UsePlayTimeProps) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const lastTickAtRef = useRef<number>(Date.now());
+  const activeSinceRef = useRef<number | null>(null);
   const playerRef = useRef<PlayerStats | null>(player);
 
   useEffect(() => {
@@ -29,31 +29,48 @@ export function usePlayTime({
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      activeSinceRef.current = null;
       return;
     }
 
-    lastTickAtRef.current = Date.now();
+    const flushActiveTime = (countElapsed = document.visibilityState === 'visible') => {
+      const activeSince = activeSinceRef.current;
+      if (activeSince === null) return;
 
-    intervalRef.current = setInterval(() => {
       const now = Date.now();
-      const elapsed = now - lastTickAtRef.current;
-      lastTickAtRef.current = now;
+      const elapsed = Math.max(0, now - activeSince);
+      activeSinceRef.current = now;
 
-      if (document.visibilityState !== 'visible') {
-        return;
-      }
+      if (elapsed === 0 || !countElapsed) return;
 
-      const activeElapsed = Math.min(Math.max(elapsed, 0), 1000);
       setPlayer((prev) => {
         if (!prev) return null;
-        return { ...prev, playTime: (prev.playTime || 0) + activeElapsed };
+        return { ...prev, playTime: (prev.playTime || 0) + elapsed };
       });
+    };
+
+    activeSinceRef.current =
+      document.visibilityState === 'visible' ? Date.now() : null;
+
+    intervalRef.current = setInterval(() => {
+      if (document.visibilityState === 'visible') flushActiveTime();
     }, 1000);
 
     const handleVisibilityChange = () => {
-      lastTickAtRef.current = Date.now();
+      if (document.visibilityState === 'visible') {
+        activeSinceRef.current = Date.now();
+      } else {
+        flushActiveTime(true);
+        activeSinceRef.current = null;
+      }
+    };
+    const handlePageHide = () => {
+      flushActiveTime(true);
+      activeSinceRef.current = null;
+      if (playerRef.current) saveGame();
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handlePageHide);
 
     return () => {
       if (intervalRef.current) {
@@ -61,6 +78,10 @@ export function usePlayTime({
         intervalRef.current = null;
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handlePageHide);
+
+      if (document.visibilityState === 'visible') flushActiveTime();
+      activeSinceRef.current = null;
 
       if (playerRef.current) {
         saveGame();
