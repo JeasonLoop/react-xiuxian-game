@@ -987,8 +987,8 @@ export interface MarketItem {
   quantity: number;
   /** 由哪位NPC/玩家上架 */
   sellerName?: string;
-  /** 卖家ID：'system'=系统/NPC，'player'=玩家自己 */
-  sellerId?: 'system' | 'player';
+  /** 卖家ID：'system'=系统/NPC，'player'=玩家自己，数字或字符串表示具体用户UID */
+  sellerId?: 'system' | 'player' | string | number;
   /** 来源物品ID（玩家上架时记录原物品ID，用于下架找回） */
   sourceItemId?: string;
   /** 完整原始物品JSON（用于下架时精准还原，避免字段丢失） */

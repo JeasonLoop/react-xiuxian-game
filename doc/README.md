@@ -9,7 +9,6 @@
 - [模块解析](./MODULES.md)
 - [API 文档](./API.md)
 - [存档格式](./SAVE_FORMAT.md)
-- [可执行改进方案](./IMPROVEMENTS.md)
 - [贡献指南](./CONTRIBUTING.md)
 - [版本更新日志](../public/CHANGELOG.md)
 

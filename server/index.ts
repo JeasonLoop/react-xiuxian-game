@@ -137,6 +137,20 @@ const db = new sqlite3.Database(dbPath, (err) => {
       `);
       db.run(`CREATE INDEX IF NOT EXISTS idx_market_status ON market_listings(status)`);
       db.run(`CREATE INDEX IF NOT EXISTS idx_market_seller ON market_listings(seller_id)`);
+
+      // 交易行卖家收益表：物品售出后，卖家灵石先入账到此表，待卖家客户端领取
+      db.run(`
+        CREATE TABLE IF NOT EXISTS market_payouts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          listing_id INTEGER,
+          amount INTEGER NOT NULL,
+          claimed INTEGER NOT NULL DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+      `);
+      db.run(`CREATE INDEX IF NOT EXISTS idx_payouts_user ON market_payouts(user_id, claimed)`);
     });
   }
 });
@@ -409,7 +423,7 @@ app.get('/api/save', authenticateToken, (req: any, res: any) => {
     try {
       const saveData = JSON.parse(row.save_data);
       res.json(saveData);
-    } catch (e) {
+    } catch {
       res.status(500).json({ error: 'Error parsing save data' });
     }
   });
@@ -622,6 +636,30 @@ app.get('/api/leaderboard/me', authenticateToken, (req: any, res: any) => {
   );
 });
 
+// ── 存档辅助：读取/写回玩家存档（交易行服务端结算用） ──
+function getSavePlayer(userId: number, cb: (saveData: any | null) => void) {
+  db.get('SELECT save_data FROM saves WHERE user_id = ?', [userId], (err, row: any) => {
+    if (err || !row) return cb(null);
+    try {
+      cb(JSON.parse(row.save_data));
+    } catch {
+      cb(null);
+    }
+  });
+}
+
+function writeSavePlayer(userId: number, saveData: any, cb?: (ok: boolean) => void) {
+  db.run(
+    'UPDATE saves SET save_data = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
+    [JSON.stringify(saveData), userId],
+    (err) => cb?.(!err)
+  );
+}
+
+function getPlayerStones(saveData: any): number {
+  return Number(saveData?.player?.spiritStones) || 0;
+}
+
 // ── 交易行 API ──
 
 // GET /api/market/items — 获取在售商品列表（分页+分类+搜索）
@@ -684,7 +722,7 @@ app.get('/api/market/items', (req: any, res: any) => {
             equipmentSlot: r.equipment_slot || undefined,
             effect: r.effect_json ? JSON.parse(r.effect_json) : undefined,
             sellerName: r.seller_name,
-            sellerId: 'system',
+            sellerId: r.seller_id,
             sellerItemData: r.item_source_json || undefined,
             createdAt: r.created_at,
           };
@@ -736,7 +774,8 @@ app.post('/api/market/purchase', authenticateToken, (req: any, res: any) => {
   const { listingId } = req.body;
   if (!listingId) return res.status(400).json({ error: '缺少 listingId' });
 
-  const numericId = parseInt(listingId.toString().replace('market-', ''));
+  const cleanId = (listingId || '').toString().replace(/^(?:market-)+/, '');
+  const numericId = parseInt(cleanId, 10);
 
   db.get('SELECT * FROM market_listings WHERE id = ? AND status = ?', [numericId, 'active'], (err, listing: any) => {
     if (err || !listing) {
@@ -746,46 +785,169 @@ app.post('/api/market/purchase', authenticateToken, (req: any, res: any) => {
       return res.status(400).json({ error: '不能购买自己的商品' });
     }
 
-    // 返回商品信息（真实扣款在客户端完成，服务端只做库存检查和锁定）
-    // 实际扣款由客户端调用 purchase/confirm 完成
-    const sourceItem = parseMarketSourceItem(listing.item_source_json);
-    res.json({
-      success: true,
-      listing: {
-        id: listing.id,
-        name: listing.item_name,
-        type: listing.item_type,
-        description: listing.item_description,
-        rarity: listing.item_rarity,
-        price: listing.price,
-        quantity: listing.quantity || 1,
-        advancedItemType: sourceItem?.advancedItemType,
-        advancedItemId: sourceItem?.advancedItemId,
-        isEquippable: !!listing.is_equippable,
-        equipmentSlot: listing.equipment_slot,
-        effect: listing.effect_json ? JSON.parse(listing.effect_json) : undefined,
-        itemSourceJson: listing.item_source_json,
-      },
+    // 服务端预检买家灵石余额（以最近同步的云存档为准）
+    getSavePlayer(req.user.id, (saveData) => {
+      const stones = getPlayerStones(saveData);
+      if (stones < listing.price) {
+        return res.status(400).json({ error: `灵石不足（服务端余额 ${stones}），请先同步云存档后重试` });
+      }
+
+      const sourceItem = parseMarketSourceItem(listing.item_source_json);
+      res.json({
+        success: true,
+        listing: {
+          id: listing.id,
+          name: listing.item_name,
+          type: listing.item_type,
+          description: listing.item_description,
+          rarity: listing.item_rarity,
+          price: listing.price,
+          quantity: listing.quantity || 1,
+          advancedItemType: sourceItem?.advancedItemType,
+          advancedItemId: sourceItem?.advancedItemId,
+          isEquippable: !!listing.is_equippable,
+          equipmentSlot: listing.equipment_slot,
+          effect: listing.effect_json ? JSON.parse(listing.effect_json) : undefined,
+          itemSourceJson: listing.item_source_json,
+        },
+      });
     });
   });
 });
 
-// POST /api/market/purchase/confirm — 确认购买（扣库存+记录买家）
+// POST /api/market/purchase/confirm — 确认购买（服务端扣款 + 锁定库存 + 卖家收益入账）
 app.post('/api/market/purchase/confirm', authenticateToken, (req: any, res: any) => {
   const { listingId } = req.body;
   if (!listingId) return res.status(400).json({ error: '缺少 listingId' });
 
-  const numericId = parseInt(listingId.toString().replace('market-', ''));
+  const cleanId = (listingId || '').toString().replace(/^(?:market-)+/, '');
+  const numericId = parseInt(cleanId, 10);
 
-  db.run(
-    `UPDATE market_listings SET status = 'sold', buyer_id = ?, sold_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'active' AND seller_id != ?`,
-    [req.user.id, numericId, req.user.id],
-    function (err) {
-      if (err) return res.status(500).json({ error: '购买失败' });
-      if (this.changes === 0) return res.status(409).json({ error: '商品已被他人买走' });
-      res.json({ success: true });
+  db.get('SELECT * FROM market_listings WHERE id = ?', [numericId], (err, listing: any) => {
+    if (err || !listing) return res.status(404).json({ error: '商品不存在' });
+    if (listing.seller_id === req.user.id) return res.status(400).json({ error: '不能购买自己的商品' });
+
+    // 将商品标记回 active（失败回滚时使用）
+    const rollbackListing = () => {
+      db.run(
+        `UPDATE market_listings SET status = 'active', buyer_id = NULL, sold_at = NULL WHERE id = ? AND buyer_id = ?`,
+        [numericId, req.user.id],
+        () => {}
+      );
+    };
+
+    // 1. 原子锁定商品（防止并发重复购买）
+    db.run(
+      `UPDATE market_listings SET status = 'sold', buyer_id = ?, sold_at = CURRENT_TIMESTAMP WHERE id = ? AND status = 'active'`,
+      [req.user.id, numericId],
+      function (lockErr) {
+        if (lockErr) return res.status(500).json({ error: '购买失败' });
+        if (this.changes === 0) return res.status(409).json({ error: '商品已被他人买走' });
+
+        // 2. 服务端扣款：从买家最近同步的云存档中校验并扣除灵石
+        getSavePlayer(req.user.id, (saveData) => {
+          if (!saveData || !saveData.player) {
+            rollbackListing();
+            return res.status(409).json({ error: '尚未同步云存档，无法完成扣款，请稍后重试' });
+          }
+
+          const stones = getPlayerStones(saveData);
+          if (stones < listing.price) {
+            rollbackListing();
+            return res.status(409).json({ error: `灵石不足（服务端余额 ${stones}），请先同步云存档后重试` });
+          }
+
+          saveData.player.spiritStones = stones - listing.price;
+
+          // 将购买的商品加入到买家云存档背包中，防止立即刷新或换设备导致丢物品
+          if (!Array.isArray(saveData.player.inventory)) {
+            saveData.player.inventory = [];
+          }
+          const parsedSource = parseMarketSourceItem(listing.item_source_json);
+          const itemToAdd = parsedSource || {
+            id: `market-bought-${listing.id}-${Date.now()}`,
+            name: listing.item_name,
+            type: listing.item_type,
+            description: listing.item_description || '',
+            rarity: listing.item_rarity || '普通',
+            quantity: listing.quantity || 1,
+            isEquippable: !!listing.is_equippable,
+            equipmentSlot: listing.equipment_slot || undefined,
+            effect: listing.effect_json ? JSON.parse(listing.effect_json) : undefined,
+          };
+          const stackableIndex = saveData.player.inventory.findIndex(
+            (invItem: any) => !invItem.isEquippable && invItem.name === itemToAdd.name && invItem.type === itemToAdd.type
+          );
+          if (stackableIndex >= 0) {
+            saveData.player.inventory[stackableIndex].quantity =
+              (Number(saveData.player.inventory[stackableIndex].quantity) || 1) + (Number(itemToAdd.quantity) || 1);
+          } else {
+            saveData.player.inventory.push({
+              ...itemToAdd,
+              id: itemToAdd.id || `market-bought-${listing.id}-${Date.now()}`,
+              quantity: Number(itemToAdd.quantity) || 1,
+            });
+          }
+
+          writeSavePlayer(req.user.id, saveData, (ok) => {
+            if (!ok) {
+              rollbackListing();
+              return res.status(500).json({ error: '扣款失败，请重试' });
+            }
+
+            // 3. 卖家收益入账（待卖家领取）
+            db.run(
+              'INSERT INTO market_payouts (user_id, listing_id, amount) VALUES (?, ?, ?)',
+              [listing.seller_id, listing.id, listing.price],
+              () => {
+                res.json({ success: true, stones: saveData.player.spiritStones });
+              }
+            );
+          });
+        });
+      }
+    );
+  });
+});
+
+// GET /api/market/payouts — 查询当前用户未领取的卖家收益
+app.get('/api/market/payouts', authenticateToken, (req: any, res: any) => {
+  db.get(
+    'SELECT COALESCE(SUM(amount), 0) AS total, COUNT(*) AS count FROM market_payouts WHERE user_id = ? AND claimed = 0',
+    [req.user.id],
+    (err, row: any) => {
+      if (err) return res.status(500).json({ error: '查询收益失败' });
+      res.json({ total: row?.total || 0, count: row?.count || 0 });
     }
   );
+});
+
+// POST /api/market/payouts/claim — 领取卖家收益（写入玩家存档灵石）
+app.post('/api/market/payouts/claim', authenticateToken, (req: any, res: any) => {
+  db.all('SELECT id, amount FROM market_payouts WHERE user_id = ? AND claimed = 0', [req.user.id], (err, rows: any[]) => {
+    if (err) return res.status(500).json({ error: '领取失败' });
+    if (!rows || rows.length === 0) return res.json({ success: true, amount: 0 });
+
+    const total = rows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+    const ids = rows.map((r) => r.id);
+
+    // 先标记已领取（防止重复领取），再写入存档
+    db.run(
+      `UPDATE market_payouts SET claimed = 1 WHERE id IN (${ids.map(() => '?').join(',')})`,
+      ids,
+      (err2) => {
+        if (err2) return res.status(500).json({ error: '领取失败' });
+
+        getSavePlayer(req.user.id, (saveData) => {
+          if (saveData && saveData.player) {
+            saveData.player.spiritStones = getPlayerStones(saveData) + total;
+            writeSavePlayer(req.user.id, saveData);
+          }
+          res.json({ success: true, amount: total });
+        });
+      }
+    );
+  });
 });
 
 // POST /api/market/cancel — 下架自己的商品
@@ -793,7 +955,8 @@ app.post('/api/market/cancel', authenticateToken, (req: any, res: any) => {
   const { listingId } = req.body;
   if (!listingId) return res.status(400).json({ error: '缺少 listingId' });
 
-  const numericId = parseInt(listingId.toString().replace('market-', ''));
+  const cleanId = (listingId || '').toString().replace(/^(?:market-)+/, '');
+  const numericId = parseInt(cleanId, 10);
 
   db.get('SELECT item_source_json FROM market_listings WHERE id = ? AND seller_id = ? AND status = ?',
     [numericId, req.user.id, 'active'],

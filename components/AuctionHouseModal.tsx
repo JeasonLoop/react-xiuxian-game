@@ -77,8 +77,6 @@ export default function TradeMarketModal({
   const onCategoryChange = (v: ItemCategory) => { setCategoryFilter(v); setPage(1); };
 
   // 切换到购买tab时自动同步市场数据（跳过初始挂载，避免和 handleOpenTradeMarket 重复）
-  const syncRef = useRef(onSyncMarket);
-  syncRef.current = onSyncMarket;
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) {
@@ -86,16 +84,15 @@ export default function TradeMarketModal({
       return;
     }
     if (activeTab === 'buy') {
-      syncRef.current();
+      onSyncMarket();
     }
-  }, [activeTab]);
+  }, [activeTab, onSyncMarket]);
 
-  const systemItems = items.filter((i) => i.sellerId === 'system');
   const playerListings = items.filter((i) => i.sellerId === 'player');
 
-  // 购买 tab：分类 + 搜索 + 分页
+  // 购买 tab：分类 + 搜索 + 分页（展示全市场在售商品）
   const filteredItems = useMemo(() => {
-    let result = systemItems;
+    let result = items;
     if (categoryFilter !== 'all') {
       result = result.filter((i) => getItemCategory(i) === categoryFilter);
     }
@@ -104,7 +101,7 @@ export default function TradeMarketModal({
       result = result.filter((i) => i.name.toLowerCase().includes(q));
     }
     return result;
-  }, [systemItems, categoryFilter, buySearch]);
+  }, [items, categoryFilter, buySearch]);
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / pageSize));
   const pagedItems = useMemo(() => {
@@ -279,7 +276,14 @@ export default function TradeMarketModal({
                         {item.rarity}
                       </span>
                     </div>
-                    <div className="text-xs text-stone-500 mb-1">卖家: {item.sellerName || '匿名修士'}</div>
+                    <div className="text-xs text-stone-500 mb-1 flex items-center gap-1.5">
+                      <span>卖家: {isOwnItem ? '我（自己）' : item.sellerName || '匿名修士'}</span>
+                      {isOwnItem && (
+                        <span className="text-[10px] text-amber-400 bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-800/80">
+                          我的上架
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-stone-400 mb-3">{item.description}</p>
                     {item.effect && (
                       <div className="text-xs text-stone-400 mb-3 space-y-1">

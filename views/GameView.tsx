@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { PlayerStats, LogEntry } from '../types';
 import StatsPanel from '../components/StatsPanel';
 import LogPanel from '../components/LogPanel';
@@ -129,18 +129,21 @@ function GameView({
     [player.lotteryTickets]
   );
 
-  const [showActionBarGuide, setShowActionBarGuide] = useState(false);
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (!localStorage.getItem(STORAGE_KEYS.ACTION_BAR_GUIDE_SHOWN)) {
-      setShowActionBarGuide(true);
+  const [showActionBarGuide, setShowActionBarGuide] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    try {
+      return !localStorage.getItem(STORAGE_KEYS.ACTION_BAR_GUIDE_SHOWN);
+    } catch {
+      return false;
     }
-  }, []);
+  });
   const closeActionBarGuide = () => {
     setShowActionBarGuide(false);
     try {
       localStorage.setItem(STORAGE_KEYS.ACTION_BAR_GUIDE_SHOWN, 'true');
-    } catch (_) {}
+    } catch {
+      // ignore storage error
+    }
   };
 
   return (
@@ -248,10 +251,10 @@ function GameView({
       {itemActionLog && (
         <ItemActionToast
           log={{
-            id: '',
+            id: 'item-action',
             text: itemActionLog.text,
             type: itemActionLog.type as LogEntry['type'],
-            timestamp: Date.now(),
+            timestamp: 0,
           }}
         />
       )}

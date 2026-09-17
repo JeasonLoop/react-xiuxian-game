@@ -176,7 +176,7 @@ export function useSectHandlers({
       if (!sect) {
         sect = {
           id: prev.sectId,
-          name: '该宗门', // 无法获取名称，使用占位符
+          name: '未知宗门', // 兼容旧存档：加入时未保存宗门信息且不在宗门列表中
           description: '',
           reqRealm: RealmType.QiRefining,
           grade: '黄',

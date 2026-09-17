@@ -12,13 +12,12 @@ import WelcomeScreen from './components/WelcomeScreen';
 import StartScreen from './components/StartScreen';
 import LoadingScreen from './components/LoadingScreen';
 
-import { BattleReplay } from './services/battleService';
+import type { BattleReplay } from './services/battleService';
 import { useGameEffects } from './hooks/useGameEffects';
 import {
   useGameStore,
   usePlayer,
   useSettings,
-  useLogs,
   useGameStarted,
 } from './store';
 import { useDeathDetection } from './hooks/useDeathDetection';
@@ -68,7 +67,6 @@ function App() {
   const player = usePlayer();
   const setPlayer = useGameStore((state) => state.setPlayer);
   const settings = useSettings();
-  const logs = useLogs();
   const setLogs = useGameStore((state) => state.setLogs);
   const saveGame = useGameStore((state) => state.saveGame);
   const loadGame = useGameStore((state) => state.loadGame);
@@ -497,7 +495,6 @@ function App() {
   return (
     <AppContent
       player={player}
-      logs={logs}
       setLogs={setLogs}
       visualEffects={visualEffects}
       loading={loading}

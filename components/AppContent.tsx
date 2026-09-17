@@ -6,7 +6,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { PlayerStats, TribulationState, LogEntry } from '../types';
-import { BattleReplay } from '../services/battleService';
+import type { BattleReplay } from '../services/battleService';
 import TribulationModal from './TribulationModal';
 import DeathModal from './DeathModal';
 import DungeonModal from './DungeonModal';
@@ -22,7 +22,7 @@ import { STORAGE_KEYS } from '../constants/storageKeys';
 import { REALM_DATA } from '../constants/index';
 import { createInitialPlayer } from '../utils/playerUtils';
 import { useUIStore, useModals } from '../store/uiStore';
-import { useGameStore } from '../store/gameStore';
+import { useGameStore, useLogs } from '../store/gameStore';
 import { isDebugFeatureAvailable } from '../utils/debugMode';
 import AuctionHouseModal from './AuctionHouseModal';
 import { useTradeMarketHandlers } from '../views/auctionHouse/useAuctionHouseHandlers';
@@ -32,7 +32,6 @@ interface AppContentProps {
   player: PlayerStats;
 
   // 游戏状态
-  logs: LogEntry[];
   setLogs: React.Dispatch<React.SetStateAction<LogEntry[]>>;
   visualEffects: any[];
   loading: boolean;
@@ -101,10 +100,11 @@ export function AppContent(props: AppContentProps) {
   const setModal = useUIStore((state) => state.setModal);
   const modals = useModals();
   const marketItems = useUIStore((state) => state.marketItems);
+  // logs 直接从 store 订阅：日志高频变更，避免经 App 层引起整树重渲染
+  const logs = useLogs();
 
   const {
     player,
-    logs,
     setLogs,
     visualEffects,
     loading,

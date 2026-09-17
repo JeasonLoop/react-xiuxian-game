@@ -31,6 +31,9 @@ const DEFAULT_SETTINGS: GameSettings = {
   difficulty: 'normal',
 };
 
+// 日志条数上限：防止长时间挂机日志无限增长，拖慢渲染与存档序列化
+const MAX_LOG_COUNT = 500;
+
 // 加载初始设置
 function loadInitialSettings(): GameSettings {
   try {
@@ -146,17 +149,20 @@ export const useGameStore = create<GameState>()(
 
     // 添加日志
     addLog: (text, type) => {
-      set((state) => ({
-        logs: [
-          ...state.logs,
-          {
-            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            text,
-            type,
-            timestamp: Date.now(),
-          },
-        ],
-      }));
+      set((state) => {
+        const entry: LogEntry = {
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          text,
+          type,
+          timestamp: Date.now(),
+        };
+        // 超出上限时丢弃最早的日志
+        const logs =
+          state.logs.length >= MAX_LOG_COUNT
+            ? [...state.logs.slice(-(MAX_LOG_COUNT - 1)), entry]
+            : [...state.logs, entry];
+        return { logs };
+      });
     },
 
     // 保存游戏
@@ -242,7 +248,10 @@ export const useGameStore = create<GameState>()(
 
           set({
             player: finalPlayer,
-            logs: offlineLogEntry ? [...(savedData.logs || []), offlineLogEntry] : (savedData.logs || []),
+            // 加载时同样限制日志条数，兼容旧的超大存档
+            logs: offlineLogEntry
+              ? [...(savedData.logs || []).slice(-MAX_LOG_COUNT), offlineLogEntry]
+              : (savedData.logs || []).slice(-MAX_LOG_COUNT),
             gameStarted: true,
             hasSave: true,
           });

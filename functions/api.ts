@@ -128,6 +128,56 @@ async function initMarketFromKV(env: Env): Promise<void> {
   }
 }
 
+// ── 卖家收益 KV 持久化 ──
+interface MarketPayout {
+  id: number;
+  user_id: string;
+  listing_id: number;
+  amount: number;
+  claimed: 0 | 1;
+  created_at: number;
+}
+let marketPayouts = new Map<number, MarketPayout>();
+let payoutNextId = 1;
+const PAYOUTS_KV_KEY = 'market_payouts';
+
+async function initPayoutsFromKV(env: Env): Promise<void> {
+  if (!env.RANKINGS_STORE) return;
+  try {
+    const raw = await env.RANKINGS_STORE.get(PAYOUTS_KV_KEY, 'json');
+    if (raw && Array.isArray(raw)) {
+      marketPayouts = new Map();
+      for (const p of raw as MarketPayout[]) {
+        if (p.id != null) marketPayouts.set(p.id, p);
+      }
+      payoutNextId = Math.max(...Array.from(marketPayouts.keys()), 0) + 1;
+    }
+  } catch {}
+}
+async function writePayoutsToKV(env: Env): Promise<void> {
+  if (!env.RANKINGS_STORE) return;
+  try {
+    await env.RANKINGS_STORE.put(PAYOUTS_KV_KEY, JSON.stringify(Array.from(marketPayouts.values())));
+  } catch {}
+}
+
+// ── 存档辅助：读取/写回玩家存档（交易行服务端结算用） ──
+async function getSaveForUser(env: Env, userId: string): Promise<any | null> {
+  let saveData = saves.get(userId);
+  if (!saveData) {
+    saveData = await readSaveFromKV(env, userId);
+    if (saveData) saves.set(userId, saveData);
+  }
+  return saveData || null;
+}
+async function writeSaveForUser(env: Env, userId: string, saveData: any): Promise<void> {
+  saves.set(userId, saveData);
+  await writeSaveToKV(env, userId, saveData);
+}
+function getPlayerStones(saveData: any): number {
+  return Number(saveData?.player?.spiritStones) || 0;
+}
+
 function parseMarketSourceItem(itemSourceJson?: string): any | null {
   if (!itemSourceJson) return null;
   try {
@@ -227,9 +277,10 @@ export default {
     const path = url.pathname.replace('/api', '');
     const secret = env.JWT_SECRET;
 
-    // 冷启动时从 KV 恢复交易行数据
+    // 冷启动时从 KV 恢复交易行与收益数据
     if (!marketInitialized) {
       await initMarketFromKV(env);
+      await initPayoutsFromKV(env);
       marketInitialized = true;
     }
 
@@ -490,7 +541,7 @@ export default {
           equipmentSlot: r.equipment_slot || undefined,
           effect: r.effect_json ? JSON.parse(r.effect_json) : undefined,
           sellerName: r.seller_name,
-          sellerId: 'system',
+          sellerId: r.seller_id,
           sellerItemData: r.item_source_json || undefined,
         };
       });
@@ -526,6 +577,7 @@ export default {
     }
 
     // POST /api/market/purchase — 查库存
+    // POST /api/market/purchase — 预检购买
     if (path === '/market/purchase' && request.method === 'POST') {
       const auth = request.headers.get('Authorization');
       if (!auth) return json({ error: '未登录' }, 401);
@@ -533,10 +585,18 @@ export default {
       if (!p) return json({ error: '登录已过期' }, 401);
 
       const { listingId } = await request.json() as any;
-      const numericId = parseInt((listingId || '').toString().replace('market-', ''));
+      const cleanId = (listingId || '').toString().replace(/^(?:market-)+/, '');
+      const numericId = parseInt(cleanId, 10);
       const listing = marketListings.get(numericId);
       if (!listing || listing.status !== 'active') return json({ error: '商品不存在或已售出' }, 404);
       if (listing.seller_id === p.id) return json({ error: '不能购买自己的商品' }, 400);
+
+      // 服务端预检买家灵石余额（以最近同步的云存档为准）
+      const saveData = await getSaveForUser(env, p.id);
+      const stones = getPlayerStones(saveData);
+      if (stones < listing.price) {
+        return json({ error: `灵石不足（服务端余额 ${stones}），请先同步云存档后重试` }, 400);
+      }
 
       const sourceItem = parseMarketSourceItem(listing.item_source_json);
       return json({
@@ -562,16 +622,124 @@ export default {
       if (!p) return json({ error: '登录已过期' }, 401);
 
       const { listingId } = await request.json() as any;
-      const numericId = parseInt((listingId || '').toString().replace('market-', ''));
+      const cleanId = (listingId || '').toString().replace(/^(?:market-)+/, '');
+      const numericId = parseInt(cleanId, 10);
       const listing = marketListings.get(numericId);
       if (!listing || listing.status !== 'active') return json({ error: '商品不存在' }, 404);
       if (listing.seller_id === p.id) return json({ error: '不能购买自己的商品' }, 400);
 
+      // 服务端扣款：从买家最近同步的云存档中校验并扣除灵石
+      const saveData = await getSaveForUser(env, p.id);
+      if (!saveData || !saveData.player) {
+        return json({ error: '尚未同步云存档，无法完成扣款，请稍后重试' }, 409);
+      }
+      const stones = getPlayerStones(saveData);
+      if (stones < listing.price) {
+        return json({ error: `灵石不足（服务端余额 ${stones}），请先同步云存档后重试` }, 409);
+      }
+      saveData.player.spiritStones = stones - listing.price;
+
+      // 将购买的商品加入到买家云存档背包中，防止丢失物品
+      if (!Array.isArray(saveData.player.inventory)) {
+        saveData.player.inventory = [];
+      }
+      const parsedSource = parseMarketSourceItem(listing.item_source_json);
+      const itemToAdd = parsedSource || {
+        id: `market-bought-${listing.id}-${Date.now()}`,
+        name: listing.item_name,
+        type: listing.item_type,
+        description: listing.item_description || '',
+        rarity: listing.item_rarity || '普通',
+        quantity: listing.quantity || 1,
+        isEquippable: !!listing.is_equippable,
+        equipmentSlot: listing.equipment_slot || undefined,
+        effect: listing.effect_json ? JSON.parse(listing.effect_json) : undefined,
+      };
+      const stackableIndex = saveData.player.inventory.findIndex(
+        (invItem: any) => !invItem.isEquippable && invItem.name === itemToAdd.name && invItem.type === itemToAdd.type
+      );
+      if (stackableIndex >= 0) {
+        saveData.player.inventory[stackableIndex].quantity =
+          (Number(saveData.player.inventory[stackableIndex].quantity) || 1) + (Number(itemToAdd.quantity) || 1);
+      } else {
+        saveData.player.inventory.push({
+          ...itemToAdd,
+          id: itemToAdd.id || `market-bought-${listing.id}-${Date.now()}`,
+          quantity: Number(itemToAdd.quantity) || 1,
+        });
+      }
+
+      // 锁定商品 + 写入买家存档（先内存后 KV；无 await 空窗，天然原子）
       listing.status = 'sold';
       listing.buyer_id = p.id;
       listing.sold_at = Date.now();
+      await writeSaveForUser(env, p.id, saveData);
       await writeMarketToKV(env);
-      return json({ success: true });
+
+      // 卖家收益入账（待卖家领取）
+      const payout: MarketPayout = {
+        id: payoutNextId++,
+        user_id: listing.seller_id,
+        listing_id: listing.id,
+        amount: listing.price,
+        claimed: 0,
+        created_at: Date.now(),
+      };
+      marketPayouts.set(payout.id, payout);
+      await writePayoutsToKV(env);
+
+      return json({ success: true, stones: saveData.player.spiritStones });
+    }
+
+    // GET /api/market/payouts — 查询当前用户未领取的卖家收益
+    if (path === '/market/payouts' && request.method === 'GET') {
+      const auth = request.headers.get('Authorization');
+      if (!auth) return json({ error: '未登录' }, 401);
+      const p = await verifyToken(auth.replace('Bearer ', ''), secret);
+      if (!p) return json({ error: '登录已过期' }, 401);
+
+      let total = 0;
+      let count = 0;
+      for (const payout of marketPayouts.values()) {
+        if (payout.user_id === p.id && payout.claimed === 0) {
+          total += payout.amount;
+          count++;
+        }
+      }
+      return json({ total, count });
+    }
+
+    // POST /api/market/payouts/claim — 领取卖家收益（写入玩家存档灵石）
+    if (path === '/market/payouts/claim' && request.method === 'POST') {
+      const auth = request.headers.get('Authorization');
+      if (!auth) return json({ error: '未登录' }, 401);
+      const p = await verifyToken(auth.replace('Bearer ', ''), secret);
+      if (!p) return json({ error: '登录已过期' }, 401);
+
+      const ids: number[] = [];
+      let total = 0;
+      for (const payout of marketPayouts.values()) {
+        if (payout.user_id === p.id && payout.claimed === 0) {
+          ids.push(payout.id);
+          total += payout.amount;
+        }
+      }
+      if (ids.length === 0) return json({ success: true, amount: 0 });
+
+      // 先标记已领取（防止重复领取），再写入存档
+      for (const id of ids) {
+        const payout = marketPayouts.get(id);
+        if (payout) payout.claimed = 1;
+      }
+
+      const saveData = await getSaveForUser(env, p.id);
+      if (saveData && saveData.player) {
+        saveData.player.spiritStones = getPlayerStones(saveData) + total;
+        await writeSaveForUser(env, p.id, saveData);
+      }
+      await writePayoutsToKV(env);
+
+      return json({ success: true, amount: total });
     }
 
     // POST /api/market/cancel — 下架
@@ -582,7 +750,8 @@ export default {
       if (!p) return json({ error: '登录已过期' }, 401);
 
       const { listingId } = await request.json() as any;
-      const numericId = parseInt((listingId || '').toString().replace('market-', ''));
+      const cleanId = (listingId || '').toString().replace(/^(?:market-)+/, '');
+      const numericId = parseInt(cleanId, 10);
       const listing = marketListings.get(numericId);
       if (!listing || listing.seller_id !== p.id || listing.status !== 'active') {
         return json({ error: '无权操作' }, 403);

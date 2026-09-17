@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { Suspense, lazy, useMemo } from 'react';
 import {
   PlayerStats,
   Shop,
@@ -11,29 +11,41 @@ import {
 import { useUIStore, useModals } from '../../store';
 import { useShallow } from 'zustand/react/shallow';
 
-// 直接导入所有弹窗组件，避免 lazy 加载导致的首次打开延迟
-import InventoryModal from '../../components/InventoryModal';
-import CultivationModal from '../../components/CultivationModal';
-import CraftingModal from '../../components/CraftingModal';
-import ArtifactUpgradeModal from '../../components/ArtifactUpgradeModal';
-import SectModal from '../../components/SectModal';
-import SecretRealmModal from '../../components/SecretRealmModal';
+// BattleModal 由历练自动触发，保持同步导入确保即时响应
 import BattleModal from '../../components/BattleModal';
-import TurnBasedBattleModal from '../../components/TurnBasedBattleModal';
-import CharacterModal from '../../components/CharacterModal';
-import AchievementModal from '../../components/AchievementModal';
-import PetModal from '../../components/PetModal';
-import LotteryModal from '../../components/LotteryModal';
-import SettingsModal from '../../components/SettingsModal';
-import DailyQuestModal from '../../components/DailyQuestModal';
-import ShopModal from '../../components/ShopModal';
-import ReputationEventModal from '../../components/ReputationEventModal';
-import GrottoModal from '../../components/GrottoModal';
-import SectTreasureVaultModal from '../../components/SectTreasureVaultModal';
-import LeaderboardModal from '../../components/LeaderboardModal';
 
-import { BattleReplay } from '../../services/battleService';
-import { RandomSectTask } from '../../services/randomService';
+// 其余大弹窗按需懒加载（代码分割）：CharacterModal/TurnBasedBattleModal 等单文件 60~100KB+，
+// 懒加载可显著减小首屏 bundle；首次打开时的短暂延迟由 Suspense fallback 兜底
+const InventoryModal = lazy(() => import('../../components/InventoryModal'));
+const CultivationModal = lazy(() => import('../../components/CultivationModal'));
+const CraftingModal = lazy(() => import('../../components/CraftingModal'));
+const ArtifactUpgradeModal = lazy(() => import('../../components/ArtifactUpgradeModal'));
+const SectModal = lazy(() => import('../../components/SectModal'));
+const SecretRealmModal = lazy(() => import('../../components/SecretRealmModal'));
+const TurnBasedBattleModal = lazy(() => import('../../components/TurnBasedBattleModal'));
+const CharacterModal = lazy(() => import('../../components/CharacterModal'));
+const AchievementModal = lazy(() => import('../../components/AchievementModal'));
+const PetModal = lazy(() => import('../../components/PetModal'));
+const LotteryModal = lazy(() => import('../../components/LotteryModal'));
+const SettingsModal = lazy(() => import('../../components/SettingsModal'));
+const DailyQuestModal = lazy(() => import('../../components/DailyQuestModal'));
+const ShopModal = lazy(() => import('../../components/ShopModal'));
+const ReputationEventModal = lazy(() => import('../../components/ReputationEventModal'));
+const GrottoModal = lazy(() => import('../../components/GrottoModal'));
+const SectTreasureVaultModal = lazy(() => import('../../components/SectTreasureVaultModal'));
+const LeaderboardModal = lazy(() => import('../../components/LeaderboardModal'));
+
+import type { BattleReplay } from '../../services/battleService';
+import type { RandomSectTask } from '../../services/randomService';
+
+// 懒加载弹窗加载中的兜底 UI
+const ModalSuspenseFallback = (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 pointer-events-none">
+    <div className="px-4 py-2 rounded-lg bg-black/70 text-amber-100 text-sm">
+      术法运转中...
+    </div>
+  </div>
+);
 
 /**
  * 弹窗容器组件
@@ -234,7 +246,7 @@ function ModalsContainer({
   );
 
   return (
-    <>
+    <Suspense fallback={ModalSuspenseFallback}>
       {modals.isBattleModalOpen && (
         <BattleModal
           isOpen={modals.isBattleModalOpen}
@@ -483,7 +495,7 @@ function ModalsContainer({
           onClose={() => handlers.setIsLeaderboardOpen(false)}
         />
       )}
-    </>
+    </Suspense>
   );
 }
 

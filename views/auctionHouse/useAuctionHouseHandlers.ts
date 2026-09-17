@@ -4,12 +4,13 @@
  * API 模式：上架/购买通过服务端接口，确保库存一致性
  */
 
-import type { PlayerStats, MarketItem, Item } from '../../types';
+import type { PlayerStats, MarketItem } from '../../types';
 import { useGameStore, useUIStore } from '../../store';
+import { useAuthStore } from '../../store/authStore';
 import { createPlayerListing, restoreFromListing } from '../../services/auctionService';
 import { addItemToInventory } from '../../utils/inventoryUtils';
 import * as marketApi from '../../services/marketApiService';
-import { useAuthStore } from '../../store/authStore';
+import { cloudSaveService } from '../../services/cloudSaveService';
 
 interface UseTradeMarketHandlersProps {
   player?: PlayerStats;
@@ -48,13 +49,22 @@ export function useTradeMarketHandlers(
     try {
       // 拉取足够多的数据，确保客户端分页有内容可翻
       const res = await marketApi.fetchMarketItems(1, 100);
-      const remoteItems: MarketItem[] = (res.items || []).map((i: any) => ({
-        ...i,
-        id: `market-${i.id}`,
-        sellerId: 'system' as const,
-        quantity: i.quantity || 1,
-      }));
-      const playerItems = getPlayerListings();
+      const currentUserId = useAuthStore.getState().user?.id;
+      const remoteItems: MarketItem[] = (res.items || []).map((i: any) => {
+        const isOwner =
+          currentUserId != null &&
+          (Number(i.sellerId) === Number(currentUserId) || i.sellerId === 'player');
+        return {
+          ...i,
+          id: String(i.id).startsWith('market-') ? i.id : `market-${i.id}`,
+          sellerId: isOwner ? ('player' as const) : ('system' as const),
+          quantity: i.quantity || 1,
+        };
+      });
+      // 仅保留未在服务端出现的本地挂单，避免在线时重复显示
+      const playerItems = getPlayerListings().filter(
+        (localItem) => !remoteItems.some((r) => r.id === localItem.id)
+      );
       return [...remoteItems, ...playerItems];
     } catch (e) {
       console.error('市场同步失败:', e);
@@ -70,6 +80,8 @@ export function useTradeMarketHandlers(
       if (isAuthenticated()) {
         const merged = await refreshFromServer();
         setItems(merged);
+        // 顺带结算出售收益
+        claimPayouts();
       } else {
         // 未登录：清空市场（仅保留本地上架）
         setItems(getPlayerListings());
@@ -129,6 +141,17 @@ export function useTradeMarketHandlers(
 
     // API 模式：先查库存
     if (isAuthenticated()) {
+      // 购买前自动快速同步云存档，确保服务端余额与本地实时灵石一致
+      try {
+        await cloudSaveService.pushSave({
+          player,
+          logs: useGameStore.getState().logs,
+          timestamp: Date.now(),
+        });
+      } catch (e) {
+        console.warn('购买前同步云存档失败:', e);
+      }
+
       const check = await marketApi.checkPurchase(itemId);
       if (!check.success) {
         addLog(check.error || '商品已售出', 'danger');
@@ -279,7 +302,32 @@ export function useTradeMarketHandlers(
     try {
       const merged = await refreshFromServer();
       setItems(merged);
-    } catch {}
+      // 顺带结算出售收益
+      claimPayouts();
+    } catch (err) {
+      console.warn('同步市场数据失败:', err);
+    }
+  };
+
+  /** 领取交易行出售收益（服务端结算的卖家灵石） */
+  const claimPayouts = async () => {
+    if (!isAuthenticated()) return;
+    try {
+      const pending = await marketApi.fetchMarketPayouts();
+      if (!pending.total) return;
+      const claim = await marketApi.claimMarketPayouts();
+      if (claim.success && (claim.amount || 0) > 0) {
+        const amount = claim.amount || 0;
+        setPlayer((prev) =>
+          prev
+            ? { ...prev, spiritStones: (Number(prev.spiritStones) || 0) + amount }
+            : prev
+        );
+        addLog(`你在交易行出售的物品已结算，获得 ${amount} 灵石。`, 'gain');
+      }
+    } catch {
+      // 收益查询失败不影响主流程
+    }
   };
 
   return {
@@ -290,5 +338,7 @@ export function useTradeMarketHandlers(
     handleListItem,
     handleCancelListing,
     getPlayerListings,
+    claimPayouts,
+    setIsTradeMarketOpen,
   };
 }

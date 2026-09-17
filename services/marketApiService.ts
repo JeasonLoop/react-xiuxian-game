@@ -111,3 +111,30 @@ export async function cancelListing(
   }
   return res.json();
 }
+
+/** GET /api/market/payouts — 查询未领取的卖家收益 */
+export async function fetchMarketPayouts(): Promise<{
+  total: number;
+  count: number;
+}> {
+  const res = await fetch(`${API_URL}/market/payouts`, { headers: authHeaders() });
+  if (!res.ok) return { total: 0, count: 0 };
+  return res.json();
+}
+
+/** POST /api/market/payouts/claim — 领取卖家收益 */
+export async function claimMarketPayouts(): Promise<{
+  success: boolean;
+  amount?: number;
+  error?: string;
+}> {
+  const res = await fetch(`${API_URL}/market/payouts/claim`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: '领取收益失败' }));
+    return { success: false, error: err.error || '领取收益失败' };
+  }
+  return res.json();
+}
