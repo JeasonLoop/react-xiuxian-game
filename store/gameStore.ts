@@ -6,7 +6,7 @@
 
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import { PlayerStats, LogEntry, GameSettings, MarketItem } from '../types';
+import { PlayerStats, LogEntry, GameSettings } from '../types';
 import { createInitialPlayer } from '../utils/playerUtils';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import { TALENTS } from '../constants/index';
@@ -41,7 +41,9 @@ function loadInitialSettings(): GameSettings {
     if (saved) {
       return { ...DEFAULT_SETTINGS, ...JSON.parse(saved) };
     }
-  } catch {}
+  } catch {
+    // 忽略解析错误，降级使用默认设置
+  }
   return DEFAULT_SETTINGS;
 }
 

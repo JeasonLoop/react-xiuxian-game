@@ -161,7 +161,6 @@ export function useAdventureHandlers({
       );
       const battleResult = applySkippedBattleRewardPenalty(battleResolution.adventureResult);
       const battleCtx = battleResolution.replay;
-      const petSkillCooldowns = battleResolution.petSkillCooldowns;
       // 自动历练时跳过战斗，不打开战斗弹窗，直接返回结果
       return { result: battleResult, battleContext: battleCtx, shouldReturn: false };
     }
@@ -496,7 +495,7 @@ export function useAdventureHandlers({
         onReputationEvent,
         onPauseAutoAdventure: handlePauseAutoAdventure,
       });
-    } catch (e) {
+    } catch {
       addLog('历练途中突发异变，你神识受损，不得不返回。', 'danger');
     } finally {
       setLoading(false);

@@ -100,3 +100,15 @@ export * from './dungeon';
 
 // 拍卖行
 export * from './auctionHouse';
+
+// 九天通天塔
+export * from './tower';
+
+// 自创神通
+export * from './customSpell';
+
+// 洞府装备洗炼
+export * from './reforge';
+
+// 灵兽远征
+export * from './petExpedition';

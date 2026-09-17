@@ -652,7 +652,9 @@ function writeSavePlayer(userId: number, saveData: any, cb?: (ok: boolean) => vo
   db.run(
     'UPDATE saves SET save_data = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
     [JSON.stringify(saveData), userId],
-    (err) => cb?.(!err)
+    function (err) {
+      cb?.(!err && this.changes > 0);
+    }
   );
 }
 
@@ -922,31 +924,47 @@ app.get('/api/market/payouts', authenticateToken, (req: any, res: any) => {
   );
 });
 
-// POST /api/market/payouts/claim — 领取卖家收益（写入玩家存档灵石）
+// POST /api/market/payouts/claim — 领取卖家收益（先入账再标记，避免吞钱）
 app.post('/api/market/payouts/claim', authenticateToken, (req: any, res: any) => {
-  db.all('SELECT id, amount FROM market_payouts WHERE user_id = ? AND claimed = 0', [req.user.id], (err, rows: any[]) => {
-    if (err) return res.status(500).json({ error: '领取失败' });
-    if (!rows || rows.length === 0) return res.json({ success: true, amount: 0 });
+  getSavePlayer(req.user.id, (saveData) => {
+    if (!saveData || !saveData.player) {
+      return res.status(409).json({ error: '尚未同步云存档，无法领取收益' });
+    }
 
-    const total = rows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
-    const ids = rows.map((r) => r.id);
-
-    // 先标记已领取（防止重复领取），再写入存档
-    db.run(
-      `UPDATE market_payouts SET claimed = 1 WHERE id IN (${ids.map(() => '?').join(',')})`,
-      ids,
-      (err2) => {
-        if (err2) return res.status(500).json({ error: '领取失败' });
-
-        getSavePlayer(req.user.id, (saveData) => {
-          if (saveData && saveData.player) {
-            saveData.player.spiritStones = getPlayerStones(saveData) + total;
-            writeSavePlayer(req.user.id, saveData);
-          }
-          res.json({ success: true, amount: total });
-        });
+    db.all('SELECT id, amount FROM market_payouts WHERE user_id = ? AND claimed = 0', [req.user.id], (err, rows: any[]) => {
+      if (err) return res.status(500).json({ error: '领取失败' });
+      if (!rows || rows.length === 0) {
+        return res.json({ success: true, amount: 0, stones: getPlayerStones(saveData) });
       }
-    );
+
+      const total = rows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+      const ids = rows.map((r) => r.id);
+      const placeholders = ids.map(() => '?').join(',');
+
+      db.run(
+        `UPDATE market_payouts SET claimed = 1 WHERE user_id = ? AND claimed = 0 AND id IN (${placeholders})`,
+        [req.user.id, ...ids],
+        function (err2) {
+          if (err2) return res.status(500).json({ error: '领取失败' });
+          if (this.changes === 0) {
+            return res.json({ success: true, amount: 0, stones: getPlayerStones(saveData) });
+          }
+
+          const credited = getPlayerStones(saveData) + total;
+          saveData.player.spiritStones = credited;
+          writeSavePlayer(req.user.id, saveData, (ok) => {
+            if (!ok) {
+              db.run(
+                `UPDATE market_payouts SET claimed = 0 WHERE id IN (${placeholders})`,
+                ids
+              );
+              return res.status(500).json({ error: '入账失败，请重试' });
+            }
+            res.json({ success: true, amount: total, stones: credited });
+          });
+        }
+      );
+    });
   });
 });
 

@@ -118,7 +118,24 @@ export function useTradeMarketHandlers(
     addLog(`你花费 ${refreshCost} 灵石刷新了交易行。`, 'gain');
   };
 
-  /** 购买物品（先查库存再确认） */
+  /** 购买物品：联机先服务端确认再对齐本地，避免双扣/双发 */
+  const applyPurchasedItem = (target: PlayerStats, marketItem: MarketItem): PlayerStats => ({
+    ...target,
+    spiritStones: Math.max(0, (Number(target.spiritStones) || 0) - marketItem.price),
+    inventory: addItemToInventory(
+      target.inventory,
+      {
+        name: marketItem.name, type: marketItem.type, description: marketItem.description,
+        rarity: marketItem.rarity, isEquippable: marketItem.isEquippable,
+        equipmentSlot: marketItem.equipmentSlot, effect: marketItem.effect,
+        advancedItemType: marketItem.advancedItemType,
+        advancedItemId: marketItem.advancedItemId,
+      },
+      marketItem.quantity || 1,
+      { realm: target.realm, realmLevel: target.realmLevel }
+    ),
+  });
+
   const handlePurchase = async (itemId: string) => {
     if (!player) return;
 
@@ -139,15 +156,16 @@ export function useTradeMarketHandlers(
       return;
     }
 
-    // API 模式：先查库存
     if (isAuthenticated()) {
-      // 购买前自动快速同步云存档，确保服务端余额与本地实时灵石一致
       try {
-        await cloudSaveService.pushSave({
-          player,
-          logs: useGameStore.getState().logs,
-          timestamp: Date.now(),
-        });
+        const latest = useGameStore.getState();
+        if (latest.player) {
+          await cloudSaveService.pushSave({
+            player: latest.player,
+            logs: latest.logs,
+            timestamp: Date.now(),
+          });
+        }
       } catch (e) {
         console.warn('购买前同步云存档失败:', e);
       }
@@ -158,50 +176,33 @@ export function useTradeMarketHandlers(
         setItems(items.filter((i) => i.id !== itemId));
         return;
       }
-    }
 
-    // 扣灵石 + 给物品（本地即时）
-    // 保存扣费前的快照，用于 confirm 失败时回滚
-    let rollbackSnapshot: PlayerStats | null = null;
-    setPlayer((prev) => {
-      if (!prev) return prev;
-      rollbackSnapshot = prev;
-      return {
-        ...prev,
-        spiritStones: prev.spiritStones - item.price,
-        inventory: addItemToInventory(
-          prev.inventory,
-          {
-            name: item.name, type: item.type, description: item.description,
-            rarity: item.rarity, isEquippable: item.isEquippable,
-            equipmentSlot: item.equipmentSlot, effect: item.effect,
-            advancedItemType: item.advancedItemType,
-            advancedItemId: item.advancedItemId,
-          },
-          item.quantity || 1,
-          { realm: prev.realm, realmLevel: prev.realmLevel }
-        ),
-      };
-    });
-
-    // 从列表移除
-    setItems(items.filter((i) => i.id !== itemId));
-
-    // API 模式：确认购买
-    if (isAuthenticated()) {
       const confirm = await marketApi.confirmPurchase(itemId);
       if (!confirm.success) {
-        // 回滚：恢复灵石和背包
-        if (rollbackSnapshot) {
-          setPlayer(rollbackSnapshot);
-        }
-        addLog(`购买失败：${confirm.error || '商品已被他人买走'}，灵石已退回。`, 'danger');
-        // 将物品重新加回列表（可能被其他人上架）
-        setItems(items);
+        addLog(`购买失败：${confirm.error || '商品已被他人买走'}`, 'danger');
         return;
       }
+
+      setPlayer((prev) => (prev ? applyPurchasedItem(prev, item) : prev));
+      setItems(items.filter((i) => i.id !== itemId));
+      addLog(`你以 ${item.price} 灵石购得了【${item.name}】！`, 'special');
+      try {
+        const latest = useGameStore.getState();
+        if (latest.player) {
+          await cloudSaveService.pushSave({
+            player: latest.player,
+            logs: latest.logs,
+            timestamp: Date.now(),
+          });
+        }
+      } catch {
+        // 本地已入账，下次自动云存会补齐
+      }
+      return;
     }
 
+    setPlayer((prev) => (prev ? applyPurchasedItem(prev, item) : prev));
+    setItems(items.filter((i) => i.id !== itemId));
     addLog(`你以 ${item.price} 灵石购得了【${item.name}】！`, 'special');
   };
 
@@ -319,9 +320,7 @@ export function useTradeMarketHandlers(
       if (claim.success && (claim.amount || 0) > 0) {
         const amount = claim.amount || 0;
         setPlayer((prev) =>
-          prev
-            ? { ...prev, spiritStones: (Number(prev.spiritStones) || 0) + amount }
-            : prev
+          prev ? { ...prev, spiritStones: (Number(prev.spiritStones) || 0) + amount } : prev
         );
         addLog(`你在交易行出售的物品已结算，获得 ${amount} 灵石。`, 'gain');
       }

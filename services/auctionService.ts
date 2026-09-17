@@ -91,7 +91,9 @@ export function restoreFromListing(marketItem: MarketItem): Item {
         ...restored,
         quantity: marketItem.quantity || restored.quantity || 1,
       };
-    } catch {}
+    } catch {
+      // 解析失败时降级走标准字段还原
+    }
   }
 
   // 降级：用字段还原

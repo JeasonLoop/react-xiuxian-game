@@ -3,6 +3,12 @@
  * 部署: npx wrangler deploy
  */
 
+interface KVNamespace {
+  get(key: string, type?: string): Promise<any>;
+  put(key: string, value: string): Promise<void>;
+  delete?(key: string): Promise<void>;
+}
+
 export interface Env {
   JWT_SECRET?: string;
   LINUXDO_CLIENT_ID?: string;
@@ -110,14 +116,18 @@ async function readMarketFromKV(env: Env): Promise<Map<number, MarketListing>> {
         if (entry.id != null) map.set(entry.id, entry);
       }
     }
-  } catch {}
+  } catch {
+    // 读取 KV 失败返回默认值
+  }
   return map;
 }
 async function writeMarketToKV(env: Env): Promise<void> {
   if (!env.RANKINGS_STORE) return;
   try {
     await env.RANKINGS_STORE.put(MARKET_KV_KEY, JSON.stringify(Array.from(marketListings.values())));
-  } catch {}
+  } catch {
+    // 写入 KV 异常忽略
+  }
 }
 // 启动时从 KV 恢复
 async function initMarketFromKV(env: Env): Promise<void> {
@@ -152,13 +162,17 @@ async function initPayoutsFromKV(env: Env): Promise<void> {
       }
       payoutNextId = Math.max(...Array.from(marketPayouts.keys()), 0) + 1;
     }
-  } catch {}
+  } catch {
+    // 忽略解析错误
+  }
 }
 async function writePayoutsToKV(env: Env): Promise<void> {
   if (!env.RANKINGS_STORE) return;
   try {
     await env.RANKINGS_STORE.put(PAYOUTS_KV_KEY, JSON.stringify(Array.from(marketPayouts.values())));
-  } catch {}
+  } catch {
+    // 忽略写入错误
+  }
 }
 
 // ── 存档辅助：读取/写回玩家存档（交易行服务端结算用） ──
@@ -250,9 +264,17 @@ async function verifyToken(token: string, secret: string): Promise<any> {
   try {
     const parts = token.split('.');
     if (parts.length !== 3) return null;
-    const p = JSON.parse(atob(parts[1]));
+    const [hb, pb, sb] = parts;
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
+    const signatureBytes = Uint8Array.from(atob(sb.padEnd(sb.length + (4 - (sb.length % 4)) % 4, '=')), (c) => c.charCodeAt(0));
+    const isValid = await crypto.subtle.verify('HMAC', key, signatureBytes, encoder.encode(`${hb}.${pb}`));
+    if (!isValid) return null;
+    const p = JSON.parse(atob(pb));
     return p.exp < Math.floor(Date.now() / 1000) ? null : p;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 async function hashPassword(pw: string): Promise<string> {
@@ -628,13 +650,24 @@ export default {
       if (!listing || listing.status !== 'active') return json({ error: '商品不存在' }, 404);
       if (listing.seller_id === p.id) return json({ error: '不能购买自己的商品' }, 400);
 
+      // ponytail: isolate 内先占坑，跨 Worker 实例仍可能并发；Durable Object 再升级
+      listing.status = 'sold';
+      listing.buyer_id = p.id;
+      listing.sold_at = Date.now();
+
       // 服务端扣款：从买家最近同步的云存档中校验并扣除灵石
       const saveData = await getSaveForUser(env, p.id);
       if (!saveData || !saveData.player) {
+        listing.status = 'active';
+        listing.buyer_id = undefined;
+        listing.sold_at = undefined;
         return json({ error: '尚未同步云存档，无法完成扣款，请稍后重试' }, 409);
       }
       const stones = getPlayerStones(saveData);
       if (stones < listing.price) {
+        listing.status = 'active';
+        listing.buyer_id = undefined;
+        listing.sold_at = undefined;
         return json({ error: `灵石不足（服务端余额 ${stones}），请先同步云存档后重试` }, 409);
       }
       saveData.player.spiritStones = stones - listing.price;
@@ -669,10 +702,6 @@ export default {
         });
       }
 
-      // 锁定商品 + 写入买家存档（先内存后 KV；无 await 空窗，天然原子）
-      listing.status = 'sold';
-      listing.buyer_id = p.id;
-      listing.sold_at = Date.now();
       await writeSaveForUser(env, p.id, saveData);
       await writeMarketToKV(env);
 
@@ -726,20 +755,30 @@ export default {
       }
       if (ids.length === 0) return json({ success: true, amount: 0 });
 
-      // 先标记已领取（防止重复领取），再写入存档
+      const saveData = await getSaveForUser(env, p.id);
+      if (!saveData || !saveData.player) {
+        return json({ error: '尚未同步云存档，无法领取收益' }, 409);
+      }
+
       for (const id of ids) {
         const payout = marketPayouts.get(id);
         if (payout) payout.claimed = 1;
       }
 
-      const saveData = await getSaveForUser(env, p.id);
-      if (saveData && saveData.player) {
-        saveData.player.spiritStones = getPlayerStones(saveData) + total;
+      const credited = getPlayerStones(saveData) + total;
+      saveData.player.spiritStones = credited;
+      try {
         await writeSaveForUser(env, p.id, saveData);
+      } catch {
+        for (const id of ids) {
+          const payout = marketPayouts.get(id);
+          if (payout) payout.claimed = 0;
+        }
+        return json({ error: '入账失败，请重试' }, 500);
       }
       await writePayoutsToKV(env);
 
-      return json({ success: true, amount: total });
+      return json({ success: true, amount: total, stones: credited });
     }
 
     // POST /api/market/cancel — 下架

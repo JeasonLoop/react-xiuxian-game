@@ -37,6 +37,7 @@ import {
 } from '../constants/index';
 import { getAdventureBalance, getDifficultyBalance } from '../constants/balance';
 import { getPlayerTotalStats } from '../utils/statUtils';
+import { calculateAllCustomSpellBonuses } from './customSpellService';
 import { getRandomEnemyName } from './templateService';
 import { logger } from '../utils/logger';
 import { getItemsByType } from '../utils/itemConstantsUtils';
@@ -310,7 +311,7 @@ const generateLoot = (
   };
 
   // 最大尝试次数，避免无限循环
-  let maxAttempts = numItems * 10;
+  const maxAttempts = numItems * 10;
   let attempts = 0;
 
   while (lootItems.length < numItems && attempts < maxAttempts) {
@@ -569,7 +570,7 @@ function handlePetAction(
 
   let petDamage = 0;
   let petHeal = 0;
-  let petBuffs: Buff[] = [];
+  const petBuffs: Buff[] = [];
   let description = "";
   let skillId: string | undefined = undefined;
 
@@ -817,9 +818,6 @@ export const createEnemy = async (
 
   const getVariance = () => strengthVariance.min + Math.random() * (strengthVariance.max - strengthVariance.min);
 
-  const variance = () =>
-    strengthVariance.min +
-    Math.random() * (strengthVariance.max - strengthVariance.min);
   // 应用境界压制倍率到最终难度
   const finalDifficulty =
     baseDifficulty * strengthMultiplier * realmLevelReduction;
@@ -1070,7 +1068,7 @@ export const resolveBattleEncounter = async (
 
   // 获取激活的灵宠
   const activePet = player.activePetId
-    ? player.pets.find((p) => p.id === player.activePetId)
+    ? (player.pets || []).find((p) => p.id === player.activePetId)
     : null;
 
   // 初始化灵宠技能冷却（如果还没有）
@@ -1080,6 +1078,8 @@ export const resolveBattleEncounter = async (
   } else if (activePet) {
     petSkillCooldowns = { ...activePet.skillCooldowns };
   }
+
+  const spellBonuses = calculateAllCustomSpellBonuses(player);
 
   while (playerHp > 0 && enemyHp > 0 && rounds.length < 40) {
     const isPlayerTurn = attacker === 'player';
@@ -1094,16 +1094,25 @@ export const resolveBattleEncounter = async (
     const critSpeed = isPlayerTurn ? playerSpeed : enemySpeed;
     // 优化暴击率计算：降低速度对暴击率的影响，设置上限为20%
     // 基础10% + 速度加成最高10% = 最高20%暴击率（修复：基础暴击率改为10%）
-    const critChanceBase = 0.10 + (critSpeed / speedSum) * 0.10;
-    // 确保暴击率在合理范围内（最高20%）
-    const validCritChance = Math.max(0, Math.min(0.2, critChanceBase));
+    const critChanceBase = 0.10 + (critSpeed / speedSum) * 0.10 + (isPlayerTurn ? spellBonuses.critRate : 0);
+    const validCritChance = Math.max(0, Math.min(0.35, critChanceBase));
     const crit = Math.random() < validCritChance;
-    const finalDamage = crit ? Math.round(damage * 1.5) : damage;
+    const critMultiplier = 1.5 + (isPlayerTurn ? spellBonuses.critDamage : 0);
+    let finalDamage = crit ? Math.round(damage * critMultiplier) : damage;
 
     if (isPlayerTurn) {
       enemyHp = Math.max(0, (Number(enemyHp) || 0) - finalDamage);
+      if (finalDamage > 0 && spellBonuses.lifeLeech > 0) {
+        playerHp = Math.min(initialMaxHp, playerHp + Math.floor(finalDamage * spellBonuses.lifeLeech));
+      }
     } else {
-      playerHp = Math.max(0, (Number(playerHp) || 0) - finalDamage);
+      const dodgeChance = Math.max(0, Math.min(0.35, spellBonuses.dodgeRate));
+      if (dodgeChance > 0 && Math.random() < dodgeChance) {
+        finalDamage = 0;
+      } else {
+        finalDamage = Math.round(finalDamage * (1 - Math.min(0.6, spellBonuses.damageReduction)));
+        playerHp = Math.max(0, (Number(playerHp) || 0) - finalDamage);
+      }
     }
     rounds.push({
       id: randomId(),
@@ -1112,7 +1121,9 @@ export const resolveBattleEncounter = async (
       crit,
       description: isPlayerTurn
         ? `你发动灵力攻势，造成 ${finalDamage}${crit ? '（暴击）' : ''} 点伤害。`
-        : `${enemy.title}${enemy.name}反扑，造成 ${finalDamage}${crit ? '（暴击）' : ''} 点伤害。`,
+        : finalDamage === 0
+          ? `${enemy.title}${enemy.name}反扑，被你闪避了！`
+          : `${enemy.title}${enemy.name}反扑，造成 ${finalDamage}${crit ? '（暴击）' : ''} 点伤害。`,
       playerHpAfter: playerHp,
       enemyHpAfter: enemyHp,
     });
@@ -1290,7 +1301,6 @@ export const calculateBattleRewards = (
 
   // 根据敌人强度计算奖励倍数（敌人越强，奖励越多）
   const enemyStrength = battleState.enemyStrengthMultiplier || 1.0;
-  const strengthRewardMultiplier = 0.8 + enemyStrength * 0.4; // 0.8-1.2倍（弱敌）到 1.2-2.0倍（强敌）
 
   const riskRewardMultiplier =
     actualAdventureType === 'secret_realm' ? getRiskRewardMultiplier(actualRiskLevel) : 1.0;
@@ -1517,7 +1527,7 @@ export const initializeTurnBasedBattle = async (
     bossId, // 保存BOSS ID
     activePet, // 保存激活的灵宠
     petSkillCooldowns, // 保存灵宠技能冷却
-    elementalField: initializeElementalField(player, enemyUnit), // 初始化五行领域
+    elementalField: initializeElementalField(player), // 初始化五行领域
   };
 };
 
@@ -1525,7 +1535,7 @@ export const initializeTurnBasedBattle = async (
  * 初始化五行领域
  * 根据玩家和敌人的灵根属性决定初始领域
  */
-function initializeElementalField(player: PlayerStats, enemy: BattleUnit): BattleState['elementalField'] {
+function initializeElementalField(player: PlayerStats): BattleState['elementalField'] {
   const roots = player.spiritualRoots;
   const types: Array<'metal' | 'wood' | 'water' | 'fire' | 'earth'> = ['metal', 'wood', 'water', 'fire', 'earth'];
 
@@ -1555,7 +1565,7 @@ function initializeElementalField(player: PlayerStats, enemy: BattleUnit): Battl
 /**
  * 计算五行克制倍率
  */
-function getElementalMultiplier(attackerType: string, defenderType: string): number {
+export function getElementalMultiplier(attackerType: string, defenderType: string): number {
   const relations: Record<string, string> = {
     metal: 'wood',  // 金克木
     wood: 'earth',  // 木克土
@@ -1686,10 +1696,10 @@ function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
   const totalStats = getPlayerTotalStats(player);
 
   const equippedItems = getEquippedItems(player);
-  let totalAttack = totalStats.attack;
-  let totalDefense = totalStats.defense;
-  let totalSpirit = totalStats.spirit;
-  let totalSpeed = totalStats.speed;
+  const totalAttack = totalStats.attack;
+  const totalDefense = totalStats.defense;
+  const totalSpirit = totalStats.spirit;
+  const totalSpeed = totalStats.speed;
 
   // 注意：player.attack 等字段已经包含了装备加成
   // getPlayerTotalStats 也包含了心法加成
@@ -1767,6 +1777,32 @@ function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
         });
       }
     }
+  }
+
+  const spellBonuses = calculateAllCustomSpellBonuses(player);
+  if (spellBonuses.critRate > 0) {
+    buffs.push({
+      id: 'custom-spell-crit',
+      name: '自创神通·会心',
+      type: 'crit',
+      value: spellBonuses.critRate,
+      duration: -1,
+      source: 'custom-spell',
+    });
+  }
+  if (spellBonuses.critDamage > 0 || spellBonuses.dodgeRate > 0 || spellBonuses.damageReduction > 0 || spellBonuses.lifeLeech > 0) {
+    buffs.push({
+      id: 'custom-spell-combat',
+      name: '自创神通·战意',
+      type: 'custom',
+      value: 0,
+      duration: -1,
+      source: 'custom-spell',
+      critDamage: spellBonuses.critDamage || undefined,
+      dodge: spellBonuses.dodgeRate || undefined,
+      damageReduction: spellBonuses.damageReduction || undefined,
+      lifeLeech: spellBonuses.lifeLeech || undefined,
+    });
   }
 
   // 根据境界计算MP（灵力值）
@@ -1862,7 +1898,7 @@ export function executePlayerAction(
 
   if (actionResult) {
     newState.history.push(actionResult);
-    newState = updateBattleStateAfterAction(newState, actionResult);
+    newState = updateBattleStateAfterAction(newState);
   }
 
   // 减少剩余行动次数
@@ -1883,7 +1919,7 @@ export function executePlayerAction(
     const petAction = executePetAction(newState);
     if (petAction) {
       newState.history.push(petAction);
-      newState = updateBattleStateAfterAction(newState, petAction);
+      newState = updateBattleStateAfterAction(newState);
     }
   }
 
@@ -1939,7 +1975,7 @@ export function executeEnemyTurn(battleState: BattleState): BattleState {
 
     if (actionResult) {
       newState.history.push(actionResult);
-      newState = updateBattleStateAfterAction(newState, actionResult);
+      newState = updateBattleStateAfterAction(newState);
     }
 
     // 减少剩余行动次数
@@ -2051,7 +2087,7 @@ function executeNormalAttack(
   let maxDodge = 0;
   let maxDamageReduction = 0;
   let maxReflectRatio = 0;
-  let hasIgnoreDefense = attacker.buffs.some(buff => buff.ignoreDefense);
+  const hasIgnoreDefense = attacker.buffs.some(buff => buff.ignoreDefense);
 
   target.buffs.forEach((buff) => {
     if (buff.dodge && buff.dodge > maxDodge) maxDodge = buff.dodge;
@@ -2121,6 +2157,13 @@ function executeNormalAttack(
   // 更新目标血量（确保是整数）
   target.hp = Math.max(0, Math.floor(target.hp - actualDamage));
 
+  let leechedHp = 0;
+  const leechRatio = attacker.buffs.reduce((max, buff) => Math.max(max, buff.lifeLeech || 0), 0);
+  if (actualDamage > 0 && leechRatio > 0) {
+    leechedHp = Math.floor(actualDamage * leechRatio);
+    attacker.hp = Math.min(attacker.maxHp, Math.floor(attacker.hp + leechedHp));
+  }
+
   // 处理反弹伤害（如果目标有 reflectDamage buff）
   let reflectedDamage = 0;
   if (actualDamage > 0 && maxReflectRatio > 0) {
@@ -2133,11 +2176,17 @@ function executeNormalAttack(
   let description = '';
   if (attackerId === 'player') {
     description = `你发动攻击，造成 ${actualDamage}${isCrit ? '（暴击）' : ''} 点伤害。`;
+    if (leechedHp > 0) {
+      description += ` 神通汲取 ${leechedHp} 点气血。`;
+    }
     if (reflectedDamage > 0) {
       description += ` ${target.name}的反弹效果对你造成了 ${reflectedDamage} 点伤害！`;
     }
   } else {
     description = `${attacker.name}攻击，造成 ${actualDamage}${isCrit ? '（暴击）' : ''} 点伤害。`;
+    if (leechedHp > 0) {
+      description += ` 汲取了 ${leechedHp} 点气血。`;
+    }
     if (reflectedDamage > 0) {
       description += ` 你的反弹效果对${attacker.name}造成了 ${reflectedDamage} 点伤害！`;
     }
@@ -2211,7 +2260,7 @@ function executeSkill(
     const targetDefense = skill.damage.type === 'magical' ? target.spirit : target.defense;
 
     // 使用统一的伤害计算函数
-    let baseDamage = calcDamage(skillAttack, targetDefense);
+    const baseDamage = calcDamage(skillAttack, targetDefense);
 
     // 计算暴击
     let critChance = skill.damage.critChance || 0;
@@ -2313,10 +2362,8 @@ function executeSkill(
       }
 
       damage = Math.round(damage * (1 - defenseReduction));
-    } else if (hasIgnoreDefense) {
-      // 无视防御，直接造成伤害
-      damage = damage;
     }
+    // 无视防御时直接造成全额伤害，跳过减免判定
 
     // 应用伤害减免buff
     if (target.buffs.some(buff => buff.damageReduction && buff.damageReduction > 0)) {
@@ -2327,6 +2374,13 @@ function executeSkill(
     }
 
     target.hp = Math.max(0, Math.floor(target.hp - damage));
+
+    const skillLeech = caster.buffs.reduce((max, buff) => Math.max(max, buff.lifeLeech || 0), 0);
+    if (damage > 0 && skillLeech > 0) {
+      const leeched = Math.floor(damage * skillLeech);
+      caster.hp = Math.min(caster.maxHp, Math.floor(caster.hp + leeched));
+      heal += leeched;
+    }
 
     // 处理反弹伤害（如果目标有 reflectDamage buff）
     if (damage > 0 && target.buffs.some(buff => buff.reflectDamage && buff.reflectDamage > 0)) {
@@ -2698,7 +2752,6 @@ function executeItem(battleState: BattleState, itemId: string): BattleAction {
   }
 
   let heal = 0;
-  const buffs: Buff[] = [];
 
   if (potionConfig.type === 'heal' && potionConfig.effect.heal) {
     heal = Math.floor(potionConfig.effect.heal);
@@ -2787,8 +2840,7 @@ function executeFlee(battleState: BattleState): BattleAction {
  * 更新战斗状态（处理持续效果、冷却等）
  */
 function updateBattleStateAfterAction(
-  battleState: BattleState,
-  action: BattleAction
+  battleState: BattleState
 ): BattleState {
   // 深拷贝玩家和敌人状态，确保不可变性
   const newState: BattleState = {

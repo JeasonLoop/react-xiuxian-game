@@ -999,7 +999,8 @@ const InventoryModal: React.FC<Props> = ({
               title="选择闲置装备分解为炼器石"
             >
               <div className="flex items-center">
-                ⚒️ <span>批量分解</span>
+                <Hammer size={14} className="inline mr-1" />
+                <span>批量分解</span>
               </div>
             </button>
             <button

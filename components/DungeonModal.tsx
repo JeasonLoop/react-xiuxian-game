@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { PlayerStats, Item } from '../types';
+import React, { useState, useCallback, useRef } from 'react';
+import { PlayerStats } from '../types';
 import {
   generateDungeon,
   resolveDungeonEvent,
@@ -8,7 +8,7 @@ import {
   DungeonFloor,
 } from '../constants/dungeon';
 import { Modal } from './common';
-import { Sword, Gem, Heart, HelpCircle, Store, Skull, LogOut, ChevronRight, Map } from 'lucide-react';
+import { Skull, LogOut, ChevronRight, Map, Swords, Gem, Heart, HelpCircle, Store, Trophy, Sparkles, Package, ShieldAlert } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -42,7 +42,7 @@ const DungeonModal: React.FC<Props> = ({
     setSelectedEvent(null);
     setEventResult(null);
     setPhase('playing');
-    addLog(`🏰 你进入了【${newDungeon.name}】！共 ${newDungeon.totalFloors} 层，祝你好运！`, 'special');
+    addLog(`【深入秘境】你进入了【${newDungeon.name}】！共 ${newDungeon.totalFloors} 层，祝你好运！`, 'special');
   }, [player, addLog]);
 
   // 选择事件
@@ -91,7 +91,7 @@ const DungeonModal: React.FC<Props> = ({
       // 通关！
       setDungeon((prev) => prev ? { ...prev, currentFloor: nextFloorNum, completed: true, isActive: false } : prev);
       setPhase('exit');
-      addLog(`🏆 恭喜！你成功通关了【${dungeon.name}】！总计获得 ${dungeon.rewards.exp} 经验、${dungeon.rewards.spiritStones} 灵石！`, 'special');
+      addLog(`【秘境通关】恭喜！你成功通关了【${dungeon.name}】！总计获得 ${dungeon.rewards.exp} 经验、${dungeon.rewards.spiritStones} 灵石！`, 'special');
       return;
     }
 
@@ -107,20 +107,22 @@ const DungeonModal: React.FC<Props> = ({
     setDungeon((prev) => prev ? { ...prev, isActive: false } : prev);
     setPhase('exit');
     addLog(
-      `🚪 你退出了【${dungeon.name}】，本次探索共获得 ${dungeon.rewards.exp} 经验、${dungeon.rewards.spiritStones} 灵石。`,
+      `【安全折返】你退出了【${dungeon.name}】，本次探索共获得 ${dungeon.rewards.exp} 经验、${dungeon.rewards.spiritStones} 灵石。`,
       'normal'
     );
   }, [dungeon, addLog]);
 
-  // 打开时重置
-  useEffect(() => {
+  // 打开时重置（使用渲染期状态重置模式，避免 effect 级联重渲染）
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
     if (isOpen) {
       setDungeon(null);
       setPhase('intro');
       setSelectedEvent(null);
       setEventResult(null);
     }
-  }, [isOpen]);
+  }
 
   if (!isOpen) return null;
 
@@ -129,9 +131,23 @@ const DungeonModal: React.FC<Props> = ({
       ? dungeon.floors[dungeon.currentFloor]
       : null;
 
-  const eventIcons: Record<string, string> = {
-    battle: '⚔️', treasure: '💎', heal: '❤️',
-    mystery: '❓', merchant: '🏪', boss: '👹',
+  const renderEventIcon = (type: string, size = 22) => {
+    switch (type) {
+      case 'battle':
+        return <Swords size={size} className="text-red-400" />;
+      case 'treasure':
+        return <Gem size={size} className="text-amber-400" />;
+      case 'heal':
+        return <Heart size={size} className="text-emerald-400" />;
+      case 'mystery':
+        return <HelpCircle size={size} className="text-purple-400" />;
+      case 'merchant':
+        return <Store size={size} className="text-blue-400" />;
+      case 'boss':
+        return <Skull size={size} className="text-rose-500" />;
+      default:
+        return <Sparkles size={size} className="text-amber-300" />;
+    }
   };
 
   const riskColors: Record<string, string> = {
@@ -163,7 +179,9 @@ const DungeonModal: React.FC<Props> = ({
         {/* 引入阶段 */}
         {phase === 'intro' && (
           <div className="text-center py-6 space-y-4">
-            <div className="text-5xl mb-4">🏰</div>
+            <div className="w-16 h-16 mx-auto rounded-full bg-purple-950/80 border-2 border-purple-500/50 flex items-center justify-center text-purple-300 shadow-[0_0_20px_rgba(168,85,247,0.3)]">
+              <Map size={32} />
+            </div>
             <h3 className="text-mystic-gold text-lg font-serif">秘境 Roguelike 探索</h3>
             <p className="text-stone-400 text-sm max-w-sm mx-auto">
               深入多层地宫，每层从3个选项中择一前行。
@@ -222,7 +240,9 @@ const DungeonModal: React.FC<Props> = ({
                   className={`text-left p-4 rounded border-2 transition-all hover:scale-[1.01] active:scale-[0.99] ${riskColors[event.risk]}`}
                 >
                   <div className="flex items-start gap-3">
-                    <span className="text-2xl">{event.icon || eventIcons[event.type]}</span>
+                    <div className="p-2 rounded bg-stone-800/80 border border-stone-700/60 shrink-0">
+                      {renderEventIcon(event.type, 20)}
+                    </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-stone-200 font-bold text-sm">
                         {event.title}
@@ -257,8 +277,8 @@ const DungeonModal: React.FC<Props> = ({
         {/* 结果阶段 */}
         {phase === 'result' && eventResult && dungeon && (
           <div className="space-y-4 text-center py-4">
-            <div className="text-4xl">
-              {selectedEvent?.icon || '✨'}
+            <div className="w-12 h-12 mx-auto rounded-full bg-stone-800/90 border border-purple-500/50 flex items-center justify-center">
+              {renderEventIcon(selectedEvent?.type || 'mystery', 24)}
             </div>
             <h4 className="text-stone-200 font-serif text-lg">
               {selectedEvent?.title}
@@ -271,21 +291,23 @@ const DungeonModal: React.FC<Props> = ({
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {eventResult.expGain > 0 && (
                   <div className="flex items-center gap-2">
-                    <span className="text-blue-400">✨</span>
+                    <Sparkles size={16} className="text-blue-400" />
                     <span className="text-stone-300">+{eventResult.expGain} 经验</span>
                   </div>
                 )}
                 {eventResult.spiritStoneGain > 0 && (
                   <div className="flex items-center gap-2">
-                    <span className="text-yellow-400">💎</span>
+                    <Gem size={16} className="text-yellow-400" />
                     <span className="text-stone-300">+{eventResult.spiritStoneGain} 灵石</span>
                   </div>
                 )}
                 {eventResult.hpChange !== 0 && (
                   <div className="flex items-center gap-2">
-                    <span className={eventResult.hpChange < 0 ? 'text-red-400' : 'text-green-400'}>
-                      {eventResult.hpChange < 0 ? '💔' : '❤️'}
-                    </span>
+                    {eventResult.hpChange < 0 ? (
+                      <ShieldAlert size={16} className="text-red-400" />
+                    ) : (
+                      <Heart size={16} className="text-green-400" />
+                    )}
                     <span className={eventResult.hpChange < 0 ? 'text-red-300' : 'text-green-300'}>
                       {eventResult.hpChange > 0 ? '+' : ''}{eventResult.hpChange} HP
                     </span>
@@ -293,7 +315,7 @@ const DungeonModal: React.FC<Props> = ({
                 )}
                 {eventResult.items?.length > 0 && (
                   <div className="flex items-center gap-2 col-span-2">
-                    <span className="text-purple-400">📦</span>
+                    <Package size={16} className="text-purple-400" />
                     <span className="text-stone-300">获得 {eventResult.items.length} 件物品</span>
                   </div>
                 )}
@@ -320,8 +342,12 @@ const DungeonModal: React.FC<Props> = ({
         {/* 退出阶段 */}
         {phase === 'exit' && dungeon && (
           <div className="text-center py-6 space-y-4">
-            <div className="text-5xl">
-              {dungeon.completed ? '🏆' : '🚪'}
+            <div className="w-16 h-16 mx-auto rounded-full bg-stone-800/80 border border-stone-700 flex items-center justify-center">
+              {dungeon.completed ? (
+                <Trophy size={32} className="text-amber-400" />
+              ) : (
+                <LogOut size={32} className="text-stone-400" />
+              )}
             </div>
             <h3 className="text-mystic-gold text-lg font-serif">
               {dungeon.completed ? '恭喜通关！' : '探索结束'}
@@ -333,18 +359,21 @@ const DungeonModal: React.FC<Props> = ({
             </p>
             <div className="bg-stone-800 rounded p-4 inline-block mx-auto">
               <div className="flex items-center gap-4 text-sm">
-                <div>
-                  <span className="text-blue-400">✨ {dungeon.rewards.exp}</span>
-                  <span className="text-stone-500 ml-1">经验</span>
+                <div className="flex items-center gap-1.5">
+                  <Sparkles size={16} className="text-blue-400" />
+                  <span className="text-stone-300 font-bold">{dungeon.rewards.exp}</span>
+                  <span className="text-stone-500">经验</span>
                 </div>
-                <div>
-                  <span className="text-yellow-400">💎 {dungeon.rewards.spiritStones}</span>
-                  <span className="text-stone-500 ml-1">灵石</span>
+                <div className="flex items-center gap-1.5">
+                  <Gem size={16} className="text-yellow-400" />
+                  <span className="text-stone-300 font-bold">{dungeon.rewards.spiritStones}</span>
+                  <span className="text-stone-500">灵石</span>
                 </div>
                 {dungeon.rewards.items.length > 0 && (
-                  <div>
-                    <span className="text-purple-400">📦 {dungeon.rewards.items.length}</span>
-                    <span className="text-stone-500 ml-1">物品</span>
+                  <div className="flex items-center gap-1.5">
+                    <Package size={16} className="text-purple-400" />
+                    <span className="text-stone-300 font-bold">{dungeon.rewards.items.length}</span>
+                    <span className="text-stone-500">物品</span>
                   </div>
                 )}
               </div>

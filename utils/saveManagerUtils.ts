@@ -112,6 +112,7 @@ export const ensurePlayerStatsCompatibility = (loadedPlayer: any): PlayerStats =
       herbarium: loadedPlayer.grotto.herbarium || [],
       dailySpeedupCount: loadedPlayer.grotto.dailySpeedupCount || 0,
       lastSpeedupResetDate: loadedPlayer.grotto.lastSpeedupResetDate || new Date().toISOString().split('T')[0],
+      petExpeditions: loadedPlayer.grotto.petExpeditions || [],
       plantedHerbs: (loadedPlayer.grotto.plantedHerbs || []).map((herb: any) => ({
         ...herb,
         isMutated: herb.isMutated || false,
@@ -128,7 +129,16 @@ export const ensurePlayerStatsCompatibility = (loadedPlayer: any): PlayerStats =
       herbarium: [],
       dailySpeedupCount: 0,
       lastSpeedupResetDate: new Date().toISOString().split('T')[0],
+      petExpeditions: [],
     },
+    // 通天塔系统
+    tower: loadedPlayer.tower || {
+      highestFloor: 0,
+      dailySwept: false,
+      lastSweepDate: '',
+    },
+    // 自创神通系统
+    customSpells: loadedPlayer.customSpells || [],
   };
 };
 
@@ -285,7 +295,7 @@ export const exportSave = (saveData: SaveData): string => {
   // 简单的 Base64 编码，增加一点点修改难度
   try {
     return btoa(encodeURIComponent(json));
-  } catch (e) {
+  } catch {
     return json; // 回退到普通 JSON
   }
 };
@@ -301,7 +311,7 @@ export const importSave = (encodedString: string): SaveData | null => {
       if (!encodedString.startsWith('{')) {
         jsonString = decodeURIComponent(atob(encodedString));
       }
-    } catch (e) {
+    } catch {
       // 如果不是 Base64，则按原样处理
     }
 

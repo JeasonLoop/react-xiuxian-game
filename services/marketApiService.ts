@@ -83,7 +83,7 @@ export async function checkPurchase(
 /** POST /api/market/purchase/confirm — 确认购买 */
 export async function confirmPurchase(
   listingId: string
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; stones?: number; error?: string }> {
   const res = await fetch(`${API_URL}/market/purchase/confirm`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
@@ -126,6 +126,7 @@ export async function fetchMarketPayouts(): Promise<{
 export async function claimMarketPayouts(): Promise<{
   success: boolean;
   amount?: number;
+  stones?: number;
   error?: string;
 }> {
   const res = await fetch(`${API_URL}/market/payouts/claim`, {

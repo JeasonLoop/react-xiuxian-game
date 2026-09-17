@@ -127,16 +127,9 @@ function App() {
     setIsLotteryOpen,
     setIsSettingsOpen,
     setIsDailyQuestOpen,
-    setIsDebugOpen,
     setIsBattleModalOpen,
-    setIsTurnBasedBattleOpen,
-    setIsMobileSidebarOpen,
-    setIsMobileStatsOpen,
     setIsDebugModeEnabled,
-    setIsReputationEventOpen,
-    setIsTreasureVaultOpen,
     setIsAutoAdventureConfigOpen,
-    setIsLeaderboardOpen,
   } = modalSetters;
 
   // ========== 本地状态 ==========
@@ -445,11 +438,10 @@ function App() {
 
   // 登录并拉取云存档后跳过欢迎页，直接进游戏
   useEffect(() => {
-    if (showWelcome && skipWelcomeAfterLogin) {
-      setShowWelcome(false);
+    if (skipWelcomeAfterLogin) {
       setSkipWelcomeAfterLogin(false);
     }
-  }, [showWelcome, skipWelcomeAfterLogin, setSkipWelcomeAfterLogin]);
+  }, [skipWelcomeAfterLogin, setSkipWelcomeAfterLogin]);
 
   // ========== 渲染逻辑 ==========
 
@@ -458,7 +450,7 @@ function App() {
   }
 
   // 显示欢迎界面
-  if (showWelcome) {
+  if (showWelcome && !skipWelcomeAfterLogin) {
     return (
       <WelcomeScreen
         hasSave={hasSave}

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { PlayerStats, RealmType, SecretRealm } from '../types';
 import { REALM_ORDER } from '../constants/index';
 import { generateRandomRealms } from '../services/randomService';
-import { Mountain, Gem, Ticket, RefreshCw, Map } from 'lucide-react';
+import { Mountain, Gem, Ticket, RefreshCw, Map, Flame, Zap, Compass } from 'lucide-react';
 import { Modal } from './common';
 import { useUIStore } from '../store/uiStore';
 
@@ -54,25 +54,54 @@ const SecretRealmModal: React.FC<Props> = ({
       headerClassName="bg-purple-900/20 border-purple-900"
     >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
-        {/* 地宫探索入口 */}
-        <div
-          className="col-span-full bg-gradient-to-r from-purple-900/40 to-amber-900/40 border-2 border-amber-700/60 rounded-lg p-4 cursor-pointer hover:border-amber-500 transition-all"
-          onClick={() => {
-            const setModal = useUIStore.getState().setModal;
-            setModal('isDungeonOpen', true);
-            // 关闭当前秘境窗口
-            setModal('isRealmOpen', false);
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <Map size={28} className="text-amber-400" />
-            <div>
-              <h4 className="text-amber-300 font-serif font-bold text-base">
-                🏰 秘境 Roguelike 探索
-              </h4>
-              <p className="text-stone-400 text-xs mt-0.5">
-                多层地宫 · 3选1路径 · 奖励递增 · 可随时退出
-              </p>
+        {/* 九天通天塔 与 地宫探索 双大入口 */}
+        <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-3">
+          {/* 九天通天塔入口 */}
+          <div
+            className="bg-linear-to-r from-amber-950/70 to-red-950/60 border-2 border-amber-600/70 rounded-lg p-3.5 cursor-pointer hover:border-amber-400 hover:shadow-lg hover:shadow-amber-950/40 transition-all"
+            onClick={() => {
+              const setModal = useUIStore.getState().setModal;
+              setModal('isTowerOpen', true);
+              setModal('isRealmOpen', false);
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <Flame size={26} className="text-amber-400 animate-pulse" />
+              <div>
+                <h4 className="text-amber-300 font-serif font-bold text-sm md:text-base flex items-center gap-1.5">
+                  <Zap size={16} className="text-amber-400" />
+                  九天通天塔
+                  <span className="text-[10px] px-1.5 py-0.5 bg-amber-900/80 text-amber-200 border border-amber-600 rounded">
+                    第 {player.tower?.highestFloor || 0} / 100 层
+                  </span>
+                </h4>
+                <p className="text-stone-400 text-xs mt-0.5">
+                  百重试炼 · 战力淬道 · 太虚洗炼石 · 每日扫荡
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* 地宫探索入口 */}
+          <div
+            className="bg-linear-to-r from-purple-900/40 to-stone-900/60 border-2 border-purple-700/60 rounded-lg p-3.5 cursor-pointer hover:border-purple-400 hover:shadow-lg hover:shadow-purple-950/40 transition-all"
+            onClick={() => {
+              const setModal = useUIStore.getState().setModal;
+              setModal('isDungeonOpen', true);
+              setModal('isRealmOpen', false);
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <Map size={26} className="text-purple-300" />
+              <div>
+                <h4 className="text-purple-300 font-serif font-bold text-sm md:text-base flex items-center gap-1.5">
+                  <Compass size={16} className="text-purple-300" />
+                  秘境 Roguelike 探索
+                </h4>
+                <p className="text-stone-400 text-xs mt-0.5">
+                  多层地宫 · 3选1路径 · 随机机缘 · 随时结算
+                </p>
+              </div>
             </div>
           </div>
         </div>

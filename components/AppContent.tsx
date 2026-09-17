@@ -10,8 +10,9 @@ import type { BattleReplay } from '../services/battleService';
 import TribulationModal from './TribulationModal';
 import DeathModal from './DeathModal';
 import DungeonModal from './DungeonModal';
+import TowerModal from './TowerModal';
 import NPCRelationsModal from './NPCRelationsModal';
-import RebirthModal, { canRebirth, getRebirthBonuses } from './RebirthModal';
+import RebirthModal, { getRebirthBonuses } from './RebirthModal';
 import GameView from '../views/GameView';
 import DebugModal from './DebugModal';
 import AlertModal from './AlertModal';
@@ -19,7 +20,6 @@ import ModalsContainer from '../views/modals/ModalsContainer';
 import CultivationIntroModal from './CultivationIntroModal';
 import AutoAdventureConfigModal from './AutoAdventureConfigModal';
 import { STORAGE_KEYS } from '../constants/storageKeys';
-import { REALM_DATA } from '../constants/index';
 import { createInitialPlayer } from '../utils/playerUtils';
 import { useUIStore, useModals } from '../store/uiStore';
 import { useGameStore, useLogs } from '../store/gameStore';
@@ -144,6 +144,7 @@ export function AppContent(props: AppContentProps) {
   const setIsReputationEventOpen = (open: boolean) => setModal('isReputationEventOpen', open);
   const setIsAutoAdventureConfigOpen = (open: boolean) => setModal('isAutoAdventureConfigOpen', open);
   const setIsDungeonOpen = (open: boolean) => setModal('isDungeonOpen', open);
+  const setIsTowerOpen = (open: boolean) => setModal('isTowerOpen', open);
 
   // 交易行
   const tradeMarketHandlers = useTradeMarketHandlers({
@@ -163,7 +164,9 @@ export function AppContent(props: AppContentProps) {
 
   // 交易行：收到事件后同步市场数据
   const tradeMarketHandlerRef = useRef(tradeMarketHandlers);
-  tradeMarketHandlerRef.current = tradeMarketHandlers;
+  useEffect(() => {
+    tradeMarketHandlerRef.current = tradeMarketHandlers;
+  });
   useEffect(() => {
     const handler = () => {
       tradeMarketHandlerRef.current.handleOpenTradeMarket();
@@ -227,7 +230,6 @@ export function AppContent(props: AppContentProps) {
         roots[k] = Math.min(100, (roots[k] || 0) + bonuses.rootBoost);
       }
       
-      const realmData = REALM_DATA[prev.realm]; // 取当前境界数据但不直接用
       // 创建新玩家，重置境界但保留关键数据
       const prevTalentIds = Array.isArray(prev.talentIds) && prev.talentIds.length > 0
         ? prev.talentIds
@@ -450,6 +452,19 @@ export function AppContent(props: AppContentProps) {
         <DungeonModal
           isOpen={modals.isDungeonOpen}
           onClose={() => setIsDungeonOpen(false)}
+          player={player}
+          setPlayer={setPlayer as any}
+          addLog={(text: string, type?: string) => {
+            useGameStore.getState().addLog(text, (type || 'normal') as any);
+          }}
+        />
+      )}
+
+      {/* 九天通天塔 */}
+      {player && (
+        <TowerModal
+          isOpen={modals.isTowerOpen}
+          onClose={() => setIsTowerOpen(false)}
           player={player}
           setPlayer={setPlayer as any}
           addLog={(text: string, type?: string) => {

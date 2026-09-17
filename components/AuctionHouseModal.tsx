@@ -86,7 +86,8 @@ export default function TradeMarketModal({
     if (activeTab === 'buy') {
       onSyncMarket();
     }
-  }, [activeTab, onSyncMarket]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
 
   const playerListings = items.filter((i) => i.sellerId === 'player');
 

@@ -141,7 +141,10 @@ const BatchDismantleModal: React.FC<Props> = ({
                   </span>
                   <span className="text-stone-500 text-[10px] shrink-0">{getRarityDisplayName(item.rarity || '普通')}</span>
                   <span className="text-stone-500 text-[10px] shrink-0 hidden sm:inline">{normalizeTypeLabel(item.type, item)}</span>
-                  <span className="text-amber-400 shrink-0">⚒️×{stones}</span>
+                  <span className="text-amber-400 shrink-0 flex items-center gap-0.5">
+                    <Hammer size={12} className="inline" />
+                    <span>×{stones}</span>
+                  </span>
                   <span className="text-stone-600 text-[10px]">×{item.quantity}</span>
                 </button>
               );

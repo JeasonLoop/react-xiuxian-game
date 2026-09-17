@@ -44,6 +44,7 @@ interface ModalState {
   isTradeMarketOpen: boolean;
   isDungeonOpen: boolean;
   isLeaderboardOpen: boolean;
+  isTowerOpen: boolean;
 }
 
 // 回合制战斗参数
@@ -186,6 +187,7 @@ const defaultModalState: ModalState = {
   isTradeMarketOpen: false,
   isDungeonOpen: false,
   isLeaderboardOpen: false,
+  isTowerOpen: false,
 };
 
 export const useUIStore = create<UIState>((set, get) => ({

@@ -116,6 +116,12 @@ export interface Item {
     speed?: number;
     lifespan?: number; // 增加寿命
   };
+  reforgeAffixes?: Array<{
+    type: 'attackPercent' | 'defensePercent' | 'hpPercent' | 'critRate' | 'critDamage' | 'dodgeRate' | 'lifeLeech';
+    name: string;
+    value: number; // 如 0.05 表示 +5%
+  }>; // 装备洗练附加词条
+  reforgeCount?: number; // 已洗练次数
   permanentEffect?: {
     // 永久提升的属性（使用物品后永久增加）
     attack?: number;
@@ -381,7 +387,12 @@ export interface PlayerStats {
     herbarium: string[]; // 已收集的灵草图鉴（灵草名称列表）
     dailySpeedupCount: number; // 今日已使用加速次数
     lastSpeedupResetDate: string; // 上次重置加速次数的日期（YYYY-MM-DD格式）
+    petExpeditions?: PetExpedition[]; // 灵兽远征列表
   };
+  // 通天塔系统
+  tower?: TowerState;
+  // 自创神通系统
+  customSpells?: CustomSpell[];
   // 宗门宝库系统
   sectTreasureVault?: {
     items: Item[]; // 宝库中的物品列表
@@ -968,6 +979,49 @@ export interface Shop {
   reputationRequired?: number; // 所需声望值（声望商店用）
 }
 
+// ==================== 通天塔与洞天扩展系统类型定义 ====================
+
+export interface TowerState {
+  highestFloor: number; // 历史最高通关层数（默认0）
+  dailySwept: boolean; // 今日是否已扫荡
+  lastSweepDate: string; // 上次扫荡日期（YYYY-MM-DD）
+}
+
+export interface PetExpedition {
+  id: string;
+  petId: string;
+  petName: string;
+  locationId: string;
+  locationName: string;
+  startTime: number;
+  duration: number; // 毫秒
+  endTime: number;
+  status: 'exploring' | 'completed' | 'claimed';
+  rewards?: {
+    spiritStones: number;
+    exp: number;
+    items: Item[];
+  };
+}
+
+export interface CustomSpell {
+  id: string;
+  name: string;
+  description: string;
+  sourceArtIds: string[]; // 融合源功法ID
+  effects: {
+    attackPercent?: number;
+    critRate?: number;
+    critDamage?: number;
+    damageReduction?: number;
+    lifeLeech?: number;
+    dodgeRate?: number;
+    speedPercent?: number;
+  };
+  level: number;
+  proficiency: number;
+}
+
 // ==================== 交易行系统类型定义 ====================
 
 export interface MarketItem {
@@ -1015,6 +1069,7 @@ export interface Buff {
   damageReduction?: number; // 受到伤害减少比例（0-1之间）
   immunity?: boolean; // 免疫所有负面状态
   magicDefense?: number; // 法术防御加成
+  lifeLeech?: number; // 造成伤害按比例吸血（0-1之间）
 }
 
 export interface Debuff {

@@ -1,4 +1,4 @@
-import { PlayerStats, CultivationArt, ArtGrade } from '../types';
+import { PlayerStats, CultivationArt } from '../types';
 import { CULTIVATION_ARTS, TALENTS, TITLES, calculateSpiritualRootArtBonus, getActiveSynergies, calculateSynergyEffects } from '../constants/index';
 import { getGoldenCoreBonusMultiplier } from './cultivationUtils';
 import { getItemStats } from './itemUtils';
@@ -207,7 +207,7 @@ export function calculateTotalExpRate(player: PlayerStats): {
   // 5. 功法羁绊修炼加成
   const synergies = getActiveSynergies(player.cultivationArts);
   const synergyExpRate = calculateSynergyEffects(synergies).expRate || 0;
-  let synergyBonus = synergyExpRate;
+  const synergyBonus = synergyExpRate;
 
   // 6. NPC 好感度加成
   let npcExpBonus = 0;
@@ -309,7 +309,69 @@ export const getPlayerTotalStats = (player: PlayerStats): {
     stats.speed += applySynergyLimitedBonus(player.speed, bonusFactor, synergyLimitFactor);
   }
 
+  // 3. 应用自创神通加成
+  if (player.customSpells && player.customSpells.length > 0) {
+    for (const spell of player.customSpells) {
+      if (spell.effects.attackPercent) stats.attack += Math.floor(player.attack * spell.effects.attackPercent);
+      if (spell.effects.speedPercent) stats.speed += Math.floor(player.speed * spell.effects.speedPercent);
+    }
+  }
+
+  // 4. 应用已装备法宝的万宝洗炼词条基础攻防血加成
+  const equippedItemIds = Object.values(player.equippedItems || {});
+  for (const itemId of equippedItemIds) {
+    if (!itemId) continue;
+    const item = player.inventory.find((i) => i.id === itemId);
+    if (item?.reforgeAffixes) {
+      for (const affix of item.reforgeAffixes) {
+        if (affix.type === 'attackPercent') {
+          stats.attack += Math.floor(player.attack * affix.value);
+        } else if (affix.type === 'defensePercent') {
+          stats.defense += Math.floor(player.defense * affix.value);
+        } else if (affix.type === 'hpPercent') {
+          stats.maxHp += Math.floor(player.maxHp * affix.value);
+        }
+      }
+    }
+  }
+
   return stats;
+}
+
+/**
+ * 统计所有已穿戴法宝的洗炼附加词条总成
+ */
+export function getEquippedReforgeSpecialStats(player: PlayerStats): {
+  attackPercent: number;
+  defensePercent: number;
+  hpPercent: number;
+  critRate: number;
+  critDamage: number;
+  dodgeRate: number;
+  lifeLeech: number;
+} {
+  const totals = {
+    attackPercent: 0,
+    defensePercent: 0,
+    hpPercent: 0,
+    critRate: 0,
+    critDamage: 0,
+    dodgeRate: 0,
+    lifeLeech: 0,
+  };
+  const equippedItemIds = Object.values(player.equippedItems || {});
+  for (const itemId of equippedItemIds) {
+    if (!itemId) continue;
+    const item = player.inventory.find((i) => i.id === itemId);
+    if (item?.reforgeAffixes) {
+      for (const affix of item.reforgeAffixes) {
+        if (affix.type in totals) {
+          totals[affix.type as keyof typeof totals] += affix.value;
+        }
+      }
+    }
+  }
+  return totals;
 }
 
 /**

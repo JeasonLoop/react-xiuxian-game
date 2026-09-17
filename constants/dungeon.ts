@@ -102,7 +102,7 @@ function generateEvent(
     title,
     description: `${descPrefix}${title}。${EVENT_RISK_DESC[risk]}`,
     risk,
-    icon: type === 'battle' ? '⚔️' : type === 'treasure' ? '💎' : type === 'heal' ? '❤️' : type === 'mystery' ? '❓' : type === 'merchant' ? '🏪' : '👹',
+    icon: '',
   };
 }
 
@@ -192,7 +192,7 @@ export function resolveDungeonEvent(
       spiritStoneGain = Math.floor(100 * baseMultiplier * riskMultiplier);
       hpChange = -Math.floor(player.maxHp * (0.1 + (event.risk === 'high' ? 0.15 : 0)));
       triggeredBattle = true;
-      log = `⚔️ 击败${event.title}，获得经验与灵石，但受了些伤。`;
+      log = `【激战胜出】击败${event.title}，获得经验与灵石，但受了些伤。`;
       logType = 'danger';
       break;
     }
@@ -203,10 +203,10 @@ export function resolveDungeonEvent(
       // 高风险宝箱可能触发陷阱
       if (event.risk === 'high' && Math.random() < 0.3) {
         hpChange = -Math.floor(player.maxHp * 0.2);
-        log = `💎 发现${event.title}，获得大量灵石，但不小心中了机关陷阱！`;
+        log = `【寻宝遇险】发现${event.title}，获得大量灵石，但不小心中了机关陷阱！`;
         logType = 'danger';
       } else {
-        log = `💎 发现${event.title}，收获颇丰！`;
+        log = `【宝光初现】发现${event.title}，收获颇丰！`;
         logType = 'gain';
       }
       break;
@@ -214,7 +214,7 @@ export function resolveDungeonEvent(
     case 'heal': {
       hpChange = Math.floor(player.maxHp * 0.3);
       expGain = Math.floor(player.maxExp * 0.02);
-      log = `❤️ 在${event.title}处调息恢复，气血回复，心境也有所提升。`;
+      log = `【灵泉沐浴】在${event.title}处调息恢复，气血回复，心境也有所提升。`;
       logType = 'gain';
       break;
     }
@@ -222,27 +222,27 @@ export function resolveDungeonEvent(
       const roll = Math.random();
       if (roll < 0.4) {
         expGain = Math.floor(player.maxExp * 0.3);
-        log = `❓ ${event.title}让你窥见大道一角，修为大进！`;
+        log = `【玄妙机缘】${event.title}让你窥见大道一角，修为大进！`;
         logType = 'special';
       } else if (roll < 0.7) {
         spiritStoneGain = Math.floor(500 * baseMultiplier);
-        log = `❓ ${event.title}中飘落几块极品灵石！`;
+        log = `【奇珍现世】${event.title}中飘落几块极品灵石！`;
         logType = 'gain';
       } else if (roll < 0.9) {
         hpChange = -Math.floor(player.maxHp * 0.25);
-        log = `❓ ${event.title}之力过于狂暴，你的神魂受到冲击...`;
+        log = `【灵力反噬】${event.title}之力过于狂暴，你的神魂受到冲击...`;
         logType = 'danger';
       } else {
         expGain = Math.floor(player.maxExp * 0.5);
         spiritStoneGain = Math.floor(1000 * baseMultiplier);
-        log = `❓ ${event.title}赐予你天大机缘！修为暴涨，灵石如山！`;
+        log = `【造化降临】${event.title}赐予你天大机缘！修为暴涨，灵石如山！`;
         logType = 'special';
       }
       break;
     }
     case 'merchant': {
       spiritStoneGain = Math.floor(300 * baseMultiplier);
-      log = `🏪 遇到了${event.title}，用灵石交换了一些稀有物品，并获得额外灵石。`;
+      log = `【仙市偶遇】遇到了${event.title}，用灵石交换了一些稀有物品，并获得额外灵石。`;
       logType = 'gain';
       break;
     }
@@ -251,7 +251,7 @@ export function resolveDungeonEvent(
       spiritStoneGain = Math.floor(500 * baseMultiplier);
       hpChange = -Math.floor(player.maxHp * 0.3);
       triggeredBattle = true;
-      log = `👹 激战${event.title}！虽然身受重伤，但收获巨大！`;
+      log = `【血战强敌】激战${event.title}！虽然身受重伤，但收获巨大！`;
       logType = 'special';
       break;
     }

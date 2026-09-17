@@ -2,13 +2,13 @@ version: '3.8'
 
 services:
   web:
-    image: "react-xiuxian-game:${VITE_APP_VERSION:-0.3.3}"
+    image: "react-xiuxian-game:${VITE_APP_VERSION:-0.3.8}"
     build:
       context: .
       dockerfile: Dockerfile
       args:
         # 构建时参数 - 会被 Vite 打包到静态文件中
-        VITE_APP_VERSION: ${VITE_APP_VERSION:-0.3.3}
+        VITE_APP_VERSION: ${VITE_APP_VERSION:-0.3.8}
         VITE_API_BASE_URL: ${VITE_API_BASE_URL}
         VITE_PARTYKIT_HOST: ${VITE_PARTYKIT_HOST}
     container_name: react-xiuxian-game
