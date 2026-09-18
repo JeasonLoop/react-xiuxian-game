@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { PlayerStats, LogEntry, GameSettings } from '../types';
 import { createInitialPlayer } from '../utils/playerUtils';
+import { uid } from '../utils/gameUtils';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import { TALENTS } from '../constants/index';
 import { initializeEventTemplateLibrary } from '../services/adventureTemplateService';
@@ -153,7 +154,7 @@ export const useGameStore = create<GameState>()(
     addLog: (text, type) => {
       set((state) => {
         const entry: LogEntry = {
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: uid(),
           text,
           type,
           timestamp: Date.now(),
@@ -294,13 +295,13 @@ export const useGameStore = create<GameState>()(
 
       const initialLogs: LogEntry[] = [
         {
-          id: `${Date.now()}-1-${Math.random().toString(36).substr(2, 9)}`,
+          id: uid(),
           text: '欢迎来到修仙世界。你的长生之路就此开始。',
           type: 'special',
           timestamp: Date.now(),
         },
         {
-          id: `${Date.now()}-2-${Math.random().toString(36).substr(2, 9)}`,
+          id: uid(),
           text: `你天生拥有天赋：${talentNames}。${talentDescriptions}`,
           type: 'special',
           timestamp: Date.now(),

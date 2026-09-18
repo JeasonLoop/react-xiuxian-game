@@ -1,8 +1,9 @@
 import { SecretRealm, RealmType, Item, ItemType, EquipmentSlot } from '../types';
 import { REALM_ORDER, SectInfo, SectGrade, getPillDefinition } from '../constants/index';
 import { getItemFromConstants } from '../utils/itemConstantsUtils';
+import { uid } from '../utils/gameUtils';
 
-const randomId = () => Math.random().toString(36).slice(2, 9);
+const randomId = uid;
 
 // 秘境名称池 - 按风险等级分类
 const REALM_NAMES_BY_RISK: Record<'低' | '中' | '高' | '极度危险', string[]> = {
@@ -877,7 +878,6 @@ export const generateRandomSects = (
     const description = sectData.description;
 
     // 根据境界随机分配宗门等级
-    const grades: SectGrade[] = ['黄', '玄', '地', '天'];
     const gradeWeights = [0.4, 0.3, 0.2, 0.1]; // 黄最多，天最少
     let grade: SectGrade = '黄';
     const rand = Math.random();

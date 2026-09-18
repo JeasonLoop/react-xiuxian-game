@@ -43,7 +43,7 @@ npm run party:deploy   # PartyKit 部署
 |---|---|
 | `App.tsx` / `index.tsx` | 应用入口与根组件 |
 | `views/` | **主要业务逻辑目录**。核心 UI（`GameView.tsx`、`ActionBar.tsx`、`GameHeader.tsx`）+ 按功能模块分文件夹（adventure、battle、sect、pet、shop、cultivation、grotto 等），每个模块为 `index.ts` + `useXxxHandlers.ts` 模式 |
-| `components/` | 全局弹窗与组件（各功能 Modal、`AppContent.tsx`、`OptimizedApp.tsx`、character/common/talent 子目录） |
+| `components/` | 全局弹窗与组件（各功能 Modal、`AppContent.tsx`、character/common/talent 子目录） |
 | `hooks/` | 全局自定义 Hook（生命周期、快捷键、自动功能、IndexedDB、Party 多人等） |
 | `services/` | 服务层（AI 事件模板、战斗、商店经济、拍卖行、云存档等） |
 | `store/` | Zustand store：`gameStore.ts`（玩家/日志/设置，subscribe 触发自动保存）、`uiStore.ts`（UI/弹窗/加载/冷却）、`authStore.ts`，统一由 `store/index.ts` 导出 |

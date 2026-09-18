@@ -249,14 +249,14 @@ const PetModal: React.FC<Props> = ({
                             {skill.effect.healPercent && `治疗: ${Math.floor(skill.effect.healPercent * 100)}% `}
                             {skill.effect.buff && (
                               <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5">
-                                {skill.effect.buff.attack && <span className="text-orange-300">攻击+${skill.effect.buff.attack}</span>}
-                                {skill.effect.buff.attackPercent && <span className="text-orange-400">攻击+${Math.floor(skill.effect.buff.attackPercent * 100)}%</span>}
-                                {skill.effect.buff.defense && <span className="text-blue-300">防御+${skill.effect.buff.defense}</span>}
-                                {skill.effect.buff.defensePercent && <span className="text-blue-400">防御+${Math.floor(skill.effect.buff.defensePercent * 100)}%</span>}
-                                {skill.effect.buff.speedPercent && <span className="text-cyan-300">速度+${Math.floor(skill.effect.buff.speedPercent * 100)}%</span>}
-                                {skill.effect.buff.critChance && <span className="text-red-400">暴击+${Math.floor(skill.effect.buff.critChance * 100)}%</span>}
-                                {skill.effect.buff.dodge && <span className="text-emerald-300">闪避+${Math.floor(skill.effect.buff.dodge * 100)}%</span>}
-                                {skill.effect.buff.hp && <span className="text-green-300">气血+${skill.effect.buff.hp}</span>}
+                                {!!skill.effect.buff.attack && <span className="text-orange-300">攻击+{skill.effect.buff.attack}</span>}
+                                {!!skill.effect.buff.attackPercent && <span className="text-orange-400">攻击+{Math.floor(skill.effect.buff.attackPercent * 100)}%</span>}
+                                {!!skill.effect.buff.defense && <span className="text-blue-300">防御+{skill.effect.buff.defense}</span>}
+                                {!!skill.effect.buff.defensePercent && <span className="text-blue-400">防御+{Math.floor(skill.effect.buff.defensePercent * 100)}%</span>}
+                                {!!skill.effect.buff.speedPercent && <span className="text-cyan-300">速度+{Math.floor(skill.effect.buff.speedPercent * 100)}%</span>}
+                                {!!skill.effect.buff.critChance && <span className="text-red-400">暴击+{Math.floor(skill.effect.buff.critChance * 100)}%</span>}
+                                {!!skill.effect.buff.dodge && <span className="text-emerald-300">闪避+{Math.floor(skill.effect.buff.dodge * 100)}%</span>}
+                                {!!skill.effect.buff.hp && <span className="text-green-300">气血+{skill.effect.buff.hp}</span>}
                               </div>
                             )}
                             {skill.cooldown && (

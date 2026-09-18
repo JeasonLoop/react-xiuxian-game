@@ -1,5 +1,5 @@
 import React, { useMemo, useEffect, useCallback } from 'react';
-import { PlayerStats, Item, ItemType, ItemRarity } from '../types';
+import { PlayerStats, Item, ItemRarity } from '../types';
 import { LOOT_ITEMS } from '../services/battleService';
 import { uid } from '../utils/gameUtils';
 import { getRarityBadge } from '../utils/rarityUtils';
@@ -223,24 +223,24 @@ const SectTreasureVaultModal: React.FC<Props> = ({
 
                 {item.effect && (
                   <div className="text-xs text-stone-400 space-y-1">
-                    {item.effect.attack && <div>攻击 +{item.effect.attack}</div>}
-                    {item.effect.defense && <div>防御 +{item.effect.defense}</div>}
-                    {item.effect.hp && <div>气血 +{item.effect.hp}</div>}
-                    {item.effect.spirit && <div>神识 +{item.effect.spirit}</div>}
-                    {item.effect.physique && <div>体魄 +{item.effect.physique}</div>}
-                    {item.effect.speed && <div>速度 +{item.effect.speed}</div>}
-                    {item.effect.exp && <div>修为 +{item.effect.exp}</div>}
+                    {!!item.effect.attack && <div>攻击 +{item.effect.attack}</div>}
+                    {!!item.effect.defense && <div>防御 +{item.effect.defense}</div>}
+                    {!!item.effect.hp && <div>气血 +{item.effect.hp}</div>}
+                    {!!item.effect.spirit && <div>神识 +{item.effect.spirit}</div>}
+                    {!!item.effect.physique && <div>体魄 +{item.effect.physique}</div>}
+                    {!!item.effect.speed && <div>速度 +{item.effect.speed}</div>}
+                    {!!item.effect.exp && <div>修为 +{item.effect.exp}</div>}
                   </div>
                 )}
 
                 {item.permanentEffect && (
                   <div className="text-xs text-yellow-400 space-y-1 mt-1">
-                    {item.permanentEffect.attack && <div>✨ 攻击永久 +{item.permanentEffect.attack}</div>}
-                    {item.permanentEffect.defense && <div>✨ 防御永久 +{item.permanentEffect.defense}</div>}
-                    {item.permanentEffect.spirit && <div>✨ 神识永久 +{item.permanentEffect.spirit}</div>}
-                    {item.permanentEffect.physique && <div>✨ 体魄永久 +{item.permanentEffect.physique}</div>}
-                    {item.permanentEffect.speed && <div>✨ 速度永久 +{item.permanentEffect.speed}</div>}
-                    {item.permanentEffect.maxHp && <div>✨ 气血上限永久 +{item.permanentEffect.maxHp}</div>}
+                    {!!item.permanentEffect.attack && <div>✨ 攻击永久 +{item.permanentEffect.attack}</div>}
+                    {!!item.permanentEffect.defense && <div>✨ 防御永久 +{item.permanentEffect.defense}</div>}
+                    {!!item.permanentEffect.spirit && <div>✨ 神识永久 +{item.permanentEffect.spirit}</div>}
+                    {!!item.permanentEffect.physique && <div>✨ 体魄永久 +{item.permanentEffect.physique}</div>}
+                    {!!item.permanentEffect.speed && <div>✨ 速度永久 +{item.permanentEffect.speed}</div>}
+                    {!!item.permanentEffect.maxHp && <div>✨ 气血上限永久 +{item.permanentEffect.maxHp}</div>}
                   </div>
                 )}
               </div>

@@ -5,6 +5,7 @@
 
 import { PlayerStats } from '../types';
 import { REALM_ORDER } from '../constants/realms';
+import { uid } from './gameUtils';
 
 export interface OfflineEarnings {
   elapsedSeconds: number;
@@ -126,7 +127,7 @@ export function applyOfflineEarnings(
       existing.quantity = (existing.quantity || 1) + herb.quantity;
     } else {
       newInventory.push({
-        id: `offline-herb-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`,
+        id: `offline-herb-${uid()}`,
         name: herb.name,
         type: 'Herb' as any,
         quantity: herb.quantity,

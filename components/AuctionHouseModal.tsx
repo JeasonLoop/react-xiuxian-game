@@ -288,12 +288,12 @@ export default function TradeMarketModal({
                     <p className="text-sm text-stone-400 mb-3">{item.description}</p>
                     {item.effect && (
                       <div className="text-xs text-stone-400 mb-3 space-y-1">
-                        {item.effect.attack && <div>攻击 +{formatNumber(item.effect.attack)}</div>}
-                        {item.effect.defense && <div>防御 +{formatNumber(item.effect.defense)}</div>}
-                        {item.effect.hp && <div>气血 +{formatNumber(item.effect.hp)}</div>}
-                        {item.effect.spirit && <div>神识 +{formatNumber(item.effect.spirit)}</div>}
-                        {item.effect.physique && <div>体魄 +{formatNumber(item.effect.physique)}</div>}
-                        {item.effect.speed && <div>速度 +{formatNumber(item.effect.speed)}</div>}
+                        {!!item.effect.attack && <div>攻击 +{formatNumber(item.effect.attack)}</div>}
+                        {!!item.effect.defense && <div>防御 +{formatNumber(item.effect.defense)}</div>}
+                        {!!item.effect.hp && <div>气血 +{formatNumber(item.effect.hp)}</div>}
+                        {!!item.effect.spirit && <div>神识 +{formatNumber(item.effect.spirit)}</div>}
+                        {!!item.effect.physique && <div>体魄 +{formatNumber(item.effect.physique)}</div>}
+                        {!!item.effect.speed && <div>速度 +{formatNumber(item.effect.speed)}</div>}
                       </div>
                     )}
                     <div className="mt-3 flex items-center justify-between">

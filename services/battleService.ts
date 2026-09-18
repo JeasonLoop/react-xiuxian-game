@@ -41,9 +41,10 @@ import { calculateAllCustomSpellBonuses } from './customSpellService';
 import { getRandomEnemyName } from './templateService';
 import { logger } from '../utils/logger';
 import { getItemsByType } from '../utils/itemConstantsUtils';
+import { uid } from '../utils/gameUtils';
 
 
-const randomId = () => Math.random().toString(36).slice(2, 9);
+const randomId = uid;
 
 // ==================== 配置常量 ====================
 
