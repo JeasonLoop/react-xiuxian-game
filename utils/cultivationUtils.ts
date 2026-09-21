@@ -271,6 +271,48 @@ export function checkBreakthroughConditions(player: PlayerStats, targetRealm: st
   return { canBreakthrough: true, message: '' };
 }
 
+/** 修为泵容量：当前境界所需修为的 20 倍 */
+export const getStoredExpCap = (maxExp: number) => Math.max(0, Math.floor(maxExp * 20));
+
+/**
+ * 将溢出修为注入修为泵，修为条锁定为满值。
+ * 条未满时不改 storedExp。
+ */
+export function storeOverflowExp(player: PlayerStats, log?: (msg: string, type?: string) => void): PlayerStats {
+  const overflow = Math.floor(player.exp - player.maxExp);
+  if (overflow <= 0) return player;
+
+  const cap = getStoredExpCap(player.maxExp);
+  const currentStored = Math.max(0, Math.floor(player.storedExp || 0));
+  const storedGain = Math.min(overflow, Math.max(0, cap - currentStored));
+  const nextStored = currentStored + storedGain;
+
+  if (log && storedGain > 0) {
+    log(`溢出修为已注入修为泵 +${storedGain}${nextStored >= cap ? '（已满）' : ''}`, 'gain');
+  }
+
+  return {
+    ...player,
+    exp: player.maxExp,
+    storedExp: nextStored,
+  };
+}
+
+/**
+ * 突破后把「条上溢出 + 修为泵」灌进新境界修为条，剩余继续存在泵里。
+ */
+export function fillExpFromStore(
+  leftoverExp: number,
+  storedExp: number,
+  newMaxExp: number,
+): { exp: number; storedExp: number } {
+  const pool = Math.max(0, leftoverExp) + Math.max(0, storedExp);
+  const cap = getStoredExpCap(newMaxExp);
+  const exp = Math.min(pool, newMaxExp);
+  const remain = Math.min(cap, Math.max(0, pool - exp));
+  return { exp, storedExp: remain };
+}
+
 /**
  * 生成金丹天劫解密游戏（数字序列找规律）
  */

@@ -107,6 +107,7 @@ export const createInitialPlayer = (
     realmLevel: 1,
     exp: 0,
     maxExp: getRealmMaxExp(RealmType.QiRefining, 1),
+    storedExp: 0,
     hp: realmData.baseMaxHp + talentHp,
     maxHp: realmData.baseMaxHp + talentHp,
     attack: realmData.baseAttack + talentAttack,

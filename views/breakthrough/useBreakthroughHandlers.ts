@@ -3,7 +3,7 @@ import { PlayerStats } from '../../types';
 import { REALM_DATA, REALM_ORDER, getNewlyUnlockedFeatures, getRealmMaxExp } from '../../constants/index';
 import { getRandomBreakthroughDescription } from '../../services/templateService';
 import { getRealmIndex, calculateBreakthroughAttributePoints } from '../../utils/attributeUtils';
-import { checkBreakthroughConditions, calculateGoldenCoreMethodCount } from '../../utils/cultivationUtils';
+import { checkBreakthroughConditions, calculateGoldenCoreMethodCount, fillExpFromStore, storeOverflowExp } from '../../utils/cultivationUtils';
 import { getPlayerTotalStats, calculatePlayerBonuses } from '../../utils/statUtils';
 import { calculateSpiritualRootBreakthroughBonus } from '../../constants/spiritualRoots';
 
@@ -94,8 +94,7 @@ export function useBreakthroughHandlers({
           // 已经是最高境界且达到9层，无法再通过正常方式突破
           addLog('你已达到仙道巅峰，由于位面限制，无法再行突破！', 'special');
           setLoading(false);
-          // 将经验值锁定在满值，避免反复触发
-          setPlayer(prev => ({ ...prev, exp: prev.maxExp }));
+          setPlayer(prev => storeOverflowExp(prev));
           return;
         }
       }
@@ -148,9 +147,18 @@ export function useBreakthroughHandlers({
         const newMaxExp = getRealmMaxExp(nextRealm, nextLevel);
         const newBaseMaxLifespan = stats.baseMaxLifespan;
 
-        // 计算超出当前境界的经验值，保留到下一个境界
-        const excessExp = Math.max(0, prev.exp - prev.maxExp);
-        const newExp = excessExp;
+        const filled = fillExpFromStore(
+          Math.max(0, prev.exp - prev.maxExp),
+          prev.storedExp || 0,
+          newMaxExp,
+        );
+        const newExp = filled.exp;
+        const nextStoredExp = filled.storedExp;
+        if (nextStoredExp > 0 && nextStoredExp !== (prev.storedExp || 0)) {
+          addLog(`修为泵灌入新境界 ${newExp} 修为，泵内余 ${nextStoredExp}。`, 'gain');
+        } else if ((prev.storedExp || 0) > 0 && nextStoredExp === 0) {
+          addLog(`修为泵中的修为已全部灌入当前境界。`, 'gain');
+        }
 
         // 更新统计
         const playerStats = prev.statistics || {
@@ -247,8 +255,9 @@ export function useBreakthroughHandlers({
           ...prev,
           realm: nextRealm,
           realmLevel: nextLevel,
-          exp: newExp, // 保留超出部分
+          exp: newExp,
           maxExp: newMaxExp,
+          storedExp: nextStoredExp,
           // 新属性 = 基础属性（新境界） + 固定加成 + 分配的属性点
           maxHp: baseMaxHp,
           attack: baseAttack,
@@ -287,12 +296,15 @@ export function useBreakthroughHandlers({
         ? `你在失败中积累了一丝感悟，下次突破成功率提升至 ${Math.round(newChance * 100)}%`
         : `虽未突破，但你稳固了根基，下次成功率提升至 ${Math.round(newChance * 100)}%`;
       addLog(`你尝试冲击瓶颈，奈何根基不稳，惨遭反噬！\n${insightMsg}`, 'danger');
-      setPlayer((prev) => ({
-        ...prev,
-        exp: Math.floor(prev.exp * 0.7),
-        hp: Math.floor(prev.hp * 0.5),
-        breakthroughFailCount: newFailCount,
-      }));
+      setPlayer((prev) => {
+        const overflowed = storeOverflowExp(prev);
+        return {
+          ...overflowed,
+          exp: Math.floor(overflowed.exp * 0.7),
+          hp: Math.floor(overflowed.hp * 0.5),
+          breakthroughFailCount: newFailCount,
+        };
+      });
       setLoading(false); // 突破失败时也要重置loading状态
     }
   };
@@ -388,9 +400,13 @@ export function useBreakthroughHandlers({
         const newMaxExp = getRealmMaxExp(currentRealm, currentLevel);
         const newBaseMaxLifespan = stats.baseMaxLifespan;
 
-        // 计算超出当前境界的经验值，保留到下一个境界
-        const excessExp = Math.max(0, prev.exp - prev.maxExp);
-        const newExp = excessExp;
+        const filled = fillExpFromStore(
+          Math.max(0, prev.exp - prev.maxExp),
+          prev.storedExp || 0,
+          newMaxExp,
+        );
+        const newExp = filled.exp;
+        const nextStoredExp = filled.storedExp;
 
         // 计算寿命增加（传承突破也应该增加寿命）
         const oldMaxLifespan = prev.maxLifespan || 100;
@@ -532,6 +548,7 @@ export function useBreakthroughHandlers({
           realmLevel: currentLevel,
           exp: newExp,
           maxExp: newMaxExp,
+          storedExp: nextStoredExp,
           maxHp: baseMaxHp,
           hp: actualMaxHp, // 使用实际最大血量（包含功法加成）作为满血
           attack: baseAttack,

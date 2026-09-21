@@ -12,6 +12,7 @@ import {
 import {
   REALM_ORDER,
   CULTIVATION_ARTS,
+  ADVENTURE_ART_CHANCE,
   PET_TEMPLATES,
   getRandomPetName,
   SECTS,
@@ -149,13 +150,15 @@ const handleArtUnlocks = (
   let artUnlocked = false;
 
   const storyHasArtKeywords = result.story && /功法|残卷|秘籍|领悟|传授|传承/.test(result.story);
-  const artChance = storyHasArtKeywords ? 0.2 : (isSecretRealm ? 0.08 : (adventureType === 'lucky' ? 0.10 : 0.04));
+  const artChance = storyHasArtKeywords
+    ? ADVENTURE_ART_CHANCE.storyKeyword
+    : (isSecretRealm
+      ? ADVENTURE_ART_CHANCE.secretRealm
+      : (adventureType === 'lucky'
+        ? ADVENTURE_ART_CHANCE.lucky
+        : ADVENTURE_ART_CHANCE.normal));
 
-  const storyHash = result.story ? result.story.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) : 0;
-  const deterministicSeed = storyHash + (player.exp || 0) + (player.spiritStones || 0);
-  const artRandom = (Math.abs(Math.sin(deterministicSeed)) % 1) * 0.7 + Math.random() * 0.3;
-
-  if (artRandom < artChance) {
+  if (Math.random() < artChance) {
     const playerRealmIdx = REALM_ORDER.indexOf(player.realm);
     const availableArts = CULTIVATION_ARTS.filter(art => {
       if (player.cultivationArts.includes(art.id) || newUnlockedArts.includes(art.id)) return false;

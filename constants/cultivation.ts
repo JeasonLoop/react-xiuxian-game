@@ -4,6 +4,14 @@
 
 import { RealmType, CultivationArt, BattleSkill } from '../types';
 
+/** 历练领悟功法概率（名义 = 实际，Math.random 直接对比） */
+export const ADVENTURE_ART_CHANCE = {
+  storyKeyword: 0.28,
+  secretRealm: 0.12,
+  lucky: 0.15,
+  normal: 0.08,
+} as const;
+
 export const CULTIVATION_ARTS: CultivationArt[] = [
   {
     id: 'art-basic-breath',

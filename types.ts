@@ -255,6 +255,7 @@ export interface PlayerStats {
   realmLevel: number; // 1-9
   exp: number;
   maxExp: number;
+  storedExp?: number; // 修为泵：修为条满且无法突破时存储的溢出修为
   hp: number;
   maxHp: number;
   attack: number; // 攻击力

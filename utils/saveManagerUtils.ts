@@ -30,7 +30,13 @@ export const ensurePlayerStatsCompatibility = (loadedPlayer: any): PlayerStats =
       : RealmType.QiRefining;
   const curveMaxExp = getRealmMaxExp(safeRealm, safeRealmLevel);
   const safeMaxExp = Math.max(curveMaxExp, sanitizeNumber(loadedPlayer.maxExp, curveMaxExp));
-  const safeExp = Math.min(Math.max(0, sanitizeNumber(loadedPlayer.exp, 0)), safeMaxExp);
+  const rawExp = Math.max(0, sanitizeNumber(loadedPlayer.exp, 0));
+  const overflowExp = Math.max(0, rawExp - safeMaxExp);
+  const safeExp = Math.min(rawExp, safeMaxExp);
+  const safeStoredExp = Math.min(
+    Math.floor(safeMaxExp * 20),
+    Math.max(0, sanitizeNumber(loadedPlayer.storedExp, 0) + overflowExp),
+  );
 
   // 天赋迁移：旧存档 talentId (string) -> 新存档 talentIds (string[])
   const migratedTalentIds: string[] =
@@ -47,6 +53,7 @@ export const ensurePlayerStatsCompatibility = (loadedPlayer: any): PlayerStats =
     realmLevel: safeRealmLevel,
     exp: safeExp,
     maxExp: safeMaxExp,
+    storedExp: safeStoredExp,
     hp: safeHp,
     maxHp: safeMaxHp,
     attack: safeAttack,

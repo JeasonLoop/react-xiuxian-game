@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { PlayerStats, TribulationState, RealmType } from '../types';
 import { REALM_ORDER, TRIBULATION_CONFIG } from '../constants/index';
-import { checkBreakthroughConditions } from '../utils/cultivationUtils';
+import { checkBreakthroughConditions, storeOverflowExp } from '../utils/cultivationUtils';
 import { shouldTriggerTribulation, createTribulationState } from '../utils/tribulationUtils';
 import { showConfirm } from '../utils/toastUtils';
 import { useUIStore } from '../store/uiStore';
@@ -30,6 +30,7 @@ export function useLevelUp({
   autoAdventure = false,
 }: UseLevelUpParams) {
   const isTribulationTriggeredRef = useRef(false);
+  const lastBlockedLogKeyRef = useRef('');
 
   // 使用 ref 存储不稳定的函数引用，避免 useEffect 依赖导致循环
   const handleBreakthroughRef = useRef(handleBreakthrough);
@@ -49,9 +50,8 @@ export function useLevelUp({
       const realms = REALM_ORDER;
       const isMaxRealm = player.realm === realms[realms.length - 1];
       if (isMaxRealm && player.realmLevel >= 9) {
-        // 锁定经验为满值
         if (player.exp > player.maxExp) {
-          setPlayerRef.current((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
+          setPlayerRef.current((prev) => (prev ? storeOverflowExp(prev) : null));
         }
         return;
       }
@@ -81,9 +81,14 @@ export function useLevelUp({
       if (isRealmUpgrade && targetRealm !== player.realm) {
         const conditionCheck = checkBreakthroughConditions(player, targetRealm);
         if (!conditionCheck.canBreakthrough) {
-          addLogRef.current(conditionCheck.message, 'danger');
-          // 锁定经验值，避免反复触发
-          setPlayerRef.current((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
+          const logKey = `${player.realm}-${player.realmLevel}`;
+          if (lastBlockedLogKeyRef.current !== logKey) {
+            lastBlockedLogKeyRef.current = logKey;
+            addLogRef.current(conditionCheck.message, 'danger');
+          }
+          if (player.exp > player.maxExp) {
+            setPlayerRef.current((prev) => (prev ? storeOverflowExp(prev) : null));
+          }
           return;
         }
       }
@@ -114,7 +119,7 @@ export function useLevelUp({
           },
           () => {
             setTribulationState(null);
-            setPlayerRef.current((prev) => (prev ? { ...prev, exp: prev.maxExp } : null));
+            setPlayerRef.current((prev) => (prev ? storeOverflowExp(prev) : null));
           }
         );
       } else if (!needsTribulation) {
@@ -134,6 +139,7 @@ export function useLevelUp({
     if (player && prevRealmRef.current) {
       if (player.realm !== prevRealmRef.current.realm || player.realmLevel !== prevRealmRef.current.level) {
         isTribulationTriggeredRef.current = false;
+        lastBlockedLogKeyRef.current = '';
       }
     }
     if (player) {

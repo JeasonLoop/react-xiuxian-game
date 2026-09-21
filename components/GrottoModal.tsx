@@ -135,10 +135,13 @@ const GrottoModal: React.FC<Props> = ({
     return grotto.plantedHerbs.filter((herb) => now >= herb.harvestTime).length;
   }, [grotto.plantedHerbs, now]);
 
-  // 可洗炼的装备列表
+  // 可洗炼的装备列表：已装备优先
   const reforgeableItems = useMemo(() => {
-    return player.inventory.filter((item) => isReforgeableEquipment(item));
-  }, [player.inventory]);
+    const equippedIds = new Set(Object.values(player.equippedItems || {}).filter(Boolean));
+    return player.inventory
+      .filter((item) => isReforgeableEquipment(item))
+      .sort((a, b) => Number(equippedIds.has(b.id)) - Number(equippedIds.has(a.id)));
+  }, [player.inventory, player.equippedItems]);
 
   const selectedReforgeItem = useMemo(() => {
     if (selectedReforgeItemId) {

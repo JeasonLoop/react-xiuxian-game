@@ -4,7 +4,7 @@ import { CULTIVATION_ARTS } from '../constants/index';
 import { getRarityTextColor } from '../utils/rarityUtils';
 import { Shield, Zap, Coins, BookOpen, Sword, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 import { getPlayerTotalStats, calculateTotalExpRate } from '../utils/statUtils';
-import { getGoldenCoreMethodTitle,  } from '../utils/cultivationUtils';
+import { getGoldenCoreMethodTitle, getStoredExpCap } from '../utils/cultivationUtils';
 import { formatNumber } from '../utils/formatUtils';
 
 interface Props {
@@ -24,6 +24,12 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
   const expPercentage = useMemo(
     () => Math.min(100, (player.exp / player.maxExp) * 100),
     [player.exp, player.maxExp]
+  );
+  const storedExp = player.storedExp || 0;
+  const storedExpCap = useMemo(() => getStoredExpCap(player.maxExp), [player.maxExp]);
+  const storedExpPercentage = useMemo(
+    () => (storedExpCap > 0 ? Math.min(100, (storedExp / storedExpCap) * 100) : 0),
+    [storedExp, storedExpCap]
   );
   const hpPercentage = useMemo(
     () => Math.min(100, (player.hp / totalStats.maxHp) * 100),
@@ -136,6 +142,21 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
                 <span>+{(expRateInfo.total * 100).toFixed(1)}%</span>
               </div>
             )}
+          </div>
+
+          <div>
+            <div className="flex justify-between text-xs text-stone-400 mb-1">
+              <span>修为泵</span>
+              <span>
+                {formatNumber(Math.floor(storedExp))} / {formatNumber(storedExpCap)}
+              </span>
+            </div>
+            <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
+              <div
+                className="h-full bg-amber-500 transition-all duration-500 ease-out"
+                style={{ width: `${storedExpPercentage}%` }}
+              />
+            </div>
           </div>
 
           <div>
