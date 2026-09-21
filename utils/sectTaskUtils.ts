@@ -96,7 +96,7 @@ export const sectTaskUtils = {
             advancedItemType: 'foundationTreasure',
             advancedItemId: selected.id,
           },
-          message: ` ✨ 获得筑基奇物【${selected.name}】！`
+          message: ` 获得筑基奇物【${selected.name}】！`
         };
       }
     }
@@ -117,7 +117,7 @@ export const sectTaskUtils = {
             advancedItemType: 'heavenEarthEssence',
             advancedItemId: selected.id,
           },
-          message: ` ✨ 获得天地精华【${selected.name}】！`
+          message: ` 获得天地精华【${selected.name}】！`
         };
       }
     }
@@ -138,7 +138,7 @@ export const sectTaskUtils = {
             advancedItemType: 'heavenEarthMarrow',
             advancedItemId: selected.id,
           },
-          message: ` ✨ 获得天地之髓【${selected.name}】！`
+          message: ` 获得天地之髓【${selected.name}】！`
         };
       }
     }
@@ -162,7 +162,7 @@ export const sectTaskUtils = {
             advancedItemType: 'longevityRule',
             advancedItemId: selected.id,
           },
-          message: ` ✨ 获得规则之力【${selected.name}】！`
+          message: ` 获得规则之力【${selected.name}】！`
         };
       }
     }

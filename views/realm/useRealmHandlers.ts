@@ -1,6 +1,10 @@
 import React from 'react';
-import { PlayerStats, SecretRealm, RealmType } from '../../types';
+import { PlayerStats, SecretRealm, RealmType, ItemRarity } from '../../types';
 import { getPlayerTotalStats } from '../../utils/statUtils';
+import { SECRET_REALMS } from '../../constants/secretRealms';
+import { generateItem } from '../../utils/itemGenerator';
+import { addItemToInventory } from '../../utils/inventoryUtils';
+import { uid } from '../../utils/gameUtils';
 
 interface UseRealmHandlersProps {
   player: PlayerStats;
@@ -29,6 +33,20 @@ interface UseRealmHandlersProps {
  * @param executeAdventure 执行历练
  * @returns handleEnterRealm 进入秘境
  */
+
+/** 根据秘境风险等级决定主题掉落的稀有度 */
+function getThemedDropRarity(riskLevel: SecretRealm['riskLevel']): ItemRarity {
+  switch (riskLevel) {
+    case '极度危险':
+      return Math.random() < 0.25 ? '仙品' : '传说';
+    case '高':
+      return Math.random() < 0.15 ? '仙品' : '传说';
+    case '中':
+      return Math.random() < 0.1 ? '传说' : '稀有';
+    default:
+      return '稀有';
+  }
+}
 
 export function useRealmHandlers({
   player,
@@ -59,10 +77,71 @@ export function useRealmHandlers({
       return false;
     }
 
-    setPlayer((prev) => ({
-      ...prev,
-      spiritStones: prev.spiritStones - realm.cost,
-    }));
+    // 名境（固定秘境）：结算每日首通与主题掉落
+    const fixedRealm = SECRET_REALMS.find((r) => r.id === realm.id);
+    let themedItem: ReturnType<typeof generateItem> = null;
+    let firstClearToday = false;
+
+    if (fixedRealm && fixedRealm.themedTypes && fixedRealm.themedTypes.length > 0) {
+      const today = new Date().toISOString().split('T')[0];
+      const lastClear = player.dailyRealmFirstClears?.[fixedRealm.id];
+      firstClearToday = lastClear !== today;
+
+      // 主题掉落：每日首通必得，非首通 50% 概率
+      if (firstClearToday || Math.random() < 0.5) {
+        const type = fixedRealm.themedTypes[Math.floor(Math.random() * fixedRealm.themedTypes.length)];
+        const rarity = getThemedDropRarity(fixedRealm.riskLevel);
+        themedItem = generateItem({
+          type,
+          rarity,
+          realm: player.realm,
+          realmLevel: player.realmLevel,
+        });
+      }
+    }
+
+    setPlayer((prev) => {
+      let nextInventory = prev.inventory;
+      const nextStones = prev.spiritStones - realm.cost;
+
+      // 返还首通门票（名境每日首通奖励之一）
+      const refundStones = fixedRealm && firstClearToday ? realm.cost : 0;
+
+      // 发放主题掉落物品
+      if (themedItem) {
+        nextInventory = addItemToInventory(
+          nextInventory,
+          { ...themedItem, id: uid() },
+          themedItem.quantity || 1,
+          { realm: prev.realm, realmLevel: prev.realmLevel }
+        );
+      }
+
+      // 更新名境每日首通记录
+      let dailyRealmFirstClears = prev.dailyRealmFirstClears;
+      if (fixedRealm && firstClearToday) {
+        dailyRealmFirstClears = {
+          ...(prev.dailyRealmFirstClears || {}),
+          [fixedRealm.id]: new Date().toISOString().split('T')[0],
+        };
+      }
+
+      return {
+        ...prev,
+        spiritStones: nextStones + refundStones,
+        inventory: nextInventory,
+        dailyRealmFirstClears,
+      };
+    });
+
+    // 主题掉落与首通提示（在冒险日志之前输出）
+    if (fixedRealm && firstClearToday) {
+      addLog(`【${fixedRealm.name}】今日首次开启！门票已返还，并必有主题宝物相赠。`, 'special');
+    }
+    if (themedItem) {
+      addLog(`秘境深处灵光一闪，你获得了【${themedItem.name}】x${themedItem.quantity || 1}！`, 'gain');
+    }
+
     setIsRealmOpen(false); // Close modal
 
     // Secret Realm Adventure - 传递秘境的完整信息

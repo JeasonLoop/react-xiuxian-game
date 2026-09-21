@@ -121,7 +121,13 @@ export interface Item {
     name: string;
     value: number; // 如 0.05 表示 +5%
   }>; // 装备洗练附加词条
-  reforgeCount?: number; // 已洗练次数
+  reforgeCount?: number; // 已洗炼次数
+  reforgeLocks?: boolean[]; // 与 reforgeAffixes 平行的锁定标记，锁定词条在洗炼时保留
+  pendingReforge?: Array<{ // 洗炼候选词条（待玩家采纳或舍弃）
+    type: 'attackPercent' | 'defensePercent' | 'hpPercent' | 'critRate' | 'critDamage' | 'dodgeRate' | 'lifeLeech';
+    name: string;
+    value: number;
+  }>;
   permanentEffect?: {
     // 永久提升的属性（使用物品后永久增加）
     attack?: number;
@@ -159,6 +165,7 @@ export interface SecretRealm {
   cost: number; // Spirit stones to enter
   riskLevel: '低' | '中' | '高' | '极度危险';
   drops: string[]; // Description of potential drops
+  themedTypes?: ItemType[]; // 名境主题掉落类型：进入后额外掉落这些类型的物品（仅固定名境使用）
 }
 
 // 天赋类别
@@ -279,6 +286,12 @@ export interface PlayerStats {
   sectHuntSectId: string | null; // 正在追杀玩家的宗门ID
   sectHuntSectName: string | null; // 正在追杀玩家的宗门名称
   sectMasterId: string | null; // 当前宗门的宗主ID (如果玩家是宗主，则为玩家自己的ID)
+  sectTraining?: { // 宗门修炼室 buff（租用后限时提升修炼效率）
+    endTime: number; // 结束时间戳（毫秒）
+    expRateBonus: number; // 修炼效率加成（如 0.15 表示 +15%）
+  };
+  leaderSalaryDate?: string; // 宗主上次领取俸禄的日期（YYYY-MM-DD）
+  dailyRealmFirstClears?: Record<string, string>; // 名境每日首通记录：秘境ID -> 最近进入日期（YYYY-MM-DD）
   // 角色系统扩展
   talentIds: string[]; // 天赋ID列表（命运点分配制，可选择多个天赋）
   titleId: string | null; // 当前装备的称号ID

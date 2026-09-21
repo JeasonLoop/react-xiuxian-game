@@ -2,11 +2,12 @@
  * 秘境系统相关常量
  */
 
-import { RealmType, SecretRealm } from '../types';
+import { RealmType, SecretRealm, ItemType } from '../types';
 
 export const SECRET_REALMS: SecretRealm[] = [
   {
     id: 'realm-beast-mountain',
+    themedTypes: [ItemType.Material, ItemType.Herb],
     name: '万兽山脉',
     description:
       '外围相对安全，深处盘踞着可怕的妖兽。适合炼气、筑基期修士历练。',
@@ -17,6 +18,7 @@ export const SECRET_REALMS: SecretRealm[] = [
   },
   {
     id: 'realm-ancient-tomb',
+    themedTypes: [ItemType.Weapon, ItemType.Material],
     name: '上古剑冢',
     description: '传说中上古剑修的埋骨之地，剑气纵横。非筑基期不可入。',
     minRealm: RealmType.Foundation,
@@ -26,6 +28,7 @@ export const SECRET_REALMS: SecretRealm[] = [
   },
   {
     id: 'realm-thunder-purgatory',
+    themedTypes: [ItemType.Material, ItemType.Artifact],
     name: '雷罚炼狱',
     description: '终年雷霆不息，稍有不慎便会灰飞烟灭。',
     minRealm: RealmType.GoldenCore,
@@ -35,6 +38,7 @@ export const SECRET_REALMS: SecretRealm[] = [
   },
   {
     id: 'realm-immortal-garden',
+    themedTypes: [ItemType.Herb, ItemType.Pill],
     name: '仙灵秘境',
     description: '仙灵之气浓郁，适合修炼，相对安全。适合初入仙途的修士。',
     minRealm: RealmType.QiRefining,
@@ -44,6 +48,7 @@ export const SECRET_REALMS: SecretRealm[] = [
   },
   {
     id: 'realm-star-ruins',
+    themedTypes: [ItemType.Material, ItemType.Armor],
     name: '星辰遗迹',
     description: '星辰之力汇聚，灵气充沛，但需小心守护妖兽。',
     minRealm: RealmType.QiRefining,
@@ -53,6 +58,7 @@ export const SECRET_REALMS: SecretRealm[] = [
   },
   {
     id: 'realm-ice-domain',
+    themedTypes: [ItemType.Material, ItemType.Herb],
     name: '冰封雪域',
     description: '冰天雪地，寒风刺骨，但蕴藏着珍贵的冰属性宝物。',
     minRealm: RealmType.Foundation,
@@ -62,6 +68,7 @@ export const SECRET_REALMS: SecretRealm[] = [
   },
   {
     id: 'realm-dragon-tomb',
+    themedTypes: [ItemType.Material, ItemType.Artifact],
     name: '龙族古墓',
     description: '龙族遗迹，蕴藏着龙族传承，但守护力量不弱。',
     minRealm: RealmType.Foundation,
@@ -71,6 +78,7 @@ export const SECRET_REALMS: SecretRealm[] = [
   },
   {
     id: 'realm-fire-lava',
+    themedTypes: [ItemType.Material, ItemType.Artifact],
     name: '天火熔岩',
     description: '地火喷涌，岩浆翻滚，火属性修士的圣地，但极端危险。',
     minRealm: RealmType.GoldenCore,
@@ -80,6 +88,7 @@ export const SECRET_REALMS: SecretRealm[] = [
   },
   {
     id: 'realm-poison-swamp',
+    themedTypes: [ItemType.Herb, ItemType.Material],
     name: '毒瘴沼泽',
     description: '毒气弥漫，危险重重，但蕴藏着珍稀毒草和剧毒妖兽。',
     minRealm: RealmType.GoldenCore,
@@ -89,6 +98,7 @@ export const SECRET_REALMS: SecretRealm[] = [
   },
   {
     id: 'realm-blood-sea',
+    themedTypes: [ItemType.Artifact, ItemType.Material],
     name: '血海魔渊',
     description: '魔气滔天，邪物横行，是正道修士的绝地，九死一生。',
     minRealm: RealmType.NascentSoul,
@@ -98,6 +108,7 @@ export const SECRET_REALMS: SecretRealm[] = [
   },
   {
     id: 'realm-nine-hells',
+    themedTypes: [ItemType.Material, ItemType.Artifact],
     name: '九幽深渊',
     description: '九幽之地，死气沉沉，亡者的国度，生者禁入。',
     minRealm: RealmType.NascentSoul,
@@ -107,6 +118,7 @@ export const SECRET_REALMS: SecretRealm[] = [
   },
   {
     id: 'realm-chaos-void',
+    themedTypes: [ItemType.Material, ItemType.Artifact],
     name: '混沌虚空',
     description: '混沌之力混乱，空间不稳定，随时可能被空间裂缝吞噬。',
     minRealm: RealmType.SpiritSevering,
@@ -116,6 +128,7 @@ export const SECRET_REALMS: SecretRealm[] = [
   },
   {
     id: 'realm-god-demon-battlefield',
+    themedTypes: [ItemType.Artifact, ItemType.Weapon],
     name: '神魔战场',
     description: '上古神魔大战的遗迹，杀气冲天，怨灵遍地。',
     minRealm: RealmType.SpiritSevering,
@@ -125,6 +138,7 @@ export const SECRET_REALMS: SecretRealm[] = [
   },
   {
     id: 'realm-time-rift',
+    themedTypes: [ItemType.Material, ItemType.Pill],
     name: '时光裂缝',
     description: '时间之力扭曲，过去未来交错，稍有不慎便会迷失其中。',
     minRealm: RealmType.GoldenCore,
@@ -134,6 +148,7 @@ export const SECRET_REALMS: SecretRealm[] = [
   },
   {
     id: 'realm-phantom-cave',
+    themedTypes: [ItemType.Material, ItemType.Pill],
     name: '幻境迷窟',
     description: '幻象丛生，真假难辨，考验修士的心智和意志。',
     minRealm: RealmType.Foundation,

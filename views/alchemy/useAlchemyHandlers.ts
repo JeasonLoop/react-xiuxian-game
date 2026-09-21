@@ -45,7 +45,7 @@ export function useAlchemyHandlers(
    */
   const handleCraft = async (recipe: Recipe) => {
     if (triggerVisual) {
-      triggerVisual('alchemy', '🔥 炼丹中...', 'text-mystic-gold');
+      triggerVisual('alchemy', '炼丹中...', 'text-mystic-gold');
     }
 
     await new Promise((resolve) => setTimeout(resolve, 800));
@@ -63,7 +63,7 @@ export function useAlchemyHandlers(
           return prev;
         }
         if ((newInventory[itemIdx] as any).locked) {
-          showError(`🔒 【${req.name}】已锁定，无法作为炼丹材料！`);
+          showError(`【${req.name}】已锁定，无法作为炼丹材料！`);
           return prev;
         }
 
@@ -124,7 +124,7 @@ export function useAlchemyHandlers(
 
         if (triggerVisual) {
           setTimeout(() => {
-            triggerVisual('alchemy', `✨ ${finalResultItem.name}`, 'text-mystic-gold');
+            triggerVisual('alchemy', `${finalResultItem.name}`, 'text-mystic-gold');
           }, 200);
         }
       } else {
@@ -189,11 +189,11 @@ export function useAlchemyHandlers(
   const handleCraftArtifact = async (materials: Item[], customName: string, selectedSlot?: string) => {
     const locked = materials.find(m => (m as any).locked);
     if (locked) {
-      showError(`🔒 【${locked.name}】已锁定，无法作为炼器材料！`);
+      showError(`【${locked.name}】已锁定，无法作为炼器材料！`);
       return;
     }
     if (triggerVisual) {
-      triggerVisual('alchemy', '⚒️ 炼器中...', 'text-stone-400');
+      triggerVisual('alchemy', '炼器中...', 'text-stone-400');
     }
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -238,7 +238,7 @@ export function useAlchemyHandlers(
    */
   const handleFuseArtifact = async (item1: Item, item2: Item, stone: Item, customName?: string) => {
     if (triggerVisual) {
-      triggerVisual('alchemy', '🌀 融合中...', 'text-mystic-gold');
+      triggerVisual('alchemy', '融合中...', 'text-mystic-gold');
     }
 
     await new Promise((resolve) => setTimeout(resolve, 1200));

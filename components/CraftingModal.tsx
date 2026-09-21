@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { PlayerStats, Recipe, Item, ItemType, EquipmentSlot, ItemRarity } from '../types';
-import { PILL_RECIPES, DISCOVERABLE_RECIPES, ALCHEMY_SUCCESS_BASE, ALCHEMY_LEVEL_SUCCESS_BONUS, ALCHEMY_EXP_REQUIREMENTS } from '../constants/index';
-import { FlaskConical, CircleOff, Hammer, Combine, Trash2, Plus, Zap, Star } from 'lucide-react';
+import { PILL_RECIPES, DISCOVERABLE_RECIPES, ALCHEMY_SUCCESS_BASE, ALCHEMY_LEVEL_SUCCESS_BONUS, ALCHEMY_EXP_REQUIREMENTS, ALCHEMY_LEVEL_STAT_BONUS } from '../constants/index';
+import { FlaskConical, CircleOff, Hammer, Combine, Trash2, Plus, Zap, Star, Shield } from 'lucide-react';
 import { Modal } from './common';
 
 interface Props {
@@ -257,6 +257,10 @@ const CraftingModal: React.FC<Props> = ({
                    <div className="flex items-center gap-1 text-[10px] text-stone-500">
                       <Zap size={10} className="text-mystic-gold" />
                       幸运加成: +{Math.floor((player.luck || 0) * 0.1)}% 成功率
+                   </div>
+                   <div className="flex items-center gap-1 text-[10px] text-emerald-400">
+                      <Shield size={10} />
+                      丹道淬体: 攻/防/血 +{Math.floor((player.alchemyLevel || 0) * ALCHEMY_LEVEL_STAT_BONUS * 100)}%
                    </div>
                 </div>
               </div>

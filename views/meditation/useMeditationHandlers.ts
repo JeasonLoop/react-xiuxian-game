@@ -74,7 +74,7 @@ export function useMeditationHandlers(
       const enlightenmentMultiplier = 30 + Math.random() * 20; // 3-5倍
       actualGain = Math.floor(baseGain * enlightenmentMultiplier);
       const artText = activeArt ? `，运转${activeArt.name}` : '';
-      logMessage = `✨ 你突然顿悟，灵台清明，对大道有了更深的理解${artText}！(+${actualGain} 修为)`;
+      logMessage = `你突然顿悟，灵台清明，对大道有了更深的理解${artText}！(+${actualGain} 修为)`;
       currentAddLog(logMessage, 'special');
     } else {
       // 正常修炼：小幅随机波动
@@ -106,7 +106,7 @@ export function useMeditationHandlers(
         // 使用最新的 addLog
         const latestAddLog = props?.addLog ?? useGameStore.getState().addLog;
         latestAddLog(
-          `💚 打坐加速回血，恢复 ${actualRegen} 点气血（${multiplierText}倍速度）`,
+          `打坐加速回血，恢复 ${actualRegen} 点气血（${multiplierText}倍速度）`,
           'gain'
         );
       }
@@ -137,7 +137,7 @@ export function useMeditationHandlers(
         // 30%概率显示提示，避免刷屏
         // 使用最新的 addLog
         const latestAddLog = props?.addLog ?? useGameStore.getState().addLog;
-        latestAddLog(`💰 打坐时获得了 ${Math.max(1, stoneGain)} 灵石`, 'gain');
+        latestAddLog(`打坐时获得了 ${Math.max(1, stoneGain)} 灵石`, 'gain');
       }
 
       return {
@@ -165,7 +165,7 @@ export function useMeditationHandlers(
         latestSetPlayer((prev) => {
           const newAchievements = [...prev.achievements, 'ach-first-step'];
           latestAddLog(
-            `🎉 达成成就：【${firstMeditateAchievement.name}】！`,
+            `达成成就：【${firstMeditateAchievement.name}】！`,
             'special'
           );
           return {

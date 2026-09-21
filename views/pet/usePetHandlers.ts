@@ -132,7 +132,7 @@ export function usePetHandlers(
         return;
       }
       if (item.locked) {
-        addLog(`🔒 【${item.name}】已锁定，无法用于喂养！`, 'danger');
+        addLog(`【${item.name}】已锁定，无法用于喂养！`, 'danger');
         return;
       }
       canFeed = true;

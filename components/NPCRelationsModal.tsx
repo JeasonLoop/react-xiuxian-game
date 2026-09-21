@@ -1,7 +1,26 @@
 import React, { useState, useCallback } from 'react';
 import { PlayerStats, Item } from '../types';
 import { Modal } from './common';
-import { Users, Heart, Gift, Swords, Star, Crown, Sparkles } from 'lucide-react';
+import {
+  Users,
+  Heart,
+  Gift,
+  Swords,
+  Star,
+  Crown,
+  Sparkles,
+  HeartHandshake,
+  Handshake,
+  Smile,
+  Meh,
+  Annoyed,
+  Angry,
+  Skull,
+  Lock,
+  Gem,
+  AlertTriangle,
+} from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -12,14 +31,14 @@ interface Props {
 }
 
 /** NPC 好感度等级 */
-function getFavorLevel(f: number): { label: string; color: string; icon: string } {
-  if (f >= 80) return { label: '道侣/挚友', color: 'text-pink-400', icon: '💑' };
-  if (f >= 50) return { label: '好友', color: 'text-emerald-400', icon: '🤝' };
-  if (f >= 20) return { label: '友善', color: 'text-blue-400', icon: '😊' };
-  if (f >= 0) return { label: '中立', color: 'text-stone-400', icon: '😐' };
-  if (f >= -20) return { label: '冷淡', color: 'text-yellow-400', icon: '😒' };
-  if (f >= -50) return { label: '敌视', color: 'text-orange-400', icon: '😠' };
-  return { label: '仇敌', color: 'text-red-400', icon: '💀' };
+function getFavorLevel(f: number): { label: string; color: string; icon: LucideIcon } {
+  if (f >= 80) return { label: '道侣/挚友', color: 'text-pink-400', icon: HeartHandshake };
+  if (f >= 50) return { label: '好友', color: 'text-emerald-400', icon: Handshake };
+  if (f >= 20) return { label: '友善', color: 'text-blue-400', icon: Smile };
+  if (f >= 0) return { label: '中立', color: 'text-stone-400', icon: Meh };
+  if (f >= -20) return { label: '冷淡', color: 'text-yellow-400', icon: Annoyed };
+  if (f >= -50) return { label: '敌视', color: 'text-orange-400', icon: Angry };
+  return { label: '仇敌', color: 'text-red-400', icon: Skull };
 }
 
 /** 好感度 buff 效果 */
@@ -48,7 +67,7 @@ const NPCRelationsModal: React.FC<Props> = ({ isOpen, onClose, player, setPlayer
   const handleGift = useCallback((item: Item) => {
     if (!npc) return;
     if ((item as any).locked) {
-      addLog(`🔒 【${item.name}】已锁定，无法赠送！`, 'danger');
+      addLog(`【${item.name}】已锁定，无法赠送！`, 'danger');
       return;
     }
     const giftValue = Math.floor((item.effect?.attack || 0) * 2 + (item.effect?.defense || 0) * 1.5 +
@@ -69,7 +88,7 @@ const NPCRelationsModal: React.FC<Props> = ({ isOpen, onClose, player, setPlayer
       return { ...prev, socialRelations: newRelations, inventory: newInv };
     });
     
-    addLog(`🎁 向${npc.name}赠送了${item.name}，好感度 +${favorGain}`, 'gain');
+    addLog(`向${npc.name}赠送了${item.name}，好感度 +${favorGain}`, 'gain');
     setGiftMode(false);
   }, [npc, setPlayer, addLog]);
 
@@ -88,7 +107,7 @@ const NPCRelationsModal: React.FC<Props> = ({ isOpen, onClose, player, setPlayer
       return { ...prev, socialRelations: newRelations, spiritStones: prev.spiritStones - amount };
     });
     
-    addLog(`🎁 向${npc.name}赠送了 ${amount} 灵石，好感度 +${favorGain}`, 'gain');
+    addLog(`向${npc.name}赠送了 ${amount} 灵石，好感度 +${favorGain}`, 'gain');
     setGiftMode(false);
   }, [npc, player.spiritStones, setPlayer, addLog]);
 
@@ -115,10 +134,10 @@ const NPCRelationsModal: React.FC<Props> = ({ isOpen, onClose, player, setPlayer
         {(buffs.expBonus > 0 || buffs.stoneBonus > 0 || buffs.daoCompanion || buffs.huntChance) && (
           <div className="bg-ink-900 p-3 rounded border border-stone-700 space-y-1 text-xs">
             <p className="text-stone-400 font-bold mb-1">人际关系加成</p>
-            {buffs.expBonus > 0 && <p className="text-emerald-400">✨ 修炼速度 +{buffs.expBonus}%</p>}
-            {buffs.stoneBonus > 0 && <p className="text-yellow-400">💎 灵石获取 +{buffs.stoneBonus}%</p>}
-            {buffs.daoCompanion && <p className="text-pink-400">💑 战斗时道侣有几率出手助阵</p>}
-            {buffs.huntChance && <p className="text-red-400">⚠️ 仇敌可能在冒险中追杀你</p>}
+            {buffs.expBonus > 0 && <p className="text-emerald-400 flex items-center gap-1"><Sparkles size={14} />修炼速度 +{buffs.expBonus}%</p>}
+            {buffs.stoneBonus > 0 && <p className="text-yellow-400 flex items-center gap-1"><Gem size={14} />灵石获取 +{buffs.stoneBonus}%</p>}
+            {buffs.daoCompanion && <p className="text-pink-400 flex items-center gap-1"><HeartHandshake size={14} />战斗时道侣有几率出手助阵</p>}
+            {buffs.huntChance && <p className="text-red-400 flex items-center gap-1"><AlertTriangle size={14} />仇敌可能在冒险中追杀你</p>}
           </div>
         )}
 
@@ -142,7 +161,7 @@ const NPCRelationsModal: React.FC<Props> = ({ isOpen, onClose, player, setPlayer
                         : 'bg-stone-800 border-stone-700 hover:bg-stone-700'
                     }`}
                   >
-                    <span>{lv.icon}</span>
+                    <span><lv.icon size={16} /></span>
                     <span className="text-stone-200 truncate flex-1">{rel.name}</span>
                     <span className={lv.color + ' text-[10px]'}>{lv.label}</span>
                   </button>
@@ -155,7 +174,7 @@ const NPCRelationsModal: React.FC<Props> = ({ isOpen, onClose, player, setPlayer
               {npc ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <span className="text-3xl">{favor?.icon}</span>
+                    <span className="text-mystic-gold">{favor && <favor.icon size={28} />}</span>
                     <div>
                       <h3 className="text-stone-200 font-serif text-lg">{npc.name}</h3>
                       <p className={`text-sm font-bold ${favor?.color}`}>{favor?.label}</p>
@@ -198,7 +217,7 @@ const NPCRelationsModal: React.FC<Props> = ({ isOpen, onClose, player, setPlayer
                       disabled={player.spiritStones < 100}
                       className="px-3 py-1.5 bg-yellow-900/20 border border-yellow-700 text-yellow-300 rounded text-sm hover:bg-yellow-900/30 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
                     >
-                      💎 赠灵石 (100)
+                      <Gem size={14} /> 赠灵石 (100)
                     </button>
                   </div>
 

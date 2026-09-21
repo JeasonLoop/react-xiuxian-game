@@ -124,12 +124,17 @@ export const REFORGE_RARITY_CONFIGS: Record<ItemRarity, ReforgeRarityConfig> = {
   },
 };
 
-/** 计算装备单次洗炼的消耗 */
-export function getReforgeCost(reforgeCount = 0): {
+/** 计算装备单次洗炼的消耗（lockedCount 为锁定词条数，锁定会额外加价） */
+export function getReforgeCost(
+  reforgeCount = 0,
+  lockedCount = 0
+): {
   stones: number;
   spiritStones: number;
 } {
-  const stones = 1 + Math.floor(reforgeCount / 5);
-  const spiritStones = 500 + Math.min(10000, reforgeCount * 250);
+  const baseStones = 1 + Math.floor(reforgeCount / 5);
+  const baseSpiritStones = 500 + Math.min(10000, reforgeCount * 250);
+  const stones = baseStones + lockedCount;
+  const spiritStones = Math.round(baseSpiritStones * (1 + 0.5 * lockedCount));
   return { stones, spiritStones };
 }

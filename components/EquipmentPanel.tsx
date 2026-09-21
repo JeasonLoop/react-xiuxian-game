@@ -1,6 +1,6 @@
 import React from 'react';
 import { EquipmentSlot, Item } from '../types';
-import { ShieldCheck, X } from 'lucide-react';
+import { ShieldCheck, X, Sparkle } from 'lucide-react';
 import { getItemStats } from '../utils/itemUtils';
 import { getRarityColor, normalizeRarityValue } from '../utils/rarityUtils';
 import { getEquipmentSlotConfig } from '../utils/equipmentUtils';
@@ -67,13 +67,13 @@ const EquipmentPanel: React.FC<Props> = ({
                     </div>
                     <div className="text-[10px] text-stone-400 mb-0.5 shrink-0">{rarity}</div>
                     {reviveChances !== undefined && reviveChances > 0 && (
-                      <div className="text-[10px] text-yellow-400 mb-0.5 font-bold shrink-0">
-                        💫 {reviveChances}次
+                      <div className="text-[10px] text-yellow-400 mb-0.5 font-bold shrink-0 flex items-center gap-0.5">
+                        <Sparkle size={12} className="shrink-0" />{reviveChances}次
                       </div>
                     )}
                     {reviveChances !== undefined && reviveChances <= 0 && (
-                      <div className="text-[9px] text-stone-500 mb-0.5 shrink-0">
-                        💫 已耗尽
+                      <div className="text-[9px] text-stone-500 mb-0.5 shrink-0 flex items-center gap-0.5">
+                        <Sparkle size={11} className="shrink-0" />已耗尽
                       </div>
                     )}
                     {stats && (

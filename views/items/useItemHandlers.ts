@@ -73,7 +73,7 @@ const applyItemEffect = (
 
   // 锁定物品不可使用
   if (item.locked) {
-    addLog(`🔒 【${item.name}】已锁定，无法使用！`, 'danger');
+    addLog(`【${item.name}】已锁定，无法使用！`, 'danger');
     return prev;
   }
 
@@ -91,7 +91,7 @@ const applyItemEffect = (
   // 1. 处理传承石（特殊物品）- 已删除传承路线功能，仅提升传承等级
   const isInheritanceStone = item.name === '传承石';
   if (isInheritanceStone) {
-    addLog(`✨ 你使用了传承石，传承等级 +1！`, 'special');
+    addLog(`你使用了传承石，传承等级 +1！`, 'special');
     return {
       ...newStats,
       inventory: newInv,
@@ -137,10 +137,10 @@ const applyItemEffect = (
         affection: 50,
       };
       newPets.push(newPet);
-      const logMsg = `✨ 孵化出了灵宠【${newPet.name}】！`;
+      const logMsg = `孵化出了灵宠【${newPet.name}】！`;
       effectLogs.push(logMsg);
       if (!isBatch) {
-        addLog(`🎉 你成功孵化了${item.name}，获得了灵宠【${newPet.name}】！`, 'special');
+        addLog(`你成功孵化了${item.name}，获得了灵宠【${newPet.name}】！`, 'special');
       }
     } else {
       const logMsg = '但似乎什么都没有孵化出来...';
@@ -246,7 +246,7 @@ const applyItemEffect = (
       }
       if (rootChanges.length > 0) permLogs.push(`灵根提升：${rootChanges.join('，')}`);
     }
-    if (permLogs.length > 0) effectLogs.push(`✨ ${permLogs.join('，')}`);
+    if (permLogs.length > 0) effectLogs.push(`${permLogs.join('，')}`);
   }
 
   // 4. 处理材料包（使用后获得若干对应品级的丹药）
@@ -355,7 +355,7 @@ const applyItemEffect = (
 
     if (obtainedPills.length > 0) {
       const pillList = obtainedPills.map(p => `${p.name} x${p.quantity}`).join('、');
-      effectLogs.push(`✨ 获得了：${pillList}`);
+      effectLogs.push(`获得了：${pillList}`);
       if (!isBatch) {
         addLog(`你打开了${item.name}，获得了：${pillList}`, 'gain');
       }
@@ -386,7 +386,7 @@ const applyItemEffect = (
           newStats.unlockedRecipes.push(recipeName);
           const stats = { ...(newStats.statistics || { killCount: 0, meditateCount: 0, adventureCount: 0, equipCount: 0, petCount: 0, recipeCount: 0, artCount: 0, breakthroughCount: 0, secretRealmCount: 0 }) };
           newStats.statistics = { ...stats, recipeCount: newStats.unlockedRecipes.length };
-          effectLogs.push(`✨ 学会了【${recipeName}】的炼制方法！`);
+          effectLogs.push(`学会了【${recipeName}】的炼制方法！`);
           if (!isBatch) {
             addLog(`你研读了【${item.name}】，学会了【${recipeName}】的炼制方法！`, 'special');
           }
@@ -684,14 +684,14 @@ export function useItemHandlers(props?: UseItemHandlersProps) {
 
       if (item.advancedItemType === 'foundationTreasure') {
         newFoundationTreasure = item.advancedItemId;
-        const successMessage = `✨ 你成功炼化了筑基奇物【${item.name}】！`;
+        const successMessage = `你成功炼化了筑基奇物【${item.name}】！`;
         addLog(successMessage, 'special');
         if (setItemActionLog) {
           setItemActionLog({ text: successMessage, type: 'special' });
         }
       } else if (item.advancedItemType === 'heavenEarthEssence') {
         newHeavenEarthEssence = item.advancedItemId;
-        const successMessage = `✨ 你成功炼化了天地精华【${item.name}】！`;
+        const successMessage = `你成功炼化了天地精华【${item.name}】！`;
         addLog(successMessage, 'special');
         if (setItemActionLog) {
           setItemActionLog({ text: successMessage, type: 'special' });
@@ -700,14 +700,14 @@ export function useItemHandlers(props?: UseItemHandlersProps) {
         newHeavenEarthMarrow = item.advancedItemId;
         marrowRefiningProgress = 0;
         marrowRefiningSpeed = 1.0;
-        const successMessage = `✨ 你成功炼化了天地之髓【${item.name}】！`;
+        const successMessage = `你成功炼化了天地之髓【${item.name}】！`;
         addLog(successMessage, 'special');
         if (setItemActionLog) {
           setItemActionLog({ text: successMessage, type: 'special' });
         }
       } else if (item.advancedItemType === 'longevityRule' && item.advancedItemId) {
         newLongevityRules.push(item.advancedItemId);
-        const successMessage = `✨ 你成功炼化了规则之力【${item.name}】！`;
+        const successMessage = `你成功炼化了规则之力【${item.name}】！`;
         addLog(successMessage, 'special');
         if (setItemActionLog) {
           setItemActionLog({ text: successMessage, type: 'special' });

@@ -160,7 +160,7 @@ export function useGrottoHandlers({
       }
 
       addLog(
-        `✨ 成功${actionText}洞府至【${targetConfig.name}】！消耗 ${targetConfig.cost.toLocaleString()} 灵石。${features.join('，')}。`,
+        `成功${actionText}洞府至【${targetConfig.name}】！消耗 ${targetConfig.cost.toLocaleString()} 灵石。${features.join('，')}。`,
         'gain'
       );
 
@@ -338,9 +338,9 @@ export function useGrottoHandlers({
         bonusText = `（洞府加成：${(growthSpeedBonus * 100).toFixed(0)}%，原需 ${originalMinutes} 分钟）`;
       }
 
-      let logMessage = `🌱 成功种植【${herbConfig.name}】！预计 ${timeText} 后可收获 ${harvestQuantity} 个。${bonusText}`;
+      let logMessage = `成功种植【${herbConfig.name}】！预计 ${timeText} 后可收获 ${harvestQuantity} 个。${bonusText}`;
       if (isMutated) {
-        logMessage += ` ✨ 发生变异！产量提升 ${((mutationBonus - 1) * 100).toFixed(0)}%！`;
+        logMessage += ` 发生变异！产量提升 ${((mutationBonus - 1) * 100).toFixed(0)}%！`;
       }
       addLog(logMessage, isMutated ? 'special' : 'gain');
       if (setItemActionLog) {
@@ -425,12 +425,12 @@ export function useGrottoHandlers({
       // 移除已收获的种植
       plantedHerbs.splice(herbIndex, 1);
 
-      let logMessage = `✨ 成功收获【${herb.herbName}】x${actualQuantity}！已自动放入背包。`;
+      let logMessage = `成功收获【${herb.herbName}】x${actualQuantity}！已自动放入背包。`;
       if (herb.isMutated) {
-        logMessage += ` 🌟 变异灵草额外加成！`;
+        logMessage += ` 变异灵草额外加成！`;
       }
       if (!grotto.herbarium?.includes(herb.herbName)) {
-        logMessage += ` 📖 已记录到图鉴！`;
+        logMessage += ` 已记录到图鉴！`;
       }
       addLog(logMessage, herb.isMutated ? 'special' : 'gain');
       if (setItemActionLog) {
@@ -512,12 +512,12 @@ export function useGrottoHandlers({
       });
 
       const herbNames = matureHerbs.map(h => h.herbName).join('、');
-      let logMessage = `✨ 成功批量收获 ${matureHerbs.length} 个灵草（${herbNames}），共 ${totalQuantity} 个！已自动放入背包。`;
+      let logMessage = `成功批量收获 ${matureHerbs.length} 个灵草（${herbNames}），共 ${totalQuantity} 个！已自动放入背包。`;
       if (hasMutation) {
-        logMessage += ` 🌟 包含变异灵草！`;
+        logMessage += ` 包含变异灵草！`;
       }
       if (newHerbs.length > 0) {
-        logMessage += ` 📖 新增 ${newHerbs.length} 种图鉴！`;
+        logMessage += ` 新增 ${newHerbs.length} 种图鉴！`;
       }
       addLog(logMessage, hasMutation ? 'special' : 'gain');
       if (setItemActionLog) {
@@ -619,11 +619,11 @@ export function useGrottoHandlers({
       const totalBonus = (grotto.expRateBonus + newEnhancement) * 100;
 
       addLog(
-        `✨ 成功改造聚灵阵【${enhancementConfig.name}】！修炼速度额外提升 ${(enhancementConfig.expRateBonus * 100).toFixed(0)}%。当前总修炼加成：${totalBonus.toFixed(0)}%（基础 ${(grotto.expRateBonus * 100).toFixed(0)}% + 改造 ${(newEnhancement * 100).toFixed(0)}%）。`,
+        `成功改造聚灵阵【${enhancementConfig.name}】！修炼速度额外提升 ${(enhancementConfig.expRateBonus * 100).toFixed(0)}%。当前总修炼加成：${totalBonus.toFixed(0)}%（基础 ${(grotto.expRateBonus * 100).toFixed(0)}% + 改造 ${(newEnhancement * 100).toFixed(0)}%）。`,
         'gain'
       );
       if (setItemActionLog) {
-        setItemActionLog({ text: `✨ 成功改造聚灵阵【${enhancementConfig.name}】！修炼速度额外提升 ${(enhancementConfig.expRateBonus * 100).toFixed(0)}%。当前总修炼加成：${totalBonus.toFixed(0)}%（基础 ${(grotto.expRateBonus * 100).toFixed(0)}% + 改造 ${(newEnhancement * 100).toFixed(0)}%）。`, type: 'gain' });
+        setItemActionLog({ text: `成功改造聚灵阵【${enhancementConfig.name}】！修炼速度额外提升 ${(enhancementConfig.expRateBonus * 100).toFixed(0)}%。当前总修炼加成：${totalBonus.toFixed(0)}%（基础 ${(grotto.expRateBonus * 100).toFixed(0)}% + 改造 ${(newEnhancement * 100).toFixed(0)}%）。`, type: 'gain' });
       }
 
       return {
@@ -659,7 +659,7 @@ export function useGrottoHandlers({
       const newAutoHarvest = !grotto.autoHarvest;
       addLog(
         newAutoHarvest
-          ? '✨ 已开启自动收获功能！成熟的灵草将自动收获到背包。'
+          ? '已开启自动收获功能！成熟的灵草将自动收获到背包。'
           : '已关闭自动收获功能。',
         newAutoHarvest ? 'gain' : 'normal'
       );
@@ -716,9 +716,9 @@ export function useGrottoHandlers({
       // 这里需要根据实际的称号系统来添加称号
       // 暂时只记录日志
       newTitles.forEach(title => {
-        addLog(`🏆 获得称号：【${title}】！`, 'special');
+        addLog(`获得称号：【${title}】！`, 'special');
         if (setItemActionLog) {
-          setItemActionLog({ text: `🏆 获得称号：【${title}】！`, type: 'special' });
+          setItemActionLog({ text: `获得称号：【${title}】！`, type: 'special' });
         }
       });
     }
@@ -731,11 +731,11 @@ export function useGrottoHandlers({
 
     if (rewardParts.length > 0) {
       addLog(
-        `📖 图鉴奖励：收集了 ${herbCount} 种灵草，获得 ${rewardParts.join('、')}！`,
+        `图鉴奖励：收集了 ${herbCount} 种灵草，获得 ${rewardParts.join('、')}！`,
         'special'
       );
       if (setItemActionLog) {
-        setItemActionLog({ text: `📖 图鉴奖励：收集了 ${herbCount} 种灵草，获得 ${rewardParts.join('、')}！`, type: 'special' });
+        setItemActionLog({ text: `图鉴奖励：收集了 ${herbCount} 种灵草，获得 ${rewardParts.join('、')}！`, type: 'special' });
       }
     }
 
@@ -820,7 +820,7 @@ export function useGrottoHandlers({
       dailySpeedupCount += 1;
 
       addLog(
-        `⚡ 使用 ${cost.toLocaleString()} 灵石加速【${herb.herbName}】生长，立即成熟！`,
+        `使用 ${cost.toLocaleString()} 灵石加速【${herb.herbName}】生长，立即成熟！`,
         'gain'
       );
 

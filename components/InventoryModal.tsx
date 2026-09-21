@@ -29,6 +29,8 @@ import {
   Wand,
   Lock,
   Unlock,
+  Lightbulb,
+  Sparkle,
 } from 'lucide-react';
 import { REALM_ORDER, SPIRITUAL_ROOT_NAMES, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES, CULTIVATION_ARTS } from '../constants/index';
 import EquipmentPanel from './EquipmentPanel';
@@ -249,8 +251,9 @@ const InventoryItem = memo<InventoryItemProps>(
                     </div>
                   )}
                   {effects.specialEffect && (
-                    <div className="text-emerald-400 italic mt-1">
-                      ✨ {effects.specialEffect}
+                    <div className="text-emerald-400 italic mt-1 flex items-center gap-1">
+                      <Sparkles size={12} className="shrink-0" />
+                      <span>{effects.specialEffect}</span>
                     </div>
                   )}
                 </div>
@@ -262,7 +265,7 @@ const InventoryItem = memo<InventoryItemProps>(
           {/* 材料用途说明 */}
           {item.type === ItemType.Material && (
             <div className="text-xs text-blue-400 mb-2 p-2 bg-blue-900/20 rounded border border-blue-800/50">
-              <div className="font-bold mb-1">💡 用途说明：</div>
+              <div className="font-bold mb-1 flex items-center gap-1"><Lightbulb size={12} /> 用途说明：</div>
               <div className="space-y-0.5 text-blue-300">
                 {item.name.includes('材料包') ? (
                   <div>• 使用后可获得对应品级的丹药材料</div>
@@ -301,12 +304,12 @@ const InventoryItem = memo<InventoryItemProps>(
 
           {reviveChances !== undefined && reviveChances > 0 && (
             <div className="text-xs text-yellow-400 mb-2 flex items-center gap-1 font-bold">
-              💫 保命机会：{reviveChances}次
+              <Sparkle size={12} className="shrink-0" />保命机会：{reviveChances}次
             </div>
           )}
           {reviveChances !== undefined && reviveChances <= 0 && (
             <div className="text-[11px] text-stone-500 mb-2 flex items-center gap-1">
-              💫 保命机会：已耗尽
+              <Sparkle size={11} className="shrink-0" />保命机会：已耗尽
             </div>
           )}
 
@@ -329,25 +332,25 @@ const InventoryItem = memo<InventoryItemProps>(
               {item.permanentEffect && (
                 <div className="text-emerald-400 grid grid-cols-2 gap-1">
                   {item.permanentEffect.attack && item.permanentEffect.attack > 0 && (
-                    <span>✨ 攻永久 +{item.permanentEffect.attack}</span>
+                    <span className="flex items-center gap-1"><Sparkles size={12} className="shrink-0" />攻永久 +{item.permanentEffect.attack}</span>
                   )}
                   {item.permanentEffect.defense && item.permanentEffect.defense > 0 && (
-                    <span>✨ 防永久 +{item.permanentEffect.defense}</span>
+                    <span className="flex items-center gap-1"><Sparkles size={12} className="shrink-0" />防永久 +{item.permanentEffect.defense}</span>
                   )}
                   {item.permanentEffect.maxHp && item.permanentEffect.maxHp > 0 && (
-                    <span>✨ 气血上限永久 +{item.permanentEffect.maxHp}</span>
+                    <span className="flex items-center gap-1"><Sparkles size={12} className="shrink-0" />气血上限永久 +{item.permanentEffect.maxHp}</span>
                   )}
                   {item.permanentEffect.spirit && item.permanentEffect.spirit > 0 && (
-                    <span>✨ 神识永久 +{item.permanentEffect.spirit}</span>
+                    <span className="flex items-center gap-1"><Sparkles size={12} className="shrink-0" />神识永久 +{item.permanentEffect.spirit}</span>
                   )}
                   {item.permanentEffect.physique && item.permanentEffect.physique > 0 && (
-                    <span>✨ 体魄永久 +{item.permanentEffect.physique}</span>
+                    <span className="flex items-center gap-1"><Sparkles size={12} className="shrink-0" />体魄永久 +{item.permanentEffect.physique}</span>
                   )}
                   {item.permanentEffect.speed && item.permanentEffect.speed > 0 && (
-                    <span>✨ 速度永久 +{item.permanentEffect.speed}</span>
+                    <span className="flex items-center gap-1"><Sparkles size={12} className="shrink-0" />速度永久 +{item.permanentEffect.speed}</span>
                   )}
                   {item.permanentEffect.maxLifespan && item.permanentEffect.maxLifespan > 0 && (
-                    <span>✨ 寿命上限永久 +{item.permanentEffect.maxLifespan}</span>
+                    <span className="flex items-center gap-1"><Sparkles size={12} className="shrink-0" />寿命上限永久 +{item.permanentEffect.maxLifespan}</span>
                   )}
                   {/* 灵根效果 */}
                   {item.permanentEffect.spiritualRoots && (() => {
@@ -379,10 +382,10 @@ const InventoryItem = memo<InventoryItemProps>(
 
                       if (allSame && rootEntries.length === 5) {
                         const value = rootEntries[0].match(/\+(\d+)$/)?.[1] || '0';
-                        return <span className="col-span-2">✨ 所有灵根永久 +{value}</span>;
+                        return <span className="col-span-2 flex items-center gap-1"><Sparkles size={12} className="shrink-0" />所有灵根永久 +{value}</span>;
                       } else {
                         return rootEntries.map((entry, idx) => (
-                          <span key={idx}>✨ {entry}永久</span>
+                          <span key={idx} className="flex items-center gap-1"><Sparkles size={12} className="shrink-0" />{entry}永久</span>
                         ));
                       }
                     }
@@ -560,7 +563,7 @@ const InventoryItem = memo<InventoryItemProps>(
                       }
                       // 二次确认，特别是筑基奇物炼化后不可修改
                       const confirmMessage = item.advancedItemType === 'foundationTreasure'
-                        ? `确定要炼化【${item.name}】吗？\n\n⚠️ 警告：筑基奇物炼化后将无法修改，请谨慎选择！`
+                        ? `确定要炼化【${item.name}】吗？\n\n警告：筑基奇物炼化后将无法修改，请谨慎选择！`
                         : `确定要炼化【${item.name}】吗？`;
                       showConfirm(
                         confirmMessage,
@@ -779,7 +782,7 @@ const InventoryModal: React.FC<Props> = ({
         }
       }
     }
-    if (actions.length > 0) { actions.forEach(a => onEquipItem(a.item, a.slot)); setItemActionLog?.({ text: `✨ 一键装备完成！已自动装备 ${actions.length} 件最优装备`, type: 'gain' }); }
+    if (actions.length > 0) { actions.forEach(a => onEquipItem(a.item, a.slot)); setItemActionLog?.({ text: `一键装备完成！已自动装备 ${actions.length} 件最优装备`, type: 'gain' }); }
     else setItemActionLog?.({ text: '当前装备已是最优配置', type: 'normal' });
   }, [inventory, equippedItems, natalArtifactId, onEquipItem, setItemActionLog]);
 
@@ -1229,7 +1232,7 @@ const InventoryModal: React.FC<Props> = ({
           onDismantle={(itemIds, stoneCount) => {
             onBatchDiscard(itemIds);
             window.dispatchEvent(new CustomEvent('dismantle-equip', { detail: { stoneCount } }));
-            setItemActionLog?.({ text: `⚒️ 分解完成，获得 ${stoneCount} 个炼器石`, type: 'gain' });
+            setItemActionLog?.({ text: `分解完成，获得 ${stoneCount} 个炼器石`, type: 'gain' });
           }}
         />
       )}

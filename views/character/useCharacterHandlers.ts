@@ -101,7 +101,7 @@ export function useCharacterHandlers(
           se.titles.every(tid => prevUnlockedTitles.includes(tid))
         );
         if (setEffect) {
-          logMessage += `\n✨ 激活了套装效果【${setEffect.setName}】！`;
+          logMessage += `\n激活了套装效果【${setEffect.setName}】！`;
         }
       }
 

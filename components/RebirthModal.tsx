@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { PlayerStats } from '../types';
 import { REALM_ORDER, REALM_DATA } from '../constants/index';
 import { Modal } from './common';
-import { RefreshCw, Star, BookOpen, Gem, AlertTriangle } from 'lucide-react';
+import { RefreshCw, Star, BookOpen, Gem, AlertTriangle, CheckCircle, XCircle, Lock } from 'lucide-react';
 import { createInitialPlayer } from '../utils/playerUtils';
 
 interface Props {
@@ -56,13 +56,13 @@ const RebirthModal: React.FC<Props> = ({ isOpen, onClose, player, onRebirth }) =
       <div className="space-y-4 text-sm">
         {maxReached ? (
           <div className="text-center py-6 space-y-3">
-            <div className="text-4xl">🌟</div>
+            <div className="flex justify-center mb-2"><Star size={40} className="text-mystic-gold" /></div>
             <p className="text-mystic-gold font-serif text-lg">你已达成五转圆满</p>
             <p className="text-stone-400">转世之力已臻极致，无需再度轮回。</p>
           </div>
         ) : !canDo ? (
           <div className="text-center py-6 space-y-3">
-            <div className="text-4xl">🔒</div>
+            <div className="flex justify-center mb-2"><Lock size={40} className="text-stone-400" /></div>
             <p className="text-stone-400">转世重修需要达到 <span className="text-mystic-gold">元婴期 9 层</span> 且经验满值</p>
             <p className="text-stone-500 text-xs">当前：{player.realm} {player.realmLevel} 层</p>
           </div>
@@ -105,7 +105,7 @@ const RebirthModal: React.FC<Props> = ({ isOpen, onClose, player, onRebirth }) =
             {/* 保留与失去 */}
             <div className="grid grid-cols-2 gap-3">
               <div className="bg-stone-800 p-3 rounded border border-stone-700">
-                <p className="text-emerald-400 font-bold text-xs mb-2">✅ 保留</p>
+                <p className="text-emerald-400 font-bold text-xs mb-2 flex items-center gap-1"><CheckCircle size={14} />保留</p>
                 <ul className="text-xs text-stone-300 space-y-1">
                   <li>· 灵根属性（强化后）</li>
                   <li>· {bonuses.keepArts} 门功法（需重修习）</li>
@@ -115,7 +115,7 @@ const RebirthModal: React.FC<Props> = ({ isOpen, onClose, player, onRebirth }) =
                 </ul>
               </div>
               <div className="bg-stone-800 p-3 rounded border border-stone-700">
-                <p className="text-red-400 font-bold text-xs mb-2">❌ 失去</p>
+                <p className="text-red-400 font-bold text-xs mb-2 flex items-center gap-1"><XCircle size={14} />失去</p>
                 <ul className="text-xs text-stone-300 space-y-1">
                   <li>· 境界回归炼气期</li>
                   <li>· 所有物品 & 灵石</li>

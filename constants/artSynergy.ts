@@ -40,7 +40,7 @@ export const ART_SYNERGY_SETS: ArtSynergySet[] = [
   // ===== 火系三绝 =====
   {
     id: 'synergy-fire-triple',
-    name: '🔥 火系三绝',
+    name: '火系三绝',
     description: '烈火拳、纯阳无极功、凤凰涅槃功三法合一，火系功法威力大增',
     requiredArts: ['art-fiery-fist', 'art-pure-yang', 'art-phoenix-rebirth'],
     effects: {
@@ -53,7 +53,7 @@ export const ART_SYNERGY_SETS: ArtSynergySet[] = [
   // ===== 金系剑道 =====
   {
     id: 'synergy-metal-sword',
-    name: '⚔️ 金系剑道',
+    name: '金系剑道',
     description: '天雷剑诀、金刚剑、星辰破灭诀，剑道至境',
     requiredArts: ['art-thunder-sword', 'art-golden-sword', 'art-star-destruction'],
     effects: {
@@ -66,7 +66,7 @@ export const ART_SYNERGY_SETS: ArtSynergySet[] = [
   // ===== 土系铁壁 =====
   {
     id: 'synergy-earth-wall',
-    name: '🛡️ 土系铁壁',
+    name: '土系铁壁',
     description: '铁皮功、厚土护体、玉骨功，固若金汤',
     requiredArts: ['art-iron-skin', 'art-earth-shield', 'art-jade-bone'],
     effects: {
@@ -79,7 +79,7 @@ export const ART_SYNERGY_SETS: ArtSynergySet[] = [
   // ===== 水系灵动 =====
   {
     id: 'synergy-water-flow',
-    name: '💧 水系灵动',
+    name: '水系灵动',
     description: '水镜心法、冰心诀相辅相成，以柔克刚',
     requiredArts: ['art-water-mirror', 'art-ice-soul'],
     effects: {
@@ -92,7 +92,7 @@ export const ART_SYNERGY_SETS: ArtSynergySet[] = [
   // ===== 木系长生 =====
   {
     id: 'synergy-wood-life',
-    name: '🌿 木系长生',
+    name: '木系长生',
     description: '木身功与长生诀相辅相成，生机不绝',
     requiredArts: ['art-wooden-body', 'art-immortal-life'],
     effects: {
@@ -105,7 +105,7 @@ export const ART_SYNERGY_SETS: ArtSynergySet[] = [
   // ===== 五行归元 =====
   {
     id: 'synergy-five-elements',
-    name: '🌟 五行归元',
+    name: '五行归元',
     description: '金木水火土五系各修一门，五行合一',
     requiredArts: [
       'art-golden-armor', // 金
@@ -125,7 +125,7 @@ export const ART_SYNERGY_SETS: ArtSynergySet[] = [
   // ===== 剑意通神 =====
   {
     id: 'synergy-sword-intent',
-    name: '🗡️ 剑意通神',
+    name: '剑意通神',
     description: '剑意、杀意、神剑三诀合一，剑气纵横',
     requiredArts: ['art-sword-intent', 'art-killing-intent', 'art-divine-sword'],
     effects: {
@@ -138,7 +138,7 @@ export const ART_SYNERGY_SETS: ArtSynergySet[] = [
   // ===== 混沌不朽 =====
   {
     id: 'synergy-chaos-immortal',
-    name: '🌀 混沌不朽',
+    name: '混沌不朽',
     description: '混沌霸体、虚空霸体、不死不灭，万法不侵',
     requiredArts: ['art-chaos-body', 'art-void-body', 'art-immortal-awakening'],
     effects: {
@@ -151,7 +151,7 @@ export const ART_SYNERGY_SETS: ArtSynergySet[] = [
   // ===== 龙凤呈祥 =====
   {
     id: 'synergy-dragon-phoenix',
-    name: '🐉 龙凤呈祥',
+    name: '龙凤呈祥',
     description: '龙拳与凤凰涅槃功，龙凤齐鸣',
     requiredArts: ['art-dragon-fist', 'art-phoenix-rebirth'],
     effects: {
@@ -164,7 +164,7 @@ export const ART_SYNERGY_SETS: ArtSynergySet[] = [
   // ===== 风雷双绝 =====
   {
     id: 'synergy-wind-thunder',
-    name: '⚡ 风雷双绝',
+    name: '风雷双绝',
     description: '御风步加天雷剑诀，风雷交加',
     requiredArts: ['art-wind-step', 'art-thunder-sword'],
     effects: {

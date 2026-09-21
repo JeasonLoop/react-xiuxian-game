@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import { LogEntry } from '../types';
 import { GlobalChat } from './GlobalChat';
-import { ChevronsDown, Trash2 } from 'lucide-react';
+import { ChevronsDown, Trash2, AlertTriangle, ScrollText } from 'lucide-react';
 
 interface Props {
   logs: LogEntry[];
@@ -149,8 +149,9 @@ const LogPanel: React.FC<Props> = ({ logs, playerName, className, onClearLogs })
       {/* 日志上限提示 */}
       {logs.length >= 900 && (
         <div className="absolute top-1 right-2 z-20 flex items-center gap-2">
-          <span className="text-[10px] text-amber-400">
-            {logs.length >= 1000 ? '⚠ 日志已满，旧日志已自动清理' : `⚠ 日志 ${logs.length}/1000，建议清理`}
+          <span className="text-[10px] text-amber-400 flex items-center gap-1">
+            <AlertTriangle size={12} className="inline" />
+            {logs.length >= 1000 ? '日志已满，旧日志已自动清理' : `日志 ${logs.length}/1000，建议清理`}
           </span>
           {onClearLogs && (
             <button
@@ -174,7 +175,7 @@ const LogPanel: React.FC<Props> = ({ logs, playerName, className, onClearLogs })
           // 空状态
           <div className="h-full flex items-center justify-center p-6">
             <div className="text-center text-stone-500">
-              <div className="text-4xl md:text-5xl mb-4 opacity-50">📜</div>
+              <div className="mb-4 opacity-50"><ScrollText size={48} className="inline" /></div>
               <p className="text-sm md:text-base font-serif">暂无日志</p>
               <p className="text-xs md:text-sm mt-2 opacity-70">游戏中的事件会显示在这里</p>
             </div>

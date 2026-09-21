@@ -311,6 +311,39 @@ export const SECT_RANK_REQUIREMENTS: Record<SectRank, {
   },
 };
 
+/**
+ * 宗门职位带来的常驻被动属性加成（占总基础属性百分比）
+ * 体现宗门地位对人物成长的反哺，与 getPlayerTotalStats 联动
+ */
+export const SECT_RANK_STAT_BONUS: Record<SectRank, {
+  attackPercent: number;
+  defensePercent: number;
+  hpPercent: number;
+}> = {
+  [SectRank.Outer]: { attackPercent: 0, defensePercent: 0, hpPercent: 0 },
+  [SectRank.Inner]: { attackPercent: 0.02, defensePercent: 0.02, hpPercent: 0.02 },
+  [SectRank.Core]: { attackPercent: 0.04, defensePercent: 0.04, hpPercent: 0.04 },
+  [SectRank.Elder]: { attackPercent: 0.07, defensePercent: 0.07, hpPercent: 0.07 },
+  [SectRank.Leader]: { attackPercent: 0.10, defensePercent: 0.10, hpPercent: 0.10 },
+};
+
+/** 任务堂手动刷新任务列表的灵石消耗（防无限刷高品质任务） */
+export const SECT_TASK_REFRESH_COST = 300;
+
+/** 宗门修炼室：租用消耗贡献（随境界线性增长）与修炼效率加成 */
+export const SECT_TRAINING_ROOM = {
+  baseCost: 300,        // 基础贡献消耗
+  costPerRealm: 300,    // 每高一个境界额外消耗
+  expRateBonus: 0.15,   // 修炼效率加成
+  durationHours: 24,    // 持续时间（小时）
+};
+
+/** 宗主每日俸禄（灵石与贡献随境界线性缩放） */
+export const SECT_LEADER_SALARY = {
+  baseSpiritStones: 2000, // 基础灵石
+  contribution: 300,      // 贡献（不随境界缩放）
+};
+
 // 宗门职位显示数据
 export const SECT_RANK_DATA: Record<SectRank, {
   title: string;

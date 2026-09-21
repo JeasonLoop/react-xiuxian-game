@@ -63,7 +63,7 @@ const ReputationEventModal: React.FC<Props> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={`📜 ${title}`}
+      title={title}
       size="2xl"
       height="auto"
     >

@@ -18,6 +18,8 @@ import {
   Award,
   ChevronRight,
   Shield,
+  Lock,
+  LockOpen,
 } from 'lucide-react';
 import { Modal } from './common';
 import { PlayerStats, ItemRarity } from '../types';
@@ -35,7 +37,10 @@ import { ItemType } from '../types';
 import {
   isReforgeableEquipment,
   getReforgeStoneCount,
-  executeItemReforge,
+  rollReforgeCandidate,
+  applyReforgeCandidate,
+  discardReforgeCandidate,
+  toggleReforgeLock,
 } from '../utils/reforgeUtils';
 import {
   getReforgeCost,
@@ -144,7 +149,14 @@ const GrottoModal: React.FC<Props> = ({
   }, [reforgeableItems, selectedReforgeItemId]);
 
   const reforgeStoneCount = useMemo(() => getReforgeStoneCount(player), [player.inventory]);
-  const reforgeCost = useMemo(() => getReforgeCost(selectedReforgeItem?.reforgeCount || 0), [selectedReforgeItem]);
+  const selectedReforgeLockCount = useMemo(
+    () => (selectedReforgeItem?.reforgeLocks || []).filter(Boolean).length,
+    [selectedReforgeItem]
+  );
+  const reforgeCost = useMemo(
+    () => getReforgeCost(selectedReforgeItem?.reforgeCount || 0, selectedReforgeLockCount),
+    [selectedReforgeItem, selectedReforgeLockCount]
+  );
 
   // 远征槽位与状态
   const activeExpeditions = useMemo(() => {
@@ -219,22 +231,74 @@ const GrottoModal: React.FC<Props> = ({
     return `${secs}秒`;
   };
 
+  const commitReforgeInventory = (updatedPlayer: PlayerStats) => {
+    useGameStore.getState().setPlayer((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        spiritStones: updatedPlayer.spiritStones,
+        inventory: updatedPlayer.inventory,
+      };
+    });
+  };
+
+  // 投炉重掷：扣费并生成候选词条（待取舍）
   const handleReforgeAction = () => {
     if (!selectedReforgeItem) return;
     const latestPlayer = useGameStore.getState().player || player;
-    const { success, message, updatedPlayer } = executeItemReforge(latestPlayer, selectedReforgeItem.id);
+    const { success, message, updatedPlayer } = rollReforgeCandidate(
+      latestPlayer,
+      selectedReforgeItem.id
+    );
     if (success) {
-      useGameStore.getState().setPlayer((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          spiritStones: updatedPlayer.spiritStones,
-          inventory: updatedPlayer.inventory,
-        };
-      });
+      commitReforgeInventory(updatedPlayer);
       useGameStore.getState().addLog(message, 'special');
     } else {
       useGameStore.getState().addLog(message, 'danger');
+    }
+  };
+
+  // 采纳候选词条
+  const handleApplyReforge = () => {
+    if (!selectedReforgeItem) return;
+    const latestPlayer = useGameStore.getState().player || player;
+    const { success, message, updatedPlayer } = applyReforgeCandidate(
+      latestPlayer,
+      selectedReforgeItem.id
+    );
+    if (success) {
+      commitReforgeInventory(updatedPlayer);
+      useGameStore.getState().addLog(message, 'special');
+    }
+  };
+
+  // 舍弃候选词条（费用不退）
+  const handleDiscardReforge = () => {
+    if (!selectedReforgeItem) return;
+    const latestPlayer = useGameStore.getState().player || player;
+    const { success, updatedPlayer } = discardReforgeCandidate(
+      latestPlayer,
+      selectedReforgeItem.id
+    );
+    if (success) {
+      commitReforgeInventory(updatedPlayer);
+      useGameStore.getState().addLog('已舍弃本次洗炼候选。', 'normal');
+    }
+  };
+
+  // 切换词条锁定状态
+  const handleToggleReforgeLock = (idx: number) => {
+    if (!selectedReforgeItem) return;
+    const latestPlayer = useGameStore.getState().player || player;
+    const { success, updatedPlayer } = toggleReforgeLock(
+      latestPlayer,
+      selectedReforgeItem.id,
+      idx
+    );
+    if (success) {
+      commitReforgeInventory(updatedPlayer);
+    } else {
+      showError('至少保留一条未锁定词条！');
     }
   };
 
@@ -1395,12 +1459,12 @@ const GrottoModal: React.FC<Props> = ({
                             </div>
                           )}
 
-                          {/* 当前洗炼词条 */}
+                          {/* 当前洗炼词条（可锁定） */}
                           <div>
                             <h5 className="text-xs font-bold text-stone-300 mb-2 flex items-center justify-between">
                               <span>当前淬炼觉醒词条</span>
                               <span className="text-[11px] text-stone-500 font-normal">
-                                品质越高，词条数越多且上限越高
+                                点击锁形图标可锁定词条，洗炼时保留（锁定额外消耗）
                               </span>
                             </h5>
 
@@ -1408,23 +1472,45 @@ const GrottoModal: React.FC<Props> = ({
                               <div className="space-y-2">
                                 {selectedReforgeItem.reforgeAffixes.map((affix, idx) => {
                                   const def = REFORGE_AFFIX_DEFINITIONS[affix.type as ReforgeAffixType];
+                                  const isLocked = selectedReforgeItem.reforgeLocks?.[idx] || false;
+                                  const hasPending = !!selectedReforgeItem.pendingReforge;
                                   return (
                                     <div
                                       key={idx}
-                                      className="bg-stone-900/90 border border-amber-900/40 p-2.5 rounded flex items-center justify-between"
+                                      className={`bg-stone-900/90 border p-2.5 rounded flex items-center justify-between ${
+                                        isLocked ? 'border-sky-500/60' : 'border-amber-900/40'
+                                      }`}
                                     >
-                                      <div className="flex items-center gap-2">
+                                      <div className="flex items-center gap-2 min-w-0">
                                         <Sparkles size={14} className={def ? def.color : 'text-amber-400'} />
                                         <span className={`font-bold text-xs md:text-sm ${def ? def.color : 'text-amber-300'}`}>
                                           【{affix.name}】
                                         </span>
-                                        <span className="text-xs text-stone-400">
+                                        <span className="text-xs text-stone-400 truncate">
                                           {def?.desc || ''}
                                         </span>
                                       </div>
-                                      <span className={`font-mono font-bold text-sm ${def ? def.color : 'text-amber-300'}`}>
-                                        +{(affix.value * 100).toFixed(1)}%
-                                      </span>
+                                      <div className="flex items-center gap-2 shrink-0">
+                                        <span className={`font-mono font-bold text-sm ${def ? def.color : 'text-amber-300'}`}>
+                                          +{(affix.value * 100).toFixed(1)}%
+                                        </span>
+                                        <button
+                                          onClick={() => handleToggleReforgeLock(idx)}
+                                          disabled={hasPending}
+                                          title={isLocked ? '解锁词条' : '锁定词条（洗炼时保留）'}
+                                          className={`p-1 rounded transition-colors ${
+                                            hasPending
+                                              ? 'opacity-40 cursor-not-allowed'
+                                              : 'cursor-pointer hover:bg-stone-800'
+                                          }`}
+                                        >
+                                          {isLocked ? (
+                                            <Lock size={14} className="text-sky-400" />
+                                          ) : (
+                                            <LockOpen size={14} className="text-stone-500" />
+                                          )}
+                                        </button>
+                                      </div>
                                     </div>
                                   );
                                 })}
@@ -1435,12 +1521,89 @@ const GrottoModal: React.FC<Props> = ({
                               </div>
                             )}
                           </div>
+
+                          {/* 洗炼候选对比（存在 pending 时展示） */}
+                          {selectedReforgeItem.pendingReforge && (
+                            <div className="border border-sky-700/50 bg-sky-950/20 rounded-lg p-3 space-y-2">
+                              <h5 className="text-xs font-bold text-sky-300 flex items-center gap-1.5">
+                                <Sparkles size={14} />
+                                仙炉重掷完成 · 新旧道蕴对比
+                              </h5>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {/* 左：当前词条 */}
+                                <div className="bg-stone-900/80 rounded p-2">
+                                  <p className="text-[11px] text-stone-400 mb-1.5 font-bold">当前词条</p>
+                                  {(selectedReforgeItem.reforgeAffixes || []).length === 0 ? (
+                                    <p className="text-[11px] text-stone-500">（无）</p>
+                                  ) : (
+                                    <div className="space-y-1">
+                                      {selectedReforgeItem.reforgeAffixes!.map((a, i) => {
+                                        const def = REFORGE_AFFIX_DEFINITIONS[a.type as ReforgeAffixType];
+                                        return (
+                                          <div key={i} className="flex justify-between text-[11px]">
+                                            <span className={def ? def.color : 'text-amber-300'}>{a.name}</span>
+                                            <span className="font-mono text-stone-300">+{(a.value * 100).toFixed(1)}%</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                                {/* 右：候选词条 */}
+                                <div className="bg-sky-950/40 border border-sky-800/50 rounded p-2">
+                                  <p className="text-[11px] text-sky-300 mb-1.5 font-bold">候选词条</p>
+                                  <div className="space-y-1">
+                                    {selectedReforgeItem.pendingReforge.map((a, i) => {
+                                      const def = REFORGE_AFFIX_DEFINITIONS[a.type as ReforgeAffixType];
+                                      const oldAffix = selectedReforgeItem.reforgeAffixes?.[i];
+                                      const changed =
+                                        !oldAffix || oldAffix.type !== a.type || oldAffix.value !== a.value;
+                                      return (
+                                        <div key={i} className="flex justify-between text-[11px]">
+                                          <span className={def ? def.color : 'text-amber-300'}>
+                                            {a.name}
+                                            {changed && <span className="text-emerald-400 ml-1">新</span>}
+                                          </span>
+                                          <span className={`font-mono ${changed ? 'text-emerald-300' : 'text-stone-300'}`}>
+                                            +{(a.value * 100).toFixed(1)}%
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                              <p className="text-[10px] text-stone-500">锁定词条已保留；候选一旦舍弃，本次消耗不予退回。</p>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={handleApplyReforge}
+                                  className="flex-1 py-2 rounded bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                                >
+                                  <CheckCircle size={14} />
+                                  采纳新词条
+                                </button>
+                                <button
+                                  onClick={handleDiscardReforge}
+                                  className="flex-1 py-2 rounded bg-stone-700 hover:bg-stone-600 text-stone-200 text-xs font-bold transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                                >
+                                  <AlertCircle size={14} />
+                                  舍弃候选
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* 底部洗炼消耗与执行按钮 */}
                         <div className="border-t border-stone-800 pt-4 space-y-3">
                           <div className="flex items-center justify-between text-xs md:text-sm">
-                            <span className="text-stone-400">洗炼消耗：</span>
+                            <span className="text-stone-400">
+                              洗炼消耗
+                              {selectedReforgeLockCount > 0 && (
+                                <span className="text-sky-300 ml-1">（已锁 {selectedReforgeLockCount} 条，消耗增加）</span>
+                              )}
+                              ：
+                            </span>
                             <div className="flex items-center gap-4">
                               <span className={reforgeStoneCount >= reforgeCost.stones ? 'text-amber-300' : 'text-red-400'}>
                                 太虚洗炼石 x{reforgeCost.stones} (现有 {reforgeStoneCount})
@@ -1453,15 +1616,22 @@ const GrottoModal: React.FC<Props> = ({
 
                           <button
                             onClick={handleReforgeAction}
-                            disabled={reforgeStoneCount < reforgeCost.stones || player.spiritStones < reforgeCost.spiritStones}
+                            disabled={
+                              !!selectedReforgeItem.pendingReforge ||
+                              reforgeStoneCount < reforgeCost.stones ||
+                              player.spiritStones < reforgeCost.spiritStones
+                            }
+                            title={selectedReforgeItem.pendingReforge ? '请先采纳或舍弃仙炉中的候选词条' : undefined}
                             className={`w-full py-3 rounded-lg font-serif font-bold transition-all flex items-center justify-center gap-2 shadow-lg ${
-                              reforgeStoneCount >= reforgeCost.stones && player.spiritStones >= reforgeCost.spiritStones
+                              !selectedReforgeItem.pendingReforge &&
+                              reforgeStoneCount >= reforgeCost.stones &&
+                              player.spiritStones >= reforgeCost.spiritStones
                                 ? 'bg-linear-to-r from-amber-600 to-red-600 text-white hover:from-amber-500 hover:to-red-500 shadow-amber-950/40 cursor-pointer active:scale-[0.99]'
                                 : 'bg-stone-800 text-stone-500 border border-stone-700 cursor-not-allowed'
                             }`}
                           >
                             <Flame size={18} className="text-amber-300" />
-                            投炉重铸 · 淬火觉醒
+                            {selectedReforgeItem.pendingReforge ? '候选待取舍…' : '投炉重铸 · 淬火觉醒'}
                           </button>
                         </div>
                       </>

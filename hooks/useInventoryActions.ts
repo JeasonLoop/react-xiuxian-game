@@ -67,7 +67,7 @@ export function useInventoryActions({ setPlayer, addLog }: UseInventoryActionsPr
         }
         const newTakenIds = Array.from(takenIdsSet);
 
-        addLog(`✨ 你从宗门宝库中获得了【${item.name}】！`, 'special');
+        addLog(`你从宗门宝库中获得了【${item.name}】！`, 'special');
         return {
           ...prev,
           inventory: newInv,

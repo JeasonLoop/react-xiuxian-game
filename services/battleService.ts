@@ -1502,7 +1502,7 @@ export const initializeTurnBasedBattle = async (
         actor: 'player',
         actionType: 'attack',
         result: {},
-        description: `✨ 你的神识远超对手，对手被你震慑了！`,
+        description: `你的神识远超对手，对手被你震慑了！`,
       };
       initialHistory.push(intimidateAction);
     }
@@ -2908,7 +2908,7 @@ function updateBattleStateAfterAction(
           actor: 'system',
           actionType: 'attack',
           result: {},
-          description: '✨ 五行领域能量耗尽，逐渐消散了。'
+          description: '五行领域能量耗尽，逐渐消散了。'
         } as any);
       }
     }

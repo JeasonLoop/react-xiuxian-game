@@ -54,7 +54,7 @@ export function useAutoGrottoHarvest({
 
     if (totalExp > 0 || totalSpiritStones > 0 || totalAttributePoints > 0) {
       addLog(
-        `📖 图鉴奖励：自动收获触发奖励，获得 ${[
+        `图鉴奖励：自动收获触发奖励，获得 ${[
           totalExp > 0 ? `${totalExp} 修为` : '',
           totalSpiritStones > 0 ? `${totalSpiritStones} 灵石` : '',
           totalAttributePoints > 0 ? `${totalAttributePoints} 属性点` : '',
@@ -157,8 +157,8 @@ export function useAutoGrottoHarvest({
         nextPlayer = applyHerbariumRewards(nextPlayer, updatedHerbarium.length);
 
         addLog(
-          `✨ 洞府自动收获：${harvestedNames.join('、')}，共 ${totalQuantity} 个。已自动放入背包。${
-            hasNewHerbarium ? ' 📖 图鉴已更新。' : ''
+          `洞府自动收获：${harvestedNames.join('、')}，共 ${totalQuantity} 个。已自动放入背包。${
+            hasNewHerbarium ? ' 图鉴已更新。' : ''
           }`,
           'gain'
         );

@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { PlayerStats, RealmType, SecretRealm } from '../types';
-import { REALM_ORDER } from '../constants/index';
+import { REALM_ORDER, SECRET_REALMS } from '../constants/index';
 import { generateRandomRealms } from '../services/randomService';
-import { Mountain, Gem, Ticket, RefreshCw, Map, Flame, Zap, Compass } from 'lucide-react';
+import { Mountain, Gem, Ticket, RefreshCw, Map, Flame, Zap, Compass, Crown } from 'lucide-react';
 import { Modal } from './common';
 import { useUIStore } from '../store/uiStore';
 
@@ -20,11 +20,17 @@ const SecretRealmModal: React.FC<Props> = ({
   onEnter,
 }) => {
   const [refreshKey, setRefreshKey] = useState(0);
+  const [realmTab, setRealmTab] = useState<'random' | 'fixed'>('random');
 
   // 使用 useMemo 生成随机秘境列表，refreshKey 变化时重新生成
   const availableRealms = useMemo(() => {
+    if (realmTab === 'fixed') return [];
     return generateRandomRealms(player.realm, 6);
-  }, [player.realm, refreshKey]);
+  }, [player.realm, refreshKey, realmTab]);
+
+  const today = new Date().toISOString().split('T')[0];
+  const isFirstClear = (realm: SecretRealm) =>
+    player.dailyRealmFirstClears?.[realm.id] !== today;
 
   const getRealmIndex = (r: RealmType) => REALM_ORDER.indexOf(r);
 
@@ -106,7 +112,33 @@ const SecretRealmModal: React.FC<Props> = ({
           </div>
         </div>
 
-        {availableRealms.map((realm) => {
+        {/* 名境 / 奇境切换 */}
+        <div className="col-span-full flex gap-2">
+          <button
+            onClick={() => setRealmTab('random')}
+            className={`flex-1 py-2 rounded font-serif text-sm border transition-colors ${
+              realmTab === 'random'
+                ? 'bg-purple-900/40 text-purple-200 border-purple-600'
+                : 'bg-stone-900/60 text-stone-400 border-stone-700 hover:text-stone-200'
+            }`}
+          >
+            <Map size={14} className="inline mr-1.5 -mt-0.5" />
+            奇境探索（随机刷新）
+          </button>
+          <button
+            onClick={() => setRealmTab('fixed')}
+            className={`flex-1 py-2 rounded font-serif text-sm border transition-colors ${
+              realmTab === 'fixed'
+                ? 'bg-amber-900/40 text-amber-200 border-amber-600'
+                : 'bg-stone-900/60 text-stone-400 border-stone-700 hover:text-stone-200'
+            }`}
+          >
+            <Crown size={14} className="inline mr-1.5 -mt-0.5" />
+            天地名境（每日首通有礼）
+          </button>
+        </div>
+
+        {(realmTab === 'fixed' ? SECRET_REALMS : availableRealms).map((realm) => {
           const playerRealmIndex = getRealmIndex(player.realm);
           const reqRealmIndex = getRealmIndex(realm.minRealm);
           const isRealmEnough = playerRealmIndex >= reqRealmIndex;
@@ -188,6 +220,16 @@ const SecretRealmModal: React.FC<Props> = ({
                     {realm.cost} 灵石
                   </span>
                 </div>
+                {realmTab === 'fixed' && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-stone-500">今日首通</span>
+                    {isFirstClear(realm) ? (
+                      <span className="text-emerald-400">待探索（返门票+必得主题宝物）</span>
+                    ) : (
+                      <span className="text-stone-500">已完成（50% 主题宝物）</span>
+                    )}
+                  </div>
+                )}
 
                 <button
                   onClick={() => onEnter(realm)}

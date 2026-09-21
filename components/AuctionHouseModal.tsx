@@ -3,7 +3,7 @@ import Modal from './common/Modal';
 import { MarketItem, PlayerStats } from '../types';
 import { getRarityTextColor, getRarityBorder } from '../utils/rarityUtils';
 import { formatNumber } from '../utils/formatUtils';
-import { RefreshCw, Coins, Store, X, Package, Filter, Search } from 'lucide-react';
+import { RefreshCw, Coins, Store, X, Package, Filter, Search, Inbox, ScrollText } from 'lucide-react';
 import { CATEGORY_LIST, getItemCategory } from '../utils/itemCategoryUtils';
 import type { ItemCategory } from '../utils/itemCategoryUtils';
 
@@ -241,7 +241,9 @@ export default function TradeMarketModal({
           {/* 物品列表 */}
           {filteredItems.length === 0 ? (
             <div className="text-center text-stone-500 py-12">
-              <div className="text-4xl mb-3 text-stone-600">📭</div>
+              <div className="mb-3 flex justify-center text-stone-600">
+                <Inbox size={36} />
+              </div>
               <p className="text-base">
                 {buySearch || categoryFilter !== 'all' ? '没有匹配的商品' : '交易行暂无商品'}
               </p>
@@ -523,7 +525,7 @@ export default function TradeMarketModal({
 
           {/* 上架规则 */}
           <div className="text-xs text-stone-600 bg-stone-900 rounded-lg p-3 border border-stone-800">
-            <p className="font-bold text-stone-500 mb-1">📜 上架规则</p>
+            <p className="font-bold text-stone-500 mb-1 flex items-center gap-1"><ScrollText size={14} /> 上架规则</p>
             <ul className="space-y-0.5 list-disc list-inside">
               <li>已装备或锁定的物品不可上架</li>
               <li>上架后物品从背包移除，下架后归还</li>

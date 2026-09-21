@@ -18,6 +18,8 @@ import {
   Plus,
   Minus,
   Sparkles,
+  XCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import { Modal } from './common';
 import { useGameStore } from '../store';
@@ -221,7 +223,7 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
 
     if (result === 'success') {
       setItemActionLog?.({
-        text: `✨ 祭炼成功！${currentItem.name} 品质提升了！`,
+        text: `祭炼成功！${currentItem.name} 品质提升了！`,
         type: 'special'
       });
       setUpgradeStones(0);
@@ -231,7 +233,7 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
       }, CLOSE_DELAY);
     } else if (result === 'failure') {
       setItemActionLog?.({
-        text: `❌ 祭炼失败！${currentItem.name} 未能提升品质，材料已消耗。`,
+        text: `祭炼失败！${currentItem.name} 未能提升品质，材料已消耗。`,
         type: 'danger'
       });
       setIsUpgrading(false);
@@ -239,8 +241,8 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
     } else {
       const missingItems = getMissingMaterials();
       const errorMsg = missingItems.length > 0
-        ? `⚠️ ${missingItems.join('、')}不足，无法进行祭炼！`
-        : `⚠️ 材料不足，无法进行祭炼！`;
+        ? `${missingItems.join('、')}不足，无法进行祭炼！`
+        : `材料不足，无法进行祭炼！`;
       setItemActionLog?.({ text: errorMsg, type: 'danger' });
       setIsUpgrading(false);
     }
@@ -289,7 +291,7 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
 
     if (isCompleted) {
       setItemActionLog?.({
-        text: `✨ 连续祭炼完成！${item.name} 从 +${startLevel} 强化到 +${finalLevel}（成功 ${successCount} 次${failureCount > 0 ? `，失败 ${failureCount} 次` : ''}）`,
+        text: `连续祭炼完成！${item.name} 从 +${startLevel} 强化到 +${finalLevel}（成功 ${successCount} 次${failureCount > 0 ? `，失败 ${failureCount} 次` : ''}）`,
         type: 'special'
       });
     } else {
@@ -308,7 +310,7 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
       }
 
       setItemActionLog?.({
-        text: `⚠️ 连续祭炼中断！${item.name} 从 +${startLevel} 强化到 +${finalLevel}（成功 ${successCount} 次${failureCount > 0 ? `，失败 ${failureCount} 次` : ''}），${reason}。`,
+        text: `连续祭炼中断！${item.name} 从 +${startLevel} 强化到 +${finalLevel}（成功 ${successCount} 次${failureCount > 0 ? `，失败 ${failureCount} 次` : ''}），${reason}。`,
         type: 'warning'
       });
     }
@@ -335,7 +337,7 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
       setIsUpgrading(false);
       console.error('Upgrade error:', error);
       setItemActionLog?.({
-        text: `❌ 祭炼过程中发生错误，请重试！`,
+        text: `祭炼过程中发生错误，请重试！`,
         type: 'danger'
       });
     }
@@ -472,7 +474,8 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
                     将强化 {targetLevelValue - currentLevel} 次，从 +{currentLevel} 到 +{targetLevelValue}
                   </div>
                   <div className="text-yellow-500 text-xs flex items-center gap-1">
-                    ⚠️ 注意：连续强化时，每次失败会降低{Math.floor(FAILURE_PENALTY_RATE * 100)}%成功率（最低{Math.floor(MIN_SUCCESS_RATE * 100)}%）
+                    <AlertTriangle size={14} className="shrink-0" />
+                    <span>注意：连续强化时，每次失败会降低{Math.floor(FAILURE_PENALTY_RATE * 100)}%成功率（最低{Math.floor(MIN_SUCCESS_RATE * 100)}%）</span>
                   </div>
                 </div>
               )}

@@ -291,7 +291,7 @@ export function useDailyQuestHandlers({
               advancedItemType: 'foundationTreasure',
               advancedItemId: selected.id,
             });
-            advancedItemMsg = ` ✨ 额外获得筑基奇物【${selected.name}】！`;
+            advancedItemMsg = ` 额外获得筑基奇物【${selected.name}】！`;
           }
         }
 
@@ -311,7 +311,7 @@ export function useDailyQuestHandlers({
               advancedItemType: 'heavenEarthEssence',
               advancedItemId: selected.id,
             });
-            advancedItemMsg = ` ✨ 额外获得天地精华【${selected.name}】！`;
+            advancedItemMsg = ` 额外获得天地精华【${selected.name}】！`;
           }
         }
 
@@ -330,7 +330,7 @@ export function useDailyQuestHandlers({
               advancedItemType: 'heavenEarthMarrow',
               advancedItemId: selected.id,
             });
-            advancedItemMsg = ` ✨ 额外获得天地之髓【${selected.name}】！`;
+            advancedItemMsg = ` 额外获得天地之髓【${selected.name}】！`;
           }
         }
 
@@ -352,7 +352,7 @@ export function useDailyQuestHandlers({
               advancedItemType: 'longevityRule',
               advancedItemId: selected.id,
             });
-            advancedItemMsg = ` ✨ 额外获得规则之力【${selected.name}】！`;
+            advancedItemMsg = ` 额外获得规则之力【${selected.name}】！`;
           }
         }
       }

@@ -213,7 +213,7 @@ export function useTradeMarketHandlers(
     const inventory = player.inventory;
     const sourceItem = inventory.find((i) => i.id === itemId);
     if (!sourceItem) { addLog('背包中找不到该物品。', 'danger'); return; }
-    if (sourceItem.locked) { addLog(`🔒 【${sourceItem.name}】已锁定，无法上架。`, 'danger'); return; }
+    if (sourceItem.locked) { addLog(`【${sourceItem.name}】已锁定，无法上架。`, 'danger'); return; }
     const listingQuantity = Math.floor(Number(quantity) || 0);
     if (listingQuantity < 1 || listingQuantity > (sourceItem.quantity || 1)) {
       addLog(`上架数量需在 1-${sourceItem.quantity || 1} 之间。`, 'danger');

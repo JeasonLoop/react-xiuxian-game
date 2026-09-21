@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sword, Shield, Zap, Heart, Sparkles } from 'lucide-react';
+import { Sword, Shield, Zap, Heart, Sparkles, PartyPopper, Skull } from 'lucide-react';
 import { PlayerStats, DaoCombiningChallengeState } from '../types';
 import { HEAVEN_EARTH_SOUL_BOSSES, DAO_COMBINING_CHALLENGE_CONFIG } from '../constants/index';
 import { executePlayerAction, executeEnemyTurn, checkBattleEnd, calculateBattleRewards } from '../services/battleService';
@@ -364,7 +364,11 @@ const DaoCombiningChallengeModal: React.FC<Props> = ({
             : 'bg-red-900/20 border-red-700'
         }`}>
           <h3 className="text-lg font-semibold mb-2">
-            {challengeState.battleResult.victory ? '🎉 挑战成功！' : '💀 挑战失败'}
+            {challengeState.battleResult.victory ? (
+              <span className="flex items-center gap-2"><PartyPopper size={18} className="text-green-400" />挑战成功！</span>
+            ) : (
+              <span className="flex items-center gap-2"><Skull size={18} className="text-red-400" />挑战失败</span>
+            )}
           </h3>
           <p className={challengeState.battleResult.victory ? 'text-green-200' : 'text-red-200'}>
             {challengeState.battleResult.summary}

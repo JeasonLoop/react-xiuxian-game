@@ -8,6 +8,7 @@ import {
   Trash,
   RefreshCw,
   Box,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   Shop,
@@ -249,7 +250,7 @@ const ShopModal: React.FC<Props> = ({
             <p className="text-[10px] text-yellow-400 mt-0.5">
               需要声望：{shop.reputationRequired}（当前：{player.reputation || 0}）
               {player.reputation < shop.reputationRequired && (
-                <span className="text-red-400 ml-1">⚠️ 不足</span>
+                <span className="text-red-400 ml-1 inline-flex items-center gap-0.5"><AlertTriangle size={12} />不足</span>
               )}
             </p>
           )}

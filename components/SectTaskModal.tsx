@@ -6,7 +6,7 @@ import {
   getRandomEventTemplate,
   templateToAdventureResult,
 } from '../services/adventureTemplateService';
-import { Loader2, Scroll } from 'lucide-react';
+import { Loader2, Scroll, Sparkles, CheckCircle } from 'lucide-react';
 import { logger } from '../utils/logger';
 import { getPlayerTotalStats } from '../utils/statUtils';
 import { Modal } from './common';
@@ -125,7 +125,7 @@ const SectTaskModal: React.FC<Props> = ({
               // 使用 setItemActionLog 提示
               if (setItemActionLog && result.story) {
                 setItemActionLog({
-                  text: `✨ 任务途中遇到奇遇：${result.story.substring(0, 30)}${result.story.length > 30 ? '...' : ''}`,
+                  text: `任务途中遇到奇遇：${result.story.substring(0, 30)}${result.story.length > 30 ? '...' : ''}`,
                   type: result.eventColor || 'special',
                 });
               }
@@ -142,7 +142,7 @@ const SectTaskModal: React.FC<Props> = ({
 
               if (setItemActionLog) {
                 setItemActionLog({
-                  text: '✨ 任务途中遇到奇遇：你在执行任务时遇到了一些小机缘。',
+                  text: '任务途中遇到奇遇：你在执行任务时遇到了一些小机缘。',
                   type: 'special',
                 });
               }
@@ -167,7 +167,7 @@ const SectTaskModal: React.FC<Props> = ({
 
             if (setItemActionLog) {
               setItemActionLog({
-                text: '✨ 任务途中遇到奇遇：你在执行任务途中遇到了一位宗门前辈，他见你勤勉，随手赐下一番机缘。',
+                text: '任务途中遇到奇遇：你在执行任务途中遇到了一位宗门前辈，他见你勤勉，随手赐下一番机缘。',
                 type: 'special',
               });
             }
@@ -364,7 +364,7 @@ const SectTaskModal: React.FC<Props> = ({
       {stage === 'encounter' && encounterResult && (
         <div className="space-y-4">
           <div className="bg-ink-800 p-4 rounded border border-stone-700">
-            <h4 className="text-lg font-serif text-mystic-gold mb-2">✨ 奇遇事件</h4>
+            <h4 className="text-lg font-serif text-mystic-gold mb-2 flex items-center gap-2"><Sparkles size={16} />奇遇事件</h4>
             <p className="text-stone-300 whitespace-pre-wrap mb-4">{encounterResult.story}</p>
 
             {(encounterResult.expChange !== 0 || encounterResult.spiritStonesChange !== 0 || encounterResult.hpChange !== 0) && (
@@ -399,7 +399,13 @@ const SectTaskModal: React.FC<Props> = ({
         return (
           <div className="space-y-4">
             <div className="text-center">
-              <div className="text-4xl mb-4">{isPerfectCompletion ? '✨' : '✅'}</div>
+              <div className="text-4xl mb-4 flex justify-center">
+                {isPerfectCompletion ? (
+                  <Sparkles size={40} className="text-mystic-gold" />
+                ) : (
+                  <CheckCircle size={40} className="text-emerald-400" />
+                )}
+              </div>
               <p className="text-xl font-serif text-mystic-gold mb-2">
                 {isPerfectCompletion ? '完美完成！' : '任务完成！'}
               </p>

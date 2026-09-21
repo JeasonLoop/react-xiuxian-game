@@ -143,7 +143,7 @@ export function useBattleResultHandler({
                   !prev.cultivationArts.includes(itemData.advancedItemId)) {
                 newUnlockedArts.push(itemData.advancedItemId);
                 hasNewArt = true;
-                addLog(`✨ 你领悟了天地之魄传授的秘法：【${itemData.name}】！`, 'special');
+                addLog(`你领悟了天地之魄传授的秘法：【${itemData.name}】！`, 'special');
               }
             } else {
               // 普通物品进入背包
@@ -194,12 +194,12 @@ export function useBattleResultHandler({
           }
 
           const changeType = favorabilityChange > 0 ? '增加' : '降低';
-          addLog(`✨ 你与【${npcName}】的关系${changeType}了 ${Math.abs(favorabilityChange)} 点！`, favorabilityChange > 0 ? 'gain' : 'danger');
+          addLog(`你与【${npcName}】的关系${changeType}了 ${Math.abs(favorabilityChange)} 点！`, favorabilityChange > 0 ? 'gain' : 'danger');
         }
 
         if (result.karmaChange) {
           const changeType = result.karmaChange > 0 ? '增加' : '减少';
-          addLog(`✨ 你的因果值${changeType}了 ${Math.abs(result.karmaChange)} 点！`, result.karmaChange > 0 ? 'gain' : 'danger');
+          addLog(`你的因果值${changeType}了 ${Math.abs(result.karmaChange)} 点！`, result.karmaChange > 0 ? 'gain' : 'danger');
         }
 
         // 特殊处理：宗主挑战结果
@@ -211,7 +211,7 @@ export function useBattleResultHandler({
         let newDaoCombiningChallenged = prev.daoCombiningChallenged;
         if (result.adventureType === 'dao_combining_challenge' && result.victory) {
           newDaoCombiningChallenged = true;
-          addLog('✨ 你成功挑战了天地之魄，获得了合道期的资格！', 'special');
+          addLog('你成功挑战了天地之魄，获得了合道期的资格！', 'special');
         }
 
         // 处理追杀战斗结果（只有在追杀状态下才处理，正常挑战宗主不在这里处理）
@@ -233,7 +233,7 @@ export function useBattleResultHandler({
               sectName = SECTS.find((s) => s.id === huntSectId)?.name || huntSectId;
             }
 
-            addLog(`🎉 你战胜了【${sectName}】的宗主！宗门上下无不震惊，你正式接管了宗门，成为新一代宗主！`, 'special');
+            addLog(`你战胜了【${sectName}】的宗主！宗门上下无不震惊，你正式接管了宗门，成为新一代宗主！`, 'special');
 
             newSectRank = SectRank.Leader;
             finalSectMasterId = prev.id || 'player-leader';
@@ -269,7 +269,7 @@ export function useBattleResultHandler({
               sectName = sect ? sect.name : huntSectId;
             }
 
-            addLog(`⚠️ 你击杀了【${sectName}】的${levelNames[huntLevel]}！宗门震怒，将派出更强的追杀者！`, 'danger');
+            addLog(`你击杀了【${sectName}】的${levelNames[huntLevel]}！宗门震怒，将派出更强的追杀者！`, 'danger');
 
             return {
               ...prev,

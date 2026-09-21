@@ -13,6 +13,8 @@ import {
   Trash2,
   AlertTriangle,
   Compass,
+  Coins,
+  PawPrint,
 } from 'lucide-react';
 import { PlayerStats, Pet, ItemRarity } from '../types';
 import { PET_TEMPLATES, RARITY_MULTIPLIERS, REALM_ORDER } from '../constants/index';
@@ -69,7 +71,7 @@ const PetModal: React.FC<Props> = ({
   // 获取灵宠图片
   const getPetImage = (pet: Pet) => {
     const template = PET_TEMPLATES.find((t) => t.species === pet.species);
-    return template?.image || '🐾';
+    return template?.image || null;
   };
 
   // 可喂养的物品（所有未装备的物品）
@@ -117,7 +119,7 @@ const PetModal: React.FC<Props> = ({
           {activePet && (
             <div className="bg-stone-900 rounded p-4 border-2 border-yellow-600">
               <div className="flex items-center gap-3 mb-3">
-                <div className="text-4xl">{getPetImage(activePet)}</div>
+                <div className="text-4xl flex items-center justify-center">{getPetImage(activePet) ?? <PawPrint size={36} className="text-stone-500" />}</div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-bold text-yellow-400">
@@ -340,8 +342,9 @@ const PetModal: React.FC<Props> = ({
                   >
                     <Compass size={16} />
                     <span>秘径</span>
-                    <span className="text-yellow-400 text-[10px] ml-1">
-                      💰{Math.floor(3000 + Math.max(0, REALM_ORDER.indexOf(player.realm)) * 4500 + activePet.evolutionStage * 9000)}
+                    <span className="text-yellow-400 text-[10px] ml-1 flex items-center">
+                      <Coins size={12} className="mr-0.5" />
+                      {Math.floor(3000 + Math.max(0, REALM_ORDER.indexOf(player.realm)) * 4500 + activePet.evolutionStage * 9000)}
                     </span>
                   </button>
                 )}
@@ -410,7 +413,7 @@ const PetModal: React.FC<Props> = ({
                     }`}
                   >
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="text-3xl">{getPetImage(pet)}</div>
+                      <div className="text-3xl flex items-center">{getPetImage(pet) ?? <PawPrint size={28} className="text-stone-500" />}</div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
                           <div>
@@ -626,7 +629,7 @@ const PetModal: React.FC<Props> = ({
                         >
                           <Compass size={14} />
                           秘径
-                          <span className="text-yellow-400">💰{Math.floor(3000 + Math.max(0, REALM_ORDER.indexOf(player.realm)) * 4500 + pet.evolutionStage * 9000)}</span>
+                          <span className="text-yellow-400 flex items-center"><Coins size={12} className="mr-0.5" />{Math.floor(3000 + Math.max(0, REALM_ORDER.indexOf(player.realm)) * 4500 + pet.evolutionStage * 9000)}</span>
                         </button>
                       )}
                       {onBatchFeedItems && (
@@ -898,8 +901,9 @@ const PetModal: React.FC<Props> = ({
                       你确定要放生灵宠 <span className="text-red-400 font-bold">【{pet.name}】</span> 吗？
                     </p>
                     {isActive && (
-                      <p className="text-yellow-400 text-sm mb-2">
-                        ⚠️ 注意：这是当前激活的灵宠，放生后将自动取消激活。
+                      <p className="text-yellow-400 text-sm mb-2 flex items-center gap-1">
+                        <AlertTriangle size={14} />
+                        注意：这是当前激活的灵宠，放生后将自动取消激活。
                       </p>
                     )}
                     <div className="bg-stone-900 rounded p-3 mt-3">

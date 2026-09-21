@@ -230,10 +230,10 @@ export function useDeathDetection({
             if (item.id === reviveItem!.id) {
               const newChances = (item.reviveChances || 0) - 1;
               addLog(
-                `💫 ${item.name}的保命之力被触发！你留下一口气，从死亡边缘被拉了回来。剩余保命机会：${newChances}次`,
+                `${item.name}的保命之力被触发！你留下一口气，从死亡边缘被拉了回来。剩余保命机会：${newChances}次`,
                 'special'
               );
-              if (setItemActionLog) setItemActionLog({ text: `💫 ${item.name}的保命之力被触发！你留下一口气，从死亡边缘被拉了回来。剩余保命机会：${newChances}次`, type: 'special' });
+              if (setItemActionLog) setItemActionLog({ text: `${item.name}的保命之力被触发！你留下一口气，从死亡边缘被拉了回来。剩余保命机会：${newChances}次`, type: 'special' });
               return {
                 ...item,
                 reviveChances: newChances,
@@ -250,7 +250,7 @@ export function useDeathDetection({
             (!updatedItem.reviveChances || updatedItem.reviveChances <= 0)
           ) {
             delete newEquippedItems[reviveSlot!];
-            addLog(`⚠️ ${reviveItem!.name}的保命之力已耗尽，自动卸下。`, 'danger');
+            addLog(`${reviveItem!.name}的保命之力已耗尽，自动卸下。`, 'danger');
           }
 
           // 复活：恢复10%最大气血
@@ -342,7 +342,7 @@ export function useDeathDetection({
           }
 
           if (dropMessages.length > 0) {
-            addLog(`💀 死亡惩罚：${dropMessages.join('，')}`, 'danger');
+            addLog(`死亡惩罚：${dropMessages.join('，')}`, 'danger');
           }
 
           // 恢复10%最大气血

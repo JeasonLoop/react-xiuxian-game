@@ -1185,7 +1185,7 @@ const CharacterModal: React.FC<Props> = ({
                       onClick={() => window.dispatchEvent(new CustomEvent('open-rebirth'))}
                       className="w-full mt-2 px-4 py-2 bg-yellow-700/30 hover:bg-yellow-700/50 rounded border border-yellow-600/50 text-yellow-400 text-sm font-bold transition-all"
                     >
-                      🌟 转世重修（元婴期9层可触发）
+                      <Star size={14} className="inline mr-1 -mt-0.5" />转世重修（元婴期9层可触发）
                     </button>
                   </div>
                 ) : (
@@ -2022,7 +2022,7 @@ const CharacterModal: React.FC<Props> = ({
 
                             if (addLog) {
                               if (isCompleted) {
-                                addLog(`✨ 成功炼化【${marrow?.name || '天地之髓'}】！获得全部属性加成！`);
+                                addLog(`成功炼化【${marrow?.name || '天地之髓'}】！获得全部属性加成！`);
                               } else {
                                 addLog(`投喂【${item.name}】，炼化进度 +${progressGain}% (${currentProgress}% → ${newProgress}%)`);
                               }

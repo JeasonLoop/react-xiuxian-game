@@ -171,7 +171,7 @@ export function useBreakthroughHandlers({
         const attributePointsGained = calculateBreakthroughAttributePoints(isRealmUpgrade, targetRealm);
         if (attributePointsGained > 0) {
           addLog(
-            `✨ 突破成功！获得 ${attributePointsGained} 点可分配属性点！`,
+            `突破成功！获得 ${attributePointsGained} 点可分配属性点！`,
             'gain'
           );
         }
@@ -196,7 +196,7 @@ export function useBreakthroughHandlers({
 
         if (lifespanIncrease > 0) {
           addLog(
-            `✨ 突破成功！你的寿命增加了 ${lifespanIncrease} 年！当前寿命：${Math.floor(newLifespan)}/${newMaxLifespan} 年`,
+            `突破成功！你的寿命增加了 ${lifespanIncrease} 年！当前寿命：${Math.floor(newLifespan)}/${newMaxLifespan} 年`,
             'gain'
           );
         }
@@ -206,7 +206,7 @@ export function useBreakthroughHandlers({
           const newFeatures = getNewlyUnlockedFeatures(player.realm, nextRealm);
           if (newFeatures.length > 0) {
             const featureNames = newFeatures.map((f) => f.name).join('、');
-            addLog(`🔓 突破至 ${nextRealm}，解锁新功能：${featureNames}！`, 'special');
+            addLog(`突破至 ${nextRealm}，解锁新功能：${featureNames}！`, 'special');
           }
         }
 
@@ -445,13 +445,13 @@ export function useBreakthroughHandlers({
         }
 
         addLog(
-          `🌟 你使用了传承，连续突破了 ${actualBreakthroughCount} 个境界！获得 ${attributePointsGained} 点属性点！`,
+          `你使用了传承，连续突破了 ${actualBreakthroughCount} 个境界！获得 ${attributePointsGained} 点属性点！`,
           'special'
         );
 
         if (totalLifespanIncrease > 0) {
           addLog(
-            `✨ 传承突破成功！你的寿命增加了 ${totalLifespanIncrease} 年！当前寿命：${Math.floor(newLifespan)}/${newMaxLifespan} 年`,
+            `传承突破成功！你的寿命增加了 ${totalLifespanIncrease} 年！当前寿命：${Math.floor(newLifespan)}/${newMaxLifespan} 年`,
             'gain'
           );
         }

@@ -168,8 +168,8 @@ const handleArtUnlocks = (
       const randomArt = availableArts[artIndex];
       newUnlockedArts.push(randomArt.id);
       artUnlocked = true;
-      triggerVisual('special', `🎉 领悟功法【${randomArt.name}】`, 'special');
-      addLog(`🎉 你领悟了功法【${randomArt.name}】！现在可以在功法阁中学习它了。`, 'special');
+      triggerVisual('special', `领悟功法【${randomArt.name}】`, 'special');
+      addLog(`你领悟了功法【${randomArt.name}】！现在可以在功法阁中学习它了。`, 'special');
     }
   }
 
@@ -237,7 +237,7 @@ const applyResultToPlayer = (
       newPets.push(newPet);
       statistics.petCount += 1;
       const storyHasPet = result.story && /灵兽|灵宠|建立了联系|愿意跟随/.test(result.story);
-      if (!storyHasPet) addLog(`✨ 你获得了灵宠【${newPet.name}】！`, 'special');
+      if (!storyHasPet) addLog(`你获得了灵宠【${newPet.name}】！`, 'special');
     } else if (template) {
       const duplicatePet = newPets.find(p => p.species === template.species);
       if (duplicatePet) {
@@ -288,12 +288,12 @@ const applyResultToPlayer = (
     newState.socialRelations = newSocialRelations;
 
     const changeType = favorabilityChange > 0 ? '增加' : '降低';
-    addLog(`✨ 你与【${npcName}】的关系${changeType}了 ${Math.abs(favorabilityChange)} 点！`, favorabilityChange > 0 ? 'gain' : 'danger');
+    addLog(`你与【${npcName}】的关系${changeType}了 ${Math.abs(favorabilityChange)} 点！`, favorabilityChange > 0 ? 'gain' : 'danger');
   }
 
   if (result.karmaChange) {
     const changeType = result.karmaChange > 0 ? '增加' : '减少';
-    addLog(`✨ 你的因果值${changeType}了 ${Math.abs(result.karmaChange)} 点！`, result.karmaChange > 0 ? 'gain' : 'danger');
+    addLog(`你的因果值${changeType}了 ${Math.abs(result.karmaChange)} 点！`, result.karmaChange > 0 ? 'gain' : 'danger');
   }
 
   // 寿命与灵根
@@ -389,7 +389,7 @@ export async function executeAdventureCore({
           sectName = sect ? sect.name : huntSectId;
         }
 
-        addLog(`🎉 你战胜了【${sectName}】的宗主！宗门上下无不震惊，你正式接管了宗门，成为新一代宗主！`, 'special');
+        addLog(`你战胜了【${sectName}】的宗主！宗门上下无不震惊，你正式接管了宗门，成为新一代宗主！`, 'special');
 
         return {
           ...updatedPlayer,
@@ -413,7 +413,7 @@ export async function executeAdventureCore({
           sectName = sect ? sect.name : huntSectId;
         }
 
-        addLog(`⚠️ 你击杀了【${sectName}】的${levelNames[huntLevel]}！宗门震怒，将派出更强的追杀者！`, 'danger');
+        addLog(`你击杀了【${sectName}】的${levelNames[huntLevel]}！宗门震怒，将派出更强的追杀者！`, 'danger');
 
         return {
           ...updatedPlayer,
@@ -431,10 +431,10 @@ export async function executeAdventureCore({
     if (skipReputationEvent) {
       // 如果配置了跳过声望事件，只记录日志，不触发回调
       const eventTitle = result.reputationEvent.title || result.reputationEvent.text || '神秘事件';
-      addLog(`📜 遇到了事件：${eventTitle}，你选择跳过...`, 'normal');
+      addLog(`遇到了事件：${eventTitle}，你选择跳过...`, 'normal');
     } else if (onReputationEvent) {
       const eventTitle = result.reputationEvent.title || result.reputationEvent.text || '神秘事件';
-      addLog(`📜 遇到了事件：${eventTitle}`, 'special');
+      addLog(`遇到了事件：${eventTitle}`, 'special');
 
       // 测试环境打印调试信息
       if (import.meta.env.DEV) {
@@ -471,14 +471,14 @@ export async function executeAdventureCore({
     if (result.spiritStonesChange) changes.push(`灵石 ${result.spiritStonesChange > 0 ? '+' : ''}${result.spiritStonesChange}`);
     if (result.hpChange) changes.push(`气血 ${result.hpChange > 0 ? '+' : ''}${result.hpChange}`);
     if (changes.length > 0) {
-      addLog(`📊 ${changes.join(' | ')}`, result.eventColor || 'normal');
+      addLog(`${changes.join(' | ')}`, result.eventColor || 'normal');
     }
   }
 
-  if (result.lifespanChange) addLog(result.lifespanChange > 0 ? `✨ 寿命增加 ${result.lifespanChange.toFixed(1)} 年` : `⚠️ 寿命减少 ${Math.abs(result.lifespanChange).toFixed(1)} 年`, result.lifespanChange > 0 ? 'gain' : 'danger');
+  if (result.lifespanChange) addLog(result.lifespanChange > 0 ? `寿命增加 ${result.lifespanChange.toFixed(1)} 年` : `寿命减少 ${Math.abs(result.lifespanChange).toFixed(1)} 年`, result.lifespanChange > 0 ? 'gain' : 'danger');
   if (result.spiritualRootsChange) {
     const names: any = { metal: '金', wood: '木', water: '水', fire: '火', earth: '土' };
-    Object.entries(result.spiritualRootsChange).forEach(([k, v]) => { if (v) addLog(v > 0 ? `✨ ${names[k]}灵根提升 ${v}` : `⚠️ ${names[k]}灵根降低 ${Math.abs(v)}`, v > 0 ? 'gain' : 'danger'); });
+    Object.entries(result.spiritualRootsChange).forEach(([k, v]) => { if (v) addLog(v > 0 ? `${names[k]}灵根提升 ${v}` : `${names[k]}灵根降低 ${Math.abs(v)}`, v > 0 ? 'gain' : 'danger'); });
   }
 
   const items = [...(result.itemsObtained || [])]; if (result.itemObtained) items.push(result.itemObtained);

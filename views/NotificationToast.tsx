@@ -1,4 +1,5 @@
 import React from 'react';
+import { Gift } from 'lucide-react';
 import { LogEntry } from '../types';
 
 interface PurchaseSuccessProps {
@@ -90,7 +91,7 @@ export function LotteryRewardsToast({ rewards, onClose }: LotteryRewardsProps) {
         <div className="bg-stone-800 rounded px-6 py-8 flex flex-col items-center gap-6">
           <div className="relative">
             <div className="absolute inset-0 bg-mystic-gold/20 rounded-full blur-xl animate-pulse" />
-            <div className="relative text-5xl">🎁</div>
+            <div className="relative text-5xl text-mystic-gold"><Gift size={48} /></div>
           </div>
 
           <div className="text-center">

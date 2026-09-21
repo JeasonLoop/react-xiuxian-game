@@ -1228,6 +1228,7 @@ const SECT_SHOP_ITEM_POOL: Array<{ name: string; cost: number; item: Omit<Item, 
   createItemFromConstants('青钢剑', 300) || { name: '青钢剑', cost: 300, item: { name: '青钢剑', type: ItemType.Weapon, description: '青钢锻造的利剑，攻击力不俗。', quantity: 1, rarity: '稀有', isEquippable: true, equipmentSlot: EquipmentSlot.Weapon, effect: { attack: 35, speed: 5 } } },
   // 其他不在常量池的物品保留原样（这些可能是特殊物品，需要后续添加到常量池）
   { name: '强化石', cost: 30, item: { name: '强化石', type: ItemType.Material, description: '用于强化法宝的珍贵材料。', quantity: 1, rarity: '稀有' } },
+  createItemFromConstants('太虚洗炼石', 150) || { name: '太虚洗炼石', cost: 150, item: { name: '太虚洗炼石', type: ItemType.Material, description: '蕴含太虚之力的神秘石头，可用于万宝仙炉洗炼法宝词条。', quantity: 1, rarity: '稀有' } },
   { name: '宗门制式剑', cost: 150, item: { name: '宗门制式剑', type: ItemType.Weapon, description: '宗门统一配发的制式武器，基础攻击力。', quantity: 1, rarity: '普通', isEquippable: true, equipmentSlot: EquipmentSlot.Weapon, effect: { attack: 15 } } },
   { name: '宗门制式甲', cost: 120, item: { name: '宗门制式甲', type: ItemType.Armor, description: '宗门统一配发的制式护甲，基础防御力。', quantity: 1, rarity: '普通', isEquippable: true, equipmentSlot: EquipmentSlot.Chest, effect: { defense: 12, hp: 30 } } },
   { name: '玄铁甲', cost: 400, item: { name: '玄铁甲', type: ItemType.Armor, description: '玄铁打造的护甲，防御力强劲。', quantity: 1, rarity: '稀有', isEquippable: true, equipmentSlot: EquipmentSlot.Chest, effect: { defense: 40, hp: 80 } } },

@@ -173,7 +173,7 @@ export function useAdventureHandlers({
         bossId,
         difficulty,
         onBattleInitialized: (enemyName: string) => {
-          addLog(`⚠️ 你遭遇了【${enemyName}】！战斗即将开始...`, 'danger');
+          addLog(`你遭遇了【${enemyName}】！战斗即将开始...`, 'danger');
           setLoading(false);
         },
       });
@@ -236,7 +236,7 @@ export function useAdventureHandlers({
 
       // 如果被追杀，强制触发追杀战斗（30%概率）
       if (isHunted && huntSectId && Math.random() < 0.11) {
-        addLog('⚠️ 你感受到了一股强烈的杀意！宗门追杀者出现了！', 'danger');
+        addLog('你感受到了一股强烈的杀意！宗门追杀者出现了！', 'danger');
 
         // 使用公共函数处理战斗
         const huntRiskLevel = huntLevel >= 3 ? '极度危险' : huntLevel >= 2 ? '高' : huntLevel >= 1 ? '中' : '低';

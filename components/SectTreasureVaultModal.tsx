@@ -175,7 +175,7 @@ const SectTreasureVaultModal: React.FC<Props> = ({
       footer={footer}
     >
       <div className="mb-4 text-stone-300 text-sm">
-        <p className="mb-2">✨ 这里是宗门历代积累的珍藏，你可以选择一件物品带走。</p>
+        <p className="mb-2 flex items-center gap-1"><Sparkles size={14} className="text-mystic-gold" />这里是宗门历代积累的珍藏，你可以选择一件物品带走。</p>
         <p className="text-stone-400">宝库中的物品品质与你的境界相关，境界越高，获得高品质物品的概率越大。</p>
         {vaultStats.total > 0 && (
           <p className="text-stone-500 text-xs mt-2">
@@ -235,12 +235,12 @@ const SectTreasureVaultModal: React.FC<Props> = ({
 
                 {item.permanentEffect && (
                   <div className="text-xs text-yellow-400 space-y-1 mt-1">
-                    {!!item.permanentEffect.attack && <div>✨ 攻击永久 +{item.permanentEffect.attack}</div>}
-                    {!!item.permanentEffect.defense && <div>✨ 防御永久 +{item.permanentEffect.defense}</div>}
-                    {!!item.permanentEffect.spirit && <div>✨ 神识永久 +{item.permanentEffect.spirit}</div>}
-                    {!!item.permanentEffect.physique && <div>✨ 体魄永久 +{item.permanentEffect.physique}</div>}
-                    {!!item.permanentEffect.speed && <div>✨ 速度永久 +{item.permanentEffect.speed}</div>}
-                    {!!item.permanentEffect.maxHp && <div>✨ 气血上限永久 +{item.permanentEffect.maxHp}</div>}
+                    {!!item.permanentEffect.attack && <div className="flex items-center gap-1"><Sparkles size={12} />攻击永久 +{item.permanentEffect.attack}</div>}
+                    {!!item.permanentEffect.defense && <div className="flex items-center gap-1"><Sparkles size={12} />防御永久 +{item.permanentEffect.defense}</div>}
+                    {!!item.permanentEffect.spirit && <div className="flex items-center gap-1"><Sparkles size={12} />神识永久 +{item.permanentEffect.spirit}</div>}
+                    {!!item.permanentEffect.physique && <div className="flex items-center gap-1"><Sparkles size={12} />体魄永久 +{item.permanentEffect.physique}</div>}
+                    {!!item.permanentEffect.speed && <div className="flex items-center gap-1"><Sparkles size={12} />速度永久 +{item.permanentEffect.speed}</div>}
+                    {!!item.permanentEffect.maxHp && <div className="flex items-center gap-1"><Sparkles size={12} />气血上限永久 +{item.permanentEffect.maxHp}</div>}
                   </div>
                 )}
               </div>

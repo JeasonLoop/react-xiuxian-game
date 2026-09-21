@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import Modal from './common/Modal';
 import { PlayerStats, SectRank, RealmType, Item, AdventureResult } from '../types';
-import { SECTS, SECT_RANK_REQUIREMENTS, REALM_ORDER, SECT_RANK_DATA } from '../constants/index';
+import { SECTS, SECT_RANK_REQUIREMENTS, REALM_ORDER, SECT_RANK_DATA, SECT_RANK_STAT_BONUS, SECT_TASK_REFRESH_COST, SECT_TRAINING_ROOM, SECT_LEADER_SALARY } from '../constants/index';
+import { useGameStore } from '../store/gameStore';
+import { showConfirm, showError, showSuccess } from '../utils/toastUtils';
 import { generateRandomSects, generateRandomSectTasks, generateSectShopItems, RandomSectTask } from '../services/randomService';
-import { X, Users, ShoppingBag, Shield, Scroll, ArrowUp, RefreshCw, BookOpen } from 'lucide-react';
+import { X, Users, ShoppingBag, Shield, Scroll, ArrowUp, RefreshCw, BookOpen, Sparkles, Crown, Flame, Star, Zap, Lightbulb } from 'lucide-react';
 import SectTaskModal from './SectTaskModal';
-import { showConfirm } from '../utils/toastUtils';
 import { CULTIVATION_ARTS } from '../constants/cultivation';
 import { CultivationArt } from '../types';
 
@@ -111,6 +112,71 @@ const SectModal: React.FC<Props> = ({
 
   const handleRefresh = () => {
     setRefreshKey((prev) => prev + 1);
+  };
+
+  // 刷新任务列表消耗灵石，防止无限刷高品质任务
+  const handleRefreshTasks = () => {
+    const cost = SECT_TASK_REFRESH_COST;
+    if (player.spiritStones < cost) {
+      showError(`刷新任务列表需 ${cost} 灵石，灵石不足！`);
+      return;
+    }
+    useGameStore.getState().setPlayer((prev) => ({
+      ...prev,
+      spiritStones: prev.spiritStones - cost,
+    }));
+    setRefreshKey((prev) => prev + 1);
+  };
+
+  // 租用宗门修炼室：消耗贡献，限时提升修炼效率
+  const trainingRoomCost =
+    SECT_TRAINING_ROOM.baseCost +
+    SECT_TRAINING_ROOM.costPerRealm * REALM_ORDER.indexOf(player.realm);
+  const trainingActive =
+    !!player.sectTraining && Date.now() < player.sectTraining.endTime;
+
+  const handleRentTrainingRoom = () => {
+    if (!player.sectId) return;
+    if (trainingActive) {
+      showError('你已在修炼室闭关中，无需重复租用！');
+      return;
+    }
+    if (player.sectContribution < trainingRoomCost) {
+      showError(`租用修炼室需 ${trainingRoomCost} 贡献，贡献不足！`);
+      return;
+    }
+    useGameStore.getState().setPlayer((prev) => ({
+      ...prev,
+      sectContribution: prev.sectContribution - trainingRoomCost,
+      sectTraining: {
+        endTime: Date.now() + SECT_TRAINING_ROOM.durationHours * 60 * 60 * 1000,
+        expRateBonus: SECT_TRAINING_ROOM.expRateBonus,
+      },
+    }));
+    showSuccess(
+      `已入住宗门修炼室！${SECT_TRAINING_ROOM.durationHours} 小时内修炼效率 +${Math.round(SECT_TRAINING_ROOM.expRateBonus * 100)}%。`
+    );
+  };
+
+  // 宗主领取每日俸禄
+  const todayStr = new Date().toISOString().split('T')[0];
+  const canClaimSalary =
+    player.sectRank === SectRank.Leader && player.leaderSalaryDate !== todayStr;
+
+  const handleClaimSalary = () => {
+    if (!canClaimSalary) return;
+    const realmIndex = REALM_ORDER.indexOf(player.realm);
+    const stones = SECT_LEADER_SALARY.baseSpiritStones * (realmIndex + 1);
+    useGameStore.getState().setPlayer((prev) => ({
+      ...prev,
+      spiritStones: prev.spiritStones + stones,
+      sectContribution: prev.sectContribution + SECT_LEADER_SALARY.contribution,
+      leaderSalaryDate: todayStr,
+    }));
+    useGameStore.getState().addLog(
+      `你以宗主之名开库放粮，领取今日俸禄：${stones.toLocaleString()} 灵石、${SECT_LEADER_SALARY.contribution} 贡献。`,
+      'special'
+    );
   };
 
   // 藏宝阁刷新处理
@@ -276,6 +342,15 @@ const SectModal: React.FC<Props> = ({
                 <Shield size={10} className="text-blue-400" />
                 {SECT_RANK_DATA[player.sectRank]?.title || player.sectRank}
               </span>
+              {(() => {
+                const rankBonus = SECT_RANK_STAT_BONUS[player.sectRank];
+                if (!rankBonus || rankBonus.attackPercent <= 0) return null;
+                return (
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-900/40 text-emerald-300 border border-emerald-700/50">
+                    气运加持 攻/防/血 +{Math.round(rankBonus.attackPercent * 100)}%
+                  </span>
+                );
+              })()}
             </div>
             <div className="text-[10px] md:text-xs text-stone-400">
               宗门贡献:{' '}
@@ -293,12 +368,12 @@ const SectModal: React.FC<Props> = ({
         titleExtra={
           activeTab === 'mission' && (
             <button
-              onClick={handleRefresh}
+              onClick={handleRefreshTasks}
               className="px-2.5 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded text-xs flex items-center gap-1 transition-colors mr-2"
-              title="刷新任务列表"
+              title={`刷新任务列表（${SECT_TASK_REFRESH_COST} 灵石）`}
             >
               <RefreshCw size={14} />
-              <span className="hidden sm:inline">刷新</span>
+              <span className="hidden sm:inline">刷新（{SECT_TASK_REFRESH_COST}灵石）</span>
             </button>
           )
         }
@@ -413,9 +488,11 @@ const SectModal: React.FC<Props> = ({
                         </p>
                         <button
                           onClick={onChallengeLeader}
-                          className="w-full py-3 bg-red-900/30 text-red-400 border border-red-900 hover:bg-red-900/50 rounded font-serif text-base transition-all animate-pulse"
+                          className="w-full py-3 bg-red-900/30 text-red-400 border border-red-900 hover:bg-red-900/50 rounded font-serif text-base transition-all animate-pulse flex items-center justify-center gap-2"
                         >
-                          🔥 挑战宗主 🔥
+                          <Flame size={16} />
+                          挑战宗主
+                          <Flame size={16} />
                         </button>
                       </div>
                     )}
@@ -427,8 +504,19 @@ const SectModal: React.FC<Props> = ({
                             <h5 className="text-mystic-gold font-bold mb-2">宗主特权</h5>
                             <ul className="text-xs text-stone-400 text-left space-y-1 list-disc list-inside">
                               <li>藏宝阁兑换享受 <span className="text-mystic-gold">5折</span> 优惠</li>
+                              <li>每日可领取宗主俸祿：{SECT_LEADER_SALARY.baseSpiritStones} 灵石 + {SECT_LEADER_SALARY.contribution} 贡献</li>
                               <li>后续将解锁更多宗门管理功能...</li>
                             </ul>
+                            {canClaimSalary ? (
+                              <button
+                                onClick={handleClaimSalary}
+                                className="mt-3 w-full py-2 rounded font-serif text-sm bg-mystic-gold/20 text-mystic-gold border border-mystic-gold hover:bg-mystic-gold/30 transition-colors flex items-center justify-center gap-2"
+                              >
+                                <Crown size={14} /> 领取今日俸祿
+                              </button>
+                            ) : (
+                              <p className="mt-3 text-center text-xs text-stone-500">今日俸祿已领取，明日再来。</p>
+                            )}
                           </div>
                         </div>
                       ) : '你已位极人臣，乃宗门之中流砥柱。'}
@@ -436,6 +524,39 @@ const SectModal: React.FC<Props> = ({
                   </div>
                 )}
               </div>
+
+              {/* 宗门修炼室 */}
+              {player.sectId && (
+                <div className="bg-ink-800 p-4 rounded border border-stone-700">
+                  <h4 className="font-serif text-lg text-stone-200 mb-2 border-b border-stone-700 pb-2">
+                    宗门修炼室
+                  </h4>
+                  {trainingActive && player.sectTraining ? (
+                    <div>
+                      <p className="text-sm text-mystic-jade mb-2">
+                        闭关中 · 修炼速度 +{Math.round(SECT_TRAINING_ROOM.expRateBonus * 100)}%
+                      </p>
+                      <p className="text-xs text-stone-500">
+                        效果持续至：{new Date(player.sectTraining.endTime).toLocaleString()}
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-sm text-stone-400 mb-4">
+                        在宗门灵脉汇聚之地闭关修炼，修炼速度提升
+                        <span className="text-mystic-gold"> {Math.round(SECT_TRAINING_ROOM.expRateBonus * 100)}%</span>
+                        ，持续 {SECT_TRAINING_ROOM.durationHours} 小时。
+                      </p>
+                      <button
+                        onClick={handleRentTrainingRoom}
+                        className="w-full py-2 rounded font-serif text-sm bg-mystic-jade/20 text-mystic-jade border border-mystic-jade hover:bg-mystic-jade/30 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Sparkles size={16} /> 入驻修炼室（{trainingRoomCost} 贡献）
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="bg-ink-800 p-4 rounded border border-stone-700">
                 <h4 className="font-serif text-lg text-stone-200 mb-2 border-b border-stone-700 pb-2">
@@ -503,12 +624,12 @@ const SectModal: React.FC<Props> = ({
                     ))}
                   </select>
                   <button
-                    onClick={handleRefresh}
+                    onClick={handleRefreshTasks}
                     className="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-stone-200 border border-stone-600 rounded text-sm flex items-center gap-1.5 transition-colors"
-                    title="刷新任务列表"
+                    title={`刷新任务列表（${SECT_TASK_REFRESH_COST} 灵石）`}
                   >
                     <RefreshCw size={16} />
-                    <span>刷新</span>
+                    <span>刷新（{SECT_TASK_REFRESH_COST}灵石）</span>
                   </button>
                 </div>
               </div>
@@ -609,8 +730,9 @@ const SectModal: React.FC<Props> = ({
                         <h4 className="font-serif font-bold text-stone-200 flex-1">
                           {task.name}
                           {task.isDailySpecial && (
-                            <span className="text-xs text-yellow-400 ml-2 animate-pulse">
-                              ⭐ 每日特殊
+                            <span className="text-xs text-yellow-400 ml-2 animate-pulse flex items-center gap-1">
+                              <Star size={12} />
+                              每日特殊
                             </span>
                           )}
                         </h4>
@@ -690,8 +812,9 @@ const SectModal: React.FC<Props> = ({
                           </div>
                         )}
                         {task.typeBonus && player.lastCompletedTaskType === task.type && (
-                          <div className="text-xs text-green-400 font-bold">
-                            ⚡ 连续完成加成: +{task.typeBonus}%
+                          <div className="text-xs text-green-400 font-bold flex items-center gap-1">
+                            <Zap size={12} />
+                            连续完成加成: +{task.typeBonus}%
                           </div>
                         )}
                         {task.recommendedFor && (() => {
@@ -709,8 +832,9 @@ const SectModal: React.FC<Props> = ({
                             recommendations.push('适合高速度');
                           }
                           return recommendations.length > 0 ? (
-                            <div className="text-xs text-blue-400">
-                              💡 推荐: {recommendations.join('、')}
+                            <div className="text-xs text-blue-400 flex items-center gap-1">
+                              <Lightbulb size={12} />
+                              推荐: {recommendations.join('、')}
                             </div>
                           ) : null;
                         })()}

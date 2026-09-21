@@ -158,7 +158,7 @@ export function useAchievementHandlers({
             }
           }
 
-          addLog(`🎉 达成成就：【${achievement.name}】！`, 'special');
+          addLog(`达成成就：【${achievement.name}】！`, 'special');
         }
       });
 
@@ -207,7 +207,7 @@ export function useAchievementHandlers({
           speed: prev.speed + (newEffects.speed - oldEffects.speed),
           luck: prev.luck + (newEffects.luck - oldEffects.luck),
         };
-        addLog(`✨ 已自动为你装备新称号：【${TITLES.find(t => t.id === finalTitleId)?.name}】！`, 'special');
+        addLog(`已自动为你装备新称号：【${TITLES.find(t => t.id === finalTitleId)?.name}】！`, 'special');
       } else if (newlyUnlockedTitles.length > 0) {
         // 即使没有自动装备，如果解锁了新称号且满足套装效果，属性也会变化
         const oldEffects = calculateTitleEffects(prev.titleId, prev.unlockedTitles || []);
@@ -233,7 +233,7 @@ export function useAchievementHandlers({
             speed: prev.speed + (newEffects.speed - oldEffects.speed),
             luck: prev.luck + (newEffects.luck - oldEffects.luck),
           };
-          addLog(`✨ 解锁新称号触发了称号套装效果，实力获得了提升！`, 'special');
+          addLog(`解锁新称号触发了称号套装效果，实力获得了提升！`, 'special');
         }
       }
 

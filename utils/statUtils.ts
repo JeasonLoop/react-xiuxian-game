@@ -1,5 +1,7 @@
 import { PlayerStats, CultivationArt } from '../types';
 import { CULTIVATION_ARTS, TALENTS, TITLES, calculateSpiritualRootArtBonus, getActiveSynergies, calculateSynergyEffects } from '../constants/index';
+import { ALCHEMY_LEVEL_STAT_BONUS } from '../constants/items';
+import { SECT_RANK_STAT_BONUS } from '../constants/sects';
 import { getGoldenCoreBonusMultiplier } from './cultivationUtils';
 import { getItemStats } from './itemUtils';
 import { calculateTitleEffects } from './titleUtils';
@@ -154,6 +156,7 @@ export function calculateTotalExpRate(player: PlayerStats): {
   grotto: number;
   synergy: number;
   npc: number;
+  sect: number;
   spiritualRootBonus: number;
 } {
   let artBonus = 0;
@@ -218,10 +221,16 @@ export function calculateTotalExpRate(player: PlayerStats): {
     }
   }
 
-  // 总加成 = (1 + 心法 * 灵根) * (1 + 天赋) * (1 + 称号) * (1 + 洞府) * (1 + 羁绊) * (1 + 关系) - 1
+  // 7. 宗门修炼室加成（租用中才生效，过期忽略）
+  let sectBonus = 0;
+  if (player.sectTraining && Date.now() < player.sectTraining.endTime) {
+    sectBonus = player.sectTraining.expRateBonus;
+  }
+
+  // 总加成 = (1 + 心法 * 灵根) * (1 + 天赋) * (1 + 称号) * (1 + 洞府) * (1 + 羁绊) * (1 + 关系) * (1 + 宗门修炼室) - 1
   // 注意：这里的计算逻辑应与 useMeditationHandlers.ts 保持一致
   // 目前 useMeditationHandlers.ts 中的逻辑是连乘，且灵根仅作用于心法的 expRate
-  const totalMultiplier = (1 + artBonus * spiritualRootBonus) * (1 + talentBonus) * (1 + titleBonus) * (1 + grottoBonus) * (1 + synergyBonus) * (1 + npcExpBonus);
+  const totalMultiplier = (1 + artBonus * spiritualRootBonus) * (1 + talentBonus) * (1 + titleBonus) * (1 + grottoBonus) * (1 + synergyBonus) * (1 + npcExpBonus) * (1 + sectBonus);
 
   return {
     total: totalMultiplier - 1,
@@ -231,6 +240,7 @@ export function calculateTotalExpRate(player: PlayerStats): {
     grotto: grottoBonus,
     synergy: synergyBonus,
     npc: npcExpBonus,
+    sect: sectBonus,
     spiritualRootBonus,
   };
 }
@@ -332,6 +342,24 @@ export const getPlayerTotalStats = (player: PlayerStats): {
           stats.maxHp += Math.floor(player.maxHp * affix.value);
         }
       }
+    }
+  }
+
+  // 5. 炼丹等级常驻被动：丹道淬体，每级+2%攻/防/血
+  const alchemyBonus = (player.alchemyLevel || 0) * ALCHEMY_LEVEL_STAT_BONUS;
+  if (alchemyBonus > 0) {
+    stats.attack += Math.floor(player.attack * alchemyBonus);
+    stats.defense += Math.floor(player.defense * alchemyBonus);
+    stats.maxHp += Math.floor(player.maxHp * alchemyBonus);
+  }
+
+  // 6. 宗门职位常驻被动：宗门气运加持
+  if (player.sectId && player.sectRank) {
+    const rankBonus = SECT_RANK_STAT_BONUS[player.sectRank];
+    if (rankBonus) {
+      stats.attack += Math.floor(player.attack * rankBonus.attackPercent);
+      stats.defense += Math.floor(player.defense * rankBonus.defensePercent);
+      stats.maxHp += Math.floor(player.maxHp * rankBonus.hpPercent);
     }
   }
 

@@ -716,6 +716,9 @@ export const ALCHEMY_SUCCESS_BASE: Record<ItemRarity, number> = {
 // 每级炼丹等级提供的成功率加成
 export const ALCHEMY_LEVEL_SUCCESS_BONUS = 0.05; // 每级+5%成功率
 
+// 炼丹等级带来的常驻被动属性加成（每级攻/防/血百分比），体现丹道对人物成长的反哺
+export const ALCHEMY_LEVEL_STAT_BONUS = 0.02; // 每级+2%攻击/防御/气血上限
+
 // 炼丹品质概率（目前先预留，后续可扩展品质分级）
 // 失败产物：废丹
 export const FAILED_ALCHEMY_RESULT = {

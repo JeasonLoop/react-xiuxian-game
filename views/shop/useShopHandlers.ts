@@ -158,7 +158,7 @@ export function useShopHandlers(
 
         if (selectedItem && advancedItemType) {
           addLog(
-            `✨ 你花费 ${totalPrice} 灵石购买了【${selectedItem.name}】！这是突破的关键物品！`,
+            `你花费 ${totalPrice} 灵石购买了【${selectedItem.name}】！这是突破的关键物品！`,
             'special'
           );
           setPurchaseSuccess({ item: selectedItem.name, quantity: 1 });
@@ -219,7 +219,7 @@ export function useShopHandlers(
         return prev;
       }
       if (item.locked) {
-        addLog(`🔒 【${item.name}】已锁定，无法出售！`, 'danger');
+        addLog(`【${item.name}】已锁定，无法出售！`, 'danger');
         return prev;
       }
 

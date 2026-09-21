@@ -148,7 +148,7 @@ export function applyOfflineEarnings(
  */
 export function getOfflineEarningsLog(earnings: OfflineEarnings): string {
   const parts: string[] = [];
-  parts.push(`💤 你离线修炼了 ${earnings.elapsedText}`);
+  parts.push(`你离线修炼了 ${earnings.elapsedText}`);
 
   if (earnings.meditationExp > 0) {
     parts.push(`获得 ${earnings.meditationExp} 修为`);

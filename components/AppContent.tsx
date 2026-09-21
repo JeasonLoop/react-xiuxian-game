@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { PlayerStats, TribulationState, LogEntry } from '../types';
 import type { BattleReplay } from '../services/battleService';
+import { AlertTriangle } from 'lucide-react';
 import TribulationModal from './TribulationModal';
 import DeathModal from './DeathModal';
 import DungeonModal from './DungeonModal';
@@ -270,7 +271,7 @@ export function AppContent(props: AppContentProps) {
       };
     });
     
-    useGameStore.getState().addLog(`🌟 你抛弃凡躯，转世重修！第 ${nextLevel} 次转世，全属性 +${Math.round(bonuses.statBonus * 100)}%，修炼速度 +${Math.round(bonuses.expBonus * 100)}%`, 'special');
+    useGameStore.getState().addLog(`你抛弃凡躯，转世重修！第 ${nextLevel} 次转世，全属性 +${Math.round(bonuses.statBonus * 100)}%，修炼速度 +${Math.round(bonuses.expBonus * 100)}%`, 'special');
     setIsRebirthOpen(false);
   };
 
@@ -418,8 +419,9 @@ export function AppContent(props: AppContentProps) {
       {player && !isDead && player.lifespan < Math.max(5, (player.maxLifespan || 100) * 0.1) && (
         <>
           <div className="lifespan-warning" />
-          <div className="lifespan-warning-text animate-pulse">
-            ⚠️ 寿元将尽 (剩余 {player.lifespan.toFixed(1)} 年)
+          <div className="lifespan-warning-text animate-pulse flex items-center gap-1">
+            <AlertTriangle size={16} className="shrink-0" />
+            <span>寿元将尽 (剩余 {player.lifespan.toFixed(1)} 年)</span>
           </div>
         </>
       )}

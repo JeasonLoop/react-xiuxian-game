@@ -4,7 +4,7 @@
  */
 import React, { useState, useEffect, useCallback } from 'react';
 import { Modal } from './common';
-import { Trophy, Swords, Coins, RefreshCw } from 'lucide-react';
+import { Trophy, Swords, Coins, RefreshCw, Medal, Gem } from 'lucide-react';
 import { API_URL } from '../constants/api';
 import { useAuthStore } from '../store/authStore';
 
@@ -261,7 +261,7 @@ const LeaderboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
                   <div className={`w-10 text-center font-bold text-lg ${badge.text}`}>
                     {entry.rank <= 3 ? (
                       <span className="text-xl">
-                        {entry.rank === 1 ? '🥇' : entry.rank === 2 ? '🥈' : '🥉'}
+                        {entry.rank === 1 ? <Medal size={20} className="text-yellow-400" /> : entry.rank === 2 ? <Medal size={20} className="text-stone-300" /> : <Medal size={20} className="text-amber-600" />}
                       </span>
                     ) : (
                       entry.rank
@@ -289,7 +289,7 @@ const LeaderboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
                   )}
                   {sortBy === 'stones' && (
                     <div className="text-right text-sm">
-                      <div className="text-cyan-400/80">{formatNumber(entry.spirit_stones)} 💎</div>
+                      <div className="text-cyan-400/80 flex items-center justify-end gap-1">{formatNumber(entry.spirit_stones)} <Gem size={14} className="shrink-0" /></div>
                     </div>
                   )}
 

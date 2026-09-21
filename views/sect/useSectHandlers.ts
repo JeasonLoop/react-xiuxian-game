@@ -383,12 +383,16 @@ export function useSectHandlers({
       const req = SECT_RANK_REQUIREMENTS[nextRank];
       if (prev.sectContribution < req.contribution) return prev;
 
-      // 从常量中获取奖励
+      // 从常量中获取奖励（按当前境界缩放，避免后期晋升奖励过时）
       const baseReward = SECT_PROMOTION_BASE_REWARDS[nextRank];
+      const realmMult = REALM_ORDER.indexOf(prev.realm) + 1;
       const specialReward = SECT_SPECIAL_REWARDS[prev.sectId || '']?.[nextRank] || { items: [] };
 
       const reward = {
         ...baseReward,
+        exp: baseReward.exp * realmMult,
+        spiritStones: baseReward.spiritStones * realmMult,
+        contribution: baseReward.contribution * realmMult,
         items: specialReward.items,
       };
 
@@ -500,6 +504,13 @@ export function useSectHandlers({
       if (prev.sectRank !== SectRank.Elder) return prev;
 
       const baseReward = SECT_PROMOTION_BASE_REWARDS[SectRank.Leader];
+      const realmMult = REALM_ORDER.indexOf(prev.realm) + 1;
+      const reward = {
+        ...baseReward,
+        exp: baseReward.exp * realmMult,
+        spiritStones: baseReward.spiritStones * realmMult,
+        contribution: baseReward.contribution * realmMult,
+      };
       const specialReward = SECT_SPECIAL_REWARDS[prev.sectId || '']?.[SectRank.Leader] || { items: [] };
 
       let updatedInventory = [...prev.inventory];
@@ -514,15 +525,15 @@ export function useSectHandlers({
       }
 
       logMessage(`恭喜！你通过了考验，正式接管宗门，成为新一代【宗主】！`, 'special');
-      logMessage(`获得接任奖励：${baseReward.exp} 修为、${baseReward.spiritStones} 灵石、${baseReward.contribution} 宗门贡献。`, 'gain');
+      logMessage(`获得接任奖励：${reward.exp} 修为、${reward.spiritStones} 灵石、${reward.contribution} 宗门贡献。`, 'gain');
 
       return {
         ...prev,
         sectRank: SectRank.Leader,
         sectMasterId: prev.id || 'player-leader', // 设置为玩家自己的ID
-        exp: prev.exp + baseReward.exp,
-        spiritStones: prev.spiritStones + baseReward.spiritStones,
-        sectContribution: prev.sectContribution + baseReward.contribution,
+        exp: prev.exp + reward.exp,
+        spiritStones: prev.spiritStones + reward.spiritStones,
+        sectContribution: prev.sectContribution + reward.contribution,
         inventory: updatedInventory,
       };
     });

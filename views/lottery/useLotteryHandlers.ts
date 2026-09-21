@@ -299,7 +299,7 @@ export function useLotteryHandlers(
                   longevityRule: '规则之力',
                 };
                 const typeName = typeNames[item.advancedItemType] || '进阶物品';
-                addLog(`✨ 获得${typeName}【${item.name}】！`, 'special');
+                addLog(`获得${typeName}【${item.name}】！`, 'special');
               }
             } else {
               // 其他进阶物品直接添加
@@ -320,7 +320,7 @@ export function useLotteryHandlers(
                 longevityRule: '规则之力',
               };
               const typeName = typeNames[item.advancedItemType] || '进阶物品';
-              addLog(`✨ 获得${typeName}【${item.name}】！`, 'special');
+              addLog(`获得${typeName}【${item.name}】！`, 'special');
             }
           } else {
             // 普通物品

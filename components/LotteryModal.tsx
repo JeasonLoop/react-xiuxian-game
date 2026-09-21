@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Gift, Sparkles } from 'lucide-react';
+import { Gift, Sparkles, Lightbulb } from 'lucide-react';
 import { PlayerStats, LotteryPrize, ItemRarity } from '../types';
 import { LOTTERY_PRIZES } from '../constants/index';
 import { showError } from '../utils/toastUtils';
@@ -342,8 +342,9 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
                 );
               })}
             </div>
-            <div className="mt-4 text-xs text-stone-500 text-center">
-              💡 十连抽必出稀有以上品质
+            <div className="mt-4 text-xs text-stone-500 text-center flex items-center justify-center gap-1">
+              <Lightbulb size={14} className="inline" />
+              十连抽必出稀有以上品质
             </div>
           </div>
         </div>

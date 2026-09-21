@@ -185,8 +185,9 @@ const BatchReleaseModal: React.FC<Props> = ({
                 你确定要放生 <span className="text-red-400 font-bold">{selectedPets.size}</span> 只灵宠吗？
               </p>
               {includesActivePet && (
-                <p className="text-yellow-400 text-sm mb-2">
-                  ⚠️ 注意：其中包含当前激活的灵宠，放生后将自动取消激活。
+                <p className="text-yellow-400 text-sm mb-2 flex items-center gap-1">
+                  <AlertTriangle size={14} className="shrink-0" />
+                  <span>注意：其中包含当前激活的灵宠，放生后将自动取消激活。</span>
                 </p>
               )}
               <div className="bg-stone-900 rounded p-3 mt-3">

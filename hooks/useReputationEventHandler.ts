@@ -43,7 +43,7 @@ function formatOutcomeRatingLine(choice: ReputationChoice): string {
       net > 25 ? '收益可观' : net > 0 ? '尚可接受' : '得失参半';
   }
 
-  return `📊 结果评级：${grade}${parts.length ? '｜' + parts.join('，') : ''}`;
+  return `结果评级：${grade}${parts.length ? '｜' + parts.join('，') : ''}`;
 }
 
 interface UseReputationEventHandlerProps {
@@ -83,11 +83,11 @@ export function useReputationEventHandler({
 
       if (choice.riskTag) {
         addLog(
-          `📍 抉择反馈【${choice.riskTag}】：你选择了「${choice.text}」`,
+          `抉择反馈【${choice.riskTag}】：你选择了「${choice.text}」`,
           'normal'
         );
       } else {
-        addLog(`📍 抉择：你选择了「${choice.text}」`, 'normal');
+        addLog(`抉择：你选择了「${choice.text}」`, 'normal');
       }
 
       setPlayer((prev) => {
@@ -123,12 +123,12 @@ export function useReputationEventHandler({
           }
 
           const changeType = favorabilityChange > 0 ? '增加' : '降低';
-          addLog(`✨ 你与【${npcName}】的关系${changeType}了 ${Math.abs(favorabilityChange)} 点！`, favorabilityChange > 0 ? 'gain' : 'danger');
+          addLog(`你与【${npcName}】的关系${changeType}了 ${Math.abs(favorabilityChange)} 点！`, favorabilityChange > 0 ? 'gain' : 'danger');
         }
 
         if (choice.karmaChange) {
           const changeType = choice.karmaChange > 0 ? '增加' : '减少';
-          addLog(`✨ 你的因果值${changeType}了 ${Math.abs(choice.karmaChange)} 点！`, choice.karmaChange > 0 ? 'gain' : 'danger');
+          addLog(`你的因果值${changeType}了 ${Math.abs(choice.karmaChange)} 点！`, choice.karmaChange > 0 ? 'gain' : 'danger');
         }
 
         if (choice.hpChange !== undefined) {
@@ -148,12 +148,12 @@ export function useReputationEventHandler({
 
         if (choice.reputationChange > 0) {
           addLog(
-            `✨ 你的声望增加了 ${choice.reputationChange} 点！当前声望：${newReputation}`,
+            `你的声望增加了 ${choice.reputationChange} 点！当前声望：${newReputation}`,
             'gain'
           );
         } else if (choice.reputationChange < 0) {
           addLog(
-            `⚠️ 你的声望减少了 ${Math.abs(choice.reputationChange)} 点！当前声望：${newReputation}`,
+            `你的声望减少了 ${Math.abs(choice.reputationChange)} 点！当前声望：${newReputation}`,
             'danger'
           );
         }

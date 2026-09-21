@@ -162,7 +162,7 @@ export function fuseCustomSpell(
     success: true,
     spell: newSpell,
     updatedPlayer,
-    message: `✨ 道法归一，神念通达！你成功自创神通【${newSpell.name}】！`,
+    message: `道法归一，神念通达！你成功自创神通【${newSpell.name}】！`,
   };
 }
 
@@ -220,7 +220,7 @@ export function upgradeCustomSpell(
   return {
     success: true,
     updatedPlayer,
-    message: `⚡ 神通突破！【${targetSpell.name}】晋升至第 ${nextLevel} 重，威能大幅激增！`,
+    message: `神通突破！【${targetSpell.name}】晋升至第 ${nextLevel} 重，威能大幅激增！`,
   };
 }
 
@@ -248,7 +248,7 @@ export function forgetCustomSpell(
   return {
     success: true,
     updatedPlayer,
-    message: `💨 你斩断神念因果，遗忘了神通【${targetSpell.name}】，返还散功灵石 ${refundStones.toLocaleString()}！`,
+    message: `你斩断神念因果，遗忘了神通【${targetSpell.name}】，返还散功灵石 ${refundStones.toLocaleString()}！`,
   };
 }
 
