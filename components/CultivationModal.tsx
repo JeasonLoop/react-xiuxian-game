@@ -6,6 +6,7 @@ import { Modal } from './common';
 import { CUSTOM_SPELL_CONFIG, getCustomSpellMaxSlots, getCustomSpellUpgradeCost } from '../constants/customSpell';
 import { fuseCustomSpell, upgradeCustomSpell, forgetCustomSpell } from '../services/customSpellService';
 import { useGameStore } from '../store/gameStore';
+import { showError, showWarning } from '../utils/toastUtils';
 
 interface Props {
   isOpen: boolean;
@@ -195,6 +196,8 @@ const CultivationModal: React.FC<Props> = ({
     if (!latest) return false;
     const { success, updatedPlayer, message } = op(latest);
     if (success === false) {
+      // 条件不足时给出显眼的弹窗提示（境界/灵石/槽位/功法选择等），同时记录日志
+      showError(message, '无法融汇');
       useGameStore.getState().addLog(message, 'danger');
       return false;
     }
@@ -638,6 +641,15 @@ const CultivationModal: React.FC<Props> = ({
 
                       <button
                         onClick={() => {
+                          // 未选择功法时给出明确提示（原来按钮禁用点击无反馈）
+                          if (!selectedArt1 || !selectedArt2) {
+                            showWarning('请先选择两门已习得的功法，再进行道蕴融汇！', '请选择功法');
+                            return;
+                          }
+                          if (selectedArt1 === selectedArt2) {
+                            showWarning('道蕴相冲！必须选择两门不同的功法进行融汇。', '功法重复');
+                            return;
+                          }
                           const fused = applyCustomSpellOp((latest) =>
                             fuseCustomSpell(latest, selectedArt1, selectedArt2, customSpellNameInput)
                           );
@@ -647,11 +659,10 @@ const CultivationModal: React.FC<Props> = ({
                             setCustomSpellNameInput('');
                           }
                         }}
-                        disabled={!selectedArt1 || !selectedArt2 || selectedArt1 === selectedArt2}
-                        className={`px-5 py-2 rounded font-bold text-xs flex items-center gap-1.5 transition-all ${
+                        className={`px-5 py-2 rounded font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
                           selectedArt1 && selectedArt2 && selectedArt1 !== selectedArt2
-                            ? 'bg-amber-600 hover:bg-amber-500 text-stone-950 shadow-md shadow-amber-950/50 cursor-pointer'
-                            : 'bg-stone-800 text-stone-500 border border-stone-700 cursor-not-allowed'
+                            ? 'bg-amber-600 hover:bg-amber-500 text-stone-950 shadow-md shadow-amber-950/50'
+                            : 'bg-stone-800 text-stone-300 border border-stone-700 hover:bg-stone-700'
                         }`}
                       >
                         <Sparkles size={14} />

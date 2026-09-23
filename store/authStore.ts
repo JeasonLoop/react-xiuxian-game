@@ -10,6 +10,7 @@ const AUTH_REFRESH_TOKEN_KEY = 'auth_refresh_token';
 const AUTH_USER_KEY = 'auth_user';
 
 interface AuthState {
+  sessionId: number;
   token: string | null;
   refreshToken: string | null;
   user: User | null;
@@ -33,6 +34,7 @@ function getStoredUser(): User | null {
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
+  sessionId: 0,
   token: localStorage.getItem(AUTH_TOKEN_KEY),
   refreshToken: localStorage.getItem(AUTH_REFRESH_TOKEN_KEY),
   user: getStoredUser(),
@@ -43,7 +45,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.setItem(AUTH_TOKEN_KEY, token);
     localStorage.setItem(AUTH_REFRESH_TOKEN_KEY, refreshToken);
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user));
-    set({ token, refreshToken, user, isAuthenticated: true });
+    set((state) => ({ token, refreshToken, user, isAuthenticated: true, sessionId: state.sessionId + 1 }));
   },
 
   setTokens: (token: string, refreshToken: string) => {
@@ -58,6 +60,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(AUTH_REFRESH_TOKEN_KEY);
     localStorage.removeItem(AUTH_USER_KEY);
-    set({ token: null, refreshToken: null, user: null, isAuthenticated: false, skipWelcomeAfterLogin: false });
+    set((state) => ({ token: null, refreshToken: null, user: null, isAuthenticated: false, skipWelcomeAfterLogin: false, sessionId: state.sessionId + 1 }));
   },
 }));

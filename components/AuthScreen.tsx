@@ -64,9 +64,11 @@ export const AuthScreen: React.FC = () => {
   const handleLoginSuccess = async (data: any) => {
     const refreshToken = data.refreshToken ?? data.token;
     login(data.token, refreshToken, data.user);
+    const sessionId = useAuthStore.getState().sessionId;
 
     try {
       const cloudSave = await cloudSaveService.fetchSave();
+      if (useAuthStore.getState().sessionId !== sessionId) return;
       const gameStore = useGameStore.getState();
 
       if (cloudSave) {
@@ -83,6 +85,7 @@ export const AuthScreen: React.FC = () => {
         localStorage.removeItem(STORAGE_KEYS.SAVE);
       }
     } catch (saveErr) {
+      if (useAuthStore.getState().sessionId !== sessionId) return;
       console.error('Failed to load cloud save:', saveErr);
       // 云存档拉取失败时，也清空本地状态，避免读取旧存档
       const gameStore = useGameStore.getState();

@@ -199,6 +199,7 @@ const SettingsModal: React.FC<Props> = ({
   };
 
   const handleCloudSave = async () => {
+    const sessionId = useAuthStore.getState().sessionId;
     try {
       const state = useGameStore.getState();
       if (!state.player) {
@@ -211,8 +212,10 @@ const SettingsModal: React.FC<Props> = ({
         timestamp: Date.now(),
       };
       await cloudSaveService.pushSave(saveData);
+      if (useAuthStore.getState().sessionId !== sessionId) return;
       showSuccess('云端存档保存成功！');
     } catch (error: any) {
+      if (useAuthStore.getState().sessionId !== sessionId) return;
       console.error('云端存档保存失败:', error);
       showError(`云端存档保存失败: ${error.message}`);
     }

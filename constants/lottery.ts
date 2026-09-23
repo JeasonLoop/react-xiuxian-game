@@ -7,6 +7,7 @@ import { LotteryPrize, ItemType, EquipmentSlot, ItemRarity } from '../types'
 import { generateLotteryPrizes } from '../utils/itemGenerator';
 import { FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES } from './advanced';
 import { ALL_PILL_RECIPES, COMMON_PILLS } from './items';
+import { CULTIVATION_ARTS } from './cultivation';
 
 // --- 丹药常量池 ---
 // 从常量池中获取丹药定义，避免硬编码
@@ -647,6 +648,27 @@ export const LOTTERY_PRIZES: LotteryPrize[] = [
       },
     },
   })),
+  // 功法奖品（解锁后可前往功法阁修习；天地之魄功法为 BOSS 专属，不进入奖池）
+  ...CULTIVATION_ARTS.filter((art) => !art.isHeavenEarthSoulArt).map((art) => {
+    const gradeConfig: Record<
+      string,
+      { rarity: ItemRarity; weight: number }
+    > = {
+      天: { rarity: '仙品', weight: 0.5 },
+      地: { rarity: '传说', weight: 1.2 },
+      玄: { rarity: '稀有', weight: 2.5 },
+      黄: { rarity: '普通', weight: 4 },
+    };
+    const config = gradeConfig[art.grade] || { rarity: '普通' as ItemRarity, weight: 4 };
+    return {
+      id: `lottery-art-${art.id}`,
+      name: `功法·${art.name}（解锁）`,
+      type: 'art' as const,
+      rarity: config.rarity,
+      weight: config.weight,
+      value: { artId: art.id },
+    };
+  }),
 ];
 
 // 生成装备奖品（每个品级10件）

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AlertType } from '../components/AlertModal';
 import { setGlobalAlertSetter } from '../utils/toastUtils';
+import { useAuthStore } from '../store/authStore';
 
 export interface AlertState {
   isOpen: boolean;
@@ -19,9 +20,14 @@ export function useGlobalAlert() {
   const [alertState, setAlertState] = useState<AlertState | null>(null);
 
   useEffect(() => {
-    setGlobalAlertSetter((alert) => {
-      setAlertState(alert);
+    setGlobalAlertSetter(setAlertState);
+    // 登录/登出切换时丢弃上一个会话的弹窗，避免登录后旧提示再次出现。
+    const unsubscribe = useAuthStore.subscribe((state, previous) => {
+      if (state.isAuthenticated !== previous.isAuthenticated) setAlertState(null);
     });
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   const closeAlert = () => setAlertState(null);

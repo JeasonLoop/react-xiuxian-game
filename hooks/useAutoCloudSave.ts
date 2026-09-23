@@ -18,6 +18,8 @@ export function useAutoCloudSave() {
     const interval = setInterval(() => {
       const state = useGameStore.getState();
       if (!state.player) return;
+      const sessionId = useAuthStore.getState().sessionId;
+      if (!useAuthStore.getState().token) return;
       const now = Date.now();
 
       cloudSaveService
@@ -29,6 +31,7 @@ export function useAutoCloudSave() {
           lastActiveTime: now,
         })
         .catch((err) => {
+          if (useAuthStore.getState().sessionId !== sessionId) return;
           const now = Date.now();
           if (now - lastErrorToastRef.current < AUTO_SAVE_ERROR_THROTTLE_MS) return;
           lastErrorToastRef.current = now;

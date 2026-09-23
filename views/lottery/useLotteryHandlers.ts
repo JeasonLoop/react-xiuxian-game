@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { PlayerStats, Pet, ItemType, LotteryPrize } from '../../types';
-import { LOTTERY_PRIZES, PET_TEMPLATES } from '../../constants/index';
+import { LOTTERY_PRIZES, PET_TEMPLATES, CULTIVATION_ARTS } from '../../constants/index';
 import { uid } from '../../utils/gameUtils';
 import { addItemToInventory } from '../../utils/inventoryUtils';
 import { getRealmEventRewardMultiplier } from '../../utils/realmEventRewardScale';
@@ -9,6 +9,14 @@ import { useGameStore, useUIStore } from '../../store';
 /** 每 N 次累计抽奖必出「传说 / 仙品」池（与每 10 次稀有保底独立，取更优池） */
 const LOTTERY_SOFT_PITY_LEGEND_INTERVAL = 50;
 const DUPLICATE_PET_SPIRIT_STONES_BASE = 8000;
+
+/** 重复功法灵石补偿基数（按品级） */
+const DUPLICATE_ART_STONES_BASE: Record<string, number> = {
+  天: 12000,
+  地: 5000,
+  玄: 2000,
+  黄: 800,
+};
 
 function convertDuplicatePetDrawsToCompensation(
   results: LotteryPrize[],
@@ -45,6 +53,46 @@ function convertDuplicatePetDrawsToCompensation(
       });
     } else {
       speciesSeen.add(template.species);
+      out.push(prize);
+    }
+  }
+  return out;
+}
+
+/** 重复功法奖品 → 灵石补偿（功法奖品语义为「解锁」，已解锁的按品级折算灵石） */
+function convertDuplicateArtDrawsToCompensation(
+  results: LotteryPrize[],
+  player: PlayerStats
+): LotteryPrize[] {
+  const mult = getRealmEventRewardMultiplier(player);
+  const unlockedSet = new Set(player.unlockedArts || []);
+  const out: LotteryPrize[] = [];
+  for (const prize of results) {
+    if (prize.type !== 'art' || !prize.value.artId) {
+      out.push(prize);
+      continue;
+    }
+    const art = CULTIVATION_ARTS.find((a) => a.id === prize.value.artId);
+    if (!art) {
+      out.push(prize);
+      continue;
+    }
+    if (unlockedSet.has(art.id)) {
+      const base = DUPLICATE_ART_STONES_BASE[art.grade] || 800;
+      const stones = Math.max(
+        500,
+        Math.floor(base * Math.min(2.6, 0.42 + mult * 0.32))
+      );
+      out.push({
+        id: `${prize.id}-dup-${out.length}`,
+        name: `${art.name}（已解锁·灵石补偿）`,
+        type: 'spiritStones',
+        rarity: prize.rarity,
+        weight: 0,
+        value: { spiritStones: stones },
+      });
+    } else {
+      unlockedSet.add(art.id);
       out.push(prize);
     }
   }
@@ -182,8 +230,8 @@ export function useLotteryHandlers(
       }
     }
 
-    const resolvedResults = convertDuplicatePetDrawsToCompensation(
-      results,
+    const resolvedResults = convertDuplicateArtDrawsToCompensation(
+      convertDuplicatePetDrawsToCompensation(results, player),
       player
     );
 
@@ -240,6 +288,18 @@ export function useLotteryHandlers(
         } else {
           rewardMap.set(key, { type: 'ticket', name: '抽奖券', quantity: amount });
         }
+      } else if (prize.type === 'art' && prize.value.artId) {
+        const art = CULTIVATION_ARTS.find((a) => a.id === prize.value.artId);
+        if (art) {
+          // 相同功法合并显示
+          const key = `art:${art.id}`;
+          const existing = rewardMap.get(key);
+          if (existing) {
+            existing.quantity += 1;
+          } else {
+            rewardMap.set(key, { type: 'art', name: `功法·${art.name}（解锁）`, quantity: 1 });
+          }
+        }
       }
     }
 
@@ -252,6 +312,7 @@ export function useLotteryHandlers(
       let newExp = prev.exp;
       let newPets = [...prev.pets];
       let newTickets = prev.lotteryTickets;
+      let newUnlockedArts = [...(prev.unlockedArts || [])];
 
       for (const prize of resolvedResults) {
         if (prize.type === 'spiritStones') {
@@ -352,6 +413,12 @@ export function useLotteryHandlers(
           const amount = prize.value.tickets || 0;
           newTickets += amount;
           addLog(`获得 ${amount} 张抽奖券`, 'gain');
+        } else if (prize.type === 'art' && prize.value.artId) {
+          const art = CULTIVATION_ARTS.find((a) => a.id === prize.value.artId);
+          if (art && !newUnlockedArts.includes(art.id)) {
+            newUnlockedArts.push(art.id);
+            addLog(`机缘巧合，你参悟了功法【${art.name}】的入门要旨！可前往功法阁修习。`, 'special');
+          }
         }
       }
 
@@ -363,6 +430,7 @@ export function useLotteryHandlers(
         spiritStones: newStones,
         exp: newExp,
         pets: newPets,
+        unlockedArts: newUnlockedArts,
       };
     });
 

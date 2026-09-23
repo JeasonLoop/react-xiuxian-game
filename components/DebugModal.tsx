@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Modal from './common/Modal';
-import { AlertTriangle, Bug, FlaskConical, Heart, Search, Sword } from 'lucide-react';
-import { Item, ItemType, PlayerStats, RealmType } from '../types';
-import { INITIAL_ITEMS, REALM_ORDER } from '../constants';
+import { AlertTriangle, BookOpen, Bug, FlaskConical, Heart, Plus, Search, Sword, Trash2 } from 'lucide-react';
+import { CultivationArt, Item, ItemType, PlayerStats, RealmType } from '../types';
+import { CULTIVATION_ARTS, INITIAL_ITEMS, REALM_ORDER } from '../constants';
 import { STORAGE_KEYS } from '../constants/storageKeys';
 import { showInfo, showSuccess } from '../utils/toastUtils';
 import { getAllItemsFromConstants } from '../utils/itemConstantsUtils';
@@ -18,11 +18,12 @@ interface Props {
   onChallengeDaoCombining?: () => void;
 }
 
-type TabKey = 'quick' | 'player' | 'items' | 'danger';
+type TabKey = 'quick' | 'player' | 'arts' | 'items' | 'danger';
 
 const tabs: Array<{ key: TabKey; label: string }> = [
   { key: 'quick', label: '快捷操作' },
   { key: 'player', label: '角色调整' },
+  { key: 'arts', label: '功法管理' },
   { key: 'items', label: '物品注入' },
   { key: 'danger', label: '危险操作' },
 ];
@@ -122,6 +123,7 @@ const DebugModal: React.FC<Props> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<TabKey>('quick');
   const [search, setSearch] = useState('');
+  const [artSearch, setArtSearch] = useState('');
   const [injectCount, setInjectCount] = useState(defaultInjectCount);
   const [selectedCategory, setSelectedCategory] = useState<string>(categoryAll);
   const [selectedRarity, setSelectedRarity] = useState<string>(rarityAll);
@@ -372,6 +374,134 @@ const DebugModal: React.FC<Props> = ({
   const applyPatch = (patch: Partial<PlayerStats>, message?: string) => {
     onUpdatePlayer(patch);
     if (message) showSuccess(message);
+  };
+
+  // ── 功法管理（调试注入） ──
+  const learnedArts = player.cultivationArts || [];
+  const unlockedArts = player.unlockedArts || [];
+
+  const getArtEffectSummary = (art: CultivationArt): string => {
+    const e = art.effects;
+    const parts: string[] = [];
+    if (e.attack) parts.push(`攻+${e.attack}`);
+    if (e.defense) parts.push(`防+${e.defense}`);
+    if (e.hp) parts.push(`血+${e.hp}`);
+    if (e.spirit) parts.push(`神识+${e.spirit}`);
+    if (e.physique) parts.push(`体魄+${e.physique}`);
+    if (e.speed) parts.push(`速+${e.speed}`);
+    if (e.expRate) parts.push(`修炼速度+${Math.round(e.expRate * 100)}%`);
+    return parts.join(' / ') || '无直接数值效果';
+  };
+
+  const filteredArts = useMemo(() => {
+    const query = artSearch.trim().toLowerCase();
+    const gradeOrder = ['天', '地', '玄', '黄'];
+    return CULTIVATION_ARTS.filter((art) => {
+      if (!query) return true;
+      return (
+        art.name.toLowerCase().includes(query) ||
+        art.description.toLowerCase().includes(query) ||
+        art.grade.includes(query)
+      );
+    }).sort((a, b) => {
+      const aIdx = gradeOrder.indexOf(a.grade);
+      const bIdx = gradeOrder.indexOf(b.grade);
+      if (aIdx !== bIdx) return aIdx - bIdx;
+      return a.name.localeCompare(b.name, 'zh-CN');
+    });
+  }, [artSearch]);
+
+  // 体术功法属性回退（调试删除用）：按基础效果扣减，属性保底为 1。
+  // 注意：正常流程学习体术会附带灵根加成，调试注入不计算加成，删除时也按基础值回退。
+  const revertBodyArtEffects = (art: CultivationArt) => {
+    const e = art.effects;
+    return {
+      attack: Math.max(1, player.attack - (e.attack || 0)),
+      defense: Math.max(1, player.defense - (e.defense || 0)),
+      spirit: Math.max(1, player.spirit - (e.spirit || 0)),
+      physique: Math.max(1, player.physique - (e.physique || 0)),
+      speed: Math.max(1, player.speed - (e.speed || 0)),
+      maxHp: Math.max(1, player.maxHp - (e.hp || 0)),
+      hp: Math.max(1, player.hp - (e.hp || 0)),
+    };
+  };
+
+  /** 添加功法（调试）：直接学会；未解锁的会顺带解锁，不消耗灵石 */
+  const handleInjectArt = (art: CultivationArt) => {
+    if (learnedArts.includes(art.id)) {
+      showInfo(`功法【${art.name}】已在学习列表中`);
+      return;
+    }
+
+    const patch: Partial<PlayerStats> = {
+      unlockedArts: Array.from(new Set([...unlockedArts, art.id])),
+      cultivationArts: [...learnedArts, art.id],
+    };
+
+    // 与正常学习逻辑保持一致：体术功法永久加属性；心法功法在无激活心法时自动激活
+    if (art.type === 'body') {
+      patch.attack = player.attack + (art.effects.attack || 0);
+      patch.defense = player.defense + (art.effects.defense || 0);
+      patch.spirit = player.spirit + (art.effects.spirit || 0);
+      patch.physique = player.physique + (art.effects.physique || 0);
+      patch.speed = player.speed + (art.effects.speed || 0);
+      patch.maxHp = player.maxHp + (art.effects.hp || 0);
+      patch.hp = player.hp + (art.effects.hp || 0);
+    } else if (art.type === 'mental' && !player.activeArtId) {
+      patch.activeArtId = art.id;
+    }
+
+    applyPatch(patch, `已注入功法【${art.name}】`);
+  };
+
+  /** 删除功法（调试）：移出已学列表，体术功法回退属性加成 */
+  const handleRemoveArt = (art: CultivationArt) => {
+    if (!learnedArts.includes(art.id)) {
+      showInfo(`功法【${art.name}】尚未学习，无需删除`);
+      return;
+    }
+
+    const patch: Partial<PlayerStats> = {
+      cultivationArts: learnedArts.filter((id) => id !== art.id),
+    };
+    if (player.activeArtId === art.id) {
+      patch.activeArtId = null;
+    }
+    if (art.type === 'body') {
+      Object.assign(patch, revertBodyArtEffects(art));
+    }
+
+    applyPatch(patch, `已移除功法【${art.name}】`);
+  };
+
+  /** 一键解锁全部功法（只解锁不学习，可测试正常学习流程） */
+  const handleUnlockAllArts = () => {
+    applyPatch(
+      { unlockedArts: Array.from(new Set([...unlockedArts, ...CULTIVATION_ARTS.map((a) => a.id)])) },
+      '已解锁全部功法（未学习）'
+    );
+  };
+
+  /** 清空已学功法并回退体术属性（保留解锁状态） */
+  const handleClearLearnedArts = () => {
+    if (learnedArts.length === 0) {
+      showInfo('当前没有已学习的功法');
+      return;
+    }
+
+    const learnedBodyArts = CULTIVATION_ARTS.filter(
+      (art) => learnedArts.includes(art.id) && art.type === 'body'
+    );
+
+    let patch: Partial<PlayerStats> = {
+      cultivationArts: [],
+      activeArtId: null,
+    };
+    learnedBodyArts.forEach((art) => {
+      patch = { ...patch, ...revertBodyArtEffects(art) };
+    });
+
+    applyPatch(patch, `已清空 ${learnedArts.length} 个已学功法（体术属性已回退）`);
   };
 
   const updateDraftField = (field: keyof PlayerSettingsDraft, rawValue: string) => {
@@ -713,6 +843,121 @@ const DebugModal: React.FC<Props> = ({
               >
                 应用设置
               </button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'arts' && (
+          <div className="space-y-3">
+            <div className="rounded border border-stone-700 bg-ink-900/60 p-3 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-stone-300 text-sm">
+                  <BookOpen size={14} className="inline mr-1 text-amber-300" />
+                  已学 <span className="text-mystic-gold">{learnedArts.length}</span> / 已解锁{' '}
+                  <span className="text-mystic-gold">{unlockedArts.length}</span> / 共 {CULTIVATION_ARTS.length}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleUnlockAllArts}
+                    className="px-3 py-1.5 rounded bg-blue-900/70 hover:bg-blue-800 border border-blue-600 text-blue-100 text-sm"
+                  >
+                    一键解锁全部
+                  </button>
+                  <button
+                    onClick={handleClearLearnedArts}
+                    className="px-3 py-1.5 rounded bg-red-900/70 hover:bg-red-800 border border-red-600 text-red-100 text-sm"
+                  >
+                    清空已学（回退属性）
+                  </button>
+                </div>
+              </div>
+              <label className="block text-sm text-stone-300">
+                <span className="block mb-1">搜索功法（名称/描述/品级）</span>
+                <div className="mt-1 relative">
+                  <Search
+                    size={14}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 text-stone-500"
+                  />
+                  <input
+                    type="text"
+                    value={artSearch}
+                    onChange={(e) => setArtSearch(e.target.value)}
+                    className="w-full bg-ink-800 border border-stone-600 rounded pl-8 pr-3 py-2"
+                    placeholder="如：天雷 / 地 / 心法"
+                  />
+                </div>
+              </label>
+            </div>
+
+            <div className="max-h-[360px] overflow-y-auto space-y-2 pr-1">
+              {filteredArts.map((art) => {
+                const isLearned = learnedArts.includes(art.id);
+                const isUnlocked = unlockedArts.includes(art.id);
+                const gradeColor =
+                  art.grade === '天'
+                    ? 'text-amber-300'
+                    : art.grade === '地'
+                      ? 'text-fuchsia-300'
+                      : art.grade === '玄'
+                        ? 'text-blue-300'
+                        : 'text-stone-100';
+                return (
+                  <div
+                    key={art.id}
+                    className="flex items-center justify-between gap-3 p-3 rounded border border-stone-700 bg-ink-800"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-sm truncate font-medium">
+                        <span className={`mr-1 ${gradeColor}`}>【{art.grade}】</span>
+                        <span className="text-stone-100">{art.name}</span>
+                        <span className="text-stone-500 ml-2 text-xs">
+                          {art.type === 'mental' ? '心法' : '体术'}
+                          {art.sectId ? ' · 宗门专属' : ''}
+                        </span>
+                      </div>
+                      <div className="text-stone-400 text-xs truncate">{art.description}</div>
+                      <div className="text-xs mt-1 flex items-center gap-2 flex-wrap">
+                        <span className="text-emerald-300/80">{getArtEffectSummary(art)}</span>
+                        <span className="text-stone-500">需求境界：{art.realmRequirement}</span>
+                        <span className="text-yellow-500/80">学费：{art.cost} 灵石</span>
+                        <span
+                          className={`px-1.5 py-0.5 rounded border ${
+                            isLearned
+                              ? 'border-green-600 text-green-300 bg-green-950/40'
+                              : isUnlocked
+                                ? 'border-blue-600 text-blue-300 bg-blue-950/40'
+                                : 'border-stone-600 text-stone-400 bg-stone-900/40'
+                          }`}
+                        >
+                          {isLearned ? '已学习' : isUnlocked ? '已解锁未学' : '未解锁'}
+                        </span>
+                      </div>
+                    </div>
+                    {isLearned ? (
+                      <button
+                        onClick={() => handleRemoveArt(art)}
+                        className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded bg-red-900 hover:bg-red-800 border border-red-600 text-sm text-red-100"
+                      >
+                        <Trash2 size={14} />
+                        删除
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleInjectArt(art)}
+                        className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded bg-green-800 hover:bg-green-700 border border-green-600 text-sm"
+                      >
+                        <Plus size={14} />
+                        添加
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+              {filteredArts.length === 0 && (
+                <div className="text-center text-stone-400 text-sm py-6 border border-dashed border-stone-700 rounded">
+                  没有匹配的功法
+                </div>
+              )}
             </div>
           </div>
         )}

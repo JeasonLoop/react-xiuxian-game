@@ -77,6 +77,7 @@ const MobileSidebar: React.FC<Props> = ({
       showError('没有找到存档数据！请先开始游戏。');
       return;
     }
+    const sessionId = useAuthStore.getState().sessionId;
     setSaving(true);
     try {
       await cloudSaveService.pushSave({
@@ -84,8 +85,10 @@ const MobileSidebar: React.FC<Props> = ({
         logs: state.logs,
         timestamp: Date.now(),
       });
+      if (useAuthStore.getState().sessionId !== sessionId) return;
       showSuccess('云端存档保存成功！');
     } catch (err) {
+      if (useAuthStore.getState().sessionId !== sessionId) return;
       showError(err instanceof Error ? err.message : '云端存档保存失败');
     } finally {
       setSaving(false);

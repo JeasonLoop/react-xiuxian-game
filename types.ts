@@ -900,7 +900,7 @@ export interface PetTemplate {
 export interface LotteryPrize {
   id: string;
   name: string;
-  type: 'item' | 'spiritStones' | 'exp' | 'pet' | 'ticket';
+  type: 'item' | 'spiritStones' | 'exp' | 'pet' | 'ticket' | 'art';
   rarity: ItemRarity;
   weight: number; // 权重，越高越容易抽到
   value: {
@@ -909,6 +909,7 @@ export interface LotteryPrize {
     exp?: number;
     petId?: string;
     tickets?: number;
+    artId?: string; // 功法奖品：解锁对应功法（可前往功法阁修习）
   };
 }
 
