@@ -576,6 +576,7 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     handleSectBuy,
     handleSectLearnArt: sectHandlers.handleLearnArt,
     handleChallengeLeader: sectHandlers.handleChallengeLeader,
+    handleClaimSectSalary: sectHandlers.handleClaimSectSalary,
 
     // 成就
     checkAchievements,
@@ -596,6 +597,7 @@ export function useAppHandlers(props: UseAppHandlersProps) {
 
     // 日常任务
     claimQuestReward: dailyQuestHandlers.claimQuestReward,
+    claimAllQuestRewards: dailyQuestHandlers.claimAllQuestRewards,
 
     // 内部 handlers（供其他 hooks 使用）
     breakthroughHandlers,

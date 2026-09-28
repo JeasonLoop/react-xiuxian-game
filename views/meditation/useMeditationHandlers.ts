@@ -2,10 +2,13 @@ import React, { useCallback } from 'react';
 import { PlayerStats } from '../../types';
 import {
   ACHIEVEMENTS,
+  GAME_BALANCE,
   REALM_ORDER,
 } from '../../constants/index';
 import { getActiveMentalArt, getPlayerTotalStats, calculateTotalExpRate } from '../../utils/statUtils';
+import { getLocalDateString } from '../../utils/dateUtils';
 import { useGameStore } from '../../store';
+import { useUIStore } from '../../store/uiStore';
 
 interface UseMeditationHandlersProps {
   player?: PlayerStats;
@@ -63,25 +66,34 @@ export function useMeditationHandlers(
     }
 
     const activeArt = getActiveMentalArt(currentPlayer);
-
-    // 检查是否触发顿悟（1%概率）
-    const isEnlightenment = Math.random() < 0.01;
+    const medBalance = GAME_BALANCE.meditation;
+    const isAuto = useUIStore.getState().autoMeditate;
+    const today = getLocalDateString();
+    const autoCountToday =
+      currentPlayer.autoEnlightenmentDate === today ? (currentPlayer.autoEnlightenmentCount || 0) : 0;
+    const enlightenmentChance = isAuto
+      ? (autoCountToday >= medBalance.autoDailyEnlightenmentCap ? 0 : medBalance.autoEnlightenmentChance)
+      : medBalance.manualEnlightenmentChance;
+    const isEnlightenment = Math.random() < enlightenmentChance;
     let actualGain: number;
     let logMessage: string;
+    let autoEnlightenmentCount = autoCountToday;
 
     if (isEnlightenment) {
-      // 顿悟：获得30-50倍修为
-      const enlightenmentMultiplier = 30 + Math.random() * 20; // 3-5倍
+      const span = medBalance.enlightenmentMax - medBalance.enlightenmentMin;
+      const enlightenmentMultiplier = medBalance.enlightenmentMin + Math.random() * span;
       actualGain = Math.floor(baseGain * enlightenmentMultiplier);
       const artText = activeArt ? `，运转${activeArt.name}` : '';
       logMessage = `你突然顿悟，灵台清明，对大道有了更深的理解${artText}！(+${actualGain} 修为)`;
       currentAddLog(logMessage, 'special');
+      if (isAuto) autoEnlightenmentCount += 1;
     } else {
-      // 正常修炼：小幅随机波动
-      actualGain = Math.floor(baseGain * (0.85 + Math.random() * 0.3)); // 85%-115%
-      const artText = activeArt ? `，运转${activeArt.name}` : '';
-      logMessage = `你潜心感悟大道${artText}。(+${actualGain} 修为)`;
-      currentAddLog(logMessage, 'gain');
+      actualGain = Math.floor(baseGain * (0.85 + Math.random() * 0.3));
+      if (!isAuto) {
+        const artText = activeArt ? `，运转${activeArt.name}` : '';
+        logMessage = `你潜心感悟大道${artText}。(+${actualGain} 修为)`;
+        currentAddLog(logMessage, 'gain');
+      }
     }
 
     currentSetPlayer((prev) => {
@@ -100,10 +112,8 @@ export function useMeditationHandlers(
       // 直接恢复血量（使用实际最大血量作为上限）
       const newHp = Math.min(actualMaxHp, prev.hp + actualRegen);
 
-      // 添加回血提示
       const multiplierText = baseMultiplier.toFixed(1);
-      if (newHp > prev.hp) {
-        // 使用最新的 addLog
+      if (newHp > prev.hp && !isAuto) {
         const latestAddLog = props?.addLog ?? useGameStore.getState().addLog;
         latestAddLog(
           `打坐加速回血，恢复 ${actualRegen} 点气血（${multiplierText}倍速度）`,
@@ -111,15 +121,14 @@ export function useMeditationHandlers(
         );
       }
 
-      // 打坐时获得少量灵石（提供稳定的灵石获取途径）
-      // 基础灵石 = 境界索引 * 2 + 1，随境界增长
-      const realmIndex = REALM_ORDER.indexOf(prev.realm);
-      const baseStones = Math.max(1, realmIndex * 2 + 1);
-      // 随机波动 ±1
-      const stoneGain = baseStones + Math.floor(Math.random() * 3) - 1;
-      const newSpiritStones = prev.spiritStones + Math.max(1, stoneGain);
+      const realmIdx = REALM_ORDER.indexOf(prev.realm);
+      const baseStones = Math.max(1, realmIdx * 2 + 1);
+      let stoneGain = baseStones + Math.floor(Math.random() * 3) - 1;
+      if (isAuto) {
+        stoneGain = Math.max(0, Math.floor(stoneGain * medBalance.autoStoneMultiplier));
+      }
+      const newSpiritStones = prev.spiritStones + Math.max(isAuto ? 0 : 1, stoneGain);
 
-      // 更新统计
       const stats = prev.statistics || {
         killCount: 0,
         meditateCount: 0,
@@ -132,10 +141,7 @@ export function useMeditationHandlers(
         secretRealmCount: 0,
       };
 
-      // 只在获得灵石时显示提示（避免刷屏）
-      if (stoneGain > 0 && Math.random() < 0.3) {
-        // 30%概率显示提示，避免刷屏
-        // 使用最新的 addLog
+      if (!isAuto && stoneGain > 0 && Math.random() < 0.3) {
         const latestAddLog = props?.addLog ?? useGameStore.getState().addLog;
         latestAddLog(`打坐时获得了 ${Math.max(1, stoneGain)} 灵石`, 'gain');
       }
@@ -145,6 +151,8 @@ export function useMeditationHandlers(
         exp: prev.exp + actualGain,
         hp: newHp,
         spiritStones: newSpiritStones,
+        autoEnlightenmentDate: isAuto ? today : prev.autoEnlightenmentDate,
+        autoEnlightenmentCount: isAuto ? autoEnlightenmentCount : prev.autoEnlightenmentCount,
         statistics: {
           ...stats,
           meditateCount: stats.meditateCount + 1,

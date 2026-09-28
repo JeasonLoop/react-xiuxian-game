@@ -16,7 +16,6 @@
     "cf:collector-ips": "node scripts/cf-ip-optimizer.mjs --from-collector",
     "cf:collector-ips:update": "node scripts/cf-ip-optimizer.mjs --from-collector --update-dns",
     "cf:deploy-collector": "cd scripts/cf-bestip-collector && npx wrangler deploy",
-    "vercel-build": "npm run build",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\"",

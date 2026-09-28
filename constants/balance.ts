@@ -42,7 +42,6 @@ export const GAME_BALANCE = {
     sect_challenge: { enemyPower: 1.1, battleChance: 1, reward: 1 },
     dao_combining_challenge: { enemyPower: 1.2, battleChance: 1, reward: 1 },
   } satisfies Record<AdventureType, AdventureBalance>,
-
   equipmentUpgrade: {
     minGrowth: 0.015,
     tierFactor: [
@@ -51,6 +50,33 @@ export const GAME_BALANCE = {
       { maxLevel: 15, factor: 0.32 },
       { maxLevel: Infinity, factor: 0.18 },
     ],
+  },
+
+  meditation: {
+    autoIntervalMs: 1500,
+    autoStoneMultiplier: 0.4,
+    autoEnlightenmentChance: 0.002,
+    autoDailyEnlightenmentCap: 3,
+    manualEnlightenmentChance: 0.01,
+    enlightenmentMin: 3,
+    enlightenmentMax: 5,
+  },
+
+  hunt: {
+    encounterChance: 0.3,
+    levelUpHours: 24,
+    maxLevel: 3,
+    durationDays: 7,
+  },
+  dailyQuest: {
+    countMin: 5,
+    countMax: 8,
+    coreTypes: ['meditate', 'adventure', 'sect', 'alchemy', 'pet'] as const,
+  },
+
+  autoAdventure: {
+    settleDelayMs: 0,
+    cooldown: 1,
   },
 } as const;
 

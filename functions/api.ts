@@ -11,12 +11,32 @@ interface KVNamespace {
 
 export interface Env {
   JWT_SECRET?: string;
+  FRONTEND_URL?: string;
   LINUXDO_CLIENT_ID?: string;
   LINUXDO_CLIENT_SECRET?: string;
   RANKINGS_STORE?: KVNamespace;
 }
 
-const users = new Map<string, { id: string; username: string; passwordHash: string; linuxdoId?: string }>();
+interface WorkerUser { id: string; username: string; passwordHash: string; linuxdoId?: string }
+const USERNAME_KV_PREFIX = 'user:name:';
+const LINUXDO_KV_PREFIX = 'user:linuxdo:';
+
+async function getUserByUsername(env: Env, username: string): Promise<WorkerUser | null> {
+  if (!env.RANKINGS_STORE) throw new Error('Missing RANKINGS_STORE binding');
+  return await env.RANKINGS_STORE.get(USERNAME_KV_PREFIX + username, 'json') || null;
+}
+
+async function getUserByLinuxdoId(env: Env, id: string): Promise<WorkerUser | null> {
+  if (!env.RANKINGS_STORE) throw new Error('Missing RANKINGS_STORE binding');
+  const username = await env.RANKINGS_STORE.get(LINUXDO_KV_PREFIX + id);
+  return username ? getUserByUsername(env, username) : null;
+}
+
+async function saveUser(env: Env, user: WorkerUser): Promise<void> {
+  if (!env.RANKINGS_STORE) throw new Error('Missing RANKINGS_STORE binding');
+  await env.RANKINGS_STORE.put(USERNAME_KV_PREFIX + user.username, JSON.stringify(user));
+  if (user.linuxdoId) await env.RANKINGS_STORE.put(LINUXDO_KV_PREFIX + user.linuxdoId, user.username);
+}
 const saves = new Map<string, { player: any; logs: any[]; timestamp: number }>();
 
 // 交易行数据：内存 + KV 持久化
@@ -96,8 +116,8 @@ async function readSaveFromKV(env: Env, userId: string): Promise<any> {
   try { return await env.RANKINGS_STORE.get(SAVE_KV_PREFIX + userId, 'json'); } catch { return null; }
 }
 async function writeSaveToKV(env: Env, userId: string, saveData: any): Promise<void> {
-  if (!env.RANKINGS_STORE) return;
-  try { await env.RANKINGS_STORE.put(SAVE_KV_PREFIX + userId, JSON.stringify(saveData)); } catch (e) { console.error('writeSaveToKV error:', e); }
+  if (!env.RANKINGS_STORE) throw new Error('Missing RANKINGS_STORE binding');
+  await env.RANKINGS_STORE.put(SAVE_KV_PREFIX + userId, JSON.stringify(saveData));
 }
 async function syncUserRanking(env: Env, userId: string, username: string, saveData: any): Promise<void> {
   const rankings = await readRankingsFromKV(env);
@@ -185,8 +205,8 @@ async function getSaveForUser(env: Env, userId: string): Promise<any | null> {
   return saveData || null;
 }
 async function writeSaveForUser(env: Env, userId: string, saveData: any): Promise<void> {
-  saves.set(userId, saveData);
   await writeSaveToKV(env, userId, saveData);
+  saves.set(userId, saveData);
 }
 function getPlayerStones(saveData: any): number {
   return Number(saveData?.player?.spiritStones) || 0;
@@ -246,17 +266,21 @@ const LINUXDO_AUTH = 'https://connect.linux.do/oauth2/authorize';
 const LINUXDO_TOKEN = 'https://connect.linux.do/oauth2/token';
 const LINUXDO_USER = 'https://connect.linux.do/api/user';
 
-async function signToken(payload: any, secret: string): Promise<string> {
-  const header = { alg: 'HS256', typ: 'JWT' };
+function encodeBase64Url(value: string): string {
+  return btoa(String.fromCharCode(...new TextEncoder().encode(value)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+
+async function signToken(payload: { id: string; username: string; type: 'access' | 'refresh' }, secret: string): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  const data = { ...payload, iat: now, exp: now + 86400 * 7 };
+  const data = { ...payload, iat: now, exp: now + (payload.type === 'refresh' ? 86400 * 30 : 3600) };
   const encoder = new TextEncoder();
-  const hb = btoa(JSON.stringify(header)).replace(/=/g, '');
-  const pb = btoa(JSON.stringify(data)).replace(/=/g, '');
+  const hb = encodeBase64Url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const pb = encodeBase64Url(JSON.stringify(data));
   const si = `${hb}.${pb}`;
   const key = await crypto.subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(si));
-  const sb = btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/=/g, '');
+  const sb = btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
   return `${hb}.${pb}.${sb}`;
 }
 
@@ -267,11 +291,12 @@ async function verifyToken(token: string, secret: string): Promise<any> {
     const [hb, pb, sb] = parts;
     const encoder = new TextEncoder();
     const key = await crypto.subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']);
-    const signatureBytes = Uint8Array.from(atob(sb.padEnd(sb.length + (4 - (sb.length % 4)) % 4, '=')), (c) => c.charCodeAt(0));
+    const signatureBytes = Uint8Array.from(atob(sb.replace(/-/g, '+').replace(/_/g, '/').padEnd(sb.length + (4 - (sb.length % 4)) % 4, '=')), (c) => c.charCodeAt(0));
     const isValid = await crypto.subtle.verify('HMAC', key, signatureBytes, encoder.encode(`${hb}.${pb}`));
     if (!isValid) return null;
-    const p = JSON.parse(atob(pb));
-    return p.exp < Math.floor(Date.now() / 1000) ? null : p;
+    const payloadBytes = Uint8Array.from(atob(pb.replace(/-/g, '+').replace(/_/g, '/').padEnd(pb.length + (4 - (pb.length % 4)) % 4, '=')), c => c.charCodeAt(0));
+    const p = JSON.parse(new TextDecoder().decode(payloadBytes));
+    return typeof p.exp === 'number' && p.exp > Math.floor(Date.now() / 1000) ? p : null;
   } catch {
     return null;
   }
@@ -318,22 +343,29 @@ export default {
     // 注册
     if (path === '/auth/register' && request.method === 'POST') {
       const { username, password } = await request.json() as any;
-      if (!username || !password || username.length < 2) return json({ error: '用户名至少2个字符' }, 400);
-      if (Array.from(users.values()).some(u => u.username === username)) return json({ error: '用户名已存在' }, 409);
+      if (typeof username !== 'string' || username.length < 2 || typeof password !== 'string' || password.length < 6) return json({ error: '用户名至少2个字符，密码至少6个字符' }, 400);
+      if (await getUserByUsername(env, username)) return json({ error: '用户名已存在' }, 409);
       const id = crypto.randomUUID();
-      users.set(id, { id, username, passwordHash: await hashPassword(password) });
-      const token = await signToken({ id, username }, secret);
-      return json({ token, refreshToken: token, user: { id, username } });
+      await saveUser(env, { id, username, passwordHash: await hashPassword(password) });
+      return json({
+        token: await signToken({ id, username, type: 'access' }, secret),
+        refreshToken: await signToken({ id, username, type: 'refresh' }, secret),
+        user: { id, username },
+      });
     }
 
     // 登录
     if (path === '/auth/login' && request.method === 'POST') {
       const { username, password } = await request.json() as any;
-      const user = Array.from(users.values()).find(u => u.username === username);
+      if (typeof username !== 'string' || typeof password !== 'string') return json({ error: '用户名或密码格式错误' }, 400);
+      const user = await getUserByUsername(env, username);
       if (!user) return json({ error: '道号不存在，请先注册', code: 'USER_NOT_FOUND' }, 404);
-      if (await hashPassword(password) !== user.passwordHash) return json({ error: '密码错误，请重新输入', code: 'INVALID_PASSWORD' }, 401);
-      const token = await signToken({ id: user.id, username }, secret);
-      return json({ token, refreshToken: token, user: { id: user.id, username } });
+      if (!user.passwordHash || await hashPassword(password) !== user.passwordHash) return json({ error: '密码错误，请重新输入', code: 'INVALID_PASSWORD' }, 401);
+      return json({
+        token: await signToken({ id: user.id, username, type: 'access' }, secret),
+        refreshToken: await signToken({ id: user.id, username, type: 'refresh' }, secret),
+        user: { id: user.id, username },
+      });
     }
 
     // 刷新 Token
@@ -341,8 +373,11 @@ export default {
       const { refreshToken } = await request.json() as any;
       if (!refreshToken) return json({ error: '缺少 Token' }, 400);
       const p = await verifyToken(refreshToken, secret);
-      if (!p) return json({ error: '登录已过期' }, 401);
-      return json({ token: await signToken({ id: p.id, username: p.username }, secret), refreshToken: await signToken({ id: p.id, username: p.username }, secret) });
+      if (!p || p.type !== 'refresh') return json({ error: '登录已过期' }, 401);
+      return json({
+        token: await signToken({ id: p.id, username: p.username, type: 'access' }, secret),
+        refreshToken: await signToken({ id: p.id, username: p.username, type: 'refresh' }, secret),
+      });
     }
 
     // 获取存档
@@ -350,7 +385,7 @@ export default {
       const auth = request.headers.get('Authorization');
       if (!auth) return json({ error: '未登录' }, 401);
       const p = await verifyToken(auth.replace('Bearer ', ''), secret);
-      if (!p) return json({ error: '登录已过期' }, 401);
+      if (!p || p.type === 'refresh') return json({ error: '登录已过期' }, 401);
       // 先从内存取，没有则从 KV 恢复
       let saveData = saves.get(p.id);
       if (!saveData) {
@@ -359,7 +394,7 @@ export default {
       }
       // 有存档就同步排行榜（保证冷启动后排行榜不丢人）
       if (saveData) {
-        const user = users.get(p.id);
+        const user = await getUserByUsername(env, p.username);
         const username = user?.username || p.username || '未知';
         await syncUserRanking(env, p.id, username, saveData);
       }
@@ -371,13 +406,16 @@ export default {
       const auth = request.headers.get('Authorization');
       if (!auth) return json({ error: '未登录' }, 401);
       const p = await verifyToken(auth.replace('Bearer ', ''), secret);
-      if (!p) return json({ error: '登录已过期' }, 401);
+      if (!p || p.type === 'refresh') return json({ error: '登录已过期' }, 401);
       const saveData = await request.json();
-      saves.set(p.id, saveData);
-      // 持久化存档到 KV
-      await writeSaveToKV(env, p.id, saveData);
+      try {
+        await writeSaveForUser(env, p.id, saveData);
+      } catch (error) {
+        console.error('Save persistence failed:', error);
+        return json({ error: '云存档写入失败，请重试' }, 500);
+      }
       // 同步排行榜数据到 KV
-      const user = users.get(p.id);
+      const user = await getUserByUsername(env, p.username);
       const username = user?.username || p.username || '未知';
       const rankings = await readRankingsFromKV(env);
       rankings.set(p.id, extractRankingData(p.id, username, saveData));
@@ -434,7 +472,7 @@ export default {
       const auth = request.headers.get('Authorization');
       if (!auth) return json({ found: false, message: '未登录' });
       const p = await verifyToken(auth.replace('Bearer ', ''), secret);
-      if (!p) return json({ found: false, message: '登录已过期' });
+      if (!p || p.type === 'refresh') return json({ found: false, message: '登录已过期' });
 
       const rankings = await readRankingsFromKV(env);
       const myRow = rankings.get(p.id);
@@ -506,24 +544,22 @@ export default {
 
         // 3. 查找或创建用户
         const linuxdoId = String(linuxdoUser.id);
-        let user = Array.from(users.values()).find(u => u.linuxdoId === linuxdoId);
+        let user = await getUserByLinuxdoId(env, linuxdoId);
 
         if (!user) {
-          // 检查用户名冲突
-          let username = linuxdoUser.username;
-          if (Array.from(users.values()).some(u => u.username === username && u.linuxdoId !== linuxdoId)) {
-            username = `${linuxdoUser.username}_ld`;
-          }
-          const id = crypto.randomUUID();
-          user = { id, username, passwordHash: '', linuxdoId };
-          users.set(id, user);
+          let username = linuxdoUser.username as string;
+          if (await getUserByUsername(env, username)) username = `${username}_ld_${linuxdoId}`;
+          user = { id: crypto.randomUUID(), username, passwordHash: '', linuxdoId };
+          await saveUser(env, user);
         }
 
-        // 4. 签发 JWT 并重定向到前端
-        const token = await signToken({ id: user.id, username: user.username }, secret);
-        // 通过 postMessage 或 URL hash 传 token 给前端
-        const frontendUrl = url.origin;
-        const html = `<!DOCTYPE html><html><head><script>window.opener ? (window.opener.postMessage({type:'linuxdo-auth',token:'${token}',username:'${user.username}'},'*'),window.close()) : window.location.replace('${frontendUrl}?token=${token}&username=${encodeURIComponent(user.username)}')</script></head><body><p>登录成功，正在跳转...</p></body></html>`;
+        const token = await signToken({ id: user.id, username: user.username, type: 'access' }, secret);
+        const refreshToken = await signToken({ id: user.id, username: user.username, type: 'refresh' }, secret);
+        const payload = JSON.stringify({ type: 'linuxdo-auth', token, refreshToken, username: user.username }).replace(/</g, String.fromCharCode(92) + 'u003c');
+
+        const frontendUrl = env.FRONTEND_URL || 'https://xiuxian.jeasonloop.online';
+        const fallback = `${frontendUrl}?token=${encodeURIComponent(token)}&refreshToken=${encodeURIComponent(refreshToken)}&username=${encodeURIComponent(user.username)}`;
+        const html = `<!DOCTYPE html><html><head><script>window.opener ? (window.opener.postMessage(${payload}, ${JSON.stringify(new URL(frontendUrl).origin)}),window.close()) : window.location.replace(${JSON.stringify(fallback)})</script></head><body><p>登录成功，正在跳转...</p></body></html>`;
         return new Response(html, { headers: { 'Content-Type': 'text/html' } });
       } catch (e: any) {
         return json({ error: `OAuth 错误: ${e.message}` }, 500);
@@ -576,7 +612,7 @@ export default {
       const auth = request.headers.get('Authorization');
       if (!auth) return json({ error: '未登录' }, 401);
       const p = await verifyToken(auth.replace('Bearer ', ''), secret);
-      if (!p) return json({ error: '登录已过期' }, 401);
+      if (!p || p.type === 'refresh') return json({ error: '登录已过期' }, 401);
 
       const body = await request.json() as any;
       const { itemName, itemType, description, rarity, price, quantity, effect, isEquippable, equipmentSlot, itemSourceJson } = body;
@@ -604,7 +640,7 @@ export default {
       const auth = request.headers.get('Authorization');
       if (!auth) return json({ error: '未登录' }, 401);
       const p = await verifyToken(auth.replace('Bearer ', ''), secret);
-      if (!p) return json({ error: '登录已过期' }, 401);
+      if (!p || p.type === 'refresh') return json({ error: '登录已过期' }, 401);
 
       const { listingId } = await request.json() as any;
       const cleanId = (listingId || '').toString().replace(/^(?:market-)+/, '');
@@ -641,7 +677,7 @@ export default {
       const auth = request.headers.get('Authorization');
       if (!auth) return json({ error: '未登录' }, 401);
       const p = await verifyToken(auth.replace('Bearer ', ''), secret);
-      if (!p) return json({ error: '登录已过期' }, 401);
+      if (!p || p.type === 'refresh') return json({ error: '登录已过期' }, 401);
 
       const { listingId } = await request.json() as any;
       const cleanId = (listingId || '').toString().replace(/^(?:market-)+/, '');
@@ -725,7 +761,7 @@ export default {
       const auth = request.headers.get('Authorization');
       if (!auth) return json({ error: '未登录' }, 401);
       const p = await verifyToken(auth.replace('Bearer ', ''), secret);
-      if (!p) return json({ error: '登录已过期' }, 401);
+      if (!p || p.type === 'refresh') return json({ error: '登录已过期' }, 401);
 
       let total = 0;
       let count = 0;
@@ -743,7 +779,7 @@ export default {
       const auth = request.headers.get('Authorization');
       if (!auth) return json({ error: '未登录' }, 401);
       const p = await verifyToken(auth.replace('Bearer ', ''), secret);
-      if (!p) return json({ error: '登录已过期' }, 401);
+      if (!p || p.type === 'refresh') return json({ error: '登录已过期' }, 401);
 
       const ids: number[] = [];
       let total = 0;
@@ -786,7 +822,7 @@ export default {
       const auth = request.headers.get('Authorization');
       if (!auth) return json({ error: '未登录' }, 401);
       const p = await verifyToken(auth.replace('Bearer ', ''), secret);
-      if (!p) return json({ error: '登录已过期' }, 401);
+      if (!p || p.type === 'refresh') return json({ error: '登录已过期' }, 401);
 
       const { listingId } = await request.json() as any;
       const cleanId = (listingId || '').toString().replace(/^(?:market-)+/, '');

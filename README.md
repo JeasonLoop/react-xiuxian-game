@@ -7,7 +7,6 @@
 [![React](https://img.shields.io/badge/React-19.2.0-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.2-3178C6?logo=typescript)](https://www.typescriptlang.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.2.0-646CFF?logo=vite)](https://vitejs.dev/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 _踏上修仙之路，体验从炼气到飞升的完整修仙历程_
 
@@ -17,11 +16,11 @@ _踏上修仙之路，体验从炼气到飞升的完整修仙历程_
 
 ## 📖 项目简介
 
-这是一款以修仙为主题的**文字冒险游戏**，玩家将扮演一名修仙者，通过历练、修炼、突破境界等方式不断提升实力。游戏采用**AI生成事件**机制，每次历练都会遇到不同的随机事件，让每一次游戏体验都充满未知与惊喜。
+这是一款以修仙为主题的**文字冒险游戏**，玩家通过本地模板驱动的随机历练、修炼和突破境界提升实力；主流程无需 AI Key 或实时 AI 服务。
 
 ### ✨ 核心特色
 
-- 🎲 **AI驱动事件系统** - 使用 AI 生成丰富的随机事件，每次历练都是全新体验
+- 🎲 **模板驱动事件系统** - 本地事件模板提供随机历练体验
 - 🏔️ **完整修仙体系** - 从炼气期到飞升，7大境界，每个境界10层，共70层修炼之路
 - 🌌 **长生境规则之力** - 领悟天地规则，掌握改天换地的强大力量
 - ⚔️ **合道期挑战** - 挑战天地之魄，证明合道实力，突破生命极限
@@ -40,7 +39,7 @@ _踏上修仙之路，体验从炼气到飞升的完整修仙历程_
 ### 环境要求
 
 - **Node.js** >= 18.0.0
-- **pnpm** >= 8.0.0 (推荐) 或 **npm** >= 9.0.0
+- **npm** >= 9.0.0（或 pnpm）
 
 ### 安装步骤
 
@@ -53,57 +52,20 @@ cd react-xiuxian-game
 
 #### 2️⃣ 安装依赖
 
-使用 **pnpm** (推荐):
-
-```bash
-pnpm install
-```
-
-或使用 **npm**:
-
 ```bash
 npm install
+cd server && npm install && cd ..
 ```
 
-#### 3️⃣ 配置环境变量
+前后端联调需要分别安装根目录与 `server/` 的依赖；仅开发前端时可只安装根目录依赖。主流程无需 AI Key。
 
-**⚠️ 重要**: 项目不再包含硬编码的 API Key，必须配置环境变量。
-
-**默认配置**: 项目默认使用 **GLM (智谱AI)** 作为 AI 接口，只需配置 API Key 即可。
-
-在项目根目录创建 `.env.local` 文件：
+#### 3️⃣ 启动开发服务器
 
 ```bash
-# .env.local
-# 最小配置：只需设置 API Key，其他使用默认值（GLM/智谱AI）
-VITE_AI_KEY=your-api-key-here
-
-# 可选配置（如果不设置，将使用默认值）
-# VITE_AI_PROVIDER=glm  # 默认: glm (智谱AI)
-# VITE_AI_MODEL=glm-4.5v  # 默认模型
-```
-
-> 💡 **获取 API Key**:
->
-> - 访问 [智谱AI开放平台](https://open.bigmodel.cn) 注册账号并创建 API Key
-> - 如需使用其他 AI 服务（SiliconFlow、OpenAI 等），设置 `VITE_AI_PROVIDER` 环境变量
-> - 支持的提供商：`glm`（默认）、`siliconflow`、`openai`、`custom`
->
-> ⚠️ **安全提示**: `.env.local` 文件已添加到 `.gitignore`，不会被提交到 Git。不要将 API Key 提交到代码仓库。
-
-#### 4️⃣ 启动开发服务器
-
-```bash
-# 使用 pnpm
-pnpm dev
-
-# 或使用 npm
 npm run dev
 ```
 
-#### 5️⃣ 访问游戏
-
-打开浏览器访问: `http://localhost:3000`
+浏览器访问 `http://localhost:5175`（端口占用时 Vite 会选择后续可用端口）；本地 Express API 默认位于 `http://localhost:3001/api`。可用 `VITE_API_BASE_URL` 指定其他 API 地址，详见 [开发指南](doc/DEVELOPMENT.md)。
 
 ---
 
@@ -224,37 +186,25 @@ npm run dev
 
 ## 🛠️ 技术栈
 
-- **前端框架**: React 19.2.0
-- **开发语言**: TypeScript 5.8.2
-- **构建工具**: Vite 6.2.0
-- **UI图标**: Lucide React
-- **AI服务**: 支持多种 AI 服务（默认 GLM/智谱AI，支持 SiliconFlow、OpenAI 等）
-- **状态管理**: React Hooks (useState, useEffect)
-- **数据持久化**: localStorage
+- **前端**: React 19 + TypeScript + Vite；Zustand 状态管理
+- **事件系统**: 本地事件模板
+- **存档**: 浏览器本地存档；登录后可使用云存档
+- **本地后端**: Express + SQLite（默认 3001）
+- **Cloudflare 部署**: Pages 前端 + Worker API + KV 存档（需配置 Worker 的 KV 绑定和 JWT_SECRET）
 
----
+详见 [文档索引](doc/README.md)、[API 文档](doc/API.md) 与 [存档格式](doc/SAVE_FORMAT.md)。
 
 ## 📁 项目结构
 
-```
-react-xiuxian-game/
-├── components/          # React 组件
-│   ├── AchievementModal.tsx    # 成就弹窗
-│   ├── AlchemyModal.tsx        # 炼丹弹窗
-│   ├── CharacterModal.tsx      # 角色信息弹窗
-│   ├── InventoryModal.tsx      # 背包弹窗
-│   ├── LotteryModal.tsx         # 抽奖弹窗
-│   ├── PetModal.tsx            # 灵宠弹窗
-│   ├── SectModal.tsx           # 宗门弹窗
-│   ├── ShopModal.tsx           # 商店弹窗
-│   └── ...
-├── services/            # 服务层
-│   └── aiService.ts     # AI 事件生成服务
-├── types.ts            # TypeScript 类型定义
-├── constants.ts        # 游戏常量配置
-├── App.tsx             # 主应用组件
-├── index.tsx           # 应用入口
-└── vite.config.ts      # Vite 配置
+```text
+components/         React 组件
+constants/          游戏常量与 API 地址
+services/           游戏服务
+store/              Zustand 状态
+server/             本地 Express/SQLite 后端
+functions/api.ts    Cloudflare Worker API
+doc/                开发与接口文档
+vite.config.ts      Vite 配置
 ```
 
 ---
@@ -282,71 +232,15 @@ pnpm preview      # 或 npm run preview
 
 ## 🐳 Docker 部署
 
-支持使用 Docker 进行部署，提供一键构建和打包命令。详细说明请查看 [Docker 部署指南](DOCKER.md)。
-
-### 快速开始
+仓库提供 [Dockerfile](Dockerfile) 和 [docker-compose.yml](docker-compose.yml)：`npm run docker:build-and-up` 构建并启动 Nginx 静态前端，映射宿主机 `18080` 到容器 `80`；该 compose **不包含 API 后端**。若需云存档，请设置构建变量 `VITE_API_BASE_URL` 指向可访问的 API，并自行部署后端。另有 [docker-compose.full.yml](docker-compose.full.yml) 和 [Dockerfile.backend](Dockerfile.backend) 提供前后端组合配置；使用前应检查自身的网络、端口和环境变量配置。
 
 ```bash
-# 1. 配置环境变量（创建 .env 文件）
-VITE_AI_KEY=your_api_key
-VITE_AI_PROVIDER=glm
-
-# 2. 一键构建并启动（推荐）
 npm run docker:build-and-up
-
-# 3. 访问应用
-# http://localhost:3000
-```
-
-### 一键构建和打包
-
-```bash
-# 使用 npm 脚本（推荐）
-npm run docker:build-and-pack
-
-# 或使用 make 命令
-make build-and-pack
-
-# 这会生成 react-xiuxian-game.tar.gz 文件
-```
-
-### 常用命令
-
-```bash
-# 查看日志
 npm run docker:logs
-# 或
-make logs
-
-# 停止容器
 npm run docker:down
-# 或
-make down
-
-# 构建镜像（无缓存）
-npm run docker:build-no-cache
 ```
 
-### 查看所有可用命令
-
-```bash
-# 查看 npm 脚本
-npm run
-
-# 查看 Makefile 命令
-make help
-```
-
-### 镜像导入
-
-```bash
-# 在目标机器导入打包的镜像
-docker load < react-xiuxian-game.tar.gz
-```
-
-更多详细信息和高级配置，请查看：
-- [Docker 部署指南](DOCKER.md) - 完整的部署文档
-- [Docker 使用示例](DOCKER_EXAMPLES.md) - 常见场景和最佳实践
+Cloudflare 部署入口为 `npm run deploy:cf`（参见 [部署脚本](scripts/deploy-cf.mjs) 与 [wrangler 配置](wrangler.toml)）；上线前需配置 Pages 项目、Worker 密钥及 KV 绑定。Docker 与 Cloudflare 部署均不要求 AI Key。
 
 ---
 
@@ -416,14 +310,11 @@ docker load < react-xiuxian-game.tar.gz
 
 ## 📄 许可证
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
-
----
+仓库目前未提供根目录 LICENSE 文件；使用或再分发前请确认适用许可。
 
 ## 🙏 致谢
 
 - 感谢所有修仙小说作者提供的灵感
-- 感谢 GLM (智谱AI)、SiliconFlow、OpenAI 等 AI 服务提供商
 
 ---
 

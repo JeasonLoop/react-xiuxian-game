@@ -2,6 +2,7 @@ import React from 'react';
 import { PlayerStats, ItemType, RealmType, ItemRarity } from '../../types';
 import { GROTTO_CONFIGS, PLANTABLE_HERBS, REALM_ORDER, SPIRIT_ARRAY_ENHANCEMENTS, HERB_MUTATION_CONFIG, SPEEDUP_CONFIG, HERBARIUM_REWARDS } from '../../constants/index';
 import { addItemToInventory } from '../../utils/inventoryUtils';
+import { getLocalDateString } from '../../utils/dateUtils';
 
 interface UseGrottoHandlersProps {
   player: PlayerStats;
@@ -38,9 +39,8 @@ export function useGrottoHandlers({
     spiritArrayEnhancement: 0,
     herbarium: [],
     dailySpeedupCount: 0,
-    lastSpeedupResetDate: new Date().toISOString().split('T')[0],
+    lastSpeedupResetDate: getLocalDateString(),
   });
-
   /**
    * 获取当前洞府配置
    */
@@ -758,7 +758,8 @@ export function useGrottoHandlers({
       }
 
       // 检查每日加速次数限制
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
+
       let dailySpeedupCount = grotto.dailySpeedupCount || 0;
       const lastSpeedupResetDate = grotto.lastSpeedupResetDate || today;
 

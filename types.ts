@@ -291,7 +291,8 @@ export interface PlayerStats {
     endTime: number; // 结束时间戳（毫秒）
     expRateBonus: number; // 修炼效率加成（如 0.15 表示 +15%）
   };
-  leaderSalaryDate?: string; // 宗主上次领取俸禄的日期（YYYY-MM-DD）
+  leaderSalaryDate?: string; // 宗主上次领取俸禄的日期（YYYY-MM-DD），旧存档字段
+  sectSalaryDate?: string; // 各职位俸禄领取日期（YYYY-MM-DD）
   dailyRealmFirstClears?: Record<string, string>; // 名境每日首通记录：秘境ID -> 最近进入日期（YYYY-MM-DD）
   // 角色系统扩展
   talentIds: string[]; // 天赋ID列表（命运点分配制，可选择多个天赋）
@@ -307,6 +308,8 @@ export interface PlayerStats {
   // 抽奖系统
   lotteryTickets: number; // 抽奖券
   lotteryCount: number; // 累计抽奖次数（用于保底）
+  autoEnlightenmentDate?: string; // 自动打坐顿悟计数日期
+  autoEnlightenmentCount?: number; // 当日自动打坐已触发顿悟次数
   // 突破失败积累系统
   breakthroughFailCount: number; // 当前境界突破失败次数，每失败一次增加下次成功率
   // 传承系统（仅保留突破境界功能）

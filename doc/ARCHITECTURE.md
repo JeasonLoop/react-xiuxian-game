@@ -72,5 +72,4 @@ Express Server (server/index.ts)
 
 ## 说明
 
-- 旧版“Vercel `/api/proxy` 转发 AI”的说明不再代表当前主实现。
 - 事件生成目前主要使用本地模板，不依赖实时 AI 接口作为主路径。

@@ -7,6 +7,7 @@ import { useEffect, useRef } from 'react';
 import { PlayerStats } from '../types';
 import { AutoAdventureConfig } from '../components/AutoAdventureConfigModal';
 import { getPlayerTotalStats } from '../utils/statUtils';
+import { GAME_BALANCE } from '../constants/balance';
 
 interface UseAutoFeaturesParams {
   autoMeditate: boolean;
@@ -240,7 +241,7 @@ export function useAutoFeatures({
         }, 100);
         meditateTimeoutIdsRef.current.push(timeoutId);
       }
-    }, 200); // 每 200ms 检查一次
+    }, GAME_BALANCE.meditation.autoIntervalMs);
 
     return () => {
       clearInterval(interval);

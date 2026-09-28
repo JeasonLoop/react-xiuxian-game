@@ -12,8 +12,11 @@ import {
   SECT_PROMOTION_BASE_REWARDS,
   SECT_SPECIAL_REWARDS,
   SECT_MASTER_CHALLENGE_REQUIREMENTS,
+  SECT_RANK_SALARY,
   REALM_ORDER,
+  GAME_BALANCE,
 } from '../../constants/index';
+import { getLocalDateString } from '../../utils/dateUtils';
 import { getPlayerTotalStats } from '../../utils/statUtils';
 import { RandomSectTask } from '../../services/randomService';
 import { AdventureResult } from '../../types';
@@ -128,8 +131,7 @@ export function useSectHandlers({
         sectName = sect ? sect.name : null;
       }
 
-      // 设置追杀时间（7天）
-      const huntDuration = 7 * 24 * 60 * 60 * 1000; // 7天
+      const huntDuration = GAME_BALANCE.hunt.durationDays * 24 * 60 * 60 * 1000;
       const huntEndTime = Date.now() + huntDuration;
 
       return {
@@ -578,6 +580,33 @@ export function useSectHandlers({
     }
   };
 
+  const handleClaimSectSalary = () => {
+    if (!player?.sectId) {
+      logMessage('你当前未加入任何宗门。', 'danger');
+      return;
+    }
+    const today = getLocalDateString();
+    const lastClaim = player.sectSalaryDate || player.leaderSalaryDate;
+    if (lastClaim === today) {
+      logMessage('今日俸禄已领取。', 'danger');
+      return;
+    }
+    const salary = SECT_RANK_SALARY[player.sectRank] || SECT_RANK_SALARY[SectRank.Outer];
+    const realmIndex = Math.max(0, REALM_ORDER.indexOf(player.realm));
+    const stones = salary.baseSpiritStones * (realmIndex + 1);
+    setPlayer((prev) => ({
+      ...prev,
+      spiritStones: prev.spiritStones + stones,
+      sectContribution: prev.sectContribution + salary.contribution,
+      sectSalaryDate: today,
+      leaderSalaryDate: today,
+    }));
+    logMessage(
+      `你领取了【${player.sectRank}】今日俸禄：${stones.toLocaleString()} 灵石、${salary.contribution} 贡献。`,
+      'special'
+    );
+  };
+
   return {
     handleJoinSect,
     handleLeaveSect,
@@ -588,5 +617,6 @@ export function useSectHandlers({
     handleLearnArt,
     handleBecomeLeader,
     handleChallengeLeader,
+    handleClaimSectSalary,
   };
 }

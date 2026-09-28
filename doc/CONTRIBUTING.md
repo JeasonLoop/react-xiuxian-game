@@ -8,8 +8,8 @@
 
 如果发现 Bug，请：
 
-1. 检查 [Issues](https://github.com/your-repo/issues) 是否已有相同问题
-2. 如果没有，创建新 Issue
+1. 在项目仓库的 Issues 中检查是否已有相同问题（以仓库页面提供的地址为准）
+2. 如已开放 Issues 且没有重复问题，创建新 Issue
 3. 提供详细信息：
    - Bug 描述
    - 复现步骤
@@ -23,7 +23,7 @@
 如果有好的想法：
 
 1. 检查是否已有类似建议
-2. 创建 Feature Request Issue
+2. 如仓库开放 Issues，创建功能建议 Issue；否则通过仓库提供的联系渠道提出建议
 3. 详细描述：
    - 功能描述
    - 使用场景
@@ -35,9 +35,8 @@
 #### Fork 和克隆
 
 ```bash
-# Fork 项目到你的 GitHub 账号
-# 然后克隆你的 Fork
-git clone https://github.com/your-username/react-xiuxian-game.git
+# 将 <fork-url> 替换为你自己的 Fork 地址
+git clone <fork-url>
 cd react-xiuxian-game
 ```
 
@@ -53,10 +52,10 @@ git checkout -b fix/bug-description
 
 #### 开发
 
-1. 安装依赖: `pnpm install`
-2. 启动开发服务器: `pnpm dev`
+1. 安装根目录及 `server/` 依赖：`npm install`，然后 `cd server && npm install && cd ..`
+2. 启动开发服务器：`npm run dev`（前端默认 5175，后端默认 3001）
 3. 进行开发和测试
-4. 确保代码通过类型检查: `npx tsc --noEmit`
+4. 检查类型：`npx tsc --noEmit`；检查 lint：`npm run lint`（现有代码可能仍有遗留错误）
 
 #### 提交代码
 
@@ -88,22 +87,7 @@ git push origin feature/your-feature-name
 - 函数参数和返回值都要有类型
 - 使用接口定义对象结构
 
-```typescript
-// ✅ 好的做法
-interface PlayerStats {
-  name: string;
-  hp: number;
-}
-
-function handleAdventure(player: PlayerStats): Promise<AdventureResult> {
-  // ...
-}
-
-// ❌ 不好的做法
-function handleAdventure(player: any) {
-  // ...
-}
-```
+示例应使用仓库中已有的类型和模块；例如类型定义可从 `types.ts` 导入，不要引用不存在的 AI 服务或常量文件。避免引入新的 `any`。
 
 ### React
 
@@ -111,22 +95,7 @@ function handleAdventure(player: any) {
 - 使用 Hooks 管理状态
 - 组件 Props 要有明确的类型
 
-```typescript
-// ✅ 好的做法
-interface Props {
-  player: PlayerStats;
-  onClose: () => void;
-}
-
-export default function Component({ player, onClose }: Props) {
-  // ...
-}
-
-// ❌ 不好的做法
-export default function Component(props: any) {
-  // ...
-}
-```
+函数组件 Props 建议明确标注类型，并根据实际组件需求使用 Hooks；可参考 `components/StatsPanel.tsx` 等现有组件。
 
 ### 命名规范
 
@@ -137,39 +106,7 @@ export default function Component(props: any) {
 
 ### 代码组织
 
-```typescript
-// 1. 导入顺序
-// React
-import React, { useState } from 'react';
-// 第三方库
-import { Sword } from 'lucide-react';
-// 类型
-import { PlayerStats } from '../types';
-// 常量
-import { REALM_DATA } from '../constants';
-// 服务
-import { generateAdventureEvent } from '../services/aiService';
-// 组件
-import StatsPanel from './StatsPanel';
-
-// 2. 组件结构
-export default function Component() {
-  // 1. Hooks
-  const [state, setState] = useState();
-
-  // 2. 计算值
-  const computed = useMemo(() => {...}, [deps]);
-
-  // 3. 事件处理
-  const handleClick = useCallback(() => {...}, [deps]);
-
-  // 4. 副作用
-  useEffect(() => {...}, [deps]);
-
-  // 5. 渲染
-  return <div>...</div>;
-}
-```
+以现有目录为准：`components/` 放 UI，`views/` 放页面及事件处理，`services/` 放服务，`constants/` 放配置；详细结构见 [模块解析](./MODULES.md)。
 
 ## 🧪 测试
 
@@ -254,20 +191,14 @@ npx tsc --noEmit
 
 ## 📞 获取帮助
 
-### 问题
+### 问题与讨论
 
-- 查看 [Issues](https://github.com/JeasonLoop/react-xiuxian-game/issues)
-- 查看 [文档](../doc/)
-- 创建新 Issue 提问
-
-### 讨论
-
-- 在 GitHub Discussions 中讨论
-- 在 Issue 中讨论
+- 查看 [文档索引](./README.md) 和 [开发指南](./DEVELOPMENT.md)。
+- 若仓库开放 Issues 或 Discussions，可在仓库页面提交问题或参与讨论；不要使用示例仓库地址。
 
 ## 📄 许可证
 
-贡献的代码将使用与项目相同的许可证（MIT）。
+仓库根目录目前没有 LICENSE 文件；贡献前请向维护者确认许可条款。
 
 ## 🙏 致谢
 

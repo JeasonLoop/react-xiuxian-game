@@ -34,6 +34,7 @@ import {
 import { getRarityTextColor } from '../utils/rarityUtils';
 import { formatGrottoTime } from '../utils/formatUtils';
 import { ItemType } from '../types';
+import { getLocalDateString } from '../utils/dateUtils';
 import {
   isReforgeableEquipment,
   getReforgeStoneCount,
@@ -42,6 +43,7 @@ import {
   discardReforgeCandidate,
   toggleReforgeLock,
 } from '../utils/reforgeUtils';
+
 import {
   getReforgeCost,
   REFORGE_AFFIX_DEFINITIONS,
@@ -634,6 +636,22 @@ const GrottoModal: React.FC<Props> = ({
               ) : (
                 <>
                   {/* 洞府信息卡片 */}
+                  {matureHerbsCount > 0 && (
+                    <div className="mb-3 px-3 py-2 rounded border border-green-700 bg-green-900/30 text-green-300 text-sm">
+                      可收获 {matureHerbsCount} 株灵草
+                      {grotto.autoHarvest ? '（自动收获已开启）' : '，可一键收获'}
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between mb-2 text-xs text-stone-400">
+                    <span>
+                      今日加速 {(() => {
+                        const today = getLocalDateString();
+                        const lastReset = grotto.lastSpeedupResetDate || today;
+                        return lastReset === today ? (grotto.dailySpeedupCount || 0) : 0;
+                      })()} / {SPEEDUP_CONFIG.dailyLimit}
+                    </span>
+                  </div>
+
                   <div className="bg-ink-900 p-5 rounded-lg border border-stone-700 shadow-lg">
                     <div className="flex items-center justify-between mb-4">
                       <div>
@@ -1224,7 +1242,7 @@ const GrottoModal: React.FC<Props> = ({
                     </div>
                     <div className="text-2xl font-bold text-blue-400">
                       {(() => {
-                        const today = new Date().toISOString().split('T')[0];
+                        const today = getLocalDateString();
                         const lastReset = grotto.lastSpeedupResetDate || today;
                         return lastReset === today ? (grotto.dailySpeedupCount || 0) : 0;
                       })()} / {SPEEDUP_CONFIG.dailyLimit}

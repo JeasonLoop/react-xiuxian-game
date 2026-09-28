@@ -338,11 +338,17 @@ export const SECT_TRAINING_ROOM = {
   durationHours: 24,    // 持续时间（小时）
 };
 
-/** 宗主每日俸禄（灵石与贡献随境界线性缩放） */
-export const SECT_LEADER_SALARY = {
-  baseSpiritStones: 2000, // 基础灵石
-  contribution: 300,      // 贡献（不随境界缩放）
+/** 各职位每日俸禄（灵石随境界线性缩放） */
+export const SECT_RANK_SALARY: Record<SectRank, { baseSpiritStones: number; contribution: number }> = {
+  [SectRank.Outer]: { baseSpiritStones: 80, contribution: 10 },
+  [SectRank.Inner]: { baseSpiritStones: 200, contribution: 25 },
+  [SectRank.Core]: { baseSpiritStones: 500, contribution: 60 },
+  [SectRank.Elder]: { baseSpiritStones: 1000, contribution: 120 },
+  [SectRank.Leader]: { baseSpiritStones: 2000, contribution: 300 },
 };
+
+/** 宗主每日俸禄（兼容旧引用） */
+export const SECT_LEADER_SALARY = SECT_RANK_SALARY[SectRank.Leader];
 
 // 宗门职位显示数据
 export const SECT_RANK_DATA: Record<SectRank, {

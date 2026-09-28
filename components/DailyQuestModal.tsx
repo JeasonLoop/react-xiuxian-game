@@ -17,6 +17,7 @@ interface Props {
   onClose: () => void;
   player: PlayerStats;
   onClaimReward: (questId: string) => void;
+  onClaimAllRewards?: () => void;
 }
 
 const DailyQuestModal: React.FC<Props> = ({
@@ -24,6 +25,7 @@ const DailyQuestModal: React.FC<Props> = ({
   onClose,
   player,
   onClaimReward,
+  onClaimAllRewards,
 }) => {
   const [filterRarity, setFilterRarity] = useState<ItemRarity | 'all'>('all');
   const [sortBy, setSortBy] = useState<
@@ -83,6 +85,10 @@ const DailyQuestModal: React.FC<Props> = ({
 
   // 一键领取所有已完成任务
   const handleClaimAll = () => {
+    if (onClaimAllRewards) {
+      onClaimAllRewards();
+      return;
+    }
     claimableQuests.forEach((quest) => {
       onClaimReward(quest.id);
     });

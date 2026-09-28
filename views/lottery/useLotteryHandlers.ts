@@ -1,13 +1,10 @@
 import React, { useRef } from 'react';
 import { PlayerStats, Pet, ItemType, LotteryPrize } from '../../types';
-import { LOTTERY_PRIZES, PET_TEMPLATES, CULTIVATION_ARTS } from '../../constants/index';
+import { LOTTERY_PRIZES, PET_TEMPLATES, CULTIVATION_ARTS, LOTTERY_RARE_PITY_INTERVAL, LOTTERY_SOFT_PITY_LEGEND_INTERVAL } from '../../constants/index';
 import { uid } from '../../utils/gameUtils';
 import { addItemToInventory } from '../../utils/inventoryUtils';
 import { getRealmEventRewardMultiplier } from '../../utils/realmEventRewardScale';
 import { useGameStore, useUIStore } from '../../store';
-
-/** 每 N 次累计抽奖必出「传说 / 仙品」池（与每 10 次稀有保底独立，取更优池） */
-const LOTTERY_SOFT_PITY_LEGEND_INTERVAL = 50;
 const DUPLICATE_PET_SPIRIT_STONES_BASE = 8000;
 
 /** 重复功法灵石补偿基数（按品级） */
@@ -188,7 +185,7 @@ export function useLotteryHandlers(
         totalCount % LOTTERY_SOFT_PITY_LEGEND_INTERVAL === 0 &&
         legendImmortalPrizes.length > 0 &&
         legendTotalWeight > 0;
-      const shouldGuaranteeRare = totalCount % 10 === 0;
+      const shouldGuaranteeRare = totalCount % LOTTERY_RARE_PITY_INTERVAL === 0;
 
       if (shouldSoftLegend) {
         const prize = selectPrizeByWeight(

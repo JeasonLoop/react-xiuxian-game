@@ -8,6 +8,17 @@ import { generateLotteryPrizes } from '../utils/itemGenerator';
 import { FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES } from './advanced';
 import { ALL_PILL_RECIPES, COMMON_PILLS } from './items';
 import { CULTIVATION_ARTS } from './cultivation';
+export const LOTTERY_RARE_PITY_INTERVAL = 10;
+export const LOTTERY_SOFT_PITY_LEGEND_INTERVAL = 50;
+
+export const getLotteryPityProgress = (lotteryCount: number) => {
+  const rareMod = lotteryCount % LOTTERY_RARE_PITY_INTERVAL;
+  const legendMod = lotteryCount % LOTTERY_SOFT_PITY_LEGEND_INTERVAL;
+  return {
+    rareRemain: rareMod === 0 ? LOTTERY_RARE_PITY_INTERVAL : LOTTERY_RARE_PITY_INTERVAL - rareMod,
+    legendRemain: legendMod === 0 ? LOTTERY_SOFT_PITY_LEGEND_INTERVAL : LOTTERY_SOFT_PITY_LEGEND_INTERVAL - legendMod,
+  };
+};
 
 // --- 丹药常量池 ---
 // 从常量池中获取丹药定义，避免硬编码

@@ -8,19 +8,10 @@ import {
   HEAVEN_EARTH_ESSENCES,
   HEAVEN_EARTH_MARROWS,
   LONGEVITY_RULES,
+  GAME_BALANCE,
 } from '../../constants/index';
 import { uid } from '../../utils/gameUtils';
-
-/**
- * 获取本地日期字符串（YYYY-MM-DD格式）
- * 使用本地时区而不是UTC，避免时区问题
- */
-const getLocalDateString = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
+import { getLocalDateString } from '../../utils/dateUtils';
 
 interface UseDailyQuestHandlersProps {
   player: PlayerStats;
@@ -37,49 +28,19 @@ export function useDailyQuestHandlers({
   setPlayer,
   addLog,
 }: UseDailyQuestHandlersProps) {
-  // 生成日常任务（从30个预定义任务中随机选择）
   const generateDailyQuests = (): DailyQuest[] => {
-    // 随机生成10-20个任务
-    const questCount = Math.floor(Math.random() * 11) + 10; // 10-20
-
-    // 从30个预定义任务中随机选择
-    const availableQuests = [...PREDEFINED_DAILY_QUESTS];
+    const { countMin, countMax, coreTypes } = GAME_BALANCE.dailyQuest;
+    const questCount = countMin + Math.floor(Math.random() * (countMax - countMin + 1));
+    const usedNames = new Set<string>();
     const selectedQuests: DailyQuest[] = [];
-    const usedIndices = new Set<number>();
 
-    // 随机选择指定数量的任务，确保不重复
-    while (selectedQuests.length < questCount && usedIndices.size < availableQuests.length) {
-      const randomIndex = Math.floor(Math.random() * availableQuests.length);
-
-      // 如果已经使用过这个索引，跳过
-      if (usedIndices.has(randomIndex)) {
-        continue;
-      }
-
-      usedIndices.add(randomIndex);
-      const questTemplate = availableQuests[randomIndex];
-
-      // 对于突破任务，50%概率生成
-      if (questTemplate.type === 'breakthrough') {
-        if (Math.random() < 0.5) {
-          continue; // 跳过，不生成突破任务
-        }
-      }
-
-      // 随机生成目标数量
-      const target = Math.floor(
-        Math.random() * (questTemplate.targetRange.max - questTemplate.targetRange.min + 1)
-      ) + questTemplate.targetRange.min;
-
-      // 计算奖励（根据玩家境界调整）
-      const reward = calculateDailyQuestReward(
-        questTemplate.type,
-        target,
-        questTemplate.rarity,
-        player.realm,
-        player.realmLevel
-      );
-
+    const pushQuest = (questTemplate: (typeof PREDEFINED_DAILY_QUESTS)[number]) => {
+      if (usedNames.has(questTemplate.name)) return false;
+      if (questTemplate.type === 'breakthrough' && Math.random() < 0.5) return false;
+      usedNames.add(questTemplate.name);
+      const target =
+        Math.floor(Math.random() * (questTemplate.targetRange.max - questTemplate.targetRange.min + 1)) +
+        questTemplate.targetRange.min;
       selectedQuests.push({
         id: `daily-quest-${uid()}`,
         type: questTemplate.type,
@@ -87,51 +48,30 @@ export function useDailyQuestHandlers({
         description: questTemplate.description,
         target,
         progress: 0,
-        reward,
-        rarity: questTemplate.rarity,
-        completed: false,
-      });
-    }
-
-    // 如果选择的任务数量不足，补充任务（避免重复）
-    if (selectedQuests.length < questCount) {
-      const remainingQuests = availableQuests.filter((_, index) => !usedIndices.has(index));
-      const needed = questCount - selectedQuests.length;
-
-      for (let i = 0; i < needed && remainingQuests.length > 0; i++) {
-        const randomIndex = Math.floor(Math.random() * remainingQuests.length);
-        const questTemplate = remainingQuests[randomIndex];
-        remainingQuests.splice(randomIndex, 1);
-
-        // 对于突破任务，50%概率生成
-        if (questTemplate.type === 'breakthrough' && Math.random() < 0.5) {
-          continue;
-        }
-
-        const target = Math.floor(
-          Math.random() * (questTemplate.targetRange.max - questTemplate.targetRange.min + 1)
-        ) + questTemplate.targetRange.min;
-
-        const reward = calculateDailyQuestReward(
+        reward: calculateDailyQuestReward(
           questTemplate.type,
           target,
           questTemplate.rarity,
           player.realm,
           player.realmLevel
-        );
+        ),
+        rarity: questTemplate.rarity,
+        completed: false,
+      });
+      return true;
+    };
 
-        selectedQuests.push({
-          id: `daily-quest-${uid()}`,
-          type: questTemplate.type,
-          name: questTemplate.name,
-          description: questTemplate.description,
-          target,
-          progress: 0,
-          reward,
-          rarity: questTemplate.rarity,
-          completed: false,
-        });
-      }
+    for (const type of coreTypes) {
+      const pool = PREDEFINED_DAILY_QUESTS.filter((q) => q.type === type);
+      if (pool.length === 0) continue;
+      pushQuest(pool[Math.floor(Math.random() * pool.length)]);
+    }
+
+    const leftover = PREDEFINED_DAILY_QUESTS.filter((q) => !usedNames.has(q.name));
+    while (selectedQuests.length < questCount && leftover.length > 0) {
+      const idx = Math.floor(Math.random() * leftover.length);
+      const [picked] = leftover.splice(idx, 1);
+      pushQuest(picked);
     }
 
     return selectedQuests.slice(0, questCount);
@@ -140,70 +80,30 @@ export function useDailyQuestHandlers({
   // 重置日常任务（每天重置）
   const resetDailyQuests = () => {
     const now = Date.now();
-    const today = getLocalDateString(new Date());
-    const lastResetDate = player.lastDailyQuestResetDate || today;
-    const lastResetTime = player.lastDailyQuestResetTime || now;
-
-    // 计算上次重置时间对应的日期（使用本地时区）
-    const lastResetDateObj = new Date(lastResetTime);
-    const lastResetDateStr = getLocalDateString(lastResetDateObj);
-
-    // 判断是否需要刷新：如果时间戳是昨天或更早，或者任务不存在/为空
-    const isPastDay = lastResetDateStr !== today;
-    const needsReset = isPastDay || !player.dailyQuests || player.dailyQuests.length === 0;
-
-    if (needsReset) {
-      // 如果任务为空或日期变化，显示生成提示
-      const isEmpty = !player.dailyQuests || player.dailyQuests.length === 0;
-      if (isPastDay || isEmpty) {
-        addLog('正在生成日常任务...', 'special');
-      }
-
+    const today = getLocalDateString();
+    setPlayer((prev) => {
+      const lastResetDate = prev.lastDailyQuestResetDate || '';
+      if (lastResetDate === today) return prev;
+      const isFirstGenerate = !lastResetDate;
+      addLog('正在生成日常任务...', 'special');
       const newQuests = generateDailyQuests();
-
-      setPlayer((prev) => {
-        const currentGameDays = prev.gameDays || 1;
-
-        return {
-          ...prev,
-          dailyQuests: newQuests,
-          // 如果是新的一天，重置进度和已完成列表
-          dailyQuestProgress: isPastDay ? {} : (prev.dailyQuestProgress || {}),
-          dailyQuestCompleted: isPastDay ? [] : (prev.dailyQuestCompleted || []),
-          lastDailyQuestResetDate: today,
-          lastDailyQuestResetTime: now, // 更新刷新时间戳
-          gameDays: isPastDay ? currentGameDays + 1 : currentGameDays, // 只有日期变化时才增加游戏天数
-        };
-      });
-
-      if (isPastDay || isEmpty) {
-        addLog(`新的日常任务已刷新！今日共${newQuests.length}个任务。`, 'special');
-      }
-    }
+      addLog(`新的日常任务已刷新！今日共${newQuests.length}个任务。`, 'special');
+      return {
+        ...prev,
+        dailyQuests: newQuests,
+        dailyQuestProgress: {},
+        dailyQuestCompleted: [],
+        lastDailyQuestResetDate: today,
+        lastDailyQuestResetTime: now,
+        gameDays: isFirstGenerate ? (prev.gameDays || 1) : (prev.gameDays || 1) + 1,
+      };
+    });
   };
 
-  // 初始化日常任务（如果为空）
   const initializeDailyQuests = () => {
-    const now = Date.now();
-    const today = getLocalDateString(new Date());
-    const lastResetTime = player.lastDailyQuestResetTime || now;
-
-    // 计算上次重置时间对应的日期（使用本地时区）
-    const lastResetDateObj = new Date(lastResetTime);
-    const lastResetDateStr = getLocalDateString(lastResetDateObj);
-
-    // 只有在以下情况才生成任务：
-    // 1. 任务不存在或为空
-    // 2. 时间戳对应的日期是昨天或更早（需要刷新）
-    const needsReset =
-      !player.dailyQuests ||
-      player.dailyQuests.length === 0 ||
-      lastResetDateStr !== today;
-
-    if (needsReset) {
+    if ((player.lastDailyQuestResetDate || '') !== getLocalDateString()) {
       resetDailyQuests();
     }
-    // 如果任务已存在且日期未变化，不做任何操作
   };
 
   // 更新任务进度（不自动发放奖励，需要手动领取）
@@ -250,10 +150,7 @@ export function useDailyQuestHandlers({
     });
   };
 
-  // 领取任务奖励（手动领取，用于UI）
-  const claimQuestReward = (questId: string) => {
-    setPlayer((prev) => {
-      // 确保 dailyQuests 存在
+  const applyQuestClaim = (prev: PlayerStats, questId: string, silent = false): PlayerStats => {
       if (!prev.dailyQuests || prev.dailyQuests.length === 0) {
         return prev;
       }
@@ -365,10 +262,12 @@ export function useDailyQuestHandlers({
 
       const rewardText = rewardParts.length > 0 ? rewardParts.join('、') : '无奖励';
 
-      addLog(
-        `领取日常任务【${quest.name}】奖励！获得 ${rewardText}。${advancedItemMsg}`,
-        advancedItemMsg ? 'special' : 'gain'
-      );
+      if (!silent) {
+        addLog(
+          `领取日常任务【${quest.name}】奖励！获得 ${rewardText}。${advancedItemMsg}`,
+          advancedItemMsg ? 'special' : 'gain'
+        );
+      }
 
       return {
         ...prev,
@@ -378,6 +277,24 @@ export function useDailyQuestHandlers({
         lotteryTickets: prev.lotteryTickets + ticketGain,
         dailyQuestCompleted: [...prev.dailyQuestCompleted, questId],
       };
+  };
+
+  const claimQuestReward = (questId: string) => {
+    setPlayer((prev) => applyQuestClaim(prev, questId));
+  };
+
+  const claimAllQuestRewards = () => {
+    setPlayer((prev) => {
+      const completed = (prev.dailyQuests || []).filter(
+        (q) => q.completed && !(prev.dailyQuestCompleted || []).includes(q.id)
+      );
+      if (completed.length === 0) return prev;
+      let next = prev;
+      completed.forEach((quest) => {
+        next = applyQuestClaim(next, quest.id, true);
+      });
+      addLog(`一键领取 ${completed.length} 项日常奖励。`, 'gain');
+      return next;
     });
   };
 
@@ -386,6 +303,7 @@ export function useDailyQuestHandlers({
     resetDailyQuests,
     updateQuestProgress,
     claimQuestReward,
+    claimAllQuestRewards,
   };
 }
 

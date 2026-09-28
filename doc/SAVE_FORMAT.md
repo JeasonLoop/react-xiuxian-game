@@ -44,9 +44,10 @@
 
 ## 云存档机制
 
-- 云存档内容与本地顶层结构一致（`player` + `logs` + `timestamp`）
-- 通过 `GET/POST /api/save` 同步到后端 SQLite
-- 需要登录态（Bearer Token）
+- 云存档内容与本地顶层结构一致（`player` + `logs` + `timestamp`）；需 Bearer Token，通过 `GET/POST /api/save` 同步。
+- 本地 Express（`server/index.ts`）将存档写入 SQLite；`GET /api/save` 无存档返回 `404`。
+- Cloudflare Pages 前端使用 Worker（`functions/api.ts`）作为 API；Worker 存档先读内存、再从 `RANKINGS_STORE` KV 恢复，写入时须成功保存到 KV，否则返回 `500`。无存档时 `GET /api/save` 返回 `200`、JSON `null`。
+- 两种后端独立存储；健康检查也不同：Express 返回 `{"status":"ok","message":"Backend is running"}`，Worker 返回 `{"status":"ok"}`（需已配置 `JWT_SECRET`）。详见 [API 文档](./API.md)。
 
 ## 兼容性处理
 

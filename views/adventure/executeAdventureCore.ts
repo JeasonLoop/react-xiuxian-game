@@ -16,6 +16,7 @@ import {
   PET_TEMPLATES,
   getRandomPetName,
   SECTS,
+  GAME_BALANCE,
 } from '../../constants/index';
 import { SectRank } from '../../types';
 import { BattleReplay } from '../../services/battleService';
@@ -43,9 +44,10 @@ interface ExecuteAdventureCoreProps {
   realmName?: string;
   adventureType: AdventureType;
   skipBattle?: boolean;
-  skipReputationEvent?: boolean; // 是否跳过声望事件
+  skipReputationEvent?: boolean;
   onReputationEvent?: (event: AdventureResult['reputationEvent']) => void;
-  onPauseAutoAdventure?: () => void; // 暂停自动历练回调（用于天地之魄等特殊事件）
+  onPauseAutoAdventure?: () => void;
+  autoAdventure?: boolean;
 }
 
 // 核心玩家状态更新逻辑 (Refactored)
@@ -343,9 +345,8 @@ const applyResultToPlayer = (
   return newState;
 };
 
-
 export async function executeAdventureCore({
-  result, battleContext, petSkillCooldowns, player, setPlayer, addLog, triggerVisual, onOpenBattleModal, realmName, adventureType, riskLevel, skipBattle, skipReputationEvent, onReputationEvent, onPauseAutoAdventure
+  result, battleContext, petSkillCooldowns, player, setPlayer, addLog, triggerVisual, onOpenBattleModal, realmName, adventureType, riskLevel, skipBattle, skipReputationEvent, onReputationEvent, onPauseAutoAdventure, autoAdventure
 }: ExecuteAdventureCoreProps & { riskLevel?: '低' | '中' | '高' | '极度危险'; }) {
   // Visual Effects
   const safeHpChange = result.hpChange || 0;
@@ -425,7 +426,18 @@ export async function executeAdventureCore({
       }
     });
   } else {
-    // 非追杀战斗或非胜利情况，直接应用结果（包括血量变化）
+    if (player.sectHuntEndTime && player.sectHuntEndTime > Date.now() && player.sectId === null) {
+      const huntStart = player.sectHuntEndTime - GAME_BALANCE.hunt.durationDays * 24 * 60 * 60 * 1000;
+      const timedLevel = Math.min(
+        GAME_BALANCE.hunt.maxLevel,
+        Math.floor(Math.max(0, Date.now() - huntStart) / (GAME_BALANCE.hunt.levelUpHours * 60 * 60 * 1000))
+      );
+      if (timedLevel > (player.sectHuntLevel || 0)) {
+        const levelNames = ['普通弟子', '精英弟子', '长老', '宗主'];
+        addLog(`追杀已持续多时，宗门改派【${levelNames[timedLevel]}】前来！`, 'danger');
+        setPlayer((prev) => ({ ...prev, sectHuntLevel: timedLevel }));
+      }
+    }
     setPlayer(prev => applyResultToPlayer(prev, result, { isSecretRealm, adventureType, realmName, riskLevel, battleContext, petSkillCooldowns, addLog, triggerVisual }));
   }
 
@@ -458,24 +470,26 @@ export async function executeAdventureCore({
     }
   }
 
-  // 确保事件描述被添加到日志
-  // 注意：如果 result 为空或未定义，也要输出默认日志
-  if (result && result.story && result.story.trim()) {
+  const items = [...(result.itemsObtained || [])]; if (result.itemObtained) items.push(result.itemObtained);
+  if (autoAdventure) {
+    const loot = items.filter((i) => i?.name).map((i) => i.name).join('、') || '无掉落';
+    const title = battleContext ? `${battleContext.enemy.name}（${battleContext.victory ? '胜' : '败'}）` : (result.story?.trim() || '机缘');
+    addLog(
+      `【历练简报】${title} 修为${result.expChange || 0} 灵石${result.spiritStonesChange || 0} 掉落：${loot}`,
+      battleContext && !battleContext.victory ? 'danger' : 'gain'
+    );
+  } else if (result && result.story && result.story.trim()) {
     addLog(result.story, result.eventColor || 'normal');
   } else if (!result || !result.story) {
-    // 如果事件描述为空或 result 为空，添加默认日志
     addLog('你在历练途中没有遇到什么特别的事情。', 'normal');
   }
 
-  // 添加数值变化日志（如果测试环境需要）
-  if (import.meta.env.DEV && (result.expChange || result.spiritStonesChange || result.hpChange)) {
+  if (!autoAdventure && import.meta.env.DEV && (result.expChange || result.spiritStonesChange || result.hpChange)) {
     const changes: string[] = [];
     if (result.expChange) changes.push(`修为 ${result.expChange > 0 ? '+' : ''}${result.expChange}`);
     if (result.spiritStonesChange) changes.push(`灵石 ${result.spiritStonesChange > 0 ? '+' : ''}${result.spiritStonesChange}`);
     if (result.hpChange) changes.push(`气血 ${result.hpChange > 0 ? '+' : ''}${result.hpChange}`);
-    if (changes.length > 0) {
-      addLog(`${changes.join(' | ')}`, result.eventColor || 'normal');
-    }
+    if (changes.length > 0) addLog(`${changes.join(' | ')}`, result.eventColor || 'normal');
   }
 
   if (result.lifespanChange) addLog(result.lifespanChange > 0 ? `寿命增加 ${result.lifespanChange.toFixed(1)} 年` : `寿命减少 ${Math.abs(result.lifespanChange).toFixed(1)} 年`, result.lifespanChange > 0 ? 'gain' : 'danger');
@@ -484,8 +498,9 @@ export async function executeAdventureCore({
     Object.entries(result.spiritualRootsChange).forEach(([k, v]) => { if (v) addLog(v > 0 ? `${names[k]}灵根提升 ${v}` : `${names[k]}灵根降低 ${Math.abs(v)}`, v > 0 ? 'gain' : 'danger'); });
   }
 
-  const items = [...(result.itemsObtained || [])]; if (result.itemObtained) items.push(result.itemObtained);
-  items.forEach(i => { if (i?.name) addLog(`获得物品: ${normalizeRarityValue(i.rarity) ? `【${normalizeRarityValue(i.rarity)}】` : ''}${i.name}`, 'gain'); });
+  if (!autoAdventure) {
+    items.forEach(i => { if (i?.name) addLog(`获得物品: ${normalizeRarityValue(i.rarity) ? `【${normalizeRarityValue(i.rarity)}】` : ''}${i.name}`, 'gain'); });
+  }
 
   // 战斗弹窗延迟2秒后打开（如果跳过了战斗则不打开弹窗）
   const fastBattleSettlement = useUIStore.getState().fastBattleSettlement;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Gift, Sparkles, Lightbulb } from 'lucide-react';
 import { PlayerStats, LotteryPrize, ItemRarity } from '../types';
-import { LOTTERY_PRIZES } from '../constants/index';
+import { LOTTERY_PRIZES, getLotteryPityProgress } from '../constants/index';
 import { showError } from '../utils/toastUtils';
 import { getRarityColor, getRarityBorder } from '../utils/rarityUtils';
 import { Modal } from './common';
@@ -158,13 +158,17 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
               {displayTickets} 张
             </div>
             <div className="text-stone-400">抽奖券</div>
-            <div className="text-xs text-stone-500 mt-2">
-              累计抽奖: {player.lotteryCount} 次
-              {player.lotteryCount >= 10 && player.lotteryCount % 10 !== 0 && (
-                <span className="text-yellow-400 ml-2">
-                  (再抽 {10 - (player.lotteryCount % 10)} 次必出稀有以上)
-                </span>
-              )}
+            <div className="text-xs text-stone-500 mt-2 space-y-1">
+              <div>累计抽奖: {player.lotteryCount} 次</div>
+              {(() => {
+                const pity = getLotteryPityProgress(player.lotteryCount);
+                return (
+                  <>
+                    <div className="text-yellow-400">再抽 {pity.rareRemain} 次必出稀有以上</div>
+                    <div className="text-amber-300">再抽 {pity.legendRemain} 次必出传说/仙品</div>
+                  </>
+                );
+              })()}
             </div>
           </div>
 

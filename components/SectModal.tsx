@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import Modal from './common/Modal';
 import { PlayerStats, SectRank, RealmType, Item, AdventureResult } from '../types';
-import { SECTS, SECT_RANK_REQUIREMENTS, REALM_ORDER, SECT_RANK_DATA, SECT_RANK_STAT_BONUS, SECT_TASK_REFRESH_COST, SECT_TRAINING_ROOM, SECT_LEADER_SALARY } from '../constants/index';
+import { SECTS, SECT_RANK_REQUIREMENTS, REALM_ORDER, SECT_RANK_DATA, SECT_RANK_STAT_BONUS, SECT_TASK_REFRESH_COST, SECT_TRAINING_ROOM, SECT_LEADER_SALARY, SECT_RANK_SALARY } from '../constants/index';
 import { useGameStore } from '../store/gameStore';
+import { getLocalDateString } from '../utils/dateUtils';
 import { showConfirm, showError, showSuccess } from '../utils/toastUtils';
 import { generateRandomSects, generateRandomSectTasks, generateSectShopItems, RandomSectTask } from '../services/randomService';
 import { X, Users, ShoppingBag, Shield, Scroll, ArrowUp, RefreshCw, BookOpen, Sparkles, Crown, Flame, Star, Zap, Lightbulb } from 'lucide-react';
@@ -26,6 +27,7 @@ interface Props {
   onBuy: (item: Partial<Item>, cost: number, quantity?: number) => void;
   onLearnArt: (art: CultivationArt) => void;
   onChallengeLeader: () => void;
+  onClaimSalary?: () => void;
   setItemActionLog?: (log: { text: string; type: string } | null) => void;
 }
 
@@ -41,6 +43,7 @@ const SectModal: React.FC<Props> = ({
   onBuy,
   onLearnArt,
   onChallengeLeader,
+  onClaimSalary,
   setItemActionLog,
 }) => {
   const [activeTab, setActiveTab] = useState<'hall' | 'mission' | 'shop' | 'library'>(
@@ -158,23 +161,27 @@ const SectModal: React.FC<Props> = ({
     );
   };
 
-  // 宗主领取每日俸禄
-  const todayStr = new Date().toISOString().split('T')[0];
-  const canClaimSalary =
-    player.sectRank === SectRank.Leader && player.leaderSalaryDate !== todayStr;
+  const todayStr = getLocalDateString();
+  const lastSalaryDate = player.sectSalaryDate || player.leaderSalaryDate;
+  const canClaimSalary = !!player.sectId && lastSalaryDate !== todayStr;
+  const salaryConfig = SECT_RANK_SALARY[player.sectRank] || SECT_LEADER_SALARY;
+  const salaryStones = salaryConfig.baseSpiritStones * (Math.max(0, REALM_ORDER.indexOf(player.realm)) + 1);
 
   const handleClaimSalary = () => {
+    if (onClaimSalary) {
+      onClaimSalary();
+      return;
+    }
     if (!canClaimSalary) return;
-    const realmIndex = REALM_ORDER.indexOf(player.realm);
-    const stones = SECT_LEADER_SALARY.baseSpiritStones * (realmIndex + 1);
     useGameStore.getState().setPlayer((prev) => ({
       ...prev,
-      spiritStones: prev.spiritStones + stones,
-      sectContribution: prev.sectContribution + SECT_LEADER_SALARY.contribution,
+      spiritStones: prev.spiritStones + salaryStones,
+      sectContribution: prev.sectContribution + salaryConfig.contribution,
+      sectSalaryDate: todayStr,
       leaderSalaryDate: todayStr,
     }));
     useGameStore.getState().addLog(
-      `你以宗主之名开库放粮，领取今日俸禄：${stones.toLocaleString()} 灵石、${SECT_LEADER_SALARY.contribution} 贡献。`,
+      `你领取了【${player.sectRank}】今日俸禄：${salaryStones.toLocaleString()} 灵石、${salaryConfig.contribution} 贡献。`,
       'special'
     );
   };
@@ -352,11 +359,19 @@ const SectModal: React.FC<Props> = ({
                 );
               })()}
             </div>
-            <div className="text-[10px] md:text-xs text-stone-400">
-              宗门贡献:{' '}
-              <span className="text-white font-bold">
-                {player.sectContribution}
+            <div className="text-[10px] md:text-xs text-stone-400 flex items-center gap-2 flex-wrap">
+              <span>
+                宗门贡献:{' '}
+                <span className="text-white font-bold">{player.sectContribution}</span>
               </span>
+              {player.sectId && canClaimSalary && (
+                <button
+                  onClick={handleClaimSalary}
+                  className="px-2 py-0.5 rounded bg-mystic-gold/20 text-mystic-gold border border-mystic-gold/50 hover:bg-mystic-gold/30"
+                >
+                  领取俸禄
+                </button>
+              )}
             </div>
           </div>
         }
@@ -504,7 +519,7 @@ const SectModal: React.FC<Props> = ({
                             <h5 className="text-mystic-gold font-bold mb-2">宗主特权</h5>
                             <ul className="text-xs text-stone-400 text-left space-y-1 list-disc list-inside">
                               <li>藏宝阁兑换享受 <span className="text-mystic-gold">5折</span> 优惠</li>
-                              <li>每日可领取宗主俸祿：{SECT_LEADER_SALARY.baseSpiritStones} 灵石 + {SECT_LEADER_SALARY.contribution} 贡献</li>
+                              <li>每日可领取俸禄：{salaryStones.toLocaleString()} 灵石 + {salaryConfig.contribution} 贡献</li>
                               <li>后续将解锁更多宗门管理功能...</li>
                             </ul>
                             {canClaimSalary ? (

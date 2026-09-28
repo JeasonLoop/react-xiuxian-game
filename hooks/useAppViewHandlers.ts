@@ -36,6 +36,7 @@ interface UseAppViewHandlersProps {
   handleSectPromote: () => void;
   handleSectBuy: (itemTemplate: Partial<Item>, cost: number, quantity?: number) => void;
   handleChallengeLeader: (params: any) => void;
+  handleClaimSectSalary: () => void;
   handleSelectTalent: (talentId: string) => void;
   handleSelectTitle: (titleId: string) => void;
   handleAllocateAttribute: (attribute: string, amount: number) => void;
@@ -54,6 +55,7 @@ interface UseAppViewHandlersProps {
   handleUpdateSettings: (updates: any) => void;
   handleRebirth: () => void;
   handleClaimQuestReward: (questId: string) => void;
+  handleClaimAllQuestRewards?: () => void;
   handleUpgradeGrotto: (targetLevel: number) => void;
   handlePlantHerb: (herbId: string, slot: number) => void;
   handleHarvestHerb: (slot: number) => void;
@@ -288,6 +290,7 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     handleSectPromote,
     handleSectBuy,
     handleChallengeLeader,
+    handleClaimSectSalary,
     handleEnterRealm,
     handleSelectTalent,
     handleSelectTitle,
@@ -309,6 +312,7 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     handleUpdateSettings,
     handleRebirth,
     handleClaimQuestReward,
+    handleClaimAllQuestRewards,
     handleUpgradeGrotto,
     handlePlantHerb,
     handleHarvestHerb,
@@ -396,6 +400,7 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     handleSectPromote,
     handleSectBuy,
     handleChallengeLeader,
+    handleClaimSectSalary,
     handleEnterRealm,
     handleSelectTalent,
     handleSelectTitle,
@@ -423,6 +428,7 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     handleUpdateSettings,
     handleRestartGame: handleRebirth,
     handleClaimQuestReward,
+    handleClaimAllQuestRewards,
     handleUpgradeGrotto,
     handlePlantHerb,
     handleHarvestHerb,
@@ -485,13 +491,13 @@ export function useModalsHandlers(props: UseAppViewHandlersProps) {
     handleOrganizeInventory, handleRefineNatalArtifact, handleUnrefineNatalArtifact,
     handleRefineAdvancedItem, handleUpgradeItem, handleLearnArt, handleActivateArt,
     handleCraft, handleJoinSect, handleLeaveSect, handleSafeLeaveSect, handleSectTask,
-    handleSectPromote, handleSectBuy, handleChallengeLeader,
+    handleSectPromote, handleSectBuy, handleChallengeLeader, handleClaimSectSalary,
     handleEnterRealm, handleSelectTalent, handleSelectTitle, handleAllocateAttribute,
     handleAllocateAllAttributes, handleUseInheritance, setPlayer, addLog,
     handleActivatePet, handleDeactivatePet, handleFeedPet, handleBatchFeedItems,
     handleBatchFeedHp, handleEvolvePet, handlePetExpedition, handleReleasePet, handleBatchReleasePets,
     handleDraw, handleUpdateSettings, handleRebirth,
-    handleClaimQuestReward, handleUpgradeGrotto, handlePlantHerb,
+    handleClaimQuestReward, handleClaimAllQuestRewards, handleUpgradeGrotto, handlePlantHerb,
     handleHarvestHerb, handleHarvestAll, handleEnhanceSpiritArray,
     handleToggleAutoHarvest, handleSpeedupHerb, handleBuyItem, handleSellItem,
     handleRefreshShop, handleReputationEventChoice, setIsReputationEventOpen,

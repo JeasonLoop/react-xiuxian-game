@@ -169,6 +169,17 @@ function App() {
   useAutoCloudSave();
   useVersionCheck();
 
+  const grottoHarvestHintRef = useRef('');
+  useEffect(() => {
+    if (!gameStarted || !player?.name || !player.grotto) return;
+    if (grottoHarvestHintRef.current === player.name) return;
+    grottoHarvestHintRef.current = player.name;
+    const mature = (player.grotto.plantedHerbs || []).filter((h) => Date.now() >= h.harvestTime).length;
+    if (mature > 0) {
+      useGameStore.getState().addLog(`洞府有 ${mature} 株灵草可收获。`, 'gain');
+    }
+  }, [gameStarted, player?.name, player?.grotto]);
+
   const { alertState, closeAlert } = useGlobalAlert();
 
   // ========== 生命周期 hooks ==========
@@ -236,7 +247,7 @@ function App() {
     if (gameStarted && player && dailyQuestHandlers) {
       dailyQuestHandlers.initializeDailyQuests();
     }
-  }, [gameStarted, player, dailyQuestHandlers]);
+  }, [gameStarted, player?.name, dailyQuestHandlers]);
 
   // ========== 等级提升与天劫 ==========
   const handleBreakthroughRef = useRef(breakthroughHandlers.handleBreakthrough);

@@ -53,10 +53,11 @@ export const AuthScreen: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const oauthToken = params.get('token');
+    const oauthRefreshToken = params.get('refreshToken');
     const oauthUser = params.get('username');
     if (oauthToken && oauthUser) {
       window.history.replaceState({}, '', window.location.pathname);
-      handleLoginSuccess({ token: oauthToken, refreshToken: oauthToken, user: { id: '', username: oauthUser } });
+      handleLoginSuccess({ token: oauthToken, refreshToken: oauthRefreshToken ?? oauthToken, user: { id: '', username: oauthUser } });
     }
   }, []);
 
@@ -373,13 +374,13 @@ export const AuthScreen: React.FC = () => {
                   return;
                 }
                 const handler = (e: MessageEvent) => {
-                  if (e.data?.type !== 'linuxdo-auth') return;
+                  if (e.source !== popup || e.origin !== new URL(API_URL).origin || e.data?.type !== 'linuxdo-auth') return;
                   window.removeEventListener('message', handler);
                   if (!popup.closed) popup.close();
                   if (e.data?.token) {
                     handleLoginSuccess({
                       token: e.data.token,
-                      refreshToken: e.data.token,
+                      refreshToken: e.data.refreshToken ?? e.data.token,
                       user: { id: '', username: e.data.username },
                     });
                   }

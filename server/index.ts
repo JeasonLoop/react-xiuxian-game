@@ -1032,9 +1032,12 @@ app.get('/api/auth/linuxdo/callback', async (req, res) => {
     const ldUser = await userRes.json() as any;
     if (!ldUser.username) return res.status(500).json({ error: '获取用户信息失败' });
 
-    // 3. 查找或创建用户
+    // 3. 查找或创建用户（sqlite3.Database 使用异步回调）
     const linuxdoId = String(ldUser.id);
-    const existing = db.prepare('SELECT * FROM users WHERE linuxdo_id = ?').get(linuxdoId) as any;
+    const getUser = (sql: string, params: unknown[]) => new Promise<any>((resolve, reject) => {
+      db.get(sql, params, (err, row) => err ? reject(err) : resolve(row));
+    });
+    const existing = await getUser('SELECT * FROM users WHERE linuxdo_id = ?', [linuxdoId]);
 
     let userId: number;
     let username: string;
@@ -1043,17 +1046,23 @@ app.get('/api/auth/linuxdo/callback', async (req, res) => {
       username = existing.username;
     } else {
       username = ldUser.username;
-      if (db.prepare('SELECT id FROM users WHERE username = ? AND linuxdo_id IS NULL').get(username)) {
-        username = `${ldUser.username}_ld`;
+      if (await getUser('SELECT id FROM users WHERE username = ? AND linuxdo_id IS NULL', [username])) {
+        username = `${username}_ld_${linuxdoId}`;
       }
-      const result = db.prepare('INSERT INTO users (username, password_hash, linuxdo_id) VALUES (?, ?, ?)').run(username, '', linuxdoId);
-      userId = (result as any).lastInsertRowid as number;
+      userId = await new Promise<number>((resolve, reject) => {
+        db.run('INSERT INTO users (username, password_hash, linuxdo_id) VALUES (?, ?, ?)', [username, '', linuxdoId], function (err) {
+          if (err) reject(err);
+          else resolve(this.lastID);
+        });
+      });
     }
 
-    // 4. JWT
     const token = jwt.sign({ id: String(userId), username, type: 'access' }, JWT_SECRET_USED, { expiresIn: ACCESS_TOKEN_EXPIRY });
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    res.send(`<!DOCTYPE html><html><head><script>window.opener?(window.opener.postMessage({type:'linuxdo-auth',token:'${token}',username:'${username}'},'*'),window.close()):window.location.replace('${frontendUrl}?token=${token}&username=${encodeURIComponent(username)}')</script></head><body>登录成功，正在跳转...</body></html>`);
+    const refreshToken = jwt.sign({ id: String(userId), username, type: 'refresh' }, JWT_SECRET_USED, { expiresIn: REFRESH_TOKEN_EXPIRY });
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5175';
+    const payload = JSON.stringify({ type: 'linuxdo-auth', token, refreshToken, username }).replace(/</g, String.fromCharCode(92) + 'u003c');
+    const fallback = `${frontendUrl}?token=${encodeURIComponent(token)}&refreshToken=${encodeURIComponent(refreshToken)}&username=${encodeURIComponent(username)}`;
+    res.send(`<!DOCTYPE html><html><head><script>window.opener?(window.opener.postMessage(${payload}, ${JSON.stringify(new URL(frontendUrl).origin)}),window.close()):window.location.replace(${JSON.stringify(fallback)})</script></head><body>登录成功，正在跳转...</body></html>`);
   } catch (e: any) {
     res.status(500).json({ error: `OAuth 错误: ${e.message}` });
   }

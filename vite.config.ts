@@ -4,7 +4,7 @@ import react from '@vitejs/plugin-react';
 import { codeInspectorPlugin } from 'code-inspector-plugin';
 
 export default defineConfig({
-  base: '/', // Vercel 部署使用根路径
+  base: '/',
   server: {
     port: 5175,
     strictPort: false, // 端口被占用时自动切换到下一个可用端口

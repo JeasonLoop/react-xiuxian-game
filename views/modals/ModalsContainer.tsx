@@ -122,6 +122,7 @@ interface ModalsContainerProps {
     ) => void;
     handleSectLearnArt: (art: CultivationArt) => void;
     handleChallengeLeader: () => void;
+    handleClaimSectSalary?: () => void;
     // Realm
     handleEnterRealm: (realm: any) => void;
     // Character
@@ -158,6 +159,7 @@ interface ModalsContainerProps {
     handleRestartGame?: () => void;
     // Daily Quest
     handleClaimQuestReward?: (questId: string) => void;
+    handleClaimAllQuestRewards?: () => void;
     // Grotto
     handleUpgradeGrotto: (level: number) => void;
     handlePlantHerb: (herbId: string) => void;
@@ -355,6 +357,7 @@ function ModalsContainer({
           onBuy={handlers.handleSectBuy}
           onLearnArt={handlers.handleSectLearnArt}
           onChallengeLeader={handlers.handleChallengeLeader}
+          onClaimSalary={handlers.handleClaimSectSalary}
           setItemActionLog={setItemActionLog}
         />
       )}
@@ -433,6 +436,7 @@ function ModalsContainer({
           onClose={() => handlers.setIsDailyQuestOpen(false)}
           player={player}
           onClaimReward={handlers.handleClaimQuestReward ?? (() => {})}
+          onClaimAllRewards={handlers.handleClaimAllQuestRewards}
         />
       )}
 

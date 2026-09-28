@@ -1,6 +1,6 @@
 import React from 'react';
 import { PlayerStats, AdventureType, ShopType, RealmType, AdventureResult, DifficultyMode } from '../../types';
-import { REALM_ORDER, HEAVEN_EARTH_SOUL_BOSSES } from '../../constants/index';
+import { REALM_ORDER, HEAVEN_EARTH_SOUL_BOSSES, GAME_BALANCE } from '../../constants/index';
 import { getDifficultyBalance } from '../../constants/balance';
 import {
   shouldTriggerBattle,
@@ -220,7 +220,7 @@ export function useAdventureHandlers({
       }, 100);
     } else if (adventureType === 'dao_combining_challenge') {
       addLog('你前往挑战天地之魄，这是合道期的终极考验...', 'special');
-    } else {
+    } else if (!autoAdventure) {
       addLog('你走出洞府，前往荒野历练...', 'normal');
     }
 
@@ -234,8 +234,8 @@ export function useAdventureHandlers({
       const huntSectId = player.sectHuntSectId;
       const huntLevel = player.sectHuntLevel || 0;
 
-      // 如果被追杀，强制触发追杀战斗（30%概率）
-      if (isHunted && huntSectId && Math.random() < 0.11) {
+      // 被追杀时按配置概率触发追杀战
+      if (isHunted && huntSectId && Math.random() < GAME_BALANCE.hunt.encounterChance) {
         addLog('你感受到了一股强烈的杀意！宗门追杀者出现了！', 'danger');
 
         // 使用公共函数处理战斗
@@ -413,6 +413,7 @@ export function useAdventureHandlers({
                       skipReputationEvent: effectiveSkipReputationEvent,
                       onReputationEvent,
                       onPauseAutoAdventure: handlePauseAutoAdventure,
+                      autoAdventure,
                     });
                   }).finally(() => {
                     setLoading(false);
@@ -470,8 +471,9 @@ export function useAdventureHandlers({
         };
       }
 
-      // 等待2秒后再处理结果
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (!autoAdventure) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
 
       if(import.meta.env.DEV) {
         console.log('result', result);
@@ -494,12 +496,13 @@ export function useAdventureHandlers({
         skipReputationEvent: effectiveSkipReputationEvent,
         onReputationEvent,
         onPauseAutoAdventure: handlePauseAutoAdventure,
+        autoAdventure,
       });
     } catch {
       addLog('历练途中突发异变，你神识受损，不得不返回。', 'danger');
     } finally {
       setLoading(false);
-      setCooldown(2);
+      setCooldown(autoAdventure ? GAME_BALANCE.autoAdventure.cooldown : 2);
     }
   };
 

@@ -9,6 +9,7 @@
 
 ```bash
 npm install
+cd server && npm install && cd ..
 ```
 
 前后端联调（推荐）：
@@ -17,10 +18,7 @@ npm install
 npm run dev
 ```
 
-说明：
-
-- 前端：Vite（默认 `5173`）
-- 后端：Express（默认 `3001`）
+说明：根目录和 `server/` 是独立的依赖安装目录；联调需要先安装两处依赖。前端：Vite（默认 `5175`，占用时递增）；后端：Express（默认 `3001`）。生产部署可使用 Cloudflare Pages + Worker + KV，见 [API 文档](./API.md)。
 
 仅启动前端：
 

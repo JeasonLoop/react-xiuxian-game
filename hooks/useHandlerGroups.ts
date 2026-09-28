@@ -47,6 +47,7 @@ interface SectHandlers {
   handleSectBuy: (itemTemplate: Partial<Item>, cost: number, quantity?: number) => void;
   handleChallengeLeader: (params: any) => void;
   handleSectLearnArt: (art: any) => void;
+  handleClaimSectSalary: () => void;
 }
 
 /**
@@ -105,7 +106,8 @@ interface ShopAndBattleHandlers {
   handleDraw: (count: number) => void; // 抽取
   handleUpdateSettings: (settings: any) => void; // 更新设置
   handleRebirth: () => void; // 涅槃重生
-  handleClaimQuestReward: (questId: string) => void; // 领取任务奖励
+  handleClaimQuestReward: (questId: string) => void;
+  handleClaimAllQuestRewards?: () => void;
 }
 
 /**
@@ -208,6 +210,7 @@ interface UseHandlerGroupsProps {
     handleSectBuy: (itemTemplate: Partial<Item>, cost: number, quantity?: number) => void; // 宗门购买
     handleChallengeLeader: (params: any) => void; // 挑战宗门领袖
     handleSectLearnArt: (art: any) => void;
+    handleClaimSectSalary: () => void;
     handleUpdateVault?: (vault: any) => void;
     handleBuyItem: (shopItem: ShopItem, quantity?: number) => void;
     handleSellItem: (item: Item, quantity?: number) => void; // 出售物品
@@ -219,7 +222,8 @@ interface UseHandlerGroupsProps {
     handleCloseBattleModal: () => void; // 关闭战斗模态框
     handleDraw: (count: number) => void; // 抽取
     handleUpdateSettings: (settings: any) => void; // 更新设置
-    claimQuestReward: (questId: string) => void; // 领取任务奖励
+    claimQuestReward: (questId: string) => void;
+    claimAllQuestRewards: () => void;
     checkAchievements: () => void; // 检查成就
     // 洞府相关
     handleUpgradeGrotto: (targetLevel: number) => void; // 升级洞府
@@ -307,6 +311,7 @@ export function useSectHandlersGroup(appHandlers: UseHandlerGroupsProps['appHand
       handleSectBuy: appHandlers.handleSectBuy,
       handleChallengeLeader: appHandlers.handleChallengeLeader,
       handleSectLearnArt: appHandlers.handleSectLearnArt,
+      handleClaimSectSalary: appHandlers.handleClaimSectSalary,
     }),
     [
       appHandlers.handleJoinSect,
@@ -317,6 +322,7 @@ export function useSectHandlersGroup(appHandlers: UseHandlerGroupsProps['appHand
       appHandlers.handleSectBuy,
       appHandlers.handleChallengeLeader,
       appHandlers.handleSectLearnArt,
+      appHandlers.handleClaimSectSalary,
     ]
   );
 }
@@ -425,6 +431,7 @@ export function useShopAndBattleHandlersGroup(
       handleUpdateSettings: appHandlers.handleUpdateSettings,
       handleRebirth,
       handleClaimQuestReward: appHandlers.claimQuestReward,
+      handleClaimAllQuestRewards: appHandlers.claimAllQuestRewards,
     }),
     [
       appHandlers.handleBuyItem,
@@ -440,6 +447,7 @@ export function useShopAndBattleHandlersGroup(
       appHandlers.handleUpdateSettings,
       handleRebirth,
       appHandlers.claimQuestReward,
+      appHandlers.claimAllQuestRewards,
     ]
   );
 }
