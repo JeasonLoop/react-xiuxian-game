@@ -279,29 +279,54 @@ export function useDeathDetection({
         setAutoAdventure(false);
       } else if (difficulty === 'normal') {
         // 普通模式：掉落部分属性和装备
+        // 随机掉落数值与日志都在 updater 外计算/输出，保持 setPlayer 的 updater 为纯函数（避免 StrictMode 下重复记日志、随机值双取）
+        // 随机掉落属性 10-20%
+        const attributeDropPercent = 0.1 + Math.random() * 0.1;
+        const attackDrop = Math.floor(player.attack * attributeDropPercent);
+        const defenseDrop = Math.floor(player.defense * attributeDropPercent);
+        const spiritDrop = Math.floor(player.spirit * attributeDropPercent);
+        const physiqueDrop = Math.floor(player.physique * attributeDropPercent);
+        const speedDrop = Math.floor(player.speed * attributeDropPercent);
+        const maxHpDrop = Math.floor(player.maxHp * attributeDropPercent);
+
+        // 随机掉落装备 1-3件
+        const equippedItemIds = Object.values(player.equippedItems).filter(
+          Boolean
+        ) as string[];
+        const dropCount = Math.min(
+          1 + Math.floor(Math.random() * 3),
+          equippedItemIds.length
+        );
+        const itemsToDrop = equippedItemIds
+          .sort(() => Math.random() - 0.5)
+          .slice(0, dropCount);
+
+        // 记录掉落信息
+        const dropMessages: string[] = [];
+        if (attackDrop > 0) dropMessages.push(`攻击力 -${attackDrop}`);
+        if (defenseDrop > 0) dropMessages.push(`防御力 -${defenseDrop}`);
+        if (spiritDrop > 0) dropMessages.push(`神识 -${spiritDrop}`);
+        if (physiqueDrop > 0) dropMessages.push(`体魄 -${physiqueDrop}`);
+        if (speedDrop > 0) dropMessages.push(`速度 -${speedDrop}`);
+        if (maxHpDrop > 0) dropMessages.push(`气血上限 -${maxHpDrop}`);
+
+        if (itemsToDrop.length > 0) {
+          const droppedItemNames = itemsToDrop
+            .map((id) => player.inventory.find((i) => i.id === id)?.name)
+            .filter(Boolean)
+            .join('、');
+          dropMessages.push(`装备掉落：${droppedItemNames}`);
+        }
+
+        if (dropMessages.length > 0) {
+          addLog(`死亡惩罚：${dropMessages.join('，')}`, 'danger');
+        }
+
+        // 恢复10%最大气血
+        const reviveHp = Math.max(1, Math.floor((player.maxHp - maxHpDrop) * 0.1));
+
         setPlayer((prev) => {
           if (!prev) return prev;
-
-          // 随机掉落属性 10-20%
-          const attributeDropPercent = 0.1 + Math.random() * 0.1;
-          const attackDrop = Math.floor(prev.attack * attributeDropPercent);
-          const defenseDrop = Math.floor(prev.defense * attributeDropPercent);
-          const spiritDrop = Math.floor(prev.spirit * attributeDropPercent);
-          const physiqueDrop = Math.floor(prev.physique * attributeDropPercent);
-          const speedDrop = Math.floor(prev.speed * attributeDropPercent);
-          const maxHpDrop = Math.floor(prev.maxHp * attributeDropPercent);
-
-          // 随机掉落装备 1-3件
-          const equippedItemIds = Object.values(prev.equippedItems).filter(
-            Boolean
-          ) as string[];
-          const dropCount = Math.min(
-            1 + Math.floor(Math.random() * 3),
-            equippedItemIds.length
-          );
-          const itemsToDrop = equippedItemIds
-            .sort(() => Math.random() - 0.5)
-            .slice(0, dropCount);
 
           // 先卸载掉落的装备
           const newEquippedItems = { ...prev.equippedItems };
@@ -318,30 +343,6 @@ export function useDeathDetection({
           const newInventory = prev.inventory.filter(
             (item) => !itemsToDrop.includes(item.id)
           );
-
-          // 记录掉落信息
-          const dropMessages: string[] = [];
-          if (attackDrop > 0) dropMessages.push(`攻击力 -${attackDrop}`);
-          if (defenseDrop > 0) dropMessages.push(`防御力 -${defenseDrop}`);
-          if (spiritDrop > 0) dropMessages.push(`神识 -${spiritDrop}`);
-          if (physiqueDrop > 0) dropMessages.push(`体魄 -${physiqueDrop}`);
-          if (speedDrop > 0) dropMessages.push(`速度 -${speedDrop}`);
-          if (maxHpDrop > 0) dropMessages.push(`气血上限 -${maxHpDrop}`);
-
-          if (itemsToDrop.length > 0) {
-            const droppedItemNames = itemsToDrop
-              .map((id) => prev.inventory.find((i) => i.id === id)?.name)
-              .filter(Boolean)
-              .join('、');
-            dropMessages.push(`装备掉落：${droppedItemNames}`);
-          }
-
-          if (dropMessages.length > 0) {
-            addLog(`死亡惩罚：${dropMessages.join('，')}`, 'danger');
-          }
-
-          // 恢复10%最大气血
-          const reviveHp = Math.max(1, Math.floor((prev.maxHp - maxHpDrop) * 0.1));
 
           return {
             ...prev,

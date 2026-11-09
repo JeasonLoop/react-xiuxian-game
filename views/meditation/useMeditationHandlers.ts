@@ -117,39 +117,43 @@ export function useMeditationHandlers(
        }
      }
  
-     currentSetPlayer((prev) => {
-      // 获取实际的最大血量（包含金丹法数加成等）
-      const totalStats = getPlayerTotalStats(prev);
-      const actualMaxHp = totalStats.maxHp;
+    // 回血量、灵石收益与对应日志都在 updater 外计算/输出，保持 updater 为纯函数（避免 StrictMode 下重复记日志、随机值双取）
+    // 获取实际的最大血量（包含金丹法数加成等）
+    const totalStats = getPlayerTotalStats(currentPlayer);
+    const actualMaxHp = totalStats.maxHp;
 
-      // 打坐时直接加速回血：基础2倍，根据境界和层数可以增加
-      // 基础倍数 = 2.0 + 境界层数 * 0.1（最高3.5倍）
-      const baseMultiplier = 2.0 + Math.min(prev.realmLevel * 0.1, 1.5); // 2.0 - 3.5倍
+    // 打坐时直接加速回血：基础2倍，根据境界和层数可以增加
+    // 基础倍数 = 2.0 + 境界层数 * 0.1（最高3.5倍）
+    const baseMultiplier = 2.0 + Math.min(currentPlayer.realmLevel * 0.1, 1.5); // 2.0 - 3.5倍
 
-      // 计算回血量：基础回血 * 打坐加成倍数（基于实际最大血量）
-      const baseRegen = Math.max(1, Math.floor(actualMaxHp * 0.01));
-      const actualRegen = Math.floor(baseRegen * baseMultiplier);
+    // 计算回血量：基础回血 * 打坐加成倍数（基于实际最大血量）
+    const baseRegen = Math.max(1, Math.floor(actualMaxHp * 0.01));
+    const actualRegen = Math.floor(baseRegen * baseMultiplier);
 
-      // 直接恢复血量（使用实际最大血量作为上限）
-      const newHp = Math.min(actualMaxHp, prev.hp + actualRegen);
+    // 直接恢复血量（使用实际最大血量作为上限）
+    const newHp = Math.min(actualMaxHp, currentPlayer.hp + actualRegen);
 
-      const multiplierText = baseMultiplier.toFixed(1);
-      if (newHp > prev.hp && !isAuto) {
-        const latestAddLog = props?.addLog ?? useGameStore.getState().addLog;
-        latestAddLog(
-          `打坐加速回血，恢复 ${actualRegen} 点气血（${multiplierText}倍速度）`,
-          'gain'
-        );
-      }
+    if (newHp > currentPlayer.hp && !isAuto) {
+      const latestAddLog = props?.addLog ?? useGameStore.getState().addLog;
+      latestAddLog(
+        `打坐加速回血，恢复 ${actualRegen} 点气血（${baseMultiplier.toFixed(1)}倍速度）`,
+        'gain'
+      );
+    }
 
-      const realmIdx = REALM_ORDER.indexOf(prev.realm);
-      const baseStones = Math.max(1, realmIdx * 2 + 1);
-      let stoneGain = baseStones + Math.floor(Math.random() * 3) - 1;
-      if (isAuto) {
-        stoneGain = Math.max(0, Math.floor(stoneGain * medBalance.autoStoneMultiplier));
-      }
-      const newSpiritStones = prev.spiritStones + Math.max(isAuto ? 0 : 1, stoneGain);
+    // 灵石收益（随机值在 updater 外一次取定）
+    const realmIdx = REALM_ORDER.indexOf(currentPlayer.realm);
+    const baseStones = Math.max(1, realmIdx * 2 + 1);
+    let stoneGain = baseStones + Math.floor(Math.random() * 3) - 1;
+    if (isAuto) {
+      stoneGain = Math.max(0, Math.floor(stoneGain * medBalance.autoStoneMultiplier));
+    }
+    const newSpiritStones = currentPlayer.spiritStones + Math.max(isAuto ? 0 : 1, stoneGain);
+    if (!isAuto && stoneGain > 0 && Math.random() < 0.3) {
+      currentAddLog(`打坐时获得了 ${Math.max(1, stoneGain)} 灵石`, 'gain');
+    }
 
+    currentSetPlayer((prev) => {
       const stats = prev.statistics || {
         killCount: 0,
         meditateCount: 0,
@@ -161,11 +165,6 @@ export function useMeditationHandlers(
         breakthroughCount: 0,
         secretRealmCount: 0,
       };
-
-      if (!isAuto && stoneGain > 0 && Math.random() < 0.3) {
-        const latestAddLog = props?.addLog ?? useGameStore.getState().addLog;
-        latestAddLog(`打坐时获得了 ${Math.max(1, stoneGain)} 灵石`, 'gain');
-      }
 
       return {
         ...prev,
@@ -191,12 +190,13 @@ export function useMeditationHandlers(
       if (firstMeditateAchievement) {
         const latestSetPlayer = props?.setPlayer ?? useGameStore.getState().setPlayer;
         const latestAddLog = props?.addLog ?? useGameStore.getState().addLog;
+        // 成就日志在 updater 外输出，保持 updater 为纯函数（避免 StrictMode 下重复记日志）
+        latestAddLog(
+          `达成成就：【${firstMeditateAchievement.name}】！`,
+          'special'
+        );
         latestSetPlayer((prev) => {
           const newAchievements = [...prev.achievements, 'ach-first-step'];
-          latestAddLog(
-            `达成成就：【${firstMeditateAchievement.name}】！`,
-            'special'
-          );
           return {
             ...prev,
             achievements: newAchievements,

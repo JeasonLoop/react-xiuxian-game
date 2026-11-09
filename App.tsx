@@ -61,7 +61,6 @@ import {
   useDebugModeInit,
   useTribulationComplete,
 } from './hooks/useAppLifecycle';
-import { useHandlerGroups } from './hooks/useHandlerGroups';
 
 function App() {
   // ========== Game Store 状态 ==========
@@ -423,35 +422,41 @@ function App() {
     enabled: gameStarted && !!player && !isDead,
   });
 
-  // ========== Handler Groups ==========
-   const { commonHandlersParams } = useHandlerGroups({
-     appHandlers,
-     handleRebirth,
-     modalSetters,
-     otherSettersAndState: {
+   // ========== Handler Groups ==========
+   // 直接合并 handlers 参数（原 useHandlerGroups 为 480 行纯转发层，已删除；
+   // useGameViewHandlers/useModalsHandlers 内部 useMemo 均为逐字段依赖，handler 引用稳定则输出稳定）
+   const commonHandlersParams = useMemo(
+     () => ({
+       ...appHandlers,
+       handleRebirth,
+       // appHandlers 中无前缀的日常任务领取方法重命名为 handler 命名
+       handleClaimQuestReward: appHandlers.claimQuestReward,
+       handleClaimAllQuestRewards: appHandlers.claimAllQuestRewards,
+       ...modalSetters,
        setItemToUpgrade,
-      setCurrentShop,
-      setBattleReplay,
-      setRevealedBattleRounds,
-      setTurnBasedBattleParams,
-      setReputationEvent,
-      setPlayer,
-      addLog,
-      autoMeditate,
-      autoAdventure,
-      pausedByShop,
-      pausedByBattle,
-      pausedByReputationEvent,
-      pausedByHeavenEarthSoul,
-      setAutoMeditate,
-      setAutoAdventure,
-      setPausedByShop,
-      setPausedByBattle,
-      setPausedByReputationEvent,
-      setPausedByHeavenEarthSoul,
-    },
-  });
-
+       setCurrentShop,
+       setBattleReplay,
+       setRevealedBattleRounds,
+       setTurnBasedBattleParams,
+       setReputationEvent,
+       setPlayer,
+       addLog,
+       autoMeditate,
+       autoAdventure,
+       pausedByShop,
+       pausedByBattle,
+       pausedByReputationEvent,
+       pausedByHeavenEarthSoul,
+       setAutoMeditate,
+       setAutoAdventure,
+       setPausedByShop,
+       setPausedByBattle,
+       setPausedByReputationEvent,
+       setPausedByHeavenEarthSoul,
+     }),
+     [appHandlers, handleRebirth, modalSetters]
+   );
+ 
    const baseGameViewHandlers = useGameViewHandlers(commonHandlersParams);
    // 附加手动突破入口，随 handlers 一路传到 StatsPanel
    const gameViewHandlers = useMemo(() => ({

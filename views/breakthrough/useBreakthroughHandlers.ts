@@ -104,10 +104,73 @@ export function useBreakthroughHandlers({
       const flavor = getRandomBreakthroughDescription(realmText, player.name);
       addLog(flavor, 'special');
 
-      setPlayer((prev) => {
-        const stats = REALM_DATA[nextRealm];
-        const levelMultiplier = 1 + nextLevel * 0.1;
+      // 以下随机数与日志内容均在 updater 外计算/输出，保持 updater 为纯函数（避免 StrictMode 下重复记日志、随机值双取）
+      const stats = REALM_DATA[nextRealm];
+      const levelMultiplier = 1 + nextLevel * 0.1;
+      const newBaseMaxHp = Math.floor(stats.baseMaxHp * levelMultiplier);
+      const newMaxExp = getRealmMaxExp(nextRealm, nextLevel);
+      const newBaseMaxLifespan = stats.baseMaxLifespan;
 
+      // 修为泵的溢出注入结果在 updater 外算好
+      const filled = fillExpFromStore(
+        Math.max(0, player.exp - player.maxExp),
+        player.storedExp || 0,
+        newMaxExp,
+      );
+      const newExp = filled.exp;
+      const nextStoredExp = filled.storedExp;
+      if (nextStoredExp > 0 && nextStoredExp !== (player.storedExp || 0)) {
+        addLog(`修为泵灌入新境界 ${newExp} 修为，泵内余 ${nextStoredExp}。`, 'gain');
+      } else if ((player.storedExp || 0) > 0 && nextStoredExp === 0) {
+        addLog(`修为泵中的修为已全部灌入当前境界。`, 'gain');
+      }
+
+      // 突破时给予属性点：指数级别增长
+      // 境界升级：2^(境界索引+1)，层数升级：2^境界索引/9 + 1
+      const targetRealm = isRealmUpgrade ? nextRealm : player.realm;
+      const attributePointsGained = calculateBreakthroughAttributePoints(isRealmUpgrade, targetRealm);
+      if (attributePointsGained > 0) {
+        addLog(
+          `突破成功！获得 ${attributePointsGained} 点可分配属性点！`,
+          'gain'
+        );
+      }
+
+      // 计算寿命增加（更明显的驱动力：长生）；层数升级的随机增量在 updater 外一次取定
+      const oldMaxLifespan = player.maxLifespan || 100;
+      let lifespanIncrease = 0;
+
+      if (isRealmUpgrade) {
+        // 境界升级：获得两个境界基础寿命差额的全额，并额外奖励基础值
+        const baseIncrease = newBaseMaxLifespan - oldMaxLifespan;
+        lifespanIncrease = baseIncrease + Math.floor(newBaseMaxLifespan * 0.1);
+      } else {
+        // 层数升级：获得差额的 1/9，并至少增加 1-5 年随机寿命，体现积少成多
+        const baseIncrease = Math.floor((newBaseMaxLifespan - oldMaxLifespan) / 9);
+        const bonus = Math.floor(Math.random() * 5) + 1;
+        lifespanIncrease = baseIncrease + bonus;
+      }
+
+      const newMaxLifespan = oldMaxLifespan + lifespanIncrease;
+      const newLifespan = (player.lifespan ?? oldMaxLifespan) + lifespanIncrease;
+
+      if (lifespanIncrease > 0) {
+        addLog(
+          `突破成功！你的寿命增加了 ${lifespanIncrease} 年！当前寿命：${Math.floor(newLifespan)}/${newMaxLifespan} 年`,
+          'gain'
+        );
+      }
+
+      // 境界升级时检查新解锁的功能
+      if (isRealmUpgrade) {
+        const newFeatures = getNewlyUnlockedFeatures(player.realm, nextRealm);
+        if (newFeatures.length > 0) {
+          const featureNames = newFeatures.map((f) => f.name).join('、');
+          addLog(`突破至 ${nextRealm}，解锁新功能：${featureNames}！`, 'special');
+        }
+      }
+
+      setPlayer((prev) => {
         // 计算旧境界的基础属性（用于计算分配的属性点）
         const oldStats = REALM_DATA[prev.realm];
         const oldLevelMultiplier = 1 + prev.realmLevel * 0.1;
@@ -143,23 +206,6 @@ export function useBreakthroughHandlers({
         const allocatedPhysique = Math.max(0, prev.physique - oldBaseWithFixedBonusPhysique);
         const allocatedSpeed = Math.max(0, prev.speed - oldBaseWithFixedBonusSpeed);
 
-        const newBaseMaxHp = Math.floor(stats.baseMaxHp * levelMultiplier);
-        const newMaxExp = getRealmMaxExp(nextRealm, nextLevel);
-        const newBaseMaxLifespan = stats.baseMaxLifespan;
-
-        const filled = fillExpFromStore(
-          Math.max(0, prev.exp - prev.maxExp),
-          prev.storedExp || 0,
-          newMaxExp,
-        );
-        const newExp = filled.exp;
-        const nextStoredExp = filled.storedExp;
-        if (nextStoredExp > 0 && nextStoredExp !== (prev.storedExp || 0)) {
-          addLog(`修为泵灌入新境界 ${newExp} 修为，泵内余 ${nextStoredExp}。`, 'gain');
-        } else if ((prev.storedExp || 0) > 0 && nextStoredExp === 0) {
-          addLog(`修为泵中的修为已全部灌入当前境界。`, 'gain');
-        }
-
         // 更新统计
         const playerStats = prev.statistics || {
           killCount: 0,
@@ -172,51 +218,6 @@ export function useBreakthroughHandlers({
           breakthroughCount: 0,
           secretRealmCount: 0,
         };
-
-        // 突破时给予属性点：指数级别增长
-        // 境界升级：2^(境界索引+1)，层数升级：2^境界索引/9 + 1
-        const targetRealm = isRealmUpgrade ? nextRealm : prev.realm;
-        const attributePointsGained = calculateBreakthroughAttributePoints(isRealmUpgrade, targetRealm);
-        if (attributePointsGained > 0) {
-          addLog(
-            `突破成功！获得 ${attributePointsGained} 点可分配属性点！`,
-            'gain'
-          );
-        }
-
-        // 计算寿命增加（更明显的驱动力：长生）
-        const oldMaxLifespan = prev.maxLifespan || 100;
-        let lifespanIncrease = 0;
-
-        if (isRealmUpgrade) {
-          // 境界升级：获得两个境界基础寿命差额的全额，并额外奖励基础值
-          const baseIncrease = newBaseMaxLifespan - oldMaxLifespan;
-          lifespanIncrease = baseIncrease + Math.floor(newBaseMaxLifespan * 0.1);
-        } else {
-          // 层数升级：获得差额的 1/9，并至少增加 1-5 年随机寿命，体现积少成多
-          const baseIncrease = Math.floor((newBaseMaxLifespan - oldMaxLifespan) / 9);
-          const bonus = Math.floor(Math.random() * 5) + 1;
-          lifespanIncrease = baseIncrease + bonus;
-        }
-
-        const newMaxLifespan = oldMaxLifespan + lifespanIncrease;
-        const newLifespan = (prev.lifespan ?? oldMaxLifespan) + lifespanIncrease;
-
-        if (lifespanIncrease > 0) {
-          addLog(
-            `突破成功！你的寿命增加了 ${lifespanIncrease} 年！当前寿命：${Math.floor(newLifespan)}/${newMaxLifespan} 年`,
-            'gain'
-          );
-        }
-
-        // 境界升级时检查新解锁的功能
-        if (isRealmUpgrade) {
-          const newFeatures = getNewlyUnlockedFeatures(player.realm, nextRealm);
-          if (newFeatures.length > 0) {
-            const featureNames = newFeatures.map((f) => f.name).join('、');
-            addLog(`突破至 ${nextRealm}，解锁新功能：${featureNames}！`, 'special');
-          }
-        }
 
         // 先计算基础属性 + 固定加成 + 分配的属性点
         const baseAttack = Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack + allocatedAttack;
@@ -310,244 +311,247 @@ export function useBreakthroughHandlers({
   };
 
   const handleUseInheritance = () => {
-    setPlayer((prev) => {
-      const inheritanceUsed = prev.inheritanceUsed || 0;
-      if (inheritanceUsed <= 0) {
-        return prev;
+    if (!player) return;
+    // 闭包内的 player 即为最新状态；所有计算与日志都在 updater 外完成，保持 updater 为纯函数（避免 StrictMode 下重复记日志、随机值双取）
+    const inheritanceUsed = player.inheritanceUsed || 0;
+    if (inheritanceUsed <= 0) {
+      return;
+    }
+
+    let breakthroughCount = inheritanceUsed;
+    let remainingInheritance = 0;
+    let currentRealm = player.realm;
+    let currentLevel = player.realmLevel;
+
+    // 传承只能用于小境界（1-9 层）跳层，不可跨越天劫突破大境界
+    while (breakthroughCount > 0) {
+      if (currentLevel >= 9) {
+        // 已到达大境界顶点，剩余传承保留不消耗
+        remainingInheritance = breakthroughCount;
+        addLog('传承跳层仅限小境界（1-9 层），无法跨越天劫突破大境界！大境界突破需正常积累感悟。', 'danger');
+        break;
       }
+      currentLevel += 1;
+      breakthroughCount--;
+    }
 
-      let breakthroughCount = inheritanceUsed;
-      let remainingInheritance = 0;
-      let currentRealm = prev.realm;
-      let currentLevel = prev.realmLevel;
+    const actualBreakthroughCount = inheritanceUsed - remainingInheritance;
 
-      // 传承只能用于小境界（1-9 层）跳层，不可跨越天劫突破大境界
-      while (breakthroughCount > 0) {
-        if (currentLevel >= 9) {
-          // 已到达大境界顶点，剩余传承保留不消耗
-          remainingInheritance = breakthroughCount;
-          addLog('传承跳层仅限小境界（1-9 层），无法跨越天劫突破大境界！大境界突破需正常积累感悟。', 'danger');
+    if (actualBreakthroughCount <= 0) {
+      return;
+    }
+
+    // 后续计算逻辑与原先一致，prev 即当前的 player
+    const prev = player;
+
+    const stats = REALM_DATA[currentRealm];
+    const levelMultiplier = 1 + currentLevel * 0.1;
+
+    // 计算旧境界的基础属性（用于计算分配的属性点）
+    const oldStats = REALM_DATA[prev.realm];
+    const oldLevelMultiplier = 1 + prev.realmLevel * 0.1;
+    const oldBaseAttack = Math.floor(oldStats.baseAttack * oldLevelMultiplier);
+    const oldBaseDefense = Math.floor(oldStats.baseDefense * oldLevelMultiplier);
+    const oldBaseHp = Math.floor(oldStats.baseMaxHp * oldLevelMultiplier);
+    const oldBaseSpirit = Math.floor(oldStats.baseSpirit * oldLevelMultiplier);
+    const oldBasePhysique = Math.floor(oldStats.basePhysique * oldLevelMultiplier);
+    const oldBaseSpeed = Math.floor(oldStats.baseSpeed * oldLevelMultiplier);
+
+    // 使用统一的加成计算函数
+    const bonuses = calculatePlayerBonuses(prev);
+    const bonusAttack = bonuses.attack;
+    const bonusDefense = bonuses.defense;
+    const bonusHp = bonuses.hp;
+    const bonusSpirit = bonuses.spirit;
+    const bonusPhysique = bonuses.physique;
+    const bonusSpeed = bonuses.speed;
+
+    // 计算旧境界时的基础属性+固定加成（用于计算分配的属性点）
+    const oldBaseWithFixedBonusAttack = oldBaseAttack + bonusAttack;
+    const oldBaseWithFixedBonusDefense = oldBaseDefense + bonusDefense;
+    const oldBaseWithFixedBonusHp = oldBaseHp + bonusHp;
+    const oldBaseWithFixedBonusSpirit = oldBaseSpirit + bonusSpirit;
+    const oldBaseWithFixedBonusPhysique = oldBasePhysique + bonusPhysique;
+    const oldBaseWithFixedBonusSpeed = oldBaseSpeed + bonusSpeed;
+
+    // 计算用户通过属性点分配的额外属性
+    const allocatedAttack = Math.max(0, prev.attack - oldBaseWithFixedBonusAttack);
+    const allocatedDefense = Math.max(0, prev.defense - oldBaseWithFixedBonusDefense);
+    const allocatedHp = Math.max(0, prev.maxHp - oldBaseWithFixedBonusHp);
+    const allocatedSpirit = Math.max(0, prev.spirit - oldBaseWithFixedBonusSpirit);
+    const allocatedPhysique = Math.max(0, prev.physique - oldBaseWithFixedBonusPhysique);
+    const allocatedSpeed = Math.max(0, prev.speed - oldBaseWithFixedBonusSpeed);
+
+    const newBaseMaxHp = Math.floor(stats.baseMaxHp * levelMultiplier);
+    const newMaxExp = getRealmMaxExp(currentRealm, currentLevel);
+
+    const filled = fillExpFromStore(
+      Math.max(0, prev.exp - prev.maxExp),
+      prev.storedExp || 0,
+      newMaxExp,
+    );
+    const newExp = filled.exp;
+    const nextStoredExp = filled.storedExp;
+
+    // 计算寿命增加（传承突破也应该增加寿命）
+    const oldMaxLifespan = prev.maxLifespan || 100;
+    let totalLifespanIncrease = 0;
+
+    // 计算每次突破的寿命增加（层数升级的随机增量在此处一次取定）
+    let tempRealmForLifespan = prev.realm;
+    let tempLevelForLifespan = prev.realmLevel;
+    for (let i = 0; i < actualBreakthroughCount; i++) {
+      const isRealmUpgradeForLifespan = tempLevelForLifespan >= 9;
+      const tempRealmIndex = REALM_ORDER.indexOf(tempRealmForLifespan);
+
+      if (isRealmUpgradeForLifespan) {
+        if (tempRealmIndex < REALM_ORDER.length - 1) {
+          const nextRealmForLifespan = REALM_ORDER[tempRealmIndex + 1];
+          const nextRealmStats = REALM_DATA[nextRealmForLifespan];
+          const oldRealmStats = REALM_DATA[tempRealmForLifespan];
+          const baseIncrease = nextRealmStats.baseMaxLifespan - oldRealmStats.baseMaxLifespan;
+          totalLifespanIncrease += baseIncrease + Math.floor(nextRealmStats.baseMaxLifespan * 0.1);
+          tempRealmForLifespan = nextRealmForLifespan;
+          tempLevelForLifespan = 1;
+        }
+      } else {
+        const tempRealmStats = REALM_DATA[tempRealmForLifespan];
+        const baseIncrease = Math.floor((tempRealmStats.baseMaxLifespan - oldMaxLifespan) / 9);
+        const bonus = Math.floor(Math.random() * 5) + 1;
+        totalLifespanIncrease += baseIncrease + bonus;
+        tempLevelForLifespan++;
+      }
+    }
+
+    const newMaxLifespan = oldMaxLifespan + totalLifespanIncrease;
+    const newLifespan = (prev.lifespan ?? oldMaxLifespan) + totalLifespanIncrease;
+
+    // 计算传承突破获得的属性点（指数级别增长）
+    let attributePointsGained = 0;
+    let tempRealm = prev.realm;
+    let tempLevel = prev.realmLevel;
+    for (let i = 0; i < actualBreakthroughCount; i++) {
+      const isRealmUpgrade = tempLevel >= 9;
+      const validRealmIndex = getRealmIndex(tempRealm);
+      if (isRealmUpgrade) {
+        if (validRealmIndex < REALM_ORDER.length - 1) {
+          attributePointsGained += calculateBreakthroughAttributePoints(isRealmUpgrade, REALM_ORDER[validRealmIndex + 1]);
+          tempRealm = REALM_ORDER[validRealmIndex + 1];
+          tempLevel = 1;
+        }
+      } else {
+        attributePointsGained += calculateBreakthroughAttributePoints(isRealmUpgrade, tempRealm);
+        tempLevel++;
+      }
+    }
+
+    addLog(
+      `你使用了传承，连续突破了 ${actualBreakthroughCount} 个境界！获得 ${attributePointsGained} 点属性点！`,
+      'special'
+    );
+
+    if (totalLifespanIncrease > 0) {
+      addLog(
+        `传承突破成功！你的寿命增加了 ${totalLifespanIncrease} 年！当前寿命：${Math.floor(newLifespan)}/${newMaxLifespan} 年`,
+        'gain'
+      );
+    }
+
+    // 计算新境界的最终属性 = 基础属性 + 固定加成 + 分配的属性点
+    const baseAttack = Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack + allocatedAttack;
+    const baseDefense = Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense + allocatedDefense;
+    const baseMaxHp = newBaseMaxHp + bonusHp + allocatedHp;
+    const baseSpirit = Math.floor(stats.baseSpirit * levelMultiplier) + bonusSpirit + allocatedSpirit;
+    const basePhysique = Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique + allocatedPhysique;
+    const baseSpeed = Math.max(0, Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed + allocatedSpeed);
+
+    // 计算金丹法数（如果晋升到金丹期）
+    let goldenCoreMethodCount = prev.goldenCoreMethodCount;
+    // 检查是否在传承突破过程中晋升到金丹期
+    let tempRealmForGoldenCore = prev.realm;
+    let tempLevelForGoldenCore = prev.realmLevel;
+    for (let i = 0; i < actualBreakthroughCount; i++) {
+      if (tempLevelForGoldenCore >= 9) {
+        const tempRealmIndex = REALM_ORDER.indexOf(tempRealmForGoldenCore);
+        if (tempRealmIndex < REALM_ORDER.length - 1) {
+          const nextRealm = REALM_ORDER[tempRealmIndex + 1];
+          if (nextRealm === '金丹期') {
+            // 构建临时玩家状态来计算金丹法数
+            const tempPlayer = {
+              ...prev,
+              realm: nextRealm,
+              realmLevel: 1,
+            };
+            goldenCoreMethodCount = calculateGoldenCoreMethodCount(tempPlayer);
+            break;
+          }
+          tempRealmForGoldenCore = nextRealm;
+          tempLevelForGoldenCore = 1;
+        } else {
           break;
         }
-        currentLevel += 1;
-        breakthroughCount--;
+      } else {
+        tempLevelForGoldenCore++;
       }
+    }
 
-      const actualBreakthroughCount = inheritanceUsed - remainingInheritance;
+    // 构建更新后的玩家状态来计算实际最大血量（包含功法加成等）
+    const updatedPlayer = {
+      ...prev,
+      realm: currentRealm,
+      realmLevel: currentLevel,
+      maxHp: baseMaxHp,
+      attack: baseAttack,
+      defense: baseDefense,
+      spirit: baseSpirit,
+      physique: basePhysique,
+      speed: baseSpeed,
+      goldenCoreMethodCount,
+      activeArtId: prev.activeArtId,
+      cultivationArts: prev.cultivationArts,
+      spiritualRoots: prev.spiritualRoots,
+    };
+    const totalStats = getPlayerTotalStats(updatedPlayer);
+    const actualMaxHp = totalStats.maxHp; // 实际最大血量（包含功法加成）
 
-      if (actualBreakthroughCount > 0) {
-        const stats = REALM_DATA[currentRealm];
-        const levelMultiplier = 1 + currentLevel * 0.1;
+    // 更新统计
+    const playerStats = prev.statistics || {
+      killCount: 0,
+      meditateCount: 0,
+      adventureCount: 0,
+      equipCount: 0,
+      petCount: 0,
+      recipeCount: 0,
+      artCount: 0,
+      breakthroughCount: 0,
+      secretRealmCount: 0,
+    };
 
-        // 计算旧境界的基础属性（用于计算分配的属性点）
-        const oldStats = REALM_DATA[prev.realm];
-        const oldLevelMultiplier = 1 + prev.realmLevel * 0.1;
-        const oldBaseAttack = Math.floor(oldStats.baseAttack * oldLevelMultiplier);
-        const oldBaseDefense = Math.floor(oldStats.baseDefense * oldLevelMultiplier);
-        const oldBaseHp = Math.floor(oldStats.baseMaxHp * oldLevelMultiplier);
-        const oldBaseSpirit = Math.floor(oldStats.baseSpirit * oldLevelMultiplier);
-        const oldBasePhysique = Math.floor(oldStats.basePhysique * oldLevelMultiplier);
-        const oldBaseSpeed = Math.floor(oldStats.baseSpeed * oldLevelMultiplier);
-
-        // 使用统一的加成计算函数
-        const bonuses = calculatePlayerBonuses(prev);
-        const bonusAttack = bonuses.attack;
-        const bonusDefense = bonuses.defense;
-        const bonusHp = bonuses.hp;
-        const bonusSpirit = bonuses.spirit;
-        const bonusPhysique = bonuses.physique;
-        const bonusSpeed = bonuses.speed;
-
-        // 计算旧境界时的基础属性+固定加成（用于计算分配的属性点）
-        const oldBaseWithFixedBonusAttack = oldBaseAttack + bonusAttack;
-        const oldBaseWithFixedBonusDefense = oldBaseDefense + bonusDefense;
-        const oldBaseWithFixedBonusHp = oldBaseHp + bonusHp;
-        const oldBaseWithFixedBonusSpirit = oldBaseSpirit + bonusSpirit;
-        const oldBaseWithFixedBonusPhysique = oldBasePhysique + bonusPhysique;
-        const oldBaseWithFixedBonusSpeed = oldBaseSpeed + bonusSpeed;
-
-        // 计算用户通过属性点分配的额外属性
-        const allocatedAttack = Math.max(0, prev.attack - oldBaseWithFixedBonusAttack);
-        const allocatedDefense = Math.max(0, prev.defense - oldBaseWithFixedBonusDefense);
-        const allocatedHp = Math.max(0, prev.maxHp - oldBaseWithFixedBonusHp);
-        const allocatedSpirit = Math.max(0, prev.spirit - oldBaseWithFixedBonusSpirit);
-        const allocatedPhysique = Math.max(0, prev.physique - oldBaseWithFixedBonusPhysique);
-        const allocatedSpeed = Math.max(0, prev.speed - oldBaseWithFixedBonusSpeed);
-
-        const newBaseMaxHp = Math.floor(stats.baseMaxHp * levelMultiplier);
-        const newMaxExp = getRealmMaxExp(currentRealm, currentLevel);
-        const newBaseMaxLifespan = stats.baseMaxLifespan;
-
-        const filled = fillExpFromStore(
-          Math.max(0, prev.exp - prev.maxExp),
-          prev.storedExp || 0,
-          newMaxExp,
-        );
-        const newExp = filled.exp;
-        const nextStoredExp = filled.storedExp;
-
-        // 计算寿命增加（传承突破也应该增加寿命）
-        const oldMaxLifespan = prev.maxLifespan || 100;
-        let totalLifespanIncrease = 0;
-
-        // 计算每次突破的寿命增加
-        let tempRealmForLifespan = prev.realm;
-        let tempLevelForLifespan = prev.realmLevel;
-        for (let i = 0; i < actualBreakthroughCount; i++) {
-          const isRealmUpgradeForLifespan = tempLevelForLifespan >= 9;
-          const tempRealmIndex = REALM_ORDER.indexOf(tempRealmForLifespan);
-
-          if (isRealmUpgradeForLifespan) {
-            if (tempRealmIndex < REALM_ORDER.length - 1) {
-              const nextRealmForLifespan = REALM_ORDER[tempRealmIndex + 1];
-              const nextRealmStats = REALM_DATA[nextRealmForLifespan];
-              const oldRealmStats = REALM_DATA[tempRealmForLifespan];
-              const baseIncrease = nextRealmStats.baseMaxLifespan - oldRealmStats.baseMaxLifespan;
-              totalLifespanIncrease += baseIncrease + Math.floor(nextRealmStats.baseMaxLifespan * 0.1);
-              tempRealmForLifespan = nextRealmForLifespan;
-              tempLevelForLifespan = 1;
-            }
-          } else {
-            const tempRealmStats = REALM_DATA[tempRealmForLifespan];
-            const baseIncrease = Math.floor((tempRealmStats.baseMaxLifespan - oldMaxLifespan) / 9);
-            const bonus = Math.floor(Math.random() * 5) + 1;
-            totalLifespanIncrease += baseIncrease + bonus;
-            tempLevelForLifespan++;
-          }
-        }
-
-        const newMaxLifespan = oldMaxLifespan + totalLifespanIncrease;
-        const newLifespan = (prev.lifespan ?? oldMaxLifespan) + totalLifespanIncrease;
-
-        // 计算传承突破获得的属性点（指数级别增长）
-        let attributePointsGained = 0;
-        let tempRealm = prev.realm;
-        let tempLevel = prev.realmLevel;
-        for (let i = 0; i < actualBreakthroughCount; i++) {
-          const isRealmUpgrade = tempLevel >= 9;
-          const validRealmIndex = getRealmIndex(tempRealm);
-          if (isRealmUpgrade) {
-            if (validRealmIndex < REALM_ORDER.length - 1) {
-              attributePointsGained += calculateBreakthroughAttributePoints(isRealmUpgrade, REALM_ORDER[validRealmIndex + 1]);
-              tempRealm = REALM_ORDER[validRealmIndex + 1];
-              tempLevel = 1;
-            }
-          } else {
-            attributePointsGained += calculateBreakthroughAttributePoints(isRealmUpgrade, tempRealm);
-            tempLevel++;
-          }
-        }
-
-        addLog(
-          `你使用了传承，连续突破了 ${actualBreakthroughCount} 个境界！获得 ${attributePointsGained} 点属性点！`,
-          'special'
-        );
-
-        if (totalLifespanIncrease > 0) {
-          addLog(
-            `传承突破成功！你的寿命增加了 ${totalLifespanIncrease} 年！当前寿命：${Math.floor(newLifespan)}/${newMaxLifespan} 年`,
-            'gain'
-          );
-        }
-
-        // 计算新境界的最终属性 = 基础属性 + 固定加成 + 分配的属性点
-        const baseAttack = Math.floor(stats.baseAttack * levelMultiplier) + bonusAttack + allocatedAttack;
-        const baseDefense = Math.floor(stats.baseDefense * levelMultiplier) + bonusDefense + allocatedDefense;
-        const baseMaxHp = newBaseMaxHp + bonusHp + allocatedHp;
-        const baseSpirit = Math.floor(stats.baseSpirit * levelMultiplier) + bonusSpirit + allocatedSpirit;
-        const basePhysique = Math.floor(stats.basePhysique * levelMultiplier) + bonusPhysique + allocatedPhysique;
-        const baseSpeed = Math.max(0, Math.floor(stats.baseSpeed * levelMultiplier) + bonusSpeed + allocatedSpeed);
-
-        // 计算金丹法数（如果晋升到金丹期）
-        let goldenCoreMethodCount = prev.goldenCoreMethodCount;
-        // 检查是否在传承突破过程中晋升到金丹期
-        let tempRealmForGoldenCore = prev.realm;
-        let tempLevelForGoldenCore = prev.realmLevel;
-        for (let i = 0; i < actualBreakthroughCount; i++) {
-          if (tempLevelForGoldenCore >= 9) {
-            const tempRealmIndex = REALM_ORDER.indexOf(tempRealmForGoldenCore);
-            if (tempRealmIndex < REALM_ORDER.length - 1) {
-              const nextRealm = REALM_ORDER[tempRealmIndex + 1];
-              if (nextRealm === '金丹期') {
-                // 构建临时玩家状态来计算金丹法数
-                const tempPlayer = {
-                  ...prev,
-                  realm: nextRealm,
-                  realmLevel: 1,
-                };
-                goldenCoreMethodCount = calculateGoldenCoreMethodCount(tempPlayer);
-                break;
-              }
-              tempRealmForGoldenCore = nextRealm;
-              tempLevelForGoldenCore = 1;
-            } else {
-              break;
-            }
-          } else {
-            tempLevelForGoldenCore++;
-          }
-        }
-
-        // 构建更新后的玩家状态来计算实际最大血量（包含功法加成等）
-        const updatedPlayer = {
-          ...prev,
-          realm: currentRealm,
-          realmLevel: currentLevel,
-          maxHp: baseMaxHp,
-          attack: baseAttack,
-          defense: baseDefense,
-          spirit: baseSpirit,
-          physique: basePhysique,
-          speed: baseSpeed,
-          goldenCoreMethodCount,
-          activeArtId: prev.activeArtId,
-          cultivationArts: prev.cultivationArts,
-          spiritualRoots: prev.spiritualRoots,
-        };
-        const totalStats = getPlayerTotalStats(updatedPlayer);
-        const actualMaxHp = totalStats.maxHp; // 实际最大血量（包含功法加成）
-
-        // 更新统计
-        const playerStats = prev.statistics || {
-          killCount: 0,
-          meditateCount: 0,
-          adventureCount: 0,
-          equipCount: 0,
-          petCount: 0,
-          recipeCount: 0,
-          artCount: 0,
-          breakthroughCount: 0,
-          secretRealmCount: 0,
-        };
-
-        return {
-          ...prev,
-          realm: currentRealm,
-          realmLevel: currentLevel,
-          exp: newExp,
-          maxExp: newMaxExp,
-          storedExp: nextStoredExp,
-          maxHp: baseMaxHp,
-          hp: actualMaxHp, // 使用实际最大血量（包含功法加成）作为满血
-          attack: baseAttack,
-          defense: baseDefense,
-          spirit: baseSpirit,
-          physique: basePhysique,
-          speed: baseSpeed,
-          attributePoints: prev.attributePoints + attributePointsGained,
-          maxLifespan: newMaxLifespan,
-          lifespan: newLifespan,
-          goldenCoreMethodCount, // 设置金丹法数
-          inheritanceUsed: remainingInheritance,
-          statistics: {
-            ...playerStats,
-            breakthroughCount: playerStats.breakthroughCount + actualBreakthroughCount,
-          },
-        };
-      }
-
-      return prev;
-    });
+    // updater 内只做纯状态映射，引用上面算好的最终值
+    setPlayer((p) => ({
+      ...p,
+      realm: currentRealm,
+      realmLevel: currentLevel,
+      exp: newExp,
+      maxExp: newMaxExp,
+      storedExp: nextStoredExp,
+      maxHp: baseMaxHp,
+      hp: actualMaxHp, // 使用实际最大血量（包含功法加成）作为满血
+      attack: baseAttack,
+      defense: baseDefense,
+      spirit: baseSpirit,
+      physique: basePhysique,
+      speed: baseSpeed,
+      attributePoints: p.attributePoints + attributePointsGained,
+      maxLifespan: newMaxLifespan,
+      lifespan: newLifespan,
+      goldenCoreMethodCount, // 设置金丹法数
+      inheritanceUsed: remainingInheritance,
+      statistics: {
+        ...playerStats,
+        breakthroughCount: playerStats.breakthroughCount + actualBreakthroughCount,
+      },
+    }));
   };
 
   return {

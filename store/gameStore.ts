@@ -173,27 +173,19 @@ export const useGameStore = create<GameState>()(
       const state = get();
       if (!state.player) return;
 
-      try {
-        const saveData = {
-          player: state.player,
-          logs: state.logs,
-          timestamp: Date.now(),
-          lastActiveTime: Date.now(),
-        };
-
-        saveGameData(state.player, state.logs, useUIStore.getState().marketItems);
-
-        // 同时保存到旧存档系统（兼容性）
-        localStorage.setItem(STORAGE_KEYS.SAVE, JSON.stringify(saveData));
-
-        // 保存设置
-        localStorage.setItem(
-          STORAGE_KEYS.SETTINGS,
-          JSON.stringify(state.settings)
-        );
-      } catch (error) {
-        console.error('保存存档失败:', error);
-      }
+       try {
+         // 仅写入新存档系统（旧格式 localStorage[SAVE] 双写已移除；
+         // 读取路径保留旧格式兼容，历史存档首次迁移后即走新格式）
+         saveGameData(state.player, state.logs, useUIStore.getState().marketItems);
+ 
+         // 保存设置
+         localStorage.setItem(
+           STORAGE_KEYS.SETTINGS,
+           JSON.stringify(state.settings)
+         );
+       } catch (error) {
+         console.error('保存存档失败:', error);
+       }
     },
 
     // 加载游戏
