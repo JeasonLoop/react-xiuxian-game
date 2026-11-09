@@ -1,5 +1,4 @@
-import React, { useCallback } from 'react';
-import { PlayerStats } from '../../types';
+import { useCallback } from 'react';
 import {
   ACHIEVEMENTS,
   GAME_BALANCE,
@@ -9,47 +8,25 @@ import { getActiveMentalArt, getPlayerTotalStats, calculateTotalExpRate } from '
 import { getLocalDateString } from '../../utils/dateUtils';
 import { useGameStore } from '../../store';
 import { useUIStore } from '../../store/uiStore';
- 
- // 自动打坐汇总日志的输出间隔（每 N 次输出一条累计日志，避免挂机刷屏）
- const AUTO_MEDITATE_LOG_INTERVAL = 10;
- // 模块级计数器：自动打坐次数与累计修为（游戏单实例，跨渲染保持）
- let autoMeditateTick = 0;
- let autoMeditateAccumGain = 0;
- 
- interface UseMeditationHandlersProps {
-  player?: PlayerStats;
-  setPlayer?: React.Dispatch<React.SetStateAction<PlayerStats>>;
-  addLog?: (message: string, type?: string) => void;
-  checkLevelUp?: (addedExp: number) => void;
-}
+
+// 自动打坐汇总日志的输出间隔（每 N 次输出一条累计日志，避免挂机刷屏）
+const AUTO_MEDITATE_LOG_INTERVAL = 10;
+// 模块级计数器：自动打坐次数与累计修为（游戏单实例，跨渲染保持）
+let autoMeditateTick = 0;
+let autoMeditateAccumGain = 0;
 
 /**
  * 打坐处理函数
- * 包含打坐
- * @param props 可选的 props（向后兼容），如果不提供则从 zustand store 获取
+ * 函数内部总是通过 useGameStore.getState() 获取最新状态（无闭包依赖），
+ * 因此 useCallback 依赖为空数组、引用永久稳定。
+ * 说明：升级检查由 useLevelUp 的修为圆满检测接管，此处不再重复触发。
  * @returns handleMeditate 打坐
  */
-
-export function useMeditationHandlers(
-  props?: UseMeditationHandlersProps
-) {
-  // 从 zustand store 获取状态
-  const storePlayer = useGameStore((state) => state.player);
-  const storeSetPlayer = useGameStore((state) => state.setPlayer);
-  const storeAddLog = useGameStore((state) => state.addLog);
-
-  // 使用 props 或 store 的值（props 优先，用于向后兼容）
-  const player = props?.player ?? storePlayer;
-  const setPlayer = props?.setPlayer ?? storeSetPlayer;
-  const addLog = props?.addLog ?? storeAddLog;
-  const checkLevelUp = props?.checkLevelUp ?? (() => {}); // 默认空函数，升级检查在 useEffect 中处理
-
-  // 使用 useCallback 确保函数能够访问最新的值
+export function useMeditationHandlers() {
   const handleMeditate = useCallback(() => {
-    // 在函数内部直接从 store 获取最新的 player，避免闭包问题
-    const currentPlayer = props?.player ?? useGameStore.getState().player;
-    const currentSetPlayer = props?.setPlayer ?? useGameStore.getState().setPlayer;
-    const currentAddLog = props?.addLog ?? useGameStore.getState().addLog;
+    const currentPlayer = useGameStore.getState().player;
+    const currentSetPlayer = useGameStore.getState().setPlayer;
+    const currentAddLog = useGameStore.getState().addLog;
     if (!currentPlayer) return;
 
     // 根据境界计算基础修为
@@ -82,7 +59,6 @@ export function useMeditationHandlers(
       : medBalance.manualEnlightenmentChance;
     const isEnlightenment = Math.random() < enlightenmentChance;
     let actualGain: number;
-    let logMessage: string;
     let autoEnlightenmentCount = autoCountToday;
 
     if (isEnlightenment) {
@@ -90,33 +66,31 @@ export function useMeditationHandlers(
       const enlightenmentMultiplier = medBalance.enlightenmentMin + Math.random() * span;
       actualGain = Math.floor(baseGain * enlightenmentMultiplier);
       const artText = activeArt ? `，运转${activeArt.name}` : '';
-      logMessage = `你突然顿悟，灵台清明，对大道有了更深的理解${artText}！(+${actualGain} 修为)`;
-      currentAddLog(logMessage, 'special');
+      currentAddLog(`你突然顿悟，灵台清明，对大道有了更深的理解${artText}！(+${actualGain} 修为)`, 'special');
       if (isAuto) autoEnlightenmentCount += 1;
     } else {
       actualGain = Math.floor(baseGain * (0.85 + Math.random() * 0.3));
       if (!isAuto) {
         const artText = activeArt ? `，运转${activeArt.name}` : '';
-        logMessage = `你潜心感悟大道${artText}。(+${actualGain} 修为)`;
-        currentAddLog(logMessage, 'gain');
+        currentAddLog(`你潜心感悟大道${artText}。(+${actualGain} 修为)`, 'gain');
       }
     }
 
-     // 自动打坐静默运行，每 10 次输出一条汇总日志：避免刷屏的同时让挂机进度可见
-     if (isAuto) {
-       autoMeditateTick += 1;
-       autoMeditateAccumGain += actualGain;
-       if (autoMeditateTick >= AUTO_MEDITATE_LOG_INTERVAL) {
-         const artText = activeArt ? `，运转${activeArt.name}` : '';
-         currentAddLog(
-           `自动打坐 ×${AUTO_MEDITATE_LOG_INTERVAL}${artText}，累计修为 +${autoMeditateAccumGain}（修为满时溢出已注入修为泵）`,
-           'gain'
-         );
-         autoMeditateTick = 0;
-         autoMeditateAccumGain = 0;
-       }
-     }
- 
+    // 自动打坐静默运行，每 10 次输出一条汇总日志：避免刷屏的同时让挂机进度可见
+    if (isAuto) {
+      autoMeditateTick += 1;
+      autoMeditateAccumGain += actualGain;
+      if (autoMeditateTick >= AUTO_MEDITATE_LOG_INTERVAL) {
+        const artText = activeArt ? `，运转${activeArt.name}` : '';
+        currentAddLog(
+          `自动打坐 ×${AUTO_MEDITATE_LOG_INTERVAL}${artText}，累计修为 +${autoMeditateAccumGain}（修为满时溢出已注入修为泵）`,
+          'gain'
+        );
+        autoMeditateTick = 0;
+        autoMeditateAccumGain = 0;
+      }
+    }
+
     // 回血量、灵石收益与对应日志都在 updater 外计算/输出，保持 updater 为纯函数（避免 StrictMode 下重复记日志、随机值双取）
     // 获取实际的最大血量（包含金丹法数加成等）
     const totalStats = getPlayerTotalStats(currentPlayer);
@@ -134,8 +108,7 @@ export function useMeditationHandlers(
     const newHp = Math.min(actualMaxHp, currentPlayer.hp + actualRegen);
 
     if (newHp > currentPlayer.hp && !isAuto) {
-      const latestAddLog = props?.addLog ?? useGameStore.getState().addLog;
-      latestAddLog(
+      currentAddLog(
         `打坐加速回血，恢复 ${actualRegen} 点气血（${baseMultiplier.toFixed(1)}倍速度）`,
         'gain'
       );
@@ -179,19 +152,17 @@ export function useMeditationHandlers(
         },
       };
     });
-    checkLevelUp(actualGain);
 
     // 检查首次打坐成就（使用最新的 player）
-    const latestPlayer = props?.player ?? useGameStore.getState().player;
+    const latestPlayer = useGameStore.getState().player;
     if (latestPlayer && !latestPlayer.achievements.includes('ach-first-step')) {
       const firstMeditateAchievement = ACHIEVEMENTS.find(
         (a) => a.id === 'ach-first-step'
       );
       if (firstMeditateAchievement) {
-        const latestSetPlayer = props?.setPlayer ?? useGameStore.getState().setPlayer;
-        const latestAddLog = props?.addLog ?? useGameStore.getState().addLog;
+        const latestSetPlayer = useGameStore.getState().setPlayer;
         // 成就日志在 updater 外输出，保持 updater 为纯函数（避免 StrictMode 下重复记日志）
-        latestAddLog(
+        currentAddLog(
           `达成成就：【${firstMeditateAchievement.name}】！`,
           'special'
         );
@@ -208,7 +179,7 @@ export function useMeditationHandlers(
         });
       }
     }
-  }, []); // 空依赖数组，函数内部总是从 store 获取最新值
+  }, []); // 空依赖：函数内部只通过 getState 获取最新值，无任何闭包依赖
 
   return {
     handleMeditate,
