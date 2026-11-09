@@ -12,7 +12,6 @@ interface UseBreakthroughHandlersProps {
   setPlayer: React.Dispatch<React.SetStateAction<PlayerStats>>;
   addLog: (message: string, type?: string) => void;
   setLoading: (loading: boolean) => void;
-  loading: boolean;
 }
 
 /**
@@ -31,7 +30,6 @@ export function useBreakthroughHandlers({
   setPlayer,
   addLog,
   setLoading,
-  loading,
 }: UseBreakthroughHandlersProps) {
   const handleBreakthrough = async (skipSuccessCheck: boolean = false, hpLoss: number = 0) => {
     if (!player) return;

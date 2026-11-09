@@ -81,8 +81,6 @@ function App() {
   const {
     modals,
     modalSetters,
-    loading,
-    cooldown,
     setLoading,
     setCooldown,
     purchaseSuccess,
@@ -201,21 +199,20 @@ function App() {
     resetAutoStates,
   });
 
-  useBattleResume({
-    pausedByBattle,
-    player,
-    isDead,
-    loading,
-    setAutoAdventure,
-    setPausedByBattle,
-  });
-
-  // ========== App Handlers ==========
-  const appHandlers = useAppHandlers({
-    player,
-    setPlayer,
-    addLog,
-    triggerVisual,
+   useBattleResume({
+     pausedByBattle,
+     player,
+     isDead,
+     setAutoAdventure,
+     setPausedByBattle,
+   });
+ 
+   // ========== App Handlers ==========
+   const appHandlers = useAppHandlers({
+     player,
+     setPlayer,
+     addLog,
+     triggerVisual,
     settings,
     gameStarted,
     autoMeditate,
@@ -226,8 +223,6 @@ function App() {
     setPausedByShop,
     setPausedByReputationEvent,
     setPausedByHeavenEarthSoul,
-    loading,
-    cooldown,
     setLoading,
     setCooldown,
     setDeathReason,
@@ -344,12 +339,11 @@ function App() {
   });
 
   // ========== 被动回血和冷却 ==========
-  usePassiveRegeneration({
-    player,
-    setPlayer,
-    cooldown,
-    setCooldown,
-  });
+   usePassiveRegeneration({
+     player,
+     setPlayer,
+     setCooldown,
+   });
 
   // ========== 洞府自动收获 ==========
   useAutoGrottoHarvest({
@@ -359,13 +353,11 @@ function App() {
   });
 
   // ========== 自动功能 ==========
-  useAutoFeatures({
-    autoMeditate,
-    autoAdventure,
-    player,
-    loading,
-    cooldown,
-    isShopOpen: modals.isShopOpen,
+   useAutoFeatures({
+     autoMeditate,
+     autoAdventure,
+     player,
+     isShopOpen: modals.isShopOpen,
     isReputationEventOpen: modals.isReputationEventOpen,
     isTurnBasedBattleOpen: modals.isTurnBasedBattleOpen,
     isAlertOpen: alertState?.isOpen ?? false,
@@ -539,8 +531,6 @@ function App() {
       player={player}
       setLogs={setLogs}
       visualEffects={visualEffects}
-      loading={loading}
-      cooldown={cooldown}
       settings={settings}
       isDead={isDead}
       setIsDead={setIsDead}

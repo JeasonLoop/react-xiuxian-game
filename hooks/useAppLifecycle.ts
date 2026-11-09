@@ -144,43 +144,43 @@ export function useAchievementCheck({
   ]);
 }
 
-interface UseBattleResumeProps {
-  pausedByBattle: boolean;
-  player: PlayerStats | null;
-  isDead: boolean;
-  loading: boolean;
-  setAutoAdventure: (value: boolean) => void;
-  setPausedByBattle: (value: boolean) => void;
-}
-
-/**
- * 战斗结束后恢复自动历练
- */
-export function useBattleResume({
-  pausedByBattle,
-  player,
-  isDead,
-  loading,
-  setAutoAdventure,
-  setPausedByBattle,
-}: UseBattleResumeProps) {
-  useEffect(() => {
-    if (
-      pausedByBattle &&
-      player &&
-      player.hp > THRESHOLD_CONSTANTS.DEATH_HP_THRESHOLD &&
-      !isDead &&
-      !loading
-    ) {
-      // 延迟一小段时间后恢复自动历练，确保状态更新完成
-      const timer = setTimeout(() => {
-        setAutoAdventure(true);
-        setPausedByBattle(false);
-      }, DELAY_CONSTANTS.AUTO_ADVENTURE_RESUME_DELAY);
-      return () => clearTimeout(timer);
-    }
-  }, [pausedByBattle, player, isDead, loading, setAutoAdventure, setPausedByBattle]);
-}
+ interface UseBattleResumeProps {
+   pausedByBattle: boolean;
+   player: PlayerStats | null;
+   isDead: boolean;
+   setAutoAdventure: (value: boolean) => void;
+   setPausedByBattle: (value: boolean) => void;
+ }
+ 
+ /**
+  * 战斗结束后恢复自动历练
+  */
+ export function useBattleResume({
+   pausedByBattle,
+   player,
+   isDead,
+   setAutoAdventure,
+   setPausedByBattle,
+ }: UseBattleResumeProps) {
+   // loading 为高频字段，内部订阅（值与原 prop 同源）
+   const loading = useUIStore((state) => state.loading);
+   useEffect(() => {
+     if (
+       pausedByBattle &&
+       player &&
+       player.hp > THRESHOLD_CONSTANTS.DEATH_HP_THRESHOLD &&
+       !isDead &&
+       !loading
+     ) {
+       // 延迟一小段时间后恢复自动历练，确保状态更新完成
+       const timer = setTimeout(() => {
+         setAutoAdventure(true);
+         setPausedByBattle(false);
+       }, DELAY_CONSTANTS.AUTO_ADVENTURE_RESUME_DELAY);
+       return () => clearTimeout(timer);
+     }
+   }, [pausedByBattle, player, isDead, loading, setAutoAdventure, setPausedByBattle]);
+ }
 
 interface UseCultivationIntroProps {
   gameStarted: boolean;
@@ -324,7 +324,6 @@ export function useAppLifecycle(props: UseAppLifecycleProps) {
     player,
     setPlayer,
     isDead,
-    loading,
     pausedByBattle,
     setShowCultivationIntro,
     setTribulationState,
@@ -375,7 +374,6 @@ export function useAppLifecycle(props: UseAppLifecycleProps) {
     pausedByBattle,
     player,
     isDead,
-    loading,
     setAutoAdventure,
     setPausedByBattle,
   });

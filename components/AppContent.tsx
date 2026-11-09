@@ -35,8 +35,6 @@ interface AppContentProps {
   // 游戏状态
   setLogs: React.Dispatch<React.SetStateAction<LogEntry[]>>;
   visualEffects: any[];
-  loading: boolean;
-  cooldown: number;
   settings: any;
 
   // 弹窗状态
@@ -108,8 +106,6 @@ export function AppContent(props: AppContentProps) {
     player,
     setLogs,
     visualEffects,
-    loading,
-    cooldown,
     settings,
     isDead,
     deathBattleData,
@@ -331,8 +327,6 @@ export function AppContent(props: AppContentProps) {
         logs={logs}
         setLogs={setLogs}
         visualEffects={visualEffects}
-        loading={loading}
-        cooldown={cooldown}
         purchaseSuccess={purchaseSuccess}
         lotteryRewards={lotteryRewards}
         onCloseLotteryRewards={() => setLotteryRewards([])}

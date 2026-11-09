@@ -8,12 +8,11 @@ import type { Dispatch, SetStateAction } from 'react';
 import { PlayerStats } from '../types';
 import { getPlayerTotalStats } from '../utils/statUtils';
 
-interface UsePassiveRegenerationParams {
-  player: PlayerStats | null;
-  setPlayer: Dispatch<SetStateAction<PlayerStats | null>>;
-  cooldown: number;
-  setCooldown: Dispatch<SetStateAction<number>>;
-}
+ interface UsePassiveRegenerationParams {
+   player: PlayerStats | null;
+   setPlayer: Dispatch<SetStateAction<PlayerStats | null>>;
+   setCooldown: Dispatch<SetStateAction<number>>;
+ }
 
 /**
  * 被动回血和冷却管理

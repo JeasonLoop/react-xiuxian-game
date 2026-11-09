@@ -36,8 +36,6 @@ interface GameViewProps {
   logs: LogEntry[];
   setLogs: React.Dispatch<React.SetStateAction<LogEntry[]>>;
   visualEffects: any[];
-  loading: boolean;
-  cooldown: number;
   purchaseSuccess: { item: string; quantity: number } | null;
   lotteryRewards: Array<{ type: string; name: string; quantity?: number }>;
   onCloseLotteryRewards?: () => void;
@@ -103,8 +101,6 @@ function GameView({
   logs,
   setLogs,
   visualEffects,
-  loading,
-  cooldown,
   purchaseSuccess,
   lotteryRewards,
   onCloseLotteryRewards,
@@ -181,8 +177,6 @@ function GameView({
         />
 
         <ActionBar
-          loading={loading}
-          cooldown={cooldown}
           onMeditate={handlers.onMeditate}
           onAdventure={handlers.onAdventure}
           onOpenRealm={handlers.onOpenRealm}

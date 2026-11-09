@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { RealmType } from '../types';
 import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../constants/featureUnlock';
+ import { useUIStore } from '../store/uiStore';
 /**
  * 操作按钮栏组件
  * 包含打坐、历练、秘境、炼丹、宗门五个按钮
@@ -20,43 +21,43 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
  * 炼丹按钮：丹药 · 辅助
  * 宗门按钮：任务 · 晋升
  */
-interface ActionBarProps {
-  loading: boolean;
-  cooldown: number;
-  onMeditate: () => void;
-  onAdventure: () => void;
-  onOpenRealm: () => void;
-  onOpenAlchemy: () => void;
-  onOpenSect: () => void;
-  autoMeditate: boolean;
-  autoAdventure: boolean;
-  pausedByBattle?: boolean; // 是否因战斗暂停
-  onToggleAutoMeditate: () => void;
-  onToggleAutoAdventure: () => void;
-  realm: RealmType; // 当前境界（用于解锁判断）
-}
-
-function ActionBar({
-  loading,
-  cooldown,
-  onMeditate,
-  onAdventure,
-  onOpenRealm,
-  onOpenAlchemy,
-  onOpenSect,
-  autoMeditate,
-  autoAdventure,
-  pausedByBattle = false,
-  onToggleAutoMeditate,
-  onToggleAutoAdventure,
-  realm,
-}: ActionBarProps) {
-  // 境界解锁检查
-  const sectLocked = !isFeatureUnlocked(FeatureId.SECT, realm);
-  const alchemyLocked = !isFeatureUnlocked(FeatureId.ALCHEMY, realm);
-  const realmLocked = !isFeatureUnlocked(FeatureId.SECRET_REALM, realm);
-
-  // 锁定按钮样式
+ interface ActionBarProps {
+   onMeditate: () => void;
+   onAdventure: () => void;
+   onOpenRealm: () => void;
+   onOpenAlchemy: () => void;
+   onOpenSect: () => void;
+   autoMeditate: boolean;
+   autoAdventure: boolean;
+   pausedByBattle?: boolean; // 是否因战斗暂停
+   onToggleAutoMeditate: () => void;
+   onToggleAutoAdventure: () => void;
+   realm: RealmType; // 当前境界（用于解锁判断）
+ }
+ 
+ function ActionBar({
+   onMeditate,
+   onAdventure,
+   onOpenRealm,
+   onOpenAlchemy,
+   onOpenSect,
+   autoMeditate,
+   autoAdventure,
+   pausedByBattle = false,
+   onToggleAutoMeditate,
+   onToggleAutoAdventure,
+   realm,
+ }: ActionBarProps) {
+   // loading/cooldown 为高频字段（每秒 tick），由本组件直接订阅，
+   // 不再经 App→GameView props 逐层传递，避免每秒重渲染整个主界面
+   const loading = useUIStore((state) => state.loading);
+   const cooldown = useUIStore((state) => state.cooldown);
+   // 境界解锁检查
+   const sectLocked = !isFeatureUnlocked(FeatureId.SECT, realm);
+   const alchemyLocked = !isFeatureUnlocked(FeatureId.ALCHEMY, realm);
+   const realmLocked = !isFeatureUnlocked(FeatureId.SECRET_REALM, realm);
+ 
+   // 锁定按钮样式
   const lockedCls =
     'opacity-35 cursor-not-allowed bg-stone-900 border-stone-800';
 

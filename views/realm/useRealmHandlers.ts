@@ -5,6 +5,7 @@ import { SECRET_REALMS } from '../../constants/secretRealms';
 import { generateItem } from '../../utils/itemGenerator';
 import { addItemToInventory } from '../../utils/inventoryUtils';
 import { uid } from '../../utils/gameUtils';
+ import { useUIStore } from '../../store/uiStore';
 
 interface UseRealmHandlersProps {
   player: PlayerStats;
@@ -13,8 +14,6 @@ interface UseRealmHandlersProps {
   setItemActionLog?: (log: { text: string; type: string } | null) => void;
   setLoading: (loading: boolean) => void;
   setCooldown: (cooldown: number) => void;
-  loading: boolean;
-  cooldown: number;
   setIsRealmOpen: (open: boolean) => void;
   executeAdventure: (adventureType: 'secret_realm', realmName: string, riskLevel?: '低' | '中' | '高' | '极度危险', realmMinRealm?: RealmType, realmDescription?: string) => Promise<void>;
 }
@@ -48,18 +47,18 @@ function getThemedDropRarity(riskLevel: SecretRealm['riskLevel']): ItemRarity {
   }
 }
 
-export function useRealmHandlers({
-  player,
-  setPlayer,
-  addLog,
-  setItemActionLog,
-  loading,
-  cooldown,
-  setIsRealmOpen,
-  executeAdventure,
-}: UseRealmHandlersProps) {
-  const handleEnterRealm = async (realm: SecretRealm): Promise<boolean> => {
-    if (loading || cooldown > 0 || !player) return false;
+ export function useRealmHandlers({
+   player,
+   setPlayer,
+   addLog,
+   setItemActionLog,
+   setIsRealmOpen,
+   executeAdventure,
+ }: UseRealmHandlersProps) {
+   const handleEnterRealm = async (realm: SecretRealm): Promise<boolean> => {
+     // loading/cooldown 为高频字段，实时从 store 读取（不经 props）
+     const { loading, cooldown } = useUIStore.getState();
+     if (loading || cooldown > 0 || !player) return false;
 
     // 使用实际最大血量（包含金丹法数加成等）来判断气血不足
     const totalStats = getPlayerTotalStats(player);

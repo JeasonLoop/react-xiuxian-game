@@ -62,13 +62,12 @@ interface UseAppHandlersProps {
   pausedByReputationEvent: boolean;
   setPausedByShop: (value: boolean) => void;
   setPausedByReputationEvent: (value: boolean) => void;
-  setPausedByHeavenEarthSoul: (value: boolean) => void;
-  loading: boolean;
-  cooldown: number;
-  setLoading: (loading: boolean) => void;
-  setCooldown: (cooldown: number) => void;
+   setPausedByHeavenEarthSoul: (value: boolean) => void;
+   // loading/cooldown 为高频字段，hook 内部通过 useUIStore.getState() 实时读取，不经 props
+   setLoading: (loading: boolean) => void;
   setDeathReason: (reason: string) => void;
   setItemActionLog: (log: { text: string; type: string } | null) => void;
+   setCooldown: (cooldown: number) => void;
   handleOpenTurnBasedBattle: (params: {
     adventureType: any;
     riskLevel?: '低' | '中' | '高' | '极度危险';
@@ -102,8 +101,6 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     setPausedByShop,
     setPausedByReputationEvent,
     setPausedByHeavenEarthSoul,
-    loading,
-    cooldown,
     setLoading,
     setCooldown,
     setItemActionLog,
@@ -203,13 +200,12 @@ export function useAppHandlers(props: UseAppHandlersProps) {
 
   const meditationHandlers = useMeditationHandlers();
 
-  const breakthroughHandlers = useBreakthroughHandlers({
-    player,
-    setPlayer,
-    addLog,
-    setLoading,
-    loading,
-  });
+   const breakthroughHandlers = useBreakthroughHandlers({
+     player,
+     setPlayer,
+     addLog,
+     setLoading,
+   });
 
   const itemHandlers = useItemHandlers({ setItemActionLog });
   const equipmentHandlers = useEquipmentHandlers({ setItemActionLog });
@@ -229,22 +225,20 @@ export function useAppHandlers(props: UseAppHandlersProps) {
   });
 
   // 冒险相关逻辑
-  const adventureHandlers = useAdventureHandlers({
-    player,
-    setPlayer,
-    addLog,
-    triggerVisual,
-    setLoading,
-    setCooldown,
-    loading,
-    cooldown,
-    onOpenShop: (shopType: ShopType) => {
-      if (autoAdventure) {
-        setPausedByShop(true);
-        setAutoAdventure(false);
-      }
-      shopHandlers.handleOpenShop(shopType);
-    },
+   const adventureHandlers = useAdventureHandlers({
+     player,
+     setPlayer,
+     addLog,
+     triggerVisual,
+     setLoading,
+     setCooldown,
+     onOpenShop: (shopType: ShopType) => {
+       if (autoAdventure) {
+         setPausedByShop(true);
+         setAutoAdventure(false);
+       }
+       shopHandlers.handleOpenShop(shopType);
+     },
     onOpenBattleModal: (replay: BattleReplay) => {
       setLastBattleReplay(replay);
       battleHandlers.openBattleModal(replay);
@@ -303,8 +297,6 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     setItemActionLog,
     setLoading,
     setCooldown,
-    loading,
-    cooldown,
     setIsRealmOpen: setters.setIsRealmOpen,
     executeAdventure,
   });
@@ -458,16 +450,18 @@ export function useAppHandlers(props: UseAppHandlersProps) {
     dailyQuestHandlersRef.current.updateQuestProgress('adventure', 1);
   }, [autoMeditate, addLog]);
 
-  const handleMeditate = useCallback(() => {
-    if (loading || cooldown > 0 || !player) return;
-    if (autoAdventure) {
-      addLog('正在历练中，无法打坐。请先停止自动历练。', 'danger');
-      return;
-    }
-    meditationHandlersRef.current.handleMeditate();
-    dailyQuestHandlersRef.current.updateQuestProgress('meditate', 1);
-    setCooldown(1);
-  }, [loading, cooldown, player, autoAdventure, addLog, setCooldown]);
+   const handleMeditate = useCallback(() => {
+     // loading/cooldown 为高频字段，实时从 store 读取（不经 props，避免每秒重渲染）
+     const { loading, cooldown } = useUIStore.getState();
+     if (loading || cooldown > 0 || !player) return;
+     if (autoAdventure) {
+       addLog('正在历练中，无法打坐。请先停止自动历练。', 'danger');
+       return;
+     }
+     meditationHandlersRef.current.handleMeditate();
+     dailyQuestHandlersRef.current.updateQuestProgress('meditate', 1);
+     setCooldown(1);
+   }, [player, autoAdventure, addLog, setCooldown]);
 
   const handleEnterRealm = useCallback(
     async (realm: SecretRealm) => {

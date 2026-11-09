@@ -1,5 +1,6 @@
 import React from 'react';
 import { PlayerStats, AdventureType, ShopType, RealmType, AdventureResult, DifficultyMode } from '../../types';
+ import { useUIStore } from '../../store/uiStore';
 import { REALM_ORDER, HEAVEN_EARTH_SOUL_BOSSES, GAME_BALANCE } from '../../constants/index';
 import { getDifficultyBalance } from '../../constants/balance';
 import {
@@ -40,8 +41,6 @@ interface UseAdventureHandlersProps {
   triggerVisual: (type: string, text?: string, className?: string) => void;
   setLoading: (loading: boolean) => void;
   setCooldown: (cooldown: number) => void;
-  loading: boolean;
-  cooldown: number;
   onOpenShop: (shopType: ShopType) => void;
   onOpenBattleModal: (replay: BattleReplay) => void;
   onOpenTurnBasedBattle?: (params: {
@@ -71,8 +70,6 @@ export function useAdventureHandlers({
   triggerVisual,
   setLoading,
   setCooldown,
-  loading,
-  cooldown,
   onOpenShop,
   onOpenBattleModal,
   onOpenTurnBasedBattle,
@@ -506,8 +503,10 @@ export function useAdventureHandlers({
     }
   };
 
-  const handleAdventure = async () => {
-    if (loading || cooldown > 0) return;
+   const handleAdventure = async () => {
+     // loading/cooldown 为高频字段，实时从 store 读取（不经 props）
+     const { loading, cooldown } = useUIStore.getState();
+     if (loading || cooldown > 0) return;
     // 使用实际最大血量（包含金丹法数加成等）来判断重伤状态
     const totalStats = getPlayerTotalStats(player);
     if (player.hp < totalStats.maxHp * 0.2) {

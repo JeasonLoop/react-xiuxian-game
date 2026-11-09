@@ -3,19 +3,18 @@
  * 处理自动打坐、自动历练等自动功能逻辑
  */
 
-import { useEffect, useRef } from 'react';
-import { PlayerStats } from '../types';
-import { AutoAdventureConfig } from '../components/AutoAdventureConfigModal';
-import { getPlayerTotalStats } from '../utils/statUtils';
-import { GAME_BALANCE } from '../constants/balance';
-
-interface UseAutoFeaturesParams {
-  autoMeditate: boolean;
-  autoAdventure: boolean;
-  player: PlayerStats | null;
-  loading: boolean;
-  cooldown: number;
-  isShopOpen: boolean;
+ import { useEffect, useRef } from 'react';
+ import { PlayerStats } from '../types';
+ import { AutoAdventureConfig } from '../components/AutoAdventureConfigModal';
+ import { getPlayerTotalStats } from '../utils/statUtils';
+ import { GAME_BALANCE } from '../constants/balance';
+ import { useUIStore } from '../store/uiStore';
+ 
+ interface UseAutoFeaturesParams {
+   autoMeditate: boolean;
+   autoAdventure: boolean;
+   player: PlayerStats | null;
+   isShopOpen: boolean;
   isReputationEventOpen: boolean;
   isTurnBasedBattleOpen: boolean;
   isAlertOpen: boolean; // 确认弹窗是否打开（包括天地之魄确认弹窗）
@@ -40,17 +39,15 @@ interface UseAutoFeaturesParams {
 /**
  * 自动功能管理
  */
-export function useAutoFeatures({
-  autoMeditate,
-  autoAdventure,
-  player,
-  loading,
-  cooldown,
-  isShopOpen,
-  isReputationEventOpen,
-  isTurnBasedBattleOpen,
-  isAlertOpen,
-  pausedByShop,
+ export function useAutoFeatures({
+   autoMeditate,
+   autoAdventure,
+   player,
+   isShopOpen,
+   isReputationEventOpen,
+   isTurnBasedBattleOpen,
+   isAlertOpen,
+   pausedByShop,
   pausedByBattle,
   pausedByReputationEvent,
   pausedByHeavenEarthSoul,
@@ -76,51 +73,46 @@ export function useAutoFeatures({
   const meditateTimeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
   const adventureTimeoutIdsRef = useRef<NodeJS.Timeout[]>([]);
 
-  // 使用 ref 跟踪所有状态，避免闭包问题
-  const stateRefs = useRef({
+   // 使用 ref 跟踪所有状态，避免闭包问题
+   // （loading/cooldown 为高频字段，不走 props/ref，判断时直接 useUIStore.getState() 读取）
+   const stateRefs = useRef({
+     autoMeditate,
+     autoAdventure,
+     player,
+     isShopOpen,
+     isReputationEventOpen,
+     isTurnBasedBattleOpen,
+     isAlertOpen,
+     pausedByShop,
+     pausedByBattle,
+     pausedByReputationEvent,
+     pausedByHeavenEarthSoul,
+     pausedByTribulation,
+   });
+ 
+   // 统一更新所有 refs
+   useEffect(() => {
+     handleMeditateRef.current = handleMeditate;
+     handleAdventureRef.current = handleAdventure;
+     setCooldownRef.current = setCooldown;
+     stateRefs.current = {
+       autoMeditate,
+       autoAdventure,
+       player,
+       isShopOpen,
+       isReputationEventOpen,
+       isTurnBasedBattleOpen,
+       isAlertOpen,
+       pausedByShop,
+       pausedByBattle,
+       pausedByReputationEvent,
+       pausedByHeavenEarthSoul,
+       pausedByTribulation,
+     };
+     playerRef.current = player;
+   }, [
     autoMeditate,
     autoAdventure,
-    loading,
-    cooldown,
-    player,
-    isShopOpen,
-    isReputationEventOpen,
-    isTurnBasedBattleOpen,
-    isAlertOpen,
-    pausedByShop,
-    pausedByBattle,
-    pausedByReputationEvent,
-    pausedByHeavenEarthSoul,
-    pausedByTribulation,
-  });
-
-  // 统一更新所有 refs
-  useEffect(() => {
-    handleMeditateRef.current = handleMeditate;
-    handleAdventureRef.current = handleAdventure;
-    setCooldownRef.current = setCooldown;
-    stateRefs.current = {
-      autoMeditate,
-      autoAdventure,
-      loading,
-      cooldown,
-      player,
-      isShopOpen,
-      isReputationEventOpen,
-      isTurnBasedBattleOpen,
-      isAlertOpen,
-      pausedByShop,
-      pausedByBattle,
-      pausedByReputationEvent,
-      pausedByHeavenEarthSoul,
-      pausedByTribulation,
-    };
-    playerRef.current = player;
-  }, [
-    autoMeditate,
-    autoAdventure,
-    loading,
-    cooldown,
     player,
     isShopOpen,
     isReputationEventOpen,
@@ -175,14 +167,16 @@ export function useAutoFeatures({
    * 检查自动历练是否应该暂停
    * 统一所有需要暂停自动历练的情况
    */
-  const shouldPauseAdventure = (): boolean => {
-    const state = stateRefs.current;
-    return (
-      !state.autoAdventure ||
-      !state.player ||
-      state.loading ||
-      state.cooldown > 0 ||
-      state.isShopOpen ||
+   const shouldPauseAdventure = (): boolean => {
+     const state = stateRefs.current;
+     // loading/cooldown 为高频字段，实时从 store 读取（不走 ref，避免每秒同步）
+     const { loading, cooldown } = useUIStore.getState();
+     return (
+       !state.autoAdventure ||
+       !state.player ||
+       loading ||
+       cooldown > 0 ||
+       state.isShopOpen ||
       state.isReputationEventOpen ||
       state.isTurnBasedBattleOpen ||
       state.isAlertOpen || // 确认弹窗打开时暂停（包括天地之魄确认弹窗）
@@ -198,23 +192,25 @@ export function useAutoFeatures({
 
   // 自动打坐逻辑 - 使用 setInterval 定期检查
   useEffect(() => {
-    if (!autoMeditate) {
-      // 当自动打坐关闭时，重置执行标志
-      isExecutingMeditateRef.current = false;
-      return;
-    }
-
-    const interval = setInterval(() => {
-      const state = stateRefs.current;
-
-      // 检查所有条件
-      if (
-        !state.autoMeditate ||
-        !state.player ||
-        state.loading ||
-        state.cooldown > 0 ||
-        state.autoAdventure ||
-        state.isShopOpen ||
+     if (!autoMeditate) {
+       // 当自动打坐关闭时，重置执行标志
+       isExecutingMeditateRef.current = false;
+       return;
+     }
+ 
+     const interval = setInterval(() => {
+       const state = stateRefs.current;
+       // loading/cooldown 为高频字段，实时从 store 读取
+       const { loading, cooldown } = useUIStore.getState();
+ 
+       // 检查所有条件
+       if (
+         !state.autoMeditate ||
+         !state.player ||
+         loading ||
+         cooldown > 0 ||
+         state.autoAdventure ||
+         state.isShopOpen ||
         state.isReputationEventOpen ||
         state.isTurnBasedBattleOpen ||
         state.isAlertOpen ||

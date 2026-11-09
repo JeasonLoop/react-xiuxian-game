@@ -81,18 +81,20 @@ export function useModalSetters(): ModalSetters {
 /**
  * 全局加载和冷却状态
  */
-export function useGlobalState() {
-  return useUIStore(
-    useShallow((state) => ({
-      loading: state.loading,
-      cooldown: state.cooldown,
-      setLoading: state.setLoading,
-      setCooldown: state.setCooldown,
-      fastBattleSettlement: state.fastBattleSettlement,
-      setFastBattleSettlement: state.setFastBattleSettlement,
-    }))
-  );
-}
+ /**
+  * 全局加载和冷却状态
+  * 注意：loading/cooldown 为高频字段（每秒 tick），App 层不订阅，
+  * 由消费组件（ActionBar）与相关 hooks 内部自行订阅，避免每秒重跑 App 全体 hooks
+  */
+ export function useGlobalState() {
+   return useUIStore(
+     useShallow((state) => ({
+       setLoading: state.setLoading,
+       setCooldown: state.setCooldown,
+       setFastBattleSettlement: state.setFastBattleSettlement,
+     }))
+   );
+ }
 
 /**
  * 商店、升级、通知相关状态

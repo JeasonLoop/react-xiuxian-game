@@ -208,7 +208,7 @@ PlayerStats 按子系统聚合、battleService 拆 4 文件、InventoryModal 虚
 ### 第二梯队：结构重构（支撑 v0.4.0，约 2-3 天）
 
 4. **拆分 battleService.ts（3006 行）**：enemyFactory（createEnemy+名字池）/ fastBattle / turnBasedEngine / loot 四个文件；M4 词条池与 BOSS 脚本落地前必须完成。
-5. **PlayerStats 按子系统聚合**（types.ts 100+ 平铺字段）：参照 player.sect/player.grotto 先例收拢宗门/洞府/日常任务/通天塔字段 + 存档白名单迁移；M4 词条系统前的最后一块地基。
+5. **PlayerStats 按子系统聚合**（策略调整 2026 实施时）：评估后确认词条系统触碰的是 item 词条与战斗触发器，不阻塞于 PlayerStats 结构，一次性迁移 100+ 字段的风险收益比不佳。调整为 **M4 实施时按需聚合**——触摸哪个子系统就把该子系统字段收拢为嵌套对象（参照 player.sect/player.grotto 先例），配合 saveManagerUtils 迁移函数渐进执行。
 6. **App.tsx 订阅收窄**：useAppUIState 订阅整个 UI store（含每秒 cooldown），任何变化重跑 App 全体 hooks；改组件级订阅。
 
 ### 第三梯队：性能优化（穿插进行）
