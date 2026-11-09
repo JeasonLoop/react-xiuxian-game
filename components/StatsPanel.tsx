@@ -1,17 +1,20 @@
 import React, { useState, useMemo } from 'react';
 import { PlayerStats } from '../types';
-import { CULTIVATION_ARTS } from '../constants/index';
+ import { CULTIVATION_ARTS, REALM_ORDER } from '../constants/index';
 import { getRarityTextColor } from '../utils/rarityUtils';
 import { Shield, Zap, Coins, BookOpen, Sword, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
-import { getPlayerTotalStats, calculateTotalExpRate } from '../utils/statUtils';
+import { EQUIP_PERCENT_SOFT_CAP } from '../constants/balance';
+import { getPlayerTotalStats, calculateTotalExpRate, getEquippedReforgeSpecialStats } from '../utils/statUtils';
 import { getGoldenCoreMethodTitle, getStoredExpCap } from '../utils/cultivationUtils';
 import { formatNumber } from '../utils/formatUtils';
 
-interface Props {
-  player: PlayerStats;
-}
-
-const StatsPanel: React.FC<Props> = ({ player }) => {
+ interface Props {
+   player: PlayerStats;
+   /** 手动突破回调：修为圆满时由属性面板「突破」按钮触发 */
+   onBreakthrough?: () => void;
+ }
+ 
+ const StatsPanel: React.FC<Props> = ({ player, onBreakthrough }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // 使用 getPlayerTotalStats 获取包含心法加成的总属性
@@ -25,8 +28,27 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
     () => Math.min(100, (player.exp / player.maxExp) * 100),
     [player.exp, player.maxExp]
   );
+
+  // 词条软上限提示：攻/防/血百分比词条任一超过软上限即视为已达上限
+  const affixCapReached = useMemo(() => {
+    const special = getEquippedReforgeSpecialStats(player);
+    return (
+      special.attackPercent > EQUIP_PERCENT_SOFT_CAP.attack ||
+      special.defensePercent > EQUIP_PERCENT_SOFT_CAP.defense ||
+      special.hpPercent > EQUIP_PERCENT_SOFT_CAP.hp
+    );
+  }, [player]);
+
   const storedExp = player.storedExp || 0;
   const storedExpCap = useMemo(() => getStoredExpCap(player.maxExp), [player.maxExp]);
+ 
+   // 是否已达仙道巅峰（最高境界9层）：此时无突破概念，不显示突破按钮
+   const isPeakRealm = useMemo(
+     () =>
+       player.realm === REALM_ORDER[REALM_ORDER.length - 1] &&
+       player.realmLevel >= 9,
+     [player.realm, player.realmLevel]
+   );
   const storedExpPercentage = useMemo(
     () => (storedExpCap > 0 ? Math.min(100, (storedExp / storedExpCap) * 100) : 0),
     [storedExp, storedExpCap]
@@ -130,16 +152,31 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
                 {formatNumber(Math.floor(player.exp))} / {formatNumber(player.maxExp)}
               </span>
             </div>
-            <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
-              <div
-                className="h-full bg-mystic-jade transition-all duration-500 ease-out"
-                style={{ width: `${expPercentage}%` }}
-              />
-            </div>
+             <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
+               <div
+                 className="h-full bg-mystic-jade transition-all duration-500 ease-out"
+                 style={{ width: `${expPercentage}%` }}
+               />
+             </div>
+             {/* 修为圆满：显示手动突破按钮（已达仙道巅峰时不再显示） */}
+             {onBreakthrough && expPercentage >= 100 && !isPeakRealm && (
+               <button
+                 onClick={onBreakthrough}
+                 className="w-full mt-2 py-1.5 rounded text-xs font-bold bg-mystic-gold/20 border border-mystic-gold text-mystic-gold hover:bg-mystic-gold/30 active:bg-mystic-gold/40 animate-glow-pulse touch-manipulation"
+                 title="修为已圆满，点击尝试突破（大境界晋升需迎接天劫）"
+               >
+                 修为圆满 · 点击突破
+               </button>
+             )}
             {expRateInfo.total > 0 && (
               <div className="mt-1 flex justify-between text-[10px] text-mystic-jade font-serif">
                 <span>修炼效率加成</span>
                 <span>+{(expRateInfo.total * 100).toFixed(1)}%</span>
+              </div>
+            )}
+            {affixCapReached && (
+              <div className="mt-1 text-[10px] text-amber-400 font-serif">
+                ⚠ 词条收益已达上限，超出部分效果减半
               </div>
             )}
           </div>
@@ -298,7 +335,7 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
             </div>
           </div>
         )}
-        {player.inheritanceLevel > 0 && (
+        {player.inheritanceUsed > 0 && (
           <div className="bg-ink-800 p-2 md:p-3 rounded border border-purple-500/50 flex items-center gap-2 md:gap-3">
             <Zap
               size={14}
@@ -309,7 +346,7 @@ const StatsPanel: React.FC<Props> = ({ player }) => {
                 传承等级
               </div>
               <div className="text-purple-400 font-bold text-xs md:text-base">
-                {player.inheritanceLevel}
+                {player.inheritanceUsed}
               </div>
             </div>
           </div>

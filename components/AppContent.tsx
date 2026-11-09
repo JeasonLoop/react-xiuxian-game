@@ -218,8 +218,8 @@ export function AppContent(props: AppContentProps) {
   }, [setPlayer]);
   const doRebirth = () => {
     if (!player) return;
-    const nextLevel = (player.inheritanceLevel || 0) + 1;
-    const bonuses = getRebirthBonuses(nextLevel - 1);
+    const nextLevel = (player.rebirthCount || 0) + 1;
+    const bonuses = getRebirthBonuses(nextLevel);
     
     setPlayer(prev => {
       if (!prev) return prev;
@@ -249,7 +249,8 @@ export function AppContent(props: AppContentProps) {
         unlockedTitles: prev.unlockedTitles || [],
         titleId: prev.titleId,
         talentIds: prevTalentIds,
-        inheritanceLevel: nextLevel,
+        rebirthCount: nextLevel,
+        inheritanceUsed: 0, // 转世重置传承跳层次数，转世不再白送跳层
         luck: prev.luck + 2,
         // 应用转世属性加成
         attack: Math.floor(newPlayer.attack * (1 + bonuses.statBonus)),

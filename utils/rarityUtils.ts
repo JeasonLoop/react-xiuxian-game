@@ -7,8 +7,13 @@ import { ItemRarity } from '../types';
 
 /**
  * 获取稀有度的颜色类名（用于文本）
+ * @param commonColor 普通/未知稀有度使用的颜色类名，默认 text-stone-300；
+ *                    个别场景（如灵宠放生列表）需要不同的普通色时可通过该参数覆盖
  */
-export const getRarityTextColor = (rarity: ItemRarity | undefined): string => {
+export const getRarityTextColor = (
+  rarity: ItemRarity | undefined,
+  commonColor: string = 'text-stone-300'
+): string => {
   switch (rarity) {
     case '稀有':
       return 'text-blue-400';
@@ -17,7 +22,7 @@ export const getRarityTextColor = (rarity: ItemRarity | undefined): string => {
     case '仙品':
       return 'text-yellow-400';
     default:
-      return 'text-stone-300';
+      return commonColor;
   }
 };
 
@@ -132,3 +137,71 @@ export const normalizeRarityValue = (rarity?: ItemRarity | string): ItemRarity =
   return rarityAliasMap[key] || (rarity as ItemRarity);
 };
 
+/**
+ * 获取稀有度的文本颜色类名（亮色阶变体）
+ * 用于批量分解等列表场景，与 getRarityTextColor 的区别是使用 300 色阶、普通为 stone-400
+ */
+export const getRarityTextBrightColor = (rarity: ItemRarity | undefined): string => {
+  switch (rarity) {
+    case '稀有':
+      return 'text-blue-300';
+    case '传说':
+      return 'text-purple-300';
+    case '仙品':
+      return 'text-yellow-300';
+    default:
+      return 'text-stone-400';
+  }
+};
+
+/**
+ * 获取稀有度的卡片样式类名（边框+文本+背景）
+ * 用于合成/融合列表项的卡片容器
+ */
+export const getRarityCardStyle = (rarity: ItemRarity | undefined): string => {
+  switch (rarity) {
+    case '稀有':
+      return 'border-blue-800/50 text-blue-400 bg-blue-900/10';
+    case '传说':
+      return 'border-purple-800/50 text-purple-400 bg-purple-900/10';
+    case '仙品':
+      return 'border-mystic-gold/50 text-mystic-gold bg-mystic-gold/10';
+    default:
+      return 'border-stone-700/50 text-stone-400 bg-stone-900/20';
+  }
+};
+
+/**
+ * 获取宗门宝库物品卡片的背景和边框样式类名
+ */
+export const getRarityVaultCardStyle = (rarity: ItemRarity | undefined): string => {
+  switch (rarity) {
+    case '仙品':
+      return 'bg-yellow-900/30 border-yellow-400/50';
+    case '传说':
+      return 'bg-purple-900/30 border-purple-400/50';
+    case '稀有':
+      return 'bg-blue-900/30 border-blue-400/50';
+    default:
+      return 'bg-stone-800/30 border-stone-400/50';
+  }
+};
+
+/**
+ * 获取功法品级（天/地/玄/黄）的徽章样式类名（边框+文本+背景）
+ * 品级未知时返回中性石色样式
+ */
+export const getSkillQualityColor = (quality: string | null): string => {
+  switch (quality) {
+    case '天':
+      return 'border-yellow-500 text-yellow-400 bg-yellow-900/20';
+    case '地':
+      return 'border-purple-500 text-purple-400 bg-purple-900/20';
+    case '玄':
+      return 'border-blue-500 text-blue-400 bg-blue-900/20';
+    case '黄':
+      return 'border-green-500 text-green-400 bg-green-900/20';
+    default:
+      return 'border-stone-600 text-stone-400 bg-stone-900/20';
+  }
+};

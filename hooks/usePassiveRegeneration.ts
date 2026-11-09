@@ -34,10 +34,19 @@ export function usePassiveRegeneration({
     player?.equippedItems ? JSON.stringify(player.equippedItems) : '',
     [player?.equippedItems]
   );
-  const inventoryKey = useMemo(() =>
-    player?.inventory ? `${player.inventory.length}-${player.inventory.map(i => `${i.id}-${i.level || 0}`).join(',')}` : '',
-    [player?.inventory]
-  );
+  // 只有已装备的物品会影响 maxHp（通过 id 在背包中查找其属性），
+  // 因此只拼接：背包数量（感知物品增删）+ 已装备物品的 id-等级；
+  // 非装备物品的属性变化不影响 maxHp，无需纳入 key，避免背包越大每秒重算越贵
+  const inventoryKey = useMemo(() => {
+    const inventory = player?.inventory;
+    if (!inventory) return '';
+    const equippedIds = Object.values(player?.equippedItems || {});
+    const equippedParts = equippedIds.map((id) => {
+      const item = inventory.find((i) => i.id === id);
+      return item ? `${id}-${item.level || 0}` : `${id}-missing`;
+    });
+    return `${inventory.length}|${equippedParts.join(',')}`;
+  }, [player?.inventory, player?.equippedItems]);
   const cultivationArtsKey = useMemo(() =>
     player?.cultivationArts ? player.cultivationArts.join(',') : '',
     [player?.cultivationArts]

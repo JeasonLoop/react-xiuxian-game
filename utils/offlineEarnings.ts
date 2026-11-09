@@ -5,6 +5,7 @@
 
 import { PlayerStats } from '../types';
 import { REALM_ORDER } from '../constants/realms';
+import { getStoredExpCap } from './cultivationUtils';
 import { uid } from './gameUtils';
 
 export interface OfflineEarnings {
@@ -14,6 +15,7 @@ export interface OfflineEarnings {
   spiritStoneIncome: number;
   grottoHerbs: Array<{ name: string; quantity: number }>;
   lifespanSpent: number;
+  overflowToStoredExp?: number; // 超出修为条上限的溢出修为，注入修为泵（感悟）的数量
 }
 
 /**
@@ -110,13 +112,21 @@ export function applyOfflineEarnings(
 ): PlayerStats {
   const updated = { ...player };
 
-  // 添加经验和灵石
-  updated.exp = Math.min(
-    (updated.exp || 0) + earnings.meditationExp,
-    (updated.maxExp || 100) * 2
-  );
-  updated.spiritStones = (updated.spiritStones || 0) + earnings.spiritStoneIncome;
+  // 修为与溢出处理：修为条锁定为满值，溢出部分复用修为泵逻辑注入 storedExp，不再截断丢弃
+  const totalExp = (updated.exp || 0) + earnings.meditationExp;
+  const maxExp = Math.max(1, updated.maxExp || 100);
+  const overflow = Math.max(0, totalExp - maxExp);
+  updated.exp = Math.min(totalExp, maxExp);
+  earnings.overflowToStoredExp = 0;
+  if (overflow > 0) {
+    const cap = getStoredExpCap(maxExp);
+    const currentStored = Math.max(0, Math.floor(updated.storedExp || 0));
+    const storedGain = Math.min(overflow, Math.max(0, cap - currentStored));
+    updated.storedExp = currentStored + storedGain;
+    earnings.overflowToStoredExp = storedGain;
+  }
 
+  updated.spiritStones = (updated.spiritStones || 0) + earnings.spiritStoneIncome;
   // 添加洞府产物到背包
   const newInventory = [...(updated.inventory || [])];
   earnings.grottoHerbs.forEach((herb) => {
@@ -161,6 +171,9 @@ export function getOfflineEarningsLog(earnings: OfflineEarnings): string {
       .map((h) => `${h.name}×${h.quantity}`)
       .join('、');
     parts.push(`洞府收获：${herbText}`);
+  }
+  if ((earnings.overflowToStoredExp || 0) > 0) {
+    parts.push(`溢出修为 ${earnings.overflowToStoredExp} 点转化为感悟（已注入修为泵）`);
   }
 
   return parts.join(' · ');

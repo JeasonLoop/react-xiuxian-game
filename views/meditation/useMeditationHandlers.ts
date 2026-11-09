@@ -9,8 +9,14 @@ import { getActiveMentalArt, getPlayerTotalStats, calculateTotalExpRate } from '
 import { getLocalDateString } from '../../utils/dateUtils';
 import { useGameStore } from '../../store';
 import { useUIStore } from '../../store/uiStore';
-
-interface UseMeditationHandlersProps {
+ 
+ // 自动打坐汇总日志的输出间隔（每 N 次输出一条累计日志，避免挂机刷屏）
+ const AUTO_MEDITATE_LOG_INTERVAL = 10;
+ // 模块级计数器：自动打坐次数与累计修为（游戏单实例，跨渲染保持）
+ let autoMeditateTick = 0;
+ let autoMeditateAccumGain = 0;
+ 
+ interface UseMeditationHandlersProps {
   player?: PlayerStats;
   setPlayer?: React.Dispatch<React.SetStateAction<PlayerStats>>;
   addLog?: (message: string, type?: string) => void;
@@ -96,7 +102,22 @@ export function useMeditationHandlers(
       }
     }
 
-    currentSetPlayer((prev) => {
+     // 自动打坐静默运行，每 10 次输出一条汇总日志：避免刷屏的同时让挂机进度可见
+     if (isAuto) {
+       autoMeditateTick += 1;
+       autoMeditateAccumGain += actualGain;
+       if (autoMeditateTick >= AUTO_MEDITATE_LOG_INTERVAL) {
+         const artText = activeArt ? `，运转${activeArt.name}` : '';
+         currentAddLog(
+           `自动打坐 ×${AUTO_MEDITATE_LOG_INTERVAL}${artText}，累计修为 +${autoMeditateAccumGain}（修为满时溢出已注入修为泵）`,
+           'gain'
+         );
+         autoMeditateTick = 0;
+         autoMeditateAccumGain = 0;
+       }
+     }
+ 
+     currentSetPlayer((prev) => {
       // 获取实际的最大血量（包含金丹法数加成等）
       const totalStats = getPlayerTotalStats(prev);
       const actualMaxHp = totalStats.maxHp;

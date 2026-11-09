@@ -936,6 +936,26 @@ export const createEnemy = async (
   };
 };
 
+/**
+ * 统一的暴击率计算（快速战斗与回合制共用，保证两条路径公式一致）：
+ * 暴击率 = 基础10% + 速度占比加成（攻击方速度 / 双方速度之和，最高贡献10%）+ 额外加成（领域、Buff等）
+ * 结果限制在 [0, 35%] 区间内（原注释中的"上限20%"为漂移描述，实际一直使用35%上限）
+ */
+const computeCritChance = (attackerSpeed: number, targetSpeed: number, extraChance: number = 0): number => {
+  const speedSum = Math.max(1, attackerSpeed + targetSpeed); // 至少为1，避免除零
+  const speedBonus = (attackerSpeed / speedSum) * 0.10;
+  return Math.min(0.35, Math.max(0, 0.10 + speedBonus + extraChance));
+};
+
+/**
+ * 统一的速度差闪避率（快速战斗与回合制共用）：
+ * 目标每比攻击方快1点速度提供0.05%闪避，上限15%
+ */
+const computeSpeedDodge = (attackerSpeed: number, targetSpeed: number): number => {
+  const speedDiff = Math.max(0, targetSpeed - attackerSpeed);
+  return Math.min(0.15, speedDiff * 0.0005);
+};
+
 const calcDamage = (attack: number, defense: number) => {
   // 确保输入是有效数字，防止NaN
   const validAttack = Number(attack) || 0;
@@ -1091,25 +1111,37 @@ export const resolveBattleEncounter = async (
     // 确保速度值是有效数字，防止NaN
     const playerSpeed = Number(battlePlayer.speed) || 0;
     const enemySpeed = Number(enemy.speed) || 0;
-    const speedSum = Math.max(1, playerSpeed + enemySpeed); // 确保至少为1，避免除零
-    const critSpeed = isPlayerTurn ? playerSpeed : enemySpeed;
-    // 优化暴击率计算：降低速度对暴击率的影响，设置上限为20%
-    // 基础10% + 速度加成最高10% = 最高20%暴击率（修复：基础暴击率改为10%）
-    const critChanceBase = 0.10 + (critSpeed / speedSum) * 0.10 + (isPlayerTurn ? spellBonuses.critRate : 0);
-    const validCritChance = Math.max(0, Math.min(0.35, critChanceBase));
-    const crit = Math.random() < validCritChance;
+    // 暴击率统一使用 computeCritChance，与回合制路径保持同一公式
+    const attackerSpeed = isPlayerTurn ? playerSpeed : enemySpeed;
+    const targetSpeed = isPlayerTurn ? enemySpeed : playerSpeed;
+    const extraCritChance = isPlayerTurn ? spellBonuses.critRate : 0;
+    const critChance = computeCritChance(attackerSpeed, targetSpeed, extraCritChance);
+    const crit = Math.random() < critChance;
     const critMultiplier = 1.5 + (isPlayerTurn ? spellBonuses.critDamage : 0);
     let finalDamage = crit ? Math.round(damage * critMultiplier) : damage;
+    let isDodged = false;
 
     if (isPlayerTurn) {
-      enemyHp = Math.max(0, (Number(enemyHp) || 0) - finalDamage);
-      if (finalDamage > 0 && spellBonuses.lifeLeech > 0) {
-        playerHp = Math.min(initialMaxHp, playerHp + Math.floor(finalDamage * spellBonuses.lifeLeech));
+      // 敌方目标的闪避判定：与回合制一致，使用速度差闪避（上限15%）
+      const enemyDodgeChance = computeSpeedDodge(playerSpeed, enemySpeed);
+      if (enemyDodgeChance > 0 && Math.random() < enemyDodgeChance) {
+        finalDamage = 0;
+        isDodged = true;
+      } else {
+        enemyHp = Math.max(0, (Number(enemyHp) || 0) - finalDamage);
+        if (finalDamage > 0 && spellBonuses.lifeLeech > 0) {
+          playerHp = Math.min(initialMaxHp, playerHp + Math.floor(finalDamage * spellBonuses.lifeLeech));
+        }
       }
     } else {
-      const dodgeChance = Math.max(0, Math.min(0.35, spellBonuses.dodgeRate));
+      // 玩家的闪避判定：法术闪避（保持原有35%上限）与速度差闪避取最大值，与回合制逻辑一致
+      const dodgeChance = Math.max(
+        Math.max(0, Math.min(0.35, spellBonuses.dodgeRate)),
+        computeSpeedDodge(enemySpeed, playerSpeed)
+      );
       if (dodgeChance > 0 && Math.random() < dodgeChance) {
         finalDamage = 0;
+        isDodged = true;
       } else {
         finalDamage = Math.round(finalDamage * (1 - Math.min(0.6, spellBonuses.damageReduction)));
         playerHp = Math.max(0, (Number(playerHp) || 0) - finalDamage);
@@ -1121,7 +1153,9 @@ export const resolveBattleEncounter = async (
       damage: finalDamage,
       crit,
       description: isPlayerTurn
-        ? `你发动灵力攻势，造成 ${finalDamage}${crit ? '（暴击）' : ''} 点伤害。`
+        ? isDodged
+          ? `你发动灵力攻势，但被${enemy.title}${enemy.name}闪避了！`
+          : `你发动灵力攻势，造成 ${finalDamage}${crit ? '（暴击）' : ''} 点伤害。`
         : finalDamage === 0
           ? `${enemy.title}${enemy.name}反扑，被你闪避了！`
           : `${enemy.title}${enemy.name}反扑，造成 ${finalDamage}${crit ? '（暴击）' : ''} 点伤害。`,
@@ -2053,34 +2087,29 @@ function executeNormalAttack(
     }
   }
 
-  // 计算暴击（优化：统一暴击率计算，设置上限）
-  let critChance = 0.10; // 基础暴击率10%
+  // 计算暴击（统一使用工具函数 computeCritChance，保证与快速战斗公式一致）
+  const attackerSpeed = Number(attacker.speed) || 0;
+  const targetSpeed = Number(target.speed) || 0;
   let critMultiplier = 1.5; // 基础暴击伤害倍率
 
-  // 领域对暴击的影响
+  // 额外暴击加成：领域 + 攻击者增益
+  let extraCritChance = 0;
   if (battleState.elementalField?.type === 'fire') {
-    critChance += (battleState.elementalField.intensity * 0.02);
+    extraCritChance += (battleState.elementalField.intensity * 0.02);
   }
 
   // 预先收集攻击者增益
   attacker.buffs.forEach((buff) => {
     if (buff.type === 'crit') {
-      critChance += buff.value;
+      extraCritChance += buff.value;
     }
     if (buff.critDamage && buff.critDamage > 0) {
       critMultiplier += buff.critDamage;
     }
   });
 
-  // 根据速度差计算速度加成
-  const attackerSpeed = Number(attacker.speed) || 0;
-  const targetSpeed = Number(target.speed) || 0;
-  const speedSum = Math.max(1, attackerSpeed + targetSpeed);
-  const speedBonus = (attackerSpeed / speedSum) * 0.10;
-  critChance += speedBonus;
-
-  // 设置暴击率上限为35%（原20%过于严苛，Buff可突破上限）
-  critChance = Math.min(0.35, Math.max(0, critChance));
+  // 暴击率上限35%、下限0，由 computeCritChance 内部统一处理
+  const critChance = computeCritChance(attackerSpeed, targetSpeed, extraCritChance);
   const isCrit = Math.random() < critChance;
   const finalDamage = Math.round((isCrit ? baseDamage * critMultiplier : baseDamage) * elementalMultiplier);
 
@@ -2096,9 +2125,8 @@ function executeNormalAttack(
     if (buff.reflectDamage && buff.reflectDamage > maxReflectRatio) maxReflectRatio = buff.reflectDamage;
   });
 
-  // 速度提供基础闪避率：每点速度差提供0.05%闪避，上限15%
-  const speedDiff = Math.max(0, (Number(target.speed) || 0) - (Number(attacker.speed) || 0));
-  const baseDodgeFromSpeed = Math.min(0.15, speedDiff * 0.0005);
+  // 速度提供基础闪避率：统一使用 computeSpeedDodge（每点速度差0.05%闪避，上限15%）
+  const baseDodgeFromSpeed = computeSpeedDodge(attackerSpeed, targetSpeed);
   maxDodge = Math.max(maxDodge, baseDodgeFromSpeed);
 
   // 检查闪避

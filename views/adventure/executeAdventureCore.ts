@@ -266,7 +266,7 @@ const applyResultToPlayer = (
   newState.spiritStones = Math.max(0, prev.spiritStones + (result.spiritStonesChange || 0));
   newState.reputation = Math.max(0, (prev.reputation || 0) + (result.reputationChange || 0));
   newState.lotteryTickets = Math.max(0, prev.lotteryTickets + (result.lotteryTicketsChange || 0));
-  newState.inheritanceLevel = Math.max(0, Math.min(4, prev.inheritanceLevel + (result.inheritanceLevelChange || 0)));
+  newState.inheritanceUsed = Math.max(0, Math.min(4, prev.inheritanceUsed + (result.inheritanceUsedChange || 0)));
   newState.karma = (prev.karma || 0) + (result.karmaChange || 0);
 
   // 处理 NPC 关系变化

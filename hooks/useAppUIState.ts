@@ -7,7 +7,6 @@
 import { useCallback, useMemo } from 'react';
 import { useShallow } from 'zustand/react/shallow';
 import { useUIStore, useModals } from '../store/uiStore';
-import { STORAGE_KEYS } from '../constants/storageKeys';
 
 /**
  * Modal Setters 类型
@@ -269,14 +268,4 @@ export function useAppUIState() {
   };
 }
 
-/**
- * 初始化调试模式
- */
-export function useInitDebugMode(setIsDebugModeEnabled: (enabled: boolean) => void) {
-  // 在组件挂载时检查调试模式
-  const debugMode = localStorage.getItem(STORAGE_KEYS.DEBUG_MODE) === 'true';
-  if (debugMode) {
-    setIsDebugModeEnabled(true);
-  }
-}
 

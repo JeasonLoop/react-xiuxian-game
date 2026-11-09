@@ -1,4 +1,5 @@
-import React, { Suspense, lazy, useMemo } from 'react';
+ import React, { Suspense, lazy, useMemo, useState } from 'react';
+ import { useDelayedUnmount } from '../../hooks/useDelayedUnmount';
 import {
   PlayerStats,
   Shop,
@@ -246,9 +247,25 @@ function ModalsContainer({
       reputationEvent,
     ]
   );
-
-  return (
-    <Suspense fallback={ModalSuspenseFallback}>
+   // 5 个高频弹窗使用延迟卸载门控：关闭时保留挂载播完退场动画（M2.3）
+   const inventoryMount = useDelayedUnmount(modals.isInventoryOpen, 260);
+   const characterMount = useDelayedUnmount(modals.isCharacterOpen, 260);
+   const cultivationMount = useDelayedUnmount(modals.isCultivationOpen, 260);
+   const shopMount = useDelayedUnmount(modals.isShopOpen, 260);
+   const battleMount = useDelayedUnmount(modals.isTurnBasedBattleOpen, 260);
+   // 关闭动画期间保留最后一次的数据，避免面板内容瞬间清空
+   // （render 期间派生状态：仅在有新数据时更新，相同引用 React 会自动跳过重渲染）
+   const [lastShop, setLastShop] = useState(currentShop);
+   if (currentShop && currentShop !== lastShop) {
+     setLastShop(currentShop);
+   }
+   const [lastBattleParams, setLastBattleParams] = useState(turnBasedBattleParams);
+   if (turnBasedBattleParams && turnBasedBattleParams !== lastBattleParams) {
+     setLastBattleParams(turnBasedBattleParams);
+   }
+ 
+   return (
+     <Suspense fallback={ModalSuspenseFallback}>
       {modals.isBattleModalOpen && (
         <BattleModal
           isOpen={modals.isBattleModalOpen}
@@ -259,15 +276,15 @@ function ModalsContainer({
         />
       )}
 
-      {modals.isTurnBasedBattleOpen && modalState.turnBasedBattleParams && (
-        <TurnBasedBattleModal
-          isOpen={modals.isTurnBasedBattleOpen}
-          player={player}
-          adventureType={modalState.turnBasedBattleParams.adventureType}
-          riskLevel={modalState.turnBasedBattleParams.riskLevel}
-          realmMinRealm={modalState.turnBasedBattleParams.realmMinRealm}
-          bossId={modalState.turnBasedBattleParams.bossId}
-          difficulty={modalState.turnBasedBattleParams.difficulty}
+       {battleMount.mounted && lastBattleParams && (
+         <TurnBasedBattleModal
+           isOpen={modals.isTurnBasedBattleOpen}
+           player={player}
+           adventureType={lastBattleParams.adventureType}
+           riskLevel={lastBattleParams.riskLevel}
+           realmMinRealm={lastBattleParams.realmMinRealm}
+           bossId={lastBattleParams.bossId}
+           difficulty={lastBattleParams.difficulty}
           autoAdventure={autoAdventure}
           onClose={(result, updatedInventory) => {
             if (handlers.setIsTurnBasedBattleOpen) {
@@ -280,9 +297,9 @@ function ModalsContainer({
         />
       )}
 
-      {modals.isInventoryOpen && (
-        <InventoryModal
-          isOpen={modals.isInventoryOpen}
+       {inventoryMount.mounted && (
+         <InventoryModal
+           isOpen={modals.isInventoryOpen}
           onClose={() => handlers.setIsInventoryOpen(false)}
           inventory={player.inventory}
           equippedItems={player.equippedItems}
@@ -308,9 +325,9 @@ function ModalsContainer({
         />
       )}
 
-      {modals.isCultivationOpen && (
-        <CultivationModal
-          isOpen={modals.isCultivationOpen}
+       {cultivationMount.mounted && (
+         <CultivationModal
+           isOpen={modals.isCultivationOpen}
           onClose={() => handlers.setIsCultivationOpen(false)}
           player={player}
           onLearnArt={handlers.handleLearnArt}
@@ -371,9 +388,9 @@ function ModalsContainer({
         />
       )}
 
-      {modals.isCharacterOpen && (
-        <CharacterModal
-          isOpen={modals.isCharacterOpen}
+       {characterMount.mounted && (
+         <CharacterModal
+           isOpen={modals.isCharacterOpen}
           onClose={() => handlers.setIsCharacterOpen(false)}
           player={player}
           setPlayer={handlers.setPlayer}
@@ -440,14 +457,14 @@ function ModalsContainer({
         />
       )}
 
-      {modals.isShopOpen && modalState.currentShop && (
-        <ShopModal
-          isOpen={modals.isShopOpen}
-          onClose={() => {
-            handlers.setIsShopOpen(false);
-            handlers.setCurrentShop(null);
-          }}
-          shop={modalState.currentShop}
+       {shopMount.mounted && lastShop && (
+         <ShopModal
+           isOpen={modals.isShopOpen}
+           onClose={() => {
+             handlers.setIsShopOpen(false);
+             handlers.setCurrentShop(null);
+           }}
+           shop={lastShop}
           player={player}
           onBuyItem={handlers.handleBuyItem}
           onSellItem={handlers.handleSellItem}

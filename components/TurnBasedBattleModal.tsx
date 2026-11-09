@@ -27,6 +27,7 @@ import {
 import { BATTLE_POTIONS, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES, CULTIVATION_ARTS } from '../constants/index';
 import { BattleSkill } from '../types';
 import { useUIStore } from '../store/uiStore';
+import { getSkillQualityColor } from '../utils/rarityUtils';
 import BattleResultSummary from './BattleResultSummary';
 
 interface TurnBasedBattleModalProps {
@@ -641,18 +642,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   }, [battleState]);
 
   // 获取品质颜色样式
-  const getRarityColor = (rarity: string | null): string => {
-    if (!rarity) return 'border-stone-600 text-stone-400 bg-stone-900/20';
-
-    // 功法品级颜色
-    if (rarity === '天') return 'border-yellow-500 text-yellow-400 bg-yellow-900/20';
-    if (rarity === '地') return 'border-purple-500 text-purple-400 bg-purple-900/20';
-    if (rarity === '玄') return 'border-blue-500 text-blue-400 bg-blue-900/20';
-    if (rarity === '黄') return 'border-green-500 text-green-400 bg-green-900/20';
-
-    return 'border-stone-600 text-stone-400 bg-stone-900/20';
-  };
-
+  // 品质颜色样式已统一迁移到 utils/rarityUtils.ts 的 getSkillQualityColor
   // 获取可用技能（检查冷却和MP，且包含搜索/类型/品质过滤）
   const availableSkills = useMemo(() => {
     if (!battleState) return [];
@@ -1116,7 +1106,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                             {(() => {
                               const rarity = getSkillRarity(skill);
                               return rarity ? (
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${getRarityColor(rarity)}`}>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${getSkillQualityColor(rarity)}`}>
                                   {rarity}
                                 </span>
                               ) : null;
@@ -1167,7 +1157,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                                   {(() => {
                                     const rarity = getSkillRarity(skill);
                                     return rarity ? (
-                                      <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${getRarityColor(rarity)}`}>
+                                      <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${getSkillQualityColor(rarity)}`}>
                                         {rarity}
                                       </span>
                                     ) : null;

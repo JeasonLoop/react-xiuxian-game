@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Hammer, Filter, Check } from 'lucide-react';
 import { Item, ItemType, ItemRarity, EquipmentSlot } from '../types';
-import { getRarityTextColor, getRarityBorder, getRarityDisplayName } from '../utils/rarityUtils';
+import { getRarityTextBrightColor, getRarityDisplayName } from '../utils/rarityUtils';
 import { normalizeTypeLabel } from '../utils/itemUtils';
 import { Modal } from './common';
 
@@ -74,13 +74,6 @@ const BatchDismantleModal: React.FC<Props> = ({
     onClose();
   };
 
-  const rarityColor = (rarity?: ItemRarity) => {
-    const colors: Record<string, string> = {
-      '仙品': 'text-yellow-300', '传说': 'text-purple-300',
-      '稀有': 'text-blue-300', '普通': 'text-stone-400',
-    };
-    return colors[rarity || '普通'] || 'text-stone-400';
-  };
 
   if (!isOpen) return null;
 
@@ -135,7 +128,7 @@ const BatchDismantleModal: React.FC<Props> = ({
                   <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${isSelected ? 'bg-amber-500 border-amber-400' : 'border-stone-500'}`}>
                     {isSelected && <Check size={10} className="text-stone-900" />}
                   </div>
-                  <span className={`font-bold truncate flex-1 ${rarityColor(item.rarity)}`}>
+                  <span className={`font-bold truncate flex-1 ${getRarityTextBrightColor(item.rarity)}`}>
                     {item.name}
                     {item.level && item.level > 0 && <span className="text-stone-500 ml-1">+{item.level}</span>}
                   </span>

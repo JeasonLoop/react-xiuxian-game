@@ -1,9 +1,10 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-} from 'react';
+ import React, {
+   useState,
+   useEffect,
+   useRef,
+   useCallback,
+   useMemo,
+ } from 'react';
 import {
   TribulationState,
   GameSettings,
@@ -32,6 +33,10 @@ import { usePlayTime } from './hooks/usePlayTime';
 import { useVersionCheck } from './hooks/useVersionCheck';
 import { useGameInitialization } from './hooks/useGameInitialization';
 import { useLevelUp } from './hooks/useLevelUp';
+ import { shouldTriggerTribulation, createTribulationState } from './utils/tribulationUtils';
+ import { TRIBULATION_CONFIG, REALM_ORDER } from './constants';
+ import { showConfirm } from './utils/toastUtils';
+ import { useUIStore } from './store/uiStore';
 import { useGlobalAlert } from './hooks/useGlobalAlert';
 import { useRebirth } from './hooks/useRebirth';
 import { useAuthStore } from './store/authStore';
@@ -255,15 +260,39 @@ function App() {
     handleBreakthroughRef.current = breakthroughHandlers.handleBreakthrough;
   }, [breakthroughHandlers.handleBreakthrough]);
 
-  const { isTribulationTriggeredRef } = useLevelUp({
-    player,
-    setPlayer,
-    tribulationState,
-    setTribulationState,
-    handleBreakthrough: (...args) => handleBreakthroughRef.current(...args),
-    addLog,
-    autoAdventure,
-  });
+   const { isTribulationTriggeredRef } = useLevelUp({
+     player,
+     setPlayer,
+     addLog,
+   });
+ 
+   // ========== 手动突破 ==========
+   // 修为圆满后由玩家在属性面板点击「突破」按钮触发；需渡劫的大境界晋升先弹确认
+   const handleManualBreakthrough = useCallback(() => {
+     if (!player || player.exp < player.maxExp) return;
+     // 大境界晋升需渡劫：确认后进入天劫
+     if (shouldTriggerTribulation(player)) {
+       const currentIndex = REALM_ORDER.indexOf(player.realm);
+       const targetRealm = REALM_ORDER[currentIndex + 1];
+       const config = TRIBULATION_CONFIG[targetRealm];
+       const tribulationName = config?.tribulationLevel || `${targetRealm}天劫`;
+       showConfirm(
+         `你的${tribulationName}来了，是否现在渡劫？`,
+         '确认渡劫',
+         () => {
+           // 停止自动历练，防止天劫期间后台继续冒险
+           const uiState = useUIStore.getState();
+           if (uiState.autoAdventure) {
+             useUIStore.setState({ autoAdventure: false, pausedByTribulation: true });
+           }
+           setTribulationState(createTribulationState(player, targetRealm));
+         }
+       );
+       return;
+     }
+     handleBreakthroughRef.current();
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, [player, setTribulationState]);
 
   // 天劫完成处理
   const handleTribulationComplete = useTribulationComplete({
@@ -395,12 +424,12 @@ function App() {
   });
 
   // ========== Handler Groups ==========
-  const { commonHandlersParams } = useHandlerGroups({
-    appHandlers,
-    handleRebirth,
-    modalSetters,
-    otherSettersAndState: {
-      setItemToUpgrade,
+   const { commonHandlersParams } = useHandlerGroups({
+     appHandlers,
+     handleRebirth,
+     modalSetters,
+     otherSettersAndState: {
+       setItemToUpgrade,
       setCurrentShop,
       setBattleReplay,
       setRevealedBattleRounds,
@@ -423,8 +452,13 @@ function App() {
     },
   });
 
-  const gameViewHandlers = useGameViewHandlers(commonHandlersParams);
-  const modalsHandlers = useModalsHandlers(commonHandlersParams);
+   const baseGameViewHandlers = useGameViewHandlers(commonHandlersParams);
+   // 附加手动突破入口，随 handlers 一路传到 StatsPanel
+   const gameViewHandlers = useMemo(() => ({
+     ...baseGameViewHandlers,
+     onBreakthrough: handleManualBreakthrough,
+   }), [baseGameViewHandlers, handleManualBreakthrough]);
+   const modalsHandlers = useModalsHandlers(commonHandlersParams);
 
   // ========== 游戏启动时自动加载存档 ==========
   useEffect(() => {

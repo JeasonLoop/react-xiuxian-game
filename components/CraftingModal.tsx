@@ -2,7 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { PlayerStats, Recipe, Item, ItemType, EquipmentSlot, ItemRarity } from '../types';
 import { PILL_RECIPES, DISCOVERABLE_RECIPES, ALCHEMY_SUCCESS_BASE, ALCHEMY_LEVEL_SUCCESS_BONUS, ALCHEMY_EXP_REQUIREMENTS, ALCHEMY_LEVEL_STAT_BONUS } from '../constants/index';
 import { FlaskConical, CircleOff, Hammer, Combine, Trash2, Plus, Zap, Star, Shield } from 'lucide-react';
+import { getRarityCardStyle } from '../utils/rarityUtils';
 import { Modal } from './common';
+ import TabBar from './common/TabBar';
 
 interface Props {
   isOpen: boolean;
@@ -40,12 +42,7 @@ const CraftingModal: React.FC<Props> = ({
   const [fuseRarityFilter, setFuseRarityFilter] = useState<ItemRarity | '全部'>('全部');
   const [fuseSlotFilter, setFuseSlotFilter] = useState<string>('全部');
 
-  const rarityColors: Record<string, string> = {
-    '普通': 'border-stone-700/50 text-stone-400 bg-stone-900/20',
-    '稀有': 'border-blue-800/50 text-blue-400 bg-blue-900/10',
-    '传说': 'border-purple-800/50 text-purple-400 bg-purple-900/10',
-    '仙品': 'border-mystic-gold/50 text-mystic-gold bg-mystic-gold/10',
-  };
+  // 稀有度卡片样式已统一迁移到 utils/rarityUtils.ts 的 getRarityCardStyle
 
   const CRAFTABLE_SLOTS = [
     { value: '', label: '随机部位' },
@@ -203,22 +200,18 @@ const CraftingModal: React.FC<Props> = ({
       size="4xl"
       height="2xl"
     >
-      <div className="flex flex-col h-full">
-        {/* Tab 切换 */}
-        <div className="flex border-b border-stone-800 mb-4">
-          <button
-            onClick={() => setActiveTab('alchemy')}
-            className={`px-6 py-2 font-serif font-bold transition-colors ${activeTab === 'alchemy' ? 'text-mystic-gold border-b-2 border-mystic-gold' : 'text-stone-500 hover:text-stone-300'}`}
-          >
-            炼丹
-          </button>
-          <button
-            onClick={() => setActiveTab('artifact')}
-            className={`px-6 py-2 font-serif font-bold transition-colors ${activeTab === 'artifact' ? 'text-mystic-gold border-b-2 border-mystic-gold' : 'text-stone-500 hover:text-stone-300'}`}
-          >
-            炼器
-          </button>
-        </div>
+       <div className="flex flex-col h-full">
+         {/* Tab 切换（M2.4：滑动指示条 + hover 反馈） */}
+         <TabBar
+           className="mb-4"
+           tabs={[
+             { key: 'alchemy', label: '炼丹', icon: <FlaskConical size={14} /> },
+             { key: 'artifact', label: '炼器', icon: <Hammer size={14} /> },
+           ]}
+           activeKey={activeTab}
+           onChange={(key) => setActiveTab(key as 'alchemy' | 'artifact')}
+         />
+ 
 
         {activeTab === 'alchemy' ? (
           /* 炼丹界面 */
@@ -371,7 +364,7 @@ const CraftingModal: React.FC<Props> = ({
                       <button
                         key={item.id}
                         onClick={() => handleAddMaterial(item)}
-                        className={`border p-2 rounded text-left hover:border-white/30 transition-all flex flex-col ${rarityColors[item.rarity || '普通']}`}
+                        className={`border p-2 rounded text-left hover:border-white/30 transition-all flex flex-col ${getRarityCardStyle(item.rarity)}`}
                       >
                         <div className="text-xs font-serif font-bold truncate">{item.name}</div>
                         <div className="text-[10px] opacity-60 flex justify-between">
@@ -529,7 +522,7 @@ const CraftingModal: React.FC<Props> = ({
                                     className={`p-2 rounded text-left border transition-all ${
                                       isSelected
                                         ? 'border-mystic-gold bg-mystic-gold/20 shadow-[0_0_10px_rgba(212,175,55,0.2)]'
-                                        : `${rarityColors[item.rarity || '普通']} hover:border-white/30`
+                                        : `${getRarityCardStyle(item.rarity)} hover:border-white/30`
                                     }`}
                                   >
                                     <div className="text-xs font-serif font-bold truncate">{item.name}</div>
@@ -558,7 +551,7 @@ const CraftingModal: React.FC<Props> = ({
                                   className={`p-2 rounded text-left border transition-all ${
                                     fuseStone?.id === stone.id
                                       ? 'border-mystic-gold bg-mystic-gold/20'
-                                      : `${rarityColors[stone.rarity || '普通']} hover:border-white/30`
+                                      : `${getRarityCardStyle(stone.rarity)} hover:border-white/30`
                                   }`}
                                 >
                                   <div className="text-xs font-serif font-bold truncate">{stone.name}</div>

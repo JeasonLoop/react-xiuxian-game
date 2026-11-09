@@ -45,9 +45,23 @@ export const ensurePlayerStatsCompatibility = (loadedPlayer: any): PlayerStats =
       : loadedPlayer.talentId
         ? [loadedPlayer.talentId]
         : [];
+  // 转世/传承字段拆分迁移：旧档只有一个 inheritanceLevel，同时充当转世次数与传承跳层次数。
+  // 旧值映射给 rebirthCount（转世次数）：转世次数是长线进度且驱动修炼速度加成（见 statUtils），
+  // 若映射给 inheritanceUsed 会让旧档继续享受「转世白送跳层」的漏洞收益；
+  // 传承跳层次数不再继承旧值，需要通过传承石/历练重新获取。
+  const legacyInheritanceLevel = Math.max(0, Math.floor(sanitizeNumber(loadedPlayer.inheritanceLevel, 0)));
+  const migratedRebirthCount = Math.max(0, Math.floor(sanitizeNumber(loadedPlayer.rebirthCount, legacyInheritanceLevel)));
+  const migratedInheritanceUsed = Math.max(0, Math.floor(sanitizeNumber(loadedPlayer.inheritanceUsed, 0)));
+
+   // 剥离旧的 inheritanceLevel 字段，避免其在保存存档时继续残留
+   // （解构仅用于丢弃旧字段，eslint-disable 避免未使用变量误报）
+   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   const { inheritanceLevel: _legacyInheritanceLevel, ...normalizedPlayer } = loadedPlayer;
 
   return {
-    ...loadedPlayer,
+    ...normalizedPlayer,
+    rebirthCount: migratedRebirthCount,
+    inheritanceUsed: migratedInheritanceUsed,
     talentIds: migratedTalentIds,
     realm: safeRealm,
     realmLevel: safeRealmLevel,

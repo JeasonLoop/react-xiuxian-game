@@ -22,6 +22,7 @@
 - 宗门：`sectId`、`sectRank`、`sectContribution` 等
 - 灵宠：`pets`、`activePetId`
 - 成就与称号：`achievements`、`viewedAchievements`、`titleId`、`unlockedTitles`
+- 转世与传承：`rebirthCount`（转世次数）、`inheritanceUsed`（传承跳层次数）
 - 进阶系统：`lifespan`、`maxLifespan`、`spiritualRoots`、`grotto` 等
 
 完整字段以 `types.ts` 的 `PlayerStats` 为准。
@@ -55,6 +56,8 @@
 
 - 入口：`ensurePlayerStatsCompatibility()`
 - 会为缺失字段补默认值（如 `statistics`、`grotto`、`spiritualRoots` 等）
+- 旧字段 `inheritanceLevel` 拆分为 `rebirthCount`（转世次数）与 `inheritanceUsed`（传承跳层次数）：
+  旧值映射给 `rebirthCount`，`inheritanceUsed` 置 0，读档后旧字段不再保留
 
 ## 导入导出
 

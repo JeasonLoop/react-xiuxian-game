@@ -311,51 +311,29 @@ export function useBreakthroughHandlers({
 
   const handleUseInheritance = () => {
     setPlayer((prev) => {
-      const inheritanceLevel = prev.inheritanceLevel || 0;
-      if (inheritanceLevel <= 0) {
+      const inheritanceUsed = prev.inheritanceUsed || 0;
+      if (inheritanceUsed <= 0) {
         return prev;
       }
 
-      let breakthroughCount = inheritanceLevel;
+      let breakthroughCount = inheritanceUsed;
       let remainingInheritance = 0;
       let currentRealm = prev.realm;
       let currentLevel = prev.realmLevel;
 
-      // 计算能够突破的次数，并检查突破条件
+      // 传承只能用于小境界（1-9 层）跳层，不可跨越天劫突破大境界
       while (breakthroughCount > 0) {
-        const currentIndex = REALM_ORDER.indexOf(currentRealm);
         if (currentLevel >= 9) {
-          // 境界升级，需要检查突破条件
-          if (currentIndex < REALM_ORDER.length - 1) {
-            const targetRealm = REALM_ORDER[currentIndex + 1];
-            const conditionCheck = checkBreakthroughConditions(prev, targetRealm);
-
-            // 如果条件不满足，停止突破并保留剩余的传承
-            if (!conditionCheck.canBreakthrough) {
-              remainingInheritance = breakthroughCount;
-              addLog(`传承突破中断：${conditionCheck.message}`, 'danger');
-              break;
-            }
-
-            currentRealm = targetRealm;
-            currentLevel = 1;
-          } else {
-            // 已经是最高境界，无法再突破
-            remainingInheritance = breakthroughCount;
-            break;
-          }
-        } else {
-          currentLevel += 1;
+          // 已到达大境界顶点，剩余传承保留不消耗
+          remainingInheritance = breakthroughCount;
+          addLog('传承跳层仅限小境界（1-9 层），无法跨越天劫突破大境界！大境界突破需正常积累感悟。', 'danger');
+          break;
         }
+        currentLevel += 1;
         breakthroughCount--;
       }
 
-      if (remainingInheritance === inheritanceLevel) {
-        addLog('你已达到仙道巅峰，无法使用传承继续突破！', 'special');
-        return prev;
-      }
-
-      const actualBreakthroughCount = inheritanceLevel - remainingInheritance;
+      const actualBreakthroughCount = inheritanceUsed - remainingInheritance;
 
       if (actualBreakthroughCount > 0) {
         const stats = REALM_DATA[currentRealm];
@@ -560,7 +538,7 @@ export function useBreakthroughHandlers({
           maxLifespan: newMaxLifespan,
           lifespan: newLifespan,
           goldenCoreMethodCount, // 设置金丹法数
-          inheritanceLevel: remainingInheritance,
+          inheritanceUsed: remainingInheritance,
           statistics: {
             ...playerStats,
             breakthroughCount: playerStats.breakthroughCount + actualBreakthroughCount,

@@ -3,6 +3,7 @@ import { CultivationArt, RealmType, PlayerStats, ArtGrade } from '../types';
 import { CULTIVATION_ARTS, REALM_ORDER, getActiveSynergies, ART_SYNERGY_SETS, calculateBuildAffinityTotals, BUILD_THRESHOLD_BONUSES } from '../constants/index';
 import { BookOpen, Check, Lock, Search, X, Zap, Star, TrendingUp, Wand, Sparkles, Flame, Trash2, ArrowUpCircle } from 'lucide-react';
 import { Modal } from './common';
+ import TabBar from './common/TabBar';
 import { CUSTOM_SPELL_CONFIG, getCustomSpellMaxSlots, getCustomSpellUpgradeCost } from '../constants/customSpell';
 import { fuseCustomSpell, upgradeCustomSpell, forgetCustomSpell } from '../services/customSpellService';
 import { useGameStore } from '../store/gameStore';
@@ -398,28 +399,18 @@ const CultivationModal: React.FC<Props> = ({
       size="3xl"
       height="xl"
       titleExtra={
-        <div className="flex items-center gap-2">
-          <div className="flex bg-stone-800 p-0.5 rounded border border-stone-700 text-xs">
-            <button
-              onClick={() => setActiveTab('arts')}
-              className={`px-3 py-1 rounded transition-colors ${
-                activeTab === 'arts' ? 'bg-mystic-gold text-stone-950 font-bold' : 'text-stone-300 hover:text-white'
-              }`}
-            >
-              功法修习
-            </button>
-            <button
-              onClick={() => setActiveTab('custom')}
-              className={`px-3 py-1 rounded transition-colors flex items-center gap-1 ${
-                activeTab === 'custom' ? 'bg-amber-600 text-stone-950 font-bold' : 'text-stone-300 hover:text-white'
-              }`}
-            >
-              <Sparkles size={12} />
-              自创神通
-            </button>
-          </div>
-
-          {activeTab === 'arts' && (
+         <div className="flex items-center gap-2">
+           <TabBar
+             variant="pill"
+             tabs={[
+               { key: 'arts', label: '功法修习' },
+               { key: 'custom', label: '自创神通', icon: <Sparkles size={12} /> },
+             ]}
+             activeKey={activeTab}
+             onChange={(key) => setActiveTab(key as 'arts' | 'custom')}
+           />
+ 
+           {activeTab === 'arts' && (
             <button
               onClick={handleBatchLearn}
               className="px-3 py-1.5 bg-mystic-gold/20 border border-mystic-gold text-mystic-gold hover:bg-mystic-gold/30 rounded text-sm flex items-center gap-1.5 transition-colors min-h-11 md:min-h-0 touch-manipulation"

@@ -116,14 +116,6 @@ const BatchReleaseModal: React.FC<Props> = ({
     onClose();
   };
 
-  // 使用统一的工具函数获取稀有度颜色（BatchReleaseModal 需要特殊的灰色处理）
-  const getRarityColor = (rarity: string) => {
-    if (rarity === '普通') {
-      return 'text-gray-400';
-    }
-    return getRarityTextColor(rarity as ItemRarity);
-  };
-
   // 计算总补偿
   const totalCompensation = Array.from(selectedPets).reduce((total: number, petId) => {
     const pet = player.pets.find((p) => p.id === petId);
@@ -471,7 +463,7 @@ const BatchReleaseModal: React.FC<Props> = ({
                         />
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
-                            <span className={`font-bold ${getRarityColor(pet.rarity)}`}>
+                            <span className={`font-bold ${getRarityTextColor(pet.rarity as ItemRarity, 'text-gray-400')}`}>
                               {pet.name}
                             </span>
                             {isActive && (

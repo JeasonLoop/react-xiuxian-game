@@ -1,25 +1,22 @@
 import React, { useRef } from 'react';
 import { PlayerStats, Pet, ItemType, LotteryPrize } from '../../types';
-import { LOTTERY_PRIZES, PET_TEMPLATES, CULTIVATION_ARTS, LOTTERY_RARE_PITY_INTERVAL, LOTTERY_SOFT_PITY_LEGEND_INTERVAL } from '../../constants/index';
+import { LOTTERY_PRIZES, PET_TEMPLATES, CULTIVATION_ARTS, LOTTERY_RARE_PITY_INTERVAL, LOTTERY_SOFT_PITY_LEGEND_INTERVAL, REALM_ORDER } from '../../constants/index';
+import { LOTTERY_DUPLICATE_COMPENSATION, getLotteryDuplicateRealmFactor } from '../../constants/balance';
 import { uid } from '../../utils/gameUtils';
 import { addItemToInventory } from '../../utils/inventoryUtils';
-import { getRealmEventRewardMultiplier } from '../../utils/realmEventRewardScale';
 import { useGameStore, useUIStore } from '../../store';
-const DUPLICATE_PET_SPIRIT_STONES_BASE = 8000;
 
-/** 重复功法灵石补偿基数（按品级） */
-const DUPLICATE_ART_STONES_BASE: Record<string, number> = {
-  天: 12000,
-  地: 5000,
-  玄: 2000,
-  黄: 800,
-};
+/** 计算重复补偿的境界系数（1 + 境界序号 × 2，见 constants/balance.ts） */
+function getDuplicateRealmFactor(player: PlayerStats): number {
+  const realmIndex = REALM_ORDER.indexOf(player.realm);
+  return getLotteryDuplicateRealmFactor(realmIndex);
+}
 
 function convertDuplicatePetDrawsToCompensation(
   results: LotteryPrize[],
   player: PlayerStats
 ): LotteryPrize[] {
-  const mult = getRealmEventRewardMultiplier(player);
+  const realmFactor = getDuplicateRealmFactor(player);
   const speciesSeen = new Set(player.pets.map((p) => p.species));
   const out: LotteryPrize[] = [];
   for (const prize of results) {
@@ -33,12 +30,10 @@ function convertDuplicatePetDrawsToCompensation(
       continue;
     }
     if (speciesSeen.has(template.species)) {
+      // 补偿 = 基础值 × 境界系数，随境界放大（避免固定赔率在后期成为主要灵石产出）
       const stones = Math.max(
-        2000,
-        Math.floor(
-          DUPLICATE_PET_SPIRIT_STONES_BASE *
-            Math.min(2.6, 0.42 + mult * 0.32)
-        )
+        LOTTERY_DUPLICATE_COMPENSATION.petMin,
+        Math.floor(LOTTERY_DUPLICATE_COMPENSATION.petBase * realmFactor)
       );
       out.push({
         id: `${prize.id}-dup-${out.length}`,
@@ -61,7 +56,7 @@ function convertDuplicateArtDrawsToCompensation(
   results: LotteryPrize[],
   player: PlayerStats
 ): LotteryPrize[] {
-  const mult = getRealmEventRewardMultiplier(player);
+  const realmFactor = getDuplicateRealmFactor(player);
   const unlockedSet = new Set(player.unlockedArts || []);
   const out: LotteryPrize[] = [];
   for (const prize of results) {
@@ -75,10 +70,10 @@ function convertDuplicateArtDrawsToCompensation(
       continue;
     }
     if (unlockedSet.has(art.id)) {
-      const base = DUPLICATE_ART_STONES_BASE[art.grade] || 800;
+      const base = LOTTERY_DUPLICATE_COMPENSATION.artBase[art.grade] || LOTTERY_DUPLICATE_COMPENSATION.artBase['黄'];
       const stones = Math.max(
-        500,
-        Math.floor(base * Math.min(2.6, 0.42 + mult * 0.32))
+        LOTTERY_DUPLICATE_COMPENSATION.artMin,
+        Math.floor(base * realmFactor)
       );
       out.push({
         id: `${prize.id}-dup-${out.length}`,

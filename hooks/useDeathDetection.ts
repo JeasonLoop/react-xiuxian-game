@@ -221,50 +221,45 @@ export function useDeathDetection({
         }
       }
 
-      if (reviveItem && reviveSlot) {
-        // 有保命装备，消耗一次保命机会并复活
-        setPlayer((prev) => {
-          if (!prev) return prev;
-
-          const newInventory = prev.inventory.map((item) => {
-            if (item.id === reviveItem!.id) {
-              const newChances = (item.reviveChances || 0) - 1;
-              addLog(
-                `${item.name}的保命之力被触发！你留下一口气，从死亡边缘被拉了回来。剩余保命机会：${newChances}次`,
-                'special'
-              );
-              if (setItemActionLog) setItemActionLog({ text: `${item.name}的保命之力被触发！你留下一口气，从死亡边缘被拉了回来。剩余保命机会：${newChances}次`, type: 'special' });
-              return {
-                ...item,
-                reviveChances: newChances,
-              };
-            }
-            return item;
-          });
-
-          // 如果保命机会用完了，从装备栏移除
-          const updatedItem = newInventory.find((i) => i.id === reviveItem!.id);
-          const newEquippedItems = { ...prev.equippedItems };
-          if (
-            updatedItem &&
-            (!updatedItem.reviveChances || updatedItem.reviveChances <= 0)
-          ) {
-            delete newEquippedItems[reviveSlot!];
-            addLog(`${reviveItem!.name}的保命之力已耗尽，自动卸下。`, 'danger');
-          }
-
-          // 复活：恢复10%最大气血
-          const reviveHp = Math.max(1, Math.floor(prev.maxHp * 0.1));
-
-          return {
-            ...prev,
-            inventory: newInventory,
-            equippedItems: newEquippedItems,
-            hp: reviveHp,
-          };
-        });
-        return; // 不触发死亡
-      }
+       if (reviveItem && reviveSlot) {
+         // 有保命装备，消耗一次保命机会并复活
+         // 剩余次数在 updater 外计算，保持 setPlayer 的 updater 为纯函数（避免 StrictMode 下重复记日志）
+         const newChances = (reviveItem.reviveChances || 0) - 1;
+         const reviveMessage = `${reviveItem.name}的保命之力被触发！你留下一口气，从死亡边缘被拉了回来。剩余保命机会：${newChances}次`;
+         addLog(reviveMessage, 'special');
+         if (setItemActionLog) {
+           setItemActionLog({ text: reviveMessage, type: 'special' });
+         }
+         if (newChances <= 0) {
+           addLog(`${reviveItem.name}的保命之力已耗尽，装备仍保留（属性加成继续生效）。`, 'danger');
+         }
+ 
+         setPlayer((prev) => {
+           if (!prev) return prev;
+ 
+           // 只更新背包中该装备的保命次数；
+           // 耗尽后保留在装备栏（属性加成继续生效），装备栏与详情面板会同步展示「已耗尽」
+           const newInventory = prev.inventory.map((item) => {
+             if (item.id === reviveItem!.id) {
+               return {
+                 ...item,
+                 reviveChances: newChances,
+               };
+             }
+             return item;
+           });
+ 
+           // 复活：恢复10%最大气血
+           const reviveHp = Math.max(1, Math.floor(prev.maxHp * 0.1));
+ 
+           return {
+             ...prev,
+             inventory: newInventory,
+             hp: reviveHp,
+           };
+         });
+         return; // 不触发死亡
+       }
 
       // 没有保命装备，根据难度模式处理死亡
       const difficulty = settings.difficulty || 'normal';

@@ -1,9 +1,9 @@
-import React, { useMemo } from 'react';
+ import React from 'react';
 import { PlayerStats } from '../types';
-import { REALM_ORDER, REALM_DATA } from '../constants/index';
-import { Modal } from './common';
-import { RefreshCw, Star, BookOpen, Gem, AlertTriangle, CheckCircle, XCircle, Lock } from 'lucide-react';
-import { createInitialPlayer } from '../utils/playerUtils';
+ import { REALM_ORDER } from '../constants/index';
+ import { REBIRTH_EXP_BONUS } from '../constants/balance';
+ import { Modal } from './common';
+ import { RefreshCw, Star, AlertTriangle, CheckCircle, XCircle, Lock } from 'lucide-react';
 
 interface Props {
   isOpen: boolean;
@@ -18,8 +18,8 @@ function canRebirth(player: PlayerStats): boolean {
   return idx >= 3 && player.realmLevel >= 9 && player.exp >= player.maxExp;
 }
 
-/** 转世奖励等级 */
-function getRebirthBonuses(inheritanceLevel: number): {
+/** 转世奖励等级（rebirthCount 为转世后的累计转世次数） */
+function getRebirthBonuses(rebirthCount: number): {
   statBonus: number;
   expBonus: number;
   keepArts: number;
@@ -27,32 +27,31 @@ function getRebirthBonuses(inheritanceLevel: number): {
   title: string;
 } {
   const levels = [
-    { statBonus: 0.10, expBonus: 0.10, keepArts: 2, rootBoost: 3, title: '初转' },
-    { statBonus: 0.22, expBonus: 0.22, keepArts: 3, rootBoost: 5, title: '二转' },
-    { statBonus: 0.35, expBonus: 0.35, keepArts: 4, rootBoost: 8, title: '三转' },
-    { statBonus: 0.50, expBonus: 0.50, keepArts: 5, rootBoost: 10, title: '四转' },
-    { statBonus: 0.70, expBonus: 0.70, keepArts: 7, rootBoost: 15, title: '五转·圆满' },
+    { statBonus: 0.10, keepArts: 2, rootBoost: 3, title: '初转' },
+    { statBonus: 0.22, keepArts: 3, rootBoost: 5, title: '二转' },
+    { statBonus: 0.35, keepArts: 4, rootBoost: 8, title: '三转' },
+    { statBonus: 0.50, keepArts: 5, rootBoost: 10, title: '四转' },
+    { statBonus: 0.70, keepArts: 7, rootBoost: 15, title: '五转·圆满' },
   ];
-  return levels[Math.min(inheritanceLevel, 4)];
+   // rebirthCount 为转世后的累计次数：第 1 次转世取初转档，第 5 次取五转档
+   // （用 levels.length 而非硬编码 4 做钳制，修复第 5 次转世错拿四转档的 off-by-one）
+   const base = levels[Math.min(Math.max(rebirthCount, 1), levels.length) - 1];
+  // 修炼速度加成与实装公式保持一致：每转 +10%，累计上限 +70%
+  const expBonus = Math.min(
+    REBIRTH_EXP_BONUS.perRebirth * rebirthCount,
+    REBIRTH_EXP_BONUS.max
+  );
+  return { ...base, expBonus };
 }
 
 const RebirthModal: React.FC<Props> = ({ isOpen, onClose, player, onRebirth }) => {
-  const nextLevel = (player.inheritanceLevel || 0) + 1;
-  const bonuses = getRebirthBonuses(nextLevel - 1);
-  const canDo = canRebirth(player);
-  const maxReached = nextLevel > 5;
-
-  // 统计会保留的功法（挑品级最高的几个）
-  const topArts = useMemo(() => {
-    if (!player.cultivationArts) return [];
-    const arts = player.cultivationArts
-      .map(id => ({ id }))
-      .sort(() => Math.random() - 0.5);
-    return arts.slice(0, bonuses.keepArts);
-  }, [player.cultivationArts, bonuses.keepArts]);
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="转世重修" titleIcon={<RefreshCw size={18} />} size="md" height="auto">
+  const nextLevel = (player.rebirthCount || 0) + 1;
+  const bonuses = getRebirthBonuses(nextLevel);
+   const canDo = canRebirth(player);
+   const maxReached = nextLevel > 5;
+ 
+   return (
+     <Modal isOpen={isOpen} onClose={onClose} title="转世重修" titleIcon={<RefreshCw size={18} />} size="md" height="auto">
       <div className="space-y-4 text-sm">
         {maxReached ? (
           <div className="text-center py-6 space-y-3">

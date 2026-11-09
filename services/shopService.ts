@@ -1,5 +1,6 @@
 import { ShopItem, ShopType, ItemType, ItemRarity, EquipmentSlot, RealmType } from '../types';
 import { REALM_ORDER, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS } from '../constants/index';
+import { getInheritanceStonePrice } from '../constants/balance';
 import { uid } from '../utils/gameUtils';
 import { getItemFromConstants } from '../utils/itemConstantsUtils';
 import { generateItems } from '../utils/itemGenerator';
@@ -408,8 +409,13 @@ export function generateShopItems(
       // 检查境界要求
       if (!template.minRealm ||
           playerRealmIndex >= REALM_ORDER.indexOf(template.minRealm)) {
+        // 传承石售价随当前境界指数放大（50000 × 8^境界序号），堵住固定低价跳层的经济漏洞
+        const price = template.name === '传承石'
+          ? getInheritanceStonePrice(playerRealmIndex)
+          : template.price;
         items.push({
           ...template,
+          price,
           id: `shop-reputation-${uid()}`,
         });
       }

@@ -88,15 +88,15 @@ const applyItemEffect = (
   let newPets = [...prev.pets];
   const effectLogs: string[] = [];
 
-  // 1. 处理传承石（特殊物品）- 已删除传承路线功能，仅提升传承等级
+  // 1. 处理传承石（特殊物品）：+1 传承跳层次数（上限 4，仅可跳小境界层）
   const isInheritanceStone = item.name === '传承石';
   if (isInheritanceStone) {
-    addLog(`你使用了传承石，传承等级 +1！`, 'special');
+    addLog(`你使用了传承石，传承跳层次数 +1！`, 'special');
     return {
       ...newStats,
       inventory: newInv,
       pets: newPets,
-      inheritanceLevel: (prev.inheritanceLevel || 0) + 1,
+      inheritanceUsed: Math.min(4, (prev.inheritanceUsed || 0) + 1),
     };
   }
 

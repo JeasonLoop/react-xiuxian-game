@@ -71,7 +71,7 @@ interface AdventureEventTemplate {
   attributeReduction?: AdventureResult['attributeReduction'];
   reputationChange?: number;
   reputationEvent?: AdventureResult['reputationEvent'];
-  inheritanceLevelChange?: number;
+  inheritanceUsedChange?: number;
   triggerSecretRealm?: boolean;
   spiritualRootsChange?: AdventureResult['spiritualRootsChange'];
   lifespanChange?: number;
@@ -985,7 +985,7 @@ function generateLuckyEventTemplate(index: number): AdventureEventTemplate {
     eventColor: 'special',
     adventureType: 'lucky',
     itemObtained: randomChance(index, 0.7, 500) ? generateRandomItem(rarity, index) : undefined,
-    inheritanceLevelChange: randomChance(index, 0.1, 510) ? 1 : undefined, // 传承等级每次只能增加1级
+    inheritanceUsedChange: randomChance(index, 0.1, 510) ? 1 : undefined, // 传承跳层次数每次只能增加1级
     triggerSecretRealm: randomChance(index, 0.05, 530),
     reputationEvent: randomChance(index, 0.18, 531) ? selectFromArray(luckyBranchEvents, index) : undefined,
   };
@@ -1816,7 +1816,7 @@ export function templateToAdventureResult(
   if (template.attributeReduction !== undefined) result.attributeReduction = template.attributeReduction;
   if (template.reputationChange !== undefined) result.reputationChange = template.reputationChange;
   if (template.reputationEvent !== undefined) result.reputationEvent = template.reputationEvent;
-  if (template.inheritanceLevelChange !== undefined) result.inheritanceLevelChange = template.inheritanceLevelChange;
+  if (template.inheritanceUsedChange !== undefined) result.inheritanceUsedChange = template.inheritanceUsedChange;
   if (template.triggerSecretRealm !== undefined) result.triggerSecretRealm = template.triggerSecretRealm;
   if (template.spiritualRootsChange !== undefined) result.spiritualRootsChange = template.spiritualRootsChange;
   if (template.lifespanChange !== undefined) result.lifespanChange = template.lifespanChange;
@@ -1879,8 +1879,8 @@ export function templateToAdventureResult(
     if (result.reputationEvent) {
       logger.log('  声望事件:', result.reputationEvent);
     }
-    if (result.inheritanceLevelChange) {
-      logger.log('  传承等级变化:', result.inheritanceLevelChange);
+    if (result.inheritanceUsedChange) {
+      logger.log('  传承跳层次数变化:', result.inheritanceUsedChange);
     }
     if (result.triggerSecretRealm) {
       logger.log('  触发秘境:', result.triggerSecretRealm);

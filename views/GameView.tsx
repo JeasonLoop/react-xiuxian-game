@@ -87,7 +87,8 @@ interface GameViewProps {
     onOpenStats: () => void;
     onOpenDebug?: () => void;
     onOpenLeaderboard?: () => void;
-    onUpdateViewedAchievements: () => void;
+     onUpdateViewedAchievements: () => void;
+     onBreakthrough?: () => void;
     autoMeditate: boolean;
     autoAdventure: boolean;
     pausedByBattle?: boolean;
@@ -150,12 +151,11 @@ function GameView({
     <div className="flex flex-col md:flex-row h-screen bg-stone-900 text-stone-200 overflow-hidden relative">
       {/* Visual Effects Layer */}
       <CombatVisuals effects={visualEffects} />
-
-      <div className="hidden md:block">
-        <StatsPanel player={player} />
-      </div>
-
-      <main className="flex-1 flex flex-col h-full relative min-w-0 pt-[72px] md:pt-0">
+       <div className="hidden md:block">
+         <StatsPanel player={player} onBreakthrough={handlers.onBreakthrough} />
+       </div>
+ 
+       <main className="flex-1 flex flex-col h-full relative min-w-0 pt-[72px] md:pt-0">
         <GameHeader
           player={player}
           onOpenMenu={handlers.onOpenMenu}
@@ -249,8 +249,9 @@ function GameView({
         onClose={onCloseLotteryRewards}
       />
       {itemActionLog && (
-        <ItemActionToast
-          log={{
+         <ItemActionToast
+           key={`${itemActionLog.text}-${itemActionLog.type}`}
+           log={{
             id: 'item-action',
             text: itemActionLog.text,
             type: itemActionLog.type as LogEntry['type'],
@@ -287,10 +288,10 @@ function GameView({
         >
           <div
             className="bg-paper-800 w-full h-[80vh] rounded-t-2xl border border-stone-700 shadow-2xl overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <StatsPanel player={player} />
-          </div>
+             onClick={(e) => e.stopPropagation()}
+           >
+             <StatsPanel player={player} onBreakthrough={handlers.onBreakthrough} />
+           </div>
         </div>
       )}
     </div>

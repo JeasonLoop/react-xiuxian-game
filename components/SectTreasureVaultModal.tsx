@@ -2,7 +2,7 @@ import React, { useMemo, useEffect, useCallback } from 'react';
 import { PlayerStats, Item, ItemRarity } from '../types';
 import { LOOT_ITEMS } from '../services/battleService';
 import { uid } from '../utils/gameUtils';
-import { getRarityBadge } from '../utils/rarityUtils';
+import { getRarityBadge, getRarityVaultCardStyle } from '../utils/rarityUtils';
 import { Package, Sparkles } from 'lucide-react';
 import { Modal } from './common';
 
@@ -195,12 +195,7 @@ const SectTreasureVaultModal: React.FC<Props> = ({
           {vaultItems.map((item) => (
           <div
             key={item.id}
-            className={`border rounded-lg p-4 bg-stone-800/30 border-stone-400/50 hover:scale-105 transition-transform cursor-pointer ${
-              item.rarity === '仙品' ? 'bg-yellow-900/30 border-yellow-400/50' :
-              item.rarity === '传说' ? 'bg-purple-900/30 border-purple-400/50' :
-              item.rarity === '稀有' ? 'bg-blue-900/30 border-blue-400/50' :
-              'bg-stone-800/30 border-stone-400/50'
-            }`}
+            className={`border rounded-lg p-4 hover:scale-105 transition-transform cursor-pointer ${getRarityVaultCardStyle(item.rarity)}`}
             onClick={() => {
               onTakeItem(item);
               onClose();

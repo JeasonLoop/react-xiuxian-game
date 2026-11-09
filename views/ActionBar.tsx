@@ -71,7 +71,7 @@ function ActionBar({
             ${
               loading || cooldown > 0 || autoAdventure
                 ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed'
-                : 'bg-ink-800 border-stone-600 active:border-mystic-jade active:bg-ink-700 text-stone-200'
+                 : 'bg-ink-800 border-stone-600 active:border-mystic-jade active:bg-ink-700 text-stone-200 hover:border-mystic-jade hover:bg-ink-700 hover:-translate-y-0.5 hover:shadow-[0_4px_14px_rgba(92,148,110,0.25)]'
             }
             ${autoMeditate ? 'border-mystic-jade border-2' : ''}
           `}
@@ -115,7 +115,7 @@ function ActionBar({
             ${
               loading || cooldown > 0 || autoMeditate
                 ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed'
-                : 'bg-ink-800 border-stone-600 active:border-mystic-gold active:bg-ink-700 text-stone-200'
+                 : 'bg-ink-800 border-stone-600 active:border-mystic-gold active:bg-ink-700 text-stone-200 hover:border-mystic-gold hover:bg-ink-700 hover:-translate-y-0.5 hover:shadow-[0_4px_14px_rgba(203,161,53,0.3)]'
             }
             ${autoAdventure ? 'border-mystic-gold border-2' : ''}
           `}
@@ -186,7 +186,7 @@ function ActionBar({
           ${
             loading
               ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed'
-              : 'bg-ink-800 border-stone-600 active:border-purple-500 active:bg-ink-700 text-stone-200'
+               : 'bg-ink-800 border-stone-600 active:border-purple-500 active:bg-ink-700 text-stone-200 hover:border-purple-500 hover:bg-ink-700 hover:-translate-y-0.5 hover:shadow-[0_4px_14px_rgba(168,85,247,0.25)]'
           }
         `}
       >
@@ -229,7 +229,7 @@ function ActionBar({
           ${
             loading
               ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed'
-              : 'bg-ink-800 border-stone-600 active:border-cyan-500 active:bg-ink-700 text-stone-200'
+               : 'bg-ink-800 border-stone-600 active:border-cyan-500 active:bg-ink-700 text-stone-200 hover:border-cyan-500 hover:bg-ink-700 hover:-translate-y-0.5 hover:shadow-[0_4px_14px_rgba(34,211,238,0.25)]'
           }
         `}
       >
@@ -271,7 +271,7 @@ function ActionBar({
           ${
             loading
               ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed'
-              : 'bg-ink-800 border-stone-600 active:border-blue-400 active:bg-ink-700 text-stone-200'
+               : 'bg-ink-800 border-stone-600 active:border-blue-400 active:bg-ink-700 text-stone-200 hover:border-blue-400 hover:bg-ink-700 hover:-translate-y-0.5 hover:shadow-[0_4px_14px_rgba(96,165,250,0.25)]'
           }
         `}
       >

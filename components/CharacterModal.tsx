@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Modal from './common/Modal';
+ import TabBar from './common/TabBar';
 import { createPortal } from 'react-dom';
 import { X, Star, Award, Info, Zap, BarChart3, TrendingUp, Sparkles, BookOpen, Users, Beaker, Package, Swords, HeartPulse, RotateCcw, Layers } from 'lucide-react';
 import { PlayerStats, ItemRarity, RealmType, Title, ItemType } from '../types';
@@ -672,34 +673,17 @@ const CharacterModal: React.FC<Props> = ({
       headerClassName="bg-ink-800 border-b border-stone-600"
       contentClassName="bg-paper-800"
       showHeaderBorder={false}
-      subHeader={
-        <div className="flex border-b border-stone-600 bg-ink-800">
-            <button
-              onClick={() => setActiveTab('character')}
-              className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'character'
-                  ? 'bg-stone-700 text-mystic-gold border-b-2 border-mystic-gold'
-                  : 'text-stone-400 hover:text-stone-200 hover:bg-stone-700/50'
-                }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <Info size={16} />
-                角色信息
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('statistics')}
-              className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'statistics'
-                  ? 'bg-stone-700 text-mystic-gold border-b-2 border-mystic-gold'
-                  : 'text-stone-400 hover:text-stone-200 hover:bg-stone-700/50'
-                }`}
-            >
-              <div className="flex items-center justify-center gap-2">
-                <BarChart3 size={16} />
-                数据统计
-              </div>
-            </button>
-        </div>
-      }
+       subHeader={
+         <TabBar
+           className="[&>button]:flex-1 [&>button]:px-4 [&>button]:py-2 [&>button]:text-sm [&>button]:font-medium"
+           tabs={[
+             { key: 'character', label: '角色信息', icon: <Info size={16} /> },
+             { key: 'statistics', label: '数据统计', icon: <BarChart3 size={16} /> },
+           ]}
+           activeKey={activeTab}
+           onChange={(key) => setActiveTab(key as 'character' | 'statistics')}
+         />
+       }
     >
       <div className="space-y-6">
           {activeTab === 'character' ? (
@@ -1160,17 +1144,20 @@ const CharacterModal: React.FC<Props> = ({
                   传承系统
                 </h3>
 
-                {player.inheritanceLevel > 0 ? (
+                {player.inheritanceUsed > 0 ? (
                   <div>
                     <p className="text-sm text-stone-300 mb-3">
                       传承等级:{' '}
                       <span className="font-bold text-purple-300">
-                        {player.inheritanceLevel}
+                        {player.inheritanceUsed}
                       </span>{' '}
                       / 4
                     </p>
-                    <p className="text-xs text-stone-400 mb-3">
-                      传承等级可以通过历练获得，用于突破境界。
+                    <p className="text-xs text-stone-400 mb-1">
+                      传承等级可以通过历练获得，仅用于小境界（1-9 层）跳层。
+                    </p>
+                    <p className="text-xs text-yellow-500/80 mb-3">
+                      ⚠ 无法跨越天劫突破大境界，大境界突破需正常积累感悟。
                     </p>
                     {onUseInheritance && (
                       <button

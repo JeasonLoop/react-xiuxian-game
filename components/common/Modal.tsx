@@ -7,6 +7,12 @@
 import React, { useEffect, useCallback, memo } from 'react';
 import { X } from 'lucide-react';
 import { createPortal } from 'react-dom';
+ import { useDelayedUnmount } from '../../hooks/useDelayedUnmount';
+ 
+ // 弹窗滚动锁引用计数：多个 Modal 实例叠层时共享，最后一个卸载才恢复背景滚动
+ let modalScrollLockCount = 0;
+ 
+ // 弹窗尺寸配置
 
 // 弹窗尺寸配置
 const sizeClasses = {
@@ -122,34 +128,47 @@ const Modal: React.FC<ModalProps> = ({
   contentPadding = 'p-4 md:p-6',
   disableScroll = false,
   hideHeader = false,
-}) => {
-  // ESC 键关闭
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (closeOnEsc && e.key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation();
-        onClose();
-      }
-    },
-    [closeOnEsc, onClose]
-  );
-
-  // 注册/注销键盘事件
-  useEffect(() => {
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      // 阻止背景滚动
-      document.body.style.overflow = 'hidden';
-    }
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
-    };
-  }, [isOpen, handleKeyDown]);
-
-  // 如果不打开则不渲染
-  if (!isOpen) return null;
+ }) => {
+   // 出入场动效：关闭后保持挂载播完退场动画再卸载（260ms 与 CSS 退场 250ms 对齐）
+   const { mounted, state } = useDelayedUnmount(isOpen, 260);
+   // ESC 键关闭
+   const handleKeyDown = useCallback(
+     (e: KeyboardEvent) => {
+       if (closeOnEsc && e.key === 'Escape') {
+         e.preventDefault();
+         e.stopPropagation();
+         onClose();
+       }
+     },
+     [closeOnEsc, onClose]
+   );
+ 
+   // 弹窗挂载期间（含退场动画）阻止背景滚动，避免关闭瞬间出现滚动条闪烁。
+   // 使用引用计数：多弹窗叠层时（如商店内打开背包），最后一个弹窗卸载才恢复滚动
+   useEffect(() => {
+     if (!mounted) return;
+     modalScrollLockCount += 1;
+     document.body.style.overflow = 'hidden';
+     return () => {
+       modalScrollLockCount -= 1;
+       if (modalScrollLockCount <= 0) {
+         modalScrollLockCount = 0;
+         document.body.style.overflow = '';
+       }
+     };
+   }, [mounted]);
+   // 仅在打开状态响应 ESC（退场动画期间不重复触发关闭）
+   useEffect(() => {
+     if (isOpen) {
+       document.addEventListener('keydown', handleKeyDown);
+     }
+     return () => {
+       document.removeEventListener('keydown', handleKeyDown);
+     };
+   }, [isOpen, handleKeyDown]);
+ 
+   // 不打开且退场动画已结束则不渲染
+   if (!mounted) return null;
 
   // 点击遮罩层处理
   const handleOverlayClick = (e: React.MouseEvent) => {
@@ -164,27 +183,29 @@ const Modal: React.FC<ModalProps> = ({
   };
 
   const modalContent = (
-    <div
-      className={`fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4 touch-manipulation `}
-      style={{ zIndex }}
-      onClick={handleOverlayClick}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="modal-title"
-    >
-      <div
-        className={`
-          bg-stone-800
-          rounded-t-2xl md:rounded-lg
-          border-0 md:border border-stone-700
-          w-full ${sizeClasses[size]} ${heightClasses[height]}
-          flex flex-col
-          shadow-2xl shadow-black/50
-          transform transition-all duration-200 ease-out
-          ${containerClassName}
-        `}
-        onClick={handleContentClick}
-      >
+     <div
+       className={`modal-shell-overlay fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-4 touch-manipulation `}
+       data-state={state}
+       style={{ zIndex }}
+       onClick={handleOverlayClick}
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="modal-title"
+     >
+     <div
+       data-state={state}
+       className={`
+         modal-shell-panel
+         bg-stone-800
+         rounded-t-2xl md:rounded-lg
+         border-0 md:border border-stone-700
+         w-full ${sizeClasses[size]} ${heightClasses[height]}
+         flex flex-col
+         shadow-2xl shadow-black/50
+         ${containerClassName}
+       `}
+       onClick={handleContentClick}
+     >
         {/* 头部区域 */}
         {!hideHeader && (
         <div

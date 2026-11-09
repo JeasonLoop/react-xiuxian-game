@@ -2,6 +2,7 @@ import { PlayerStats, CultivationArt } from '../types';
 import { CULTIVATION_ARTS, TALENTS, TITLES, calculateSpiritualRootArtBonus, getActiveSynergies, calculateSynergyEffects } from '../constants/index';
 import { ALCHEMY_LEVEL_STAT_BONUS } from '../constants/items';
 import { SECT_RANK_STAT_BONUS } from '../constants/sects';
+import { EQUIP_PERCENT_SOFT_CAP, REBIRTH_EXP_BONUS } from '../constants/balance';
 import { getGoldenCoreBonusMultiplier } from './cultivationUtils';
 import { getItemStats } from './itemUtils';
 import { calculateTitleEffects } from './titleUtils';
@@ -135,6 +136,15 @@ export function calculatePlayerBonuses(player: PlayerStats): {
 }
 
 /**
+ * 词条百分比软上限：超过上限的部分收益减半（不截断）。
+ * effective = cap + (total - cap) / 2
+ */
+export function applyEquipPercentSoftCap(total: number, cap: number): number {
+  if (total <= cap) return total;
+  return cap + (total - cap) / 2;
+}
+
+/**
  * 获取玩家激活的心法
  */
 export function getActiveMentalArt(player: PlayerStats): CultivationArt | null {
@@ -157,6 +167,7 @@ export function calculateTotalExpRate(player: PlayerStats): {
   synergy: number;
   npc: number;
   sect: number;
+  rebirth: number;
   spiritualRootBonus: number;
 } {
   let artBonus = 0;
@@ -227,10 +238,16 @@ export function calculateTotalExpRate(player: PlayerStats): {
     sectBonus = player.sectTraining.expRateBonus;
   }
 
-  // 总加成 = (1 + 心法 * 灵根) * (1 + 天赋) * (1 + 称号) * (1 + 洞府) * (1 + 羁绊) * (1 + 关系) * (1 + 宗门修炼室) - 1
+  // 8. 转世加成：每转世一次 +10%，累计上限 +70%（与 RebirthModal 展示口径一致）
+  const rebirthBonus = Math.min(
+    REBIRTH_EXP_BONUS.perRebirth * (player.rebirthCount || 0),
+    REBIRTH_EXP_BONUS.max
+  );
+
+  // 总加成 = (1 + 心法 * 灵根) * (1 + 天赋) * (1 + 称号) * (1 + 洞府) * (1 + 羁绊) * (1 + 关系) * (1 + 宗门修炼室) * (1 + 转世) - 1
   // 注意：这里的计算逻辑应与 useMeditationHandlers.ts 保持一致
   // 目前 useMeditationHandlers.ts 中的逻辑是连乘，且灵根仅作用于心法的 expRate
-  const totalMultiplier = (1 + artBonus * spiritualRootBonus) * (1 + talentBonus) * (1 + titleBonus) * (1 + grottoBonus) * (1 + synergyBonus) * (1 + npcExpBonus) * (1 + sectBonus);
+  const totalMultiplier = (1 + artBonus * spiritualRootBonus) * (1 + talentBonus) * (1 + titleBonus) * (1 + grottoBonus) * (1 + synergyBonus) * (1 + npcExpBonus) * (1 + sectBonus) * (1 + rebirthBonus);
 
   return {
     total: totalMultiplier - 1,
@@ -241,6 +258,7 @@ export function calculateTotalExpRate(player: PlayerStats): {
     synergy: synergyBonus,
     npc: npcExpBonus,
     sect: sectBonus,
+    rebirth: rebirthBonus,
     spiritualRootBonus,
   };
 }
@@ -326,24 +344,30 @@ export const getPlayerTotalStats = (player: PlayerStats): {
       if (spell.effects.speedPercent) stats.speed += Math.floor(player.speed * spell.effects.speedPercent);
     }
   }
-
   // 4. 应用已装备法宝的万宝洗炼词条基础攻防血加成
+  // 跨装备累加后套用软上限：超出上限部分收益减半（不截断），见 constants/balance.ts
   const equippedItemIds = Object.values(player.equippedItems || {});
+  let affixAttackPercent = 0;
+  let affixDefensePercent = 0;
+  let affixHpPercent = 0;
   for (const itemId of equippedItemIds) {
     if (!itemId) continue;
     const item = player.inventory.find((i) => i.id === itemId);
     if (item?.reforgeAffixes) {
       for (const affix of item.reforgeAffixes) {
         if (affix.type === 'attackPercent') {
-          stats.attack += Math.floor(player.attack * affix.value);
+          affixAttackPercent += affix.value;
         } else if (affix.type === 'defensePercent') {
-          stats.defense += Math.floor(player.defense * affix.value);
+          affixDefensePercent += affix.value;
         } else if (affix.type === 'hpPercent') {
-          stats.maxHp += Math.floor(player.maxHp * affix.value);
+          affixHpPercent += affix.value;
         }
       }
     }
   }
+  stats.attack += Math.floor(player.attack * applyEquipPercentSoftCap(affixAttackPercent, EQUIP_PERCENT_SOFT_CAP.attack));
+  stats.defense += Math.floor(player.defense * applyEquipPercentSoftCap(affixDefensePercent, EQUIP_PERCENT_SOFT_CAP.defense));
+  stats.maxHp += Math.floor(player.maxHp * applyEquipPercentSoftCap(affixHpPercent, EQUIP_PERCENT_SOFT_CAP.hp));
 
   // 5. 炼丹等级常驻被动：丹道淬体，每级+2%攻/防/血
   const alchemyBonus = (player.alchemyLevel || 0) * ALCHEMY_LEVEL_STAT_BONUS;

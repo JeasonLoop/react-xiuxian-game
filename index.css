@@ -1,6 +1,111 @@
 @import 'tailwindcss';
 @config "./tailwind.config.js";
 
+/* ============ 交互设计令牌（M2.1）============
+   统一动效时长与缓动，所有交互反馈引用同一组令牌 */
+:root {
+  --dur-fast: 150ms; /* hover / 按压反馈 */
+  --dur-base: 200ms; /* Tab / 内容切换 */
+  --dur-slow: 250ms; /* 弹窗出入场 */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* 入场回弹，过冲 ≤1.05 倍 */
+}
+
+/* 用户系统开启"减少动态效果"时，所有过渡与动画即时完成 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============ 全局按钮交互基座（M2.2）============
+   所有按钮统一：可点击光标、状态过渡、按压缩放、键盘焦点环 */
+button {
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-spring);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* 按压回弹：松开后由 transition 弹回 */
+button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+/* 键盘导航焦点环（鼠标点击不显示） */
+button:focus-visible {
+  outline: 2px solid #cba135;
+  outline-offset: 2px;
+}
+
+/* ============ 语义按钮工具类（M2.2）============
+   主流程按钮统一三类风格，替换时叠加在原有布局类之上 */
+/* 金色主按钮：hover 提亮 + 金色光晕 + 上浮 1px */
+.btn-gold {
+  background: linear-gradient(180deg, #cba135 0%, #a8862c 100%);
+  color: #1c1c1a;
+  border: 1px solid rgba(255, 224, 130, 0.4);
+}
+.btn-gold:hover:not(:disabled) {
+  background: linear-gradient(180deg, #dcb649 0%, #b89530 100%);
+  box-shadow: 0 4px 14px rgba(203, 161, 53, 0.35);
+  transform: translateY(-1px);
+}
+.btn-gold:active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+}
+
+/* 描边幽灵按钮：hover 淡金填充 */
+.btn-ghost {
+  background: transparent;
+  color: #cba135;
+  border: 1px solid rgba(203, 161, 53, 0.45);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(203, 161, 53, 0.12);
+  border-color: rgba(203, 161, 53, 0.8);
+  color: #dcb649;
+}
+
+/* 血红危险按钮：hover 加深扩大光晕 */
+.btn-danger {
+  background: rgba(138, 44, 44, 0.25);
+  color: #e07a7a;
+  border: 1px solid rgba(138, 44, 44, 0.55);
+}
+.btn-danger:hover:not(:disabled) {
+  background: rgba(138, 44, 44, 0.55);
+  color: #ff9d9d;
+  border-color: rgba(220, 80, 80, 0.8);
+  box-shadow: 0 0 12px rgba(138, 44, 44, 0.4);
+}
+
+/* 卡片 / 列表项 hover 统一：边框提亮 + 背景微亮 + 阴影扩散 */
+.card-hover {
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+.card-hover:hover:not(:disabled) {
+  border-color: rgba(203, 161, 53, 0.55);
+  background-color: rgba(203, 161, 53, 0.06);
+  box-shadow: 0 2px 10px rgba(203, 161, 53, 0.12);
+}
+
 body {
   font-family: 'Noto Serif SC', serif;
   background-color: #1c1c1a;
@@ -314,3 +419,110 @@ input[type='number']:active {
     margin: 0;
   }
 }
+ 
+ /* ============ 弹窗出入场动效（M2.3）============
+    入场用 keyframes 带回弹，退场由 data-state='closed' 触发反向过渡 */
+ @keyframes modal-panel-in {
+   from {
+     opacity: 0;
+     transform: scale(0.95) translateY(12px);
+   }
+   to {
+     opacity: 1;
+     transform: scale(1) translateY(0);
+   }
+ }
+ 
+ .modal-shell-overlay {
+   transition: opacity var(--dur-slow) var(--ease-out);
+ }
+ .modal-shell-overlay[data-state='closed'] {
+   opacity: 0;
+   pointer-events: none;
+ }
+ 
+ .modal-shell-panel {
+   animation: modal-panel-in var(--dur-slow) var(--ease-spring);
+   transition:
+     transform var(--dur-slow) var(--ease-spring),
+     opacity var(--dur-slow) var(--ease-out);
+ }
+ .modal-shell-panel[data-state='closed'] {
+   opacity: 0;
+   transform: scale(0.95) translateY(8px);
+   pointer-events: none;
+ }
+ 
+ /* ============ Tab 内容切换入场（M2.4）============ */
+ @keyframes tab-content-in {
+   from {
+     opacity: 0;
+     transform: translateY(8px);
+   }
+   to {
+     opacity: 1;
+     transform: translateY(0);
+   }
+ }
+ .tab-content-anim {
+   animation: tab-content-in var(--dur-base) var(--ease-out);
+ }
+ 
+ /* ============ 战利品入包闪光（M2.5）============ */
+ @keyframes loot-flash {
+   0% {
+     box-shadow: 0 0 0 rgba(203, 161, 53, 0);
+   }
+   40% {
+     box-shadow: 0 0 18px rgba(203, 161, 53, 0.8);
+     border-color: rgba(255, 224, 130, 0.9);
+   }
+   100% {
+     box-shadow: 0 0 0 rgba(203, 161, 53, 0);
+   }
+ }
+ .loot-flash {
+   animation: loot-flash 900ms var(--ease-out);
+ }
+ 
+ /* ============ Toast 轻提示动效（M2.5）============ */
+ @keyframes toast-in {
+   from {
+     opacity: 0;
+     transform: translateX(24px);
+   }
+   to {
+     opacity: 1;
+     transform: translateX(0);
+   }
+ }
+ @keyframes toast-out {
+   from {
+     opacity: 1;
+     transform: translateX(0);
+   }
+   to {
+     opacity: 0;
+     transform: translateX(24px);
+   }
+ }
+ .toast-anim-in {
+   animation: toast-in var(--dur-base) var(--ease-spring);
+ }
+ .toast-anim-out {
+   animation: toast-out var(--dur-fast) var(--ease-out) forwards;
+ }
+ /* 进度条：时长由组件按显示时长内联指定 */
+ @keyframes toast-progress {
+   from {
+     width: 100%;
+   }
+   to {
+     width: 0;
+   }
+ }
+ .toast-progress {
+   animation: toast-progress linear forwards;
+ }
+ 
+ /* 隐藏数值输入框的加减按钮 */

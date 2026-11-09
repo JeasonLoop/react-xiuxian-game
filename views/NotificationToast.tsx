@@ -58,19 +58,28 @@ export function ItemActionToast({ log }: ItemActionToastProps) {
     }
   })();
 
-  return (
-    <>
-     {
-      log.text && (
-          <div className="fixed top-20 right-4 z-[70] pointer-events-none animate-fade-in">
-            <div className={logClassName}>{log.text}</div>
-          </div>
-      )
-     }
-    </>
-  );
-}
-
+   return (
+     <>
+      {
+       log.text && (
+           <div className="fixed top-20 right-4 z-[70] pointer-events-none toast-anim-in">
+             <div className={logClassName}>
+               <div>{log.text}</div>
+               {/* 倒计时进度条：时长与 useItemActionLog 默认 3000ms 对齐 */}
+               <div className="mt-1.5 h-0.5 bg-white/20 rounded overflow-hidden">
+                 <div
+                   className="toast-progress h-full bg-current opacity-60"
+                   style={{ animationDuration: '3000ms' }}
+                 />
+               </div>
+             </div>
+           </div>
+       )
+      }
+     </>
+   );
+ }
+ 
 interface LotteryRewardsProps {
   rewards: Array<{ type: string; name: string; quantity?: number }>;
   onClose?: () => void;

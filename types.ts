@@ -312,8 +312,9 @@ export interface PlayerStats {
   autoEnlightenmentCount?: number; // 当日自动打坐已触发顿悟次数
   // 突破失败积累系统
   breakthroughFailCount: number; // 当前境界突破失败次数，每失败一次增加下次成功率
-  // 传承系统（仅保留突破境界功能）
-  inheritanceLevel: number; // 传承等级（0-4，每次传承可突破1-4个境界）
+  // 转世与传承系统（已拆分：转世次数与传承跳层次数不再共用一个字段）
+  rebirthCount: number; // 转世次数（转世重修累计，最多 5 次）
+  inheritanceUsed: number; // 传承跳层次数（传承石/历练获得，用于小境界 1-9 层跳层，0-4）
   // 每日任务系统
   dailyTaskCount: Record<string, number>; // 按任务ID记录每日完成次数，每个任务每天最多3次
   lastTaskResetDate: string; // 上次重置任务计数的日期（YYYY-MM-DD格式）
@@ -580,7 +581,7 @@ export interface AdventureResult {
   expChange: number;
   spiritStonesChange: number;
   lotteryTicketsChange?: number; // 抽奖券变化
-  inheritanceLevelChange?: number; // 传承等级变化（1-4，表示可以突破的境界数）
+  inheritanceUsedChange?: number; // 传承跳层次数变化（历练偶发获得，+1）
   lifespanChange?: number; // 寿命变化（正数为增加，负数为减少）
   reputationChange?: number; // 声望变化（正数为增加，负数为减少）
   reputationEvent?: {

@@ -19,7 +19,7 @@ export function useInheritanceHandlers({
   addLog,
 }: UseInheritanceHandlersProps) {
   // 传承系统已简化，不再提供手动提升等级的功能
-  // 传承等级只能通过历练获得（inheritanceLevelChange）
+  // 传承跳层次数只能通过历练获得（inheritanceUsedChange）
   // 使用传承突破境界的功能在 useBreakthroughHandlers 中
 
   return {};
