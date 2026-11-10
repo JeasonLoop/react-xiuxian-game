@@ -25,9 +25,20 @@
 - 转世与传承：`rebirthCount`（转世次数）、`inheritanceUsed`（传承跳层次数）
 - 进阶系统：`lifespan`、`maxLifespan`、`spiritualRoots`、`grotto` 等
 
-完整字段以 `types.ts` 的 `PlayerStats` 为准。
-
-## 日志结构
+ 完整字段以 `types.ts` 的 `PlayerStats` 为准。
+ 
+ ## 云存档顶层字段（服务端注入）
+ 
+ 云存档（`GET /api/save` 响应）除 `player`/`logs` 外，由服务端追加：
+ 
+ - `totalPlaySeconds`：**服务端权威游戏时长（秒）**。
+   - 后端在每次 `POST /api/save` 时用两次保存之间的服务器时间差累加（单次上限 2 小时），
+     客户端定期保存即心跳，无法伪造；掉线/关闭游戏期间无保存心跳，自然不计时
+   - 客户端加载存档时以此覆盖 `player.playTime`（该字段可被客户端修改，不再作为权威来源）
+   - 排行榜的 `play_time` 同样使用该权威值
+ - 本地未登录存档无此字段，游戏时长沿用客户端累计值
+ 
+ ## 日志结构
 
 `logs` 为 `LogEntry[]`，通常包含：
 

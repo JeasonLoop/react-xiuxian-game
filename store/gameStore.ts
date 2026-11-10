@@ -217,11 +217,18 @@ export const useGameStore = create<GameState>()(
           saveGameData(savedData.player, savedData.logs || []);
         }
 
-        if (savedData) {
-          // 使用统一的兼容性处理函数
-          const loadedPlayer = ensurePlayerStatsCompatibility(savedData.player);
-
-          // 计算离线收益
+         if (savedData) {
+           // 使用统一的兼容性处理函数
+           const loadedPlayer = ensurePlayerStatsCompatibility(savedData.player);
+ 
+           // 服务端权威游戏时长：覆盖存档内可被客户端修改的 playTime 字段
+           // （后端在每次保存时用服务器时间差累加 total_play_seconds，见 server/index.ts）
+           const serverPlaySeconds = Number((savedData as any).totalPlaySeconds);
+           if (Number.isFinite(serverPlaySeconds) && serverPlaySeconds > 0) {
+             loadedPlayer.playTime = serverPlaySeconds * 1000;
+           }
+ 
+           // 计算离线收益
           const lastActiveTime = savedData.lastActiveTime || savedData.timestamp || Date.now();
           const elapsedMs = Date.now() - lastActiveTime;
           let finalPlayer = loadedPlayer;

@@ -78,14 +78,25 @@ const db = new sqlite3.Database(dbPath, (err) => {
       });
 
       db.run(`
-        CREATE TABLE IF NOT EXISTS saves (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          user_id INTEGER NOT NULL UNIQUE,
-          save_data TEXT NOT NULL,
-          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (user_id) REFERENCES users (id)
-        )
-      `);
+         CREATE TABLE IF NOT EXISTS saves (
+           id INTEGER PRIMARY KEY AUTOINCREMENT,
+           user_id INTEGER NOT NULL UNIQUE,
+           save_data TEXT NOT NULL,
+           total_play_seconds INTEGER NOT NULL DEFAULT 0,
+           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+           FOREIGN KEY (user_id) REFERENCES users (id)
+         )
+       `);
+ 
+       // 旧表迁移：补加权威游戏时长列（已存在时忽略报错）
+       db.run(
+         'ALTER TABLE saves ADD COLUMN total_play_seconds INTEGER NOT NULL DEFAULT 0',
+         (err) => {
+           if (err && !String(err.message).includes('duplicate column')) {
+             console.error('迁移 saves.total_play_seconds 失败:', err.message);
+           }
+         }
+       );
 
       // 添加索引加速查询
       db.run(`CREATE INDEX IF NOT EXISTS idx_saves_user_id ON saves(user_id)`);
@@ -212,13 +223,18 @@ function extractRankingData(saveData: any): {
   }
 }
 
-function upsertRanking(userId: number, username: string, saveData: any): Promise<boolean> {
-  const data = extractRankingData(saveData);
-  if (!data) return Promise.resolve(false);
-
-  return new Promise((resolve) => {
-    db.run(
-      `INSERT INTO rankings (user_id, username, realm_index, realm_level, exp, combat_power, spirit_stones, reputation, achievement_count, kill_count, play_time, updated_at)
+ function upsertRanking(userId: number, username: string, saveData: any, serverPlayTimeSeconds?: number): Promise<boolean> {
+   const data = extractRankingData(saveData);
+   if (!data) return Promise.resolve(false);
+ 
+   // 游戏时长使用服务端权威值（saves.total_play_seconds），避免存档内可改字段污染排行榜
+   if (typeof serverPlayTimeSeconds === 'number') {
+     data.play_time = serverPlayTimeSeconds;
+   }
+ 
+   return new Promise((resolve) => {
+     db.run(
+       `INSERT INTO rankings (user_id, username, realm_index, realm_level, exp, combat_power, spirit_stones, reputation, achievement_count, kill_count, play_time, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
        ON CONFLICT(user_id) DO UPDATE SET
          username = excluded.username,
@@ -416,54 +432,74 @@ app.post('/api/auth/refresh', (req: any, res: any) => {
 
 // Save Routes
 app.get('/api/save', authenticateToken, (req: any, res: any) => {
-  db.get('SELECT save_data FROM saves WHERE user_id = ?', [req.user.id], (err, row: any) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
-    if (!row) return res.status(404).json({ error: 'No save found' });
-    
-    try {
-      const saveData = JSON.parse(row.save_data);
-      res.json(saveData);
-    } catch {
-      res.status(500).json({ error: 'Error parsing save data' });
-    }
-  });
-});
-
-app.post('/api/save', authenticateToken, (req: any, res: any) => {
-  const saveData = req.body;
-  
-  if (!saveData) {
-    return res.status(400).json({ error: 'Save data is required' });
-  }
-
-  const saveDataString = JSON.stringify(saveData);
-
-  db.get('SELECT id FROM saves WHERE user_id = ?', [req.user.id], (err, row: any) => {
-    if (err) return res.status(500).json({ error: 'Database error' });
-
-    if (row) {
-      db.run(
-        'UPDATE saves SET save_data = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
-        [saveDataString, req.user.id],
-        async (updateErr) => {
-          if (updateErr) return res.status(500).json({ error: 'Error updating save' });
-          const rankingSynced = await upsertRanking(req.user.id, req.user.username, saveData);
-          res.json({ message: 'Save updated successfully', rankingSynced });
-        }
-      );
-    } else {
-      db.run(
-        'INSERT INTO saves (user_id, save_data) VALUES (?, ?)',
-        [req.user.id, saveDataString],
-        async (insertErr) => {
-          if (insertErr) return res.status(500).json({ error: 'Error creating save' });
-          const rankingSynced = await upsertRanking(req.user.id, req.user.username, saveData);
-          res.json({ message: 'Save created successfully', rankingSynced });
-        }
-      );
-    }
-  });
-});
+   db.get('SELECT save_data, total_play_seconds FROM saves WHERE user_id = ?', [req.user.id], (err, row: any) => {
+     if (err) return res.status(500).json({ error: 'Database error' });
+     if (!row) return res.status(404).json({ error: 'No save found' });
+ 
+     try {
+       const saveData = JSON.parse(row.save_data);
+       // 附带服务端权威游戏时长（秒），客户端以此为准覆盖存档内的可改字段
+       res.json({ ...saveData, totalPlaySeconds: row.total_play_seconds ?? 0 });
+     } catch {
+       res.status(500).json({ error: 'Error parsing save data' });
+     }
+   });
+ });
+ 
+ app.post('/api/save', authenticateToken, (req: any, res: any) => {
+   const saveData = req.body;
+ 
+   if (!saveData) {
+     return res.status(400).json({ error: 'Save data is required' });
+   }
+ 
+   const saveDataString = JSON.stringify(saveData);
+ 
+   db.get(
+     'SELECT id, total_play_seconds, updated_at FROM saves WHERE user_id = ?',
+     [req.user.id],
+     (err, row: any) => {
+       if (err) return res.status(500).json({ error: 'Database error' });
+ 
+       // 权威游戏时长：用两次保存之间的服务器时间差累加。
+       // 客户端定期保存即心跳——无法伪造（delta 由服务器时钟决定），
+       // 掉线/关闭游戏期间没有保存心跳，自然不计时
+       const prevSeconds = row?.total_play_seconds ?? 0;
+       let deltaSeconds = 0;
+       if (row?.updated_at) {
+         const lastMs = new Date(String(row.updated_at).replace(' ', 'T') + 'Z').getTime();
+         if (!Number.isNaN(lastMs)) {
+           const elapsedSec = Math.floor((Date.now() - lastMs) / 1000);
+           // 单次上限 2 小时：防断网恢复后一次性灌入
+           deltaSeconds = Math.min(Math.max(elapsedSec, 0), 7200);
+         }
+       }
+       const totalPlaySeconds = prevSeconds + deltaSeconds;
+ 
+       if (row) {
+         db.run(
+           'UPDATE saves SET save_data = ?, total_play_seconds = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
+           [saveDataString, totalPlaySeconds, req.user.id],
+           async (updateErr) => {
+             if (updateErr) return res.status(500).json({ error: 'Error updating save' });
+             const rankingSynced = await upsertRanking(req.user.id, req.user.username, saveData, totalPlaySeconds);
+             res.json({ message: 'Save updated successfully', rankingSynced, totalPlaySeconds });
+           }
+         );
+       } else {
+         db.run(
+           'INSERT INTO saves (user_id, save_data, total_play_seconds) VALUES (?, ?, 0)',
+           [req.user.id, saveDataString],
+           async (insertErr) => {
+             if (insertErr) return res.status(500).json({ error: 'Error creating save' });
+             const rankingSynced = await upsertRanking(req.user.id, req.user.username, saveData, 0);
+             res.json({ message: 'Save created successfully', rankingSynced, totalPlaySeconds: 0 });
+           }
+         );
+       }
+     }
+   );
+ });
 
 // 健康检查端点（用于Docker健康检查）
 app.get('/api/health', (req, res) => {
