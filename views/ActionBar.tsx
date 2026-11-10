@@ -68,7 +68,7 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
           onClick={onMeditate}
           disabled={loading || cooldown > 0 || autoAdventure}
           className={`
-            flex flex-col items-center justify-center p-4 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[90px] md:min-h-[100px] w-full
+            flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[64px] md:min-h-[100px] w-full
             ${
               loading || cooldown > 0 || autoAdventure
                 ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed'
@@ -79,12 +79,12 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
         >
           <User
             size={24}
-            className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-mystic-jade"
+            className="mb-1 md:mb-2 text-mystic-jade"
           />
-          <span className="font-serif font-bold text-base md:text-base">
+          <span className="font-serif font-bold text-sm md:text-base">
             打坐
           </span>
-          <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">
+          <span className="text-[10px] md:text-xs text-stone-500 mt-0.5 md:mt-1">
             修炼 · 心法
           </span>
         </button>
@@ -112,7 +112,7 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
           onClick={onAdventure}
           disabled={loading || cooldown > 0 || autoMeditate}
           className={`
-            flex flex-col items-center justify-center p-4 md:p-4 rounded-lg border-2 transition-all duration-200 group touch-manipulation min-h-[90px] md:min-h-[100px] w-full
+            flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-all duration-200 group touch-manipulation min-h-[64px] md:min-h-[100px] w-full
             ${
               loading || cooldown > 0 || autoMeditate
                 ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed'
@@ -129,10 +129,10 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
                 : 'group-active:scale-110 transition-transform'
             }`}
           />
-          <span className="font-serif font-bold text-base md:text-base">
+          <span className="font-serif font-bold text-sm md:text-base">
             {loading ? '历练中...' : '历练'}
           </span>
-          <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">
+          <span className="text-[10px] md:text-xs text-stone-500 mt-0.5 md:mt-1">
             机缘 · 战斗
           </span>
         </button>
@@ -163,15 +163,15 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
 
       {realmLocked ? (
         <div
-          className={`flex flex-col items-center justify-center p-4 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[90px] md:min-h-[100px] relative ${lockedCls}`}
+          className={`flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[64px] md:min-h-[100px] relative ${lockedCls}`}
           title={getFeatureRequirementText(FeatureId.SECRET_REALM)}
         >
           <Lock size={10} className="absolute top-1 right-1 text-stone-600" />
           <Mountain
             size={24}
-            className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-stone-600"
+            className="mb-1 md:mb-2 text-stone-600"
           />
-          <span className="font-serif font-bold text-base md:text-base text-stone-500">
+          <span className="font-serif font-bold text-sm md:text-base text-stone-500">
             秘境
           </span>
           <span className="text-[10px] text-stone-600 mt-0.5">
@@ -183,7 +183,7 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
         onClick={onOpenRealm}
         disabled={loading}
         className={`
-          flex flex-col items-center justify-center p-4 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[90px] md:min-h-[100px]
+          flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[64px] md:min-h-[100px]
           ${
             loading
               ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed'
@@ -193,12 +193,12 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
       >
         <Mountain
           size={24}
-          className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-purple-400"
+          className="mb-1 md:mb-2 text-purple-400"
         />
-        <span className="font-serif font-bold text-base md:text-base">
+        <span className="font-serif font-bold text-sm md:text-base">
           秘境
         </span>
-        <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">
+        <span className="text-[10px] md:text-xs text-stone-500 mt-0.5 md:mt-1">
           探险 · 夺宝
         </span>
       </button>
@@ -206,15 +206,15 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
 
       {alchemyLocked ? (
         <div
-          className={`flex flex-col items-center justify-center p-4 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[90px] md:min-h-[100px] relative ${lockedCls}`}
+          className={`flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[64px] md:min-h-[100px] relative ${lockedCls}`}
           title={getFeatureRequirementText(FeatureId.ALCHEMY)}
         >
           <Lock size={10} className="absolute top-1 right-1 text-stone-600" />
           <Sparkles
             size={24}
-            className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-stone-600"
+            className="mb-1 md:mb-2 text-stone-600"
           />
-          <span className="font-serif font-bold text-base md:text-base text-stone-500">
+          <span className="font-serif font-bold text-sm md:text-base text-stone-500">
             炼丹 · 炼器
           </span>
           <span className="text-[10px] text-stone-600 mt-0.5">
@@ -226,7 +226,7 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
         onClick={onOpenAlchemy}
         disabled={loading}
         className={`
-          flex flex-col items-center justify-center p-4 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[90px] md:min-h-[100px]
+          flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[64px] md:min-h-[100px]
           ${
             loading
               ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed'
@@ -236,12 +236,12 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
       >
         <Sparkles
           size={24}
-          className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-cyan-400"
+          className="mb-1 md:mb-2 text-cyan-400"
         />
-        <span className="font-serif font-bold text-base md:text-base">
+        <span className="font-serif font-bold text-sm md:text-base">
           炼丹 · 炼器
         </span>
-        <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">
+        <span className="text-[10px] md:text-xs text-stone-500 mt-0.5 md:mt-1">
           神丹 · 神兵
         </span>
       </button>
@@ -249,15 +249,15 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
 
       {sectLocked ? (
         <div
-          className={`flex flex-col items-center justify-center p-4 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[90px] md:min-h-[100px] relative ${lockedCls}`}
+          className={`flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[64px] md:min-h-[100px] relative ${lockedCls}`}
           title={getFeatureRequirementText(FeatureId.SECT)}
         >
           <Lock size={10} className="absolute top-1 right-1 text-stone-600" />
           <Scroll
             size={24}
-            className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-stone-600"
+            className="mb-1 md:mb-2 text-stone-600"
           />
-          <span className="font-serif font-bold text-base md:text-base text-stone-500">
+          <span className="font-serif font-bold text-sm md:text-base text-stone-500">
             宗门
           </span>
           <span className="text-[10px] text-stone-600 mt-0.5">
@@ -268,7 +268,7 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
       <button
         onClick={onOpenSect}
         className={`
-          flex flex-col items-center justify-center p-4 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[90px] md:min-h-[100px]
+          flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[64px] md:min-h-[100px]
           ${
             loading
               ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed'
@@ -278,17 +278,17 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
       >
         <Scroll
           size={24}
-          className="md:w-6 md:h-6 mb-1.5 md:mb-2 text-blue-400"
+          className="mb-1 md:mb-2 text-blue-400"
         />
-        <span className="font-serif font-bold text-base md:text-base">
+        <span className="font-serif font-bold text-sm md:text-base">
           宗门
         </span>
-        <span className="text-xs md:text-xs text-stone-500 mt-0.5 md:mt-1">
+        <span className="text-[10px] md:text-xs text-stone-500 mt-0.5 md:mt-1">
           任务 · 晋升
         </span>
       </button>
       )}
-      <p className="col-span-2 md:col-span-5 text-center text-[10px] md:text-xs text-stone-500 mt-1">
+      <p className="hidden md:block col-span-2 md:col-span-5 text-center text-[10px] md:text-xs text-stone-500 mt-1">
         快捷键见设置
       </p>
     </div>
