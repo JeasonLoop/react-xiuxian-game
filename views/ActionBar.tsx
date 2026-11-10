@@ -62,7 +62,7 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
      'opacity-35 cursor-not-allowed bg-stone-900 border-stone-800';
  
    return (
-       <div className="relative">
+    <div className="bg-paper-800 p-2 md:p-4 border-t border-stone-700 grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4 shrink-0 relative z-50 safe-area-footer">
       <div className="relative">
         <button
           onClick={onMeditate}
