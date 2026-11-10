@@ -99,7 +99,40 @@ const db = new sqlite3.Database(dbPath, (err) => {
        );
 
       // 添加索引加速查询
-      db.run(`CREATE INDEX IF NOT EXISTS idx_saves_user_id ON saves(user_id)`);
+       // 历史游戏时长校准（幂等，每次启动执行；个人项目数据量小）：
+       // 1. 把存档内客户端累计的 playTime（毫秒）作为权威值的下限——老玩家历史时长立即生效
+       // 2. 同步 rankings.play_time（×1000 转毫秒）——清除单位混乱期间的脏数据，
+       //    修复不依赖客户端触发保存
+       db.all(
+         `SELECT s.user_id, s.save_data, s.total_play_seconds
+          FROM saves s JOIN users u ON u.id = s.user_id`,
+         (err, rows: any[]) => {
+           if (err || !rows?.length) return;
+           let calibrated = 0;
+           for (const row of rows) {
+             try {
+               const saveData = JSON.parse(row.save_data);
+               const legacySeconds = Math.floor((Number(saveData?.player?.playTime) || 0) / 1000);
+               if (!Number.isFinite(legacySeconds) || legacySeconds <= (row.total_play_seconds ?? 0)) continue;
+               db.run(
+                 'UPDATE saves SET total_play_seconds = ? WHERE user_id = ?',
+                 [legacySeconds, row.user_id]
+               );
+               db.run(
+                 'UPDATE rankings SET play_time = ? WHERE user_id = ?',
+                 [legacySeconds * 1000, row.user_id]
+               );
+               calibrated += 1;
+             } catch {
+               // 单条存档解析失败跳过，不影响其他用户
+             }
+           }
+           if (calibrated > 0) {
+             console.log(`历史游戏时长校准完成，共校准 ${calibrated} 个存档`);
+           }
+         }
+       );
+ 
 
       // 排行榜表：存储从存档中提取的可排序字段
       db.run(`
