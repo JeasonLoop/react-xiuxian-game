@@ -229,7 +229,9 @@ function extractRankingData(saveData: any): {
  
    // 游戏时长使用服务端权威值（saves.total_play_seconds），避免存档内可改字段污染排行榜
    if (typeof serverPlayTimeSeconds === 'number') {
-     data.play_time = serverPlayTimeSeconds;
+     // rankings.play_time 历史上存的是毫秒（player.playTime 原始值），显示端 formatPlayTime 按毫秒处理，
+    // 因此权威秒值 ×1000 保持单位一致
+    data.play_time = serverPlayTimeSeconds * 1000;
    }
  
    return new Promise((resolve) => {
@@ -475,25 +477,29 @@ app.get('/api/save', authenticateToken, (req: any, res: any) => {
          }
        }
        const totalPlaySeconds = prevSeconds + deltaSeconds;
+      // 兼容历史时长：权威值不小于客户端存档内已累计的时长（老玩家首次保存即同步历史值）；
+      // 此后 delta 由服务器时钟权威累加，客户端本地累计与心跳累计取大者
+      const legacyPlaySeconds = Math.floor((Number(saveData?.player?.playTime) || 0) / 1000);
+      const syncedPlaySeconds = Math.max(totalPlaySeconds, legacyPlaySeconds);
  
        if (row) {
          db.run(
            'UPDATE saves SET save_data = ?, total_play_seconds = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
-           [saveDataString, totalPlaySeconds, req.user.id],
+           [saveDataString, syncedPlaySeconds, req.user.id],
            async (updateErr) => {
              if (updateErr) return res.status(500).json({ error: 'Error updating save' });
-             const rankingSynced = await upsertRanking(req.user.id, req.user.username, saveData, totalPlaySeconds);
-             res.json({ message: 'Save updated successfully', rankingSynced, totalPlaySeconds });
+             const rankingSynced = await upsertRanking(req.user.id, req.user.username, saveData, syncedPlaySeconds);
+             res.json({ message: 'Save updated successfully', rankingSynced, totalPlaySeconds: syncedPlaySeconds });
            }
          );
        } else {
          db.run(
-           'INSERT INTO saves (user_id, save_data, total_play_seconds) VALUES (?, ?, 0)',
+           'INSERT INTO saves (user_id, save_data, total_play_seconds) VALUES (?, ?, ?)',
            [req.user.id, saveDataString],
            async (insertErr) => {
              if (insertErr) return res.status(500).json({ error: 'Error creating save' });
-             const rankingSynced = await upsertRanking(req.user.id, req.user.username, saveData, 0);
-             res.json({ message: 'Save created successfully', rankingSynced, totalPlaySeconds: 0 });
+             const rankingSynced = await upsertRanking(req.user.id, req.user.username, saveData, syncedPlaySeconds);
+             res.json({ message: 'Save created successfully', rankingSynced, totalPlaySeconds: syncedPlaySeconds });
            }
          );
        }
