@@ -181,7 +181,13 @@ export function useMeditationHandlers() {
     }
   }, []); // 空依赖：函数内部只通过 getState 获取最新值，无任何闭包依赖
 
-  return {
-    handleMeditate,
-  };
-}
+   return {
+     handleMeditate,
+   };
+ }
+ 
+ /** 转世/重新开始游戏时重置自动打坐汇总日志计数器 */
+ export function resetAutoMeditateLogCounter() {
+   autoMeditateTick = 0;
+   autoMeditateAccumGain = 0;
+ }

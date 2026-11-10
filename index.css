@@ -496,21 +496,8 @@ input[type='number']:active {
      transform: translateX(0);
    }
  }
- @keyframes toast-out {
-   from {
-     opacity: 1;
-     transform: translateX(0);
-   }
-   to {
-     opacity: 0;
-     transform: translateX(24px);
-   }
- }
  .toast-anim-in {
    animation: toast-in var(--dur-base) var(--ease-spring);
- }
- .toast-anim-out {
-   animation: toast-out var(--dur-fast) var(--ease-out) forwards;
  }
  /* 进度条：时长由组件按显示时长内联指定 */
  @keyframes toast-progress {

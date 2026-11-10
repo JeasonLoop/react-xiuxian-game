@@ -3,8 +3,8 @@ import React, {
   useMemo,
   useTransition,
   useCallback,
-  memo,
-} from 'react';
+   memo,
+ } from 'react';
 import Modal from './common/Modal';
 import {
   Item,
@@ -795,11 +795,15 @@ const InventoryModal: React.FC<Props> = ({
     return map;
   }, [inventory, equippedItems]);
 
-  // 过滤和排序物品
-  const filteredAndSortedInventory = useMemo(() => {
-    let filtered = inventory;
-
-    // 按分类过滤
+   // 分批渲染：背包物品可能数百件，一次性全量渲染会造成明显卡顿；
+   // 先渲染前 60 件，底部"加载更多"逐批追加（无需引入虚拟列表依赖）
+   const [visibleCount, setVisibleCount] = useState(60);
+   const INITIAL_VISIBLE_COUNT = 60;
+ 
+   // 过滤和排序物品
+   const filteredAndSortedInventory = useMemo(() => {
+     let filtered = inventory;
+ 
     if (selectedCategory !== 'all') {
       filtered = inventory.filter(
         (item) => getItemCategory(item) === selectedCategory
@@ -856,9 +860,17 @@ const InventoryModal: React.FC<Props> = ({
     }
 
     return filtered;
-  }, [inventory, selectedCategory, selectedEquipmentSlot, sortByRarity, debouncedSearchQuery, rarityFilter, statFilter, statFilterMin, natalArtifactId]);
-
-  // 计算所有已装备物品的总属性（使用统一的工具函数）
+   }, [inventory, selectedCategory, selectedEquipmentSlot, sortByRarity, debouncedSearchQuery, rarityFilter, statFilter, statFilterMin, natalArtifactId]);
+ 
+   // 筛选条件变化时重置分批渲染计数（React 官方 render 期间派生状态模式，
+   // 避免 effect 内 setState 的级联渲染）
+   const filterKey = `${selectedCategory}|${selectedEquipmentSlot}|${sortByRarity}|${debouncedSearchQuery}|${rarityFilter}|${statFilter}|${statFilterMin}`;
+   const [lastFilterKey, setLastFilterKey] = useState(filterKey);
+   if (filterKey !== lastFilterKey) {
+     setLastFilterKey(filterKey);
+     setVisibleCount(INITIAL_VISIBLE_COUNT);
+   }
+   // 计算所有已装备物品的总属性（使用统一的工具函数）
   const calculateTotalEquippedStats = useMemo(() => {
     let totalAttack = 0;
     let totalDefense = 0;
@@ -1174,34 +1186,50 @@ const InventoryModal: React.FC<Props> = ({
                 const realmIndex = REALM_ORDER.indexOf(playerRealm as RealmType);
                 const goldenCoreIndex = REALM_ORDER.indexOf(RealmType.GoldenCore);
                 const canRefineGlobal = realmIndex >= goldenCoreIndex;
-
-                return filteredAndSortedInventory.map((item) => (
-                  <InventoryItem
-                    key={item.id}
-                    item={item}
-                    isNatal={item.id === natalArtifactId}
-                    canRefine={canRefineGlobal}
-                    isEquipped={itemEquippedMap.get(item.id) || false}
-                    playerRealm={playerRealm}
-                    foundationTreasure={foundationTreasure}
-                    heavenEarthEssence={heavenEarthEssence}
-                    heavenEarthMarrow={heavenEarthMarrow}
-                    longevityRules={longevityRules}
-                    maxLongevityRules={maxLongevityRules}
-                    onHover={handleHoverItem}
-                    onUseItem={onUseItem}
-                    onEquipItem={handleEquipWrapper}
-                    onUnequipItem={handleUnequipWrapper}
+                 const visibleItems = filteredAndSortedInventory.slice(0, visibleCount);
+ 
+                 return (
+                   <>
+                     {visibleItems.map((item) => (
+                       <InventoryItem
+                         key={item.id}
+                         item={item}
+                         isNatal={item.id === natalArtifactId}
+                         canRefine={canRefineGlobal}
+                         isEquipped={itemEquippedMap.get(item.id) || false}
+                         playerRealm={playerRealm}
+                         foundationTreasure={foundationTreasure}
+                         heavenEarthEssence={heavenEarthEssence}
+                         heavenEarthMarrow={heavenEarthMarrow}
+                         longevityRules={longevityRules}
+                         maxLongevityRules={maxLongevityRules}
+                         onHover={handleHoverItem}
+                         onUseItem={onUseItem}
+                         onEquipItem={handleEquipWrapper}
+                         onUnequipItem={handleUnequipWrapper}
                     onUpgradeItem={onUpgradeItem}
                     onDiscardItem={onDiscardItem}
                     onRefineNatalArtifact={onRefineNatalArtifact}
                     onUnrefineNatalArtifact={onUnrefineNatalArtifact}
                     onRefineAdvancedItem={onRefineAdvancedItem}
                     setItemActionLog={setItemActionLog}
-                  />
-                ));
-              })()}
-            </div>
+                   />
+                     ))}
+                     {/* 分批加载：仍有未显示的物品时显示加载按钮 */}
+                     {visibleCount < filteredAndSortedInventory.length && (
+                       <div className="col-span-full flex flex-col items-center gap-2 py-4">
+                         <button
+                           onClick={() => setVisibleCount((c) => c + 60)}
+                           className="btn-ghost px-4 py-2 rounded text-sm"
+                         >
+                           加载更多（已显示 {visibleCount} / {filteredAndSortedInventory.length} 件）
+                         </button>
+                       </div>
+                     )}
+                   </>
+                 );
+               })()}
+             </div>
           </div>
       </div>
     </Modal>

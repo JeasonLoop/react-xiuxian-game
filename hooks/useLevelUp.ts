@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { PlayerStats } from '../types';
 import { REALM_ORDER, TRIBULATION_CONFIG } from '../constants/index';
-import { checkBreakthroughConditions, storeOverflowExp } from '../utils/cultivationUtils';
+ import { checkBreakthroughConditions, storeOverflowExp, getStoredExpCap } from '../utils/cultivationUtils';
 import { shouldTriggerTribulation } from '../utils/tribulationUtils';
 
 interface UseLevelUpParams {
@@ -53,10 +53,19 @@ export function useLevelUp({
       return;
     }
 
-    // 溢出修为存入修为泵，等待手动突破成功后自动补充
-    if (player.exp > player.maxExp) {
-      setPlayerRef.current((prev) => (prev ? storeOverflowExp(prev) : null));
-    }
+     // 溢出修为存入修为泵，等待手动突破成功后自动补充
+     if (player.exp > player.maxExp) {
+       // 泵满后溢出修为会被丢弃：一次性警告，推动玩家尽快突破
+       const pumpCap = getStoredExpCap(player.maxExp);
+       if ((player.storedExp || 0) >= pumpCap) {
+         const pumpKey = `pump-full-${player.realm}-${player.realmLevel}`;
+         if (lastLogKeyRef.current !== pumpKey) {
+           lastLogKeyRef.current = pumpKey;
+           addLogRef.current('修为泵已满，溢出修为正在散逸！请尽快点击属性面板中的「突破」按钮提升境界。', 'danger');
+         }
+       }
+       setPlayerRef.current((prev) => (prev ? storeOverflowExp(prev) : null));
+     }
 
     const isRealmUpgrade = player.realmLevel >= 9;
 

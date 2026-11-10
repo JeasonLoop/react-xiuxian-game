@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+ import React, { useState, useMemo, useEffect, memo } from 'react';
 import {
   Home,
   ArrowUp,
@@ -22,7 +22,8 @@ import {
   LockOpen,
 } from 'lucide-react';
 import { Modal } from './common';
-import { PlayerStats, ItemRarity } from '../types';
+ import { useNow } from '../hooks/useNow';
+ import { PlayerStats, ItemRarity } from '../types';
 import {
   GROTTO_CONFIGS,
   PLANTABLE_HERBS,
@@ -86,8 +87,224 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
   const elapsed = currentNow - plantTime;
   return Math.min(100, Math.max(0, Math.floor((elapsed / total) * 100)));
 };
-
-const GrottoModal: React.FC<Props> = ({
+ 
+ /** 灵草槽位卡片所需的形状（取自 grotto.plantedHerbs 元素） */
+ interface HerbSlotData {
+   herbName: string;
+   harvestTime: number;
+   plantTime: number;
+   isMutated?: boolean;
+   mutationBonus?: number;
+   quantity: number;
+ }
+ 
+ interface HerbSlotCardProps {
+   herb: HerbSlotData;
+   index: number;
+   onSpeedupHerb: (index: number) => void;
+   onHarvestHerb: (index: number) => void;
+ }
+ 
+ /**
+  * 灵草槽位卡片（memo）
+  * 秒级倒计时由组件内部 useNow 驱动——只有卡片自身每秒重渲染，
+  * 不再拖动整个洞府弹窗重算（性能优化 M3-8）
+  */
+ const HerbSlotCard = memo<HerbSlotCardProps>(({ herb, index, onSpeedupHerb, onHarvestHerb }) => {
+   const now = useNow(1000);
+   const isMature = now >= herb.harvestTime;
+   const remaining = Math.max(0, herb.harvestTime - now);
+   const progress = calculateProgress(herb.plantTime, herb.harvestTime, now);
+ 
+   return (
+     <div
+       className={`p-4 rounded-lg border-2 transition-all ${
+         isMature
+           ? 'bg-green-900/30 border-green-500 shadow-lg ring-2 ring-green-500/30'
+           : 'bg-stone-800/50 border-stone-700 hover:border-stone-600'
+       }`}
+     >
+       <div className="flex items-start justify-between gap-4">
+         <div className="flex-1 min-w-0">
+           <div className="flex items-center gap-2 mb-2">
+             <span className="font-bold text-stone-200 text-lg">{herb.herbName}</span>
+             {herb.isMutated && (
+               <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded flex items-center gap-1">
+                 <Sparkles size={12} />
+                 变异
+               </span>
+             )}
+             <span className="text-stone-400 text-sm bg-stone-700 px-2 py-0.5 rounded">
+               x{herb.isMutated && herb.mutationBonus ? Math.floor(herb.quantity * herb.mutationBonus) : herb.quantity}
+             </span>
+             {isMature && (
+               <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded flex items-center gap-1">
+                 <CheckCircle size={12} />
+                 可收获
+               </span>
+             )}
+           </div>
+ 
+           {!isMature && (
+             <div className="mb-3">
+               <div className="flex items-center justify-between text-sm mb-2">
+                 <span className="flex items-center gap-1.5 text-stone-300">
+                   <Clock size={14} className="text-blue-400" />
+                   <span>剩余时间</span>
+                 </span>
+                 <span className="font-bold text-mystic-gold">{formatGrottoTime(remaining)}</span>
+               </div>
+               <div className="w-full bg-stone-700/50 rounded-full h-2.5 overflow-hidden border border-stone-600">
+                 <div
+                   className="bg-linear-to-r from-mystic-gold to-yellow-500 h-full transition-all duration-1000 shadow-lg"
+                   style={{ width: `${progress}%` }}
+                 />
+               </div>
+               <div className="flex items-center justify-between mt-1.5">
+                 <p className="text-xs text-stone-500">生长进度</p>
+                 <p className="text-xs font-bold text-mystic-gold">{progress}%</p>
+               </div>
+             </div>
+           )}
+ 
+           {isMature && (
+             <p className="text-sm text-green-300 flex items-center gap-1">
+               <CheckCircle size={14} />
+               已成熟，可以收获了！
+             </p>
+           )}
+         </div>
+ 
+         <div className="flex items-center gap-2 shrink-0">
+           {!isMature && (
+             <button
+               onClick={() => onSpeedupHerb(index)}
+               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm font-bold flex items-center gap-1.5 shadow-lg border-2 border-blue-500"
+               title="使用灵石加速生长"
+             >
+               <Gauge size={14} />
+               加速
+             </button>
+           )}
+           {isMature && (
+             <button
+               onClick={() => onHarvestHerb(index)}
+               className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all text-sm font-bold shadow-lg border-2 border-green-500"
+             >
+               <CheckCircle size={14} className="inline mr-1" />
+               收获
+             </button>
+           )}
+         </div>
+       </div>
+     </div>
+   );
+ });
+ HerbSlotCard.displayName = 'HerbSlotCard';
+ 
+ /** 远征任务卡片所需的形状 */
+ interface ExpeditionCardData {
+   id: string;
+   petName: string;
+   locationName: string;
+   status: string;
+   startTime: number;
+   endTime: number;
+   duration: number;
+ }
+ 
+ interface ExpeditionCardProps {
+   exp: ExpeditionCardData;
+   onClaim: (id: string) => void;
+   onRecall: (id: string) => void;
+ }
+ 
+ /**
+  * 灵兽远征卡片（memo）
+  * 秒级进度由组件内部 useNow 驱动，仅卡片自身每秒重渲染
+  */
+ const ExpeditionCard = memo<ExpeditionCardProps>(({ exp, onClaim, onRecall }) => {
+   const now = useNow(1000);
+   const isCompleted = exp.status === 'completed' || now >= exp.endTime;
+   const progress = isCompleted
+     ? 100
+     : Math.min(100, Math.max(0, Math.floor(((now - exp.startTime) / exp.duration) * 100)));
+ 
+   const formatRemaining = (endTime: number) => {
+     const remainingMs = Math.max(0, endTime - now);
+     if (remainingMs === 0) return '已凯旋待领取';
+     const totalSecs = Math.floor(remainingMs / 1000);
+     const hours = Math.floor(totalSecs / 3600);
+     const mins = Math.floor((totalSecs % 3600) / 60);
+     const secs = totalSecs % 60;
+     if (hours > 0) return `${hours}小时${mins}分${secs}秒`;
+     if (mins > 0) return `${mins}分${secs}秒`;
+     return `${secs}秒`;
+   };
+ 
+   return (
+     <div
+       className={`p-3.5 rounded border flex flex-col justify-between space-y-3 ${
+         isCompleted
+           ? 'bg-amber-950/30 border-amber-500/60 shadow-md shadow-amber-950/20'
+           : 'bg-stone-900/80 border-stone-800'
+       }`}
+     >
+       <div>
+         <div className="flex items-center justify-between">
+           <span className="font-bold text-sm text-stone-200 flex items-center gap-1.5">
+             <Award size={15} className="text-emerald-400" />
+             {exp.petName}
+           </span>
+           <span className="text-xs text-stone-400 font-serif">
+             【{exp.locationName}】
+           </span>
+         </div>
+ 
+         <div className="mt-2.5">
+           <div className="flex items-center justify-between text-xs mb-1">
+             <span className={isCompleted ? 'text-amber-400 font-bold' : 'text-stone-400'}>
+               {isCompleted ? '已探索归来，待领取！' : `探索中：${formatRemaining(exp.endTime)}`}
+             </span>
+             <span className="font-mono text-stone-400">{progress}%</span>
+           </div>
+           <div className="w-full bg-stone-800 rounded-full h-2 overflow-hidden border border-stone-700">
+             <div
+               className={`h-full transition-all duration-500 ${
+                 isCompleted
+                   ? 'bg-linear-to-r from-amber-500 to-yellow-400'
+                   : 'bg-linear-to-r from-emerald-500 to-teal-400'
+               }`}
+               style={{ width: `${progress}%` }}
+             />
+           </div>
+         </div>
+       </div>
+ 
+       <div className="flex items-center justify-end gap-2 pt-1 border-t border-stone-800/80">
+         {isCompleted ? (
+           <button
+             onClick={() => onClaim(exp.id)}
+             className="px-3 py-1.5 bg-linear-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-stone-950 text-xs font-bold rounded shadow transition-all cursor-pointer"
+           >
+             领取凯旋战果
+           </button>
+         ) : (
+           <button
+             onClick={() => onRecall(exp.id)}
+             className="px-2.5 py-1 text-stone-400 hover:text-stone-200 border border-stone-700 hover:border-stone-500 text-xs rounded transition-all"
+           >
+             传音召回
+           </button>
+         )}
+       </div>
+     </div>
+   );
+ });
+ ExpeditionCard.displayName = 'ExpeditionCard';
+ 
+ 
+ const GrottoModal: React.FC<Props> = ({
   isOpen,
   onClose,
   player,
@@ -97,10 +314,13 @@ const GrottoModal: React.FC<Props> = ({
   onHarvestAll,
   onEnhanceSpiritArray,
   onToggleAutoHarvest,
-  onSpeedupHerb,
-}) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'upgrade' | 'plant' | 'enhancement' | 'herbarium' | 'reforge' | 'expedition'>('overview');
-  const [now, setNow] = useState(() => Date.now());
+   onSpeedupHerb,
+ }) => {
+   const [activeTab, setActiveTab] = useState<'overview' | 'upgrade' | 'plant' | 'enhancement' | 'herbarium' | 'reforge' | 'expedition'>('overview');
+   // 低频时间戳（10 秒）：仅供"可收获数量"等粗粒度计数使用。
+   // 秒级倒计时由 HerbSlotCard/ExpeditionCard 子组件内部 useNow 驱动，
+   // 避免每秒 setState 重渲染整个 1800+ 行的弹窗
+   const now = useNow(10000, isOpen);
 
   // 装备洗炼状态
   const [selectedReforgeItemId, setSelectedReforgeItemId] = useState<string>('');
@@ -195,8 +415,6 @@ const GrottoModal: React.FC<Props> = ({
 
     const interval = setInterval(() => {
       const currentNow = Date.now();
-      setNow(currentNow);
-
       const hasExploring = player.grotto?.petExpeditions?.some(
         (e) => e.status === 'exploring' && currentNow >= e.endTime
       );
@@ -223,18 +441,6 @@ const GrottoModal: React.FC<Props> = ({
 
     return () => clearInterval(interval);
   }, [isOpen, player.grotto?.petExpeditions]);
-
-  const formatExpeditionRemaining = (endTime: number) => {
-    const remainingMs = Math.max(0, endTime - now);
-    if (remainingMs === 0) return '已凯旋待领取';
-    const totalSecs = Math.floor(remainingMs / 1000);
-    const hours = Math.floor(totalSecs / 3600);
-    const mins = Math.floor((totalSecs % 3600) / 60);
-    const secs = totalSecs % 60;
-    if (hours > 0) return `${hours}小时${mins}分${secs}秒`;
-    if (mins > 0) return `${mins}分${secs}秒`;
-    return `${secs}秒`;
-  };
 
   const commitReforgeInventory = (updatedPlayer: PlayerStats) => {
     useGameStore.getState().setPlayer((prev) => {
@@ -774,102 +980,21 @@ const GrottoModal: React.FC<Props> = ({
                           </button>
                         )}
                       </div>
-                      <div className="space-y-3">
-                        {grotto.plantedHerbs.map((herb, index) => {
-                          const isMature = now >= herb.harvestTime;
-                          const remaining = Math.max(0, herb.harvestTime - now);
-                          const progress = calculateProgress(herb.plantTime, herb.harvestTime, now);
-
-                          return (
-                            <div
-                              key={index}
-                              className={`p-4 rounded-lg border-2 transition-all ${
-                                isMature
-                                  ? 'bg-green-900/30 border-green-500 shadow-lg ring-2 ring-green-500/30'
-                                  : 'bg-stone-800/50 border-stone-700 hover:border-stone-600'
-                              }`}
-                            >
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <span className="font-bold text-stone-200 text-lg">{herb.herbName}</span>
-                                    {herb.isMutated && (
-                                      <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded flex items-center gap-1">
-                                        <Sparkles size={12} />
-                                        变异
-                                      </span>
-                                    )}
-                                    <span className="text-stone-400 text-sm bg-stone-700 px-2 py-0.5 rounded">
-                                      x{herb.isMutated && herb.mutationBonus ? Math.floor(herb.quantity * herb.mutationBonus) : herb.quantity}
-                                    </span>
-                                    {isMature && (
-                                      <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded flex items-center gap-1">
-                                        <CheckCircle size={12} />
-                                        可收获
-                                      </span>
-                                    )}
-                                  </div>
-
-                                  {!isMature && (
-                                    <div className="mb-3">
-                                      <div className="flex items-center justify-between text-sm mb-2">
-                                        <span className="flex items-center gap-1.5 text-stone-300">
-                                          <Clock size={14} className="text-blue-400" />
-                                          <span>剩余时间</span>
-                                        </span>
-                                        <span className="font-bold text-mystic-gold">{formatGrottoTime(remaining)}</span>
-                                      </div>
-                                      <div className="w-full bg-stone-700/50 rounded-full h-2.5 overflow-hidden border border-stone-600">
-                                        <div
-                                          className="bg-linear-to-r from-mystic-gold to-yellow-500 h-full transition-all duration-1000 shadow-lg"
-                                          style={{ width: `${progress}%` }}
-                                        />
-                                      </div>
-                                      <div className="flex items-center justify-between mt-1.5">
-                                        <p className="text-xs text-stone-500">生长进度</p>
-                                        <p className="text-xs font-bold text-mystic-gold">{progress}%</p>
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {isMature && (
-                                    <p className="text-sm text-green-300 flex items-center gap-1">
-                                      <CheckCircle size={14} />
-                                      已成熟，可以收获了！
-                                    </p>
-                                  )}
-                                </div>
-
-                                <div className="flex items-center gap-2 shrink-0">
-                                  {!isMature && (
-                                    <button
-                                      onClick={() => onSpeedupHerb(index)}
-                                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm font-bold flex items-center gap-1.5 shadow-lg border-2 border-blue-500"
-                                      title="使用灵石加速生长"
-                                    >
-                                      <Gauge size={14} />
-                                      加速
-                                    </button>
-                                  )}
-                                  {isMature && (
-                                    <button
-                                      onClick={() => onHarvestHerb(index)}
-                                      className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all text-sm font-bold shadow-lg border-2 border-green-500"
-                                    >
-                                      <CheckCircle size={14} className="inline mr-1" />
-                                      收获
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {grotto.plantedHerbs.length === 0 && (
+                       <div className="space-y-3">
+                         {grotto.plantedHerbs.map((herb, index) => (
+                           <HerbSlotCard
+                             key={index}
+                             herb={herb}
+                             index={index}
+                             onSpeedupHerb={onSpeedupHerb}
+                             onHarvestHerb={onHarvestHerb}
+                           />
+                         ))}
+                       </div>
+                     </div>
+                   )}
+ 
+                   {grotto.plantedHerbs.length === 0 && (
                     <div className="bg-ink-900 p-8 rounded-lg border border-stone-700 text-center">
                       <Sprout className="mx-auto text-stone-500 mb-3" size={48} />
                       <p className="text-stone-400">还没有种植任何灵草</p>
@@ -1702,78 +1827,21 @@ const GrottoModal: React.FC<Props> = ({
                   <div className="text-center py-6 bg-stone-900/40 rounded border border-dashed border-stone-800 text-stone-500 text-xs">
                     暂无外派队伍，请在下方选择禁地派遣灵兽！
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {activeExpeditions.map((exp) => {
-                      const isCompleted = exp.status === 'completed' || now >= exp.endTime;
-                      const progress = isCompleted
-                        ? 100
-                        : Math.min(100, Math.max(0, Math.floor(((now - exp.startTime) / exp.duration) * 100)));
-
-                      return (
-                        <div
-                          key={exp.id}
-                          className={`p-3.5 rounded border flex flex-col justify-between space-y-3 ${
-                            isCompleted
-                              ? 'bg-amber-950/30 border-amber-500/60 shadow-md shadow-amber-950/20'
-                              : 'bg-stone-900/80 border-stone-800'
-                          }`}
-                        >
-                          <div>
-                            <div className="flex items-center justify-between">
-                              <span className="font-bold text-sm text-stone-200 flex items-center gap-1.5">
-                                <Award size={15} className="text-emerald-400" />
-                                {exp.petName}
-                              </span>
-                              <span className="text-xs text-stone-400 font-serif">
-                                【{exp.locationName}】
-                              </span>
-                            </div>
-
-                            <div className="mt-2.5">
-                              <div className="flex items-center justify-between text-xs mb-1">
-                                <span className={isCompleted ? 'text-amber-400 font-bold' : 'text-stone-400'}>
-                                  {isCompleted ? '已探索归来，待领取！' : `探索中：${formatExpeditionRemaining(exp.endTime)}`}
-                                </span>
-                                <span className="font-mono text-stone-400">{progress}%</span>
-                              </div>
-                              <div className="w-full bg-stone-800 rounded-full h-2 overflow-hidden border border-stone-700">
-                                <div
-                                  className={`h-full transition-all duration-500 ${
-                                    isCompleted
-                                      ? 'bg-linear-to-r from-amber-500 to-yellow-400'
-                                      : 'bg-linear-to-r from-emerald-500 to-teal-400'
-                                  }`}
-                                  style={{ width: `${progress}%` }}
-                                />
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center justify-end gap-2 pt-1 border-t border-stone-800/80">
-                            {isCompleted ? (
-                              <button
-                                onClick={() => handleClaimExpeditionAction(exp.id)}
-                                className="px-3 py-1.5 bg-linear-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-stone-950 text-xs font-bold rounded shadow transition-all cursor-pointer"
-                              >
-                                领取凯旋战果
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleRecallExpeditionAction(exp.id)}
-                                className="px-2.5 py-1 text-stone-400 hover:text-stone-200 border border-stone-700 hover:border-stone-500 text-xs rounded transition-all"
-                              >
-                                传音召回
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
+                 ) : (
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                     {activeExpeditions.map((exp) => (
+                       <ExpeditionCard
+                         key={exp.id}
+                         exp={exp}
+                         onClaim={handleClaimExpeditionAction}
+                         onRecall={handleRecallExpeditionAction}
+                       />
+                     ))}
+                   </div>
+                 )}
+               </div>
+ 
+               {/* 派遣新远征模块 */}
               {/* 派遣新远征模块 */}
               <div className="bg-ink-900 p-4 rounded-lg border border-stone-800 space-y-4">
                 <h4 className="text-stone-200 font-serif font-bold text-sm flex items-center justify-between">

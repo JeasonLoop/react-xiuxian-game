@@ -12,6 +12,7 @@ import TribulationModal from './TribulationModal';
 import DeathModal from './DeathModal';
 import DungeonModal from './DungeonModal';
 import TowerModal from './TowerModal';
+ import { resetAutoMeditateLogCounter } from '../views/meditation/useMeditationHandlers';
 import NPCRelationsModal from './NPCRelationsModal';
 import RebirthModal, { getRebirthBonuses } from './RebirthModal';
 import GameView from '../views/GameView';
@@ -212,12 +213,15 @@ export function AppContent(props: AppContentProps) {
     window.addEventListener('toggle-item-lock', handler);
     return () => window.removeEventListener('toggle-item-lock', handler);
   }, [setPlayer]);
-  const doRebirth = () => {
-    if (!player) return;
-    const nextLevel = (player.rebirthCount || 0) + 1;
-    const bonuses = getRebirthBonuses(nextLevel);
-    
-    setPlayer(prev => {
+   const doRebirth = () => {
+     if (!player) return;
+     const nextLevel = (player.rebirthCount || 0) + 1;
+     const bonuses = getRebirthBonuses(nextLevel);
+     // 转世后重置自动打坐汇总日志计数器，避免新一世首条日志携带上一世累计值
+     resetAutoMeditateLogCounter();
+     
+     setPlayer(prev => {
+       if (!prev) return prev;
       if (!prev) return prev;
       // 保留功法（选品级最高的）
       const sortedArts = [...(prev.cultivationArts || [])].sort(() => Math.random() - 0.5).slice(0, bonuses.keepArts);
