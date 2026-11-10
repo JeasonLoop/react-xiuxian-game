@@ -144,14 +144,15 @@ function GameView({
   };
 
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-stone-900 text-stone-200 overflow-hidden relative">
-      {/* Visual Effects Layer */}
-      <CombatVisuals effects={visualEffects} />
+     <div className="flex flex-col md:flex-row h-screen bg-stone-900 text-stone-200 overflow-hidden relative">
+       {/* Visual Effects Layer */}
+       <CombatVisuals effects={visualEffects} />
+ 
        <div className="hidden md:block">
          <StatsPanel player={player} onBreakthrough={handlers.onBreakthrough} />
        </div>
  
-       <main className="flex-1 flex flex-col h-full relative min-w-0 pt-[72px] md:pt-0">
+       <main className="flex-1 flex flex-col h-full relative min-w-0">
         <GameHeader
           player={player}
           onOpenMenu={handlers.onOpenMenu}
@@ -172,7 +173,7 @@ function GameView({
         <LogPanel
           logs={logs}
           playerName={player.name}
-          className="pb-[28rem] md:pb-0"
+           className="min-h-0 md:pb-0"
           onClearLogs={() => setLogs([])}
         />
 

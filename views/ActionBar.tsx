@@ -58,11 +58,11 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
    const realmLocked = !isFeatureUnlocked(FeatureId.SECRET_REALM, realm);
  
    // 锁定按钮样式
-  const lockedCls =
-    'opacity-35 cursor-not-allowed bg-stone-900 border-stone-800';
-
-  return (
-    <div className="bg-paper-800 p-3 md:p-4 border-t border-stone-700 grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 shrink-0 fixed md:relative bottom-0 left-0 right-0 md:left-auto md:right-auto z-50 shadow-lg md:shadow-none">
+   const lockedCls =
+     'opacity-35 cursor-not-allowed bg-stone-900 border-stone-800';
+ 
+   return (
+       <div className="relative">
       <div className="relative">
         <button
           onClick={onMeditate}
