@@ -52,14 +52,14 @@ const AutoAdventureConfigModal: React.FC<Props> = ({
       // onClick={onClose}
     >
       <div
-        className="bg-paper-800 w-full max-w-md rounded-lg border border-stone-600 shadow-2xl"
+        className="bg-paper-800 w-full max-w-md max-h-[88dvh] overflow-y-auto rounded-lg border border-stone-600 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 头部 */}
         <div className="flex items-center justify-between p-4 border-b border-stone-700">
           <div className="flex items-center gap-2">
             <Settings className="text-mystic-gold" size={20} />
-            <h2 className="text-xl font-serif text-stone-200">自动历练配置</h2>
+            <h2 className="text-lg font-serif text-stone-200">自动历练配置</h2>
           </div>
           <button
             onClick={onClose}
@@ -71,7 +71,7 @@ const AutoAdventureConfigModal: React.FC<Props> = ({
         </div>
 
         {/* 配置项 */}
-        <div className="p-4 space-y-4">
+        <div className="p-3 md:p-4 space-y-3 md:space-y-4">
           {/* 跳过战斗 */}
           <div className="flex items-center justify-between p-3 bg-stone-900/50 rounded-lg border border-stone-700">
             <div className="flex-1">
@@ -92,7 +92,7 @@ const AutoAdventureConfigModal: React.FC<Props> = ({
                 className="sr-only peer"
                 aria-label="跳过战斗"
               />
-              <div className="w-11 h-6 bg-stone-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-mystic-gold rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-mystic-gold"></div>
+              <div className="w-11 h-6 bg-stone-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-mystic-gold rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-[transform,border-color] peer-checked:bg-mystic-gold"></div>
             </label>
           </div>
 
@@ -118,7 +118,7 @@ const AutoAdventureConfigModal: React.FC<Props> = ({
                 aria-label="遇到战斗逃跑"
               />
               <div
-                className={`w-11 h-6 bg-stone-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-mystic-gold rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-mystic-gold ${
+                className={`w-11 h-6 bg-stone-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-mystic-gold rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-[transform,border-color] peer-checked:bg-mystic-gold ${
                   config.skipBattle ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               ></div>
@@ -145,7 +145,7 @@ const AutoAdventureConfigModal: React.FC<Props> = ({
                 className="sr-only peer"
                 aria-label="跳过商店"
               />
-              <div className="w-11 h-6 bg-stone-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-mystic-gold rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-mystic-gold"></div>
+              <div className="w-11 h-6 bg-stone-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-mystic-gold rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-[transform,border-color] peer-checked:bg-mystic-gold"></div>
             </label>
           </div>
 
@@ -169,7 +169,7 @@ const AutoAdventureConfigModal: React.FC<Props> = ({
                 className="sr-only peer"
                 aria-label="跳过声望事件"
               />
-              <div className="w-11 h-6 bg-stone-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-mystic-gold rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-mystic-gold"></div>
+              <div className="w-11 h-6 bg-stone-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-mystic-gold rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-[transform,border-color] peer-checked:bg-mystic-gold"></div>
             </label>
           </div>
 
@@ -190,7 +190,7 @@ const AutoAdventureConfigModal: React.FC<Props> = ({
                   const value = Math.max(0, parseInt(e.target.value) || 0);
                   setConfig({ ...config, minHpThreshold: value });
                 }}
-                className="flex-1 px-3 py-2 bg-stone-800 border border-stone-600 rounded-lg text-stone-200 focus:outline-none focus:ring-2 focus:ring-mystic-gold"
+                 className="flex-1 min-w-0 px-3 py-2 bg-stone-800 border border-stone-600 rounded-lg text-stone-200 focus:outline-none focus:ring-2 focus:ring-mystic-gold"
                 placeholder="0"
               />
               <span className="text-stone-400 text-sm">%</span>
@@ -199,7 +199,7 @@ const AutoAdventureConfigModal: React.FC<Props> = ({
         </div>
 
         {/* 底部按钮 */}
-        <div className="flex gap-2 p-4 border-t border-stone-700">
+        <div className="flex gap-2 p-3 md:p-4 border-t border-stone-700">
           <button
             onClick={onClose}
             className="flex-1 px-4 py-2 bg-stone-700 hover:bg-stone-600 text-stone-200 rounded-lg transition-colors"

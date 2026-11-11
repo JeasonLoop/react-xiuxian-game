@@ -3,7 +3,6 @@ import Modal from './common/Modal';
 import {
   Shield,
   Sword,
-  X,
   Zap,
   Option,
   ArrowRight,
@@ -99,7 +98,6 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   realmMinRealm,
   bossId,
   difficulty = 'normal',
-  autoAdventure = false,
   onClose,
 }) => {
   const [battleState, setBattleState] = useState<BattleState | null>(null);
@@ -819,7 +817,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
             </div>
             <div className="w-full bg-stone-800 rounded-full h-3 mb-2 relative z-10">
               <div
-                className="bg-rose-500 h-3 rounded-full transition-all duration-300"
+                className="bg-rose-500 h-3 rounded-full transition-[width] duration-300"
                 style={{ width: `${enemyHpPercent}%` }}
               />
             </div>
@@ -850,7 +848,7 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
             </div>
             <div className="w-full bg-stone-800 rounded-full h-3 mb-2">
               <div
-                className="bg-emerald-500 h-3 rounded-full transition-all duration-300"
+                className="bg-emerald-500 h-3 rounded-full transition-[width] duration-300"
                 style={{ width: `${playerHpPercent}%` }}
               />
             </div>

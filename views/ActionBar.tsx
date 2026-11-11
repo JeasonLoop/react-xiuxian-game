@@ -68,7 +68,7 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
           onClick={onMeditate}
           disabled={loading || cooldown > 0 || autoAdventure}
           className={`
-            flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[64px] md:min-h-[100px] w-full
+            flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-[transform,box-shadow,border-color,background-color] duration-200 touch-manipulation min-h-[56px] md:min-h-[100px] w-full
             ${
               loading || cooldown > 0 || autoAdventure
                 ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed'
@@ -78,7 +78,7 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
           `}
         >
           <User
-            size={24}
+            size={20}
             className="mb-1 md:mb-2 text-mystic-jade"
           />
           <span className="font-serif font-bold text-sm md:text-base">
@@ -94,7 +94,7 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
             onToggleAutoMeditate();
           }}
           className={`
-            absolute top-1 right-1 p-1 rounded transition-all duration-200
+            absolute top-1 right-1 p-1 rounded transition-colors duration-200
             ${
               autoMeditate
                 ? 'bg-mystic-jade/80 text-stone-900 hover:bg-mystic-jade'
@@ -112,7 +112,7 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
           onClick={onAdventure}
           disabled={loading || cooldown > 0 || autoMeditate}
           className={`
-            flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-all duration-200 group touch-manipulation min-h-[64px] md:min-h-[100px] w-full
+            flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-[transform,box-shadow,border-color,background-color] duration-200 group touch-manipulation min-h-[56px] md:min-h-[100px] w-full
             ${
               loading || cooldown > 0 || autoMeditate
                 ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed'
@@ -122,7 +122,7 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
           `}
         >
           <Sword
-            size={24}
+            size={20}
             className={`md:w-6 md:h-6 mb-1.5 md:mb-2 text-mystic-gold ${
               loading
                 ? 'animate-spin'
@@ -142,7 +142,7 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
             onToggleAutoAdventure();
           }}
           className={`
-            absolute top-1 right-1 p-1 rounded transition-all duration-200
+            absolute top-1 right-1 p-1 rounded transition-colors duration-200
             ${
               autoAdventure || pausedByBattle
                 ? 'bg-mystic-gold/80 text-stone-900 hover:bg-mystic-gold'
@@ -163,12 +163,12 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
 
       {realmLocked ? (
         <div
-          className={`flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[64px] md:min-h-[100px] relative ${lockedCls}`}
+          className={`flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-colors duration-200 touch-manipulation min-h-[56px] md:min-h-[100px] relative ${lockedCls}`}
           title={getFeatureRequirementText(FeatureId.SECRET_REALM)}
         >
           <Lock size={10} className="absolute top-1 right-1 text-stone-600" />
           <Mountain
-            size={24}
+            size={20}
             className="mb-1 md:mb-2 text-stone-600"
           />
           <span className="font-serif font-bold text-sm md:text-base text-stone-500">
@@ -183,7 +183,7 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
         onClick={onOpenRealm}
         disabled={loading}
         className={`
-          flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[64px] md:min-h-[100px]
+          flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-[transform,box-shadow,border-color,background-color] duration-200 touch-manipulation min-h-[56px] md:min-h-[100px]
           ${
             loading
               ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed'
@@ -192,7 +192,7 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
         `}
       >
         <Mountain
-          size={24}
+          size={20}
           className="mb-1 md:mb-2 text-purple-400"
         />
         <span className="font-serif font-bold text-sm md:text-base">
@@ -206,12 +206,12 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
 
       {alchemyLocked ? (
         <div
-          className={`flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[64px] md:min-h-[100px] relative ${lockedCls}`}
+          className={`flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-colors duration-200 touch-manipulation min-h-[56px] md:min-h-[100px] relative ${lockedCls}`}
           title={getFeatureRequirementText(FeatureId.ALCHEMY)}
         >
           <Lock size={10} className="absolute top-1 right-1 text-stone-600" />
           <Sparkles
-            size={24}
+            size={20}
             className="mb-1 md:mb-2 text-stone-600"
           />
           <span className="font-serif font-bold text-sm md:text-base text-stone-500">
@@ -226,7 +226,7 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
         onClick={onOpenAlchemy}
         disabled={loading}
         className={`
-          flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[64px] md:min-h-[100px]
+          flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-[transform,box-shadow,border-color,background-color] duration-200 touch-manipulation min-h-[56px] md:min-h-[100px]
           ${
             loading
               ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed'
@@ -235,7 +235,7 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
         `}
       >
         <Sparkles
-          size={24}
+          size={20}
           className="mb-1 md:mb-2 text-cyan-400"
         />
         <span className="font-serif font-bold text-sm md:text-base">
@@ -249,12 +249,12 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
 
       {sectLocked ? (
         <div
-          className={`flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[64px] md:min-h-[100px] relative ${lockedCls}`}
+          className={`flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-colors duration-200 touch-manipulation min-h-[56px] md:min-h-[100px] relative ${lockedCls}`}
           title={getFeatureRequirementText(FeatureId.SECT)}
         >
           <Lock size={10} className="absolute top-1 right-1 text-stone-600" />
           <Scroll
-            size={24}
+            size={20}
             className="mb-1 md:mb-2 text-stone-600"
           />
           <span className="font-serif font-bold text-sm md:text-base text-stone-500">
@@ -268,7 +268,7 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
       <button
         onClick={onOpenSect}
         className={`
-          flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-all duration-200 touch-manipulation min-h-[64px] md:min-h-[100px]
+          flex flex-col items-center justify-center p-2 md:p-4 rounded-lg border-2 transition-[transform,box-shadow,border-color,background-color] duration-200 touch-manipulation min-h-[56px] md:min-h-[100px]
           ${
             loading
               ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed'
@@ -277,7 +277,7 @@ import { isFeatureUnlocked, FeatureId, getFeatureRequirementText } from '../cons
         `}
       >
         <Scroll
-          size={24}
+          size={20}
           className="mb-1 md:mb-2 text-blue-400"
         />
         <span className="font-serif font-bold text-sm md:text-base">

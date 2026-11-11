@@ -17,7 +17,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({ selected, onSelect }) =
           <button
             key={cat}
             onClick={() => onSelect(cat)}
-            className={`px-3.5 py-1.5 rounded-md text-sm font-medium transition-all duration-200 border ${
+            className={`px-3.5 py-1.5 rounded-md text-sm font-medium transition-colors duration-200 border ${
               isActive
                 ? 'bg-amber-500/20 text-amber-400 border-amber-500/60 shadow-[0_0_6px_rgba(245,158,11,0.3)]'
                 : 'bg-stone-900/50 text-stone-400 border-stone-700 hover:text-stone-200 hover:border-stone-500'

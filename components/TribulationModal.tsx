@@ -35,7 +35,7 @@ const TribulationModal: React.FC<TribulationModalProps> = ({
   const [showPuzzle, setShowPuzzle] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [hintUsed, setHintUsed] = useState(false);
-  const [revealedPositions, setRevealedPositions] = useState<number[]>([]);
+  const [_revealedPositions, setRevealedPositions] = useState<number[]>([]);
 
   // 长生天劫五重考验状态
   const [longevityChallenges, setLongevityChallenges] = useState<any>(null);
@@ -626,7 +626,7 @@ const TribulationModal: React.FC<TribulationModalProps> = ({
               <Sparkles className="text-purple-400 w-6 h-6 sm:w-8 sm:h-8" />
             </div>
             <p className="text-sm sm:text-base md:text-lg text-stone-300">
-              {tribulationState.targetRealm}突破在即，天劫降临！
+              {tribulationState.targetRealm}突破在即，天劫降临
             </p>
           </div>
 
@@ -724,7 +724,7 @@ const TribulationModal: React.FC<TribulationModalProps> = ({
                             <p className="text-sm text-stone-400">目标分数: <span className="text-yellow-300 font-bold">{targetScore}</span></p>
                           </div>
                           {game2048Score >= targetScore && (
-                            <span className="text-green-400 font-bold text-sm">✓ 已达到目标！</span>
+                            <span className="text-green-400 font-bold text-sm">✓ 已达到目标</span>
                           )}
                         </div>
                         <div className="grid grid-cols-4 gap-2 mb-4 max-w-xs mx-auto">
@@ -1047,7 +1047,7 @@ const TribulationModal: React.FC<TribulationModalProps> = ({
           {result && (
             <button
               onClick={handleClose}
-              className={`w-full py-2 sm:py-3 md:py-4 text-sm sm:text-base md:text-lg font-bold rounded-lg border-2 transition-all ${
+              className={`w-full py-2 sm:py-3 md:py-4 text-sm sm:text-base md:text-lg font-bold rounded-lg border-2 transition-colors ${
                 result.success
                   ? 'bg-green-700 hover:bg-green-600 text-green-100 border-green-500'
                   : 'bg-red-700 hover:bg-red-600 text-red-100 border-red-500'

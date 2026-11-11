@@ -64,7 +64,7 @@ const SecretRealmModal: React.FC<Props> = ({
         <div className="col-span-full grid grid-cols-1 md:grid-cols-2 gap-3">
           {/* 九天通天塔入口 */}
           <div
-            className="bg-linear-to-r from-amber-950/70 to-red-950/60 border-2 border-amber-600/70 rounded-lg p-3.5 cursor-pointer hover:border-amber-400 hover:shadow-lg hover:shadow-amber-950/40 transition-all"
+            className="bg-linear-to-r from-amber-950/70 to-red-950/60 border-2 border-amber-600/70 rounded-lg p-3.5 cursor-pointer hover:border-amber-400 hover:shadow-lg hover:shadow-amber-950/40 transition-[border-color,box-shadow]"
             onClick={() => {
               const setModal = useUIStore.getState().setModal;
               setModal('isTowerOpen', true);
@@ -90,7 +90,7 @@ const SecretRealmModal: React.FC<Props> = ({
 
           {/* 地宫探索入口 */}
           <div
-            className="bg-linear-to-r from-purple-900/40 to-stone-900/60 border-2 border-purple-700/60 rounded-lg p-3.5 cursor-pointer hover:border-purple-400 hover:shadow-lg hover:shadow-purple-950/40 transition-all"
+            className="bg-linear-to-r from-purple-900/40 to-stone-900/60 border-2 border-purple-700/60 rounded-lg p-3.5 cursor-pointer hover:border-purple-400 hover:shadow-lg hover:shadow-purple-950/40 transition-[border-color,box-shadow]"
             onClick={() => {
               const setModal = useUIStore.getState().setModal;
               setModal('isDungeonOpen', true);
@@ -149,7 +149,7 @@ const SecretRealmModal: React.FC<Props> = ({
             <div
               key={realm.id}
               className={`
-                relative border flex flex-col p-5 rounded-lg transition-all duration-300 group
+                relative border flex flex-col p-5 rounded-lg transition-[background-color,border-color,box-shadow] duration-300 group
                 ${
                   locked
                     ? 'bg-ink-900 border-stone-800 opacity-60'
@@ -235,7 +235,7 @@ const SecretRealmModal: React.FC<Props> = ({
                   onClick={() => onEnter(realm)}
                   disabled={locked || !canAfford}
                   className={`
-                     w-full py-2.5 rounded font-serif font-bold text-sm flex items-center justify-center gap-2 mt-4 transition-all
+                     w-full py-2.5 rounded font-serif font-bold text-sm flex items-center justify-center gap-2 mt-4 transition-colors
                      ${
                        locked || !canAfford
                          ? 'bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700'

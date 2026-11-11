@@ -15,7 +15,7 @@ interface Props {
 
 const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
   const [isDrawing, setIsDrawing] = useState(false);
-  const [lastResult, setLastResult] = useState<LotteryPrize[] | null>(null);
+  const [_lastResult, setLastResult] = useState<LotteryPrize[] | null>(null);
   const [displayTickets, setDisplayTickets] = useState(player.lotteryTickets);
   const [customCountInput, setCustomCountInput] = useState<string>('');
   const drawTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -49,11 +49,11 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
   const handleDraw = async (count: number) => {
     const currentTickets = player.lotteryTickets;
     if (currentTickets < count) {
-      showError(`抽奖券不足！需要 ${count} 张，当前拥有 ${currentTickets} 张`);
+      showError(`抽奖券不足需要 ${count} 张，当前拥有 ${currentTickets} 张`);
       return;
     }
     if (count <= 0 || !Number.isInteger(count)) {
-      showError('抽奖次数必须为正整数！');
+      showError('抽奖次数必须为正整数');
       return;
     }
 
@@ -179,7 +179,7 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
               <button
                 onClick={() => handleDraw(1)}
                 disabled={isDrawing || displayTickets < 1}
-                className="group relative px-6 py-8 bg-stone-900 hover:bg-stone-800 rounded-lg border-2 border-purple-900/50 hover:border-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all overflow-hidden shadow-lg"
+                className="group relative px-6 py-8 bg-stone-900 hover:bg-stone-800 rounded-lg border-2 border-purple-900/50 hover:border-purple-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors overflow-hidden shadow-lg"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="absolute -inset-y-2 w-px bg-purple-500/20 left-4 group-hover:bg-purple-500/40 transition-colors" />
@@ -194,7 +194,7 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
                   <div className="flex flex-col items-center gap-2 relative z-10">
                     <Gift
                       size={32}
-                      className="text-purple-400 group-hover:scale-110 transition-transform"
+                      className="text-purple-400"
                     />
                     <span className="font-bold text-stone-200">单抽</span>
                     <span className="text-xs text-stone-500">消耗 1 张</span>
@@ -205,7 +205,7 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
               <button
                 onClick={() => handleDraw(10)}
                 disabled={isDrawing || displayTickets < 10}
-                className="group relative px-6 py-8 bg-stone-900 hover:bg-stone-800 rounded-lg border-2 border-yellow-900/50 hover:border-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all overflow-hidden shadow-xl"
+                className="group relative px-6 py-8 bg-stone-900 hover:bg-stone-800 rounded-lg border-2 border-yellow-900/50 hover:border-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors overflow-hidden shadow-xl"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-yellow-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="absolute -inset-y-2 w-px bg-yellow-500/20 left-4 group-hover:bg-yellow-500/40 transition-colors" />
@@ -221,7 +221,7 @@ const LotteryModal: React.FC<Props> = ({ isOpen, onClose, player, onDraw }) => {
                   <div className="flex flex-col items-center gap-2 relative z-10">
                     <Sparkles
                       size={32}
-                      className="text-yellow-400 group-hover:scale-110 transition-transform"
+                      className="text-yellow-400"
                     />
                     <span className="font-bold text-stone-200">十连抽</span>
                     <span className="text-xs text-stone-500">消耗 10 张</span>

@@ -3,11 +3,7 @@ import { PlayerStats, Item } from '../types';
 import { Modal } from './common';
 import {
   Users,
-  Heart,
   Gift,
-  Swords,
-  Star,
-  Crown,
   Sparkles,
   HeartHandshake,
   Handshake,
@@ -16,7 +12,6 @@ import {
   Annoyed,
   Angry,
   Skull,
-  Lock,
   Gem,
   AlertTriangle,
 } from 'lucide-react';
@@ -189,7 +184,7 @@ const NPCRelationsModal: React.FC<Props> = ({ isOpen, onClose, player, setPlayer
                     </div>
                     <div className="w-full bg-stone-800 rounded-full h-2">
                       <div
-                        className={`h-2 rounded-full transition-all ${npc.favorability >= 0 ? 'bg-emerald-500' : 'bg-red-500'}`}
+                        className={`h-2 rounded-full transition-[width] ${npc.favorability >= 0 ? 'bg-emerald-500' : 'bg-red-500'}`}
                         style={{ width: `${Math.abs(npc.favorability)}%` }}
                       />
                     </div>

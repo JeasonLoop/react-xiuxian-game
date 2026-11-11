@@ -6,7 +6,7 @@ import { useGameStore } from '../store/gameStore';
 import { getLocalDateString } from '../utils/dateUtils';
 import { showConfirm, showError, showSuccess } from '../utils/toastUtils';
 import { generateRandomSects, generateRandomSectTasks, generateSectShopItems, RandomSectTask } from '../services/randomService';
-import { X, Users, ShoppingBag, Shield, Scroll, ArrowUp, RefreshCw, BookOpen, Sparkles, Crown, Flame, Star, Zap, Lightbulb } from 'lucide-react';
+import { ShoppingBag, Shield, Scroll, ArrowUp, RefreshCw, BookOpen, Sparkles, Crown, Flame, Star, Zap, Lightbulb } from 'lucide-react';
 import SectTaskModal from './SectTaskModal';
 import { CULTIVATION_ARTS } from '../constants/cultivation';
 import { CultivationArt } from '../types';
@@ -121,7 +121,7 @@ const SectModal: React.FC<Props> = ({
   const handleRefreshTasks = () => {
     const cost = SECT_TASK_REFRESH_COST;
     if (player.spiritStones < cost) {
-      showError(`刷新任务列表需 ${cost} 灵石，灵石不足！`);
+      showError(`刷新任务列表需 ${cost} 灵石，灵石不足`);
       return;
     }
     useGameStore.getState().setPlayer((prev) => ({
@@ -141,11 +141,11 @@ const SectModal: React.FC<Props> = ({
   const handleRentTrainingRoom = () => {
     if (!player.sectId) return;
     if (trainingActive) {
-      showError('你已在修炼室闭关中，无需重复租用！');
+      showError('你已在修炼室闭关中，无需重复租用');
       return;
     }
     if (player.sectContribution < trainingRoomCost) {
-      showError(`租用修炼室需 ${trainingRoomCost} 贡献，贡献不足！`);
+      showError(`租用修炼室需 ${trainingRoomCost} 贡献，贡献不足`);
       return;
     }
     useGameStore.getState().setPlayer((prev) => ({
@@ -157,7 +157,7 @@ const SectModal: React.FC<Props> = ({
       },
     }));
     showSuccess(
-      `已入住宗门修炼室！${SECT_TRAINING_ROOM.durationHours} 小时内修炼效率 +${Math.round(SECT_TRAINING_ROOM.expRateBonus * 100)}%。`
+      `已入住宗门修炼室${SECT_TRAINING_ROOM.durationHours} 小时内修炼效率 +${Math.round(SECT_TRAINING_ROOM.expRateBonus * 100)}%。`
     );
   };
 
@@ -503,7 +503,7 @@ const SectModal: React.FC<Props> = ({
                         </p>
                         <button
                           onClick={onChallengeLeader}
-                          className="w-full py-3 bg-red-900/30 text-red-400 border border-red-900 hover:bg-red-900/50 rounded font-serif text-base transition-all animate-pulse flex items-center justify-center gap-2"
+                          className="w-full py-3 bg-red-900/30 text-red-400 border border-red-900 hover:bg-red-900/50 rounded font-serif text-base transition-colors flex items-center justify-center gap-2"
                         >
                           <Flame size={16} />
                           挑战宗主

@@ -63,17 +63,7 @@ const SectTaskModal: React.FC<Props> = ({
       setLoading(true);
       setProgress(0);
 
-      // 根据推荐属性计算成功率加成
-      let statBonus = 0;
-      if (task.recommendedFor) {
-        if (task.recommendedFor.highAttack) statBonus += (player.attack / 500);
-        if (task.recommendedFor.highDefense) statBonus += (player.defense / 250);
-        if (task.recommendedFor.highSpirit) statBonus += (player.spirit / 100);
-        if (task.recommendedFor.highSpeed) statBonus += (player.speed / 100);
-      }
 
-      // 限制加成上限为 20%
-      const finalStatBonus = Math.min(20, statBonus);
 
       // 模拟任务执行进度
       const duration = {
@@ -200,7 +190,6 @@ const SectTaskModal: React.FC<Props> = ({
 
       const steps = 20;
       const stepDuration = duration / steps;
-      const startProgress = 50; // 从50%开始，因为奇遇发生在中间
 
       for (let i = Math.floor(steps / 2); i <= steps; i++) {
         await new Promise((resolve) => setTimeout(resolve, stepDuration));
@@ -343,7 +332,7 @@ const SectTaskModal: React.FC<Props> = ({
             {/* 进度条 */}
             <div className="w-full bg-stone-700 rounded-full h-4 mb-2">
               <div
-                className="bg-mystic-gold h-4 rounded-full transition-all duration-300"
+                className="bg-mystic-gold h-4 rounded-full transition-[width] duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -407,7 +396,7 @@ const SectTaskModal: React.FC<Props> = ({
                 )}
               </div>
               <p className="text-xl font-serif text-mystic-gold mb-2">
-                {isPerfectCompletion ? '完美完成！' : '任务完成！'}
+                {isPerfectCompletion ? '完美完成' : '任务完成'}
               </p>
               <p className="text-stone-400">
                 {isPerfectCompletion

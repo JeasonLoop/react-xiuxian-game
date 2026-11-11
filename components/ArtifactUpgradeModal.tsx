@@ -18,7 +18,6 @@ import {
   Plus,
   Minus,
   Sparkles,
-  XCircle,
   AlertTriangle,
 } from 'lucide-react';
 import { Modal } from './common';
@@ -46,7 +45,7 @@ interface Props {
   setItemActionLog?: (log: { text: string; type: string } | null) => void;
 }
 
-const ArtifactUpgradeModal: React.FC<Props> = ({
+const ArtifactUpgradeModalContent: React.FC<Props & { item: Item }> = ({
   isOpen,
   onClose,
   item,
@@ -71,7 +70,6 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
     }
   }, [isOpen, item]);
 
-  if (!item) return null;
 
   // ==================== 计算函数 ====================
   // 计算单个等级的消耗
@@ -223,7 +221,7 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
 
     if (result === 'success') {
       setItemActionLog?.({
-        text: `祭炼成功！${currentItem.name} 品质提升了！`,
+        text: `祭炼成功，${currentItem.name} 品质提升了`,
         type: 'special'
       });
       setUpgradeStones(0);
@@ -233,7 +231,7 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
       }, CLOSE_DELAY);
     } else if (result === 'failure') {
       setItemActionLog?.({
-        text: `祭炼失败！${currentItem.name} 未能提升品质，材料已消耗。`,
+        text: `祭炼失败，${currentItem.name} 未能提升品质，材料已消耗。`,
         type: 'danger'
       });
       setIsUpgrading(false);
@@ -241,8 +239,8 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
     } else {
       const missingItems = getMissingMaterials();
       const errorMsg = missingItems.length > 0
-        ? `${missingItems.join('、')}不足，无法进行祭炼！`
-        : `材料不足，无法进行祭炼！`;
+        ? `${missingItems.join('、')}不足，无法进行祭炼`
+        : `材料不足，无法进行祭炼`;
       setItemActionLog?.({ text: errorMsg, type: 'danger' });
       setIsUpgrading(false);
     }
@@ -291,7 +289,7 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
 
     if (isCompleted) {
       setItemActionLog?.({
-        text: `连续祭炼完成！${item.name} 从 +${startLevel} 强化到 +${finalLevel}（成功 ${successCount} 次${failureCount > 0 ? `，失败 ${failureCount} 次` : ''}）`,
+        text: `连续祭炼完成：${item.name} 从 +${startLevel} 强化到 +${finalLevel}（成功 ${successCount} 次${failureCount > 0 ? `，失败 ${failureCount} 次` : ''}）`,
         type: 'special'
       });
     } else {
@@ -310,7 +308,7 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
       }
 
       setItemActionLog?.({
-        text: `连续祭炼中断！${item.name} 从 +${startLevel} 强化到 +${finalLevel}（成功 ${successCount} 次${failureCount > 0 ? `，失败 ${failureCount} 次` : ''}），${reason}。`,
+        text: `连续祭炼中断：${item.name} 从 +${startLevel} 强化到 +${finalLevel}（成功 ${successCount} 次${failureCount > 0 ? `，失败 ${failureCount} 次` : ''}），${reason}。`,
         type: 'warning'
       });
     }
@@ -337,7 +335,7 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
       setIsUpgrading(false);
       console.error('Upgrade error:', error);
       setItemActionLog?.({
-        text: `祭炼过程中发生错误，请重试！`,
+        text: `祭炼过程中发生错误，请重试`,
         type: 'danger'
       });
     }
@@ -397,7 +395,7 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
                 setTargetLevel(null);
                 setTargetLevelInput('');
               }}
-              className={`flex-1 py-2 px-4 rounded transition-all ${
+              className={`flex-1 py-2 px-4 rounded transition-colors ${
                 upgradeMode === 'single' ? modeButtonActiveClass : modeButtonInactiveClass
               }`}
             >
@@ -405,7 +403,7 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
             </button>
             <button
               onClick={() => setUpgradeMode('target')}
-              className={`flex-1 py-2 px-4 rounded transition-all ${
+              className={`flex-1 py-2 px-4 rounded transition-colors ${
                 upgradeMode === 'target' ? modeButtonActiveClass : modeButtonInactiveClass
               }`}
             >
@@ -549,7 +547,7 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
           </div>
           <div className="w-full bg-stone-800 rounded-full h-2">
             <div
-              className={`h-2 rounded-full transition-all ${
+              className={`h-2 rounded-full transition-[width] ${
                 successRate >= 0.7
                   ? 'bg-green-500'
                   : successRate >= 0.5
@@ -636,7 +634,7 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
           onClick={handleUpgrade}
           disabled={!canAfford || isUpgrading}
           className={`
-            w-full py-3 rounded font-serif font-bold text-lg transition-all relative overflow-hidden
+            w-full py-3 rounded font-serif font-bold text-lg transition-[background-color,border-color,box-shadow] relative overflow-hidden
             ${canAfford && !isUpgrading
               ? 'bg-mystic-gold/20 text-mystic-gold hover:bg-mystic-gold/30 border border-mystic-gold shadow-[0_0_15px_rgba(203,161,53,0.3)]'
               : 'bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700'}
@@ -658,6 +656,12 @@ const ArtifactUpgradeModal: React.FC<Props> = ({
       </div>
     </Modal>
   );
+};
+
+// 外层组件负责 item 判空，保证内容组件内的 hooks 不会在条件分支中被调用
+const ArtifactUpgradeModal: React.FC<Props> = (props) => {
+  if (!props.item) return null;
+  return <ArtifactUpgradeModalContent {...props} item={props.item} />;
 };
 
 export default ArtifactUpgradeModal;

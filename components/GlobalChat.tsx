@@ -119,7 +119,7 @@ export const GlobalChat: React.FC<Props> = ({ playerName }) => {
   };
 
   return (
-    <div className="absolute bottom-3 right-3 md:bottom-4 md:right-4 z-20 transition-all duration-300 ease-in-out w-9 md:w-11">
+    <div className="absolute bottom-3 right-3 md:bottom-4 md:right-4 z-20 w-9 md:w-11">
       {/* 消息气泡统计 / 红点 */}
       {!isOpen && hasNew && (
         <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse border-2 border-stone-900" />
@@ -128,7 +128,7 @@ export const GlobalChat: React.FC<Props> = ({ playerName }) => {
       {/* 切换按钮 */}
       <button
         onClick={toggleOpen}
-        className={`w-9 h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center shadow-lg transition-all border ${
+        className={`w-9 h-9 md:w-11 md:h-11 rounded-full flex items-center justify-center shadow-lg transition-colors border ${
           isOpen
             ? 'bg-stone-800 border-amber-500/50 text-amber-500'
             : 'bg-stone-900/90 border-stone-700 text-stone-400 hover:border-amber-500/50 hover:text-amber-500'
@@ -139,7 +139,7 @@ export const GlobalChat: React.FC<Props> = ({ playerName }) => {
 
       {/* 聊天面板 */}
       <div
-        className={`absolute bottom-full right-0 mb-2 w-80 md:w-80 bg-stone-900/95 backdrop-blur-xl border border-amber-500/30 shadow-2xl rounded-lg overflow-hidden flex flex-col transition-all duration-300 origin-bottom-right ${
+        className={`absolute bottom-full right-0 mb-2 w-80 md:w-80 bg-stone-900/95 backdrop-blur-xl border border-amber-500/30 shadow-2xl rounded-lg overflow-hidden flex flex-col transition-[height,opacity,transform] duration-300 origin-bottom-right ${
           isOpen
             ? 'h-96 opacity-100 scale-100'
             : 'h-0 opacity-0 scale-90 pointer-events-none'
@@ -258,7 +258,7 @@ export const GlobalChat: React.FC<Props> = ({ playerName }) => {
                         <button
                           key={emoji}
                           onClick={() => addEmoji(emoji)}
-                          className="w-7 h-7 flex items-center justify-center text-base hover:bg-amber-500/30 hover:scale-110 rounded-lg transition-all duration-200 border border-transparent hover:border-amber-500/40 shadow-sm"
+                          className="w-7 h-7 flex items-center justify-center text-base hover:bg-amber-500/30 rounded-lg transition-colors duration-200 border border-transparent hover:border-amber-500/40 shadow-sm"
                           title={emoji}
                         >
                           {emoji}
@@ -275,7 +275,7 @@ export const GlobalChat: React.FC<Props> = ({ playerName }) => {
             {/* 表情按钮 */}
             <button
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className={`p-1.5 rounded-lg transition-all duration-200 border relative ${
+              className={`p-1.5 rounded-lg transition-colors duration-200 border relative ${
                 showEmojiPicker
                   ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-lg'
                   : 'bg-stone-800/50 border-stone-700/50 text-amber-500 hover:bg-amber-500/10 hover:border-amber-500/30'
@@ -291,13 +291,13 @@ export const GlobalChat: React.FC<Props> = ({ playerName }) => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                className="w-full bg-stone-900/80 backdrop-blur-sm border border-stone-700/50 rounded-lg pl-3 pr-10 py-2 text-xs text-stone-200 placeholder:text-stone-500 focus:outline-none focus:border-amber-500/50 focus:bg-stone-800/90 transition-all duration-300 shadow-inner"
+                className="w-full bg-stone-900/80 backdrop-blur-sm border border-stone-700/50 rounded-lg pl-3 pr-10 py-2 text-xs text-stone-200 placeholder:text-stone-500 focus:outline-none focus:border-amber-500/50 focus:bg-stone-800/90 transition-colors duration-300 shadow-inner"
                 placeholder="切磋武艺，交流感悟..."
               />
               <button
                 onClick={handleSend}
                 disabled={!input.trim()}
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 rounded bg-gradient-to-r from-amber-500/80 to-amber-600/70 text-white hover:from-amber-500 hover:to-amber-600 disabled:from-stone-700 disabled:to-stone-800 disabled:text-stone-500 transition-all duration-200 shadow disabled:shadow-none"
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 p-1 rounded bg-gradient-to-r from-amber-500/80 to-amber-600/70 text-white hover:from-amber-500 hover:to-amber-600 disabled:from-stone-700 disabled:to-stone-800 disabled:text-stone-500 transition-colors duration-200 shadow disabled:shadow-none"
               >
                 <Send size={12} />
               </button>

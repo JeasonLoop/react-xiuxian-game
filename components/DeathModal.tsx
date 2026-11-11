@@ -46,14 +46,14 @@ const DeathModal: React.FC<DeathModalProps> = ({
         <div className="flex items-center justify-center gap-2 md:gap-3">
           <Skull
             size={32}
-            className="md:w-12 md:h-12 text-red-500 animate-pulse"
+            className="md:w-12 md:h-12 text-red-500"
           />
           <span className="text-2xl md:text-3xl font-serif font-bold text-red-400">
             身死道消
           </span>
           <Skull
             size={32}
-            className="md:w-12 md:h-12 text-red-500 animate-pulse"
+            className="md:w-12 md:h-12 text-red-500"
           />
         </div>
       }
@@ -243,7 +243,7 @@ const DeathModal: React.FC<DeathModalProps> = ({
           <>
             <button
               onClick={onRebirth}
-              className="w-full py-2.5 md:py-3 bg-gradient-to-r from-red-600 via-orange-600 to-red-600 hover:from-red-500 hover:via-orange-500 hover:to-red-500 text-white font-bold text-base md:text-lg rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2 md:gap-3 touch-manipulation"
+              className="w-full py-2.5 md:py-3 bg-gradient-to-r from-red-600 via-orange-600 to-red-600 hover:from-red-500 hover:via-orange-500 hover:to-red-500 text-white font-bold text-base md:text-lg rounded-lg transition-shadow duration-300 shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2 md:gap-3 touch-manipulation"
             >
               <Flame size={18} className="md:w-6 md:h-6" />
               涅槃重生
@@ -257,7 +257,7 @@ const DeathModal: React.FC<DeathModalProps> = ({
             {onContinue && (
               <button
                 onClick={onContinue}
-                className="w-full py-2.5 md:py-3 bg-gradient-to-r from-green-600 via-emerald-600 to-green-600 hover:from-green-500 hover:via-emerald-500 hover:to-green-500 text-white font-bold text-base md:text-lg rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2 md:gap-3 touch-manipulation"
+                className="w-full py-2.5 md:py-3 bg-gradient-to-r from-green-600 via-emerald-600 to-green-600 hover:from-green-500 hover:via-emerald-500 hover:to-green-500 text-white font-bold text-base md:text-lg rounded-lg transition-shadow duration-300 shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2 md:gap-3 touch-manipulation"
               >
                 <RotateCcw size={18} className="md:w-6 md:h-6" />
                 继续游戏
@@ -265,7 +265,7 @@ const DeathModal: React.FC<DeathModalProps> = ({
             )}
             <button
               onClick={onRebirth}
-              className="w-full py-2 md:py-2.5 bg-stone-700 hover:bg-stone-600 text-stone-200 font-semibold text-sm md:text-base rounded-lg transition-all duration-300 shadow-md hover:shadow-lg active:scale-95 flex items-center justify-center gap-2 touch-manipulation"
+              className="w-full py-2 md:py-2.5 bg-stone-700 hover:bg-stone-600 text-stone-200 font-semibold text-sm md:text-base rounded-lg transition-[background-color,box-shadow] duration-300 shadow-md hover:shadow-lg active:scale-95 flex items-center justify-center gap-2 touch-manipulation"
             >
               <Flame size={16} className="md:w-5 md:h-5" />
               涅槃重生（重新开始）

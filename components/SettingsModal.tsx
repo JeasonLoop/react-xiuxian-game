@@ -1,7 +1,5 @@
 import React, { useRef, useState } from 'react';
 import {
-  Volume2,
-  Music,
   Save,
   Globe,
   Upload,
@@ -17,7 +15,6 @@ import { Modal } from './common';
 import { GameSettings } from '../types';
 import dayjs from 'dayjs';
 import { showError, showSuccess, showInfo, showConfirm } from '../utils/toastUtils';
-import { STORAGE_KEYS } from '../constants/storageKeys';
 import {
   saveGameData,
   loadGameData,
@@ -36,7 +33,6 @@ import { KeyboardShortcut } from '../hooks/useKeyboardShortcuts';
 import { KeyboardShortcutConfig } from '../types';
 import LogoutConfirmModal from './LogoutConfirmModal';
 import {
-  DEFAULT_SHORTCUTS,
   SHORTCUT_DESCRIPTIONS,
   getShortcutConfig,
   configToShortcut,
@@ -100,7 +96,7 @@ const SettingsModal: React.FC<Props> = ({
     // 支持 .json 和 .txt 文件
     const fileName = file.name.toLowerCase();
     if (!fileName.endsWith('.json') && !fileName.endsWith('.txt')) {
-      showError('请选择 .json 或 .txt 格式的存档文件！');
+      showError('请选择 .json 或 .txt 格式的存档文件');
       return;
     }
 
@@ -110,7 +106,7 @@ const SettingsModal: React.FC<Props> = ({
       const saveData = importSave(text);
 
       if (!saveData) {
-        showError('存档文件格式错误！请确保文件内容是有效的JSON格式。');
+        showError('存档文件格式错误请确保文件内容是有效的JSON格式。');
         return;
       }
 
@@ -133,7 +129,7 @@ const SettingsModal: React.FC<Props> = ({
             );
 
             if (!success) {
-              showError('保存存档失败，请重试！');
+              showError('保存存档失败，请重试');
               return;
             }
 
@@ -144,14 +140,14 @@ const SettingsModal: React.FC<Props> = ({
             }, 100);
           } catch (error) {
             console.error('保存存档失败:', error);
-            showError('保存存档失败，请重试！');
+            showError('保存存档失败，请重试');
           }
         }
       );
     } catch (error) {
       console.error('导入存档失败:', error);
       showError(
-        `导入存档失败！错误信息: ${error instanceof Error ? error.message : '未知错误'}，请检查文件格式是否正确。`
+        `导入存档失败错误信息: ${error instanceof Error ? error.message : '未知错误'}，请检查文件格式是否正确。`
       );
     }
 
@@ -166,7 +162,7 @@ const SettingsModal: React.FC<Props> = ({
       const saveData = loadGameData();
 
       if (!saveData) {
-        showError('没有找到存档数据！请先开始游戏。');
+        showError('没有找到存档数据，请先开始游戏。');
         return;
       }
 
@@ -189,11 +185,11 @@ const SettingsModal: React.FC<Props> = ({
       URL.revokeObjectURL(url);
 
       // 显示成功提示
-      showSuccess('存档导出成功！');
+      showSuccess('存档导出成功');
     } catch (error) {
       console.error('导出存档失败:', error);
       showError(
-        `导出存档失败！错误信息: ${error instanceof Error ? error.message : '未知错误'}`
+        `导出存档失败错误信息: ${error instanceof Error ? error.message : '未知错误'}`
       );
     }
   };
@@ -203,7 +199,7 @@ const SettingsModal: React.FC<Props> = ({
     try {
       const state = useGameStore.getState();
       if (!state.player) {
-        showError('没有找到存档数据！请先开始游戏。');
+        showError('没有找到存档数据，请先开始游戏。');
         return;
       }
       const saveData = {
@@ -213,7 +209,7 @@ const SettingsModal: React.FC<Props> = ({
       };
       await cloudSaveService.pushSave(saveData);
       if (useAuthStore.getState().sessionId !== sessionId) return;
-      showSuccess('云端存档保存成功！');
+      showSuccess('云端存档保存成功');
     } catch (error: any) {
       if (useAuthStore.getState().sessionId !== sessionId) return;
       console.error('云端存档保存失败:', error);
@@ -472,7 +468,7 @@ const SettingsModal: React.FC<Props> = ({
                   </label>
                   <button
                     onClick={() => {
-                      showInfo('重新开始游戏将清除当前所有进度，包括：\n- 角色数据\n- 装备和物品\n- 境界和修为\n- 所有成就\n\n此操作无法撤销！', '转世重修', () => {
+                      showInfo('重新开始游戏将清除当前所有进度，包括：\n- 角色数据\n- 装备和物品\n- 境界和修为\n- 所有成就\n\n此操作无法撤销', '转世重修', () => {
                         onRestartGame();
                         onClose();
                       });

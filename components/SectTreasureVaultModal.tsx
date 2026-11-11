@@ -195,7 +195,7 @@ const SectTreasureVaultModal: React.FC<Props> = ({
           {vaultItems.map((item) => (
           <div
             key={item.id}
-            className={`border rounded-lg p-4 hover:scale-105 transition-transform cursor-pointer ${getRarityVaultCardStyle(item.rarity)}`}
+            className={`border rounded-lg p-4 cursor-pointer ${getRarityVaultCardStyle(item.rarity)}`}
             onClick={() => {
               onTakeItem(item);
               onClose();

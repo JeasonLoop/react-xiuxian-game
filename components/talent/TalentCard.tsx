@@ -51,13 +51,13 @@ const TalentCard: React.FC<TalentCardProps> = ({ talent, selected, canAfford, on
   return (
     <div
       onClick={handleClick}
-      className={`relative flex min-h-[126px] flex-col p-3 rounded-lg border-2 transition-all duration-200 select-none ${
+      className={`relative flex min-h-[126px] flex-col p-3 rounded-lg border-2 transition-[background-color,border-color,box-shadow] duration-200 select-none ${
         selected
           ? 'ring-2 ring-amber-400 border-amber-500 bg-amber-950/30 shadow-[0_0_12px_rgba(245,158,11,0.25)]'
           : getRarityColor(talent.rarity)
       } ${
         isInteractive
-          ? 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]'
+          ? 'cursor-pointer active:scale-[0.98]'
           : 'opacity-50 cursor-not-allowed'
       }`}
     >

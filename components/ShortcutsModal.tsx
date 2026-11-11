@@ -92,7 +92,7 @@ const ShortcutsModal: React.FC<ShortcutsModalProps> = ({
       if (conflictId) {
         setConflictActionId(conflictId);
         showError(
-          `快捷键冲突！该快捷键已被 "${SHORTCUT_DESCRIPTIONS[conflictId]?.description || conflictId}" 使用`
+          `快捷键冲突：该快捷键已被 "${SHORTCUT_DESCRIPTIONS[conflictId]?.description || conflictId}" 使用`
         );
         return;
       }
@@ -144,7 +144,7 @@ const ShortcutsModal: React.FC<ShortcutsModalProps> = ({
       if (conflictId) {
         setConflictActionId(conflictId);
         showError(
-          `快捷键冲突！该快捷键已被 "${SHORTCUT_DESCRIPTIONS[conflictId]?.description || conflictId}" 使用`
+          `快捷键冲突：该快捷键已被 "${SHORTCUT_DESCRIPTIONS[conflictId]?.description || conflictId}" 使用`
         );
         return;
       }
@@ -371,7 +371,7 @@ const ShortcutsModal: React.FC<ShortcutsModalProps> = ({
                     <li>点击快捷键按钮，然后按下您想要设置的按键组合</li>
                     <li>如果快捷键冲突，会显示错误提示</li>
                     <li>点击重置按钮可以恢复单个快捷键为默认值</li>
-                    <li>点击"重置全部"可以恢复所有快捷键为默认值</li>
+                    <li>点击&quot;重置全部&quot;可以恢复所有快捷键为默认值</li>
                   </ul>
                 </div>
               </div>

@@ -1,4 +1,4 @@
-import { Filter, Heart, Layers, Package, X, Check, Info, Minus, Plus } from 'lucide-react';
+import { Filter, Heart, Layers, Package, Check, Info, Minus, Plus } from 'lucide-react';
 import { Item, ItemType, ItemRarity, PlayerStats } from '../types';
 import { getRarityTextColor, getRarityBorder } from '../utils/rarityUtils';
 import { normalizeTypeLabel } from '../utils/itemUtils';
@@ -38,7 +38,7 @@ const ItemCard = memo(({
 
   return (
     <div
-      className={`relative group p-4 rounded-xl border flex flex-col gap-3 transition-all duration-300 cursor-pointer overflow-hidden ${
+      className={`relative group p-4 rounded-xl border flex flex-col gap-3 transition-[background-color,border-color,box-shadow] duration-300 cursor-pointer overflow-hidden ${
         isSelected
           ? 'bg-mystic-gold/10 border-mystic-gold/60 shadow-[0_0_20px_rgba(212,175,55,0.05)]'
           : 'bg-stone-900/40 hover:bg-stone-800/60 border-stone-800 hover:border-stone-700'
@@ -55,7 +55,7 @@ const ItemCard = memo(({
 
       <div className="flex items-start gap-4">
         {/* 自定义复选框 */}
-        <div className={`mt-1 flex items-center justify-center w-5 h-5 rounded-full border-2 transition-all duration-300 shrink-0 ${
+        <div className={`mt-1 flex items-center justify-center w-5 h-5 rounded-full border-2 transition-[background-color,border-color,box-shadow] duration-300 shrink-0 ${
           isSelected
             ? 'bg-mystic-gold border-mystic-gold shadow-[0_0_10px_rgba(212,175,55,0.4)]'
             : 'bg-stone-950 border-stone-700 group-hover:border-stone-500'
@@ -94,7 +94,7 @@ const ItemCard = memo(({
       </div>
 
       {/* 数量调节区 */}
-      <div className={`mt-1 overflow-hidden transition-all duration-300 ${isSelected ? 'max-h-20 opacity-100 mt-2' : 'max-h-0 opacity-0'}`}>
+      <div className={`mt-1 overflow-hidden transition-[max-height,margin,opacity] duration-300 ${isSelected ? 'max-h-20 opacity-100 mt-2' : 'max-h-0 opacity-0'}`}>
         <div
           className="flex items-center gap-4 pl-9 py-3 border-t border-mystic-gold/20 bg-mystic-gold/5 rounded-b-lg"
           onClick={e => e.stopPropagation()}
@@ -130,7 +130,7 @@ const ItemCard = memo(({
             </button>
           </div>
           <button
-            className="text-[10px] font-bold text-mystic-gold hover:text-white bg-mystic-gold/10 hover:bg-mystic-gold/30 px-2.5 py-1.5 rounded transition-all ml-auto"
+            className="text-[10px] font-bold text-mystic-gold hover:text-white bg-mystic-gold/10 hover:bg-mystic-gold/30 px-2.5 py-1.5 rounded transition-colors ml-auto"
             onClick={() => onQuantityChange(item.id, item.quantity)}
           >最大</button>
         </div>
@@ -247,7 +247,7 @@ const BatchFeedModal: React.FC<Props> = ({
     });
 
     showInfo(
-      `确定要用所有 ${allFeedableItems.length} 种物品（共 ${itemsToFeed.length} 件）喂养【${pet.name}】吗？\n这将消耗所有可喂养的物品！`,
+      `确定要用所有 ${allFeedableItems.length} 种物品（共 ${itemsToFeed.length} 件）喂养【${pet.name}】吗？\n这将消耗所有可喂养的物品`,
       '批量喂养',
       () => {
         onFeedItems(petId, itemsToFeed);
@@ -323,7 +323,7 @@ const BatchFeedModal: React.FC<Props> = ({
                     setSelectedItems(new Set());
                     setItemQuantities(new Map());
                   }}
-                  className={`px-3 py-1 rounded-md text-xs border transition-all duration-200 ${
+                  className={`px-3 py-1 rounded-md text-xs border transition-[background-color,border-color,box-shadow] duration-200 ${
                     selectedCategory === category
                       ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold shadow-[0_0_10px_rgba(212,175,55,0.1)]'
                       : 'bg-stone-800 border-stone-700 text-stone-400 hover:bg-stone-700 hover:text-stone-200'
@@ -352,7 +352,7 @@ const BatchFeedModal: React.FC<Props> = ({
                     setSelectedItems(new Set());
                     setItemQuantities(new Map());
                   }}
-                  className={`px-3 py-1 rounded-md text-xs border transition-all duration-200 ${
+                  className={`px-3 py-1 rounded-md text-xs border transition-[background-color,border-color,box-shadow] duration-200 ${
                     selectedRarity === rarity
                       ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold shadow-[0_0_10px_rgba(212,175,55,0.1)]'
                       : 'bg-stone-800 border-stone-700 text-stone-400 hover:bg-stone-700 hover:text-stone-200'
@@ -378,7 +378,7 @@ const BatchFeedModal: React.FC<Props> = ({
             </button>
             <button
               onClick={handleFeedAll}
-              className="px-4 py-1.5 bg-orange-900/30 hover:bg-orange-900/50 text-orange-300 rounded text-xs border border-orange-800/50 transition-all"
+              className="px-4 py-1.5 bg-orange-900/30 hover:bg-orange-900/50 text-orange-300 rounded text-xs border border-orange-800/50 transition-colors"
               title="喂养所有可喂养的物品"
             >
               一键全喂 ({allFeedableItems.reduce((sum, item) => sum + item.quantity, 0)})
@@ -392,9 +392,9 @@ const BatchFeedModal: React.FC<Props> = ({
           <button
             onClick={handleFeed}
             disabled={selectedItems.size === 0}
-            className={`px-8 py-2 rounded-lg text-sm font-bold transition-all duration-300 flex items-center gap-2 ${
+            className={`px-8 py-2 rounded-lg text-sm font-bold transition-[background-color,box-shadow] duration-300 flex items-center gap-2 ${
               selectedItems.size > 0
-                ? 'bg-gradient-to-r from-mystic-gold to-yellow-600 text-black shadow-[0_0_15px_rgba(212,175,55,0.3)] hover:scale-105 active:scale-95'
+                ? 'bg-gradient-to-r from-mystic-gold to-yellow-600 text-black shadow-[0_0_15px_rgba(212,175,55,0.3)] active:scale-95'
                 : 'bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700'
             }`}
           >

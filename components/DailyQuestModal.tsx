@@ -132,7 +132,7 @@ const DailyQuestModal: React.FC<Props> = ({
         </div>
         <div className="h-3 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
           <div
-            className="h-full bg-gradient-to-r from-mystic-jade to-mystic-gold transition-all duration-500"
+            className="h-full bg-gradient-to-r from-mystic-jade to-mystic-gold transition-[width] duration-500"
             style={{ width: `${completionRate}%` }}
           />
         </div>
@@ -225,7 +225,7 @@ const QuestItem: React.FC<QuestItemProps> = ({
 
   return (
     <div
-      className={`bg-ink-800 rounded-lg border-2 p-4 transition-all ${
+      className={`bg-ink-800 rounded-lg border-2 p-4 transition-colors ${
         quest.completed && isClaimed
           ? 'border-stone-600 bg-stone-800/50'
           : quest.completed
@@ -262,7 +262,7 @@ const QuestItem: React.FC<QuestItemProps> = ({
         </div>
         <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
           <div
-            className={`h-full transition-all duration-300 ${
+            className={`h-full transition-[width] duration-300 ${
               quest.completed
                 ? 'bg-mystic-jade'
                 : 'bg-gradient-to-r from-mystic-jade to-mystic-gold'

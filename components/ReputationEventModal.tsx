@@ -84,7 +84,7 @@ const ReputationEventModal: React.FC<Props> = ({
           <button
             key={index}
             onClick={() => handleChoice(index)}
-            className="w-full p-4 bg-stone-900 hover:bg-stone-700 border border-stone-600 rounded-lg text-left transition-all hover:border-yellow-500"
+            className="w-full p-4 bg-stone-900 hover:bg-stone-700 border border-stone-600 rounded-lg text-left transition-colors hover:border-yellow-500"
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">

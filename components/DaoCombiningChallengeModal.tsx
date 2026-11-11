@@ -295,14 +295,13 @@ const DaoCombiningChallengeModal: React.FC<Props> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {Object.entries(HEAVEN_EARTH_SOUL_BOSSES).map(([bossId, boss]) => {
           const attempts = bossAttempts[bossId] || 0;
-          const remainingAttempts = DAO_COMBINING_CHALLENGE_CONFIG.maxBossAttempts - attempts;
           const isSelected = selectedBossId === bossId;
           const isMaxAttempts = attempts >= DAO_COMBINING_CHALLENGE_CONFIG.maxBossAttempts;
 
           return (
             <div
               key={bossId}
-              className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+              className={`p-4 border-2 rounded-lg cursor-pointer transition-colors ${
                 isSelected
                   ? 'border-mystic-gold bg-mystic-gold/10'
                   : isMaxAttempts
@@ -365,7 +364,7 @@ const DaoCombiningChallengeModal: React.FC<Props> = ({
         }`}>
           <h3 className="text-lg font-semibold mb-2">
             {challengeState.battleResult.victory ? (
-              <span className="flex items-center gap-2"><PartyPopper size={18} className="text-green-400" />挑战成功！</span>
+              <span className="flex items-center gap-2"><PartyPopper size={18} className="text-green-400" />挑战成功</span>
             ) : (
               <span className="flex items-center gap-2"><Skull size={18} className="text-red-400" />挑战失败</span>
             )}

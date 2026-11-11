@@ -351,7 +351,7 @@ export const TowerModal: React.FC<Props> = ({
           <button
             onClick={handleChallenge}
             disabled={selectedFloor > nextTargetFloor || isChallenging}
-            className={`px-6 py-2 rounded text-sm font-bold flex items-center gap-2 transition-all ${
+            className={`px-6 py-2 rounded text-sm font-bold flex items-center gap-2 transition-colors ${
               selectedFloor === nextTargetFloor && !isChallenging
                 ? 'bg-amber-600 hover:bg-amber-500 text-stone-950 shadow-lg shadow-amber-900/50 cursor-pointer'
                 : selectedFloor < nextTargetFloor

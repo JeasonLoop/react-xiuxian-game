@@ -118,7 +118,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
  
    return (
      <div
-       className={`p-4 rounded-lg border-2 transition-all ${
+         className={`p-4 rounded-lg border-2 transition-[background-color,border-color,box-shadow] ${
          isMature
            ? 'bg-green-900/30 border-green-500 shadow-lg ring-2 ring-green-500/30'
            : 'bg-stone-800/50 border-stone-700 hover:border-stone-600'
@@ -156,7 +156,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
                </div>
                <div className="w-full bg-stone-700/50 rounded-full h-2.5 overflow-hidden border border-stone-600">
                  <div
-                   className="bg-linear-to-r from-mystic-gold to-yellow-500 h-full transition-all duration-1000 shadow-lg"
+                   className="bg-linear-to-r from-mystic-gold to-yellow-500 h-full transition-[width] duration-1000 shadow-lg"
                    style={{ width: `${progress}%` }}
                  />
                </div>
@@ -170,7 +170,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
            {isMature && (
              <p className="text-sm text-green-300 flex items-center gap-1">
                <CheckCircle size={14} />
-               已成熟，可以收获了！
+               已成熟，可以收获了
              </p>
            )}
          </div>
@@ -179,7 +179,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
            {!isMature && (
              <button
                onClick={() => onSpeedupHerb(index)}
-               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all text-sm font-bold flex items-center gap-1.5 shadow-lg border-2 border-blue-500"
+               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-bold flex items-center gap-1.5 shadow-lg border-2 border-blue-500"
                title="使用灵石加速生长"
              >
                <Gauge size={14} />
@@ -189,7 +189,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
            {isMature && (
              <button
                onClick={() => onHarvestHerb(index)}
-               className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all text-sm font-bold shadow-lg border-2 border-green-500"
+               className="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-bold shadow-lg border-2 border-green-500"
              >
                <CheckCircle size={14} className="inline mr-1" />
                收获
@@ -264,13 +264,13 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
          <div className="mt-2.5">
            <div className="flex items-center justify-between text-xs mb-1">
              <span className={isCompleted ? 'text-amber-400 font-bold' : 'text-stone-400'}>
-               {isCompleted ? '已探索归来，待领取！' : `探索中：${formatRemaining(exp.endTime)}`}
+               {isCompleted ? '已探索归来，待领取' : `探索中：${formatRemaining(exp.endTime)}`}
              </span>
              <span className="font-mono text-stone-400">{progress}%</span>
            </div>
            <div className="w-full bg-stone-800 rounded-full h-2 overflow-hidden border border-stone-700">
              <div
-               className={`h-full transition-all duration-500 ${
+               className={`h-full transition-[width] duration-500 ${
                  isCompleted
                    ? 'bg-linear-to-r from-amber-500 to-yellow-400'
                    : 'bg-linear-to-r from-emerald-500 to-teal-400'
@@ -285,14 +285,14 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
          {isCompleted ? (
            <button
              onClick={() => onClaim(exp.id)}
-             className="px-3 py-1.5 bg-linear-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-stone-950 text-xs font-bold rounded shadow transition-all cursor-pointer"
+             className="px-3 py-1.5 bg-linear-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-stone-950 text-xs font-bold rounded shadow transition-colors cursor-pointer"
            >
              领取凯旋战果
            </button>
          ) : (
            <button
              onClick={() => onRecall(exp.id)}
-             className="px-2.5 py-1 text-stone-400 hover:text-stone-200 border border-stone-700 hover:border-stone-500 text-xs rounded transition-all"
+             className="px-2.5 py-1 text-stone-400 hover:text-stone-200 border border-stone-700 hover:border-stone-500 text-xs rounded transition-colors"
            >
              传音召回
            </button>
@@ -509,7 +509,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
     if (success) {
       commitReforgeInventory(updatedPlayer);
     } else {
-      showError('至少保留一条未锁定词条！');
+      showError('至少保留一条未锁定词条');
     }
   };
 
@@ -517,7 +517,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
     const latestPlayer = useGameStore.getState().player || player;
     const petId = selectedExpeditionPetId || idlePets[0]?.id || '';
     if (!petId) {
-      showError('请先选择派遣出征的灵兽！');
+      showError('请先选择派遣出征的灵兽');
       return;
     }
     const { success, message, updatedPlayer } = startPetExpedition(
@@ -945,7 +945,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
                         </div>
                         <button
                           onClick={onToggleAutoHarvest}
-                          className={`px-5 py-2.5 rounded-lg font-bold transition-all shadow-lg ${
+                          className={`px-5 py-2.5 rounded-lg font-bold transition-colors shadow-lg ${
                             grotto.autoHarvest
                               ? 'bg-green-600 text-white hover:bg-green-700 border-2 border-green-500'
                               : 'bg-stone-700 text-stone-300 hover:bg-stone-600 border-2 border-stone-600'
@@ -973,7 +973,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
                         {matureHerbsCount > 0 && (
                           <button
                             onClick={onHarvestAll}
-                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all text-sm font-bold flex items-center gap-2 shadow-lg border-2 border-green-500"
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-bold flex items-center gap-2 shadow-lg border-2 border-green-500"
                           >
                             <CheckCircle size={16} />
                             批量收获
@@ -1030,7 +1030,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
                     return (
                       <div
                         key={config.level}
-                        className={`bg-ink-900 p-5 rounded-lg border-2 shadow-lg transition-all ${
+                        className={`bg-ink-900 p-5 rounded-lg border-2 shadow-lg transition-[background-color,border-color,box-shadow] ${
                           canAfford
                             ? 'border-stone-700 hover:border-mystic-gold hover:shadow-mystic-gold/20'
                             : 'border-stone-700/50 opacity-75'
@@ -1148,7 +1148,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
                     return (
                       <div
                         key={herb.id}
-                        className={`bg-ink-900 p-4 rounded-lg border-2 transition-all ${
+                        className={`bg-ink-900 p-4 rounded-lg border-2 transition-colors ${
                           canPlant
                             ? 'border-stone-700 hover:border-green-500 shadow-lg hover:shadow-green-500/20'
                             : 'border-stone-700/50 opacity-75'
@@ -1191,7 +1191,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
                           <button
                             onClick={() => onPlantHerb(herb.id || herb.name)}
                             disabled={!canPlant}
-                            className={`px-5 py-2.5 rounded-lg font-bold transition-all flex-shrink-0 ${
+                            className={`px-5 py-2.5 rounded-lg font-bold transition-colors flex-shrink-0 ${
                               canPlant
                                 ? 'bg-green-600 text-white hover:bg-green-700 shadow-lg border-2 border-green-500'
                                 : 'bg-stone-700 text-stone-500 cursor-not-allowed border-2 border-stone-600'
@@ -1265,7 +1265,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
                       return (
                         <div
                           key={enhancement.id}
-                          className={`bg-ink-900 p-5 rounded-lg border-2 transition-all ${
+                          className={`bg-ink-900 p-5 rounded-lg border-2 transition-colors ${
                             canEnhance
                               ? 'border-stone-700 hover:border-mystic-gold shadow-lg hover:shadow-mystic-gold/20'
                               : 'border-stone-700/50 opacity-75'
@@ -1311,7 +1311,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
                           <button
                             onClick={() => onEnhanceSpiritArray(enhancement.id)}
                             disabled={!canEnhance}
-                            className={`w-full px-4 py-3 rounded-lg font-bold transition-all ${
+                            className={`w-full px-4 py-3 rounded-lg font-bold transition-colors ${
                               canEnhance
                                 ? 'bg-mystic-gold text-stone-900 hover:bg-yellow-600 shadow-lg border-2 border-yellow-500'
                                 : 'bg-stone-700 text-stone-500 cursor-not-allowed border-2 border-stone-600'
@@ -1462,7 +1462,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
               <div className="bg-linear-to-r from-amber-950/60 via-stone-900/90 to-stone-900/80 border border-amber-600/40 rounded-lg p-4 flex flex-wrap items-center justify-between gap-4">
                 <div>
                   <h3 className="text-base md:text-lg font-bold text-amber-300 flex items-center gap-2">
-                    <Flame className="text-amber-400 animate-pulse" size={20} />
+                    <Flame className="text-amber-400" size={20} />
                     万宝仙炉 · 装备淬炼
                   </h3>
                   <p className="text-xs text-stone-400 mt-1">
@@ -1512,7 +1512,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
                           <div
                             key={item.id}
                             onClick={() => setSelectedReforgeItemId(item.id)}
-                            className={`p-3 rounded border cursor-pointer transition-all flex items-center justify-between ${
+                            className={`p-3 rounded border cursor-pointer transition-colors flex items-center justify-between ${
                               isSelected
                                 ? 'bg-amber-950/40 border-amber-500 shadow-md shadow-amber-950/30'
                                 : 'bg-stone-900/60 border-stone-800 hover:border-stone-700 hover:bg-stone-800/40'
@@ -1768,7 +1768,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
                               player.spiritStones < reforgeCost.spiritStones
                             }
                             title={selectedReforgeItem.pendingReforge ? '请先采纳或舍弃仙炉中的候选词条' : undefined}
-                            className={`w-full py-3 rounded-lg font-serif font-bold transition-all flex items-center justify-center gap-2 shadow-lg ${
+                            className={`w-full py-3 rounded-lg font-serif font-bold transition-colors flex items-center justify-center gap-2 shadow-lg ${
                               !selectedReforgeItem.pendingReforge &&
                               reforgeStoneCount >= reforgeCost.stones &&
                               player.spiritStones >= reforgeCost.spiritStones
@@ -1859,7 +1859,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
                       <div
                         key={loc.id}
                         onClick={() => setSelectedExpeditionLocationId(loc.id)}
-                        className={`p-3 rounded border cursor-pointer transition-all flex flex-col justify-between space-y-2 ${
+                        className={`p-3 rounded border cursor-pointer transition-colors flex flex-col justify-between space-y-2 ${
                           isSelected
                             ? 'bg-emerald-950/40 border-emerald-500 shadow-md shadow-emerald-950/30'
                             : 'bg-stone-900/60 border-stone-800 hover:border-stone-700'
@@ -1934,7 +1934,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
                       !selectedExpeditionPetId ||
                       activeExpeditions.filter((e) => e.status !== 'claimed').length >= maxExpeditionSlots
                     }
-                    className={`px-6 py-2 rounded font-serif font-bold text-xs md:text-sm transition-all flex items-center gap-1.5 shadow ${
+                    className={`px-6 py-2 rounded font-serif font-bold text-xs md:text-sm transition-colors flex items-center gap-1.5 shadow ${
                       selectedExpeditionPetId &&
                       activeExpeditions.filter((e) => e.status !== 'claimed').length < maxExpeditionSlots
                         ? 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer active:scale-[0.98]'

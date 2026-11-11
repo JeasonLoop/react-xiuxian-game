@@ -128,7 +128,7 @@ const RebirthModal: React.FC<Props> = ({ isOpen, onClose, player, onRebirth }) =
             <div className="bg-red-900/20 p-3 rounded border border-red-700/50 flex items-start gap-2">
               <AlertTriangle size={16} className="text-red-400 shrink-0 mt-0.5" />
               <div className="text-xs text-red-300">
-                <p className="font-bold">确认转世后将无法撤销！</p>
+                <p className="font-bold">确认转世后将无法撤销</p>
                 <p className="text-red-400/70 mt-1">你将从炼气期重新开始，但保留真灵之力。</p>
               </div>
             </div>

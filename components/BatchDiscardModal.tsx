@@ -93,7 +93,7 @@ const BatchDiscardModal: React.FC<Props> = ({
   const handleDiscard = () => {
     if (selectedItems.size === 0) return;
     showConfirm(
-      `确定要丢弃选中的 ${selectedItems.size} 件物品吗？此操作不可撤销！`,
+      `确定要丢弃选中的 ${selectedItems.size} 件物品吗？此操作不可撤销`,
       '确认丢弃',
       () => {
         onDiscardItems(Array.from(selectedItems));

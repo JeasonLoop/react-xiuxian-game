@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import Modal from './common/Modal';
  import TabBar from './common/TabBar';
 import { createPortal } from 'react-dom';
-import { X, Star, Award, Info, Zap, BarChart3, TrendingUp, Sparkles, BookOpen, Users, Beaker, Package, Swords, HeartPulse, RotateCcw, Layers } from 'lucide-react';
+import { X, Star, Award, Info, Zap, BarChart3, TrendingUp, Sparkles, Beaker, Swords, HeartPulse, RotateCcw, Layers } from 'lucide-react';
 import { PlayerStats, ItemRarity, RealmType, Title, ItemType } from '../types';
 import {
   TALENTS,
@@ -19,7 +19,7 @@ import {
 import { getGoldenCoreBonusMultiplier, getGoldenCoreMethodTitle, calculateGoldenCoreMethodCount, getGoldenCoreTribulationDifficulty } from '../utils/cultivationUtils';
 import { getItemStats } from '../utils/itemUtils';
 import { getRarityTextColor } from '../utils/rarityUtils';
-import { showConfirm, showError } from '../utils/toastUtils';
+import { showConfirm } from '../utils/toastUtils';
 import {
   calculateTitleEffects,
   getActiveSetEffects,
@@ -27,7 +27,7 @@ import {
 import { useInheritanceHandlers } from '../views/inheritance';
 import { getPlayerTotalStats, getActiveMentalArt, calculateTotalExpRate } from '../utils/statUtils';
 import { logger } from '../utils/logger';
-import { formatValueChange, formatNumber } from '../utils/formatUtils';
+import { formatValueChange } from '../utils/formatUtils';
 import { getBuildArchetypeProfile } from '../utils/buildArchetypeUtils';
 import { BUILD_ARCHETYPE_LABELS } from '../constants/buildArchetypes';
 import { getGlobalAchievementIds } from '../utils/achievementUtils';
@@ -130,97 +130,21 @@ const HoverableCard: React.FC<{
   );
 };
 
-// Tooltip 组件 - 使用 Portal 渲染到 body，避免被遮挡（保留用于向后兼容）
-const Tooltip: React.FC<{
-  children: React.ReactNode;
-  targetRef: React.RefObject<HTMLElement>;
-  isVisible: boolean;
-  borderColor?: string;
-  width?: string;
-}> = ({ children, targetRef, isVisible, borderColor = 'border-blue-500', width = 'w-64' }) => {
-  const [position, setPosition] = useState({ top: 0, left: 0 });
-  const tooltipRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!isVisible || !targetRef.current) return;
-
-    const updatePosition = () => {
-      if (!targetRef.current) return;
-      const rect = targetRef.current.getBoundingClientRect();
-      const tooltipWidth = width === 'w-72' ? 288 : 256; // w-64 = 256px, w-72 = 288px
-      const tooltipHeight = tooltipRef.current?.offsetHeight || 200;
-      const gap = 8; // ml-2 = 8px
-
-      let left = rect.right + gap;
-      let top = rect.top;
-
-      // 检查是否会超出视口右侧
-      if (left + tooltipWidth > window.innerWidth) {
-        // 显示在左侧
-        left = rect.left - tooltipWidth - gap;
-      }
-
-      // 检查是否会超出视口底部
-      if (top + tooltipHeight > window.innerHeight) {
-        top = window.innerHeight - tooltipHeight - 10;
-      }
-
-      // 检查是否会超出视口顶部
-      if (top < 10) {
-        top = 10;
-      }
-
-      setPosition({ top, left });
-    };
-
-    updatePosition();
-    const timer = setTimeout(updatePosition, 0); // 延迟一帧确保 DOM 更新
-    window.addEventListener('scroll', updatePosition, true);
-    window.addEventListener('resize', updatePosition);
-
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('scroll', updatePosition, true);
-      window.removeEventListener('resize', updatePosition);
-    };
-  }, [isVisible, targetRef, width]);
-
-  if (!isVisible) return null;
-
-  return createPortal(
-    <div
-      ref={tooltipRef}
-      className={`fixed ${width} bg-stone-900 border-2 ${borderColor} rounded-lg p-3 shadow-xl z-10000 pointer-events-none transition-opacity duration-200`}
-      style={{
-        top: `${position.top}px`,
-        left: `${position.left}px`,
-      }}
-    >
-      {children}
-    </div>,
-    document.body
-  );
-};
-
-const CharacterModal: React.FC<Props> = ({
+const CharacterModalContent: React.FC<Props> = ({
   isOpen,
   onClose,
   player,
   setPlayer,
-  onSelectTalent,
   onSelectTitle,
   onAllocateAttribute,
   onAllocateAllAttributes,
   onUseInheritance,
-  onResetAttributes,
   addLog = (msg: string) => logger.log(msg),
 }) => {
-  if (!isOpen) return null;
 
   // 使用 getPlayerTotalStats 获取包含心法加成的总属性
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const totalStats = useMemo(() => getPlayerTotalStats(player), [player]);
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const completedAchievementCount = useMemo(
     () => getGlobalAchievementIds(player.achievements).length,
     [player.achievements]
@@ -229,12 +153,10 @@ const CharacterModal: React.FC<Props> = ({
   const buildProfile = useMemo(() => getBuildArchetypeProfile(player), [player]);
 
   // 计算总修炼速度加成
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   const expRateInfo = useMemo(() => calculateTotalExpRate(player), [player]);
 
   // 传承处理函数
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const inheritanceHandlers = useInheritanceHandlers({
+  useInheritanceHandlers({
     player,
     setPlayer,
     addLog,
@@ -653,7 +575,7 @@ const CharacterModal: React.FC<Props> = ({
 
 预计增加: ${gainText}
 
-此操作不可撤销！`,
+此操作不可撤销`,
       '确认分配',
       () => {
         onAllocateAllAttributes(type);
@@ -724,7 +646,7 @@ const CharacterModal: React.FC<Props> = ({
                       </div>
                       <div className="h-2 rounded-full bg-stone-800 overflow-hidden">
                         <div
-                          className={`h-full ${color} transition-all duration-300`}
+                          className={`h-full ${color} transition-[width] duration-300`}
                           style={{ width: `${Math.min(100, buildProfile.percent[k])}%` }}
                         />
                       </div>
@@ -761,7 +683,7 @@ const CharacterModal: React.FC<Props> = ({
                     return (
                       <HoverableCard
                         borderColor="border-blue-500"
-                        className="bg-linear-to-br from-blue-900/40 to-cyan-900/40 rounded-xl p-4 border-2 border-blue-600 shadow-md hover:shadow-lg transition-all duration-300 relative cursor-pointer"
+                        className="bg-linear-to-br from-blue-900/40 to-cyan-900/40 rounded-xl p-4 border-2 border-blue-600 shadow-md hover:shadow-lg transition-shadow duration-300 relative cursor-pointer"
                         tooltipContent={
                           <>
                             <div className="text-sm font-bold text-blue-300 mb-2">{treasure?.name}</div>
@@ -837,7 +759,7 @@ const CharacterModal: React.FC<Props> = ({
                       return (
                         <HoverableCard
                           borderColor="border-yellow-500"
-                          className="bg-linear-to-br from-yellow-900/40 to-orange-900/40 rounded-xl p-4 border-2 border-yellow-600 shadow-md hover:shadow-lg transition-all duration-300 relative cursor-pointer"
+                          className="bg-linear-to-br from-yellow-900/40 to-orange-900/40 rounded-xl p-4 border-2 border-yellow-600 shadow-md hover:shadow-lg transition-shadow duration-300 relative cursor-pointer"
                           tooltipContent={
                             <>
                               <div className="text-sm font-bold text-yellow-300 mb-2">{methodTitle}详情</div>
@@ -898,7 +820,7 @@ const CharacterModal: React.FC<Props> = ({
                     return (
                       <HoverableCard
                         borderColor="border-purple-500"
-                        className="bg-linear-to-br from-purple-900/40 to-pink-900/40 rounded-xl p-4 border-2 border-purple-600 shadow-md hover:shadow-lg transition-all duration-300 relative cursor-pointer"
+                        className="bg-linear-to-br from-purple-900/40 to-pink-900/40 rounded-xl p-4 border-2 border-purple-600 shadow-md hover:shadow-lg transition-shadow duration-300 relative cursor-pointer"
                         tooltipContent={
                           <>
                             <div className="text-sm font-bold text-purple-300 mb-2">{essence?.name}</div>
@@ -964,7 +886,7 @@ const CharacterModal: React.FC<Props> = ({
                     return (
                       <HoverableCard
                         borderColor="border-red-500"
-                        className="bg-linear-to-br from-red-900/40 to-orange-900/40 rounded-xl p-4 border-2 border-red-600 shadow-md hover:shadow-lg transition-all duration-300 relative cursor-pointer"
+                        className="bg-linear-to-br from-red-900/40 to-orange-900/40 rounded-xl p-4 border-2 border-red-600 shadow-md hover:shadow-lg transition-shadow duration-300 relative cursor-pointer"
                         tooltipContent={
                           <>
                             <div className="text-sm font-bold text-red-300 mb-2">{marrow?.name}</div>
@@ -1014,7 +936,7 @@ const CharacterModal: React.FC<Props> = ({
                           <div className="mt-3 space-y-2">
                             <div className="w-full bg-red-900/30 rounded-full h-2">
                               <div
-                                className="bg-red-500 h-2 rounded-full transition-all duration-300"
+                                className="bg-red-500 h-2 rounded-full transition-[width] duration-300"
                                 style={{ width: `${player.marrowRefiningProgress}%` }}
                               ></div>
                             </div>
@@ -1044,7 +966,7 @@ const CharacterModal: React.FC<Props> = ({
 
                   {/* 合道期挑战状态 */}
                   {player.daoCombiningChallenged ? (
-                    <div className="bg-linear-to-br from-indigo-900/40 to-violet-900/40 rounded-xl p-4 border-2 border-indigo-600 shadow-md hover:shadow-lg transition-all duration-300">
+                    <div className="bg-linear-to-br from-indigo-900/40 to-violet-900/40 rounded-xl p-4 border-2 border-indigo-600 shadow-md hover:shadow-lg transition-shadow duration-300">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="w-2 h-2 bg-indigo-400 rounded-full"></div>
                         <h4 className="text-base font-bold text-indigo-300">天地之魄</h4>
@@ -1072,7 +994,7 @@ const CharacterModal: React.FC<Props> = ({
                     <HoverableCard
                       borderColor="border-green-500"
                       width="w-72"
-                      className="bg-linear-to-br from-green-900/40 to-emerald-900/40 rounded-xl p-4 border-2 border-green-600 shadow-md hover:shadow-lg transition-all duration-300 relative cursor-pointer"
+                      className="bg-linear-to-br from-green-900/40 to-emerald-900/40 rounded-xl p-4 border-2 border-green-600 shadow-md hover:shadow-lg transition-shadow duration-300 relative cursor-pointer"
                       tooltipContent={
                         <div className="max-h-96 overflow-y-auto">
                           <div className="text-sm font-bold text-green-300 mb-3">规则之力详情</div>
@@ -1162,7 +1084,7 @@ const CharacterModal: React.FC<Props> = ({
                     {onUseInheritance && (
                       <button
                         onClick={onUseInheritance}
-                        className="w-full px-4 py-3 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded border border-purple-400 font-bold text-white transition-all"
+                        className="w-full px-4 py-3 bg-linear-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded border border-purple-400 font-bold text-white transition-colors"
                       >
                         使用传承突破境界
                       </button>
@@ -1170,7 +1092,7 @@ const CharacterModal: React.FC<Props> = ({
                     {/* 转世重修入口 */}
                     <button
                       onClick={() => window.dispatchEvent(new CustomEvent('open-rebirth'))}
-                      className="w-full mt-2 px-4 py-2 bg-yellow-700/30 hover:bg-yellow-700/50 rounded border border-yellow-600/50 text-yellow-400 text-sm font-bold transition-all"
+                      className="w-full mt-2 px-4 py-2 bg-yellow-700/30 hover:bg-yellow-700/50 rounded border border-yellow-600/50 text-yellow-400 text-sm font-bold transition-colors"
                     >
                       <Star size={14} className="inline mr-1 -mt-0.5" />转世重修（元婴期9层可触发）
                     </button>
@@ -1704,7 +1626,7 @@ const CharacterModal: React.FC<Props> = ({
                       <div className="flex items-center gap-2">
                         <div className="flex-1 bg-stone-700 rounded-full h-2">
                           <div
-                            className="bg-purple-500 h-2 rounded-full transition-all"
+                            className="bg-purple-500 h-2 rounded-full transition-[width]"
                             style={{ width: `${statistics.realmProgress}%` }}
                           />
                         </div>
@@ -2026,7 +1948,7 @@ const CharacterModal: React.FC<Props> = ({
                             setShowMarrowFeedModal(false);
                           }
                         }}
-                        className="p-3 bg-stone-700 hover:bg-stone-600 rounded border-2 border-stone-600 hover:border-red-500 transition-all text-left"
+                        className="p-3 bg-stone-700 hover:bg-stone-600 rounded border-2 border-stone-600 hover:border-red-500 transition-colors text-left"
                       >
                         <div className="text-xs font-bold mb-1" style={{ color: getRarityTextColor(rarity) }}>
                           {item.name}
@@ -2064,6 +1986,12 @@ const CharacterModal: React.FC<Props> = ({
       )}
     </>
   );
+};
+
+// 外层组件负责 isOpen 判空，保证内容组件内的 hooks 不会在条件分支中被调用
+const CharacterModal: React.FC<Props> = (props) => {
+  if (!props.isOpen) return null;
+  return <CharacterModalContent {...props} />;
 };
 
 export default React.memo(CharacterModal);

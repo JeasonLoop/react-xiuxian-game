@@ -18,7 +18,7 @@ import {
   ItemRarity,
   ItemType,
 } from '../types';
-import { REALM_ORDER, RARITY_MULTIPLIERS } from '../constants/index';
+import { REALM_ORDER } from '../constants/index';
 import { generateShopItems } from '../services/shopService';
 import { showError, showConfirm } from '../utils/toastUtils';
 import { getRarityTextColor, getRarityBorder } from '../utils/rarityUtils';
@@ -64,36 +64,6 @@ const ShopModal: React.FC<Props> = ({
   const [selectedRarity, setSelectedRarity] = useState<'all' | ItemRarity>(
     'all'
   );
-
-  if (!isOpen) return null;
-
-  const canBuyItem = (shopItem: ShopItem): boolean => {
-    // 检查声望要求（声望商店）
-    if (shop.reputationRequired && (player.reputation || 0) < shop.reputationRequired) {
-      return false;
-    }
-    if (player.spiritStones < getEffectiveBuyPrice(shopItem.price, player))
-      return false;
-    if (shopItem.minRealm) {
-      const itemRealmIndex = REALM_ORDER.indexOf(shopItem.minRealm);
-      const playerRealmIndex = REALM_ORDER.indexOf(player.realm);
-      return playerRealmIndex >= itemRealmIndex;
-    }
-    return true;
-  };
-
-  const getShopTypeColor = (type: string) => {
-    switch (type) {
-      case '村庄':
-        return 'text-green-400';
-      case '城市':
-        return 'text-blue-400';
-      case '仙门':
-        return 'text-purple-400';
-      default:
-        return 'text-stone-400';
-    }
-  };
 
   // 过滤物品（根据类型，但不根据境界过滤，让所有物品都显示）
   // 声望商店应该显示所有物品，即使当前境界无法购买
@@ -175,6 +145,37 @@ const ShopModal: React.FC<Props> = ({
     // 切换标签页时清空选择
     setSelectedItems(new Set());
   }, [activeTab, availableTypes, selectedTypeFilter]);
+
+  if (!isOpen) return null;
+
+  const canBuyItem = (shopItem: ShopItem): boolean => {
+    // 检查声望要求（声望商店）
+    if (shop.reputationRequired && (player.reputation || 0) < shop.reputationRequired) {
+      return false;
+    }
+    if (player.spiritStones < getEffectiveBuyPrice(shopItem.price, player))
+      return false;
+    if (shopItem.minRealm) {
+      const itemRealmIndex = REALM_ORDER.indexOf(shopItem.minRealm);
+      const playerRealmIndex = REALM_ORDER.indexOf(player.realm);
+      return playerRealmIndex >= itemRealmIndex;
+    }
+    return true;
+  };
+
+  const getShopTypeColor = (type: string) => {
+    switch (type) {
+      case '村庄':
+        return 'text-green-400';
+      case '城市':
+        return 'text-blue-400';
+      case '仙门':
+        return 'text-purple-400';
+      default:
+        return 'text-stone-400';
+    }
+  };
+
 
   const handleToggleItem = (itemId: string) => {
     setSelectedItems((prev) => {
@@ -278,7 +279,7 @@ const ShopModal: React.FC<Props> = ({
               onClick={() => {
                 const refreshCost = shop.refreshCost || 100;
                 if (player.spiritStones < refreshCost) {
-                  showError(`灵石不足！刷新需要${refreshCost}灵石。`);
+                  showError(`灵石不足，刷新需要${refreshCost}灵石。`);
                   return;
                 }
                 showConfirm(

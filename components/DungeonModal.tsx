@@ -215,7 +215,7 @@ const DungeonModal: React.FC<Props> = ({
               </div>
               <div className="w-full bg-stone-700 rounded-full h-2">
                 <div
-                  className="bg-mystic-gold h-2 rounded-full transition-all duration-300"
+                  className="bg-mystic-gold h-2 rounded-full transition-[width] duration-300"
                   style={{
                     width: `${((dungeon.currentFloor + 1) / dungeon.totalFloors) * 100}%`,
                   }}
@@ -237,7 +237,7 @@ const DungeonModal: React.FC<Props> = ({
                 <button
                   key={i}
                   onClick={() => handleSelectEvent(event)}
-                  className={`text-left p-4 rounded border-2 transition-all hover:scale-[1.01] active:scale-[0.99] ${riskColors[event.risk]}`}
+                  className={`text-left p-4 rounded border-2 transition-colors active:scale-[0.99] ${riskColors[event.risk]}`}
                 >
                   <div className="flex items-start gap-3">
                     <div className="p-2 rounded bg-stone-800/80 border border-stone-700/60 shrink-0">
@@ -350,7 +350,7 @@ const DungeonModal: React.FC<Props> = ({
               )}
             </div>
             <h3 className="text-mystic-gold text-lg font-serif">
-              {dungeon.completed ? '恭喜通关！' : '探索结束'}
+              {dungeon.completed ? '恭喜通关' : '探索结束'}
             </h3>
             <p className="text-stone-400 text-sm">
               {dungeon.completed

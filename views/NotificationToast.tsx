@@ -20,7 +20,7 @@ export function PurchaseSuccessToast({ item, quantity }: PurchaseSuccessProps) {
         <div className="flex items-center gap-2 md:gap-3">
           <span className="text-xl md:text-2xl">✓</span>
           <div>
-            <div className="font-bold text-base md:text-lg">购买成功！</div>
+            <div className="font-bold text-base md:text-lg">购买成功</div>
             <div className="text-xs md:text-sm">
               获得 {item} x{quantity}
             </div>

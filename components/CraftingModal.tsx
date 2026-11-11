@@ -226,7 +226,7 @@ const CraftingModal: React.FC<Props> = ({
                 </div>
                 <div className="w-full bg-stone-900 h-1.5 rounded-full overflow-hidden border border-stone-800">
                   <div
-                    className="bg-mystic-gold h-full transition-all duration-500"
+                    className="bg-mystic-gold h-full transition-[width] duration-500"
                     style={{
                       width: `${Math.min(100, ((player.alchemyProficiency || 0) / (ALCHEMY_EXP_REQUIREMENTS[player.alchemyLevel || 1] || 100)) * 100)}%`
                     }}
@@ -240,7 +240,7 @@ const CraftingModal: React.FC<Props> = ({
               <div className="bg-ink-900/50 p-3 rounded border border-stone-700 flex flex-col justify-center col-span-2">
                 <div className="flex justify-between text-sm">
                   <span>拥有灵石：<span className="text-mystic-gold font-bold">{player.spiritStones}</span></span>
-                  <span className="text-stone-500 italic text-xs">"神识控火，丹成上品。"</span>
+                  <span className="text-stone-500 italic text-xs">&quot;神识控火，丹成上品。&quot;</span>
                 </div>
                 <div className="flex gap-4 mt-2">
                    <div className="flex items-center gap-1 text-[10px] text-stone-500">
@@ -271,7 +271,7 @@ const CraftingModal: React.FC<Props> = ({
                 const successRate = Math.min(0.98, baseSuccess + levelBonus + luckBonus);
 
                 return (
-                  <div key={idx} className="bg-ink-800 border border-stone-700 rounded p-4 flex flex-col group hover:border-mystic-gold/50 transition-all">
+                  <div key={idx} className="bg-ink-800 border border-stone-700 rounded p-4 flex flex-col group hover:border-mystic-gold/50 transition-colors">
                     <div className="flex justify-between items-start mb-2">
                       <h4 className="text-lg font-serif font-bold text-stone-200">{recipe.name}</h4>
                       <div className="flex flex-col items-end">
@@ -308,9 +308,9 @@ const CraftingModal: React.FC<Props> = ({
                     <button
                       onClick={() => onCraft(recipe)}
                       disabled={!canAfford || !hasIngredients}
-                      className={`w-full py-2 rounded font-serif font-bold text-sm flex items-center justify-center gap-2 transition-all ${canAfford && hasIngredients ? 'bg-mystic-gold/20 text-mystic-gold hover:bg-mystic-gold/30 border border-mystic-gold active:scale-95 shadow-lg shadow-mystic-gold/10' : 'bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700'}`}
+                      className={`w-full py-2 rounded font-serif font-bold text-sm flex items-center justify-center gap-2 transition-colors ${canAfford && hasIngredients ? 'bg-mystic-gold/20 text-mystic-gold hover:bg-mystic-gold/30 border border-mystic-gold active:scale-95 shadow-lg shadow-mystic-gold/10' : 'bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700'}`}
                     >
-                      {!canAfford || !hasIngredients ? <CircleOff size={16} /> : <FlaskConical size={16} className="group-hover:animate-bounce" />}
+                      {!canAfford || !hasIngredients ? <CircleOff size={16} /> : <FlaskConical size={16} />}
                       {canAfford && hasIngredients ? '开炉炼丹' : '材料不足'}
                     </button>
                   </div>
@@ -324,13 +324,13 @@ const CraftingModal: React.FC<Props> = ({
             <div className="flex gap-2 mb-4">
               <button
                 onClick={() => setArtifactTab('material')}
-                className={`flex-1 py-1.5 rounded text-sm font-serif font-bold transition-all ${artifactTab === 'material' ? 'bg-mystic-gold text-ink-900 shadow-lg' : 'bg-ink-800 text-stone-500 border border-stone-700'}`}
+                className={`flex-1 py-1.5 rounded text-sm font-serif font-bold transition-colors ${artifactTab === 'material' ? 'bg-mystic-gold text-ink-900 shadow-lg' : 'bg-ink-800 text-stone-500 border border-stone-700'}`}
               >
                 材料合成
               </button>
               <button
                 onClick={() => setArtifactTab('fuse')}
-                className={`flex-1 py-1.5 rounded text-sm font-serif font-bold transition-all ${artifactTab === 'fuse' ? 'bg-mystic-gold text-ink-900 shadow-lg' : 'bg-ink-800 text-stone-500 border border-stone-700'}`}
+                className={`flex-1 py-1.5 rounded text-sm font-serif font-bold transition-colors ${artifactTab === 'fuse' ? 'bg-mystic-gold text-ink-900 shadow-lg' : 'bg-ink-800 text-stone-500 border border-stone-700'}`}
               >
                 装备融合
               </button>
@@ -348,7 +348,7 @@ const CraftingModal: React.FC<Props> = ({
                         <button
                           key={r}
                           onClick={() => setRarityFilter(r as any)}
-                          className={`px-1.5 py-0.5 rounded text-[10px] border transition-all ${
+                          className={`px-1.5 py-0.5 rounded text-[10px] border transition-colors ${
                             rarityFilter === r
                               ? 'bg-mystic-gold text-ink-900 border-mystic-gold'
                               : 'bg-ink-800 text-stone-500 border-stone-700 hover:border-stone-500'
@@ -364,7 +364,7 @@ const CraftingModal: React.FC<Props> = ({
                       <button
                         key={item.id}
                         onClick={() => handleAddMaterial(item)}
-                        className={`border p-2 rounded text-left hover:border-white/30 transition-all flex flex-col ${getRarityCardStyle(item.rarity)}`}
+                        className={`border p-2 rounded text-left hover:border-white/30 transition-colors flex flex-col ${getRarityCardStyle(item.rarity)}`}
                       >
                         <div className="text-xs font-serif font-bold truncate">{item.name}</div>
                         <div className="text-[10px] opacity-60 flex justify-between">
@@ -434,7 +434,7 @@ const CraftingModal: React.FC<Props> = ({
                   <button
                     onClick={handleCraftArtifact}
                     disabled={selectedMaterials.length < 4}
-                    className={`w-full py-3 rounded font-serif font-bold text-lg flex items-center justify-center gap-2 transition-all ${selectedMaterials.length >= 4 ? 'bg-mystic-gold text-ink-900 hover:scale-105 active:scale-95 shadow-mystic-gold/20 shadow-lg' : 'bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700'}`}
+                    className={`w-full py-3 rounded font-serif font-bold text-lg flex items-center justify-center gap-2 transition-colors ${selectedMaterials.length >= 4 ? 'bg-mystic-gold text-ink-900 active:scale-95 shadow-mystic-gold/20 shadow-lg' : 'bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700'}`}
                   >
                     <Hammer size={20} />
                     {selectedMaterials.length < 4 ? `还需 ${4 - selectedMaterials.length} 种材料` : '开炉炼器'}
@@ -459,7 +459,7 @@ const CraftingModal: React.FC<Props> = ({
                                 <button
                                   key={r}
                                   onClick={() => setFuseRarityFilter(r as any)}
-                                  className={`px-1.5 py-0.5 rounded text-[10px] border transition-all ${
+                                  className={`px-1.5 py-0.5 rounded text-[10px] border transition-colors ${
                                     fuseRarityFilter === r
                                       ? 'bg-mystic-gold text-ink-900 border-mystic-gold'
                                       : 'bg-ink-800 text-stone-500 border-stone-700 hover:border-stone-500'
@@ -488,7 +488,7 @@ const CraftingModal: React.FC<Props> = ({
                                 <button
                                   key={slotLabel}
                                   onClick={() => setFuseSlotFilter(val)}
-                                  className={`px-2 py-0.5 rounded text-[10px] border whitespace-nowrap transition-all ${
+                                  className={`px-2 py-0.5 rounded text-[10px] border whitespace-nowrap transition-colors ${
                                     fuseSlotFilter === val
                                       ? 'bg-stone-200 text-ink-900 border-stone-200'
                                       : 'bg-ink-800 text-stone-500 border-stone-800 hover:border-stone-600'
@@ -519,7 +519,7 @@ const CraftingModal: React.FC<Props> = ({
                                       else if (!fuseItem1) setFuseItem1(item);
                                       else if (!fuseItem2) setFuseItem2(item);
                                     }}
-                                    className={`p-2 rounded text-left border transition-all ${
+                                    className={`p-2 rounded text-left border transition-colors ${
                                       isSelected
                                         ? 'border-mystic-gold bg-mystic-gold/20 shadow-[0_0_10px_rgba(212,175,55,0.2)]'
                                         : `${getRarityCardStyle(item.rarity)} hover:border-white/30`
@@ -548,7 +548,7 @@ const CraftingModal: React.FC<Props> = ({
                                 <button
                                   key={stone.id}
                                   onClick={() => setFuseStone(stone)}
-                                  className={`p-2 rounded text-left border transition-all ${
+                                  className={`p-2 rounded text-left border transition-colors ${
                                     fuseStone?.id === stone.id
                                       ? 'border-mystic-gold bg-mystic-gold/20'
                                       : `${getRarityCardStyle(stone.rarity)} hover:border-white/30`
@@ -676,7 +676,7 @@ const CraftingModal: React.FC<Props> = ({
                             ) ||
                             !isStoneRarityValid()
                           }
-                          className={`px-12 py-3 rounded-full font-serif font-bold text-lg flex items-center gap-2 transition-all ${
+                          className={`px-12 py-3 rounded-full font-serif font-bold text-lg flex items-center gap-2 transition-colors ${
                             fuseItem1 &&
                             fuseItem2 &&
                             fuseStone &&
@@ -688,7 +688,7 @@ const CraftingModal: React.FC<Props> = ({
                               )
                             ) &&
                             isStoneRarityValid()
-                              ? 'bg-mystic-gold text-ink-900 hover:scale-110 shadow-mystic-gold/40 shadow-xl'
+                              ? 'bg-mystic-gold text-ink-900 shadow-mystic-gold/40 shadow-xl'
                               : 'bg-stone-800 text-stone-600 cursor-not-allowed'
                           }`}
                         >

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Hammer, Filter, Check } from 'lucide-react';
-import { Item, ItemType, ItemRarity, EquipmentSlot } from '../types';
+import { Item, ItemRarity, EquipmentSlot } from '../types';
 import { getRarityTextBrightColor, getRarityDisplayName } from '../utils/rarityUtils';
 import { normalizeTypeLabel } from '../utils/itemUtils';
 import { Modal } from './common';

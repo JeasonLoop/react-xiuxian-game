@@ -79,7 +79,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
       const talent = TALENTS.find((t) => t.id === talentId);
       if (!talent) return;
       if (totalCost + talent.fateCost > FATE_POINTS_TOTAL) {
-        showError('命运点不足，无法选择此天赋！');
+        showError('命运点不足，无法选择此天赋');
         return;
       }
       // 仙品天赋只能选一个
@@ -90,7 +90,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
           return t && t.rarity === '仙品';
         });
         if (hasImmortalSelected) {
-          showError('仙品天赋只能选择一个！请先取消已选的仙品天赋。');
+          showError('仙品天赋只能选择一个请先取消已选的仙品天赋。');
           return;
         }
       }
@@ -116,7 +116,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
     // Step 0 → 1: 校验道号
     if (currentStep === 0) {
       if (!playerName.trim()) {
-        showError('请输入你的道号！');
+        showError('请输入你的道号');
         return;
       }
       setCurrentStep(1);
@@ -125,7 +125,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
     // Step 1 → 2: 校验天赋
     if (currentStep === 1) {
       if (selectedTalentIds.length === 0) {
-        showError('请至少选择一个天赋，或使用随机分配！');
+        showError('请至少选择一个天赋，或使用随机分配');
         return;
       }
       setCurrentStep(2);
@@ -143,11 +143,11 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
   // 最终开始游戏
   const handleStart = () => {
     if (!playerName.trim()) {
-      showError('请输入修仙者名称！');
+      showError('请输入修仙者名称');
       return;
     }
     if (selectedTalentIds.length === 0) {
-      showError('请至少选择一个天赋，或使用随机分配！');
+      showError('请至少选择一个天赋，或使用随机分配');
       return;
     }
     onStart(playerName.trim(), selectedTalentIds, difficulty);
@@ -161,7 +161,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
 
     const fileName = file.name.toLowerCase();
     if (!fileName.endsWith('.json') && !fileName.endsWith('.txt')) {
-      showError('请选择 .json 或 .txt 格式的存档文件！');
+      showError('请选择 .json 或 .txt 格式的存档文件');
       return;
     }
 
@@ -170,7 +170,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
       const saveData = importSave(text);
 
       if (!saveData) {
-        showError('存档文件格式错误！请确保文件内容是有效的JSON格式。');
+        showError('存档文件格式错误请确保文件内容是有效的JSON格式。');
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -178,7 +178,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
       }
 
       if (!saveData.player || !Array.isArray(saveData.logs)) {
-        showError('存档数据格式错误！缺少必要的数据字段。');
+        showError('存档数据格式错误缺少必要的数据字段。');
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -192,7 +192,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
         );
 
         if (!success) {
-          showError('保存存档失败，请重试！');
+          showError('保存存档失败，请重试');
           if (fileInputRef.current) {
             fileInputRef.current.value = '';
           }
@@ -200,7 +200,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
         }
       } catch (error) {
         console.error('保存存档失败:', error);
-        showError(`保存存档失败：${error instanceof Error ? error.message : '未知错误'}，请重试！`);
+        showError(`保存存档失败：${error instanceof Error ? error.message : '未知错误'}，请重试`);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
@@ -208,7 +208,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
     } catch (error) {
       console.error('导入存档失败:', error);
       showError(
-        `导入存档失败！错误信息: ${error instanceof Error ? error.message : '未知错误'}，请检查文件格式是否正确。`
+        `导入存档失败错误信息: ${error instanceof Error ? error.message : '未知错误'}，请检查文件格式是否正确。`
       );
     }
 
@@ -274,7 +274,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
                     }}
                     className={`
                       w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center
-                      border-2 transition-all duration-300
+                      border-2 transition-[background-color,border-color,box-shadow] duration-300
                       ${isDone
                         ? 'bg-mystic-gold/20 border-mystic-gold cursor-pointer hover:bg-mystic-gold/30'
                         : isActive
@@ -321,7 +321,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
         </div>
 
         {/* 步骤内容 */}
-        <div className="min-h-[280px] md:min-h-[320px] transition-all duration-300">
+        <div className="min-h-[280px] md:min-h-[320px]">
           {/* 第一步：道号 */}
           {currentStep === 0 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-right-4 duration-300">
@@ -421,7 +421,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
                 </p>
               </div>
               <div className="max-w-md mx-auto space-y-3">
-                <label className={`flex items-center gap-3 p-4 bg-stone-800/50 rounded border-2 cursor-pointer transition-all duration-200 ${
+                <label className={`flex items-center gap-3 p-4 bg-stone-800/50 rounded border-2 cursor-pointer transition-colors duration-200 ${
                   difficulty === 'easy'
                     ? 'border-green-500 bg-green-900/20 shadow-[0_0_12px_rgba(34,197,94,0.15)]'
                     : 'border-stone-700 hover:border-mystic-jade/50'
@@ -446,7 +446,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
                     </p>
                   </div>
                 </label>
-                <label className={`flex items-center gap-3 p-4 bg-stone-800/50 rounded border-2 cursor-pointer transition-all duration-200 ${
+                <label className={`flex items-center gap-3 p-4 bg-stone-800/50 rounded border-2 cursor-pointer transition-colors duration-200 ${
                   difficulty === 'normal'
                     ? 'border-yellow-500 bg-yellow-900/20 shadow-[0_0_12px_rgba(234,179,8,0.15)]'
                     : 'border-stone-700 hover:border-mystic-jade/50'
@@ -471,7 +471,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
                     </p>
                   </div>
                 </label>
-                <label className={`flex items-center gap-3 p-4 bg-stone-800/50 rounded border-2 cursor-pointer transition-all duration-200 ${
+                <label className={`flex items-center gap-3 p-4 bg-stone-800/50 rounded border-2 cursor-pointer transition-colors duration-200 ${
                   difficulty === 'hard'
                     ? 'border-red-500 bg-red-900/20 shadow-[0_0_12px_rgba(239,68,68,0.15)]'
                     : 'border-stone-700 hover:border-mystic-jade/50'
@@ -534,7 +534,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
               <button
                 onClick={handleNext}
                 disabled={!canProceed}
-                className="flex-1 flex items-center justify-center gap-1.5 py-3 bg-gradient-to-r from-mystic-gold to-yellow-600 active:from-yellow-600 active:to-mystic-gold text-stone-900 font-bold text-sm md:text-base rounded-lg transition-all duration-300 shadow-lg active:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] touch-manipulation"
+                className="flex-1 flex items-center justify-center gap-1.5 py-3 bg-gradient-to-r from-mystic-gold to-yellow-600 active:from-yellow-600 active:to-mystic-gold text-stone-900 font-bold text-sm md:text-base rounded-lg transition-shadow duration-300 shadow-lg active:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed min-h-[48px] touch-manipulation"
               >
                 下一步
                 <ChevronRight size={18} className="md:w-5 md:h-5" />
@@ -542,7 +542,7 @@ const StartScreen: React.FC<Props> = ({ onStart }) => {
             ) : (
               <button
                 onClick={handleStart}
-                className="flex-1 flex items-center justify-center gap-2 py-3 md:py-4 bg-gradient-to-r from-mystic-gold to-yellow-600 active:from-yellow-600 active:to-mystic-gold text-stone-900 font-bold text-sm md:text-lg rounded-lg transition-all duration-300 shadow-lg active:shadow-xl min-h-[48px] touch-manipulation"
+                className="flex-1 flex items-center justify-center gap-2 py-3 md:py-4 bg-gradient-to-r from-mystic-gold to-yellow-600 active:from-yellow-600 active:to-mystic-gold text-stone-900 font-bold text-sm md:text-lg rounded-lg transition-shadow duration-300 shadow-lg active:shadow-xl min-h-[48px] touch-manipulation"
               >
                 <Sparkles size={20} className="md:w-6 md:h-6" />
                 开始修仙之旅

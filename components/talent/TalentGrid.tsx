@@ -10,7 +10,7 @@ interface TalentGridProps {
   onToggle: (id: string) => void;
 }
 
-const TalentGrid: React.FC<TalentGridProps> = ({ talents, selectedIds, remainingPoints, onToggle }) => {
+const TalentGrid: React.FC<TalentGridProps> = ({ talents, selectedIds, onToggle }) => {
   if (talents.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-stone-500">

@@ -236,7 +236,7 @@ export const AuthScreen: React.FC = () => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full px-4 py-3 bg-stone-900/50 border border-stone-700 rounded-lg focus:outline-none focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/30 text-stone-100 transition-all placeholder-stone-600"
+                className="w-full px-4 py-3 bg-stone-900/50 border border-stone-700 rounded-lg focus:outline-none focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/30 text-stone-100 transition-[border-color,box-shadow] placeholder-stone-600"
                 placeholder="请输入道号"
                 required
                 minLength={3}
@@ -253,7 +253,7 @@ export const AuthScreen: React.FC = () => {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 pr-12 bg-stone-900/50 border border-stone-700 rounded-lg focus:outline-none focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/30 text-stone-100 transition-all placeholder-stone-600"
+                  className="w-full px-4 py-3 pr-12 bg-stone-900/50 border border-stone-700 rounded-lg focus:outline-none focus:border-mystic-gold focus:ring-1 focus:ring-mystic-gold/30 text-stone-100 transition-[border-color,box-shadow] placeholder-stone-600"
                   placeholder="请输入真言"
                   required
                   minLength={6}
@@ -283,7 +283,7 @@ export const AuthScreen: React.FC = () => {
                       return (
                         <div
                           key={index}
-                          className={`h-2 flex-1 rounded-full transition-all duration-300 ${bgColor}`}
+                          className={`h-2 flex-1 rounded-full transition-colors duration-300 ${bgColor}`}
                         />
                       );
                     })}
@@ -319,7 +319,7 @@ export const AuthScreen: React.FC = () => {
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className={`w-full px-4 py-3 pr-12 bg-stone-900/50 border rounded-lg focus:outline-none focus:ring-1 focus:ring-mystic-gold/30 text-stone-100 transition-all placeholder-stone-600 ${
+                    className={`w-full px-4 py-3 pr-12 bg-stone-900/50 border rounded-lg focus:outline-none focus:ring-1 focus:ring-mystic-gold/30 text-stone-100 transition-[border-color,box-shadow] placeholder-stone-600 ${
                       confirmPassword && password !== confirmPassword
                         ? 'border-red-500/50 focus:border-red-500'
                         : 'border-stone-700 focus:border-mystic-gold'
@@ -346,7 +346,7 @@ export const AuthScreen: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 bg-gradient-to-r from-mystic-gold to-yellow-600 hover:from-yellow-600 hover:to-mystic-gold text-stone-900 font-bold rounded-lg transition-all duration-300 shadow-lg hover:shadow-mystic-gold/20 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
+              className="w-full py-4 bg-gradient-to-r from-mystic-gold to-yellow-600 hover:from-yellow-600 hover:to-mystic-gold text-stone-900 font-bold rounded-lg transition-shadow duration-300 shadow-lg hover:shadow-mystic-gold/20 active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2 mt-4"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-stone-900 border-t-transparent rounded-full animate-spin" />
@@ -387,7 +387,7 @@ export const AuthScreen: React.FC = () => {
                 };
                 window.addEventListener('message', handler);
               }}
-              className="w-full py-3 rounded-lg border border-stone-600 bg-stone-800 hover:bg-stone-700 text-stone-200 text-sm transition-all flex items-center justify-center gap-2.5"
+              className="w-full py-3 rounded-lg border border-stone-600 bg-stone-800 hover:bg-stone-700 text-stone-200 text-sm transition-colors flex items-center justify-center gap-2.5"
             >
               <img src="/assets/images/linuxdo.png" alt="" className="w-5 h-5 rounded" />
               LinuxDo 快捷登录
@@ -401,9 +401,9 @@ export const AuthScreen: React.FC = () => {
               }}
               className="text-stone-400 hover:text-mystic-gold text-sm transition-colors flex items-center justify-center gap-2 mx-auto group"
             >
-              <div className="h-px w-8 bg-stone-700 group-hover:bg-mystic-gold/30 transition-all" />
+              <div className="h-px w-8 bg-stone-700 group-hover:bg-mystic-gold/30 transition-colors" />
               {isLogin ? '初入此界？点击注册' : '已有道号？点击登录'}
-              <div className="h-px w-8 bg-stone-700 group-hover:bg-mystic-gold/30 transition-all" />
+              <div className="h-px w-8 bg-stone-700 group-hover:bg-mystic-gold/30 transition-colors" />
             </button>
           </div>
         </div>

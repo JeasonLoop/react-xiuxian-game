@@ -202,8 +202,8 @@ const LogPanel: React.FC<Props> = ({ logs, playerName, className, onClearLogs })
                      bg-stone-900/90 border border-stone-700 text-stone-400
                      hover:border-red-500/50 hover:text-red-500
                      rounded-full flex items-center justify-center
-                     shadow-xl hover:shadow-2xl hover:scale-110 active:scale-95
-                     transition-all duration-200
+                     shadow-xl hover:shadow-2xl active:scale-95
+                     transition-[border-color,color,box-shadow] duration-200
                      cursor-pointer pointer-events-auto"
           title="清空日志"
           aria-label="清空日志"
@@ -221,8 +221,8 @@ const LogPanel: React.FC<Props> = ({ logs, playerName, className, onClearLogs })
                      bg-stone-900/90 border border-stone-700 text-stone-400
                      hover:border-amber-500/50 hover:text-amber-500
                      rounded-full flex items-center justify-center
-                     shadow-xl hover:shadow-2xl hover:scale-110 active:scale-95
-                     transition-all duration-200
+                     shadow-xl hover:shadow-2xl active:scale-95
+                     transition-[border-color,color,box-shadow] duration-200
                      cursor-pointer pointer-events-auto"
           title="滚动到底部"
           aria-label="滚动到底部"

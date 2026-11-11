@@ -634,11 +634,11 @@ const CultivationModal: React.FC<Props> = ({
                         onClick={() => {
                           // 未选择功法时给出明确提示（原来按钮禁用点击无反馈）
                           if (!selectedArt1 || !selectedArt2) {
-                            showWarning('请先选择两门已习得的功法，再进行道蕴融汇！', '请选择功法');
+                            showWarning('请先选择两门已习得的功法，再进行道蕴融汇', '请选择功法');
                             return;
                           }
                           if (selectedArt1 === selectedArt2) {
-                            showWarning('道蕴相冲！必须选择两门不同的功法进行融汇。', '功法重复');
+                            showWarning('道蕴相冲，必须选择两门不同的功法进行融汇。', '功法重复');
                             return;
                           }
                           const fused = applyCustomSpellOp((latest) =>
@@ -650,7 +650,7 @@ const CultivationModal: React.FC<Props> = ({
                             setCustomSpellNameInput('');
                           }
                         }}
-                        className={`px-5 py-2 rounded font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer ${
+                        className={`px-5 py-2 rounded font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer ${
                           selectedArt1 && selectedArt2 && selectedArt1 !== selectedArt2
                             ? 'bg-amber-600 hover:bg-amber-500 text-stone-950 shadow-md shadow-amber-950/50'
                             : 'bg-stone-800 text-stone-300 border border-stone-700 hover:bg-stone-700'
@@ -947,7 +947,7 @@ const CultivationModal: React.FC<Props> = ({
                       onClick={(e) => handleLearnClick(art, e)}
                       disabled={locked || learningArtId === art.id}
                       className={`
-                        px-4 py-2 rounded text-xs md:text-sm font-serif transition-all flex items-center gap-1 min-h-[44px] md:min-h-0 touch-manipulation
+                        px-4 py-2 rounded text-xs md:text-sm font-serif transition-colors flex items-center gap-1 min-h-[44px] md:min-h-0 touch-manipulation
                         ${
                           locked || learningArtId === art.id
                             ? 'bg-stone-800 text-stone-600 cursor-not-allowed border border-stone-700'

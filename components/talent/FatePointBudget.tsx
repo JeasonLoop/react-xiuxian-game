@@ -22,7 +22,7 @@ const FatePointBudget: React.FC<FatePointBudgetProps> = ({ used, total }) => {
 
       <div className="relative w-full h-3 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
         <div
-          className={`h-full rounded-full transition-all duration-300 ease-out ${
+          className={`h-full rounded-full transition-[width] duration-300 ease-out ${
             isOverBudget
               ? 'bg-red-500'
               : isNearFull

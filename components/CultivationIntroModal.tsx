@@ -62,7 +62,7 @@ const CultivationIntroModal: React.FC<Props> = ({ isOpen, onClose }) => {
           return (
             <div
               key={index}
-              className={`transition-all duration-500 ${
+              className={`transition-[opacity,transform] duration-500 ${
                 shouldShow
                   ? 'opacity-100 translate-y-0'
                   : 'opacity-0 translate-y-4'

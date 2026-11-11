@@ -1,6 +1,5 @@
 import React, { useMemo, useCallback, useState } from 'react';
 import {
-  Menu,
   X,
   BookOpen,
   Backpack,
@@ -74,7 +73,7 @@ const MobileSidebar: React.FC<Props> = ({
     if (saving) return;
     const state = useGameStore.getState();
     if (!state.player) {
-      showError('没有找到存档数据！请先开始游戏。');
+      showError('没有找到存档数据，请先开始游戏。');
       return;
     }
     const sessionId = useAuthStore.getState().sessionId;
@@ -86,7 +85,7 @@ const MobileSidebar: React.FC<Props> = ({
         timestamp: Date.now(),
       });
       if (useAuthStore.getState().sessionId !== sessionId) return;
-      showSuccess('云端存档保存成功！');
+      showSuccess('云端存档保存成功');
     } catch (err) {
       if (useAuthStore.getState().sessionId !== sessionId) return;
       showError(err instanceof Error ? err.message : '云端存档保存失败');

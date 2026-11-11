@@ -139,7 +139,7 @@ import { formatNumber } from '../utils/formatUtils';
             </div>
             <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
               <div
-                className="h-full bg-mystic-blood transition-all duration-500 ease-out"
+                className="h-full bg-mystic-blood transition-[width] duration-500 ease-out"
                 style={{ width: `${hpPercentage}%` }}
               />
             </div>
@@ -154,7 +154,7 @@ import { formatNumber } from '../utils/formatUtils';
             </div>
              <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
                <div
-                 className="h-full bg-mystic-jade transition-all duration-500 ease-out"
+                 className="h-full bg-mystic-jade transition-[width] duration-500 ease-out"
                  style={{ width: `${expPercentage}%` }}
                />
              </div>
@@ -190,7 +190,7 @@ import { formatNumber } from '../utils/formatUtils';
             </div>
             <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
               <div
-                className="h-full bg-amber-500 transition-all duration-500 ease-out"
+                className="h-full bg-amber-500 transition-[width] duration-500 ease-out"
                 style={{ width: `${storedExpPercentage}%` }}
               />
             </div>
@@ -205,7 +205,7 @@ import { formatNumber } from '../utils/formatUtils';
             </div>
             <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-700">
               <div
-                className={`h-full transition-all duration-500 ease-out ${
+                className={`h-full transition-[width] duration-500 ease-out ${
                   lifespanPercentage < 20 ? 'bg-red-500' : lifespanPercentage < 50 ? 'bg-orange-500' : 'bg-emerald-500'
                 }`}
                 style={{ width: `${lifespanPercentage}%` }}
@@ -437,7 +437,7 @@ import { formatNumber } from '../utils/formatUtils';
         )}
 
         <div className="hidden md:block mt-auto pt-6 border-t border-stone-700 text-xs text-stone-500 italic text-center">
-          "道可道，非常道。"
+          &quot;道可道，非常道。&quot;
         </div>
       </div>
     </div>

@@ -24,7 +24,6 @@ import {
   Trash,
   Zap,
   Search,
-  Filter,
   SlidersHorizontal,
   Wand,
   Lock,
@@ -55,7 +54,6 @@ import {
 } from '../utils/equipmentUtils';
 import { useDebounce } from '../hooks/useDebounce';
 import { showConfirm } from '../utils/toastUtils';
-import { formatValueChange, formatNumber } from '../utils/formatUtils';
 
 // 模块级：避免每次渲染重新创建
 const getItemCategory = (item: Item): ItemCategory => {
@@ -563,7 +561,7 @@ const InventoryItem = memo<InventoryItemProps>(
                       }
                       // 二次确认，特别是筑基奇物炼化后不可修改
                       const confirmMessage = item.advancedItemType === 'foundationTreasure'
-                        ? `确定要炼化【${item.name}】吗？\n\n警告：筑基奇物炼化后将无法修改，请谨慎选择！`
+                        ? `确定要炼化【${item.name}】吗？\n\n警告：筑基奇物炼化后将无法修改，请谨慎选择`
                         : `确定要炼化【${item.name}】吗？`;
                       showConfirm(
                         confirmMessage,
@@ -782,7 +780,7 @@ const InventoryModal: React.FC<Props> = ({
         }
       }
     }
-    if (actions.length > 0) { actions.forEach(a => onEquipItem(a.item, a.slot)); setItemActionLog?.({ text: `一键装备完成！已自动装备 ${actions.length} 件最优装备`, type: 'gain' }); }
+    if (actions.length > 0) { actions.forEach(a => onEquipItem(a.item, a.slot)); setItemActionLog?.({ text: `一键装备完成，已自动装备 ${actions.length} 件最优装备`, type: 'gain' }); }
     else setItemActionLog?.({ text: '当前装备已是最优配置', type: 'normal' });
   }, [inventory, equippedItems, natalArtifactId, onEquipItem, setItemActionLog]);
 
@@ -871,7 +869,8 @@ const InventoryModal: React.FC<Props> = ({
      setVisibleCount(INITIAL_VISIBLE_COUNT);
    }
    // 计算所有已装备物品的总属性（使用统一的工具函数）
-  const calculateTotalEquippedStats = useMemo(() => {
+  // 结果当前仅被注释代码引用，保留计算调用以维持 hooks 顺序稳定
+  useMemo(() => {
     let totalAttack = 0;
     let totalDefense = 0;
     let totalHp = 0;
@@ -905,7 +904,8 @@ const InventoryModal: React.FC<Props> = ({
 
   // 使用 useMemo 缓存装备比较结果，避免每次渲染都重新计算
   // 注意：必须在 if (!isOpen) return null; 之前调用，遵守 React Hooks 规则
-  const comparison = useMemo(() => {
+  // 比较结果当前仅被注释代码引用，保留计算调用以维持 hooks 顺序稳定
+  useMemo(() => {
     if (!hoveredItem || !hoveredItem.isEquippable)
       return null;
 
@@ -962,7 +962,7 @@ const InventoryModal: React.FC<Props> = ({
       showHeaderBorder={false}
       showFooterBorder={false}
       titleExtra={
-        <div className="flex gap-2 items-center ml-auto md:ml-4">
+        <div className="flex gap-1.5 md:gap-2 items-center ml-auto md:ml-4 flex-wrap justify-end">
             <button
               onClick={handleAutoEquip}
               className="px-2 md:px-3 py-1.5 md:py-1 rounded text-xs md:text-sm border transition-colors min-h-11 md:min-h-0 touch-manipulation bg-mystic-gold/20 border-mystic-gold text-mystic-gold hover:bg-mystic-gold/30"
@@ -970,7 +970,7 @@ const InventoryModal: React.FC<Props> = ({
             >
               <div className="flex items-center">
                 <Wand size={14} className="inline mr-1" />
-                <span>一键装备</span>
+                <span className="hidden sm:inline">一键装备</span>
               </div>
             </button>
             {onOrganizeInventory && (
@@ -984,7 +984,7 @@ const InventoryModal: React.FC<Props> = ({
               >
                 <div className="flex items-center">
                   <ArrowUpDown size={14} className="inline mr-1" />
-                  <span>整理背包</span>
+                  <span className="hidden sm:inline">整理背包</span>
                 </div>
               </button>
             )}
@@ -995,7 +995,7 @@ const InventoryModal: React.FC<Props> = ({
               >
                 <div className="flex items-center">
                   <Zap size={14} className="inline mr-1" />
-                  <span>批量使用</span>
+                  <span className="hidden sm:inline">批量使用</span>
                 </div>
               </button>
             )}
@@ -1005,7 +1005,7 @@ const InventoryModal: React.FC<Props> = ({
             >
               <div className="flex items-center">
                 <Trash size={14} className="inline mr-1" />
-                <span>批量丢弃</span>
+                <span className="hidden sm:inline">批量丢弃</span>
               </div>
             </button>
             <button
@@ -1015,7 +1015,7 @@ const InventoryModal: React.FC<Props> = ({
             >
               <div className="flex items-center">
                 <Hammer size={14} className="inline mr-1" />
-                <span>批量分解</span>
+                <span className="hidden sm:inline">批量分解</span>
               </div>
             </button>
             <button

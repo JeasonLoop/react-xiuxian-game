@@ -321,7 +321,7 @@ const PetModal: React.FC<Props> = ({
                         </div>
                       )}
                       {canEvolve && (
-                        <div className="text-green-400 font-bold mt-2">✓ 可以进化！</div>
+                        <div className="text-green-400 font-bold mt-2">✓ 可以进化</div>
                       )}
                     </div>
                   </div>

@@ -195,7 +195,7 @@ const LeaderboardModal: React.FC<Props> = ({ isOpen, onClose }) => {
             <button
               key={opt.key}
               onClick={() => handleSortChange(opt.key)}
-              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 sortBy === opt.key
                   ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
                   : 'bg-white/5 text-white/60 hover:bg-white/10 border border-transparent'
