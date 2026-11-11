@@ -754,38 +754,6 @@ export interface Recipe {
   };
 }
 
-// 奇遇系统
-export interface EncounterEvent {
-  id: string;
-  name: string;
-  description: string;
-  rarity: ItemRarity;
-  triggerChance: number; // 触发概率 (0-1)
-  minRealm?: RealmType; // 最低境界要求
-  rewards: {
-    exp?: number;
-    spiritStones?: number;
-    items?: { name: string; rarity: ItemRarity; quantity?: number }[];
-    hpChange?: number;
-  };
-  requirements?: {
-    minLuck?: number;
-    sectId?: string;
-  };
-}
-
-// 探索系统
-export interface ExplorationLocation {
-  id: string;
-  name: string;
-  description: string;
-  minRealm: RealmType;
-  cost: number; // 进入消耗
-  riskLevel: '低' | '中' | '高' | '极度危险';
-  eventTypes: AdventureType[];
-  specialEncounters?: string[]; // 特殊奇遇ID列表
-}
-
 // 成就系统
 export interface Achievement {
   id: string;

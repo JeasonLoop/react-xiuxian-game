@@ -72,7 +72,6 @@ export function getLongevityRuleEffects(ruleIds: string[] = []) {
  */
 export function numberToChinese(num: number): string {
   const chineseNums = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九'];
-  const chineseUnits = ['', '十', '百', '千'];
 
   if (num === 0) return '零';
   if (num < 0) return '';

@@ -38,7 +38,7 @@ export function useCharacterHandlers(
   const setPlayer = props?.setPlayer ?? storeSetPlayer;
   const addLog = props?.addLog ?? storeAddLog;
   const setItemActionLog = props?.setItemActionLog ?? storeSetItemActionLog;
-  const handleSelectTalent = (talentId: string) => {
+  const handleSelectTalent = (_talentId: string) => {
     // 天赋在游戏开始时随机生成，之后不可修改
     addLog('天赋在游戏开始时已确定，无法修改！', 'danger');
     return;
@@ -75,7 +75,6 @@ export function useCharacterHandlers(
       const spiritDiff = newEffects.spirit - oldEffects.spirit;
       const physiqueDiff = newEffects.physique - oldEffects.physique;
       const speedDiff = newEffects.speed - oldEffects.speed;
-      const expRateDiff = newEffects.expRate - oldEffects.expRate;
       const luckDiff = newEffects.luck - oldEffects.luck;
 
       let newAttack = prev.attack + attackDiff;

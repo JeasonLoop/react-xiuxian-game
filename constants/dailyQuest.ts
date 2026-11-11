@@ -2,7 +2,7 @@
  * 日常任务系统相关常量
  */
 
-import { DailyQuestType, ItemRarity, RealmType, Recipe } from '../types';
+import { DailyQuestType, ItemRarity, RealmType } from '../types';
 import { RARITY_MULTIPLIERS } from './items';
 import { REALM_ORDER } from './realms';
 
@@ -77,10 +77,10 @@ export const DAILY_QUEST_TARGET_RANGES: Record<DailyQuestType, { min: number; ma
   pet: { min: 1, max: 3 }, // 灵宠培养：1-3次，适中
   sect: { min: 2, max: 5 }, // 宗门任务：2-5次，适中
   realm: { min: 1, max: 3 }, // 秘境探索：1-3次，适中
-  kill: { min: 5, max: 20 }, // 击败敌人：5-20次（AI生成）
-  collect: { min: 3, max: 10 }, // 收集物品：3-10次（AI生成）
-  learn: { min: 1, max: 3 }, // 学习功法：1-3次（AI生成）
-  other: { min: 1, max: 5 }, // 其他任务：1-5次（AI生成）
+  kill: { min: 5, max: 20 }, // 击败敌人：5-20次（预留，暂无对应模板）
+  collect: { min: 3, max: 10 }, // 收集物品：3-10次（预留，暂无对应模板）
+  learn: { min: 1, max: 3 }, // 学习功法：1-3次（预留，暂无对应模板）
+  other: { min: 1, max: 5 }, // 其他任务：1-5次（预留，暂无对应模板）
 };
 
 /**

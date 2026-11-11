@@ -316,7 +316,6 @@ export function getRandomBreakthroughDescription(
   if (breakthroughDescriptionLibrary.length === 0) {
     // 如果没有模板，返回默认描述
     const name = playerName || '你';
-    const realmName = realm.includes('第') ? realm.split('第')[0].trim() : realm;
     return `${name}成功突破到了${realm}！`;
   }
 

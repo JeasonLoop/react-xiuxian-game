@@ -2,12 +2,11 @@ import React from 'react';
 import {
   PlayerStats,
   Recipe,
-  ItemType,
   ItemRarity,
   Item,
 } from '../../types';
 import { addItemToInventory } from '../../utils/inventoryUtils';
-import { multiplyEffects, adjustPillEffectByPurity } from '../../utils/itemUtils';
+import { adjustPillEffectByPurity } from '../../utils/itemUtils';
 import { showSuccess, showError, showInfo } from '../../utils/toastUtils';
 import { useGameStore } from '../../store';
 import { artifactService } from '../../services/artifactService';

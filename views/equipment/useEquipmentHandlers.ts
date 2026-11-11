@@ -58,12 +58,19 @@ export function useEquipmentHandlers(props?: UseEquipmentHandlersProps) {
   // 如果 player 为 null，返回空的 handlers（防御性编程）
   if (!player) {
     return {
-      handleEquipItem: () => {},
-      handleUnequipItem: () => {},
-      handleRefineNatalArtifact: () => {},
+      // 使用与正常分支一致的函数签名，避免 TS 推断出联合类型导致调用方类型不兼容
+      handleEquipItem: (_item: Item, _slot: EquipmentSlot) => {},
+      handleUnequipItem: (_slot: EquipmentSlot) => {},
+      handleRefineNatalArtifact: (_item: Item) => {},
       handleUnrefineNatalArtifact: () => {},
-      handleOpenUpgrade: () => {},
-      handleUpgradeItem: () => {},
+      handleOpenUpgrade: (_item: Item) => {},
+      handleUpgradeItem: (
+        _item: Item,
+        _costStones: number,
+        _costMats: number,
+        _upgradeStones?: number,
+        _failurePenalty?: number
+      ): Promise<'success' | 'failure' | 'error'> => Promise.resolve('error'),
     };
   }
 

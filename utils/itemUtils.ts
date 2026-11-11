@@ -302,8 +302,8 @@ export const normalizeItemEffect = (
   itemName: string,
   aiEffect?: ItemEffect,
   aiPermanentEffect?: ItemPermanentEffect,
-  itemType?: ItemType,
-  rarity?: ItemRarity
+  _itemType?: ItemType,
+  _rarity?: ItemRarity
 ) => {
   // 优先从常量池获取物品定义（如果常量池中有，直接使用，不再调整）
   const itemFromConstants = getItemFromConstants(itemName);

@@ -73,7 +73,6 @@ const processLootItems = (
     let itemName = itemData.name.trim();
     let itemType = (itemData.type as ItemType) || ItemType.Material;
     let isEquippable = !!itemData.isEquippable;
-    let equipmentSlot = itemData.equipmentSlot as EquipmentSlot | undefined;
 
     try {
       // 1. 神秘法宝处理
@@ -88,7 +87,10 @@ const processLootItems = (
           itemName = randomArtifact.name;
           itemType = randomArtifact.type;
           isEquippable = true;
-          equipmentSlot = (randomArtifact.equipmentSlot as EquipmentSlot) || (Math.random() < 0.5 ? EquipmentSlot.Artifact1 : EquipmentSlot.Artifact2);
+          // equipmentSlot 从未被读取；保留原有的条件随机数消耗，避免改变后续 Math.random 序列
+          if (!(randomArtifact.equipmentSlot as EquipmentSlot)) {
+            Math.random();
+          }
           if (randomArtifact.description) itemData.description = randomArtifact.description;
           if (randomArtifact.effect) itemData.effect = randomArtifact.effect;
           if (randomArtifact.permanentEffect) itemData.permanentEffect = randomArtifact.permanentEffect;
@@ -201,8 +203,7 @@ const applyResultToPlayer = (
   const { isSecretRealm, adventureType, realmName, riskLevel, battleContext, petSkillCooldowns, addLog, triggerVisual } = options;
   if (!prev) return prev;
 
-  const realmIndex = REALM_ORDER.indexOf(prev.realm);
-  const realmMultiplier = 1 + realmIndex * 0.3 + (prev.realmLevel - 1) * 0.1;
+  // 原 realmMultiplier 未被使用，连同仅为其服务的 realmIndex 一并移除
 
   // 1. 基础属性副本与统计更新
   let newState = { ...prev };

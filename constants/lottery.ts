@@ -3,10 +3,10 @@
  * 包含所有抽奖奖品定义
  */
 
-import { LotteryPrize, ItemType, EquipmentSlot, ItemRarity } from '../types'
+import { LotteryPrize, ItemType, ItemRarity } from '../types'
 import { generateLotteryPrizes } from '../utils/itemGenerator';
 import { FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES } from './advanced';
-import { ALL_PILL_RECIPES, COMMON_PILLS } from './items';
+import { COMMON_PILLS } from './items';
 import { CULTIVATION_ARTS } from './cultivation';
 export const LOTTERY_RARE_PITY_INTERVAL = 10;
 export const LOTTERY_SOFT_PITY_LEGEND_INTERVAL = 50;
@@ -692,7 +692,7 @@ const equipmentRarities: Array<{ rarity: ItemRarity; label: string }> = [
 ];
 
 equipmentTypes.forEach(type => {
-  equipmentRarities.forEach(({ rarity, label }) => {
+  equipmentRarities.forEach(({ rarity }) => {
     const generatedPrizes = generateLotteryPrizes({ type, rarity: rarity as any });
     LOTTERY_PRIZES.push(...generatedPrizes);
   });

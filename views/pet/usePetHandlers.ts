@@ -384,8 +384,6 @@ export function usePetHandlers(
         if (p.id === petId) {
           const newStage = p.evolutionStage + 1;
           // 根据阶段提升属性（大幅提升以匹配境界）
-          const statMultiplier = newStage === 1 ? 4.5 : 5.0; // 成熟期4.5倍，完全体5倍（总共22.5倍）
-          const speedMultiplier = newStage === 1 ? 2.0 : 2.5; // 速度提升2.0倍和2.5倍
 
           // 更新名称（如果有进化名称）
           let newName = p.name;

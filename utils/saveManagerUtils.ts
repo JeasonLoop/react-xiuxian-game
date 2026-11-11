@@ -54,8 +54,7 @@ export const ensurePlayerStatsCompatibility = (loadedPlayer: any): PlayerStats =
   const migratedInheritanceUsed = Math.max(0, Math.floor(sanitizeNumber(loadedPlayer.inheritanceUsed, 0)));
 
    // 剥离旧的 inheritanceLevel 字段，避免其在保存存档时继续残留
-   // （解构仅用于丢弃旧字段，eslint-disable 避免未使用变量误报）
-   // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // （解构仅用于丢弃旧字段，下划线前缀变量不触发 no-unused-vars）
    const { inheritanceLevel: _legacyInheritanceLevel, ...normalizedPlayer } = loadedPlayer;
 
   return {

@@ -21,7 +21,6 @@ interface UseGrottoHandlersProps {
  * - 自动处理边界情况
  */
 export function useGrottoHandlers({
-  player,
   setPlayer,
   addLog,
   setItemActionLog,
@@ -127,7 +126,6 @@ export function useGrottoHandlers({
       }
 
       // 计算需要删除的种植（如果新等级支持更少的槽位）
-      const currentConfig = getCurrentGrottoConfig(currentLevel);
       const maxSlots = targetConfig.maxHerbSlots;
       const currentPlanted = grotto.plantedHerbs.length;
       let newPlantedHerbs = [...grotto.plantedHerbs];
@@ -678,8 +676,7 @@ export function useGrottoHandlers({
    * 检查并发放图鉴奖励
    */
   const checkAndAwardHerbariumRewards = (player: PlayerStats, herbCount: number): PlayerStats => {
-    const grotto = player.grotto || getDefaultGrotto();
-    const awardedRewards = grotto.herbarium?.length || 0;
+    // 原 awardedRewards 未被使用，连带仅为其服务的 grotto 取值一并移除
 
     // 查找未领取的奖励
     const unclaimedRewards = HERBARIUM_REWARDS.filter(

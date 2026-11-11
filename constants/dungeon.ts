@@ -3,8 +3,8 @@
  * 多层地宫探索：每层3选1，奖励递增，风险递增
  */
 
-import { PlayerStats, RealmType, Item } from '../types';
-import { REALM_DATA, REALM_ORDER } from './realms';
+import { PlayerStats, Item } from '../types';
+import { REALM_ORDER } from './realms';
 
 // 地宫层数范围
 const MIN_FLOORS = 5;
@@ -86,7 +86,7 @@ function getRandomFromArray<T>(arr: T[]): T {
 function generateEvent(
   type: DungeonEventType,
   floor: number,
-  player: PlayerStats
+  _player: PlayerStats
 ): DungeonEvent {
   const title = getRandomFromArray(EVENT_TITLES[type]);
   const riskLevels: ('low' | 'medium' | 'high')[] = ['low', 'medium', 'high'];

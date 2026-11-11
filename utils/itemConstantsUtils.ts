@@ -3,7 +3,7 @@
  * 统一从常量池获取物品，确保所有物品都来自常量池
  */
 
-import { Item, ItemType, ItemRarity, EquipmentSlot } from '../types';
+import { ItemType, ItemRarity, EquipmentSlot } from '../types';
 import {
   INITIAL_ITEMS,
   LOTTERY_PRIZES,

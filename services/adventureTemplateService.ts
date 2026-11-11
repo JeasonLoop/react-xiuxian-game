@@ -14,13 +14,14 @@ import { logger } from '../utils/logger';
 
 // ==================== 常量定义 ====================
 
+// 兼容 node 环境（测试脚本）：import.meta.env 仅在 vite 下存在
+const isDevEnv = (import.meta as { env?: { DEV?: boolean } }).env?.DEV ?? false;
+
 /**
  * 常用地点描述
  * 用于生成事件故事中的地点描述
  */
 const COMMON_LOCATIONS = ['古洞府', '遗迹', '仙山', '秘境', '禁地'] as const;
-const DANGEROUS_LOCATIONS = ['险地', '禁地', '危险区域', '魔域', '死地'] as const;
-const NATURAL_LOCATIONS = ['森林', '山洞', '山谷', '河边', '山崖'] as const;
 const CULTIVATION_LOCATIONS = ['灵泉', '古洞', '遗迹', '仙山', '秘境'] as const;
 
 /**
@@ -35,15 +36,12 @@ const PLATFORM_WORDS = ['祭坛', '石台', '玉座', '法阵', '灵池'] as con
  * 人物类型
  * 用于生成事件中遇到的人物描述
  */
-const CULTIVATOR_TYPES = ['散修', '宗门弟子', '游方道士', '隐世高人', '商队护卫'] as const;
 const ELDER_TYPES = ['隐世高人', '前辈修士', '神秘老者', '仙门长老', '散修大能'] as const;
-const ENEMY_TYPES = ['邪修', '魔修', '恶人', '歹徒', '敌人'] as const;
 
 /**
  * 物品类型
  * 用于描述洞府中发现的物品
  */
-const ITEM_TYPES = ['书籍', '丹药', '材料', '灵石', '法器'] as const;
 
 /**
  * 仙品丹药效果最小值
@@ -139,13 +137,6 @@ function randomInt(index: number, min: number, max: number, offset: number = 0):
   return Math.floor(deterministicRandom(index, offset) * range) + min;
 }
 
-/**
- * 生成确定性随机浮点数（范围：[min, max)）
- */
-function randomFloat(index: number, min: number, max: number, offset: number = 0): number {
-  const range = max - min;
-  return deterministicRandom(index, offset) * range + min;
-}
 
 /**
  * 基于概率的确定性判断
@@ -1333,7 +1324,7 @@ function generateRandomItem(rarity: ItemRarity, index: number): AdventureResult[
   }
 
   // 测试环境验证物品数据
-  if (import.meta.env.DEV) {
+  if (isDevEnv) {
     // 验证物品类型和稀有度的匹配
     const typeRarityValid = result.type && result.rarity;
     if (!typeRarityValid) {
@@ -1366,7 +1357,7 @@ function generateRandomItem(rarity: ItemRarity, index: number): AdventureResult[
       }
 
       // 只在开发环境记录警告，生产环境使用默认效果
-      if (import.meta.env.DEV) {
+      if (isDevEnv) {
         logger.warn('【物品验证警告】草药或丹药缺少效果，已使用默认效果:', {
           name: result.name,
           type: result.type,
@@ -1828,7 +1819,7 @@ export function templateToAdventureResult(
   if (template.adventureType !== undefined) result.adventureType = template.adventureType;
 
   // 测试环境打印事件模板返回结果
-  if (import.meta.env.DEV) {
+  if (isDevEnv) {
     logger.log('=== 事件模板返回结果 ===');
     logger.log('【模板信息】');
     logger.log('  事件类型:', template.adventureType);

@@ -8,14 +8,14 @@ export default class MainServer implements Party.Server {
   constructor(readonly room: Party.Room) {}
 
   // 处理 HTTP 请求，访问 http://127.0.0.1:1999 时不再 404
-  onRequest(request: Party.Request) {
+  onRequest(_request: Party.Request) {
     return new Response('修仙世界联机服务器已就绪！', {
       status: 200,
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
     });
   }
 
-  onConnect(conn: Party.Connection, ctx: Party.ConnectionContext) {
+  onConnect(conn: Party.Connection, _ctx: Party.ConnectionContext) {
     console.log(`Connected: ${conn.id}`);
     
     // 获取当前连接数
@@ -66,7 +66,7 @@ export default class MainServer implements Party.Server {
           this.messageHistory = this.messageHistory.slice(-this.MAX_HISTORY);
         }
       }
-    } catch (e) {
+    } catch {
       // 如果不是JSON格式的消息，忽略历史记录存储
     }
     

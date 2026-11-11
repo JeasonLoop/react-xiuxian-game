@@ -3,7 +3,7 @@
  * 支持根据类型、品级、数量生成物品
  */
 
-import { Item, ItemType, ItemRarity, EquipmentSlot, LotteryPrize, RealmType } from '../types';
+import { Item, ItemType, ItemRarity, LotteryPrize, RealmType } from '../types';
 import { ITEM_TEMPLATES, getItemTemplatesByType, getItemTemplatesByRarity, getItemTemplatesByTypeAndRarity } from '../constants/itemTemplates';
 import { uid } from './gameUtils';
 import { adjustItemStatsByRealm } from './itemUtils';

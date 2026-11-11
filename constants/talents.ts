@@ -2,7 +2,7 @@
  * 天赋称号系统相关常量
  */
 
-import { Talent, Title, TitleSetEffect, EncounterEvent, ExplorationLocation, Achievement, RealmType } from '../types';
+import { Talent, Title, TitleSetEffect, Achievement, RealmType } from '../types';
 
 export const TALENTS: Talent[] = [
   // ========== 体质（12个）==========
@@ -914,92 +914,6 @@ export const TITLE_SET_EFFECTS: TitleSetEffect[] = [
       spirit: 60,
       expRate: 0.15,
     },
-  },
-];
-
-// --- 奇遇系统 ---
-export const ENCOUNTER_EVENTS: EncounterEvent[] = [
-  {
-    id: 'encounter-herb',
-    name: '发现灵草',
-    description: '你在山间发现了一株珍贵的灵草。',
-    rarity: '普通',
-    triggerChance: 0.3,
-    rewards: {
-      exp: 20,
-      items: [{ name: '聚灵草', rarity: '普通', quantity: 1 }],
-    },
-  },
-  {
-    id: 'encounter-spirit-stone',
-    name: '灵石矿脉',
-    description: '你意外发现了一处小型灵石矿脉。',
-    rarity: '稀有',
-    triggerChance: 0.15,
-    rewards: {
-      spiritStones: 100,
-      exp: 50,
-    },
-  },
-  {
-    id: 'encounter-ancient-cave',
-    name: '古修士洞府',
-    description: '你发现了一处古修士遗留的洞府，获得了珍贵的传承。',
-    rarity: '传说',
-    triggerChance: 0.05,
-    minRealm: RealmType.Foundation,
-    requirements: { minLuck: 30 },
-    rewards: {
-      exp: 500,
-      spiritStones: 500,
-      items: [{ name: '上古功法残卷', rarity: '传说', quantity: 1 }],
-    },
-  },
-  {
-    id: 'encounter-immortal-herb',
-    name: '万年仙草',
-    description: '你遇到了传说中的万年仙草，这是天大的机缘！',
-    rarity: '仙品',
-    triggerChance: 0.01,
-    minRealm: RealmType.GoldenCore,
-    requirements: { minLuck: 50 },
-    rewards: {
-      exp: 2000,
-      items: [{ name: '万年仙草', rarity: '仙品', quantity: 1 }],
-    },
-  },
-];
-
-// --- 探索系统 ---
-export const EXPLORATION_LOCATIONS: ExplorationLocation[] = [
-  {
-    id: 'explore-forest',
-    name: '迷雾森林',
-    description: '常年被迷雾笼罩的森林，隐藏着许多秘密。',
-    minRealm: RealmType.QiRefining,
-    cost: 20,
-    riskLevel: '低',
-    eventTypes: ['normal', 'lucky'],
-  },
-  {
-    id: 'explore-mountain',
-    name: '天柱山',
-    description: '高耸入云的山峰，传说有仙人居住。',
-    minRealm: RealmType.Foundation,
-    cost: 50,
-    riskLevel: '中',
-    eventTypes: ['normal', 'lucky'],
-    specialEncounters: ['encounter-ancient-cave'],
-  },
-  {
-    id: 'explore-abyss',
-    name: '无底深渊',
-    description: '深不见底的深渊，危险与机遇并存。',
-    minRealm: RealmType.GoldenCore,
-    cost: 200,
-    riskLevel: '高',
-    eventTypes: ['normal', 'lucky', 'secret_realm'],
-    specialEncounters: ['encounter-immortal-herb'],
   },
 ];
 

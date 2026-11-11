@@ -2,7 +2,7 @@
  * 宗门系统相关常量
  */
 
-import { RealmType, SectRank, SecretRealm, Item, ItemType } from '../types';
+import { RealmType, SectRank, Item, ItemType } from '../types';
 
 export type SectGrade = '天' | '地' | '玄' | '黄'; // 宗门等级：天最高，黄最低
 

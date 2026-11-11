@@ -6,7 +6,8 @@
 
 import { STORAGE_KEYS } from '../constants/storageKeys';
 
-const isDev = import.meta.env.DEV;
+// 兼容 node 环境（测试脚本）：import.meta.env 仅在 vite 下存在
+const isDev = (import.meta as { env?: { DEV?: boolean } }).env?.DEV ?? false;
 
 export const logger = {
   /**

@@ -612,24 +612,19 @@ export function useItemHandlers(props?: UseItemHandlersProps) {
     }
 
     const currentRealmIndex = REALM_ORDER.indexOf(player.realm);
-    let requiredRealm: RealmType | null = null;
     let canRefine = false;
     let warningMessage = '';
 
     if (item.advancedItemType === 'foundationTreasure') {
-      requiredRealm = RealmType.QiRefining;
       canRefine = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.QiRefining);
       warningMessage = '天道警告：炼化筑基奇物需要达到炼气期！';
     } else if (item.advancedItemType === 'heavenEarthEssence') {
-      requiredRealm = RealmType.GoldenCore;
       canRefine = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.GoldenCore);
       warningMessage = '天道警告：炼化天地精华需要达到金丹期！';
     } else if (item.advancedItemType === 'heavenEarthMarrow') {
-      requiredRealm = RealmType.NascentSoul;
       canRefine = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.NascentSoul);
       warningMessage = '天道警告：炼化天地之髓需要达到元婴期！';
     } else if (item.advancedItemType === 'longevityRule') {
-      requiredRealm = RealmType.DaoCombining;
       canRefine = currentRealmIndex >= REALM_ORDER.indexOf(RealmType.DaoCombining);
       warningMessage = '天道警告：炼化规则之力需要达到合道期！';
     }

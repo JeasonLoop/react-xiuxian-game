@@ -178,14 +178,6 @@ export function getNewlyUnlockedFeatures(
 ): FeatureUnlockDef[] {
   return [];
 }
-
-/**
- * 获取指定境界及以下所有已解锁功能
- */
-export function getUnlockedFeatures(_realm: unknown): FeatureUnlockDef[] {
-  return FEATURE_UNLOCK_DEFS;
-}
-
 /**
  * 获取指定境界下某个功能的最低境界要求文本
  */

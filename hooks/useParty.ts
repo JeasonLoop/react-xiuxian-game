@@ -58,7 +58,7 @@ function setupGlobalConnection(roomName: string) {
         // 普通消息
         messageListeners.forEach((listener) => listener(data));
       }
-    } catch (e) {
+    } catch {
       // 非JSON消息
       messageListeners.forEach((listener) => listener(event.data));
     }

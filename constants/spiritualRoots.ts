@@ -2,7 +2,7 @@
  * 灵根系统相关常量
  */
 
-import { CultivationArt, RealmType } from '../types';
+import { CultivationArt } from '../types';
 
 export type SpiritualRootType = 'metal' | 'wood' | 'water' | 'fire' | 'earth';
 

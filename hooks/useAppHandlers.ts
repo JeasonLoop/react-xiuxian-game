@@ -340,21 +340,24 @@ export function useAppHandlers(props: UseAppHandlersProps) {
   }, [itemHandlers]);
 
   const handleEquipItem = useCallback(
-    withQuestProgress(equipmentHandlers.handleEquipItem, 'equip', dailyQuestHandlers),
+    (...args: Parameters<typeof equipmentHandlers.handleEquipItem>) =>
+      withQuestProgress(equipmentHandlers.handleEquipItem, 'equip', dailyQuestHandlers)(...args),
     [equipmentHandlers.handleEquipItem, dailyQuestHandlers]
   );
 
   const handleUnequipItem = equipmentHandlers.handleUnequipItem;
 
   const handleRefineNatalArtifact = useCallback(
-    withQuestProgress(equipmentHandlers.handleRefineNatalArtifact, 'equip', dailyQuestHandlers),
+    (...args: Parameters<typeof equipmentHandlers.handleRefineNatalArtifact>) =>
+      withQuestProgress(equipmentHandlers.handleRefineNatalArtifact, 'equip', dailyQuestHandlers)(...args),
     [equipmentHandlers.handleRefineNatalArtifact, dailyQuestHandlers]
   );
 
   const handleUnrefineNatalArtifact = equipmentHandlers.handleUnrefineNatalArtifact;
 
   const handleLearnArt = useCallback(
-    withQuestProgress(cultivationHandlers.handleLearnArt, 'learn', dailyQuestHandlers),
+    (...args: Parameters<typeof cultivationHandlers.handleLearnArt>) =>
+      withQuestProgress(cultivationHandlers.handleLearnArt, 'learn', dailyQuestHandlers)(...args),
     [cultivationHandlers.handleLearnArt, dailyQuestHandlers]
   );
 
@@ -389,7 +392,8 @@ export function useAppHandlers(props: UseAppHandlersProps) {
   const handleDeactivatePet = petHandlers.handleDeactivatePet;
 
   const handleFeedPet = useCallback(
-    withQuestProgress(petHandlers.handleFeedPet, 'pet', dailyQuestHandlers),
+    (...args: Parameters<typeof petHandlers.handleFeedPet>) =>
+      withQuestProgress(petHandlers.handleFeedPet, 'pet', dailyQuestHandlers)(...args),
     [petHandlers.handleFeedPet, dailyQuestHandlers]
   );
 
@@ -397,12 +401,14 @@ export function useAppHandlers(props: UseAppHandlersProps) {
   const handleBatchFeedHp = petHandlers.handleBatchFeedHp;
 
   const handleEvolvePet = useCallback(
-    withQuestProgress(petHandlers.handleEvolvePet, 'pet', dailyQuestHandlers),
+    (...args: Parameters<typeof petHandlers.handleEvolvePet>) =>
+      withQuestProgress(petHandlers.handleEvolvePet, 'pet', dailyQuestHandlers)(...args),
     [petHandlers.handleEvolvePet, dailyQuestHandlers]
   );
 
   const handlePetExpedition = useCallback(
-    withQuestProgress(petHandlers.handlePetExpedition, 'pet', dailyQuestHandlers),
+    (...args: Parameters<typeof petHandlers.handlePetExpedition>) =>
+      withQuestProgress(petHandlers.handlePetExpedition, 'pet', dailyQuestHandlers)(...args),
     [petHandlers.handlePetExpedition, dailyQuestHandlers]
   );
 
@@ -414,7 +420,8 @@ export function useAppHandlers(props: UseAppHandlersProps) {
   const handleSafeLeaveSect = sectHandlers.handleSafeLeaveSect;
 
   const handleSectTask = useCallback(
-    withQuestProgress(sectHandlers.handleSectTask, 'sect', dailyQuestHandlers),
+    (...args: Parameters<typeof sectHandlers.handleSectTask>) =>
+      withQuestProgress(sectHandlers.handleSectTask, 'sect', dailyQuestHandlers)(...args),
     [sectHandlers.handleSectTask, dailyQuestHandlers]
   );
 

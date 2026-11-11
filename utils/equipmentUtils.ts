@@ -3,7 +3,7 @@
  * 统一管理装备槽位查找、装备状态检查等逻辑
  */
 
-import { Item, ItemType, EquipmentSlot, PlayerStats } from '../types';
+import { Item, ItemType, EquipmentSlot } from '../types';
 
 /**
  * 获取指定装备类型的所有可用槽位

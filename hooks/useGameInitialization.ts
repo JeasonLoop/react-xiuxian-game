@@ -15,9 +15,6 @@ import {
 export function useGameInitialization() {
   const {
     isReady,
-    saveTemplates,
-    loadTemplates,
-    hasTemplates,
     saveBreakthroughDescriptions,
     loadBreakthroughDescriptions,
     hasBreakthroughDescriptions,

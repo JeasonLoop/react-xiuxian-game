@@ -81,7 +81,6 @@ export const calculateBreakthroughAttributePoints = (
   realm: RealmType,
   currentPoints: number = 0
 ): number => {
-  const validRealmIndex = getRealmIndex(realm);
   const maxPoints = MAX_ATTRIBUTE_POINTS_PER_REALM[realm];
   const pointsGain = isRealmUpgrade ? 2 : 1; // 简化为线性增长
 

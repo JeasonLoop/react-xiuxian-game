@@ -679,7 +679,6 @@ function generateEquipmentTemplates(): Item[] {
     { type: 'artifact', itemType: ItemType.Artifact, slots: [EquipmentSlot.Artifact1, EquipmentSlot.Artifact2] },
   ];
 
-  let idCounter = 1;
 
   equipmentTypes.forEach(({ type, itemType, slots }) => {
     rarities.forEach(rarity => {
@@ -701,8 +700,6 @@ function generateEquipmentTemplates(): Item[] {
           equipmentSlot: slot,
           effect: stats,
         });
-
-        idCounter++;
       }
     });
   });
@@ -779,7 +776,7 @@ function generatePillStats(
 /**
  * 生成丹药描述
  */
-function generatePillDescription(rarity: ItemRarity, index: number, name: string): string {
+function generatePillDescription(rarity: ItemRarity, index: number, _name: string): string {
   const descriptions: Record<ItemRarity, string[]> = {
     普通: [
       '一颗普通的丹药，虽然品质一般，但也能提供基础的修炼辅助。',
@@ -922,7 +919,7 @@ function generateHerbStats(
 /**
  * 生成草药描述
  */
-function generateHerbDescription(rarity: ItemRarity, index: number, name: string): string {
+function generateHerbDescription(rarity: ItemRarity, index: number, _name: string): string {
   const descriptions: Record<ItemRarity, string[]> = {
     普通: [
       '一株普通的草药，虽然灵气稀薄，但也能提供基础的疗伤效果。',
@@ -1010,7 +1007,7 @@ function generateHerbTemplates(): Item[] {
 /**
  * 生成材料描述
  */
-function generateMaterialDescription(rarity: ItemRarity, index: number, name: string): string {
+function generateMaterialDescription(rarity: ItemRarity, index: number, _name: string): string {
   const descriptions: Record<ItemRarity, string[]> = {
     普通: [
       '一块普通的材料，虽然品质一般，但也能用于基础的炼器和炼丹。',
