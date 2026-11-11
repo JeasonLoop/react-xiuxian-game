@@ -1,12 +1,13 @@
 import {
   AdventureResult,
   AdventureType,
+  BattleUnit,
+  BattleSkill,
   DifficultyMode,
   PlayerStats,
   RealmType,
 } from '../../types';
 import { getPlayerTotalStats } from '../../utils/statUtils';
-import { calculateAllCustomSpellBonuses } from '../customSpellService';
 import { createEnemy } from './enemyFactory';
 import { BattleResolution, BattleRoundLog } from './types';
 import {
@@ -20,8 +21,15 @@ import {
   handlePetAction,
   randomId,
 } from './shared';
+import {
+  collectPlayerCombatSkills,
+  collectPlayerInnateBuffs,
+  computePlayerMaxMana,
+  sumPercentBuffs,
+} from './skillAssembly';
+import { applySkillFast, settlePersistEffects } from './fastTriggers';
 
-const safeNumber = (val: any, def: number = 0) => Number(val) || def;
+const safeNumber = (val: unknown, def: number = 0) => Number(val) || def;
 
 /**
  * 根据基础最大值和当前值，按比例计算新的值
@@ -30,6 +38,43 @@ const getScaledValue = (oldMax: number, current: number, newMax: number) => {
   const ratio = oldMax > 0 ? current / oldMax : 0;
   return Math.floor(newMax * ratio);
 };
+
+/**
+ * 玩家技能决策（挂机自动逻辑）：
+ * 低血量优先治疗，否则用期望伤害最高的攻击技能，否则上增益，无可用技能则普攻。
+ */
+function choosePlayerSkill(unit: BattleUnit): BattleSkill | null {
+  const usable = unit.skills.filter((skill) => {
+    if ((unit.cooldowns[skill.id] || 0) > 0) return false;
+    if ((unit.mana || 0) < (skill.cost.mana || 0)) return false;
+    // 条件技能：气血百分比门槛
+    if (skill.conditions?.minHp && unit.hp / Math.max(1, unit.maxHp) < skill.conditions.minHp) {
+      return false;
+    }
+    return true;
+  });
+  if (usable.length === 0) return null;
+
+  const hpRatio = unit.hp / Math.max(1, unit.maxHp);
+  // 低血量优先治疗技能
+  if (hpRatio < 0.55) {
+    const healSkill = usable.find((s) => s.heal);
+    if (healSkill) return healSkill;
+  }
+  // 攻击技能：取期望伤害最高者（物理看攻击、法术看神识）
+  const attackSkills = usable.filter((s) => s.damage);
+  if (attackSkills.length > 0) {
+    attackSkills.sort((a, b) => {
+      const expected = (s: BattleSkill) =>
+        (s.damage?.base || 0) +
+        (s.damage?.type === 'magical' ? unit.spirit : unit.attack) * (s.damage?.multiplier || 0);
+      return expected(b) - expected(a);
+    });
+    return attackSkills[0];
+  }
+  // 增益技能兜底（冷却与灵力天然限频）
+  return usable.find((s) => s.type === 'buff') || null;
+}
 
 export const resolveBattleEncounter = async (
   player: PlayerStats,
@@ -56,23 +101,51 @@ export const resolveBattleEncounter = async (
   // 使用getPlayerTotalStats计算实际最大血量（包含金丹法数、心法等加成）
   const totalStats = getPlayerTotalStats(player);
   const actualMaxHp = totalStats.maxHp;
-  const battlePlayer = {
-    ...player,
-    attack: totalStats.attack,
-    defense: totalStats.defense,
-    maxHp: actualMaxHp,
-    speed: totalStats.speed,
-    spirit: totalStats.spirit,
-  };
   // 确保初始值为有效数字，防止NaN
   // 按比例调整血量：如果功法增加了最大血量，当前血量也应该按比例增加
   const initialPlayerHp = getScaledValue(safeNumber(player.maxHp, 1), safeNumber(player.hp, 0), actualMaxHp);
   const initialMaxHp = actualMaxHp;
-  let playerHp = Math.max(0, Math.min(initialPlayerHp, initialMaxHp));
-  let enemyHp = safeNumber(enemy.maxHp);
+
+  // 构建与回合制一致的战斗单元（技能/灵力/自带Buff 与 turnBased 共用同一组装逻辑）
+  const playerUnit: BattleUnit = {
+    id: 'player',
+    name: player.name,
+    realm: player.realm,
+    hp: Math.max(0, Math.min(initialPlayerHp, initialMaxHp)),
+    maxHp: initialMaxHp,
+    attack: totalStats.attack,
+    defense: totalStats.defense,
+    speed: totalStats.speed,
+    spirit: totalStats.spirit,
+    buffs: collectPlayerInnateBuffs(player),
+    debuffs: [],
+    skills: collectPlayerCombatSkills(player),
+    cooldowns: {},
+    mana: computePlayerMaxMana(player, totalStats.spirit),
+    maxMana: computePlayerMaxMana(player, totalStats.spirit),
+    isDefending: false,
+  };
+  const enemyUnit: BattleUnit = {
+    id: 'enemy',
+    name: enemy.name,
+    realm: enemy.realm,
+    hp: safeNumber(enemy.maxHp),
+    maxHp: safeNumber(enemy.maxHp),
+    attack: safeNumber(enemy.attack),
+    defense: safeNumber(enemy.defense),
+    speed: safeNumber(enemy.speed),
+    spirit: safeNumber(enemy.spirit),
+    buffs: [],
+    debuffs: [],
+    skills: [],
+    cooldowns: {},
+    mana: 0,
+    maxMana: 0,
+    isDefending: false,
+  };
+
   const rounds: BattleRoundLog[] = [];
-  let attacker: 'player' | 'enemy' =
-    (battlePlayer.speed || 0) >= enemy.speed ? 'player' : 'enemy';
+  let attacker: 'player' | 'enemy' = playerUnit.speed >= enemyUnit.speed ? 'player' : 'enemy';
 
   // 获取激活的灵宠
   const activePet = player.activePetId
@@ -87,106 +160,188 @@ export const resolveBattleEncounter = async (
     petSkillCooldowns = { ...activePet.skillCooldowns };
   }
 
-  const spellBonuses = calculateAllCustomSpellBonuses(player);
-
-  while (playerHp > 0 && enemyHp > 0 && rounds.length < 40) {
+  while (playerUnit.hp > 0 && enemyUnit.hp > 0 && rounds.length < 40) {
     const isPlayerTurn = attacker === 'player';
-    const damage = calcDamage(
-      isPlayerTurn ? battlePlayer.attack : enemy.attack,
-      isPlayerTurn ? enemy.defense : battlePlayer.defense
-    );
-    // 确保速度值是有效数字，防止NaN
-    const playerSpeed = Number(battlePlayer.speed) || 0;
-    const enemySpeed = Number(enemy.speed) || 0;
-    // 暴击率统一使用 computeCritChance，与回合制路径保持同一公式
-    const attackerSpeed = isPlayerTurn ? playerSpeed : enemySpeed;
-    const targetSpeed = isPlayerTurn ? enemySpeed : playerSpeed;
-    const extraCritChance = isPlayerTurn ? spellBonuses.critRate : 0;
-    const critChance = computeCritChance(attackerSpeed, targetSpeed, extraCritChance);
-    const crit = Math.random() < critChance;
-    const critMultiplier = 1.5 + (isPlayerTurn ? spellBonuses.critDamage : 0);
-    let finalDamage = crit ? Math.round(damage * critMultiplier) : damage;
-    let isDodged = false;
 
     if (isPlayerTurn) {
-      // 敌方目标的闪避判定：与回合制一致，使用速度差闪避（上限15%）
-      const enemyDodgeChance = computeSpeedDodge(playerSpeed, enemySpeed);
-      if (enemyDodgeChance > 0 && Math.random() < enemyDodgeChance) {
-        finalDamage = 0;
-        isDodged = true;
+      playerUnit.isDefending = false;
+
+      // 技能决策：治疗 > 攻击 > 增益 > 普攻
+      const chosenSkill = choosePlayerSkill(playerUnit);
+      if (chosenSkill) {
+        playerUnit.mana = (playerUnit.mana || 0) - (chosenSkill.cost.mana || 0);
+        const result = applySkillFast(playerUnit, enemyUnit, chosenSkill);
+        rounds.push({
+          id: randomId(),
+          attacker: 'player',
+          damage: result.damage,
+          crit: false, // 摘要结算的技能暴击信息并入伤害，不单独标记
+          description: result.dodged
+            ? `你施展${chosenSkill.name}，但被${enemy.title}${enemy.name}闪避了！`
+            : result.damage > 0
+              ? `你施展${chosenSkill.name}，造成 ${result.damage} 点伤害。${result.heal > 0 ? `（回复 ${result.heal} 气血）` : ''}`
+              : `你运转${chosenSkill.name}，${result.heal > 0 ? `回复了 ${result.heal} 点气血。` : '灵光护体。'}`,
+          playerHpAfter: playerUnit.hp,
+          enemyHpAfter: enemyUnit.hp,
+        });
       } else {
-        enemyHp = Math.max(0, (Number(enemyHp) || 0) - finalDamage);
-        if (finalDamage > 0 && spellBonuses.lifeLeech > 0) {
-          playerHp = Math.min(initialMaxHp, playerHp + Math.floor(finalDamage * spellBonuses.lifeLeech));
+        // 普攻（与回合制 executeNormalAttack 同口径：攻击/防御 buff 生效）
+        const effectiveAttack = Math.round(playerUnit.attack * (1 + sumPercentBuffs(playerUnit.buffs, 'attack')));
+        const effectiveDefense = Math.round(enemyUnit.defense * (1 + sumPercentBuffs(enemyUnit.buffs, 'defense')));
+        const damage = calcDamage(effectiveAttack, effectiveDefense);
+
+        // 暴击：速度差公式 + 暴击 buff（与回合制一致）
+        let extraCritChance = 0;
+        let critMultiplier = 1.5;
+        playerUnit.buffs.forEach((buff) => {
+          if (buff.type === 'crit') extraCritChance += buff.value;
+          if (buff.critDamage && buff.critDamage > 0) critMultiplier += buff.critDamage;
+        });
+        const critChance = computeCritChance(playerUnit.speed, enemyUnit.speed, extraCritChance);
+        const crit = Math.random() < critChance;
+        let finalDamage = crit ? Math.round(damage * critMultiplier) : damage;
+        let isDodged = false;
+
+        // 敌方闪避判定（速度差闪避，上限 15%）
+        const enemyDodgeChance = computeSpeedDodge(playerUnit.speed, enemyUnit.speed);
+        // 敌人防御状态：动态减伤 50%/40%/35%（与回合制 executeDefend 一致）
+        if (enemyUnit.isDefending) {
+          const ratio = effectiveAttack / Math.max(1, effectiveDefense);
+          const defenseReduction = ratio > 3.0 ? 0.35 : ratio > 2.0 ? 0.4 : 0.5;
+          finalDamage = Math.round(finalDamage * (1 - defenseReduction));
         }
+        if (enemyDodgeChance > 0 && Math.random() < enemyDodgeChance) {
+          finalDamage = 0;
+          isDodged = true;
+        } else {
+          enemyUnit.hp = Math.max(0, enemyUnit.hp - finalDamage);
+          // 普攻吸血（buff.lifeLeech 取最大，与回合制 executeNormalAttack 一致）
+          const lifeLeech = playerUnit.buffs.reduce((max, buff) => Math.max(max, buff.lifeLeech || 0), 0);
+          if (finalDamage > 0 && lifeLeech > 0) {
+            playerUnit.hp = Math.min(playerUnit.maxHp, playerUnit.hp + Math.floor(finalDamage * lifeLeech));
+          }
+        }
+
+        rounds.push({
+          id: randomId(),
+          attacker: 'player',
+          damage: finalDamage,
+          crit,
+          description: isDodged
+            ? `你发动灵力攻势，但被${enemy.title}${enemy.name}闪避了！`
+            : `你发动灵力攻势，造成 ${finalDamage}${crit ? '（暴击）' : ''} 点伤害。`,
+          playerHpAfter: playerUnit.hp,
+          enemyHpAfter: enemyUnit.hp,
+        });
+      }
+
+      // 玩家行动周期结算：DoT/持续治疗/冷却（与回合制 updateBattleStateAfterAction 一致）
+      settlePersistEffects(playerUnit);
+
+      // 玩家回合后，灵宠可以行动（附加攻击或释放技能）
+      if (activePet && enemyUnit.hp > 0) {
+        // 更新技能冷却
+        Object.keys(petSkillCooldowns).forEach((skillId) => {
+          if (petSkillCooldowns[skillId] > 0) {
+            petSkillCooldowns[skillId]--;
+          }
+        });
+
+        const { action, updatedEnemyHp, updatedPlayerHp, updatedCooldowns } = handlePetAction(
+          activePet,
+          { ...player, hp: playerUnit.hp } as PlayerStats,
+          { hp: enemyUnit.hp, maxHp: enemyUnit.maxHp, defense: enemyUnit.defense, name: enemy.name, title: enemy.title },
+          petSkillCooldowns,
+          randomId,
+          calcDamage,
+          getPlayerTotalStats
+        );
+
+        enemyUnit.hp = updatedEnemyHp;
+        playerUnit.hp = Math.min(playerUnit.maxHp, updatedPlayerHp);
+        petSkillCooldowns = updatedCooldowns;
+        rounds.push(action as BattleRoundLog);
       }
     } else {
-      // 玩家的闪避判定：法术闪避（保持原有35%上限）与速度差闪避取最大值，与回合制逻辑一致
-      const dodgeChance = Math.max(
-        Math.max(0, Math.min(0.35, spellBonuses.dodgeRate)),
-        computeSpeedDodge(enemySpeed, playerSpeed)
-      );
-      if (dodgeChance > 0 && Math.random() < dodgeChance) {
-        finalDamage = 0;
-        isDodged = true;
+      // 敌人回合（AI 摘要：10% 防御，其余普攻，与回合制 70/20/10 中无技能时的有效行为对齐）
+      if (Math.random() < 0.1) {
+        enemyUnit.isDefending = true;
+        rounds.push({
+          id: randomId(),
+          attacker: 'enemy',
+          damage: 0,
+          crit: false,
+          description: `${enemy.title}${enemy.name}凝神戒备，摆出了防御姿态。`,
+          playerHpAfter: playerUnit.hp,
+          enemyHpAfter: enemyUnit.hp,
+        });
       } else {
-        finalDamage = Math.round(finalDamage * (1 - Math.min(0.6, spellBonuses.damageReduction)));
-        playerHp = Math.max(0, (Number(playerHp) || 0) - finalDamage);
-      }
-    }
-    rounds.push({
-      id: randomId(),
-      attacker,
-      damage: finalDamage,
-      crit,
-      description: isPlayerTurn
-        ? isDodged
-          ? `你发动灵力攻势，但被${enemy.title}${enemy.name}闪避了！`
-          : `你发动灵力攻势，造成 ${finalDamage}${crit ? '（暴击）' : ''} 点伤害。`
-        : finalDamage === 0
-          ? `${enemy.title}${enemy.name}反扑，被你闪避了！`
-          : `${enemy.title}${enemy.name}反扑，造成 ${finalDamage}${crit ? '（暴击）' : ''} 点伤害。`,
-      playerHpAfter: playerHp,
-      enemyHpAfter: enemyHp,
-    });
+        const effectiveAttack = Math.round(enemyUnit.attack * (1 + sumPercentBuffs(enemyUnit.buffs, 'attack')));
+        const damage = calcDamage(effectiveAttack, playerUnit.defense);
 
-    // 玩家回合后，灵宠可以行动（附加攻击或释放技能）
-    if (isPlayerTurn && activePet && enemyHp > 0) {
-      // 更新技能冷却
-      Object.keys(petSkillCooldowns).forEach((skillId) => {
-        if (petSkillCooldowns[skillId] > 0) {
-          petSkillCooldowns[skillId]--;
+        // 敌人暴击（与回合制一致：速度差公式，无技能加成）
+        const critChance = computeCritChance(enemyUnit.speed, playerUnit.speed, 0);
+        const crit = Math.random() < critChance;
+        let finalDamage = crit ? Math.round(damage * 1.5) : damage;
+
+        // 玩家闪避：buff 闪避与速度差闪避取最大
+        let maxDodge = 0;
+        playerUnit.buffs.forEach((buff) => {
+          if (buff.dodge && buff.dodge > maxDodge) maxDodge = buff.dodge;
+        });
+        const dodgeChance = Math.max(maxDodge, computeSpeedDodge(enemyUnit.speed, playerUnit.speed));
+        let isDodged = false;
+        if (dodgeChance > 0 && Math.random() < dodgeChance) {
+          finalDamage = 0;
+          isDodged = true;
+        } else {
+          // 玩家防御状态（快速战斗中玩家不主动防御，预留字段保持一致）
+          if (playerUnit.isDefending) {
+            const ratio = effectiveAttack / Math.max(1, playerUnit.defense);
+            const defenseReduction = ratio > 3.0 ? 0.35 : ratio > 2.0 ? 0.4 : 0.5;
+            finalDamage = Math.round(finalDamage * (1 - defenseReduction));
+          }
+          // 减伤 buff（取最大，与回合制一致）
+          const maxReduction = playerUnit.buffs.reduce((max, buff) => Math.max(max, buff.damageReduction || 0), 0);
+          finalDamage = Math.round(finalDamage * (1 - Math.min(0.6, maxReduction)));
+          playerUnit.hp = Math.max(0, playerUnit.hp - finalDamage);
+
+          // 反弹伤害（玩家 reflectDamage 取最大）
+          const maxReflect = playerUnit.buffs.reduce((max, buff) => Math.max(max, buff.reflectDamage || 0), 0);
+          if (finalDamage > 0 && maxReflect > 0) {
+            enemyUnit.hp = Math.max(0, enemyUnit.hp - Math.floor(finalDamage * maxReflect));
+          }
         }
-      });
 
-      const { action, updatedEnemyHp, updatedPlayerHp, updatedCooldowns } = handlePetAction(
-        activePet,
-        { ...battlePlayer, hp: playerHp } as PlayerStats,
-        { hp: enemyHp, maxHp: enemy.maxHp, defense: enemy.defense, name: enemy.name, title: enemy.title },
-        petSkillCooldowns,
-        randomId,
-        calcDamage,
-        getPlayerTotalStats
-      );
+        rounds.push({
+          id: randomId(),
+          attacker: 'enemy',
+          damage: finalDamage,
+          crit,
+          description: isDodged
+            ? `${enemy.title}${enemy.name}反扑，被你闪避了！`
+            : `${enemy.title}${enemy.name}反扑，造成 ${finalDamage}${crit ? '（暴击）' : ''} 点伤害。`,
+          playerHpAfter: playerUnit.hp,
+          enemyHpAfter: enemyUnit.hp,
+        });
+      }
 
-      enemyHp = updatedEnemyHp;
-      playerHp = updatedPlayerHp;
-      petSkillCooldowns = updatedCooldowns;
-      rounds.push(action as BattleRoundLog);
+      // 敌人行动周期结算
+      settlePersistEffects(enemyUnit);
     }
 
-    if (playerHp <= 0 || enemyHp <= 0) {
+    if (playerUnit.hp <= 0 || enemyUnit.hp <= 0) {
       break;
     }
 
     attacker = attacker === 'player' ? 'enemy' : 'player';
   }
 
-  const victory = enemyHp <= 0 && playerHp > 0;
+  const victory = enemyUnit.hp <= 0 && playerUnit.hp > 0;
 
   // 确保hpLoss是有效数字，防止NaN
   const playerHpBefore = Number(player.hp) || 0;
-  const playerHpAfter = Number(playerHp) || 0;
+  const playerHpAfter = Number(playerUnit.hp) || 0;
   const hpLoss = Math.max(0, Math.floor(playerHpBefore - playerHpAfter));
 
   const rewardMultiplier =

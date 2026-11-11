@@ -7,8 +7,6 @@ import {
   Buff,
   Debuff,
   DifficultyMode,
-  Item,
-  ItemType,
   PlayerAction,
   PlayerStats,
   RealmType,
@@ -16,17 +14,19 @@ import {
 import {
   BATTLE_POTIONS,
   CULTIVATION_ARTS,
-  CULTIVATION_ART_BATTLE_SKILLS,
   FOUNDATION_TREASURES,
   HEAVEN_EARTH_ESSENCES,
   HEAVEN_EARTH_MARROWS,
   LONGEVITY_RULES,
-  REALM_ORDER,
 } from '../../constants/index';
-import { calculateAllCustomSpellBonuses } from '../customSpellService';
 import { getPlayerTotalStats } from '../../utils/statUtils';
 import { createEnemy } from './enemyFactory';
-import { ARTIFACT_SKILLS_MAP, GRADE_MULTIPLIERS, GRADE_POWER_BONUS, WEAPON_SKILLS_MAP } from './constants';
+import {
+  collectPlayerCombatSkills,
+  collectPlayerInnateBuffs,
+  computePlayerMaxMana,
+  sumPercentBuffs,
+} from './skillAssembly';
 import { calcDamage, computeCritChance, computeSpeedDodge, handlePetAction, randomId } from './shared';
 
 /**
@@ -220,239 +220,21 @@ function initializeElementalField(player: PlayerStats): BattleState['elementalFi
 }
 
 /**
- * 为没有配置技能的功法生成默认技能
- */
-function generateDefaultSkillForArt(art: { id: string; name: string; type: string; grade: string; effects: any }): BattleSkill | null {
-  // 根据功法类型和品级生成不同的技能
-  const multiplier = GRADE_MULTIPLIERS[art.grade] || 1.0;
-  const powerBonus = GRADE_POWER_BONUS[art.grade] || GRADE_POWER_BONUS['黄'];
-
-  // 根据功法类型决定技能类型
-  if (art.type === 'body') {
-    // 体术类功法 -> 攻击技能
-    // 消耗公式: 基础15 + 品级加成
-    const bodyCostBonus: Record<string, number> = { '黄': 10, '玄': 25, '地': 45, '天': 75 };
-    const skillCost = 15 + (bodyCostBonus[art.grade] || 10);
-
-    const baseDamage = Math.round(30 * multiplier) + powerBonus.baseDamage;
-    const damageMultiplier = 0.8 + (multiplier - 1) * 0.3 + powerBonus.damageMultiplier;
-
-    return {
-      id: `skill-${art.id}`,
-      name: art.name,
-      description: `施展${art.name}，对敌人造成伤害。`,
-      type: 'attack',
-      source: 'cultivation_art',
-      sourceId: art.id,
-      effects: [],
-      cost: { mana: skillCost },
-      cooldown: 0,
-      maxCooldown: Math.max(2, Math.round(multiplier)),
-      target: 'enemy',
-      damage: {
-        base: baseDamage,
-        multiplier: damageMultiplier,
-        type: 'physical',
-        critChance: 0.1 + (multiplier - 1) * 0.05 + powerBonus.critChance,
-        critMultiplier: 1.5 + (multiplier - 1) * 0.2 + powerBonus.critMultiplier,
-      },
-    };
-  } else if (art.type === 'mental') {
-    // 心法类功法 -> 根据效果决定技能类型
-    if (art.effects?.expRate) {
-      // 如果有修炼速度加成，生成Buff技能（提升属性）
-      // 消耗公式: 基础20 + 品级加成
-      const mentalBuffCostBonus: Record<string, number> = { '黄': 15, '玄': 30, '地': 55, '天': 90 };
-      const skillCost = 20 + (mentalBuffCostBonus[art.grade] || 15);
-
-      return {
-        id: `skill-${art.id}`,
-        name: art.name,
-        description: `运转${art.name}，提升自身属性。`,
-        type: 'buff',
-        source: 'cultivation_art',
-        sourceId: art.id,
-        effects: [
-          {
-            type: 'buff',
-            target: 'self',
-            buff: {
-              id: `${art.id}-buff`,
-              name: art.name,
-              type: 'attack',
-              value: 0.1 * multiplier, // 10% * 品级倍数
-              duration: 3,
-              source: art.id,
-              description: `攻击力提升${Math.round(10 * multiplier)}%`,
-            },
-          },
-        ],
-        cost: { mana: skillCost },
-        cooldown: 0,
-        maxCooldown: Math.max(3, Math.round(multiplier * 1.5)),
-        target: 'self',
-      };
-    } else {
-      // 其他心法 -> 法术攻击
-      // 消耗公式: 基础25 + 品级加成
-      const mentalAttackCostBonus: Record<string, number> = { '黄': 20, '玄': 40, '地': 70, '天': 110 };
-      const skillCost = 25 + (mentalAttackCostBonus[art.grade] || 20);
-
-      const baseDamage = Math.round(40 * multiplier) + powerBonus.baseDamage;
-      const damageMultiplier = 1.0 + (multiplier - 1) * 0.4 + powerBonus.damageMultiplier;
-
-      return {
-        id: `skill-${art.id}`,
-        name: art.name,
-        description: `施展${art.name}，对敌人造成法术伤害。`,
-        type: 'attack',
-        source: 'cultivation_art',
-        sourceId: art.id,
-        effects: [],
-        cost: { mana: skillCost },
-        cooldown: 0,
-        maxCooldown: Math.max(2, Math.round(multiplier)),
-        target: 'enemy',
-        damage: {
-          base: baseDamage,
-          multiplier: damageMultiplier,
-          type: 'magical',
-          critChance: 0.15 + (multiplier - 1) * 0.05 + powerBonus.critChance,
-          critMultiplier: 2.0 + (multiplier - 1) * 0.3 + powerBonus.critMultiplier,
-        },
-      };
-    }
-  }
-
-  return null;
-}
-
-/**
  * 从玩家数据创建战斗单位
  */
 function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
   // 获取包含心法加成的总属性
   const totalStats = getPlayerTotalStats(player);
 
-  const equippedItems = getEquippedItems(player);
   const totalAttack = totalStats.attack;
   const totalDefense = totalStats.defense;
   const totalSpirit = totalStats.spirit;
   const totalSpeed = totalStats.speed;
 
-  // 注意：player.attack 等字段已经包含了装备加成
-  // getPlayerTotalStats 也包含了心法加成
-  // 所以这里不再需要遍历 equippedItems 累加属性，否则会重复计算
-
-  // 收集所有可用技能
-  const skills: BattleSkill[] = [];
-
-  // 优化：预先建立功法映射，避免在循环中重复查找
-  const artsMap = new Map(
-    CULTIVATION_ARTS.map(art => [art.id, art])
-  );
-
-  // 1. 功法技能
-  player.cultivationArts.forEach((artId) => {
-    const artSkills = CULTIVATION_ART_BATTLE_SKILLS[artId];
-    if (artSkills) {
-      // 如果功法有配置的技能，使用配置的技能
-      skills.push(...artSkills.map((s) => ({ ...s, cooldown: 0 })));
-    } else {
-      // 如果功法没有配置技能，自动生成默认技能
-      const art = CULTIVATION_ARTS.find(a => a.id === artId);
-      if (art) {
-        const defaultSkill = generateDefaultSkillForArt(art);
-        if (defaultSkill) {
-          skills.push({ ...defaultSkill, cooldown: 0 });
-        }
-      }
-    }
-  });
-
-  // 2. 法宝/武器技能
-  // 使用预构建的映射表，大幅提升查找性能
-  equippedItems.forEach((item) => {
-    // 优先使用物品自带的battleSkills
-    if (item.battleSkills && item.battleSkills.length > 0) {
-      skills.push(...item.battleSkills.map((s) => ({ ...s, cooldown: 0 })));
-    } else {
-      // 如果没有，尝试从配置中获取
-      if (item.type === ItemType.Artifact) {
-        // 优先通过 id 查找（支持重命名后的法宝）
-        const artifactSkills = ARTIFACT_SKILLS_MAP.get(item.id) ||
-          ARTIFACT_SKILLS_MAP.get(item.name);
-        if (artifactSkills) {
-          skills.push(...artifactSkills.map((s) => ({ ...s, cooldown: 0 })));
-        }
-      } else if (item.type === ItemType.Weapon) {
-        // 优先通过 id 查找
-        const weaponSkills = WEAPON_SKILLS_MAP.get(item.id) ||
-          WEAPON_SKILLS_MAP.get(item.name);
-        if (weaponSkills) {
-          skills.push(...weaponSkills.map((s) => ({ ...s, cooldown: 0 })));
-        }
-      }
-
-    }
-  });
-
-
-  // 应用被动效果（心法）
-  const buffs: Buff[] = [];
-  if (player.activeArtId) {
-    const activeArt = artsMap.get(player.activeArtId);
-    if (activeArt && activeArt.type === 'mental') {
-      const artSkills = CULTIVATION_ART_BATTLE_SKILLS[player.activeArtId];
-      if (artSkills) {
-        artSkills.forEach((skill) => {
-          if (skill.type === 'buff' && skill.effects) {
-            skill.effects.forEach((effect) => {
-              if (effect.type === 'buff' && effect.buff) {
-                buffs.push(effect.buff);
-              }
-            });
-          }
-        });
-      }
-    }
-  }
-
-  const spellBonuses = calculateAllCustomSpellBonuses(player);
-  if (spellBonuses.critRate > 0) {
-    buffs.push({
-      id: 'custom-spell-crit',
-      name: '自创神通·会心',
-      type: 'crit',
-      value: spellBonuses.critRate,
-      duration: -1,
-      source: 'custom-spell',
-    });
-  }
-  if (spellBonuses.critDamage > 0 || spellBonuses.dodgeRate > 0 || spellBonuses.damageReduction > 0 || spellBonuses.lifeLeech > 0) {
-    buffs.push({
-      id: 'custom-spell-combat',
-      name: '自创神通·战意',
-      type: 'custom',
-      value: 0,
-      duration: -1,
-      source: 'custom-spell',
-      critDamage: spellBonuses.critDamage || undefined,
-      dodge: spellBonuses.dodgeRate || undefined,
-      damageReduction: spellBonuses.damageReduction || undefined,
-      lifeLeech: spellBonuses.lifeLeech || undefined,
-    });
-  }
-
-  // 根据境界计算MP（灵力值）
-  // MP = 基础值 + 境界加成 + 神识加成
-  // 使用新的灵力消耗配置: baseMana=60, realmMultiplier=70, levelMultiplier=15, spiritMultiplier=0.8
-  const realmIndex = REALM_ORDER.indexOf(player.realm);
-  const baseMana = 60; // 基础灵力值(原50,提升20%)
-  const realmManaBonus = realmIndex * 70 + Math.max(0, player.realmLevel - 1) * 15; // 境界加成(原50/10,提升40%/50%)
-  const spiritManaBonus = Math.floor(totalSpirit * 0.8); // 神识加成(原0.5,提升60%)
-  const maxMana = baseMana + realmManaBonus + spiritManaBonus;
-  const currentMana = maxMana; // 战斗开始时MP满值
+  // 收集技能与自带 Buff（与快速战斗共用同一组装逻辑，保证两模式一致）
+  const skills = collectPlayerCombatSkills(player);
+  const buffs = collectPlayerInnateBuffs(player);
+  const maxMana = computePlayerMaxMana(player, totalSpirit);
 
   // 按比例调整血量：如果功法增加了最大血量，当前血量也应该按比例增加
   const baseMaxHp = Number(player.maxHp) || 1; // 避免除零
@@ -464,7 +246,7 @@ function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
     id: 'player',
     name: player.name,
     realm: player.realm,
-    hp: Math.min(adjustedHp, totalStats.maxHp), // 使用按比例调整后的血量
+    hp: Math.min(adjustedHp, totalStats.maxHp),
     maxHp: totalStats.maxHp, // 使用实际最大血量（包含金丹法数加成等）
     attack: totalAttack,
     defense: totalDefense,
@@ -474,26 +256,10 @@ function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
     debuffs: [],
     skills,
     cooldowns: {},
-    mana: currentMana,
-    maxMana: maxMana,
+    mana: maxMana,
+    maxMana,
     isDefending: false,
   };
-}
-
-/**
- * 获取玩家装备的物品列表
- */
-function getEquippedItems(player: PlayerStats): Item[] {
-  const equipped: Item[] = [];
-  Object.values(player.equippedItems).forEach((itemId) => {
-    if (itemId) {
-      const item = player.inventory.find((i) => i.id === itemId);
-      if (item) {
-        equipped.push(item);
-      }
-    }
-  });
-  return equipped;
 }
 
 /**
@@ -677,8 +443,14 @@ function executeNormalAttack(
   const attacker = attackerId === 'player' ? battleState.player : battleState.enemy;
   const target = targetId === 'player' ? battleState.player : battleState.enemy;
 
+  // 攻击/防御 buff 生效：value 为百分比加成（如 +10% 攻击），与快速战斗口径一致
+  const attackerBonus = sumPercentBuffs(attacker.buffs, 'attack');
+  const targetDefenseBonus = sumPercentBuffs(target.buffs, 'defense');
+  const effectiveAttack = Math.round(attacker.attack * (1 + attackerBonus));
+  const effectiveDefense = Math.round(target.defense * (1 + targetDefenseBonus));
+
   // 计算基础伤害
-  const baseDamage = calcDamage(attacker.attack, target.defense);
+  const baseDamage = calcDamage(effectiveAttack, effectiveDefense);
 
   // 应用五行领域加成
   let elementalMultiplier = 1.0;
@@ -883,13 +655,20 @@ function executeSkill(
   if (skill.damage) {
     const base = skill.damage.base;
     const multiplier = skill.damage.multiplier;
-    const statValue =
+    // 攻击 buff 生效：物理用攻击力、法术用神识，均为百分比加成（与普攻口径一致）
+    const atkBonus = sumPercentBuffs(caster.buffs, 'attack');
+    const rawStatValue =
       skill.damage.type === 'magical' ? caster.spirit : caster.attack;
+    const statValue = rawStatValue * (1 + atkBonus);
     // 计算技能的基础攻击力（用于伤害计算）
     const skillAttack = base + statValue * multiplier;
 
-    // 根据伤害类型选择对应的防御属性
-    const targetDefense = skill.damage.type === 'magical' ? target.spirit : target.defense;
+    // 根据伤害类型选择对应的防御属性；物理防御受 defense buff 影响
+    const defenseBonus = sumPercentBuffs(target.buffs, 'defense');
+    const targetDefense =
+      skill.damage.type === 'magical'
+        ? target.spirit
+        : Math.round(target.defense * (1 + defenseBonus));
 
     // 使用统一的伤害计算函数
     const baseDamage = calcDamage(skillAttack, targetDefense);
