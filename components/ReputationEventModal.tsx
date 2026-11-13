@@ -72,7 +72,7 @@ const ReputationEventModal: React.FC<Props> = ({
           {description}
         </p>
         <p className="text-xs text-stone-500 mt-2">
-          选项中的修为、灵石等奖励已按当前境界（×{rewardMult.toFixed(2)}）调整。
+          选项中的修为、灵石、气血等数值已按当前境界乘区（×{rewardMult.toFixed(2)}）调整，与历练主事件一致。
         </p>
       </div>
 

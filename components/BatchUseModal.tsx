@@ -40,10 +40,13 @@ const BatchUseModal: React.FC<Props> = ({
   // 判断物品是否可使用
   const isUsable = (item: Item): boolean => {
     // 装备不可使用
+    // 通天宝匣是宝箱不是装备，可批量使用开启（按名称判断，兼容旧存档误入库为 Artifact 的情况）
+    if (item.name.includes('宝匣')) return true;
     if (item.isEquippable) return false;
     // 材料包和宗门宝库钥匙可以使用
-    const isMaterialPack = item.name.includes('材料包') && item.type === ItemType.Material;
-    const isTreasureVaultKey = item.name === '宗门宝库钥匙' && item.type === ItemType.Material;
+    // 与 useItemHandlers 保持一致（仅按名称判断），避免入库时类型被误推断导致无法批量使用
+    const isMaterialPack = item.name.includes('材料包');
+    const isTreasureVaultKey = item.name === '宗门宝库钥匙';
     if (isMaterialPack || isTreasureVaultKey) return true;
     // 其他材料不可使用（除非有 effect）
     if (item.type === ItemType.Material && !item.effect) return false;

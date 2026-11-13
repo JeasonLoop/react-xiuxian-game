@@ -19,7 +19,7 @@ import {
   ItemType,
 } from '../types';
 import { REALM_ORDER } from '../constants/index';
-import { generateShopItems } from '../services/shopService';
+import { generateShopItems, getScaledItemForBuyer } from '../services/shopService';
 import { showError, showConfirm } from '../utils/toastUtils';
 import { getRarityTextColor, getRarityBorder } from '../utils/rarityUtils';
 import { calculateItemSellPrice, normalizeTypeLabel } from '../utils/itemUtils';
@@ -77,6 +77,16 @@ const ShopModal: React.FC<Props> = ({
 
     return filtered;
   }, [shop.items, selectedTypeFilter]);
+
+  // 展示用：装备类物品按购买者（玩家）当前境界缩放后的属性
+  // 与购买入库（useShopHandlers.handleBuyItem）共用同一缩放逻辑，保证显示值 = 入库值
+  const scaledItemsById = useMemo(() => {
+    const map = new Map<string, ShopItem>();
+    shop.items.forEach((item) => {
+      map.set(item.id, getScaledItemForBuyer(item, player.realm));
+    });
+    return map;
+  }, [shop.items, player.realm]);
 
   // 可出售的物品（排除已装备的，并根据类型和品质筛选）
   const sellableItems = useMemo(() => {
@@ -388,6 +398,8 @@ const ShopModal: React.FC<Props> = ({
                   availableItems.map((shopItem) => {
                     const unitBuy = getEffectiveBuyPrice(shopItem.price, player);
                     const canBuy = canBuyItem(shopItem);
+                    // 展示用缩放后的物品（仅装备类会缩放，与购买入库一致）
+                    const displayItem = scaledItemsById.get(shopItem.id) ?? shopItem;
                     return (
                       <div
                         key={shopItem.id}
@@ -417,28 +429,28 @@ const ShopModal: React.FC<Props> = ({
                         <p className="text-sm text-stone-400 mb-3">
                           {shopItem.description}
                         </p>
-                        {shopItem.effect && (
+                        {displayItem.effect && (
                           <div className="text-xs text-stone-400 mb-3 space-y-1">
-                            {shopItem.effect.attack && (
-                              <div>攻击 +{formatNumber(shopItem.effect.attack)}</div>
+                            {displayItem.effect.attack && (
+                              <div>攻击 +{formatNumber(displayItem.effect.attack)}</div>
                             )}
-                            {shopItem.effect.defense && (
-                              <div>防御 +{formatNumber(shopItem.effect.defense)}</div>
+                            {displayItem.effect.defense && (
+                              <div>防御 +{formatNumber(displayItem.effect.defense)}</div>
                             )}
-                            {shopItem.effect.hp && (
-                              <div>气血 +{formatNumber(shopItem.effect.hp)}</div>
+                            {displayItem.effect.hp && (
+                              <div>气血 +{formatNumber(displayItem.effect.hp)}</div>
                             )}
-                            {shopItem.effect.exp && (
-                              <div>修为 +{formatNumber(shopItem.effect.exp)}</div>
+                            {displayItem.effect.exp && (
+                              <div>修为 +{formatNumber(displayItem.effect.exp)}</div>
                             )}
-                            {shopItem.effect.spirit && (
-                              <div>神识 +{formatNumber(shopItem.effect.spirit)}</div>
+                            {displayItem.effect.spirit && (
+                              <div>神识 +{formatNumber(displayItem.effect.spirit)}</div>
                             )}
-                            {shopItem.effect.physique && (
-                              <div>体魄 +{formatNumber(shopItem.effect.physique)}</div>
+                            {displayItem.effect.physique && (
+                              <div>体魄 +{formatNumber(displayItem.effect.physique)}</div>
                             )}
-                            {shopItem.effect.speed && (
-                              <div>速度 +{formatNumber(shopItem.effect.speed)}</div>
+                            {displayItem.effect.speed && (
+                              <div>速度 +{formatNumber(displayItem.effect.speed)}</div>
                             )}
                           </div>
                         )}

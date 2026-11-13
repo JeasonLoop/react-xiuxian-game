@@ -3,7 +3,7 @@ import { PlayerStats, ShopType, ShopItem, Item, Shop, ItemType, ItemRarity } fro
 import { SHOPS, REALM_ORDER, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES } from '../../constants/index';
 import { uid } from '../../utils/gameUtils';
 import { calculateItemSellPrice } from '../../utils/itemUtils';
-import { generateShopItems } from '../../services/shopService';
+import { generateShopItems, getScaledItemForBuyer } from '../../services/shopService';
 import { useGameStore, useUIStore } from '../../store';
 import { addItemToInventory } from '../../utils/inventoryUtils';
 import { getEffectiveBuyPrice, getEffectiveSellPrice } from '../../utils/shopEconomy';
@@ -185,9 +185,11 @@ export function useShopHandlers(
       }
 
       // 普通物品：放入背包
+      // 装备类物品先按购买者当前境界缩放属性再入库；数量>1 时每件复用同一缩放结果
+      const scaledShopItem = getScaledItemForBuyer(shopItem, prev.realm);
       const newInv = addItemToInventory(
         prev.inventory,
-        shopItem,
+        scaledShopItem,
         quantity,
         { realm: prev.realm, realmLevel: prev.realmLevel }
       );

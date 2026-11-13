@@ -6,6 +6,7 @@ import { useGameStore } from '../store/gameStore';
 import { getLocalDateString } from '../utils/dateUtils';
 import { showConfirm, showError, showSuccess } from '../utils/toastUtils';
 import { generateRandomSects, generateRandomSectTasks, generateSectShopItems, RandomSectTask } from '../services/randomService';
+import { getScaledItemForBuyer } from '../services/shopService';
 import { ShoppingBag, Shield, Scroll, ArrowUp, RefreshCw, BookOpen, Sparkles, Crown, Flame, Star, Zap, Lightbulb } from 'lucide-react';
 import SectTaskModal from './SectTaskModal';
 import { CULTIVATION_ARTS } from '../constants/cultivation';
@@ -943,6 +944,9 @@ const SectModal: React.FC<Props> = ({
               </div>
               {(shopFloor === 1 ? sectShopItems : sectShopItemsFloor2).map((item, idx) => {
                 const quantity = buyQuantities[idx] || 1;
+                // 展示用：装备类物品按玩家当前境界缩放后的属性（与兑换入库 useSectHandlers.handleSectBuy 共用同一缩放逻辑）
+                // 注意：onBuy 仍传原始模板，由入库函数内部统一缩放，避免重复放大
+                const scaledShopItem = getScaledItemForBuyer(item.item, player.realm);
                 // 宗主享受5折优惠
                 const baseCost = player.sectRank === SectRank.Leader ? Math.ceil(item.cost * 0.5) : item.cost;
                 const totalCost = baseCost * quantity;
@@ -965,6 +969,23 @@ const SectModal: React.FC<Props> = ({
                       <div className="text-xs text-stone-500">
                         {item.item.description}
                       </div>
+                      {/* 缩放后的属性展示（仅装备类物品会缩放，数值与兑换入库一致） */}
+                      {(scaledShopItem.effect || scaledShopItem.permanentEffect) && (
+                        <div className="text-xs text-stone-400 mt-1 space-y-0.5">
+                          {!!scaledShopItem.effect?.attack && <div>攻击 +{scaledShopItem.effect.attack}</div>}
+                          {!!scaledShopItem.effect?.defense && <div>防御 +{scaledShopItem.effect.defense}</div>}
+                          {!!scaledShopItem.effect?.hp && <div>气血 +{scaledShopItem.effect.hp}</div>}
+                          {!!scaledShopItem.effect?.spirit && <div>神识 +{scaledShopItem.effect.spirit}</div>}
+                          {!!scaledShopItem.effect?.physique && <div>体魄 +{scaledShopItem.effect.physique}</div>}
+                          {!!scaledShopItem.effect?.speed && <div>速度 +{scaledShopItem.effect.speed}</div>}
+                          {!!scaledShopItem.permanentEffect?.attack && <div className="text-yellow-400">攻击永久 +{scaledShopItem.permanentEffect.attack}</div>}
+                          {!!scaledShopItem.permanentEffect?.defense && <div className="text-yellow-400">防御永久 +{scaledShopItem.permanentEffect.defense}</div>}
+                          {!!scaledShopItem.permanentEffect?.spirit && <div className="text-yellow-400">神识永久 +{scaledShopItem.permanentEffect.spirit}</div>}
+                          {!!scaledShopItem.permanentEffect?.physique && <div className="text-yellow-400">体魄永久 +{scaledShopItem.permanentEffect.physique}</div>}
+                          {!!scaledShopItem.permanentEffect?.speed && <div className="text-yellow-400">速度永久 +{scaledShopItem.permanentEffect.speed}</div>}
+                          {!!scaledShopItem.permanentEffect?.maxHp && <div className="text-yellow-400">气血上限永久 +{scaledShopItem.permanentEffect.maxHp}</div>}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm text-mystic-gold font-bold">

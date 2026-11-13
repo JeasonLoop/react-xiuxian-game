@@ -1,9 +1,10 @@
 import React from 'react';
 import { PlayerStats, Item, Pet, ItemType, ItemRarity, RealmType } from '../../types';
-import { PET_TEMPLATES, DISCOVERABLE_RECIPES, getRandomPetName, REALM_ORDER, REALM_DATA } from '../../constants/index';
+import { PET_TEMPLATES, DISCOVERABLE_RECIPES, getRandomPetName, REALM_ORDER, REALM_DATA, getPillDefinition } from '../../constants/index';
 import { uid } from '../../utils/gameUtils';
 import { showConfirm } from '../../utils/toastUtils';
 import { LOOT_ITEMS } from '../../services/battleService';
+import { getTowerFloorConfig, createReforgeStoneItem, createComprehensionScrollItem } from '../../constants/tower';
 import { compareItemEffects } from '../../utils/objectUtils';
 import { getPlayerTotalStats } from '../../utils/statUtils';
 import { useGameStore } from '../../store';
@@ -268,6 +269,9 @@ const applyItemEffect = (
     }
 
     // 从对应稀有度的丹药中筛选
+    // 只保留程序生成的丹药模板（无丹方定义）：固定定义的高价值丹药
+    // （如九转金丹/太乙紫金丹 修为+60万）走抽奖、秘境、炼丹等渠道，
+    // 避免低价材料包开出固定高价值丹药形成套利
     const allPills = LOOT_ITEMS.pills;
     let availablePills: Array<{
       name: string;
@@ -276,7 +280,7 @@ const applyItemEffect = (
       effect?: any;
       permanentEffect?: any;
       description?: string;
-    }> = allPills.filter(p => p.rarity === targetRarity);
+    }> = allPills.filter(p => p.rarity === targetRarity && !getPillDefinition(p.name));
 
     // 如果没有找到对应稀有度的丹药，降级查找
     if (availablePills.length === 0 && targetRarity !== '普通') {
@@ -363,6 +367,54 @@ const applyItemEffect = (
       if (!isBatch) {
         addLog(`你打开了${item.name}，但似乎什么都没有...`, 'normal');
       }
+    }
+  }
+
+  // 4.5 处理通天塔宝匣（宝箱类物品，使用后按对应层数首通奖励的 60%-80% 发放修炼资源）
+  // 注意按名称判断而非 type：旧存档中的宝匣可能已被误入库为 Artifact（法宝）
+  if (item.name.includes('宝匣')) {
+    // 从名称解析宝匣对应的通天塔层数（如“70层通天宝匣”→70），解析失败时按第 10 层处理
+    const chestFloorMatch = item.name.match(/^(\d+)层/);
+    const chestFloor = chestFloorMatch
+      ? Math.max(1, Math.min(100, parseInt(chestFloorMatch[1], 10)))
+      : 10;
+    const chestFloorConfig = getTowerFloorConfig(chestFloor);
+
+    // 宝匣奖励量级：该层首通奖励的 60%-80%
+    const rewardRatio = 0.6 + Math.random() * 0.2;
+    const expGain = Math.max(1, Math.floor(chestFloorConfig.firstClearRewards.exp * rewardRatio));
+    const stoneGain = Math.max(1, Math.floor(chestFloorConfig.firstClearRewards.spiritStones * rewardRatio));
+    const reforgeGain = Math.max(1, Math.floor(chestFloorConfig.firstClearRewards.reforgeStones * rewardRatio));
+
+    newStats.exp += expGain;
+    newStats.spiritStones = (newStats.spiritStones || 0) + stoneGain;
+
+    // 太虚洗炼石加入背包（按名称合并到已有物品的数量上）
+    const reforgeStone = createReforgeStoneItem(reforgeGain);
+    const existingReforgeIndex = newInv.findIndex(i => i.name === reforgeStone.name);
+    if (existingReforgeIndex >= 0) {
+      newInv[existingReforgeIndex].quantity += reforgeGain;
+    } else {
+      newInv.push({ ...reforgeStone, id: uid() });
+    }
+
+    // 太虚悟道卷：按奖励比例的概率获得 1 卷（对应首通奖励中的悟道卷）
+    let scrollGained = false;
+    if (Math.random() < rewardRatio) {
+      const scroll = createComprehensionScrollItem(1);
+      const existingScrollIndex = newInv.findIndex(i => i.name === scroll.name);
+      if (existingScrollIndex >= 0) {
+        newInv[existingScrollIndex].quantity += 1;
+      } else {
+        newInv.push({ ...scroll, id: uid() });
+      }
+      scrollGained = true;
+    }
+
+    const chestRewardText = `修为 +${expGain.toLocaleString()}，灵石 +${stoneGain.toLocaleString()}，太虚洗炼石 x${reforgeGain}${scrollGained ? '，太虚悟道卷 x1' : ''}`;
+    effectLogs.push(`获得${chestRewardText}`);
+    if (!isBatch) {
+      addLog(`你打开了${item.name}，获得了：${chestRewardText}`, 'gain');
     }
   }
 
@@ -556,11 +608,10 @@ export function useItemHandlers(props?: UseItemHandlersProps) {
   };
 
   const handleOrganizeInventory = () => {
-    setPlayer((prev) => {
-      const newInventory = organizeInventory(prev);
-      addLog('背包整理完毕。', 'gain');
-      return { ...prev, inventory: newInventory };
-    });
+    // 整理结果（合并堆叠 + 稳定排序后的新数组）整体写回 store 的 player.inventory，
+    // 持久化由 gameStore 对 player 变化的订阅 + 防抖存档自动完成
+    setPlayer((prev) => ({ ...prev, inventory: organizeInventory(prev) }));
+    addLog('背包整理完毕。', 'gain');
   };
 
   const handleDiscardItem = (item: Item) => {

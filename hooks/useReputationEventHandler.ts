@@ -6,13 +6,13 @@ import { useCallback } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import { PlayerStats, AdventureResult } from '../types';
 import { getPlayerTotalStats } from '../utils/statUtils';
-import { scaleReputationEventChoice } from '../utils/realmEventRewardScale';
+import { scaleReputationEventChoice, getRealmEventRewardMultiplier } from '../utils/realmEventRewardScale';
 
 type ReputationChoice = NonNullable<
   AdventureResult['reputationEvent']
 >['choices'][number];
 
-function formatOutcomeRatingLine(choice: ReputationChoice): string {
+function formatOutcomeRatingLine(choice: ReputationChoice, rewardMult: number): string {
   const hp = choice.hpChange ?? 0;
   const exp = choice.expChange ?? 0;
   const stones = choice.spiritStonesChange ?? 0;
@@ -24,15 +24,17 @@ function formatOutcomeRatingLine(choice: ReputationChoice): string {
   if (stones !== 0) parts.push(`灵石${stones > 0 ? '+' : ''}${stones}`);
   if (rep !== 0) parts.push(`声望${rep > 0 ? '+' : ''}${rep}`);
 
+  // 阈值按境界乘区同步放大：choice 中的数值已经是缩放后的值，
+  // 原始基准阈值（-18/-20/50/80/25）对应的是缩放前的模板数值
   const tag = choice.riskTag;
   let grade: string;
   if (tag === '稳妥') {
-    grade = hp < -18 ? '险中求稳' : '稳扎稳打';
+    grade = hp < -18 * rewardMult ? '险中求稳' : '稳扎稳打';
   } else if (tag === '激进') {
     grade =
-      hp <= -20
+      hp <= -20 * rewardMult
         ? '险中求胜'
-        : exp > 50 || stones > 80
+        : exp > 50 * rewardMult || stones > 80 * rewardMult
           ? '收获颇丰'
           : '激进一搏';
   } else if (tag === '保底') {
@@ -40,7 +42,7 @@ function formatOutcomeRatingLine(choice: ReputationChoice): string {
   } else {
     const net = exp + stones * 0.05 - Math.max(0, -hp) * 1.2 + rep;
     grade =
-      net > 25 ? '收益可观' : net > 0 ? '尚可接受' : '得失参半';
+      net > 25 * rewardMult ? '收益可观' : net > 0 ? '尚可接受' : '得失参半';
   }
 
   return `结果评级：${grade}${parts.length ? '｜' + parts.join('，') : ''}`;
@@ -169,8 +171,7 @@ export function useReputationEventHandler({
           );
         }
 
-        addLog(formatOutcomeRatingLine(choice), 'normal');
-
+        addLog(formatOutcomeRatingLine(choice, getRealmEventRewardMultiplier(player)), 'normal');
         return {
           ...prev,
           reputation: newReputation,

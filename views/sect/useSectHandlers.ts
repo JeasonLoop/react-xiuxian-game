@@ -21,6 +21,7 @@ import { getPlayerTotalStats } from '../../utils/statUtils';
 import { RandomSectTask } from '../../services/randomService';
 import { AdventureResult } from '../../types';
 import { addItemToInventory } from '../../utils/inventoryUtils';
+import { getScaledItemForBuyer } from '../../services/shopService';
 import { sectTaskUtils } from '../../utils/sectTaskUtils';
 import { CultivationArt } from '../../types';
 
@@ -456,7 +457,9 @@ export function useSectHandlers({
         return prev;
       }
 
-      const newInv = addItemToInventory(prev.inventory, itemTemplate, quantity);
+      // 装备类物品先按购买者当前境界缩放属性再入库；数量>1 时每件复用同一缩放结果
+      const scaledTemplate = getScaledItemForBuyer(itemTemplate, prev.realm);
+      const newInv = addItemToInventory(prev.inventory, scaledTemplate, quantity);
 
       logMessage(
         `你消耗了 ${totalCost} 贡献，兑换了 ${itemTemplate.name} x${quantity}。`,

@@ -3,6 +3,7 @@ import { PlayerStats, Item, ItemRarity } from '../types';
 import { LOOT_ITEMS } from '../services/battleService';
 import { uid } from '../utils/gameUtils';
 import { getRarityBadge, getRarityVaultCardStyle } from '../utils/rarityUtils';
+import { getScaledItemForBuyer } from '../services/shopService';
 import { Package, Sparkles } from 'lucide-react';
 import { Modal } from './common';
 
@@ -123,6 +124,13 @@ const SectTreasureVaultModal: React.FC<Props> = ({
     return [];
   }, [player.sectTreasureVault]);
 
+  // 展示与领取共用：装备类物品按玩家当前境界缩放后的属性（材料/丹药/草药不缩放）
+  // 点击领取时传入的正是这个缩放后的对象，保证显示值 = 入库值
+  const scaledVaultItems = useMemo(
+    () => vaultItems.map((item) => getScaledItemForBuyer(item, player.realm)),
+    [vaultItems, player.realm]
+  );
+
   // 使用 useEffect 处理宝库初始化，避免在 useMemo 中使用副作用
   useEffect(() => {
     // 如果宝库为空且弹窗打开，生成新宝库
@@ -192,7 +200,7 @@ const SectTreasureVaultModal: React.FC<Props> = ({
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {vaultItems.map((item) => (
+          {scaledVaultItems.map((item) => (
           <div
             key={item.id}
             className={`border rounded-lg p-4 cursor-pointer ${getRarityVaultCardStyle(item.rarity)}`}

@@ -210,9 +210,25 @@ export function AppContent(props: AppContentProps) {
         return { ...prev, inventory: inv };
       });
     };
-    window.addEventListener('toggle-item-lock', handler);
-    return () => window.removeEventListener('toggle-item-lock', handler);
-  }, [setPlayer]);
+     window.addEventListener('toggle-item-lock', handler);
+     return () => window.removeEventListener('toggle-item-lock', handler);
+   }, [setPlayer]);
+ 
+   // 物品收藏切换（收藏仅为常用标记，用于筛选和材料排序，不影响丢弃/分解，与锁定独立）
+   useEffect(() => {
+     const handler = (e: Event) => {
+       const { itemId } = (e as CustomEvent).detail;
+       setPlayer((prev: any) => {
+         if (!prev) return prev;
+         const inv = prev.inventory.map((i: any) =>
+           i.id === itemId ? { ...i, favorited: !i.favorited } : i
+         );
+         return { ...prev, inventory: inv };
+       });
+     };
+     window.addEventListener('toggle-item-favorite', handler);
+     return () => window.removeEventListener('toggle-item-favorite', handler);
+   }, [setPlayer]);
    const doRebirth = () => {
      if (!player) return;
      const nextLevel = (player.rebirthCount || 0) + 1;

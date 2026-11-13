@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Modal from './common/Modal';
 import {
-  Shield,
   Sword,
-  Zap,
-  Option,
-  ArrowRight,
   FastForward,
+  Skull,
+  Trophy,
 } from 'lucide-react';
 import {
   BattleState,
@@ -23,11 +21,20 @@ import {
   initializeTurnBasedBattle,
   calculateBattleRewards,
 } from '../services/battleService';
-import { BATTLE_POTIONS, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES, CULTIVATION_ARTS } from '../constants/index';
-import { BattleSkill } from '../types';
+ import { BATTLE_POTIONS, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES } from '../constants/index';
 import { useUIStore } from '../store/uiStore';
-import { getSkillQualityColor } from '../utils/rarityUtils';
 import BattleResultSummary from './BattleResultSummary';
+
+import {
+  FighterPanel,
+  DamageFloat,
+  SkillBanner,
+  classifyBattleLog,
+  buildTurnActionEvent,
+  useBattleStageEffects,
+  LoadoutSkillBar,
+} from './battle';
+import { getBattleLoadout } from '../utils/battleLoadout';
 
 interface TurnBasedBattleModalProps {
   isOpen: boolean;
@@ -101,10 +108,6 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   onClose,
 }) => {
   const [battleState, setBattleState] = useState<BattleState | null>(null);
-  const [showSkills, setShowSkills] = useState(false);
-  const [skillSearch, setSkillSearch] = useState('');
-  const [skillTypeFilter, setSkillTypeFilter] = useState<string | null>(null);
-  const [skillRarityFilter, setSkillRarityFilter] = useState<string | null>(null);
   const [showPotions, setShowPotions] = useState(false);
   const [showAdvancedItems, setShowAdvancedItems] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -117,6 +120,14 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   const isActionLockedRef = useRef(false);
   // 使用状态来触发重新渲染，确保按钮禁用状态正确更新
 
+  // 战斗技能栏装配序列（localStorage 持久化，独立于玩家存档；仅展示层使用）
+  const [battleLoadout, setBattleLoadout] = useState<string[]>(() => getBattleLoadout());
+  // 每次战斗弹窗打开时重新读取装配配置，保证角色面板中的修改在后续战斗中生效
+  useEffect(() => {
+    if (isOpen) {
+      setBattleLoadout(getBattleLoadout());
+    }
+  }, [isOpen]);
   const getActionActorLabel = (action: BattleState['history'][number]) => {
     if (action.turn === 'enemy') return '敌方出手';
     if (action.actionType === 'item') return '丹药生效';
@@ -242,9 +253,6 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
       setBattleState(null);
       setIsProcessing(false);
       isActionLockedRef.current = false;
-      setShowSkills(false);
-      setSkillSearch('');
-      setSkillTypeFilter(null);
       setShowPotions(false);
       setShowAdvancedItems(false);
       setErrorMessage(null);
@@ -261,6 +269,20 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
     setIsProcessing(false);
     isActionLockedRef.current = false;
   };
+  // onClose 父组件每次渲染都会重建，用 ref 固定引用供自动关闭定时器回调使用
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  // 胜利结算：显示「战斗胜利」横幅 1 秒后自动关闭弹窗（携带与确认按钮相同的结算数据）；
+  // 失败时不触发自动关闭，保留确认按钮由玩家手动查看损失。
+  // 定时器在组件卸载/提前关闭时清理，避免重复回调。
+  useEffect(() => {
+    if (!settlement?.result.victory) return;
+    const timer = window.setTimeout(() => {
+      onCloseRef.current(settlement.result, settlement.updatedInventory);
+    }, 1000);
+    return () => window.clearTimeout(timer);
+  }, [settlement]);
 
   // 监控状态，确保操作栏能正确显示（防止 isProcessing 卡住）
   useEffect(() => {
@@ -401,6 +423,34 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
     };
   }, [battleState?.waitingForPlayerAction, battleState?.enemyActionsRemaining, battleState?.id]);
 
+
+  // ===== 战斗演出（纯展示层）：监听新增的行动记录，逐条错开播放演出 =====
+  const stageEffects = useBattleStageEffects();
+  const playedHistoryCountRef = useRef(0);
+
+  useEffect(() => {
+    if (!battleState) {
+      // 战斗关闭/重置：清空演出并重置播放游标
+      playedHistoryCountRef.current = 0;
+      stageEffects.clear();
+      return;
+    }
+    const history = battleState.history;
+    if (history.length <= playedHistoryCountRef.current) {
+      playedHistoryCountRef.current = Math.min(playedHistoryCountRef.current, history.length);
+      return;
+    }
+    // 一次状态更新可能追加多条记录（如玩家+灵宠连动），每 380ms 错开演出，
+    // 不阻塞下一次玩家操作，只做视觉演出
+    const newEntries = history.slice(playedHistoryCountRef.current);
+    playedHistoryCountRef.current = history.length;
+    const schedule = stageEffects.schedule;
+    const playEntry = stageEffects.playEntry;
+    newEntries.forEach((action, index) => {
+      schedule(() => playEntry(buildTurnActionEvent(action, battleState)), index * 380);
+    });
+  }, [battleState?.id, battleState?.history.length, stageEffects.schedule, stageEffects.playEntry]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // 处理玩家行动
   const handlePlayerAction = async (action: PlayerAction) => {
     // 使用 ref 锁进行第一层检查（同步，立即生效）
@@ -421,9 +471,6 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
     // 立即设置锁，防止重复点击（同时更新 ref 和 state）
     isActionLockedRef.current = true;
     setIsProcessing(true);
-    setShowSkills(false);
-    setSkillSearch('');
-    setSkillTypeFilter(null);
     setShowPotions(false);
     setShowAdvancedItems(false);
 
@@ -598,98 +645,6 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
         }
   };
 
-  // 获取所有可用技能（仅检查冷却和MP，不检查搜索/类型过滤）
-  const totalAvailableSkillsCount = useMemo(() => {
-    if (!battleState) return 0;
-    return battleState.player.skills.filter((skill) => {
-      const cooldownOk = (battleState.player.cooldowns[skill.id] || 0) === 0;
-      const manaOk =
-        !skill.cost.mana || (battleState.player.mana || 0) >= skill.cost.mana;
-      return cooldownOk && manaOk;
-    }).length;
-  }, [battleState]);
-
-  // 获取技能品质（从功法、法宝等来源获取）
-  const getSkillRarity = useMemo(() => {
-    if (!battleState) return () => null as string | null;
-
-    // 创建功法映射表
-    const artsMap = new Map(CULTIVATION_ARTS.map(art => [art.id, art]));
-
-    // 创建物品映射表（包括所有背包物品，用于通过ID或名称查找）
-    const itemsMap = new Map<string, Item>();
-    battleState.playerInventory.forEach(item => {
-      itemsMap.set(item.id, item);
-      // 也通过名称映射，因为技能可能使用名称作为sourceId
-      if (item.name) {
-        itemsMap.set(item.name, item);
-      }
-    });
-
-    return (skill: BattleSkill): string | null => {
-      // 从功法获取品质（天、地、玄、黄）
-      if (skill.source === 'cultivation_art') {
-        const art = artsMap.get(skill.sourceId);
-        if (art?.grade) {
-          return art.grade;
-        }
-      }
-
-      return null;
-    };
-  }, [battleState]);
-
-  // 获取品质颜色样式
-  // 品质颜色样式已统一迁移到 utils/rarityUtils.ts 的 getSkillQualityColor
-  // 获取可用技能（检查冷却和MP，且包含搜索/类型/品质过滤）
-  const availableSkills = useMemo(() => {
-    if (!battleState) return [];
-    let filtered = battleState.player.skills.filter((skill) => {
-      const cooldownOk = (battleState.player.cooldowns[skill.id] || 0) === 0;
-      const manaOk =
-        !skill.cost.mana || (battleState.player.mana || 0) >= skill.cost.mana;
-      return cooldownOk && manaOk;
-    });
-
-    if (skillSearch) {
-      filtered = filtered.filter(s => s.name.includes(skillSearch));
-    }
-    if (skillTypeFilter) {
-      filtered = filtered.filter(s => s.type === skillTypeFilter);
-    }
-    if (skillRarityFilter) {
-      filtered = filtered.filter(s => {
-        const rarity = getSkillRarity(s);
-        return rarity === skillRarityFilter;
-      });
-    }
-    return filtered;
-  }, [battleState, skillSearch, skillTypeFilter, skillRarityFilter, getSkillRarity]);
-
-  // 获取冷却中或MP不足的技能
-  const unavailableSkills = useMemo(() => {
-    if (!battleState) return [];
-    let filtered = battleState.player.skills.filter((skill) => {
-      const onCooldown = (battleState.player.cooldowns[skill.id] || 0) > 0;
-      const notEnoughMana =
-        skill.cost.mana && (battleState.player.mana || 0) < skill.cost.mana;
-      return onCooldown || notEnoughMana;
-    });
-
-    if (skillSearch) {
-      filtered = filtered.filter(s => s.name.includes(skillSearch));
-    }
-    if (skillTypeFilter) {
-      filtered = filtered.filter(s => s.type === skillTypeFilter);
-    }
-    if (skillRarityFilter) {
-      filtered = filtered.filter(s => {
-        const rarity = getSkillRarity(s);
-        return rarity === skillRarityFilter;
-      });
-    }
-    return filtered;
-  }, [battleState, skillSearch, skillTypeFilter, skillRarityFilter, getSkillRarity]);
 
   // 获取可用丹药（从战斗状态中的背包获取，因为物品使用会更新背包）
   const availablePotions = useMemo(() => {
@@ -712,8 +667,13 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   const playerMaxHp = Math.floor(playerUnit.maxHp);
   const enemyHp = Math.floor(enemyUnit.hp);
   const enemyMaxHp = Math.floor(enemyUnit.maxHp);
-  const playerHpPercent = (playerHp / playerMaxHp) * 100;
-  const enemyHpPercent = (enemyHp / enemyMaxHp) * 100;
+  // 演出区震屏（暴击时触发，奇偶交替重触发动画）
+  const stageShakeClass =
+    stageEffects.stageShakeTick > 0
+      ? stageEffects.stageShakeTick % 2 === 1
+        ? 'anim-shake-a'
+        : 'anim-shake-b'
+      : '';
 
   return (
     <Modal
@@ -741,14 +701,25 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
         </div>
       }
       titleExtra={
-        <button
-          onClick={handleSkipBattle}
-          disabled={isProcessing || !!settlement}
-          className="p-2 rounded border border-stone-600 text-stone-200 hover:bg-stone-700/40 disabled:opacity-50 transition-colors mr-2"
-          title="跳过战斗"
-        >
-          <FastForward size={16} />
-        </button>
+        battleState.enemyIsElite ? (
+          // 精英强敌：显示「强敌来袭」标识，禁止跳过战斗
+          <span
+            className="flex items-center gap-1 px-2 py-1 mr-2 rounded border border-red-500/80 bg-red-900/40 text-red-300 text-xs font-bold"
+            title="精英强敌无法跳过战斗"
+          >
+            <Skull size={14} />
+            强敌来袭
+          </span>
+        ) : (
+          <button
+            onClick={handleSkipBattle}
+            disabled={isProcessing || !!settlement}
+            className="p-2 rounded border border-stone-600 text-stone-200 hover:bg-stone-700/40 disabled:opacity-50 transition-colors mr-2"
+            title="跳过战斗"
+          >
+            <FastForward size={16} />
+          </button>
+        )
       }
       size="4xl"
       height="auto"
@@ -771,16 +742,94 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                 expChange={settlement.result.expChange}
                 spiritChange={settlement.result.spiritChange}
               />
-              <button
-                onClick={() => onClose(settlement.result, settlement.updatedInventory)}
-                className="w-full px-4 py-2 rounded border border-emerald-500 text-emerald-300 hover:bg-emerald-500/10"
-              >
-                确认并返回
-              </button>
+              {settlement.result.victory ? (
+                // 胜利横幅：替代「确认并返回」按钮，1 秒后由上方定时器自动关闭弹窗
+                <div className="flex items-center justify-center gap-2 rounded-lg border border-yellow-500/60 bg-gradient-to-r from-emerald-900/40 via-ink-900/30 to-yellow-900/30 px-4 py-3">
+                  <Trophy size={20} className="text-yellow-400" />
+                  <span className="text-lg font-serif font-bold text-yellow-300">战斗胜利</span>
+                  <span className="text-sm text-emerald-300">
+                    修为 +{settlement.result.expChange} · 灵石 +{settlement.result.spiritChange}
+                  </span>
+                </div>
+              ) : (
+                <button
+                  onClick={() => onClose(settlement.result, settlement.updatedInventory)}
+                  className="w-full px-4 py-2 rounded border border-emerald-500 text-emerald-300 hover:bg-emerald-500/10"
+                >
+                  确认并返回
+                </button>
+              )}
             </div>
           )}
-          {/* 敌人信息 */}
-          <div className="bg-rose-900/20 border border-rose-700/40 rounded-lg p-4 relative overflow-hidden">
+          {/* 对峙舞台：玩家左 / 敌人右 */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+            <FighterPanel
+              side="player"
+              name={playerUnit.name}
+              realm={playerUnit.realm}
+              hp={playerHp}
+              maxHp={playerMaxHp}
+              mana={playerUnit.mana}
+              maxMana={playerUnit.maxMana}
+              buffs={playerUnit.buffs}
+              debuffs={playerUnit.debuffs}
+              hitTick={stageEffects.hitTicks.player}
+              lungeTick={stageEffects.lungeTicks.player}
+              defending={playerUnit.isDefending}
+              headerExtra={
+                battleState.waitingForPlayerAction && battleState.playerActionsRemaining > 0 ? (
+                  <span className="shrink-0 text-[10px] text-emerald-400">
+                    行动 {battleState.playerActionsRemaining}/{battleState.playerMaxActions}
+                  </span>
+                ) : null
+              }
+              footer={
+                <div className="mt-1.5 flex gap-3 text-[10px] text-stone-400">
+                  <span>攻 {playerUnit.attack}</span>
+                  <span>防 {playerUnit.defense}</span>
+                  <span>速 {playerUnit.speed}</span>
+                  <span>识 {playerUnit.spirit}</span>
+                </div>
+              }
+              className="flex-1 min-w-0"
+            />
+            <FighterPanel
+              side="enemy"
+              name={enemyUnit.name}
+              realm={enemyUnit.realm}
+              hp={enemyHp}
+              maxHp={enemyMaxHp}
+              mana={enemyUnit.mana}
+              maxMana={enemyUnit.maxMana}
+              buffs={enemyUnit.buffs}
+              debuffs={enemyUnit.debuffs}
+              hitTick={stageEffects.hitTicks.enemy}
+              lungeTick={stageEffects.lungeTicks.enemy}
+              defending={enemyUnit.isDefending}
+              headerExtra={
+                battleState.enemyIsElite ? (
+                  <span className="flex shrink-0 items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border border-amber-500 text-amber-400 bg-amber-900/40 font-bold">
+                    <Skull size={12} />
+                    强敌来袭
+                  </span>
+                ) : null
+              }
+              footer={
+                <div className="mt-1.5 flex gap-3 text-[10px] text-stone-400">
+                  <span>攻 {enemyUnit.attack}</span>
+                  <span>防 {enemyUnit.defense}</span>
+                  <span>速 {enemyUnit.speed}</span>
+                  <span>识 {enemyUnit.spirit}</span>
+                </div>
+              }
+              className="flex-1 min-w-0"
+            />
+          </div>
+
+          {/* 演出区：留白给飘字 / 技能名横幅 / 领域提示 */}
+          <div
+            className={`relative h-44 md:h-60 rounded-lg border border-stone-800 bg-ink-900/70 overflow-hidden ${stageShakeClass}`}
+          >
             {/* 五行领域背景特效 */}
             {battleState.elementalField && (
               <div className={`absolute inset-0 opacity-10 pointer-events-none ${
@@ -791,130 +840,73 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
                 'bg-amber-600'
               }`} />
             )}
-            <div className="flex items-center justify-between mb-2 relative z-10">
-              <div className="flex items-center gap-2">
-                <span className="text-rose-300 font-semibold">
-                  {enemyUnit.name}
-                </span>
-                {battleState.elementalField && (
-                  <span className={`text-[10px] px-1.5 py-0.5 rounded border font-bold ${
-                    battleState.elementalField.type === 'metal' ? 'border-yellow-500 text-yellow-400' :
-                    battleState.elementalField.type === 'wood' ? 'border-green-500 text-green-400' :
-                    battleState.elementalField.type === 'water' ? 'border-blue-500 text-blue-400' :
-                    battleState.elementalField.type === 'fire' ? 'border-red-500 text-red-400' :
-                    'border-amber-600 text-amber-500'
-                  }`}>
-                    {battleState.elementalField.type === 'metal' ? '金' :
-                     battleState.elementalField.type === 'wood' ? '木' :
-                     battleState.elementalField.type === 'water' ? '水' :
-                     battleState.elementalField.type === 'fire' ? '火' : '土'}之领域 LV.{battleState.elementalField.intensity}
-                  </span>
-                )}
-              </div>
-              <span className="text-xs text-stone-400">
-                HP: {enemyHp} / {enemyMaxHp}
+            {/* 领域提示（演出区顶部居中） */}
+            {battleState.elementalField && (
+              <span className={`absolute left-1/2 top-2 z-10 -translate-x-1/2 whitespace-nowrap rounded border px-1.5 py-0.5 text-[10px] font-bold ${
+                battleState.elementalField.type === 'metal' ? 'border-yellow-500 text-yellow-400' :
+                battleState.elementalField.type === 'wood' ? 'border-green-500 text-green-400' :
+                battleState.elementalField.type === 'water' ? 'border-blue-500 text-blue-400' :
+                battleState.elementalField.type === 'fire' ? 'border-red-500 text-red-400' :
+                'border-amber-600 text-amber-500'
+              }`}>
+                {battleState.elementalField.type === 'metal' ? '金' :
+                 battleState.elementalField.type === 'wood' ? '木' :
+                 battleState.elementalField.type === 'water' ? '水' :
+                 battleState.elementalField.type === 'fire' ? '火' : '土'}之领域 LV.{battleState.elementalField.intensity}
               </span>
-            </div>
-            <div className="w-full bg-stone-800 rounded-full h-3 mb-2 relative z-10">
-              <div
-                className="bg-rose-500 h-3 rounded-full transition-[width] duration-300"
-                style={{ width: `${enemyHpPercent}%` }}
-              />
-            </div>
-            <div className="flex gap-4 text-xs text-stone-400 relative z-10">
-              <span>攻击: {enemyUnit.attack}</span>
-              <span>防御: {enemyUnit.defense}</span>
-              <span>速度: {enemyUnit.speed}</span>
-              <span>神识: {enemyUnit.spirit}</span>
-            </div>
-          </div>
-
-          {/* 玩家信息 */}
-          <div className="bg-emerald-900/20 border border-emerald-700/40 rounded-lg p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-emerald-300 font-semibold">
-                {playerUnit.name}
-              </span>
-              <span className="text-xs text-stone-400">
-                HP: {playerHp} / {playerMaxHp} · MP:{' '}
-                {Math.floor(playerUnit.mana || 0)} / {Math.floor(playerUnit.maxMana || 100)}
-                {battleState.waitingForPlayerAction && (
-                  <span className="text-emerald-400 ml-2">
-                    · 行动: {battleState.playerActionsRemaining}/
-                    {battleState.playerMaxActions}
-                  </span>
-                )}
-              </span>
-            </div>
-            <div className="w-full bg-stone-800 rounded-full h-3 mb-2">
-              <div
-                className="bg-emerald-500 h-3 rounded-full transition-[width] duration-300"
-                style={{ width: `${playerHpPercent}%` }}
-              />
-            </div>
-            <div className="flex gap-4 text-xs text-stone-400">
-              <span>攻击: {playerUnit.attack}</span>
-              <span>防御: {playerUnit.defense}</span>
-              <span>速度: {playerUnit.speed}</span>
-              <span>神识: {playerUnit.spirit}</span>
-            </div>
-            {/* Buff/Debuff显示 */}
-            {(playerUnit.buffs.length > 0 || playerUnit.debuffs.length > 0) && (
-              <div className="mt-2 flex gap-2 flex-wrap">
-                {playerUnit.buffs.map((buff) => (
-                  <span
-                    key={buff.id}
-                    className="text-xs bg-emerald-700/30 text-emerald-200 px-2 py-0.5 rounded"
-                    title={buff.description || buff.name}
-                  >
-                    {buff.name}
-                  </span>
-                ))}
-                {playerUnit.debuffs.map((debuff) => (
-                  <span
-                    key={debuff.id}
-                    className="text-xs bg-rose-700/30 text-rose-200 px-2 py-0.5 rounded"
-                    title={debuff.description || debuff.name}
-                  >
-                    {debuff.name}
-                  </span>
-                ))}
-              </div>
             )}
+            {/* 对峙水印 */}
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <span className="select-none font-serif text-6xl text-stone-800/70 md:text-7xl">
+                对决
+              </span>
+            </div>
+            {stageEffects.floats.map((float) => (
+              <DamageFloat key={float.id} float={float} />
+            ))}
+            {stageEffects.banner && <SkillBanner banner={stageEffects.banner} />}
           </div>
 
-          {/* 战斗日志 */}
+          {/* 战斗日志：收窄滚动条 + 图标分级染色 */}
           {battleState.history.length > 0 && (
-            <div className="bg-ink-800/60 rounded-lg p-4 max-h-40 overflow-y-auto">
-              <div className="text-xs text-stone-400 mb-2">战斗日志</div>
-              <div className="space-y-2">
-                {battleState.history.slice(-5).map((action) => {
+            <div className="max-h-32 overflow-y-auto rounded-lg border border-stone-800 bg-ink-900/60 p-2">
+              <div className="space-y-1.5">
+                {battleState.history.slice(-12).map((action) => {
+                  const style = classifyBattleLog({
+                    actorSide: action.turn,
+                    description: action.description,
+                    actionType: action.actionType,
+                    crit: action.result.crit,
+                    miss: action.result.miss,
+                    damage: action.result.damage,
+                    heal: action.result.heal,
+                    isPet: action.turn === 'player' && action.description.startsWith('【'),
+                  });
                   const detailTags = getActionDetailTags(action);
                   return (
                     <div
                       key={action.id}
-                      className={`rounded border px-3 py-2 text-sm ${
-                        action.turn === 'player'
-                          ? 'border-emerald-700/40 bg-emerald-950/20 text-emerald-200'
-                          : 'border-rose-700/40 bg-rose-950/20 text-rose-200'
-                      }`}
+                      className={`flex items-start gap-2 rounded border px-2 py-1.5 text-xs text-stone-200 ${style.rowClass}`}
                     >
-                      <div className="mb-1 flex items-center justify-between gap-2 text-[11px] text-stone-400">
-                        <span>第 {action.round} 回合 · {getActionActorLabel(action)}</span>
-                        {detailTags.length > 0 && (
-                          <span className="flex flex-wrap justify-end gap-1">
-                            {detailTags.map((tag) => (
-                              <span
-                                key={tag.text}
-                                className={`rounded border px-1.5 py-0.5 ${tag.className}`}
-                              >
-                                {tag.text}
-                              </span>
-                            ))}
-                          </span>
-                        )}
+                      <style.Icon size={13} className={`mt-0.5 shrink-0 ${style.iconClass}`} />
+                      <div className="min-w-0 flex-1">
+                        <div className="mb-0.5 flex flex-wrap items-center justify-between gap-1 text-[10px] text-stone-500">
+                          <span>第 {action.round} 回合 · {getActionActorLabel(action)}</span>
+                          {detailTags.length > 0 && (
+                            <span className="flex flex-wrap justify-end gap-1">
+                              {detailTags.map((tag) => (
+                                <span
+                                  key={tag.text}
+                                  className={`rounded border px-1 py-0.5 ${tag.className}`}
+                                >
+                                  {tag.text}
+                                </span>
+                              ))}
+                            </span>
+                          )}
+                        </div>
+                        <div className="leading-snug">{action.description}</div>
                       </div>
-                      <div>{action.description}</div>
                     </div>
                   );
                 })}
@@ -926,261 +918,6 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
         {/* 行动选择区域 */}
         {!settlement && battleState.waitingForPlayerAction && battleState.playerActionsRemaining > 0 && !isProcessing && (
           <div className="border-t border-stone-700 px-6 py-4 bg-ink-900/90">
-            <div className="flex flex-wrap gap-2 mb-3">
-              <button
-                onClick={() => handlePlayerAction({ type: 'attack' })}
-                disabled={isProcessing || battleState.playerActionsRemaining <= 0}
-                className={`flex items-center gap-2 px-4 py-2 rounded border ${
-                  isProcessing || battleState.playerActionsRemaining <= 0
-                    ? 'border-stone-700 text-stone-600 cursor-not-allowed opacity-50'
-                    : 'border-amber-500 text-amber-300 hover:bg-amber-500/10'
-                }`}
-              >
-                <Sword size={16} />
-                普通攻击
-              </button>
-              <button
-                onClick={() => {
-                  if (showSkills) {
-                    setSkillSearch('');
-                    setSkillTypeFilter(null);
-                    setSkillRarityFilter(null);
-                  }
-                  setShowSkills(!showSkills);
-                }}
-                disabled={isProcessing}
-                className={`flex items-center gap-2 px-4 py-2 rounded border ${
-                  isProcessing
-                    ? 'border-stone-700 text-stone-600 cursor-not-allowed opacity-50'
-                    : 'border-blue-500 text-blue-300 hover:bg-blue-500/10'
-                }`}
-              >
-                <Zap size={16} />
-                技能 ({totalAvailableSkillsCount})
-              </button>
-              <button
-                onClick={() => setShowPotions(!showPotions)}
-                disabled={isProcessing}
-                className={`flex items-center gap-2 px-4 py-2 rounded border ${
-                  isProcessing
-                    ? 'border-stone-700 text-stone-600 cursor-not-allowed opacity-50'
-                    : 'border-purple-500 text-purple-300 hover:bg-purple-500/10'
-                }`}
-              >
-                <Option size={16} />
-                丹药 ({availablePotions.length})
-              </button>
-              <button
-                onClick={() => setShowAdvancedItems(!showAdvancedItems)}
-                disabled={isProcessing}
-                className={`flex items-center gap-2 px-4 py-2 rounded border ${
-                  isProcessing
-                    ? 'border-stone-700 text-stone-600 cursor-not-allowed opacity-50'
-                    : 'border-yellow-500 text-yellow-300 hover:bg-yellow-500/10'
-                }`}
-              >
-                <Zap size={16} />
-                进阶物品
-              </button>
-              <button
-                onClick={() => handlePlayerAction({ type: 'defend' })}
-                disabled={isProcessing || battleState.playerActionsRemaining <= 0}
-                className={`flex items-center gap-2 px-4 py-2 rounded border ${
-                  isProcessing || battleState.playerActionsRemaining <= 0
-                    ? 'border-stone-700 text-stone-600 cursor-not-allowed opacity-50'
-                    : 'border-cyan-500 text-cyan-300 hover:bg-cyan-500/10'
-                }`}
-              >
-                <Shield size={16} />
-                防御
-              </button>
-              <button
-                onClick={() => handlePlayerAction({ type: 'flee' })}
-                disabled={isProcessing || battleState.playerActionsRemaining <= 0}
-                className={`flex items-center gap-2 px-4 py-2 rounded border ${
-                  isProcessing || battleState.playerActionsRemaining <= 0
-                    ? 'border-stone-700 text-stone-600 cursor-not-allowed opacity-50'
-                    : 'border-stone-500 text-stone-300 hover:bg-stone-500/10'
-                }`}
-              >
-                <ArrowRight size={16} />
-                逃跑
-              </button>
-            </div>
-
-            {/* 技能列表 */}
-            {showSkills && (
-              <div className="mt-3 p-3 bg-ink-800 rounded border border-stone-700 max-h-[400px] flex flex-col">
-                <div className="flex flex-col gap-2 mb-3">
-                  <div className="flex justify-between items-center">
-                    <div className="text-sm text-stone-300 font-semibold">可用技能 ({availableSkills.length})</div>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {[
-                        { id: 'attack', label: '攻击', activeClass: 'bg-rose-900/40 border-rose-500 text-rose-300' },
-                        { id: 'defense', label: '防御', activeClass: 'bg-blue-900/40 border-blue-500 text-blue-300' },
-                        { id: 'heal', label: '治疗', activeClass: 'bg-emerald-900/40 border-emerald-500 text-emerald-300' },
-                        { id: 'buff', label: '增益', activeClass: 'bg-amber-900/40 border-amber-500 text-amber-300' },
-                        { id: 'debuff', label: '减益', activeClass: 'bg-purple-900/40 border-purple-500 text-purple-300' },
-                        { id: 'special', label: '特殊', activeClass: 'bg-cyan-900/40 border-cyan-500 text-cyan-300' },
-                      ].map((type) => (
-                        <button
-                          key={type.id}
-                          onClick={() => setSkillTypeFilter(skillTypeFilter === type.id ? null : type.id)}
-                          className={`px-2 py-1 rounded text-xs border transition-colors ${
-                            skillTypeFilter === type.id
-                              ? type.activeClass
-                              : 'bg-ink-900 border-stone-700 text-stone-500 hover:border-stone-600'
-                          }`}
-                        >
-                          {type.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  {/* 品质筛选 */}
-                  <div className="flex gap-1.5 flex-wrap">
-                    {[
-                      { id: '天', label: '天', color: 'border-yellow-500 text-yellow-400 bg-yellow-900/40' },
-                      { id: '地', label: '地', color: 'border-purple-500 text-purple-400 bg-purple-900/40' },
-                      { id: '玄', label: '玄', color: 'border-blue-500 text-blue-400 bg-blue-900/40' },
-                      { id: '黄', label: '黄', color: 'border-green-500 text-green-400 bg-green-900/40' },
-                    ].map((rarity) => (
-                      <button
-                        key={rarity.id}
-                        onClick={() => setSkillRarityFilter(skillRarityFilter === rarity.id ? null : rarity.id)}
-                        className={`px-2 py-1 rounded text-xs border transition-colors ${
-                          skillRarityFilter === rarity.id
-                            ? rarity.color
-                            : 'bg-ink-900 border-stone-700 text-stone-500 hover:border-stone-600'
-                        }`}
-                      >
-                        {rarity.label}
-                      </button>
-                    ))}
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="搜索技能名称..."
-                    value={skillSearch}
-                    onChange={(e) => setSkillSearch(e.target.value)}
-                    className="w-full bg-ink-900 border border-stone-700 rounded px-3 py-1.5 text-sm text-stone-200 focus:outline-none focus:border-blue-500"
-                  />
-                </div>
-
-                <div className="overflow-y-auto pr-1 space-y-2 flex-1 min-h-0">
-                  {availableSkills.length === 0 ? (
-                    <div className="text-sm text-stone-500 text-center py-4">
-                      {skillSearch || skillTypeFilter || skillRarityFilter ? '未找到符合条件的技能' : '没有可用技能'}
-                    </div>
-                  ) : (
-                    availableSkills.map((skill) => (
-                      <button
-                        key={skill.id}
-                        onClick={() =>
-                          handlePlayerAction({
-                            type: 'skill',
-                            skillId: skill.id,
-                          })
-                        }
-                        disabled={isProcessing || battleState.playerActionsRemaining <= 0}
-                        className={`w-full text-left p-2 rounded border text-sm ${
-                          isProcessing || battleState.playerActionsRemaining <= 0
-                            ? 'border-stone-700 bg-stone-900/40 text-stone-600 cursor-not-allowed opacity-50'
-                            : 'border-blue-700/50 bg-blue-900/20 hover:bg-blue-900/40'
-                        }`}
-                      >
-                        <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-2">
-                            <span className="text-blue-300 font-semibold">
-                              {skill.name}
-                            </span>
-                            <span className={`ml-2 text-[10px] px-1 rounded border border-blue-500/30 text-blue-400/80 font-normal`}>
-                              {skill.type === 'attack' ? '攻击' :
-                               skill.type === 'defense' ? '防御' :
-                               skill.type === 'heal' ? '治疗' :
-                               skill.type === 'buff' ? '增益' :
-                               skill.type === 'debuff' ? '减益' : '特殊'}
-                            </span>
-                            {(() => {
-                              const rarity = getSkillRarity(skill);
-                              return rarity ? (
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${getSkillQualityColor(rarity)}`}>
-                                  {rarity}
-                                </span>
-                              ) : null;
-                            })()}
-                          </div>
-                          <span className="text-xs text-stone-400">
-                            {skill.cost.mana
-                              ? `消耗灵力: ${skill.cost.mana}`
-                              : ''}
-                          </span>
-                        </div>
-                        <div className="text-xs text-stone-400 mt-1">
-                          {skill.description}
-                        </div>
-                      </button>
-                    ))
-                  )}
-
-                  {unavailableSkills.length > 0 && (
-                    <>
-                      <div className="text-xs text-stone-500 mt-4 mb-2 pb-1 border-b border-stone-800">
-                        不可用技能 ({unavailableSkills.length})
-                      </div>
-                      <div className="space-y-2 opacity-60">
-                        {unavailableSkills.map((skill) => {
-                          const onCooldown =
-                            (battleState.player.cooldowns[skill.id] || 0) > 0;
-                          const notEnoughMana =
-                            skill.cost.mana &&
-                            (battleState.player.mana || 0) < skill.cost.mana;
-                          return (
-                            <div
-                              key={skill.id}
-                              className="w-full text-left p-2 rounded border border-stone-700 bg-stone-900/40 text-sm"
-                            >
-                              <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-stone-400 font-semibold">
-                                    {skill.name}
-                                  </span>
-                                  <span className="ml-2 text-[10px] text-stone-500 font-normal">
-                                    {skill.type === 'attack' ? '攻击' :
-                                     skill.type === 'defense' ? '防御' :
-                                     skill.type === 'heal' ? '治疗' :
-                                     skill.type === 'buff' ? '增益' :
-                                     skill.type === 'debuff' ? '减益' : '特殊'}
-                                  </span>
-                                  {(() => {
-                                    const rarity = getSkillRarity(skill);
-                                    return rarity ? (
-                                      <span className={`text-[10px] px-1.5 py-0.5 rounded border font-semibold ${getSkillQualityColor(rarity)}`}>
-                                        {rarity}
-                                      </span>
-                                    ) : null;
-                                  })()}
-                                </div>
-                                <span className="text-xs text-stone-500">
-                                  {onCooldown &&
-                                    `冷却: ${battleState.player.cooldowns[skill.id]} 回合`}
-                                  {notEnoughMana &&
-                                    `灵力不足 (需要 ${skill.cost.mana}, 当前 ${battleState.player.mana || 0})`}
-                                </span>
-                              </div>
-                              <div className="text-xs text-stone-500 mt-1 line-clamp-1">
-                                {skill.description}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* 丹药列表 */}
             {showPotions && (
               <div className="mt-3 p-3 bg-ink-800 rounded border border-stone-700 max-h-[300px] overflow-y-auto">
@@ -1446,6 +1183,31 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
             <div className="text-center text-rose-300 text-sm">
               {errorMessage}
             </div>
+          </div>
+        )}
+
+        {/* 底部统一操作栏：sticky 固定在弹窗最底部，集中全部战斗操作（普攻/防御/技能格/逃跑 + 丹药/进阶物品入口），
+            敌方回合/处理中保持可见但置灰，点击格子直接派发对应行动 */}
+        {!settlement && (
+          <div className="sticky bottom-0 z-20">
+            <LoadoutSkillBar
+              player={battleState.player}
+              loadout={battleLoadout}
+              disabled={
+                isProcessing ||
+                !battleState.waitingForPlayerAction ||
+                battleState.playerActionsRemaining <= 0
+              }
+              onUseSkill={(skillId) => handlePlayerAction({ type: 'skill', skillId })}
+              onAttack={() => handlePlayerAction({ type: 'attack' })}
+              onDefend={() => handlePlayerAction({ type: 'defend' })}
+              onFlee={() => handlePlayerAction({ type: 'flee' })}
+              potionCount={availablePotions.length}
+              potionsOpen={showPotions}
+              onTogglePotions={() => setShowPotions(!showPotions)}
+              advancedItemsOpen={showAdvancedItems}
+              onToggleAdvancedItems={() => setShowAdvancedItems(!showAdvancedItems)}
+            />
           </div>
         )}
     </Modal>

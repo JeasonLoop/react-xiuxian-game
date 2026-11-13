@@ -6,6 +6,10 @@ import { getRarityCardStyle } from '../utils/rarityUtils';
 import { Modal } from './common';
  import TabBar from './common/TabBar';
 
+ 
+ // 排序辅助：收藏的材料排最前，其余保持原顺序（Array.sort 为稳定排序）
+ const sortFavoritesFirst = (items: Item[]): Item[] =>
+   [...items].sort((a, b) => Number(!!b.favorited) - Number(!!a.favorited));
 interface Props {
   isOpen: boolean;
   onClose: () => void;
@@ -69,23 +73,24 @@ const CraftingModal: React.FC<Props> = ({
   }, [player.unlockedRecipes]);
 
   // 获取背包中可用于炼器的材料
-  const materialItems = useMemo(() => {
-    return player.inventory.filter(i => {
-      const isMaterial =
-        i.type === ItemType.Herb ||
-        i.type === ItemType.Material ||
-        i.type === ItemType.AdvancedItem;
-
-      if (!isMaterial) return false;
-      if (rarityFilter === '全部') return true;
-      return i.rarity === rarityFilter;
-    });
-  }, [player.inventory, rarityFilter]);
-
-  // 获取背包中可用于融合的装备
-  const equippableItems = useMemo(() => {
-    const equippedIds = Object.values(player.equippedItems);
-    return player.inventory.filter(i => {
+   const materialItems = useMemo(() => {
+     // 收藏的材料排最前，方便快速定位常用材料
+     return sortFavoritesFirst(player.inventory.filter(i => {
+       const isMaterial =
+         i.type === ItemType.Herb ||
+         i.type === ItemType.Material ||
+         i.type === ItemType.AdvancedItem;
+ 
+       if (!isMaterial) return false;
+       if (rarityFilter === '全部') return true;
+       return i.rarity === rarityFilter;
+     }));
+   }, [player.inventory, rarityFilter]);
+ 
+   // 获取背包中可用于融合的装备
+   const equippableItems = useMemo(() => {
+     const equippedIds = Object.values(player.equippedItems);
+     return sortFavoritesFirst(player.inventory.filter(i => {
       // 必须是可装备物品
       if (!i.isEquippable) return false;
       // 必须未被装备
@@ -113,13 +118,15 @@ const CraftingModal: React.FC<Props> = ({
       }
 
       return true;
-    });
-  }, [player.inventory, player.equippedItems, fuseRarityFilter, fuseSlotFilter]);
-
-  // 获取背包中的合成石
-  const synthesisStones = useMemo(() => {
-    return player.inventory.filter(i => i.type === ItemType.ArtifactStone);
-  }, [player.inventory]);
+       return true;
+     }));
+   }, [player.inventory, player.equippedItems, fuseRarityFilter, fuseSlotFilter]);
+ 
+   // 获取背包中的合成石
+   const synthesisStones = useMemo(() => {
+     // 收藏的合成石排最前
+     return sortFavoritesFirst(player.inventory.filter(i => i.type === ItemType.ArtifactStone));
+   }, [player.inventory]);
 
   const handleAddMaterial = (item: Item) => {
     if (selectedMaterials.length >= 8) return;
@@ -366,7 +373,11 @@ const CraftingModal: React.FC<Props> = ({
                         onClick={() => handleAddMaterial(item)}
                         className={`border p-2 rounded text-left hover:border-white/30 transition-colors flex flex-col ${getRarityCardStyle(item.rarity)}`}
                       >
-                        <div className="text-xs font-serif font-bold truncate">{item.name}</div>
+                         {/* 收藏的材料带小星标 */}
+                         <div className="text-xs font-serif font-bold flex items-center gap-1 min-w-0">
+                           {item.favorited && <Star size={10} className="fill-mystic-gold shrink-0" />}
+                           <span className="truncate">{item.name}</span>
+                         </div>
                         <div className="text-[10px] opacity-60 flex justify-between">
                           <span>{item.rarity}</span>
                           <span>x{item.quantity}</span>
@@ -525,7 +536,11 @@ const CraftingModal: React.FC<Props> = ({
                                         : `${getRarityCardStyle(item.rarity)} hover:border-white/30`
                                     }`}
                                   >
-                                    <div className="text-xs font-serif font-bold truncate">{item.name}</div>
+                                     {/* 收藏的装备带小星标 */}
+                                     <div className="text-xs font-serif font-bold flex items-center gap-1 min-w-0">
+                                       {item.favorited && <Star size={10} className="fill-mystic-gold shrink-0" />}
+                                       <span className="truncate">{item.name}</span>
+                                     </div>
                                     <div className="text-[10px] opacity-60 flex justify-between">
                                       <span>{item.equipmentSlot}</span>
                                       <span>{item.rarity}</span>
@@ -554,7 +569,11 @@ const CraftingModal: React.FC<Props> = ({
                                       : `${getRarityCardStyle(stone.rarity)} hover:border-white/30`
                                   }`}
                                 >
-                                  <div className="text-xs font-serif font-bold truncate">{stone.name}</div>
+                                   {/* 收藏的合成石带小星标 */}
+                                   <div className="text-xs font-serif font-bold flex items-center gap-1 min-w-0">
+                                     {stone.favorited && <Star size={10} className="fill-mystic-gold shrink-0" />}
+                                     <span className="truncate">{stone.name}</span>
+                                   </div>
                                   <div className="text-[10px] opacity-60 flex justify-between">
                                     <span>{stone.rarity}</span>
                                     <span>x{stone.quantity}</span>

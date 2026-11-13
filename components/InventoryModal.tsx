@@ -28,9 +28,10 @@ import {
   Wand,
   Lock,
   Unlock,
-  Lightbulb,
-  Sparkle,
-} from 'lucide-react';
+   Lightbulb,
+   Sparkle,
+   Star,
+ } from 'lucide-react';
 import { REALM_ORDER, SPIRITUAL_ROOT_NAMES, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS, LONGEVITY_RULES, CULTIVATION_ARTS } from '../constants/index';
 import EquipmentPanel from './EquipmentPanel';
 import BatchDiscardModal from './BatchDiscardModal';
@@ -53,6 +54,7 @@ import {
   getEquipmentSlotsByType,
 } from '../utils/equipmentUtils';
 import { useDebounce } from '../hooks/useDebounce';
+import { useUIStore } from '../store/uiStore';
 import { showConfirm } from '../utils/toastUtils';
 
 // 模块级：避免每次渲染重新创建
@@ -158,7 +160,7 @@ const InventoryItem = memo<InventoryItemProps>(
 
     return (
       <div
-        className={`p-3 rounded border flex flex-col justify-between relative transition-colors ${isEquipped ? 'bg-ink-800 border-mystic-gold shadow-md' : `bg-ink-800 hover:bg-ink-700 ${getRarityBorder(rarity)}`}`}
+         className={`p-3 rounded border flex flex-col justify-between relative transition-colors ${isEquipped ? 'bg-ink-800 border-mystic-gold shadow-md' : `bg-ink-800 hover:bg-ink-700 ${getRarityBorder(rarity)}`}${item.favorited && !isEquipped ? ' ring-1 ring-mystic-gold/40' : ''}`}
         style={{ contain: 'layout style' }}
         onMouseEnter={() => onHover(item)}
         onMouseLeave={() => onHover(null)}
@@ -190,7 +192,16 @@ const InventoryItem = memo<InventoryItemProps>(
             >
               {rarityLabel}
             </span>
-            <span className="text-xs text-stone-500 py-0.5">{typeLabel}</span>
+             {/* 收藏标记：弱化的金色小徽标，与选中/已装备态区分 */}
+             {item.favorited && (
+               <span
+                 className="text-[10px] px-1.5 py-0.5 rounded border border-mystic-gold/40 bg-mystic-gold/10 text-mystic-gold flex items-center"
+                 title="已收藏"
+               >
+                 <Star size={9} className="fill-mystic-gold" />
+               </span>
+             )}
+             <span className="text-xs text-stone-500 py-0.5">{typeLabel}</span>
           </div>
 
           <p className="text-xs text-stone-500 italic mb-3">
@@ -260,12 +271,14 @@ const InventoryItem = memo<InventoryItemProps>(
             return null;
           })()}
 
-          {/* 材料用途说明 */}
-          {item.type === ItemType.Material && (
+          {/* 材料用途说明（宝匣为宝箱类物品，也显示使用说明） */}
+          {(item.type === ItemType.Material || item.name.includes('宝匣')) && (
             <div className="text-xs text-blue-400 mb-2 p-2 bg-blue-900/20 rounded border border-blue-800/50">
               <div className="font-bold mb-1 flex items-center gap-1"><Lightbulb size={12} /> 用途说明：</div>
               <div className="space-y-0.5 text-blue-300">
-                {item.name.includes('材料包') ? (
+                {item.name.includes('宝匣') ? (
+                  <div>• 使用后可开启宝匣，获得对应层数的修为、灵石与太虚洗炼石等修炼资源</div>
+                ) : item.name.includes('材料包') ? (
                   <div>• 使用后可获得对应品级的丹药材料</div>
                 ) : item.name === '宗门宝库钥匙' ? (
                   <div>• 使用后可打开宗门宝库，选择一件物品带走</div>
@@ -282,10 +295,10 @@ const InventoryItem = memo<InventoryItemProps>(
                 {item.name.includes('符') ? (
                   <div>• 可用于制作符箓或直接使用</div>
                 ) : null}
-                {!item.name.includes('材料包') && item.name !== '宗门宝库钥匙' && (
+                {!item.name.includes('材料包') && item.name !== '宗门宝库钥匙' && !item.name.includes('宝匣') && (
                   <div>• 可喂养灵宠获得经验</div>
                 )}
-                {!item.effect && !item.name.includes('材料包') && item.name !== '宗门宝库钥匙' && (
+                {!item.effect && !item.name.includes('材料包') && item.name !== '宗门宝库钥匙' && !item.name.includes('宝匣') && (
                   <div className="text-stone-400">• 此材料暂无直接使用效果</div>
                 )}
               </div>
@@ -396,7 +409,7 @@ const InventoryItem = memo<InventoryItemProps>(
         </div>
 
         <div className="mt-2 flex gap-1.5 flex-wrap">
-          {item.isEquippable && item.equipmentSlot ? (
+          {item.isEquippable && item.equipmentSlot && !item.name.includes('宝匣') ? (
             <>
               {isEquipped ? (
                 <button
@@ -457,26 +470,37 @@ const InventoryItem = memo<InventoryItemProps>(
                 className={`px-3 text-xs py-2 rounded transition-colors border ${item.locked ? 'bg-amber-900/30 border-amber-600 text-amber-300' : 'bg-stone-700 hover:bg-stone-600 text-stone-400 border-stone-500'}`}
                 title={item.locked ? '解锁' : '锁定（锁定后不可丢弃/分解）'}
               >
-                {item.locked ? <Lock size={14} /> : <Unlock size={14} />}
-              </button>
-              <button
-                onClick={() => onDiscardItem(item)}
-                disabled={!!item.locked}
-                className={`px-3 text-xs py-2 rounded transition-colors border ${item.locked ? 'bg-stone-800 text-stone-600 border-stone-700 cursor-not-allowed' : 'bg-red-900 hover:bg-red-800 text-red-200 border-red-700'}`}
-                title={item.locked ? '已锁定，无法丢弃' : '丢弃'}
-              >
-                <Trash2 size={14} />
-              </button>
-            </>
-          ) : (
-            <>
-              {(() => {
-                // 判断物品是否可使用
-                const isMaterialPack = item.name.includes('材料包') && item.type === ItemType.Material;
-                const isTreasureVaultKey = item.name === '宗门宝库钥匙' && item.type === ItemType.Material;
+                 {item.locked ? <Lock size={14} /> : <Unlock size={14} />}
+               </button>
+               {/* 收藏切换：仅作常用标记，不影响丢弃/分解（与锁定独立） */}
+               <button
+                 onClick={() => window.dispatchEvent(new CustomEvent('toggle-item-favorite', { detail: { itemId: item.id } }))}
+                 className={`px-3 text-xs py-2 rounded transition-colors border ${item.favorited ? 'bg-yellow-900/30 border-yellow-500 text-yellow-300' : 'bg-stone-700 hover:bg-stone-600 text-stone-400 border-stone-500'}`}
+                 title={item.favorited ? '取消收藏' : '收藏（常用材料标记，便于筛选定位）'}
+               >
+                 <Star size={14} className={item.favorited ? 'fill-yellow-300' : ''} />
+               </button>
+               <button
+                 onClick={() => onDiscardItem(item)}
+                 disabled={!!item.locked}
+                 className={`px-3 text-xs py-2 rounded transition-colors border ${item.locked ? 'bg-stone-800 text-stone-600 border-stone-700 cursor-not-allowed' : 'bg-red-900 hover:bg-red-800 text-red-200 border-red-700'}`}
+                 title={item.locked ? '已锁定，无法丢弃' : '丢弃'}
+               >
+                 <Trash2 size={14} />
+               </button>
+             </>
+           ) : (
+             <>
+               {(() => {
+                 // 判断物品是否可使用
+                // 若再叠加 type 条件会导致“使用”按钮消失
+                const isMaterialPack = item.name.includes('材料包');
+                const isTreasureVaultKey = item.name === '宗门宝库钥匙';
+                // 通天宝匣是宝箱不是装备，可使用开启（按名称判断，兼容旧存档误入库为 Artifact 的情况）
+                const isTowerChest = item.name.includes('宝匣');
                 const hasEffect = item.effect || item.permanentEffect;
                 const isRecipe = item.type === ItemType.Recipe;
-                const isUsable = isMaterialPack || isTreasureVaultKey || (hasEffect && item.type !== ItemType.Material) || isRecipe;
+                const isUsable = isMaterialPack || isTreasureVaultKey || isTowerChest || (hasEffect && item.type !== ItemType.Material) || isRecipe;
 
                 return isUsable ? (
                   <button
@@ -589,10 +613,18 @@ const InventoryItem = memo<InventoryItemProps>(
                 className={`px-3 text-xs py-2 rounded transition-colors border ${item.locked ? 'bg-amber-900/30 border-amber-600 text-amber-300' : 'bg-stone-700 hover:bg-stone-600 text-stone-400 border-stone-500'}`}
                 title={item.locked ? '解锁' : '锁定（锁定后不可丢弃/分解）'}
               >
-                {item.locked ? <Lock size={14} /> : <Unlock size={14} />}
-              </button>
-              <button
-                onClick={() => onDiscardItem(item)}
+                 {item.locked ? <Lock size={14} /> : <Unlock size={14} />}
+               </button>
+               {/* 收藏切换：仅作常用标记，不影响丢弃/分解（与锁定独立） */}
+               <button
+                 onClick={() => window.dispatchEvent(new CustomEvent('toggle-item-favorite', { detail: { itemId: item.id } }))}
+                 className={`px-3 text-xs py-2 rounded transition-colors border ${item.favorited ? 'bg-yellow-900/30 border-yellow-500 text-yellow-300' : 'bg-stone-700 hover:bg-stone-600 text-stone-400 border-stone-500'}`}
+                 title={item.favorited ? '取消收藏' : '收藏（常用材料标记，便于筛选定位）'}
+               >
+                 <Star size={14} className={item.favorited ? 'fill-yellow-300' : ''} />
+               </button>
+               <button
+                 onClick={() => onDiscardItem(item)}
                 disabled={!!item.locked}
                 className={`px-3 text-xs py-2 rounded transition-colors border ${item.locked ? 'bg-stone-800 text-stone-600 border-stone-700 cursor-not-allowed' : 'bg-red-900 hover:bg-red-800 text-red-200 border-red-700'}`}
                 title={item.locked ? '已锁定，无法丢弃' : '丢弃'}
@@ -613,7 +645,8 @@ const InventoryItem = memo<InventoryItemProps>(
       prevProps.item.level === nextProps.item.level &&
       prevProps.item.rarity === nextProps.item.rarity &&
       prevProps.item.reviveChances === nextProps.item.reviveChances &&
-      prevProps.item.locked === nextProps.item.locked &&
+       prevProps.item.locked === nextProps.item.locked &&
+       prevProps.item.favorited === nextProps.item.favorited &&
       prevProps.isEquipped === nextProps.isEquipped &&
       prevProps.isNatal === nextProps.isNatal &&
       prevProps.canRefine === nextProps.canRefine &&
@@ -660,7 +693,11 @@ const InventoryModal: React.FC<Props> = ({
   const [selectedEquipmentSlot, setSelectedEquipmentSlot] = useState<
     EquipmentSlot | 'all'
   >('all');
-  const [sortByRarity, setSortByRarity] = useState(true);
+  // 背包显示层排序开关（品质/默认）：状态放在 uiStore 而非组件本地 useState，
+  // 因为背包弹窗关闭后组件会被卸载（useDelayedUnmount），本地 state 会重置，
+  // 导致整理背包写回 store 的新顺序被重开时默认开启的品质排序覆盖（表现为整理不生效）
+  const sortByRarity = useUIStore((state) => state.inventorySortByRarity);
+  const setSortByRarity = useUIStore((state) => state.setInventorySortByRarity);
   const [isBatchDiscardOpen, setIsBatchDiscardOpen] = useState(false);
   const [isBatchUseOpen, setIsBatchUseOpen] = useState(false);
   const [isBatchDismantleOpen, setIsBatchDismantleOpen] = useState(false);
@@ -793,19 +830,26 @@ const InventoryModal: React.FC<Props> = ({
     return map;
   }, [inventory, equippedItems]);
 
-   // 分批渲染：背包物品可能数百件，一次性全量渲染会造成明显卡顿；
-   // 先渲染前 60 件，底部"加载更多"逐批追加（无需引入虚拟列表依赖）
-   const [visibleCount, setVisibleCount] = useState(60);
-   const INITIAL_VISIBLE_COUNT = 60;
+    // 分批渲染：背包物品可能数百件，一次性全量渲染会造成明显卡顿；
+    // 先渲染前 60 件，底部"加载更多"逐批追加（无需引入虚拟列表依赖）
+    const [visibleCount, setVisibleCount] = useState(60);
+    const INITIAL_VISIBLE_COUNT = 60;
+   // 收藏筛选开关：开启后只显示已收藏物品（与分类/品质等筛选叠加生效）
+   const [favoriteOnly, setFavoriteOnly] = useState(false);
  
-   // 过滤和排序物品
-   const filteredAndSortedInventory = useMemo(() => {
-     let filtered = inventory;
+    // 过滤和排序物品
+    const filteredAndSortedInventory = useMemo(() => {
+      let filtered = inventory;
  
     if (selectedCategory !== 'all') {
       filtered = inventory.filter(
         (item) => getItemCategory(item) === selectedCategory
       );
+    }
+ 
+    // 收藏过滤（与分类筛选叠加）
+    if (favoriteOnly) {
+      filtered = filtered.filter((item) => !!item.favorited);
     }
 
     // 如果是装备分类，进一步按部位过滤（使用统一的工具函数）
@@ -858,22 +902,22 @@ const InventoryModal: React.FC<Props> = ({
     }
 
     return filtered;
-   }, [inventory, selectedCategory, selectedEquipmentSlot, sortByRarity, debouncedSearchQuery, rarityFilter, statFilter, statFilterMin, natalArtifactId]);
- 
-   // 筛选条件变化时重置分批渲染计数（React 官方 render 期间派生状态模式，
-   // 避免 effect 内 setState 的级联渲染）
-   const filterKey = `${selectedCategory}|${selectedEquipmentSlot}|${sortByRarity}|${debouncedSearchQuery}|${rarityFilter}|${statFilter}|${statFilterMin}`;
+    }, [inventory, selectedCategory, selectedEquipmentSlot, sortByRarity, debouncedSearchQuery, rarityFilter, statFilter, statFilterMin, favoriteOnly, natalArtifactId]);
+  
+    // 筛选条件变化时重置分批渲染计数（React 官方 render 期间派生状态模式，
+    // 避免 effect 内 setState 的级联渲染）
+    const filterKey = `${selectedCategory}|${selectedEquipmentSlot}|${sortByRarity}|${debouncedSearchQuery}|${rarityFilter}|${statFilter}|${statFilterMin}|${favoriteOnly}`;
    const [lastFilterKey, setLastFilterKey] = useState(filterKey);
    if (filterKey !== lastFilterKey) {
      setLastFilterKey(filterKey);
      setVisibleCount(INITIAL_VISIBLE_COUNT);
    }
-   // 计算所有已装备物品的总属性（使用统一的工具函数）
-  // 结果当前仅被注释代码引用，保留计算调用以维持 hooks 顺序稳定
-  useMemo(() => {
-    let totalAttack = 0;
-    let totalDefense = 0;
-    let totalHp = 0;
+    // 计算所有已装备物品的总属性（使用统一的工具函数）
+   // 结果当前仅被注释代码引用，保留计算调用以维持 hooks 顺序稳定
+   useMemo(() => {
+     let totalAttack = 0;
+     let totalDefense = 0;
+     let totalHp = 0;
 
     Object.values(equippedItems).forEach((itemId) => {
       if (itemId) {
@@ -1154,7 +1198,16 @@ const InventoryModal: React.FC<Props> = ({
                   const lbl: Record<string,string> = {all:'全部',equipment:'装备',pill:'丹药',material:'材料',herb:'草药',synthesisStone:'合成',recipe:'丹方',advancedItem:'进阶'};
                   return <button key={cat} onClick={() => handleCategoryChange(cat)} disabled={isPending} className={`px-2 py-1 rounded text-xs border transition-colors ${selectedCategory===cat?'bg-mystic-gold/20 border-mystic-gold text-mystic-gold':'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'} ${isPending?'opacity-50':''}`}>{lbl[cat]}</button>;
                 })}
-                <span className="text-xs text-stone-500 ml-auto">{filteredAndSortedInventory.length} 件</span>
+                 {/* 已收藏筛选：与分类/品质等筛选叠加，只显示收藏的常用物品 */}
+                 <button
+                   onClick={() => setFavoriteOnly(!favoriteOnly)}
+                   className={`px-2 py-1 rounded text-xs border transition-colors flex items-center gap-1 ${favoriteOnly ? 'bg-mystic-gold/20 border-mystic-gold text-mystic-gold' : 'bg-stone-700 border-stone-600 text-stone-300 hover:bg-stone-600'}`}
+                   title="只显示已收藏的物品"
+                 >
+                   <Star size={12} className={favoriteOnly ? 'fill-mystic-gold' : ''} />
+                   已收藏
+                 </button>
+                 <span className="text-xs text-stone-500 ml-auto">{filteredAndSortedInventory.length} 件</span>
                 <button onClick={() => setShowAdvancedFilter(!showAdvancedFilter)} className={`px-2 py-1 rounded text-xs border transition-colors flex items-center gap-1 ${showAdvancedFilter||rarityFilter!=='all'||statFilter!=='all'?'bg-purple-900/30 border-purple-600 text-purple-300':'bg-stone-700 border-stone-600 text-stone-400 hover:text-stone-200'}`}><SlidersHorizontal size={12} />筛选{(rarityFilter!=='all'||statFilter!=='all')&&<span className="bg-purple-600 text-white text-[10px] px-1 rounded">●</span>}</button>
               </div>
               {showAdvancedFilter && (

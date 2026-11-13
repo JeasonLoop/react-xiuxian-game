@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import Modal from './common/Modal';
  import TabBar from './common/TabBar';
 import { createPortal } from 'react-dom';
-import { X, Star, Award, Info, Zap, BarChart3, TrendingUp, Sparkles, Beaker, Swords, HeartPulse, RotateCcw, Layers } from 'lucide-react';
+import { X, Star, Award, Info, Zap, BarChart3, TrendingUp, Sparkles, Beaker, Swords, HeartPulse, RotateCcw, Layers, LayoutGrid } from 'lucide-react';
 import { PlayerStats, ItemRarity, RealmType, Title, ItemType } from '../types';
 import {
   TALENTS,
@@ -31,6 +31,9 @@ import { formatValueChange } from '../utils/formatUtils';
 import { getBuildArchetypeProfile } from '../utils/buildArchetypeUtils';
 import { BUILD_ARCHETYPE_LABELS } from '../constants/buildArchetypes';
 import { getGlobalAchievementIds } from '../utils/achievementUtils';
+import { collectPlayerCombatSkills } from '../services/battle/skillAssembly';
+import { getBattleLoadout, saveBattleLoadout, MAX_LOADOUT_SKILLS } from '../utils/battleLoadout';
+import { LoadoutEditorDrawer } from './battle';
 
 interface Props {
   isOpen: boolean;
@@ -171,6 +174,20 @@ const CharacterModalContent: React.FC<Props> = ({
   const [marrowFilterType, setMarrowFilterType] = useState<string>('全部');
   const [marrowSearchText, setMarrowSearchText] = useState('');
   const [showTitleDetails, setShowTitleDetails] = useState(false);
+
+  // 战斗技能栏装配配置：抽屉开关 + 装配序列（localStorage 持久化，战斗外维护）
+  const [showLoadoutEditor, setShowLoadoutEditor] = useState(false);
+  const [battleLoadout, setBattleLoadout] = useState<string[]>(() => getBattleLoadout());
+
+  // 弹窗每次打开时重新读取装配序列，保证与最新配置同步
+  useEffect(() => {
+    if (isOpen) {
+      setBattleLoadout(getBattleLoadout());
+    }
+  }, [isOpen]);
+
+  // 玩家战斗技能全集（与战斗内口径一致），作为编辑抽屉的数据源
+  const combatSkills = useMemo(() => collectPlayerCombatSkills(player), [player]);
 
   // 当天地之髓投喂模态框打开时，重置筛选条件
   useEffect(() => {
@@ -653,6 +670,42 @@ const CharacterModalContent: React.FC<Props> = ({
                     </div>
                   ))}
                 </div>
+              </div>
+
+              {/* 战斗技能栏配置入口：装配编辑从战斗弹窗移到这里，抽屉就地展开 */}
+              <div className="rounded-lg border border-stone-600/60 bg-stone-900/60 p-4 shadow-md">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-center gap-2">
+                    <LayoutGrid className="shrink-0 text-sky-400" size={20} />
+                    <div>
+                      <h3 className="text-base font-bold text-stone-100">战斗技能栏</h3>
+                      <p className="text-xs text-stone-400">
+                        配置回合制战斗中底部技能栏展示的技能（最多 {MAX_LOADOUT_SKILLS} 个）
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowLoadoutEditor((prev) => !prev)}
+                    className="flex shrink-0 items-center gap-1.5 rounded border border-sky-500 px-3 py-1.5 text-sm text-sky-300 transition-colors hover:bg-sky-500/10"
+                    title="配置战斗技能栏装配"
+                  >
+                    <LayoutGrid size={14} />
+                    配置
+                    <span className="rounded border border-stone-600 px-1 py-0.5 text-[10px] text-stone-400">
+                      {battleLoadout.length}/{MAX_LOADOUT_SKILLS}
+                    </span>
+                  </button>
+                </div>
+                {showLoadoutEditor && (
+                  <div className="mt-3 overflow-hidden rounded-md border border-stone-700">
+                    <LoadoutEditorDrawer
+                      allSkills={combatSkills}
+                      loadout={battleLoadout}
+                      onWriteLoadout={(ids) => setBattleLoadout(saveBattleLoadout(ids))}
+                      onClose={() => setShowLoadoutEditor(false)}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* 修炼系统信息 */}

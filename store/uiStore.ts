@@ -103,6 +103,11 @@ interface UIState {
   cooldown: number;
   fastBattleSettlement: boolean;
 
+  // 背包显示层排序开关（品质/默认）：放进 uiStore 是为了让它在弹窗关闭（组件卸载）后不丢，
+  // 否则重开背包时会被重置为 true，品质排序会覆盖整理背包写入 store 的新顺序，
+  // 表现为「整理背包关闭再打开就恢复原样」
+  inventorySortByRarity: boolean;
+
   // Modal Setters (简化)
   setModal: <K extends keyof ModalState>(key: K, value: ModalState[K]) => void;
 
@@ -152,6 +157,9 @@ interface UIState {
   setLoading: (loading: boolean) => void;
   setCooldown: (cooldown: number) => void;
   setFastBattleSettlement: (value: boolean) => void;
+
+  // 背包显示层排序开关
+  setInventorySortByRarity: (value: boolean) => void;
 
   // Actions
   closeCurrentModal: () => void;
@@ -214,6 +222,8 @@ export const useUIStore = create<UIState>((set, get) => ({
   loading: false,
   cooldown: 0,
   fastBattleSettlement: false,
+  // 背包默认按品质排序显示
+  inventorySortByRarity: true,
 
   // 通用 Modal setter
   setModal: (key, value) =>
@@ -264,6 +274,9 @@ export const useUIStore = create<UIState>((set, get) => ({
   setLoading: (loading) => set({ loading }),
   setCooldown: (cooldown) => set({ cooldown }),
   setFastBattleSettlement: (value) => set({ fastBattleSettlement: value }),
+
+  // 背包显示层排序开关
+  setInventorySortByRarity: (value) => set({ inventorySortByRarity: value }),
 
   // 关闭当前打开的弹窗
   closeCurrentModal: () => {
