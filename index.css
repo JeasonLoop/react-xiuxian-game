@@ -508,8 +508,163 @@ input[type='number']:active {
      width: 0;
    }
  }
- .toast-progress {
-   animation: toast-progress linear forwards;
- }
- 
- /* 隐藏数值输入框的加减按钮 */
+.toast-progress {
+  animation: toast-progress linear forwards;
+}
+
+/* ============ 战斗演出动效（打击感 / 舞台化）============
+   全部只使用 transform / opacity / width / box-shadow；
+   系统开启"减少动态效果"时由全局 prefers-reduced-motion 规则统一降级 */
+
+/* 伤害飘字：普攻/治疗/闪避通用，700ms 上浮淡出 */
+@keyframes battle-damage-float {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.9);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.05);
+  }
+  35% {
+    opacity: 1;
+    transform: translate(-50%, -16px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -52px) scale(1);
+  }
+}
+.battle-damage-float {
+  animation: battle-damage-float 700ms var(--ease-out) forwards;
+  will-change: transform, opacity;
+}
+
+/* 暴击飘字：更大更久，配合演出区震屏 */
+@keyframes battle-damage-crit-float {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 10px) scale(0.7);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1.35);
+  }
+  40% {
+    opacity: 1;
+    transform: translate(-50%, -20px) scale(1.2);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -64px) scale(1.1);
+  }
+}
+.battle-damage-crit-float {
+  animation: battle-damage-crit-float 850ms var(--ease-out) forwards;
+  will-change: transform, opacity;
+}
+
+/* 受击 shake：200ms；a/b 两个同形关键帧交替触发，避免重挂载组件 */
+@keyframes battle-shake-a {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+@keyframes battle-shake-b {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+.anim-shake-a {
+  animation: battle-shake-a 200ms var(--ease-out);
+}
+.anim-shake-b {
+  animation: battle-shake-b 200ms var(--ease-out);
+}
+
+/* 进攻方前冲：方向由面板内联变量 --lunge-dx 控制，300ms；同样 a/b 交替重触发 */
+@keyframes battle-lunge-a {
+  0% { transform: translateX(0); }
+  40% { transform: translateX(var(--lunge-dx, 0px)); }
+  100% { transform: translateX(0); }
+}
+@keyframes battle-lunge-b {
+  0% { transform: translateX(0); }
+  40% { transform: translateX(var(--lunge-dx, 0px)); }
+  100% { transform: translateX(0); }
+}
+.anim-lunge-a {
+  animation: battle-lunge-a 300ms var(--ease-out);
+}
+.anim-lunge-b {
+  animation: battle-lunge-b 300ms var(--ease-out);
+}
+
+/* 血条容器受击红光：脉冲一次 450ms；a/b 交替重触发 */
+@keyframes battle-hp-flash-a {
+  0% { box-shadow: 0 0 0 rgba(220, 38, 38, 0); }
+  35% { box-shadow: 0 0 14px rgba(220, 38, 38, 0.75); }
+  100% { box-shadow: 0 0 0 rgba(220, 38, 38, 0); }
+}
+@keyframes battle-hp-flash-b {
+  0% { box-shadow: 0 0 0 rgba(220, 38, 38, 0); }
+  35% { box-shadow: 0 0 14px rgba(220, 38, 38, 0.75); }
+  100% { box-shadow: 0 0 0 rgba(220, 38, 38, 0); }
+}
+.anim-hp-flash-a {
+  animation: battle-hp-flash-a 450ms var(--ease-out);
+}
+.anim-hp-flash-b {
+  animation: battle-hp-flash-b 450ms var(--ease-out);
+}
+
+/* 技能名横幅：渐入 + 停留 + 淡出，总 600ms（横幅每次挂载播放一次） */
+@keyframes battle-skill-banner-in {
+  0% {
+    opacity: 0;
+    transform: translateX(-36px) scaleX(0.9);
+  }
+  22% {
+    opacity: 1;
+    transform: translateX(0) scaleX(1);
+  }
+  78% {
+    opacity: 1;
+    transform: translateX(0) scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(36px) scaleX(0.95);
+  }
+}
+.battle-skill-banner {
+  animation: battle-skill-banner-in 600ms var(--ease-out) forwards;
+}
+
+/* 横幅高光水平扫过层：随横幅 600ms 从左划到右 */
+@keyframes battle-banner-sweep {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(320%); }
+}
+.battle-banner-sweep {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 32%;
+  pointer-events: none;
+  animation: battle-banner-sweep 600ms var(--ease-out) forwards;
+}
+.battle-banner-sweep-gold {
+  background: linear-gradient(100deg, transparent, rgba(255, 240, 200, 0.35), transparent);
+}
+.battle-banner-sweep-red {
+  background: linear-gradient(100deg, transparent, rgba(255, 180, 180, 0.3), transparent);
+}
+
+/* 隐藏数值输入框的加减按钮 */
+
