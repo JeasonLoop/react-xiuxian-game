@@ -108,3 +108,12 @@ print(con.execute(\"SELECT e.kind, n2.name, n2.file_path FROM edges e JOIN nodes
 - 提交前运行 `npx tsc --noEmit` 与 `npm run lint` 确保通过。
 - 环境变量：前端 `VITE_*`（AI Key/Provider/Model，见 `.env.example`），后端 `JWT_SECRET`、`DATABASE_PATH`、`PORT`。不要提交任何密钥。
 - 保持改动最小：不引入新依赖、不做需求之外的扩展，除非明确要求。
+
+## 开发日志
+
+### 0.3.10（2026-09-19）—— 战斗体验与内容质量专项
+
+- **战斗系统**: 演出化展示重构（components/battle/ 7 个展示组件，引擎零改动）；精英强敌（强制回合+禁跳过+奖励×2）；敌人技能接入（消灭 turnBased skills 恒空断层）；技能栏装配系统（≤15，localStorage）
+- **内容与数值**: 装备四层名号制命名（constants/nameData/，词库 MIT 引入）；丹药/功法/灵宠改名与数值境界锚定；商店装备购买时按境界缩放；材料包定价与产出再平衡；事件分支奖励乘区对齐
+- **工程化**: 内容完整性测试（tests/contentIntegrity.test.ts）+ 数值模拟脚本（scripts/balance-sim.ts）+ npm test；lint 179 errors 清零；utils/logger、adventureTemplateService node 环境兼容
+- **经验教训**: ①子代理并发编辑同一文件易锚点错位，大文件批改优先 node 精确脚本（含出现次数断言）②奖励锚定区间设定要与用户反馈意图对照，避免"字面达标但违背意图"③materials/pills 名字被配方按名引用，改名必须全链路同步并用完整性测试兜底
