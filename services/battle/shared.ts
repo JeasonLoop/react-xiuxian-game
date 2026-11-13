@@ -24,7 +24,7 @@ import {
 } from '../../constants/index';
 import { getAdventureBalance, getDifficultyBalance } from '../../constants/balance';
 import { uid } from '../../utils/gameUtils';
-import { LOOT_ITEMS, RARITY_ORDER, RISK_REWARD_MULTIPLIERS } from './constants';
+import { ELITE_REWARD_MULTIPLIER, LOOT_ITEMS, RARITY_ORDER, RISK_REWARD_MULTIPLIERS } from './constants';
 import { BattleRoundLog } from './types';
 
 export const randomId = uid;
@@ -49,20 +49,22 @@ export const getBattleDifficulty = (
 
   if (adventureType === 'secret_realm' && riskLevel) {
     // 秘境根据风险等级调整难度（扩大差异使风险等级名称与实际难度匹配）
+    // 敌人强度整体上调 ×1.25（原 0.6 / 1.0 / 1.5 / 2.2）
     const riskMultipliers = {
-      低: 0.6,      // 降低难度，适合刷级
-      中: 1.0,       // 标准难度
-      高: 1.5,       // 提高难度，增加挑战
-      极度危险: 2.2, // 大幅提高难度，名副其实的"极度危险"
+      低: 0.75,      // 降低难度，适合刷级
+      中: 1.25,      // 标准难度
+      高: 1.875,     // 提高难度，增加挑战
+      极度危险: 2.75, // 大幅提高难度，名副其实的"极度危险"
     };
     return riskMultipliers[riskLevel] * balanceMultiplier;
   }
   // 非秘境使用固定难度
+  // 敌人强度整体上调：普通历练档 ×1.15，秘境/宗门挑战 ×1.25，天地之魄挑战保持不变
   const baseDifficulty: Record<AdventureType, number> = {
-    normal: 1,
-    lucky: 0.85,
-    secret_realm: 1.25,
-    sect_challenge: 1.5, // 宗主挑战难度稍微下调，从2.0降至1.8
+    normal: 1.15, // 原1，普通历练敌人强度 +15%
+    lucky: 0.98, // 原0.85 × 1.15，机缘档同比例上调
+    secret_realm: 1.56, // 原1.25 × 1.25，秘境基础难度同步上调
+    sect_challenge: 1.875, // 宗主挑战难度 ×1.25（原1.5）
     dao_combining_challenge: 2.0, // 天地之魄挑战难度
   };
   return baseDifficulty[adventureType] * balanceMultiplier;
@@ -485,11 +487,14 @@ export const calculateBattleRewards = (
     }
   }
 
+  // 精英强敌：修为与灵石奖励 ×2（仅胜利结算时生效）
+  const eliteRewardMultiplier = battleState.enemyIsElite ? ELITE_REWARD_MULTIPLIER : 1;
+
   const expChange = victory
-    ? rewardExp
+    ? Math.round(rewardExp * eliteRewardMultiplier)
     : -Math.max(5, Math.round(rewardExp * 0.5));
   const spiritChange = victory
-    ? rewardStones
+    ? Math.round(rewardStones * eliteRewardMultiplier)
     : -Math.max(2, Math.round(rewardStones * 0.6));
 
   // 如果胜利，生成物品奖励

@@ -24,9 +24,11 @@ import { createEnemy } from './enemyFactory';
 import {
   collectPlayerCombatSkills,
   collectPlayerInnateBuffs,
+  computeEnemyMaxMana,
   computePlayerMaxMana,
   sumPercentBuffs,
 } from './skillAssembly';
+import { ENEMY_SKILL_DAMAGE_CAP_RATIO } from './constants';
 import { calcDamage, computeCritChance, computeSpeedDodge, handlePetAction, randomId } from './shared';
 
 /**
@@ -103,11 +105,11 @@ export const initializeTurnBasedBattle = async (
     spirit: enemyData.spirit, // 使用敌人数据中的神识属性
     buffs: [],
     debuffs: [],
-    skills: [], // 敌人技能（可以后续添加）
+    skills: enemyData.skills ?? [], // 敌人技能（精英/BOSS 必带，AI 的技能分支自然生效）
     cooldowns: {},
-    // 敌人MP也根据属性计算
-    mana: Math.floor(enemyData.attack * 0.3 + enemyData.maxHp * 0.05),
-    maxMana: Math.floor(enemyData.attack * 0.3 + enemyData.maxHp * 0.05),
+    // 敌人MP也根据属性计算（与 skillAssembly.computeEnemyMaxMana 同口径）
+    mana: computeEnemyMaxMana(enemyData),
+    maxMana: computeEnemyMaxMana(enemyData),
     isDefending: false,
   };
 
@@ -179,6 +181,7 @@ export const initializeTurnBasedBattle = async (
     playerMaxActions,
     enemyMaxActions,
     enemyStrengthMultiplier: enemyData.strengthMultiplier, // 保存敌人强度倍数
+    enemyIsElite: enemyData.isElite, // 是否为精英强敌（弹窗标识/禁用跳过/奖励翻倍）
     adventureType, // 保存历练类型
     riskLevel, // 保存风险等级
     bossId, // 保存BOSS ID
@@ -784,6 +787,12 @@ function executeSkill(
       damage = Math.round(damage * (1 - maxReduction));
     }
 
+    // 敌人技能伤害上限：单次不超过玩家最大气血的 35%（防止技能一击秒杀）
+    if (casterId === 'enemy') {
+      const damageCap = Math.floor(target.maxHp * ENEMY_SKILL_DAMAGE_CAP_RATIO);
+      if (damage > damageCap) damage = damageCap;
+    }
+
     target.hp = Math.max(0, Math.floor(target.hp - damage));
 
     const skillLeech = caster.buffs.reduce((max, buff) => Math.max(max, buff.lifeLeech || 0), 0);
@@ -1354,15 +1363,17 @@ function generateSkillDescription(
   damage: number,
   heal: number
 ): string {
+  // 敌人施法时主语改为敌人名字，避免描述中出现"你使用"的歧义
+  const actor = caster.id === 'enemy' ? caster.name : '你';
+  const targetName = caster.id === 'enemy' ? '你' : target.name;
   if (damage > 0) {
-    return `你使用【${skill.name}】，对${target.name}造成 ${damage} 点伤害。`;
+    return `${actor}使用【${skill.name}】，对${targetName}造成 ${damage} 点伤害。`;
   }
   if (heal > 0) {
-    return `你使用【${skill.name}】，恢复了 ${heal} 点气血。`;
+    return `${actor}使用【${skill.name}】，恢复了 ${heal} 点气血。`;
   }
-  return `你使用【${skill.name}】。`;
+  return `${actor}使用【${skill.name}】。`;
 }
-
 /**
  * 执行灵宠行动
  */

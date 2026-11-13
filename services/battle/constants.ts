@@ -42,6 +42,31 @@ export const RISK_REWARD_MULTIPLIERS = {
   高: 1.6,
   极度危险: 2.2,
 };
+// ==================== 精英强敌配置 ====================
+
+/** 精英敌人属性额外倍率（叠加在 strengthMultiplier / 难度乘区之上） */
+export const ELITE_STAT_MULTIPLIER = 1.4;
+
+/** 精英敌人的 strengthMultiplier 下限 */
+export const ELITE_STRENGTH_FLOOR = 1.6;
+
+/** 精英敌人奖励乘区（修为/灵石/掉落统一 ×2） */
+export const ELITE_REWARD_MULTIPLIER = 2;
+
+/** 精英敌人名字前缀词库 */
+export const ELITE_PREFIXES = ['狂暴的', '嗜血的', '暴走的', '入魔的', '上古', '凶名赫赫的'];
+
+/** 精英遭遇概率（按冒险类型；天地之魄BOSS自带特殊身份，不再叠加精英判定） */
+export const ELITE_CHANCE_BY_TYPE: Record<AdventureType, number> = {
+  normal: 0.08,
+  lucky: 0.1,
+  secret_realm: 0.15,
+  sect_challenge: 0.25,
+  dao_combining_challenge: 0,
+};
+
+/** 敌人技能伤害上限：不超过玩家最大气血的比例（防止技能一击秒杀） */
+export const ENEMY_SKILL_DAMAGE_CAP_RATIO = 0.35;
 
 /**
  * 功法品级基础倍数

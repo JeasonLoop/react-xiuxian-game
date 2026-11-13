@@ -1,4 +1,4 @@
-import { AdventureResult, AdventureType, RealmType } from '../../types';
+import { AdventureResult, AdventureType, BattleSkill, RealmType } from '../../types';
 
 export interface BattleRoundLog {
   id: string;
@@ -24,6 +24,7 @@ export interface BattleReplay {
     speed: number;
     spirit: number; // 敌人神识属性
     strengthMultiplier?: number; // 敌人强度倍数
+    isElite?: boolean; // 是否为精英强敌
   };
   rounds: BattleRoundLog[];
   victory: boolean;
@@ -39,4 +40,22 @@ export interface BattleResolution {
   adventureResult: AdventureResult;
   replay: BattleReplay;
   petSkillCooldowns?: Record<string, number>; // 战斗结束后的灵宠技能冷却状态
+}
+
+/**
+ * 敌人生成结果（enemyFactory.createEnemy 的返回类型）
+ * 精英强敌：isElite = true，必带技能，属性与奖励均有额外乘区
+ */
+export interface BattleEnemy {
+  name: string;
+  title: string;
+  realm: RealmType;
+  attack: number;
+  defense: number;
+  maxHp: number;
+  speed: number;
+  spirit: number;
+  strengthMultiplier: number;
+  isElite: boolean;
+  skills: BattleSkill[];
 }

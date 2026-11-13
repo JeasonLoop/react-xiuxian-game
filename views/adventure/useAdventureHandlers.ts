@@ -4,6 +4,7 @@ import { PlayerStats, AdventureType, ShopType, RealmType, AdventureResult, Diffi
 import { REALM_ORDER, HEAVEN_EARTH_SOUL_BOSSES, GAME_BALANCE } from '../../constants/index';
 import { getDifficultyBalance } from '../../constants/balance';
 import {
+  createEnemy,
   shouldTriggerBattle,
   resolveBattleEncounter,
   BattleReplay,
@@ -133,6 +134,37 @@ export function useAdventureHandlers({
     petSkillCooldowns?: Record<string, number>;
     shouldReturn: boolean;
   }> => {
+    // 预生成敌人：精英判定一次定型，并把该敌人传给快速战斗，保证快速战斗路径永远拿到非精英敌人
+    const enemyData = await createEnemy(
+      player,
+      battleType,
+      riskLevel,
+      realmMinRealm,
+      huntSectId,
+      huntLevel,
+      bossId,
+      difficulty
+    );
+
+    // 精英强敌：无视跳过/逃跑配置，强制走回合制战斗弹窗
+    // （uiStore.openTurnBasedBattle 内部会通过 pausedByBattle 机制暂停自动历练）
+    if (enemyData.isElite && onOpenTurnBasedBattle) {
+      addLog(`遭遇精英强敌【${enemyData.title}${enemyData.name}】！无法跳过，必须正面迎战！`, 'danger');
+      onOpenTurnBasedBattle({
+        adventureType: battleType,
+        riskLevel,
+        realmMinRealm,
+        bossId,
+        difficulty,
+        onBattleInitialized: (enemyName: string) => {
+          addLog(`你遭遇了强敌【${enemyName}】！战斗即将开始...`, 'danger');
+          setLoading(false);
+        },
+      });
+      setCooldown(2);
+      return { result: {} as AdventureResult, battleContext: null, shouldReturn: true };
+    }
+
     // 如果配置了逃跑，直接跳过战斗
     if (effectiveFleeOnBattle) {
       addLog('你选择避开战斗，继续历练...', 'normal');
@@ -154,7 +186,8 @@ export function useAdventureHandlers({
         huntSectId,
         huntLevel,
         bossId,
-        difficulty
+        difficulty,
+        enemyData // 传入预生成敌人：此处必为非精英（精英已在上面的分支强制回合制）
       );
       const battleResult = applySkippedBattleRewardPenalty(battleResolution.adventureResult);
       const battleCtx = battleResolution.replay;
@@ -187,7 +220,8 @@ export function useAdventureHandlers({
       huntSectId,
       huntLevel,
       bossId,
-      difficulty
+      difficulty,
+      enemyData // 传入预生成敌人：此处必为非精英（精英已强制回合制）
     );
     return {
       result: battleResolution.adventureResult,

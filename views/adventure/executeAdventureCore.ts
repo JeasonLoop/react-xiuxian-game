@@ -504,8 +504,10 @@ export async function executeAdventureCore({
   }
 
   // 战斗弹窗延迟2秒后打开（如果跳过了战斗则不打开弹窗）
+  // 精英强敌战斗永远不跳过弹窗（防御性保证：精英不应走快速战斗静默结算）
+  const isEliteBattle = !!battleContext?.enemy?.isElite;
   const fastBattleSettlement = useUIStore.getState().fastBattleSettlement;
-  if (battleContext && !skipBattle && !fastBattleSettlement) {
+  if (battleContext && (!skipBattle || isEliteBattle) && !fastBattleSettlement) {
     setTimeout(() => {
       onOpenBattleModal(battleContext);
     }, 2000);

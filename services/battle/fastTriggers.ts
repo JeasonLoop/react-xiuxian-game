@@ -51,7 +51,8 @@ function critDamageBonus(caster: BattleUnit): number {
 export function applySkillFast(
   caster: BattleUnit,
   target: BattleUnit,
-  skill: BattleSkill
+  skill: BattleSkill,
+  damageCap?: number // 伤害上限（敌人技能用：不超过玩家 maxHp × 35%，防止一击秒杀）
 ): FastSkillResult {
   let damage = 0;
   let heal = 0;
@@ -92,7 +93,10 @@ export function applySkillFast(
       );
       if (maxMagicDef > 0) damage = Math.round(damage * (1 - maxMagicDef));
     }
-    damage = Math.max(1, damage);
+    // 伤害上限：传入 damageCap 时（敌人技能），钳制单次技能伤害
+    if (damageCap !== undefined) {
+      damage = Math.min(damage, Math.max(1, Math.floor(damageCap)));
+    }
 
     // 闪避判定（含无视防御攻击者的处理：ignoreDefense 仅跳过防御状态，不跳过闪避，与回合制一致）
     dodged = rollDodge(caster, target);

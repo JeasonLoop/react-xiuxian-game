@@ -9,7 +9,8 @@ import {
 } from '../../types';
 import { getPlayerTotalStats } from '../../utils/statUtils';
 import { createEnemy } from './enemyFactory';
-import { BattleResolution, BattleRoundLog } from './types';
+import { BattleEnemy, BattleResolution, BattleRoundLog } from './types';
+import { ENEMY_SKILL_DAMAGE_CAP_RATIO, ELITE_REWARD_MULTIPLIER } from './constants';
 import {
   calcDamage,
   computeCritChance,
@@ -24,6 +25,7 @@ import {
 import {
   collectPlayerCombatSkills,
   collectPlayerInnateBuffs,
+  computeEnemyMaxMana,
   computePlayerMaxMana,
   sumPercentBuffs,
 } from './skillAssembly';
@@ -85,9 +87,10 @@ export const resolveBattleEncounter = async (
   huntSectId?: string | null,
   huntLevel?: number,
   bossId?: string, // 指定的天地之魄BOSS ID（用于事件模板）
-  difficultyMode: DifficultyMode = 'normal'
+  difficultyMode: DifficultyMode = 'normal',
+  presetEnemy?: BattleEnemy // 预生成的敌人（调用方已完成精英判定时传入，避免二次随机）
 ): Promise<BattleResolution> => {
-  const enemy = await createEnemy(
+  const enemy = presetEnemy ?? await createEnemy(
     player,
     adventureType,
     riskLevel,
@@ -137,10 +140,10 @@ export const resolveBattleEncounter = async (
     spirit: safeNumber(enemy.spirit),
     buffs: [],
     debuffs: [],
-    skills: [],
+    skills: enemy.skills ?? [], // 敌人技能（精英/BOSS 必带，普通敌可能为空）
     cooldowns: {},
-    mana: 0,
-    maxMana: 0,
+    mana: computeEnemyMaxMana(enemy),
+    maxMana: computeEnemyMaxMana(enemy),
     isDefending: false,
   };
 
@@ -263,8 +266,33 @@ export const resolveBattleEncounter = async (
         rounds.push(action as BattleRoundLog);
       }
     } else {
-      // 敌人回合（AI 摘要：10% 防御，其余普攻，与回合制 70/20/10 中无技能时的有效行为对齐）
-      if (Math.random() < 0.1) {
+      // 敌人回合（AI 摘要）：有可用技能时 20% 概率释放技能（与回合制 70/20/10 的技能分支对齐），
+      // 否则 10% 防御，其余普攻
+      const availableSkills = enemyUnit.skills.filter(
+        (s) =>
+          (enemyUnit.cooldowns[s.id] || 0) === 0 &&
+          (!s.cost.mana || (enemyUnit.mana || 0) >= s.cost.mana)
+      );
+      if (availableSkills.length > 0 && Math.random() < 0.2) {
+        const skill = availableSkills[Math.floor(Math.random() * availableSkills.length)];
+        enemyUnit.mana = (enemyUnit.mana || 0) - (skill.cost.mana || 0);
+        // 敌人技能伤害上限：单次不超过玩家最大气血的 35%（防止技能一击秒杀）
+        const enemyDamageCap = Math.floor(playerUnit.maxHp * ENEMY_SKILL_DAMAGE_CAP_RATIO);
+        const result = applySkillFast(enemyUnit, playerUnit, skill, enemyDamageCap);
+        rounds.push({
+          id: randomId(),
+          attacker: 'enemy',
+          damage: result.damage,
+          crit: false,
+          description: result.dodged
+            ? `${enemy.title}${enemy.name}施展【${skill.name}】，被你闪避了！`
+            : result.damage > 0
+              ? `${enemy.title}${enemy.name}施展【${skill.name}】，对你造成 ${result.damage} 点伤害。`
+              : `${enemy.title}${enemy.name}施展【${skill.name}】。`,
+          playerHpAfter: playerUnit.hp,
+          enemyHpAfter: enemyUnit.hp,
+        });
+      } else if (Math.random() < 0.1) {
         enemyUnit.isDefending = true;
         rounds.push({
           id: randomId(),
@@ -347,7 +375,7 @@ export const resolveBattleEncounter = async (
   const rewardMultiplier =
     adventureType === 'secret_realm' ? getRiskRewardMultiplier(riskLevel) : 1.0;
 
-  const { exp: rewardExp, stones: rewardStones } = getExpAndStoneRewards(
+  const { exp: baseRewardExp, stones: baseRewardStones } = getExpAndStoneRewards(
 
     player,
     adventureType,
@@ -356,6 +384,11 @@ export const resolveBattleEncounter = async (
     enemy.strengthMultiplier,
     difficultyMode
   );
+
+  // 精英强敌：修为与灵石奖励 ×2（仅胜利结算时生效）
+  const eliteRewardMultiplier = enemy.isElite ? ELITE_REWARD_MULTIPLIER : 1;
+  const rewardExp = Math.round(baseRewardExp * eliteRewardMultiplier);
+  const rewardStones = Math.round(baseRewardStones * eliteRewardMultiplier);
 
   const expChange = victory
     ? rewardExp

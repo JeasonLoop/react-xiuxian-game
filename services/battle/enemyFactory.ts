@@ -1,5 +1,6 @@
 import {
   AdventureType,
+  BattleSkill,
   DifficultyMode,
   PlayerStats,
   RealmType,
@@ -13,8 +14,9 @@ import { getAdventureBalance, getDifficultyBalance } from '../../constants/balan
 import { logger } from '../../utils/logger';
 import { getPlayerTotalStats } from '../../utils/statUtils';
 import { getRandomEnemyName } from '../templateService';
-import { baseBattleChance, ENEMY_NAMES, ENEMY_TITLES } from './constants';
+import { baseBattleChance, ELITE_CHANCE_BY_TYPE, ELITE_PREFIXES, ELITE_STRENGTH_FLOOR, ELITE_STAT_MULTIPLIER, ENEMY_NAMES, ENEMY_TITLES } from './constants';
 import { getBattleDifficulty, pickOne } from './shared';
+import { generateEnemySkills } from './skillAssembly';
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
@@ -37,6 +39,10 @@ export const createEnemy = async (
   speed: number;
   spirit: number;
   strengthMultiplier: number;
+  /** 是否为精英强敌（强制回合战斗、奖励翻倍） */
+  isElite: boolean;
+  /** 敌人战斗技能（普通敌可能无，精英 1-2 个，天地之魄 BOSS 为配置的 specialSkills） */
+  skills: BattleSkill[];
 }> => {
   const currentRealmIndex = REALM_ORDER.indexOf(player.realm);
 
@@ -93,7 +99,7 @@ export const createEnemy = async (
   if (!realm) {
     const fallbackRealm = REALM_ORDER[0];
     if (!fallbackRealm) throw new Error('REALM_ORDER is empty');
-    return { name: '未知敌人', title: '神秘的', realm: fallbackRealm, attack: 10, defense: 8, maxHp: 50, speed: 10, spirit: 5, strengthMultiplier: 1 };
+    return { name: '未知敌人', title: '神秘的', realm: fallbackRealm, attack: 10, defense: 8, maxHp: 50, speed: 10, spirit: 5, strengthMultiplier: 1, isElite: false, skills: [] };
   }
   const baseDifficulty = getBattleDifficulty(adventureType, riskLevel, difficultyMode);
   const strengthRoll = Math.random();
@@ -137,6 +143,11 @@ export const createEnemy = async (
   const finalDifficulty =
     baseDifficulty * strengthMultiplier * realmLevelReduction;
 
+  // 精英强敌判定：按冒险类型概率（宗门挑战/天地之魄走专属通道，不入精英）
+  const isElite =
+    !['sect_challenge', 'dao_combining_challenge'].includes(adventureType) &&
+    Math.random() < (ELITE_CHANCE_BY_TYPE[adventureType] ?? 0);
+
   // 15%概率使用AI生成敌人名字，失败则使用预设列表
   let name = pickOne(ENEMY_NAMES);
   let title = pickOne(ENEMY_TITLES);
@@ -161,6 +172,11 @@ export const createEnemy = async (
       const generated = getRandomEnemyName(realm, adventureType);
       if (generated.name && generated.title) { name = generated.name; title = generated.title; }
     } catch (e) { logger.warn('模板生成敌人名字失败:', e); }
+  }
+
+  // 精英敌人统一加前缀（在所有命名来源之后处理，保证 AI 生成名也带）
+  if (isElite) {
+    name = `${pickOne(ELITE_PREFIXES)}${name}`;
   }
 
   // 属性计算基准
@@ -230,6 +246,12 @@ export const createEnemy = async (
       speed: Math.round(baseSpeed * powerRatio),
       spirit: Math.round(baseSpirit * powerRatio),
       strengthMultiplier: randomMultiplier,
+      isElite: false,
+      // 天地之魄BOSS：直接接入 specialSkills，消灭回合制/快速战斗敌人技能断层
+      skills: generateEnemySkills(
+        { attack: baseAttack * powerRatio, spirit: baseSpirit * powerRatio },
+        { count: 0, isElite: false, bossSkills: selectedBossForStats?.specialSkills }
+      ),
     };
   }
 
@@ -239,14 +261,32 @@ export const createEnemy = async (
   else if (attackRatio < 0.8) calculatedHp = Math.round(calculatedHp * 1.1);
 
   const v = getVariance();
+
+  // 精英强敌：属性在现有乘区基础上额外 ×1.4，strengthMultiplier 下限提到 1.6
+  const eliteStatMultiplier = isElite ? ELITE_STAT_MULTIPLIER : 1;
+  const finalAttack = Math.max(8, Math.round(baseAttack * v * finalDifficulty * eliteStatMultiplier));
+  const finalDefense = Math.max(6, Math.round(baseDefense * v * finalDifficulty * eliteStatMultiplier));
+  const finalHp = Math.max(40, Math.round(calculatedHp * eliteStatMultiplier));
+  const finalSpeed = Math.max(6, Math.round(baseSpeed * (0.7 + Math.random() * 0.3) * strengthMultiplier * eliteStatMultiplier));
+  const finalSpirit = Math.max(5, Math.round(baseSpirit * v * finalDifficulty * eliteStatMultiplier));
+
+  // 技能：普通敌人 25% 概率带 1 个；精英必带 1-2 个
+  const skillCount = isElite ? (Math.random() < 0.4 ? 2 : 1) : (Math.random() < 0.25 ? 1 : 0);
+  const enemySkills = generateEnemySkills(
+    { attack: finalAttack, spirit: finalSpirit },
+    { count: skillCount, isElite }
+  );
+
   return {
     name, title, realm,
-    attack: Math.max(8, Math.round(baseAttack * v * finalDifficulty)),
-    defense: Math.max(6, Math.round(baseDefense * v * finalDifficulty)),
-    maxHp: Math.max(40, calculatedHp),
-    speed: Math.max(6, Math.round(baseSpeed * (0.7 + Math.random() * 0.3) * strengthMultiplier)),
-    spirit: Math.max(5, Math.round(baseSpirit * v * finalDifficulty)),
-    strengthMultiplier,
+    attack: finalAttack,
+    defense: finalDefense,
+    maxHp: finalHp,
+    speed: finalSpeed,
+    spirit: finalSpirit,
+    strengthMultiplier: isElite ? Math.max(strengthMultiplier, ELITE_STRENGTH_FLOOR) : strengthMultiplier,
+    isElite,
+    skills: enemySkills,
   };
 };
 

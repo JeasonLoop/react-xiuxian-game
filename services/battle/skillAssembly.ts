@@ -275,3 +275,224 @@ export function sumPercentBuffs(buffs: Buff[], type: 'attack' | 'defense'): numb
 export function computeEnemyMaxMana(enemyData: { attack: number; maxHp: number }): number {
   return Math.floor(enemyData.attack * 0.3 + enemyData.maxHp * 0.05);
 }
+
+// ==================== 敌人技能生成 ====================
+
+// 普通敌人技能模板 key（伤害基础值取敌人攻击力的同量级比例）
+const ENEMY_NORMAL_SKILL_KEYS = ['sweep', 'charge', 'curse'] as const;
+
+// 精英敌人技能模板 key（强度更高，附带 buff/debuff 效果）
+const ENEMY_ELITE_SKILL_KEYS = ['roar', 'soulslash', 'devour', 'bloodsweep'] as const;
+
+/**
+ * 按模板生成一个敌人技能
+ * 伤害公式与玩家技能一致：calcDamage(base + 属性×multiplier, 防御)
+ * 精英模板整体乘 1.25 强度系数，消耗与冷却也更高
+ */
+function buildEnemySkill(
+  key: string,
+  stats: { attack: number; spirit: number },
+  isElite: boolean
+): BattleSkill {
+  // 精英强度系数：伤害相关数值统一放大
+  const power = isElite ? 1.25 : 1;
+  const scaled = (value: number) => Math.max(1, Math.round(value * power));
+  const attack = Math.max(1, stats.attack);
+  const spirit = Math.max(1, stats.spirit);
+
+  switch (key) {
+    case 'sweep':
+      // 横扫：略强于普攻的物理技能
+      return {
+        id: 'enemy_skill_sweep',
+        name: '横扫',
+        description: '挥动兵刃横扫四周，攻势大开大合。',
+        type: 'attack',
+        source: 'innate',
+        sourceId: 'enemy_skill',
+        effects: [],
+        cost: { mana: 15 },
+        cooldown: 0,
+        maxCooldown: 2,
+        target: 'enemy',
+        damage: { base: scaled(attack * 0.2), multiplier: 0.9, type: 'physical' },
+      };
+    case 'charge':
+      // 蓄力击：倍率更高但冷却更长
+      return {
+        id: 'enemy_skill_charge',
+        name: '蓄力击',
+        description: '凝聚灵力于一点，蓄势而发的一记重击。',
+        type: 'attack',
+        source: 'innate',
+        sourceId: 'enemy_skill',
+        effects: [],
+        cost: { mana: 20 },
+        cooldown: 0,
+        maxCooldown: 3,
+        target: 'enemy',
+        damage: { base: scaled(attack * 0.1), multiplier: 1.3, type: 'physical' },
+      };
+    case 'curse':
+      // 蚀骨咒：法术伤害 + 毒系持续掉血
+      return {
+        id: 'enemy_skill_curse',
+        name: '蚀骨咒',
+        description: '阴冷的咒力蚀入经脉，伤敌血肉。',
+        type: 'attack',
+        source: 'innate',
+        sourceId: 'enemy_skill',
+        effects: [
+          {
+            type: 'debuff',
+            target: 'enemy',
+            debuff: {
+              id: 'enemy_curse_poison',
+              name: '蚀骨咒毒',
+              type: 'poison',
+              value: -0.04, // 每回合损失最大气血 4%
+              duration: 3,
+              source: 'enemy_skill',
+              description: '经脉中的阴毒每回合侵蚀气血。',
+            },
+          },
+        ],
+        cost: { mana: 18 },
+        cooldown: 0,
+        maxCooldown: 3,
+        target: 'enemy',
+        damage: { base: scaled(spirit * 0.2 + attack * 0.1), multiplier: 1.0, type: 'magical' },
+      };
+    case 'roar':
+      // 狂暴咆哮：自体攻击增益（精英）
+      return {
+        id: 'enemy_skill_roar',
+        name: '狂暴咆哮',
+        description: '凶性大发，攻击力大幅提升。',
+        type: 'buff',
+        source: 'innate',
+        sourceId: 'enemy_skill',
+        effects: [
+          {
+            type: 'buff',
+            target: 'self',
+            buff: {
+              id: 'enemy_roar_buff',
+              name: '狂暴',
+              type: 'attack',
+              value: 0.3, // 攻击力 +30%
+              duration: 3,
+              source: 'enemy_skill',
+              description: '狂暴状态下攻击力提升30%。',
+            },
+          },
+        ],
+        cost: { mana: 25 },
+        cooldown: 0,
+        maxCooldown: 3,
+        target: 'self',
+      };
+    case 'soulslash':
+      // 裂魂斩：高倍率物理 + 烧灼持续伤害（精英）
+      return {
+        id: 'enemy_skill_soulslash',
+        name: '裂魂斩',
+        description: '附带焚身煞气的一记凶斩。',
+        type: 'attack',
+        source: 'innate',
+        sourceId: 'enemy_skill',
+        effects: [
+          {
+            type: 'debuff',
+            target: 'enemy',
+            debuff: {
+              id: 'enemy_soulslash_burn',
+              name: '焚身煞气',
+              type: 'burn',
+              value: -0.05, // 每回合损失最大气血 5%
+              duration: 3,
+              source: 'enemy_skill',
+              description: '煞气灼烧经脉，每回合损失气血。',
+            },
+          },
+        ],
+        cost: { mana: 30 },
+        cooldown: 0,
+        maxCooldown: 3,
+        target: 'enemy',
+        damage: { base: scaled(attack * 0.3), multiplier: 1.4, type: 'physical' },
+      };
+    case 'devour':
+      // 邪灵噬心：高倍率法术 + 毒系持续掉血（精英）
+      return {
+        id: 'enemy_skill_devour',
+        name: '邪灵噬心',
+        description: '驱使邪灵噬咬敌人心神，并留下阴毒。',
+        type: 'attack',
+        source: 'innate',
+        sourceId: 'enemy_skill',
+        effects: [
+          {
+            type: 'debuff',
+            target: 'enemy',
+            debuff: {
+              id: 'enemy_devour_poison',
+              name: '噬心阴毒',
+              type: 'poison',
+              value: -0.04, // 每回合损失最大气血 4%
+              duration: 3,
+              source: 'enemy_skill',
+              description: '阴毒噬咬心神，每回合损失气血。',
+            },
+          },
+        ],
+        cost: { mana: 35 },
+        cooldown: 0,
+        maxCooldown: 3,
+        target: 'enemy',
+        damage: { base: scaled(spirit * 0.3 + attack * 0.15), multiplier: 1.5, type: 'magical' },
+      };
+    case 'bloodsweep':
+    default:
+      // 血影横扫：精英强化版横扫
+      return {
+        id: 'enemy_skill_bloodsweep',
+        name: '血影横扫',
+        description: '以血催动横扫之势，威力远超寻常。',
+        type: 'attack',
+        source: 'innate',
+        sourceId: 'enemy_skill',
+        effects: [],
+        cost: { mana: 25 },
+        cooldown: 0,
+        maxCooldown: 2,
+        target: 'enemy',
+        damage: { base: scaled(attack * 0.25), multiplier: 1.2, type: 'physical' },
+      };
+  }
+}
+
+// 从模板池中不重复地取 count 个模板 key
+function pickSkillKeys(pool: readonly string[], count: number): string[] {
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, Math.max(0, Math.min(count, shuffled.length)));
+}
+
+/**
+ * 生成敌人技能列表（enemyFactory 专用）
+ * - bossSkills 存在时：直接使用天地之魄 BOSS 的 specialSkills（冷却清零）
+ * - 普通敌人：由调用方决定带 0/1 个技能（普通池）
+ * - 精英敌人：带 count 个技能（精英池，强度更高）
+ */
+export function generateEnemySkills(
+  stats: { attack: number; spirit: number },
+  options: { count: number; isElite: boolean; bossSkills?: BattleSkill[] }
+): BattleSkill[] {
+  // 天地之魄 BOSS：直接接入配置好的 specialSkills，消灭技能断层
+  if (options.bossSkills && options.bossSkills.length > 0) {
+    return options.bossSkills.map((skill) => ({ ...skill, cooldown: 0 }));
+  }
+
+  const pool = options.isElite ? ENEMY_ELITE_SKILL_KEYS : ENEMY_NORMAL_SKILL_KEYS;
+  return pickSkillKeys(pool, options.count).map((key) => buildEnemySkill(key, stats, options.isElite));
+}
