@@ -111,6 +111,12 @@ print(con.execute(\"SELECT e.kind, n2.name, n2.file_path FROM edges e JOIN nodes
 
 ## 开发日志
 
+### 0.4.0（2026-09-19）—— M4 玩法深度一期
+
+- **机制词条池**: 20 机制词条（constants/reforge.ts 四类触发）+ 共享触发器引擎（services/battle/equipTriggerEngine.ts）+ 洗炼池双池抽取（utils/reforgeUtils.ts 40% 机制词/minRarity）；BattleUnit 扩展 triggers/shieldPool/frozenTurns
+- **专属秘境与机制 BOSS**: 3 秘境 + 3 阶段制 BOSS（constants/bossEncounters.ts + services/battle/bossPhases.ts）；前世镜像复用 collectPlayerCombatSkills 镜像玩家技能；秘境战斗 30% 遭遇、奖励×3、强制回合弹窗（金「秘境主宰」/红「强敌来袭」三态徽标）
+- **工程经验**: ①两模式一致性靠共享引擎而非各自实现——触发器/BOSS 阶段全部纯函数化 ②概率触发词条必须做同源去重（灼烧/破甲初版叠乘导致防御趋零）③大文件（50KB+ 组件）委托编辑仍需主 agent 兜底校验，重复声明/未用变量是高频事故
+
 ### 0.3.10（2026-09-19）—— 战斗体验与内容质量专项
 
 - **战斗系统**: 演出化展示重构（components/battle/ 7 个展示组件，引擎零改动）；精英强敌（强制回合+禁跳过+奖励×2）；敌人技能接入（消灭 turnBased skills 恒空断层）；技能栏装配系统（≤15，localStorage）

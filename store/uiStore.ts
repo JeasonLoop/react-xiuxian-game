@@ -15,6 +15,7 @@ import {
   DifficultyMode,
 } from '../types';
 import { BattleReplay } from '../services/battleService';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 // Modal 状态接口
 interface ModalState {
@@ -223,7 +224,10 @@ export const useUIStore = create<UIState>((set, get) => ({
   cooldown: 0,
   fastBattleSettlement: false,
   // 背包默认按品质排序显示
-  inventorySortByRarity: true,
+  // 背包「品质排序」开关：持久化到 localStorage，刷新后保持整理结果不被品质排序覆盖
+  inventorySortByRarity:
+    typeof localStorage !== 'undefined' &&
+    localStorage.getItem(STORAGE_KEYS.INVENTORY_SORT_BY_RARITY) === 'true',
 
   // 通用 Modal setter
   setModal: (key, value) =>
@@ -276,7 +280,12 @@ export const useUIStore = create<UIState>((set, get) => ({
   setFastBattleSettlement: (value) => set({ fastBattleSettlement: value }),
 
   // 背包显示层排序开关
-  setInventorySortByRarity: (value) => set({ inventorySortByRarity: value }),
+  setInventorySortByRarity: (value) => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.INVENTORY_SORT_BY_RARITY, String(value));
+    }
+    set({ inventorySortByRarity: value });
+  },
 
   // 关闭当前打开的弹窗
   closeCurrentModal: () => {
