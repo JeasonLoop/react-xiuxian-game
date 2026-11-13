@@ -9,6 +9,7 @@ import {
   HEAVEN_EARTH_SOUL_BOSSES,
   REALM_DATA,
   REALM_ORDER,
+  SECRET_REALM_BOSSES,
 } from '../../constants/index';
 import { getAdventureBalance, getDifficultyBalance } from '../../constants/balance';
 import { logger } from '../../utils/logger';
@@ -16,7 +17,7 @@ import { getPlayerTotalStats } from '../../utils/statUtils';
 import { getRandomEnemyName } from '../templateService';
 import { baseBattleChance, ELITE_CHANCE_BY_TYPE, ELITE_PREFIXES, ELITE_STRENGTH_FLOOR, ELITE_STAT_MULTIPLIER, ENEMY_NAMES, ENEMY_TITLES } from './constants';
 import { getBattleDifficulty, pickOne } from './shared';
-import { generateEnemySkills } from './skillAssembly';
+import { generateEnemySkills, collectPlayerCombatSkills } from './skillAssembly';
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
 
@@ -41,10 +42,61 @@ export const createEnemy = async (
   strengthMultiplier: number;
   /** 是否为精英强敌（强制回合战斗、奖励翻倍） */
   isElite: boolean;
+  /** 秘境专属机制 BOSS（通道独立，不与 isElite 叠加） */
+  isBoss?: boolean;
+  /** 机制 BOSS 配置 ID（对应 SECRET_REALM_BOSSES） */
+  bossEncounterId?: string;
   /** 敌人战斗技能（普通敌可能无，精英 1-2 个，天地之魄 BOSS 为配置的 specialSkills） */
   skills: BattleSkill[];
 }> => {
   const currentRealmIndex = REALM_ORDER.indexOf(player.realm);
+
+  // ==================== 秘境专属机制 BOSS 通道（独立于精英系统） ====================
+  // 命中配置时不走普通推算：属性 = 玩家总属性 × BOSS 定义比例，直接返回
+  if (adventureType === 'secret_realm' && bossId && SECRET_REALM_BOSSES[bossId]) {
+    const bossConfig = SECRET_REALM_BOSSES[bossId];
+    const bossTotalStats = getPlayerTotalStats(player);
+    const ratios = bossConfig.statRatios;
+
+    const attack = Math.max(8, Math.round(bossTotalStats.attack * ratios.attack));
+    const defense = Math.max(6, Math.round(bossTotalStats.defense * ratios.defense));
+    const maxHp = Math.max(40, Math.round(bossTotalStats.maxHp * ratios.maxHp));
+    const speed = Math.max(6, Math.round((bossTotalStats.speed || 10) * ratios.speed));
+    const spirit = Math.max(5, Math.round((bossTotalStats.spirit || 0) * ratios.spirit));
+
+    // 技能组装：镜像 BOSS 从玩家功法技能池抽 3 个；其余 BOSS 用全程技能 + 第一阶段技能
+    let bossSkills: BattleSkill[];
+    if (bossConfig.isMirror) {
+      const playerSkillPool = collectPlayerCombatSkills(player);
+      const shuffledPool = [...playerSkillPool].sort(() => Math.random() - 0.5);
+      bossSkills = shuffledPool.slice(0, 3).map((s) => ({ ...s, cooldown: 0 }));
+      // 玩家技能池为空时兜底（理论上不会发生）
+      if (bossSkills.length === 0) {
+        bossSkills = bossConfig.specialSkills.map((s) => ({ ...s, cooldown: 0 }));
+      }
+    } else {
+      bossSkills = [...bossConfig.specialSkills, ...(bossConfig.phaseSkills[1] || [])].map((s) => ({
+        ...s,
+        cooldown: 0,
+      }));
+    }
+
+    return {
+      name: bossConfig.name,
+      title: bossConfig.title,
+      realm: bossConfig.realm,
+      attack,
+      defense,
+      maxHp,
+      speed,
+      spirit,
+      strengthMultiplier: 1.3, // 供奖励结算参考的强度倍数
+      isElite: false, // BOSS 通道独立，不与精英叠加
+      isBoss: true,
+      bossEncounterId: bossConfig.id,
+      skills: bossSkills,
+    };
+  }
 
   // 保存选中的BOSS用于后续属性计算（天地之魄挑战）
   let selectedBossForStats: typeof HEAVEN_EARTH_SOUL_BOSSES[string] | null = null;

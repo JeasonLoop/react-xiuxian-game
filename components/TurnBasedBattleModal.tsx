@@ -5,6 +5,7 @@ import {
   FastForward,
   Skull,
   Trophy,
+  Crown,
 } from 'lucide-react';
 import {
   BattleState,
@@ -584,6 +585,8 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   // 跳过战斗
   const handleSkipBattle = () => {
     if (!battleState || isProcessing) return;
+    // 精英强敌/秘境机制 BOSS：禁止跳过战斗（与按钮隐藏逻辑保持一致，防御性兜底）
+    if (battleState.enemyIsElite || battleState.enemy.bossEncounterId) return;
 
     setIsProcessing(true);
     let currentState = { ...battleState };
@@ -660,8 +663,9 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
   }, [battleState?.playerInventory, player.inventory]);
 
   if (!isOpen || !battleState) return null;
-
   const { player: playerUnit, enemy: enemyUnit } = battleState;
+  // 秘境机制 BOSS 判定：回合制初始化时 bossEncounterId 会写入敌方单位（见 applyBossUnitInit），
+  // 徽标/跳过禁用直接使用 battleState.enemy?.bossEncounterId 判断
   // 确保HP值是整数（避免浮点数精度问题）
   const playerHp = Math.floor(playerUnit.hp);
   const playerMaxHp = Math.floor(playerUnit.maxHp);
@@ -701,7 +705,16 @@ const TurnBasedBattleModal: React.FC<TurnBasedBattleModalProps> = ({
         </div>
       }
       titleExtra={
-        battleState.enemyIsElite ? (
+        battleState.enemy?.bossEncounterId ? (
+          // 秘境机制 BOSS：显示「秘境主宰」标识，禁止跳过战斗
+          <span
+            className="flex items-center gap-1 px-2 py-1 mr-2 rounded border border-mystic-gold/80 bg-amber-900/40 text-mystic-gold text-xs font-bold"
+            title="秘境主宰无法跳过战斗"
+          >
+            <Crown size={14} />
+            秘境主宰
+          </span>
+        ) : battleState.enemyIsElite ? (
           // 精英强敌：显示「强敌来袭」标识，禁止跳过战斗
           <span
             className="flex items-center gap-1 px-2 py-1 mr-2 rounded border border-red-500/80 bg-red-900/40 text-red-300 text-xs font-bold"

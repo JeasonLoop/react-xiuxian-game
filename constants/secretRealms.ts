@@ -156,4 +156,37 @@ export const SECRET_REALMS: SecretRealm[] = [
     riskLevel: '中',
     drops: ['幻心草', '幻术功法', '迷魂符'],
   },
+  {
+    id: 'realm-jiehui-battlefield',
+    themedTypes: [ItemType.Material, ItemType.Artifact],
+    name: '劫灰古战场',
+    description:
+      '上古神魔大战的最深处，劫火焚尽万物后留下的死寂之地。劫灰中沉眠着不灭的战意，唯有化神修士可踏入，也唯有化神修士敢踏入。',
+    minRealm: RealmType.SpiritSevering,
+    cost: 3000,
+    riskLevel: '极度危险',
+    drops: ['劫灰装备', '化神突破材料', '上古战魂精华'],
+  },
+  {
+    id: 'realm-tianji-pavilion',
+    themedTypes: [ItemType.Artifact, ItemType.Material],
+    name: '天机残阁',
+    description:
+      '天机阁倾覆后的残骸悬于虚空，阁中机关造物仍在依照千年前的敕令运转。合道修士方可解读其中残存的天机之理。',
+    minRealm: RealmType.DaoCombining,
+    cost: 5000,
+    riskLevel: '极度危险',
+    drops: ['天机造物', '合道材料', '机关残卷'],
+  },
+  {
+    id: 'realm-mirror-palace',
+    themedTypes: [ItemType.Weapon, ItemType.Artifact],
+    name: '镜中仙宫',
+    description:
+      '传说中长生者的道场倒映在无尽镜光之中，宫里陈列着每一位来客的「前世」。踏入其中，你将直面镜中的自己。',
+    minRealm: RealmType.LongevityRealm,
+    cost: 8000,
+    riskLevel: '极度危险',
+    drops: ['规则之力结晶', '仙品装备', '前世记忆碎片'],
+  },
 ];

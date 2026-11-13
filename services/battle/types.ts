@@ -25,6 +25,8 @@ export interface BattleReplay {
     spirit: number; // 敌人神识属性
     strengthMultiplier?: number; // 敌人强度倍数
     isElite?: boolean; // 是否为精英强敌
+    isBoss?: boolean; // 是否为秘境机制 BOSS（快速战斗传参时为完整 BattleEnemy，携带此字段）
+    bossEncounterId?: string; // 机制 BOSS 配置 ID（对应 SECRET_REALM_BOSSES）
   };
   rounds: BattleRoundLog[];
   victory: boolean;
@@ -57,5 +59,9 @@ export interface BattleEnemy {
   spirit: number;
   strengthMultiplier: number;
   isElite: boolean;
+  /** 秘境专属机制 BOSS（通道独立，不与 isElite 叠加） */
+  isBoss?: boolean;
+  /** 机制 BOSS 配置 ID（对应 SECRET_REALM_BOSSES） */
+  bossEncounterId?: string;
   skills: BattleSkill[];
 }

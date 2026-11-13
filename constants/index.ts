@@ -43,6 +43,8 @@ export * from './sects';
 
 // 秘境相关
 export * from './secretRealms';
+// 秘境专属机制 BOSS 相关
+export * from './bossEncounters';
 
 // 灵宠相关
 export * from './pets';

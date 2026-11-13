@@ -22,6 +22,10 @@ import {
   REALM_ORDER,
   SECT_MASTER_CHALLENGE_REQUIREMENTS,
 } from '../../constants/index';
+import {
+  BOSS_REWARD_MULTIPLIER,
+  SECRET_REALM_BOSSES,
+} from '../../constants/bossEncounters';
 import { getAdventureBalance, getDifficultyBalance } from '../../constants/balance';
 import { uid } from '../../utils/gameUtils';
 import { ELITE_REWARD_MULTIPLIER, LOOT_ITEMS, RARITY_ORDER, RISK_REWARD_MULTIPLIERS } from './constants';
@@ -487,25 +491,42 @@ export const calculateBattleRewards = (
     }
   }
 
-  // 精英强敌：修为与灵石奖励 ×2（仅胜利结算时生效）
+  // 精英强敌：修为与灵石奖励 ×2；秘境机制 BOSS：奖励 ×3（两个通道独立，不叠加）
+  const bossEncounter = battleState.enemy.bossEncounterId
+    ? SECRET_REALM_BOSSES[battleState.enemy.bossEncounterId]
+    : null;
+  const bossRewardMultiplier = bossEncounter ? BOSS_REWARD_MULTIPLIER : 1;
   const eliteRewardMultiplier = battleState.enemyIsElite ? ELITE_REWARD_MULTIPLIER : 1;
 
   const expChange = victory
-    ? Math.round(rewardExp * eliteRewardMultiplier)
+    ? Math.round(rewardExp * eliteRewardMultiplier * bossRewardMultiplier)
     : -Math.max(5, Math.round(rewardExp * 0.5));
   const spiritChange = victory
-    ? Math.round(rewardStones * eliteRewardMultiplier)
+    ? Math.round(rewardStones * eliteRewardMultiplier * bossRewardMultiplier)
     : -Math.max(2, Math.round(rewardStones * 0.6));
 
   // 如果胜利，生成物品奖励
   let items: AdventureResult['itemObtained'][] | undefined = undefined;
   if (victory) {
-    items = generateLoot(
+    const loot = generateLoot(
       enemyStrength,
       actualAdventureType,
       player.realm,
       actualRiskLevel
     );
+    items = [...loot];
+
+    // 秘境机制 BOSS：追加专属掉落（劫灰装备/天机造物/规则之力等）
+    if (bossEncounter) {
+      items.push(
+        ...bossEncounter.bonusLoot.map((lootItem) => ({
+          name: lootItem.name,
+          type: lootItem.type,
+          rarity: lootItem.rarity,
+          description: lootItem.description,
+        }))
+      );
+    }
   }
 
   return { expChange, spiritChange, items };

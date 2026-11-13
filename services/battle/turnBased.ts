@@ -30,6 +30,17 @@ import {
 } from './skillAssembly';
 import { ENEMY_SKILL_DAMAGE_CAP_RATIO } from './constants';
 import { calcDamage, computeCritChance, computeSpeedDodge, handlePetAction, randomId } from './shared';
+import { getPlayerEquipmentMechanicTriggers } from '../../utils/reforgeUtils';
+import {
+  applyDefensiveAdjust,
+  applyKillHeal,
+  buildUnitPassives,
+  computeConditionalMultipliers,
+  getEffectiveLifeLeech,
+  rollAttackTriggers,
+  settleEquipmentRegen,
+} from './equipTriggerEngine';
+import { applyBossUnitInit, checkBossPhase } from './bossPhases';
 
 /**
  * 计算行动次数（基于速度差和神识差）
@@ -111,7 +122,11 @@ export const initializeTurnBasedBattle = async (
     mana: computeEnemyMaxMana(enemyData),
     maxMana: computeEnemyMaxMana(enemyData),
     isDefending: false,
+    frozenTurns: 0, // 霜寒禁锢冻结计数（敌人不携带装备词条）
   };
+
+  // 秘境机制 BOSS：初始化阶段标记与第一阶段机制（如护盾）
+  const bossEntryLog = applyBossUnitInit(enemyUnit, enemyData.bossEncounterId, playerUnit);
 
   // 获取激活的灵宠
   const activePet = player.activePetId
@@ -146,6 +161,19 @@ export const initializeTurnBasedBattle = async (
 
   // 初始化战斗历史
   const initialHistory: BattleAction[] = [];
+
+  // 秘境机制 BOSS：写入第一阶段登场日志
+  if (bossEntryLog) {
+    initialHistory.push({
+      id: randomId(),
+      round: 1,
+      turn: 'enemy',
+      actor: 'enemy',
+      actionType: 'attack',
+      result: {},
+      description: bossEntryLog,
+    });
+  }
 
   // 如果玩家神识比对手高，添加震慑提示
   if (playerUnit.spirit > enemyUnit.spirit) {
@@ -245,7 +273,7 @@ function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
   const hpRatio = baseMaxHp > 0 ? currentHp / baseMaxHp : 0; // 计算血量比例
   const adjustedHp = Math.floor(totalStats.maxHp * hpRatio); // 按比例应用到新的最大血量
 
-  return {
+  const unit: BattleUnit = {
     id: 'player',
     name: player.name,
     realm: player.realm,
@@ -263,6 +291,12 @@ function createBattleUnitFromPlayer(player: PlayerStats): BattleUnit {
     maxMana,
     isDefending: false,
   };
+
+  // 装备机制词条：聚合触发器并应用常驻被动（追风逐电速度、玄光庇护护盾池）
+  unit.triggers = getPlayerEquipmentMechanicTriggers(player);
+  buildUnitPassives(unit, unit.triggers);
+
+  return unit;
 }
 
 /**
@@ -278,6 +312,26 @@ export function executePlayerAction(
 
   let newState = { ...battleState };
   let actionResult: BattleAction | null = null;
+
+  // 霜寒禁锢：玩家被冻结时跳过整个行动阶段（等待行动前判定）
+  if ((newState.player.frozenTurns || 0) > 0) {
+    newState.player.frozenTurns = (newState.player.frozenTurns || 0) - 1;
+    newState.history.push({
+      id: randomId(),
+      round: newState.round,
+      turn: 'player',
+      actor: 'player',
+      actionType: 'attack',
+      result: {},
+      description: '你被【霜寒禁锢】冻结，无法行动！',
+    });
+    newState = updateBattleStateAfterAction(newState);
+    newState.playerActionsRemaining = 0;
+    newState.waitingForPlayerAction = false;
+    newState.turn = 'enemy';
+    newState.enemyActionsRemaining = newState.enemyMaxActions;
+    return newState;
+  }
 
   switch (action.type) {
     case 'attack':
@@ -352,9 +406,45 @@ export function executePlayerAction(
 export function executeEnemyTurn(battleState: BattleState): BattleState {
   let newState = { ...battleState };
 
+  // 秘境机制 BOSS：敌人回合开始时推进阶段机制（自毁倒计时/镜像自损/阶段切换）
+  if (newState.enemy.bossEncounterId && newState.enemy.hp > 0) {
+    const phaseLogs = checkBossPhase(newState.enemy, newState.player);
+    phaseLogs.forEach((desc) => {
+      newState.history.push({
+        id: randomId(),
+        round: newState.round,
+        turn: 'enemy',
+        actor: 'enemy',
+        actionType: 'attack',
+        result: {},
+        description: desc,
+      });
+    });
+    // BOSS 因自毁力竭 / 道消身殒而死亡：跳过本回合行动
+    if (newState.enemy.hp <= 0) {
+      newState.enemyActionsRemaining = 0;
+    }
+  }
+
   // 使用循环代替递归，处理敌人的多个行动点
   while (newState.enemyActionsRemaining > 0 && newState.enemy.hp > 0 && newState.player.hp > 0) {
     if (newState.waitingForPlayerAction) {
+      break;
+    }
+
+    // 霜寒禁锢：敌人被冻结时跳过整个敌人回合
+    if ((newState.enemy.frozenTurns || 0) > 0) {
+      newState.enemy.frozenTurns = (newState.enemy.frozenTurns || 0) - 1;
+      newState.history.push({
+        id: randomId(),
+        round: newState.round,
+        turn: 'enemy',
+        actor: 'enemy',
+        actionType: 'attack',
+        result: {},
+        description: `${newState.enemy.name}被【霜寒禁锢】冻结，无法行动！`,
+      });
+      newState.enemyActionsRemaining = 0;
       break;
     }
 
@@ -449,8 +539,13 @@ function executeNormalAttack(
   // 攻击/防御 buff 生效：value 为百分比加成（如 +10% 攻击），与快速战斗口径一致
   const attackerBonus = sumPercentBuffs(attacker.buffs, 'attack');
   const targetDefenseBonus = sumPercentBuffs(target.buffs, 'defense');
-  const effectiveAttack = Math.round(attacker.attack * (1 + attackerBonus));
-  const effectiveDefense = Math.round(target.defense * (1 + targetDefenseBonus));
+
+  // 装备词条条件乘区：斩杀/狂暴/弑仙作用于攻击方，坚壁作用于防御方
+  const isEliteTarget = targetId === 'enemy' && !!battleState.enemyIsElite;
+  const attackerCond = computeConditionalMultipliers(attacker, target, attacker.triggers, isEliteTarget);
+  const defenderCond = computeConditionalMultipliers(target, attacker, target.triggers, false);
+  const effectiveAttack = Math.round(attacker.attack * (1 + attackerBonus) * attackerCond.attackMult);
+  const effectiveDefense = Math.round(target.defense * (1 + targetDefenseBonus) * defenderCond.defenseMult);
 
   // 计算基础伤害
   const baseDamage = calcDamage(effectiveAttack, effectiveDefense);
@@ -489,7 +584,9 @@ function executeNormalAttack(
   // 暴击率上限35%、下限0，由 computeCritChance 内部统一处理
   const critChance = computeCritChance(attackerSpeed, targetSpeed, extraCritChance);
   const isCrit = Math.random() < critChance;
-  const finalDamage = Math.round((isCrit ? baseDamage * critMultiplier : baseDamage) * elementalMultiplier);
+  const finalDamage = Math.round(
+    (isCrit ? baseDamage * critMultiplier : baseDamage) * elementalMultiplier * attackerCond.damageMult
+  );
 
   // 预先收集目标增益/减益
   let maxDodge = 0;
@@ -556,16 +653,18 @@ function executeNormalAttack(
     actualDamage = finalDamage;
   }
 
-  // 应用伤害减免buff
-  if (maxDamageReduction > 0) {
-    actualDamage = Math.round(actualDamage * (1 - maxDamageReduction));
-  }
+  // 防御侧词条结算：格挡/受暴减免/不动如山/破法真罡/护盾/荆棘/受击回灵（与 buff 减伤取 max）
+  const defAdjust = applyDefensiveAdjust(target, target.triggers, actualDamage, isCrit, {
+    isSkill: false,
+    buffDamageReduction: maxDamageReduction,
+  });
+  actualDamage = defAdjust.damage;
 
   // 更新目标血量（确保是整数）
   target.hp = Math.max(0, Math.floor(target.hp - actualDamage));
 
   let leechedHp = 0;
-  const leechRatio = attacker.buffs.reduce((max, buff) => Math.max(max, buff.lifeLeech || 0), 0);
+  const leechRatio = getEffectiveLifeLeech(attacker);
   if (actualDamage > 0 && leechRatio > 0) {
     leechedHp = Math.floor(actualDamage * leechRatio);
     attacker.hp = Math.min(attacker.maxHp, Math.floor(attacker.hp + leechedHp));
@@ -576,6 +675,35 @@ function executeNormalAttack(
   if (actualDamage > 0 && maxReflectRatio > 0) {
     reflectedDamage = Math.floor(actualDamage * maxReflectRatio);
     attacker.hp = Math.max(0, Math.floor(attacker.hp - reflectedDamage));
+  }
+
+  // 荆棘反噬：受击按实际承伤反弹（词条，与 buff 反弹叠加）
+  if (defAdjust.reflect > 0) {
+    reflectedDamage += defAdjust.reflect;
+    attacker.hp = Math.max(0, Math.floor(attacker.hp - defAdjust.reflect));
+  }
+
+  // 装备词条攻击触发：连击追击/雷罚/灼烧/冻结/破甲 + 击杀回血（仅攻击者携带词条时生效）
+  let triggerLog = '';
+  if (attacker.triggers && actualDamage > 0) {
+    if (target.hp > 0) {
+      const attackTrigger = rollAttackTriggers(attacker, target, attacker.triggers, actualDamage);
+      if (attackTrigger.extraDamage > 0) {
+        target.hp = Math.max(0, Math.floor(target.hp - attackTrigger.extraDamage));
+      }
+      if (attackTrigger.debuffs.length > 0) {
+        target.debuffs.push(...attackTrigger.debuffs);
+      }
+      if (attackTrigger.freezeTurns > 0) {
+        target.frozenTurns = Math.max(target.frozenTurns || 0, attackTrigger.freezeTurns);
+      }
+      triggerLog = attackTrigger.extraLog;
+    } else {
+      const killHealed = applyKillHeal(attacker);
+      if (killHealed > 0) {
+        triggerLog = `触发【饮血归元】，回复 ${killHealed} 点气血。`;
+      }
+    }
   }
 
 
@@ -597,6 +725,12 @@ function executeNormalAttack(
     if (reflectedDamage > 0) {
       description += ` 你的反弹效果对${attacker.name}造成了 ${reflectedDamage} 点伤害！`;
     }
+  }
+
+  // 追加装备词条触发说明（防御方格挡/护盾/回灵 + 攻击方追击/灼烧/冻结等）
+  const extraDescription = [defAdjust.log, triggerLog].filter(Boolean).join(' ');
+  if (extraDescription) {
+    description += ` ${extraDescription}`;
   }
 
   return {
@@ -651,6 +785,7 @@ function executeSkill(
   let damage = 0;
   let heal = 0;
   let reflectedDamage = 0;
+  let equipmentLog = ''; // 装备词条触发说明（攻击触发 + 防御触发）
   const buffs: Buff[] = [];
   const debuffs: Debuff[] = [];
 
@@ -662,7 +797,12 @@ function executeSkill(
     const atkBonus = sumPercentBuffs(caster.buffs, 'attack');
     const rawStatValue =
       skill.damage.type === 'magical' ? caster.spirit : caster.attack;
-    const statValue = rawStatValue * (1 + atkBonus);
+
+    // 装备词条条件乘区：斩杀/狂暴/弑仙作用于施法方，坚壁作用于受击方（仅物理防御）
+    const isEliteTarget = targetId === 'enemy' && !!battleState.enemyIsElite;
+    const casterCond = computeConditionalMultipliers(caster, target, caster.triggers, isEliteTarget);
+    const targetCond = computeConditionalMultipliers(target, caster, target.triggers, false);
+    const statValue = rawStatValue * (1 + atkBonus) * casterCond.attackMult;
     // 计算技能的基础攻击力（用于伤害计算）
     const skillAttack = base + statValue * multiplier;
 
@@ -671,7 +811,7 @@ function executeSkill(
     const targetDefense =
       skill.damage.type === 'magical'
         ? target.spirit
-        : Math.round(target.defense * (1 + defenseBonus));
+        : Math.round(target.defense * (1 + defenseBonus) * targetCond.defenseMult);
 
     // 使用统一的伤害计算函数
     const baseDamage = calcDamage(skillAttack, targetDefense);
@@ -702,6 +842,9 @@ function executeSkill(
     // 添加随机伤害浮动（0.9-1.1倍）
     const randomMultiplier = 0.9 + Math.random() * 0.2; // 0.9-1.1之间的随机数
     damage = Math.round(damage * randomMultiplier);
+
+    // 装备词条伤害乘区：斩龙断岳/弑仙诛邪
+    damage = Math.round(damage * casterCond.damageMult);
 
     // 应用法术防御buff（仅对法术技能生效）
     if (skill.damage.type === 'magical') {
@@ -779,23 +922,26 @@ function executeSkill(
     }
     // 无视防御时直接造成全额伤害，跳过减免判定
 
-    // 应用伤害减免buff
-    if (target.buffs.some(buff => buff.damageReduction && buff.damageReduction > 0)) {
-      const maxReduction = Math.max(...target.buffs
-        .filter(buff => buff.damageReduction && buff.damageReduction > 0)
-        .map(buff => buff.damageReduction!));
-      damage = Math.round(damage * (1 - maxReduction));
-    }
-
     // 敌人技能伤害上限：单次不超过玩家最大气血的 35%（防止技能一击秒杀）
     if (casterId === 'enemy') {
       const damageCap = Math.floor(target.maxHp * ENEMY_SKILL_DAMAGE_CAP_RATIO);
       if (damage > damageCap) damage = damageCap;
     }
 
+    // 防御侧词条结算：格挡/受暴减免/不动如山/破法真罡/护盾/荆棘/受击回灵（与 buff 减伤取 max）
+    const buffDamageReduction = target.buffs.reduce(
+      (max, buff) => Math.max(max, buff.damageReduction || 0),
+      0
+    );
+    const defAdjust = applyDefensiveAdjust(target, target.triggers, damage, isCrit, {
+      isSkill: true,
+      buffDamageReduction,
+    });
+    damage = defAdjust.damage;
+
     target.hp = Math.max(0, Math.floor(target.hp - damage));
 
-    const skillLeech = caster.buffs.reduce((max, buff) => Math.max(max, buff.lifeLeech || 0), 0);
+    const skillLeech = getEffectiveLifeLeech(caster);
     if (damage > 0 && skillLeech > 0) {
       const leeched = Math.floor(damage * skillLeech);
       caster.hp = Math.min(caster.maxHp, Math.floor(caster.hp + leeched));
@@ -814,6 +960,37 @@ function executeSkill(
         caster.hp = Math.max(0, Math.floor(caster.hp - reflectedDamage));
       }
     }
+
+    // 荆棘反噬：受击按实际承伤反弹（词条，与 buff 反弹叠加）
+    if (defAdjust.reflect > 0) {
+      reflectedDamage += defAdjust.reflect;
+      caster.hp = Math.max(0, Math.floor(caster.hp - defAdjust.reflect));
+    }
+
+    // 装备词条攻击触发：连击追击/雷罚/灼烧/冻结/破甲 + 击杀回血（仅施法方携带词条时生效）
+    let attackTriggerLog = '';
+    if (caster.triggers && damage > 0) {
+      if (target.hp > 0) {
+        const attackTrigger = rollAttackTriggers(caster, target, caster.triggers, damage);
+        if (attackTrigger.extraDamage > 0) {
+          target.hp = Math.max(0, Math.floor(target.hp - attackTrigger.extraDamage));
+        }
+        if (attackTrigger.debuffs.length > 0) {
+          target.debuffs.push(...attackTrigger.debuffs);
+        }
+        if (attackTrigger.freezeTurns > 0) {
+          target.frozenTurns = Math.max(target.frozenTurns || 0, attackTrigger.freezeTurns);
+        }
+        attackTriggerLog = attackTrigger.extraLog;
+      } else {
+        const killHealed = applyKillHeal(caster);
+        if (killHealed > 0) {
+          attackTriggerLog = `触发【饮血归元】，回复 ${killHealed} 点气血。`;
+        }
+      }
+    }
+
+    equipmentLog = [defAdjust.log, attackTriggerLog].filter(Boolean).join(' ');
   }
 
   // 治疗计算
@@ -851,6 +1028,11 @@ function executeSkill(
     } else {
       description += ` ${target.name}的反弹效果对你造成了 ${reflectedDamage} 点伤害！`;
     }
+  }
+
+  // 追加装备词条触发说明
+  if (equipmentLog) {
+    description += ` ${equipmentLog}`;
   }
 
   return {
@@ -1281,6 +1463,9 @@ function updateBattleStateAfterAction(
 
   // 处理持续效果
   [newState.player, newState.enemy].forEach((unit) => {
+    // 装备词条：回春妙术每个行动周期回血（护盾池不重置、冻结在回合切换处单独结算）
+    settleEquipmentRegen(unit);
+
     // 处理Debuff（持续伤害）
     unit.debuffs = unit.debuffs
       .map((debuff) => {

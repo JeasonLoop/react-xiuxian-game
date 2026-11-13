@@ -143,8 +143,8 @@ function getThemedDropRarity(riskLevel: SecretRealm['riskLevel']): ItemRarity {
 
     setIsRealmOpen(false); // Close modal
 
-    // Secret Realm Adventure - 传递秘境的完整信息
-    await executeAdventure('secret_realm', realm.name, realm.riskLevel, realm.minRealm, realm.description);
+    // Secret Realm Adventure - 传递秘境的完整信息（含秘境 ID，供专属 BOSS 遭遇判定）
+    await executeAdventure('secret_realm', realm.name, realm.riskLevel, realm.minRealm, realm.id);
     return true;
   };
 

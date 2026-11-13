@@ -1,7 +1,7 @@
 import React from 'react';
 import { PlayerStats, AdventureType, ShopType, RealmType, AdventureResult, DifficultyMode } from '../../types';
  import { useUIStore } from '../../store/uiStore';
-import { REALM_ORDER, HEAVEN_EARTH_SOUL_BOSSES, GAME_BALANCE } from '../../constants/index';
+import { REALM_ORDER, HEAVEN_EARTH_SOUL_BOSSES, GAME_BALANCE, SECRET_REALM_BOSS_BY_REALM, SECRET_REALM_BOSS_CHANCE } from '../../constants/index';
 import { getDifficultyBalance } from '../../constants/balance';
 import {
   createEnemy,
@@ -146,10 +146,14 @@ export function useAdventureHandlers({
       difficulty
     );
 
-    // 精英强敌：无视跳过/逃跑配置，强制走回合制战斗弹窗
+    // 精英强敌 / 秘境机制 BOSS：无视跳过/逃跑配置，强制走回合制战斗弹窗
     // （uiStore.openTurnBasedBattle 内部会通过 pausedByBattle 机制暂停自动历练）
-    if (enemyData.isElite && onOpenTurnBasedBattle) {
-      addLog(`遭遇精英强敌【${enemyData.title}${enemyData.name}】！无法跳过，必须正面迎战！`, 'danger');
+    if ((enemyData.isElite || enemyData.isBoss) && onOpenTurnBasedBattle) {
+      if (enemyData.isBoss) {
+        addLog(`遭遇秘境主宰【${enemyData.title}${enemyData.name}】！无法跳过，必须正面迎战！`, 'danger');
+      } else {
+        addLog(`遭遇精英强敌【${enemyData.title}${enemyData.name}】！无法跳过，必须正面迎战！`, 'danger');
+      }
       onOpenTurnBasedBattle({
         adventureType: battleType,
         riskLevel,
@@ -187,7 +191,7 @@ export function useAdventureHandlers({
         huntLevel,
         bossId,
         difficulty,
-        enemyData // 传入预生成敌人：此处必为非精英（精英已在上面的分支强制回合制）
+        enemyData // 传入预生成敌人：此处必为非精英/非BOSS（两者均已在上面的分支强制回合制，fastBattle 永远拿不到 isBoss 敌人）
       );
       const battleResult = applySkippedBattleRewardPenalty(battleResolution.adventureResult);
       const battleCtx = battleResolution.replay;
@@ -221,7 +225,7 @@ export function useAdventureHandlers({
       huntLevel,
       bossId,
       difficulty,
-      enemyData // 传入预生成敌人：此处必为非精英（精英已强制回合制）
+      enemyData // 传入预生成敌人：此处必为非精英/非BOSS（两者均已强制回合制）
     );
     return {
       result: battleResolution.adventureResult,
@@ -236,6 +240,7 @@ export function useAdventureHandlers({
     realmName?: string,
     riskLevel?: '低' | '中' | '高' | '极度危险',
     realmMinRealm?: RealmType,
+    secretRealmId?: string, // 专属秘境 ID（用于判定机制 BOSS 遭遇）
   ) => {
     if (!player) {
       setLoading(false);
@@ -299,7 +304,16 @@ export function useAdventureHandlers({
         }
 
         // 使用公共函数处理战斗
-        const battleRes = await handleBattle(adventureType, riskLevel || '低', realmMinRealm || player.realm);
+        // 专属秘境机制 BOSS：战斗触发时按概率遭遇（约每 3-4 战一遇）
+        let secretBossId: string | undefined;
+        if (adventureType === 'secret_realm' && secretRealmId) {
+          const realmBoss = SECRET_REALM_BOSS_BY_REALM[secretRealmId];
+          if (realmBoss && Math.random() < SECRET_REALM_BOSS_CHANCE) {
+            secretBossId = realmBoss.id;
+            addLog(`深处传来一声惊天动地的咆哮——你遭遇了秘境之主【${realmBoss.name}】！`, 'danger');
+          }
+        }
+        const battleRes = await handleBattle(adventureType, riskLevel || '低', realmMinRealm || player.realm, secretBossId);
         if (battleRes.shouldReturn) {
           // 如果返回了，确保至少输出一个日志
           if (!battleRes.result?.story) {

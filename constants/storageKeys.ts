@@ -21,4 +21,5 @@ export const STORAGE_KEYS = {
   SAVE_BACKUP: 'xiuxian-game-save-backup',
   /** 战斗技能栏装配配置（skillId 列表，独立于玩家存档） */
   BATTLE_SKILL_LOADOUT: 'battle-skill-loadout',
+  INVENTORY_SORT_BY_RARITY: 'inventory-sort-by-rarity',
 } as const;

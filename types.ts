@@ -1,3 +1,4 @@
+import type { ReforgeAffixType, EquipmentTriggers } from './constants/reforge';
 export enum RealmType {
   QiRefining = '炼气期',
   Foundation = '筑基期',
@@ -118,14 +119,14 @@ export interface Item {
     lifespan?: number; // 增加寿命
   };
   reforgeAffixes?: Array<{
-    type: 'attackPercent' | 'defensePercent' | 'hpPercent' | 'critRate' | 'critDamage' | 'dodgeRate' | 'lifeLeech';
+    type: ReforgeAffixType; // 数值词条 + 机制词条，定义见 constants/reforge.ts
     name: string;
     value: number; // 如 0.05 表示 +5%
   }>; // 装备洗练附加词条
   reforgeCount?: number; // 已洗炼次数
   reforgeLocks?: boolean[]; // 与 reforgeAffixes 平行的锁定标记，锁定词条在洗炼时保留
   pendingReforge?: Array<{ // 洗炼候选词条（待玩家采纳或舍弃）
-    type: 'attackPercent' | 'defensePercent' | 'hpPercent' | 'critRate' | 'critDamage' | 'dodgeRate' | 'lifeLeech';
+    type: ReforgeAffixType; // 数值词条 + 机制词条，定义见 constants/reforge.ts
     name: string;
     value: number;
   }>;
@@ -1137,6 +1138,20 @@ export interface BattleUnit {
   energy?: number; // 能量值（可选，用于特殊技能）
   maxEnergy?: number; // 最大能量值
   isDefending?: boolean; // 是否处于防御状态
+  /** 装备机制词条触发器（仅玩家单位携带；敌方单位为 undefined 表示无词条） */
+  triggers?: EquipmentTriggers;
+  /** 玄光庇护护盾池：受击先扣盾再扣血（回合尾不重置） */
+  shieldPool?: number;
+  /** 霜寒禁锢冻结剩余回合数：>0 时该单位回合跳过 */
+  frozenTurns?: number;
+  /** 秘境机制 BOSS：当前阶段编号（1 起；非 BOSS 单位为 undefined） */
+  bossPhase?: number;
+  /** 秘境机制 BOSS：配置 ID（对应 constants/bossEncounters 的 SECRET_REALM_BOSSES） */
+  bossEncounterId?: string;
+  /** 机制 BOSS：「自毁程序」等力竭倒计时（回合数），归零时 BOSS 力竭死亡 */
+  bossSelfDestructTurns?: number;
+  /** 机制 BOSS：每回合自损最大气血比例（镜像 BOSS「道消身殒」） */
+  bossSelfDamageRatio?: number;
 }
 
 // 战斗行动

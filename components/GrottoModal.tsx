@@ -47,8 +47,7 @@ import {
 
 import {
   getReforgeCost,
-  REFORGE_AFFIX_DEFINITIONS,
-  ReforgeAffixType,
+  getReforgeAffixDisplay,
 } from '../constants/reforge';
 import {
   EXPEDITION_LOCATIONS,
@@ -1617,7 +1616,7 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
                             {selectedReforgeItem.reforgeAffixes && selectedReforgeItem.reforgeAffixes.length > 0 ? (
                               <div className="space-y-2">
                                 {selectedReforgeItem.reforgeAffixes.map((affix, idx) => {
-                                  const def = REFORGE_AFFIX_DEFINITIONS[affix.type as ReforgeAffixType];
+                                  const display = getReforgeAffixDisplay(affix);
                                   const isLocked = selectedReforgeItem.reforgeLocks?.[idx] || false;
                                   const hasPending = !!selectedReforgeItem.pendingReforge;
                                   return (
@@ -1628,17 +1627,17 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
                                       }`}
                                     >
                                       <div className="flex items-center gap-2 min-w-0">
-                                        <Sparkles size={14} className={def ? def.color : 'text-amber-400'} />
-                                        <span className={`font-bold text-xs md:text-sm ${def ? def.color : 'text-amber-300'}`}>
-                                          【{affix.name}】
+                                        <Sparkles size={14} className={display.color} />
+                                        <span className={`font-bold text-xs md:text-sm ${display.color}`}>
+                                          【{display.name}】
                                         </span>
                                         <span className="text-xs text-stone-400 truncate">
-                                          {def?.desc || ''}
+                                          {display.desc}
                                         </span>
                                       </div>
                                       <div className="flex items-center gap-2 shrink-0">
-                                        <span className={`font-mono font-bold text-sm ${def ? def.color : 'text-amber-300'}`}>
-                                          +{(affix.value * 100).toFixed(1)}%
+                                        <span className={`font-mono font-bold text-sm ${display.color}`}>
+                                          {display.valueText}
                                         </span>
                                         <button
                                           onClick={() => handleToggleReforgeLock(idx)}
@@ -1684,11 +1683,11 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
                                   ) : (
                                     <div className="space-y-1">
                                       {selectedReforgeItem.reforgeAffixes!.map((a, i) => {
-                                        const def = REFORGE_AFFIX_DEFINITIONS[a.type as ReforgeAffixType];
+                                        const display = getReforgeAffixDisplay(a);
                                         return (
                                           <div key={i} className="flex justify-between text-[11px]">
-                                            <span className={def ? def.color : 'text-amber-300'}>{a.name}</span>
-                                            <span className="font-mono text-stone-300">+{(a.value * 100).toFixed(1)}%</span>
+                                            <span className={display.color}>{display.name}</span>
+                                            <span className="font-mono text-stone-300">{display.valueText}</span>
                                           </div>
                                         );
                                       })}
@@ -1700,18 +1699,18 @@ const calculateProgress = (plantTime: number, harvestTime: number, currentNow: n
                                   <p className="text-[11px] text-sky-300 mb-1.5 font-bold">候选词条</p>
                                   <div className="space-y-1">
                                     {selectedReforgeItem.pendingReforge.map((a, i) => {
-                                      const def = REFORGE_AFFIX_DEFINITIONS[a.type as ReforgeAffixType];
+                                      const display = getReforgeAffixDisplay(a);
                                       const oldAffix = selectedReforgeItem.reforgeAffixes?.[i];
                                       const changed =
                                         !oldAffix || oldAffix.type !== a.type || oldAffix.value !== a.value;
                                       return (
                                         <div key={i} className="flex justify-between text-[11px]">
-                                          <span className={def ? def.color : 'text-amber-300'}>
-                                            {a.name}
+                                          <span className={display.color}>
+                                            {display.name}
                                             {changed && <span className="text-emerald-400 ml-1">新</span>}
                                           </span>
                                           <span className={`font-mono ${changed ? 'text-emerald-300' : 'text-stone-300'}`}>
-                                            +{(a.value * 100).toFixed(1)}%
+                                            {display.valueText}
                                           </span>
                                         </div>
                                       );

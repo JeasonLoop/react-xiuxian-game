@@ -30,6 +30,17 @@ import {
   sumPercentBuffs,
 } from './skillAssembly';
 import { applySkillFast, settlePersistEffects } from './fastTriggers';
+import { getPlayerEquipmentMechanicTriggers } from '../../utils/reforgeUtils';
+import {
+  applyDefensiveAdjust,
+  applyKillHeal,
+  buildUnitPassives,
+  computeConditionalMultipliers,
+  getEffectiveLifeLeech,
+  rollAttackTriggers,
+} from './equipTriggerEngine';
+import { applyBossUnitInit, checkBossPhase, getBossEncounterConfig } from './bossPhases';
+import { BOSS_REWARD_MULTIPLIER } from '../../constants/bossEncounters';
 
 const safeNumber = (val: unknown, def: number = 0) => Number(val) || def;
 
@@ -128,6 +139,10 @@ export const resolveBattleEncounter = async (
     maxMana: computePlayerMaxMana(player, totalStats.spirit),
     isDefending: false,
   };
+  // 装备机制词条：聚合触发器并应用常驻被动（追风逐电速度、玄光庇护护盾池），与回合制一致
+  playerUnit.triggers = getPlayerEquipmentMechanicTriggers(player);
+  buildUnitPassives(playerUnit, playerUnit.triggers);
+
   const enemyUnit: BattleUnit = {
     id: 'enemy',
     name: enemy.name,
@@ -145,9 +160,25 @@ export const resolveBattleEncounter = async (
     mana: computeEnemyMaxMana(enemy),
     maxMana: computeEnemyMaxMana(enemy),
     isDefending: false,
+    frozenTurns: 0, // 敌人不携带装备词条，仅冻结计数
   };
 
   const rounds: BattleRoundLog[] = [];
+
+  // 秘境机制 BOSS：初始化阶段标记与第一阶段机制（如护盾），并写入登场日志
+  const bossEntryLog = applyBossUnitInit(enemyUnit, enemy.bossEncounterId, playerUnit);
+  if (bossEntryLog) {
+    rounds.push({
+      id: randomId(),
+      attacker: 'enemy',
+      damage: 0,
+      crit: false,
+      description: bossEntryLog,
+      playerHpAfter: playerUnit.hp,
+      enemyHpAfter: enemyUnit.hp,
+    });
+  }
+
   let attacker: 'player' | 'enemy' = playerUnit.speed >= enemyUnit.speed ? 'player' : 'enemy';
 
   // 获取激活的灵宠
@@ -166,6 +197,25 @@ export const resolveBattleEncounter = async (
   while (playerUnit.hp > 0 && enemyUnit.hp > 0 && rounds.length < 40) {
     const isPlayerTurn = attacker === 'player';
 
+    // 霜寒禁锢：被冻结的单位跳过本回合（与回合制一致）
+    const activeUnit = isPlayerTurn ? playerUnit : enemyUnit;
+    if ((activeUnit.frozenTurns || 0) > 0) {
+      activeUnit.frozenTurns = (activeUnit.frozenTurns || 0) - 1;
+      rounds.push({
+        id: randomId(),
+        attacker: attacker,
+        damage: 0,
+        crit: false,
+        description: isPlayerTurn
+          ? '你被【霜寒禁锢】冻结，无法行动！'
+          : `${enemy.title}${enemy.name}被【霜寒禁锢】冻结，无法行动！`,
+        playerHpAfter: playerUnit.hp,
+        enemyHpAfter: enemyUnit.hp,
+      });
+      attacker = isPlayerTurn ? 'enemy' : 'player';
+      continue;
+    }
+
     if (isPlayerTurn) {
       playerUnit.isDefending = false;
 
@@ -173,7 +223,8 @@ export const resolveBattleEncounter = async (
       const chosenSkill = choosePlayerSkill(playerUnit);
       if (chosenSkill) {
         playerUnit.mana = (playerUnit.mana || 0) - (chosenSkill.cost.mana || 0);
-        const result = applySkillFast(playerUnit, enemyUnit, chosenSkill);
+        const result = applySkillFast(playerUnit, enemyUnit, chosenSkill, undefined, enemy.isElite);
+        const skillTriggerLog = result.triggerLog ? ` ${result.triggerLog}` : '';
         rounds.push({
           id: randomId(),
           attacker: 'player',
@@ -182,15 +233,18 @@ export const resolveBattleEncounter = async (
           description: result.dodged
             ? `你施展${chosenSkill.name}，但被${enemy.title}${enemy.name}闪避了！`
             : result.damage > 0
-              ? `你施展${chosenSkill.name}，造成 ${result.damage} 点伤害。${result.heal > 0 ? `（回复 ${result.heal} 气血）` : ''}`
+              ? `你施展${chosenSkill.name}，造成 ${result.damage} 点伤害。${result.heal > 0 ? `（回复 ${result.heal} 气血）` : ''}${skillTriggerLog}`
               : `你运转${chosenSkill.name}，${result.heal > 0 ? `回复了 ${result.heal} 点气血。` : '灵光护体。'}`,
           playerHpAfter: playerUnit.hp,
           enemyHpAfter: enemyUnit.hp,
         });
       } else {
         // 普攻（与回合制 executeNormalAttack 同口径：攻击/防御 buff 生效）
-        const effectiveAttack = Math.round(playerUnit.attack * (1 + sumPercentBuffs(playerUnit.buffs, 'attack')));
-        const effectiveDefense = Math.round(enemyUnit.defense * (1 + sumPercentBuffs(enemyUnit.buffs, 'defense')));
+        // 装备词条条件乘区：斩杀/狂暴/弑仙（攻击方），坚壁（防御方）
+        const playerCond = computeConditionalMultipliers(playerUnit, enemyUnit, playerUnit.triggers, enemy.isElite);
+        const enemyCond = computeConditionalMultipliers(enemyUnit, playerUnit, enemyUnit.triggers, false);
+        const effectiveAttack = Math.round(playerUnit.attack * (1 + sumPercentBuffs(playerUnit.buffs, 'attack')) * playerCond.attackMult);
+        const effectiveDefense = Math.round(enemyUnit.defense * (1 + sumPercentBuffs(enemyUnit.buffs, 'defense')) * enemyCond.defenseMult);
         const damage = calcDamage(effectiveAttack, effectiveDefense);
 
         // 暴击：速度差公式 + 暴击 buff（与回合制一致）
@@ -202,8 +256,9 @@ export const resolveBattleEncounter = async (
         });
         const critChance = computeCritChance(playerUnit.speed, enemyUnit.speed, extraCritChance);
         const crit = Math.random() < critChance;
-        let finalDamage = crit ? Math.round(damage * critMultiplier) : damage;
+        let finalDamage = Math.round((crit ? damage * critMultiplier : damage) * playerCond.damageMult);
         let isDodged = false;
+        let triggerLog = '';
 
         // 敌方闪避判定（速度差闪避，上限 15%）
         const enemyDodgeChance = computeSpeedDodge(playerUnit.speed, enemyUnit.speed);
@@ -217,14 +272,60 @@ export const resolveBattleEncounter = async (
           finalDamage = 0;
           isDodged = true;
         } else {
+          // 防御侧词条结算（格挡/受暴减免/护盾/荆棘/受击回灵；敌人无词条时为空操作）
+          const maxReduction = enemyUnit.buffs.reduce((max, buff) => Math.max(max, buff.damageReduction || 0), 0);
+          const defAdjust = applyDefensiveAdjust(enemyUnit, enemyUnit.triggers, finalDamage, crit, {
+            isSkill: false,
+            buffDamageReduction: maxReduction,
+          });
+          finalDamage = defAdjust.damage;
           enemyUnit.hp = Math.max(0, enemyUnit.hp - finalDamage);
-          // 普攻吸血（buff.lifeLeech 取最大，与回合制 executeNormalAttack 一致）
-          const lifeLeech = playerUnit.buffs.reduce((max, buff) => Math.max(max, buff.lifeLeech || 0), 0);
+
+          // 反弹伤害（buff reflectDamage 取最大 + 荆棘反噬词条叠加）
+          const maxReflect = enemyUnit.buffs.reduce((max, buff) => Math.max(max, buff.reflectDamage || 0), 0);
+          let totalReflect = finalDamage > 0 && maxReflect > 0 ? Math.floor(finalDamage * maxReflect) : 0;
+          if (finalDamage > 0 && defAdjust.reflect > 0) totalReflect += defAdjust.reflect;
+          if (totalReflect > 0) {
+            playerUnit.hp = Math.max(0, playerUnit.hp - totalReflect);
+          }
+
+          // 普攻吸血（buff.lifeLeech 取最大 + 噬血狂化词条加成，与回合制 executeNormalAttack 一致）
+          const lifeLeech = getEffectiveLifeLeech(playerUnit);
           if (finalDamage > 0 && lifeLeech > 0) {
             playerUnit.hp = Math.min(playerUnit.maxHp, playerUnit.hp + Math.floor(finalDamage * lifeLeech));
           }
+
+          // 攻击侧词条触发：连击/雷罚/灼烧/冻结/破甲 + 击杀回血
+          if (playerUnit.triggers && finalDamage > 0) {
+            if (enemyUnit.hp > 0) {
+              const attackTrigger = rollAttackTriggers(playerUnit, enemyUnit, playerUnit.triggers, finalDamage);
+              if (attackTrigger.extraDamage > 0) {
+                enemyUnit.hp = Math.max(0, enemyUnit.hp - attackTrigger.extraDamage);
+              }
+              if (attackTrigger.debuffs.length > 0) {
+                enemyUnit.debuffs.push(...attackTrigger.debuffs);
+              }
+              if (attackTrigger.freezeTurns > 0) {
+                enemyUnit.frozenTurns = Math.max(enemyUnit.frozenTurns || 0, attackTrigger.freezeTurns);
+              }
+              triggerLog = attackTrigger.extraLog;
+            } else {
+              const killHealed = applyKillHeal(playerUnit);
+              if (killHealed > 0) {
+                triggerLog = `触发【饮血归元】，回复 ${killHealed} 点气血。`;
+              }
+            }
+          }
+
+          // 防御侧词条触发说明（敌人无词条时为空）
+          if (defAdjust.log) {
+            triggerLog = [defAdjust.log, triggerLog].filter(Boolean).join(' ');
+          }
         }
 
+        if (triggerLog) {
+          triggerLog = ` ${triggerLog}`;
+        }
         rounds.push({
           id: randomId(),
           attacker: 'player',
@@ -232,7 +333,7 @@ export const resolveBattleEncounter = async (
           crit,
           description: isDodged
             ? `你发动灵力攻势，但被${enemy.title}${enemy.name}闪避了！`
-            : `你发动灵力攻势，造成 ${finalDamage}${crit ? '（暴击）' : ''} 点伤害。`,
+            : `你发动灵力攻势，造成 ${finalDamage}${crit ? '（暴击）' : ''} 点伤害。${triggerLog}`,
           playerHpAfter: playerUnit.hp,
           enemyHpAfter: enemyUnit.hp,
         });
@@ -266,6 +367,26 @@ export const resolveBattleEncounter = async (
         rounds.push(action as BattleRoundLog);
       }
     } else {
+      // 秘境机制 BOSS：敌人回合开始时推进阶段机制（自毁倒计时/镜像自损/阶段切换）
+      if (enemyUnit.bossEncounterId) {
+        const phaseLogs = checkBossPhase(enemyUnit, playerUnit);
+        phaseLogs.forEach((desc) => {
+          rounds.push({
+            id: randomId(),
+            attacker: 'enemy',
+            damage: 0,
+            crit: false,
+            description: desc,
+            playerHpAfter: playerUnit.hp,
+            enemyHpAfter: enemyUnit.hp,
+          });
+        });
+        // BOSS 因自毁力竭 / 道消身殒而死亡：跳过本回合行动
+        if (enemyUnit.hp <= 0) {
+          break;
+        }
+      }
+
       // 敌人回合（AI 摘要）：有可用技能时 20% 概率释放技能（与回合制 70/20/10 的技能分支对齐），
       // 否则 10% 防御，其余普攻
       const availableSkills = enemyUnit.skills.filter(
@@ -279,6 +400,7 @@ export const resolveBattleEncounter = async (
         // 敌人技能伤害上限：单次不超过玩家最大气血的 35%（防止技能一击秒杀）
         const enemyDamageCap = Math.floor(playerUnit.maxHp * ENEMY_SKILL_DAMAGE_CAP_RATIO);
         const result = applySkillFast(enemyUnit, playerUnit, skill, enemyDamageCap);
+        const enemySkillTriggerLog = result.triggerLog ? ` ${result.triggerLog}` : '';
         rounds.push({
           id: randomId(),
           attacker: 'enemy',
@@ -287,7 +409,7 @@ export const resolveBattleEncounter = async (
           description: result.dodged
             ? `${enemy.title}${enemy.name}施展【${skill.name}】，被你闪避了！`
             : result.damage > 0
-              ? `${enemy.title}${enemy.name}施展【${skill.name}】，对你造成 ${result.damage} 点伤害。`
+              ? `${enemy.title}${enemy.name}施展【${skill.name}】，对你造成 ${result.damage} 点伤害。${enemySkillTriggerLog}`
               : `${enemy.title}${enemy.name}施展【${skill.name}】。`,
           playerHpAfter: playerUnit.hp,
           enemyHpAfter: enemyUnit.hp,
@@ -311,6 +433,7 @@ export const resolveBattleEncounter = async (
         const critChance = computeCritChance(enemyUnit.speed, playerUnit.speed, 0);
         const crit = Math.random() < critChance;
         let finalDamage = crit ? Math.round(damage * 1.5) : damage;
+        let triggerLog = ''; // 玩家防御侧词条触发说明
 
         // 玩家闪避：buff 闪避与速度差闪避取最大
         let maxDodge = 0;
@@ -329,15 +452,26 @@ export const resolveBattleEncounter = async (
             const defenseReduction = ratio > 3.0 ? 0.35 : ratio > 2.0 ? 0.4 : 0.5;
             finalDamage = Math.round(finalDamage * (1 - defenseReduction));
           }
-          // 减伤 buff（取最大，与回合制一致）
+          // 防御侧词条结算：格挡/受暴减免/不动如山/破法真罡/护盾/荆棘/受击回灵（减伤与 buff 取 max，与回合制一致）
           const maxReduction = playerUnit.buffs.reduce((max, buff) => Math.max(max, buff.damageReduction || 0), 0);
-          finalDamage = Math.round(finalDamage * (1 - Math.min(0.6, maxReduction)));
+          const defAdjust = applyDefensiveAdjust(playerUnit, playerUnit.triggers, finalDamage, crit, {
+            isSkill: false,
+            buffDamageReduction: maxReduction,
+          });
+          finalDamage = defAdjust.damage;
           playerUnit.hp = Math.max(0, playerUnit.hp - finalDamage);
 
-          // 反弹伤害（玩家 reflectDamage 取最大）
+          // 反弹伤害（玩家 reflectDamage 取最大 + 荆棘反噬词条叠加）
           const maxReflect = playerUnit.buffs.reduce((max, buff) => Math.max(max, buff.reflectDamage || 0), 0);
-          if (finalDamage > 0 && maxReflect > 0) {
-            enemyUnit.hp = Math.max(0, enemyUnit.hp - Math.floor(finalDamage * maxReflect));
+          let totalReflect = finalDamage > 0 && maxReflect > 0 ? Math.floor(finalDamage * maxReflect) : 0;
+          if (finalDamage > 0 && defAdjust.reflect > 0) totalReflect += defAdjust.reflect;
+          if (totalReflect > 0) {
+            enemyUnit.hp = Math.max(0, enemyUnit.hp - totalReflect);
+          }
+
+          // 玩家防御侧词条触发说明（格挡/护盾/受击回灵等）
+          if (defAdjust.log) {
+            triggerLog = ` ${defAdjust.log}`;
           }
         }
 
@@ -348,7 +482,7 @@ export const resolveBattleEncounter = async (
           crit,
           description: isDodged
             ? `${enemy.title}${enemy.name}反扑，被你闪避了！`
-            : `${enemy.title}${enemy.name}反扑，造成 ${finalDamage}${crit ? '（暴击）' : ''} 点伤害。`,
+            : `${enemy.title}${enemy.name}反扑，造成 ${finalDamage}${crit ? '（暴击）' : ''} 点伤害。${triggerLog}`,
           playerHpAfter: playerUnit.hp,
           enemyHpAfter: enemyUnit.hp,
         });
@@ -385,10 +519,11 @@ export const resolveBattleEncounter = async (
     difficultyMode
   );
 
-  // 精英强敌：修为与灵石奖励 ×2（仅胜利结算时生效）
+  // 精英强敌：修为与灵石奖励 ×2；秘境机制 BOSS：奖励 ×3（两个通道独立，不叠加）
+  const bossRewardMultiplier = enemy.isBoss ? BOSS_REWARD_MULTIPLIER : 1;
   const eliteRewardMultiplier = enemy.isElite ? ELITE_REWARD_MULTIPLIER : 1;
-  const rewardExp = Math.round(baseRewardExp * eliteRewardMultiplier);
-  const rewardStones = Math.round(baseRewardStones * eliteRewardMultiplier);
+  const rewardExp = Math.round(baseRewardExp * eliteRewardMultiplier * bossRewardMultiplier);
+  const rewardStones = Math.round(baseRewardStones * eliteRewardMultiplier * bossRewardMultiplier);
 
   const expChange = victory
     ? rewardExp
@@ -407,6 +542,19 @@ export const resolveBattleEncounter = async (
       riskLevel
     );
     lootItems.push(...loot);
+
+    // 秘境机制 BOSS：追加专属掉落（劫灰装备/天机造物/规则之力等）
+    const bossConfig = enemy.isBoss ? getBossEncounterConfig(enemy.bossEncounterId) : null;
+    if (bossConfig) {
+      bossConfig.bonusLoot.forEach((lootItem) => {
+        lootItems.push({
+          name: lootItem.name,
+          type: lootItem.type,
+          rarity: lootItem.rarity,
+          description: lootItem.description,
+        });
+      });
+    }
   }
 
   // 生成更丰富的战斗描述

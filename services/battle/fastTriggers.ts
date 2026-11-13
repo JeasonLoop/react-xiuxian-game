@@ -17,6 +17,14 @@
 import { BattleSkill, BattleUnit, Buff, Debuff } from '../../types';
 import { calcDamage } from './shared';
 import { sumPercentBuffs } from './skillAssembly';
+import {
+  applyDefensiveAdjust,
+  applyKillHeal,
+  computeConditionalMultipliers,
+  getEffectiveLifeLeech,
+  rollAttackTriggers,
+  settleEquipmentRegen,
+} from './equipTriggerEngine';
 
 export interface FastSkillResult {
   damage: number; // 对目标造成的伤害
@@ -24,6 +32,7 @@ export interface FastSkillResult {
   reflected: number; // 施法者受到的反弹伤害
   dodged: boolean; // 目标闪避
   description: string;
+  triggerLog?: string; // 装备词条触发说明（追加到战斗日志）
 }
 
 /** 目标闪避判定（对齐 executeNormalAttack：buff 闪避与速度闪避取最大） */
@@ -52,24 +61,32 @@ export function applySkillFast(
   caster: BattleUnit,
   target: BattleUnit,
   skill: BattleSkill,
-  damageCap?: number // 伤害上限（敌人技能用：不超过玩家 maxHp × 35%，防止一击秒杀）
+  damageCap?: number, // 伤害上限（敌人技能用：不超过玩家 maxHp × 35%，防止一击秒杀）
+  isEliteTarget?: boolean // 目标是否为精英/BOSS（弑仙诛邪判定）
 ): FastSkillResult {
   let damage = 0;
   let heal = 0;
   let reflected = 0;
   let dodged = false;
+  let triggerLog = ''; // 装备词条触发说明（攻击触发 + 防御触发）
 
   if (skill.damage) {
     // 攻击 buff 生效：物理用攻击力、法术用神识（与回合制 executeSkill 一致）
     const atkBonus = sumPercentBuffs(caster.buffs, 'attack');
     const rawStat = skill.damage.type === 'magical' ? caster.spirit : caster.attack;
-    const skillAttack = skill.damage.base + rawStat * (1 + atkBonus) * skill.damage.multiplier;
+
+    // 装备词条条件乘区：斩杀/狂暴/弑仙（施法方），坚壁（受击方物理防御）
+    const casterCond = computeConditionalMultipliers(caster, target, caster.triggers, !!isEliteTarget);
+    const targetCond = computeConditionalMultipliers(target, caster, target.triggers, false);
+
+    const skillAttack =
+      skill.damage.base + rawStat * (1 + atkBonus) * skill.damage.multiplier * casterCond.attackMult;
     // 物理防御受 defense buff 影响；法术穿 Spirit（不享受 defense buff）
     const defenseBonus = sumPercentBuffs(target.buffs, 'defense');
     const targetDefense =
       skill.damage.type === 'magical'
         ? target.spirit
-        : Math.round(target.defense * (1 + defenseBonus));
+        : Math.round(target.defense * (1 + defenseBonus) * targetCond.defenseMult);
 
     const baseDamage = calcDamage(Math.round(skillAttack), targetDefense);
 
@@ -84,6 +101,9 @@ export function applySkillFast(
     damage = isCrit ? Math.round(baseDamage * critMultiplier) : Math.round(baseDamage);
     // 随机浮动 0.9~1.1（与回合制一致）
     damage = Math.round(damage * (0.9 + Math.random() * 0.2));
+
+    // 装备词条伤害乘区：斩龙断岳/弑仙诛邪
+    damage = Math.round(damage * casterCond.damageMult);
 
     // 法术防御 buff（仅法术技能生效，取最大）
     if (skill.damage.type === 'magical') {
@@ -103,24 +123,62 @@ export function applySkillFast(
     if (dodged) {
       damage = 0;
     } else {
-      target.hp = Math.max(0, Math.floor(target.hp - damage));
-
-      // 技能吸血（buff.lifeLeech 取最大）
-      const skillLeech = caster.buffs.reduce(
-        (max, buff) => Math.max(max, buff.lifeLeech || 0),
+      // 防御侧词条结算：格挡/受暴减免/不动如山/破法真罡/护盾/荆棘/受击回灵（与回合制一致）
+      const buffDamageReduction = target.buffs.reduce(
+        (max, buff) => Math.max(max, buff.damageReduction || 0),
         0
       );
+      const defAdjust = applyDefensiveAdjust(target, target.triggers, damage, isCrit, {
+        isSkill: true,
+        buffDamageReduction,
+      });
+      damage = defAdjust.damage;
+      target.hp = Math.max(0, Math.floor(target.hp - damage));
+
+      // 技能吸血（buff.lifeLeech 取最大 + 噬血狂化词条加成）
+      const skillLeech = getEffectiveLifeLeech(caster);
       if (damage > 0 && skillLeech > 0) {
         const leeched = Math.floor(damage * skillLeech);
         caster.hp = Math.min(caster.maxHp, Math.floor(caster.hp + leeched));
         heal += leeched;
       }
 
-      // 反弹伤害（目标 reflectDamage 取最大）
+      // 反弹伤害（buff reflectDamage 取最大 + 荆棘反噬词条叠加）
       const maxReflect = Math.max(0, ...target.buffs.map((b) => b.reflectDamage || 0));
-      if (maxReflect > 0) {
-        reflected = Math.floor(damage * maxReflect);
+      let totalReflect = maxReflect > 0 ? Math.floor(damage * maxReflect) : 0;
+      if (defAdjust.reflect > 0) totalReflect += defAdjust.reflect;
+      if (totalReflect > 0) {
+        reflected = totalReflect;
         caster.hp = Math.max(0, Math.floor(caster.hp - reflected));
+      }
+
+      // 攻击侧词条触发：连击/雷罚/灼烧/冻结/破甲 + 击杀回血（仅施法方携带词条时生效）
+      if (caster.triggers && damage > 0) {
+        if (target.hp > 0) {
+          const attackTrigger = rollAttackTriggers(caster, target, caster.triggers, damage);
+          if (attackTrigger.extraDamage > 0) {
+            target.hp = Math.max(0, Math.floor(target.hp - attackTrigger.extraDamage));
+          }
+          if (attackTrigger.debuffs.length > 0) {
+            target.debuffs.push(...attackTrigger.debuffs);
+          }
+          if (attackTrigger.freezeTurns > 0) {
+            target.frozenTurns = Math.max(target.frozenTurns || 0, attackTrigger.freezeTurns);
+          }
+          // 摘要展示：追击/雷罚伤害并入本次伤害数值
+          damage += attackTrigger.extraDamage;
+          triggerLog = attackTrigger.extraLog;
+        } else {
+          const killHealed = applyKillHeal(caster);
+          if (killHealed > 0) {
+            triggerLog = `触发【饮血归元】，回复 ${killHealed} 点气血。`;
+          }
+        }
+      }
+
+      const equipmentLog = [defAdjust.log, triggerLog].filter(Boolean).join(' ');
+      if (equipmentLog) {
+        triggerLog = equipmentLog;
       }
     }
   }
@@ -149,7 +207,14 @@ export function applySkillFast(
   // 设置冷却
   caster.cooldowns[skill.id] = skill.maxCooldown;
 
-  return { damage, heal, reflected, dodged, description: skill.description };
+  return {
+    damage,
+    heal,
+    reflected,
+    dodged,
+    description: skill.description,
+    triggerLog: triggerLog || undefined,
+  };
 }
 
 /**
@@ -157,6 +222,9 @@ export function applySkillFast(
  * 语义对齐回合制 updateBattleStateAfterAction 的持续效果部分。
  */
 export function settlePersistEffects(unit: BattleUnit): void {
+  // 装备词条：回春妙术每个行动周期回血（护盾池不重置）
+  settleEquipmentRegen(unit);
+
   // Debuff：毒/烧掉血（负值=最大气血百分比，正值=固定伤害），时长递减
   unit.debuffs = unit.debuffs
     .map((debuff: Debuff) => {
