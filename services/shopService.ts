@@ -1,9 +1,43 @@
-import { ShopItem, ShopType, ItemType, ItemRarity, EquipmentSlot, RealmType } from '../types';
+import { ShopItem, ShopType, ItemType, ItemRarity, Item, EquipmentSlot, RealmType } from '../types';
 import { REALM_ORDER, FOUNDATION_TREASURES, HEAVEN_EARTH_ESSENCES, HEAVEN_EARTH_MARROWS } from '../constants/index';
 import { getInheritanceStonePrice } from '../constants/balance';
 import { uid } from '../utils/gameUtils';
 import { getItemFromConstants } from '../utils/itemConstantsUtils';
 import { generateItems } from '../utils/itemGenerator';
+import { scaleEquipmentStatsForRealm } from '../utils/itemUtils';
+
+/**
+ * 判断是否为装备类物品（可穿戴，需要按购买者境界缩放属性）
+ * 材料、丹药、草药等非装备物品不缩放
+ */
+export function isEquippableShopItem(item: { isEquippable?: boolean; type?: ItemType }): boolean {
+  if (item.isEquippable) return true;
+  const equipmentTypes: ItemType[] = [
+    ItemType.Weapon,
+    ItemType.Armor,
+    ItemType.Artifact,
+    ItemType.Accessory,
+    ItemType.Ring,
+  ];
+  return equipmentTypes.includes(item.type as ItemType);
+}
+
+/**
+ * 获取按购买者境界缩放后的最终物品（商店展示与购买入库共用同一缩放逻辑）
+ * 仅装备类物品缩放，其他物品原样返回；数量>1 购买时复用同一缩放结果即可
+ */
+export function getScaledItemForBuyer<
+  T extends {
+    isEquippable?: boolean;
+    type?: ItemType;
+    rarity?: ItemRarity;
+    effect?: Item['effect'];
+    permanentEffect?: Item['permanentEffect'];
+  }
+>(item: T, buyerRealm: RealmType): T {
+  if (!isEquippableShopItem(item)) return item;
+  return scaleEquipmentStatsForRealm(item as unknown as Item, buyerRealm) as unknown as T;
+}
 
 /**
  * 从常量池获取物品并添加商店价格信息
@@ -54,8 +88,8 @@ const SHOP_ITEM_TEMPLATES: Record<ShopType, Array<Omit<ShopItem, 'id'>>> = {
     ...(getItemFromConstants('洗髓丹') ? [createShopItemFromConstants('洗髓丹', 150, 50)] : []),
     // 青钢剑可能不在常量池中，如果不在则跳过
     ...(getItemFromConstants('青钢剑') ? [createShopItemFromConstants('青钢剑', 200, 60)] : []),
-    ...(getItemFromConstants('凝神丹') ? [createShopItemFromConstants('凝神丹', 120, 40)] : []),
-    ...(getItemFromConstants('强体丹') ? [createShopItemFromConstants('强体丹', 120, 40)] : []),
+    ...(getItemFromConstants('凝神静心丹') ? [createShopItemFromConstants('凝神静心丹', 120, 40)] : []),
+    ...(getItemFromConstants('固本培元丹') ? [createShopItemFromConstants('固本培元丹', 120, 40)] : []),
     // 强化石可能不在常量池中，如果不在则跳过
     ...(getItemFromConstants('强化石') ? [createShopItemFromConstants('强化石', 50, 15)] : []),
   ],
@@ -63,8 +97,8 @@ const SHOP_ITEM_TEMPLATES: Record<ShopType, Array<Omit<ShopItem, 'id'>>> = {
     ...(getItemFromConstants('筑基丹') ? [createShopItemFromConstants('筑基丹', 1000, 300)] : []),
     // 高阶妖丹可能不在常量池中，如果不在则跳过
     ...(getItemFromConstants('高阶妖丹') ? [createShopItemFromConstants('高阶妖丹', 500, 150)] : []),
-    ...(getItemFromConstants('凝神丹') ? [createShopItemFromConstants('凝神丹', 200, 60)] : []),
-    ...(getItemFromConstants('强体丹') ? [createShopItemFromConstants('强体丹', 200, 60)] : []),
+    ...(getItemFromConstants('凝神静心丹') ? [createShopItemFromConstants('凝神静心丹', 200, 60)] : []),
+    ...(getItemFromConstants('固本培元丹') ? [createShopItemFromConstants('固本培元丹', 200, 60)] : []),
   ],
   [ShopType.BlackMarket]: [], // 黑市物品从高级物品池中随机生成
   [ShopType.LimitedTime]: [], // 限时商店物品从所有物品池中随机生成，带折扣
@@ -80,7 +114,7 @@ const PREMIUM_ITEM_TEMPLATES: Array<Omit<ShopItem, 'id'>> = [
   ...(getItemFromConstants('九转金丹') ? [createShopItemFromConstants('九转金丹', 3000, 900)] : []),
   ...(getItemFromConstants('龙鳞甲') ? [createShopItemFromConstants('龙鳞甲', 4000, 1200, RealmType.QiRefining)] : []),
   ...(getItemFromConstants('仙灵草') ? [createShopItemFromConstants('仙灵草', 10000, 3000)] : []),
-  ...(getItemFromConstants('天元丹') ? [createShopItemFromConstants('天元丹', 15000, 4500)] : []),
+  ...(getItemFromConstants('太乙紫金丹') ? [createShopItemFromConstants('太乙紫金丹', 15000, 4500)] : []),
   // 特殊物品（不在常量池中，保留硬编码）
   {
     name: '村里最好的剑',

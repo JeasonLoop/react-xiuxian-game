@@ -115,7 +115,7 @@ export const EXPEDITION_LOCATIONS: ExpeditionLocationConfig[] = [
     durationLabel: '4小时',
     dangerLevel: '绝凶',
     description: '虚空裂隙中天火流坠，危机四伏，唯有通灵道行的灵兽方能踏足。',
-    lootPreview: ['磅礴灵石', '太虚洗炼石x2~4', '九转金丹/天元丹', '天外陨铁/万年灵乳'],
+    lootPreview: ['磅礴灵石', '太虚洗炼石x2~4', '九转金丹/太乙紫金丹', '天外陨铁/万年灵乳'],
     generateRewards: (petLevel: number) => {
       const spiritStones = Math.floor(10000 + Math.random() * 8000 + petLevel * 200);
       const exp = Math.floor(20000 + Math.random() * 15000 + petLevel * 300);
@@ -126,7 +126,7 @@ export const EXPEDITION_LOCATIONS: ExpeditionLocationConfig[] = [
       items.push({ ...createReforgeStoneItem(reforgeQty), id: uid() });
 
       // 极品仙丹或珍材
-      const rareItems = ['天外陨铁', '万年灵乳', '九转金丹', '天元丹'];
+      const rareItems = ['天外陨铁', '万年灵乳', '九转金丹', '太乙紫金丹'];
       const pick = rareItems[Math.floor(Math.random() * rareItems.length)];
       const found = getItemFromConstants(pick);
       if (found) {

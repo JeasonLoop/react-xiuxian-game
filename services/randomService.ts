@@ -669,7 +669,7 @@ const TASK_TYPE_CONFIGS: Record<TaskType, TaskTypeConfig> = {
     }),
     getReward: (rank, diff, qual, realm, quality) => ({
       contribution: Math.floor((40 + Math.random() * 60) * rank * diff * qual * realm),
-      items: [{ name: quality === '仙品' ? '九转金丹' : quality === '传说' ? '天元丹' : '筑基丹', quantity: Math.floor((1 + Math.random() * 2) * diff * qual) }]
+      items: [{ name: quality === '仙品' ? '九转金丹' : quality === '传说' ? '太乙紫金丹' : '筑基丹', quantity: Math.floor((1 + Math.random() * 2) * diff * qual) }]
     })
   }
 };
@@ -1220,8 +1220,8 @@ const SECT_SHOP_ITEM_POOL: Array<{ name: string; cost: number; item: Omit<Item, 
   createItemFromConstants('星辰石', 60) || { name: '星辰石', cost: 60, item: { name: '星辰石', type: ItemType.Material, description: '蕴含星辰之力的稀有矿石。', quantity: 1, rarity: '稀有' } },
   createItemFromConstants('精铁', 20) || { name: '精铁', cost: 20, item: { name: '精铁', type: ItemType.Material, description: '优质的炼器材料。', quantity: 1, rarity: '普通' } },
   createItemFromConstants('天灵草', 35) || { name: '天灵草', cost: 35, item: { name: '天灵草', type: ItemType.Herb, description: '珍贵的灵草，可用于炼制高级丹药。', quantity: 1, rarity: '稀有' } },
-  createPillItem('凝神丹', 80),
-  createPillItem('强体丹', 80),
+  createPillItem('凝神静心丹', 80),
+  createPillItem('固本培元丹', 80),
   // 回血丹可能不在常量池，使用默认值
   createPillItem('回血丹', 15, { type: ItemType.Pill, description: '快速恢复气血。', rarity: '普通', effect: { hp: 50 } }),
   // 装备类物品 - 尝试从常量池获取，如果不存在则使用默认值
@@ -1240,6 +1240,7 @@ const SECT_SHOP_ITEM_POOL: Array<{ name: string; cost: number; item: Omit<Item, 
   createItemFromConstants('妖兽内丹', 80) || { name: '妖兽内丹', cost: 80, item: { name: '妖兽内丹', type: ItemType.Material, description: '妖兽的内丹，可用于炼丹或炼器。', quantity: 1, rarity: '普通' } },
   createItemFromConstants('符纸', 30) || { name: '符纸', cost: 30, item: { name: '符纸', type: ItemType.Material, description: '制作符箓的基础材料。', quantity: 1, rarity: '普通' } },
   createItemFromConstants('灵矿', 45) || { name: '灵矿', cost: 45, item: { name: '灵矿', type: ItemType.Material, description: '蕴含灵气的矿石，炼器材料。', quantity: 1, rarity: '普通' } },
+  { name: '普通丹药材料包', cost: 500, item: { name: '普通丹药材料包', type: ItemType.Material, description: '包含多种普通丹药材料的礼包。', quantity: 1, rarity: '普通' } },
 ].filter((item): item is { name: string; cost: number; item: Omit<Item, 'id'> } => item !== null);
 
 // 二楼高级物品池 - 从常量池获取
@@ -1248,7 +1249,7 @@ const SECT_SHOP_ITEM_POOL_FLOOR2: Array<{ name: string; cost: number; item: Omit
   createItemFromConstants('天外陨铁', 800) || { name: '天外陨铁', cost: 800, item: { name: '天外陨铁', type: ItemType.Material, description: '来自天外的神秘金属，炼制仙器的材料。', quantity: 1, rarity: '传说' } },
   createItemFromConstants('仙晶', 1500) || { name: '仙晶', cost: 1500, item: { name: '仙晶', type: ItemType.Material, description: '蕴含仙气的晶石，极其珍贵。', quantity: 1, rarity: '仙品' } },
   createPillItem('九转金丹', 3000),
-  createPillItem('天元丹', 2000),
+  createPillItem('太乙紫金丹', 2000),
   createItemFromConstants('万年灵乳', 1200) || { name: '万年灵乳', cost: 1200, item: { name: '万年灵乳', type: ItemType.Material, description: '万年灵脉中凝聚的精华，炼制仙丹的珍贵材料。', quantity: 1, rarity: '传说' } },
   createItemFromConstants('九叶芝草', 1000) || { name: '九叶芝草', cost: 1000, item: { name: '九叶芝草', type: ItemType.Herb, description: '九叶灵芝，炼制仙丹的顶级材料。', quantity: 1, rarity: '传说' } },
   createItemFromConstants('龙鳞果', 900) || { name: '龙鳞果', cost: 900, item: { name: '龙鳞果', type: ItemType.Herb, description: '龙族栖息地生长的灵果，蕴含龙族血脉之力。', quantity: 1, rarity: '传说' } },
@@ -1259,8 +1260,10 @@ const SECT_SHOP_ITEM_POOL_FLOOR2: Array<{ name: string; cost: number; item: Omit
   { name: '仙灵护符', cost: 1800, item: { name: '仙灵护符', type: ItemType.Accessory, description: '仙气缭绕的护符，可大幅提升属性。', quantity: 1, rarity: '传说', isEquippable: true, equipmentSlot: EquipmentSlot.Accessory1, effect: { spirit: 50, hp: 150, exp: 100 } } },
   { name: '天阶功法残卷', cost: 3500, item: { name: '天阶功法残卷', type: ItemType.Material, description: '天阶功法的残卷，可用于学习或研究。', quantity: 1, rarity: '传说' } },
   { name: '仙品法宝碎片', cost: 4000, item: { name: '仙品法宝碎片', type: ItemType.Material, description: '仙品法宝的碎片，可用于修复或炼制。', quantity: 1, rarity: '仙品' } },
+  { name: '稀有丹药材料包', cost: 4000, item: { name: '稀有丹药材料包', type: ItemType.Material, description: '包含多种稀有丹药材料的礼包。', quantity: 1, rarity: '稀有' } },
+  { name: '传说丹药材料包', cost: 30000, item: { name: '传说丹药材料包', type: ItemType.Material, description: '包含多种传说丹药材料的礼包。', quantity: 1, rarity: '传说' } },
+  { name: '仙品丹药材料包', cost: 250000, item: { name: '仙品丹药材料包', type: ItemType.Material, description: '包含多种仙品丹药材料的礼包。', quantity: 1, rarity: '仙品' } },
   { name: '传承玉简', cost: 3000, item: { name: '传承玉简', type: ItemType.Material, description: '记录着强大传承的玉简，使用后可获得传承。', quantity: 1, rarity: '传说' } },
-  { name: '仙品丹药材料包', cost: 2500, item: { name: '仙品丹药材料包', type: ItemType.Material, description: '包含多种仙品丹药材料的礼包。', quantity: 1, rarity: '仙品' } },
   { name: '灵兽契约符', cost: 2200, item: { name: '灵兽契约符', type: ItemType.Material, description: '用于与灵兽建立契约的符箓。', quantity: 1, rarity: '传说' } },
   { name: '天劫护符', cost: 2800, item: { name: '天劫护符', type: ItemType.Accessory, description: '可抵御天劫的护符，渡劫时使用。', quantity: 1, rarity: '传说', isEquippable: true, equipmentSlot: EquipmentSlot.Accessory2, effect: { defense: 60, hp: 300 } } },
 ].filter((item): item is { name: string; cost: number; item: Omit<Item, 'id'> } => item !== null);

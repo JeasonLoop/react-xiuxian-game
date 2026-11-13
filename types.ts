@@ -105,7 +105,8 @@ export interface Item {
   purity?: number; // 丹药纯度 (0-100)，影响丹药效果
   advancedItemType?: 'foundationTreasure' | 'heavenEarthEssence' | 'heavenEarthMarrow' | 'longevityRule' | 'soulArt'; // 进阶物品类型（仅当type为AdvancedItem时使用）
   advancedItemId?: string; // 进阶物品ID（用于炼化）
-  locked?: boolean; // 锁定物品，锁定后不可丢弃、不可分解
+   locked?: boolean; // 锁定物品，锁定后不可丢弃、不可分解
+   favorited?: boolean; // 收藏标记（常用标记），用于筛选和材料排序，与锁定互相独立
   effect?: {
     hp?: number;
     exp?: number;
@@ -1212,6 +1213,7 @@ export interface BattleState {
   enemyMaxActions: number; // 敌人本回合最大行动次数
   // 战斗信息
   enemyStrengthMultiplier?: number; // 敌人强度倍数（用于奖励计算）
+  enemyIsElite?: boolean; // 是否为精英强敌（用于弹窗「强敌来袭」标识并禁用跳过战斗）
   adventureType: AdventureType; // 历练类型
   riskLevel?: '低' | '中' | '高' | '极度危险'; // 风险等级
   bossId?: string; // 指定的天地之魄BOSS ID

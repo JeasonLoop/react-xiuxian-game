@@ -1,5 +1,10 @@
 /**
  * 历练分支 / 声望事件等：按境界与层数放大资源奖励，使中后期收益跟得上成长曲线。
+ *
+ * 乘区与主事件（services/adventureTemplateService.ts 的 templateToAdventureResult）保持一致：
+ *   realmMultiplier = 3^境界序号 × (1 + (层数 - 1) × 0.3)
+ * 此前分支使用独立的线性乘区（约 1~4×），与主事件（最高约 2479×）严重脱节，
+ * 导致高境界下分支奖励形同虚设。
  */
 
 import type { AdventureResult, PlayerStats } from '../types';
@@ -17,24 +22,16 @@ type ChoiceLike = {
 };
 
 /**
- * 资源类奖励倍率：境界索引 + 当前层数（1~9）线性放大。
- * 炼气约 1.0×，长生境高层可达约 4.x×。
+ * 资源类奖励倍率：与主事件同一乘区。
+ * 炼气 1 层为 1.0×，化神 5 层约 178×，长生 9 层约 2479×。
  */
 export function getRealmEventRewardMultiplier(player: PlayerStats): number {
   const idx = REALM_ORDER.indexOf(player.realm);
   const ri = idx >= 0 ? idx : 0;
-  const lv = Math.max(1, Math.min(9, player.realmLevel ?? 1));
-  const realmFactor = 1 + ri * 0.38;
-  const levelFactor = 1 + (lv - 1) * 0.048;
-  return Math.round(realmFactor * levelFactor * 1000) / 1000;
-}
-
-/**
- * 气血惩罚（负值）放大更温和，避免高境界一次扣血过狠。
- */
-export function getRealmEventHpPenaltyMultiplier(player: PlayerStats): number {
-  const m = getRealmEventRewardMultiplier(player);
-  return Math.min(1.45, 0.72 + 0.28 * Math.sqrt(m));
+  const lv = Math.max(1, player.realmLevel ?? 1);
+  const realmBaseMultiplier = Math.pow(3, ri);
+  const levelMultiplier = 1 + (lv - 1) * 0.3;
+  return realmBaseMultiplier * levelMultiplier;
 }
 
 function roundReward(n: number): number {
@@ -43,21 +40,24 @@ function roundReward(n: number): number {
 }
 
 /**
- * 声望随境界略增（弱于修为/灵石），避免声望通胀过快。
+ * 声望是非数值化的"地位"资源，有上限语义（如宗门声望等级），
+ * 不随主乘区暴涨，只随境界序号轻微增长（与主事件的因果值处理一致）。
  */
-function reputationScaleMultiplier(rewardMult: number): number {
-  return 1 + (rewardMult - 1) * 0.42;
+function reputationScaleMultiplier(realmIndex: number): number {
+  return 1 + realmIndex * 0.1;
 }
 
 /**
  * 返回应用境界倍率后的选项（用于 UI 与结算，需传入同一 player 以保证一致）。
+ * 修为/灵石/气血按主事件乘区缩放；声望仅做轻量增长。
  */
 export function scaleReputationEventChoice<
   T extends ChoiceLike & Record<string, unknown>,
 >(player: PlayerStats, choice: T): T {
+  const idx = REALM_ORDER.indexOf(player.realm);
+  const ri = idx >= 0 ? idx : 0;
   const rewardMult = getRealmEventRewardMultiplier(player);
-  const hpPenMult = getRealmEventHpPenaltyMultiplier(player);
-  const repMult = reputationScaleMultiplier(rewardMult);
+  const repMult = reputationScaleMultiplier(ri);
 
   const next = { ...choice } as T;
 
@@ -71,11 +71,8 @@ export function scaleReputationEventChoice<
     next.reputationChange = roundReward(choice.reputationChange * repMult);
   }
   if (choice.hpChange !== undefined && choice.hpChange !== 0) {
-    if (choice.hpChange < 0) {
-      next.hpChange = roundReward(choice.hpChange * hpPenMult);
-    } else {
-      next.hpChange = roundReward(choice.hpChange * rewardMult);
-    }
+    // 气血属于角色数值资源，代价与收益同乘区放大（相对最大气血的比例保持稳定）
+    next.hpChange = roundReward(choice.hpChange * rewardMult);
   }
 
   return next;

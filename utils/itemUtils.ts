@@ -190,21 +190,21 @@ export const KNOWN_ITEM_EFFECTS: Record<
   // 丹药类 - 从 PILL_RECIPES 和 DISCOVERABLE_RECIPES 中获取
   回血丹: { effect: { hp: 50 } }, // 常量中未找到，保留原值
   聚气丹: { effect: { exp: 50 } }, // PILL_RECIPES: effect: { exp: 50 } (修正：从 20 改为 50)
-  强体丹: { permanentEffect: { physique: 20 } }, // DISCOVERABLE_RECIPES: permanentEffect: { physique: 20 } (修正：从 5 改为 20)
-  凝神丹: { permanentEffect: { spirit: 20 } }, // DISCOVERABLE_RECIPES: permanentEffect: { spirit: 20 } (修正：从 5 改为 20)
+  固本培元丹: { permanentEffect: { physique: 20 } }, // DISCOVERABLE_RECIPES: permanentEffect: { physique: 20 }
+  凝神静心丹: { permanentEffect: { spirit: 20 } }, // DISCOVERABLE_RECIPES: permanentEffect: { spirit: 20 }
   筑基丹: {
     // PILL_RECIPES: effect: { exp: 500 }, permanentEffect: { spirit: 30, physique: 30, maxHp: 100 }
     effect: { exp: 500 },
     permanentEffect: { spirit: 30, physique: 30, maxHp: 100 },
   },
-  破境丹: {
+  破境通玄丹: {
     // DISCOVERABLE_RECIPES: effect: { exp: 10000 }, permanentEffect: { spirit: 50, physique: 50, attack: 30, defense: 30 }
     effect: { exp: 10000 },
     permanentEffect: { spirit: 50, physique: 50, attack: 30, defense: 30 },
   },
-  仙灵丹: {
+  仙灵再造丹: {
     // DISCOVERABLE_RECIPES: effect: { exp: 2000, spirit: 50, physique: 50 }, permanentEffect: { maxLifespan: 300, spirit: 300, attack: 300, defense: 300, physique: 300, speed: 300 }
-    effect: { exp: 2000, spirit: 50, physique: 50 },
+    effect: { exp: 15000, spirit: 50, physique: 50 },
     permanentEffect: { maxLifespan: 300, spirit: 300, attack: 300, defense: 300, physique: 300, speed: 300 },
   },
 };
@@ -377,6 +377,14 @@ export const inferItemTypeAndSlot = (
     isEquippable: boolean;
     slot?: EquipmentSlot | EquipmentSlot[];
   }> = [
+    // 特殊材料类物品（材料包/宗门宝库钥匙/通天宝匣）最高优先级按 Material 处理，
+    // 避免“仙品丹药材料包”等名称含“丹药”关键词时被误推断为丹药类型，
+    // 导致背包中不显示“使用”按钮
+    {
+      match: /材料包|宝库钥匙|宝匣/,
+      type: ItemType.Material,
+      isEquippable: false,
+    },
     { match: INFER_RULES.weapon, type: ItemType.Weapon, isEquippable: true, slot: EquipmentSlot.Weapon },
     {
       match: INFER_RULES.head,
@@ -473,6 +481,12 @@ export const inferItemTypeAndSlot = (
     ItemType.Ring,
     ItemType.Accessory,
   ].includes(normalized as ItemType);
+
+  // 通天宝匣是可开启的宝箱而非法宝：旧存档中的宝匣可能已被误入库为 Artifact（法宝），
+  // 即使当前类型已是明确的装备类型，也强制按 Material 处理，与材料包一样走“使用”逻辑
+  if (/宝匣/.test(name)) {
+    return { type: ItemType.Material, isEquippable: false };
+  }
 
   // 如果当前类型是明确的装备类型，且isEquippable为true，优先保持类型
   if (isKnownEquipmentType && (currentIsEquippable || normalized === ItemType.Artifact || normalized === ItemType.Weapon || normalized === ItemType.Armor || normalized === ItemType.Ring || normalized === ItemType.Accessory)) {
@@ -960,4 +974,45 @@ export const adjustPillEffectByPurity = (
     permanentEffect: permanentEffect ? multiplyEffects(permanentEffect, permanentMultiplier) : undefined,
   };
 };
+
+/**
+ * 商店装备属性境界缩放
+ * 物品定义的数值视为「其稀有度锚定档」的基准；购买者境界更高时按乘区放大，
+ * 使商店装备能跟上玩家成长节奏（乘区 ≈ ×2.2/境界，略慢于玩家成长曲线，保留刷装备动力）。
+ * 稀有度锚定档：普通→炼气(0)、稀有→金丹(2)、传说→元婴(3)、仙品→化神(4)
+ */
+const REALM_SCALE_LADDER = [1, 2.2, 4.8, 10.5, 23, 50, 110];
+const RARITY_ANCHOR_REALM_INDEX: Record<ItemRarity, number> = {
+  普通: 0,
+  稀有: 2,
+  传说: 3,
+  仙品: 4,
+};
+
+/** 按购买者境界缩放装备类物品的数值属性（返回新对象，不入库原对象） */
+export function scaleEquipmentStatsForRealm(item: Item, buyerRealm: RealmType): Item {
+  const buyerIndex = REALM_ORDER.indexOf(buyerRealm);
+  const anchorIndex = RARITY_ANCHOR_REALM_INDEX[item.rarity] ?? 0;
+  if (buyerIndex <= anchorIndex) return item;
+  const scale = REALM_SCALE_LADDER[buyerIndex] / REALM_SCALE_LADDER[anchorIndex];
+  if (!Number.isFinite(scale) || scale <= 1) return item;
+
+  const scaleNumeric = (obj?: Record<string, unknown>): Record<string, unknown> | undefined => {
+    if (!obj) return undefined;
+    const result: Record<string, unknown> = { ...obj };
+    for (const key of ['attack', 'defense', 'hp', 'maxHp', 'spirit', 'physique', 'speed']) {
+      const val = result[key];
+      if (typeof val === 'number' && val > 0) {
+        result[key] = Math.round(val * scale);
+      }
+    }
+    return result;
+  };
+
+  return {
+    ...item,
+    effect: scaleNumeric(item.effect as Record<string, unknown> | undefined) as Item['effect'],
+    permanentEffect: scaleNumeric(item.permanentEffect as Record<string, unknown> | undefined) as Item['permanentEffect'],
+  };
+}
 

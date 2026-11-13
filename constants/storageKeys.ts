@@ -19,4 +19,6 @@ export const STORAGE_KEYS = {
   ACTION_BAR_GUIDE_SHOWN: 'xiuxian-action-bar-guide-shown',
   /** 云灵修仙本地存档备份键 */
   SAVE_BACKUP: 'xiuxian-game-save-backup',
+  /** 战斗技能栏装配配置（skillId 列表，独立于玩家存档） */
+  BATTLE_SKILL_LOADOUT: 'battle-skill-loadout',
 } as const;

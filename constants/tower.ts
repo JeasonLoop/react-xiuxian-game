@@ -139,7 +139,9 @@ export function getTowerFloorConfig(floor: number): TowerFloorConfig {
     extraItem = {
       id: `tower-floor-chest-${safeFloor}`,
       name: `${safeFloor}层通天宝匣`,
-      type: ItemType.Artifact,
+      // 宝匣是可开启的宝箱而非法宝装备，按材料类型入库，
+      // 避免被推断为 Artifact 后在背包中出现“装备”按钮
+      type: ItemType.Material,
       description: `九天通天塔第 ${safeFloor} 层镇守者珍藏的秘宝匣，打开可获得大量修炼资粮。`,
       rarity: (safeFloor >= 70 ? '仙品' : safeFloor >= 40 ? '传说' : '稀有') as ItemRarity,
       quantity: 1,

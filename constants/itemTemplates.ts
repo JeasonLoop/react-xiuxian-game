@@ -6,46 +6,24 @@
 
 import { Item, ItemType, ItemRarity, EquipmentSlot } from '../types';
 import { EQUIPMENT_MIN_STATS } from '../utils/itemUtils';
+import {
+  ACCESSORY_TYPE_POOLS,
+  ARMOR_PART_POOLS,
+  ARMOR_TYPE_POOLS,
+  ARTIFACT_TYPE_POOLS,
+  COMMON_MATERIALS,
+  IMMORTAL_EXPLICIT_NAMES,
+  IMMORTAL_NAME_SET,
+  IMMORTAL_TITLES,
+  LEGENDARY_TITLES,
+  RARE_ADORN_WORDS,
+  RING_TYPE_POOLS,
+  WEAPON_COMMON_MATERIALS,
+  WEAPON_TYPE_POOLS,
+} from './nameData/merge';
 
-// 名称生成词库
+// 名称生成词库（丹药/草药/材料；装备命名词库见 ./nameData/merge.ts 四档合并词库）
 const NAME_COMPONENTS = {
-  // 材质词（普通）
-  commonMaterials: ['精铁', '青钢', '木制', '铁制', '铜制', '石制', '骨制', '藤制', '竹制', '布', '皮', '麻', '草', '棉', '白铁', '黑铁', '生铁', '镔铁', '凡木', '古木', '青石', '灰石', '兽皮', '狼皮', '粗布', '麻布', '棉布'],
-  // 材质词（稀有）
-  rareMaterials: ['寒光', '烈火', '冰霜', '雷霆', '紫金', '龙鳞', '凤羽', '青云', '星辰', '玄铁', '精钢', '玄冰', '金刚', '云纹', '琉璃', '琥珀', '珊瑚', '玛瑙', '水晶', '碧玉', '墨玉', '赤铜', '秘银', '精金', '沉香', '檀木', '寒铁', '陨铁'],
-  // 材质词（传说）
-  legendaryMaterials: ['青莲', '紫霄', '裂空', '破天', '斩龙', '开山', '震天', '追风', '定海', '射日', '真龙', '凤凰', '玄武', '白虎', '麒麟', '九尾', '三足金乌', '四象', '五行', '八卦', '九天', '幽冥', '乾坤', '阴阳', '混元', '太虚', '归元', '离火', '壬水', '乙木', '庚金', '戊土', '如意', '避雷', '御风'],
-  // 材质词（仙品，语义为"来历/威能"；品质词已拆到 prefixes，避免重复组合）
-  immortalMaterials: ['诛仙', '灭魔', '弑神', '破虚', '开天', '镇世', '缚龙', '定天', '射月', '斩道', '九天', '十地', '万古', '永恒', '不灭', '无上', '至圣', '至神', '混沌', '鸿蒙', '诸天', '万界', '起源', '终焉', '禁忌', '无极', '造化', '轮回', '涅槃'],
-
-  // 武器类型
-  weaponTypes: ['剑', '刀', '枪', '戟', '斧', '锤', '鞭', '棍', '矛', '弓', '弩', '匕首', '短剑', '长剑', '重剑', '飞剑', '灵剑', '仙剑', '钩', '镰', '铲', '耙', '扇', '笛', '箫', '琴', '伞', '环', '圈', '爪', '刺', '杵', '槌'],
-  // 护甲类型
-  armorTypes: ['甲', '袍', '衣', '护甲', '战甲', '铠甲', '道袍', '法袍', '宝甲', '神甲', '战衣', '法衣', '仙衣', '道衣', '法裳', '羽衣', '金甲', '玄甲'],
-  // 护甲部位（按槽位顺序：头部、肩部、胸甲、手套、裤腿、鞋子）
-  armorParts: {
-    head: ['头盔', '头冠', '道冠', '法冠', '仙冠', '龙冠', '凤冠', '帽', '发簪', '发带', '头饰', '面罩', '兜帽', '额带'],
-    shoulder: ['护肩', '肩甲', '肩饰', '肩胛', '云肩', '法肩', '仙肩', '披风', '斗篷', '披肩', '披帛'],
-    chest: ['胸甲', '护胸', '铠甲', '战甲', '法袍', '道袍', '长袍', '外衣', '护甲', '重甲', '轻甲', '板甲', '锁甲', '软甲', '硬甲', '内衬', '坎肩'],
-    gloves: ['手套', '护手', '手甲', '拳套', '法手', '仙手', '龙爪套', '护腕', '手镯'],
-    legs: ['护腿', '腿甲', '裤', '下装', '法裤', '仙裤', '龙鳞裤', '胫甲', '护膝'],
-    boots: ['战靴', '法靴', '草鞋', '布鞋', '靴', '鞋', '仙履', '云履', '龙鳞靴', '芒鞋', '步履'],
-  },
-  // 饰品类型
-  accessoryTypes: ['玉佩', '手镯', '项链', '护符', '吊坠', '手链', '腰佩', '发带', '护腕', '脚环', '玉珏', '灵珠', '法印', '宝鉴', '香囊', '耳坠', '簪子'],
-  // 戒指类型
-  ringTypes: ['指环', '戒指', '宝戒', '灵戒', '玉戒', '金戒', '银戒', '法戒', '玄戒', '圣戒', '神戒', '仙戒', '道戒'],
-  // 法宝类型
-  artifactTypes: ['葫芦', '宝塔', '钟', '镜', '扇', '印', '珠', '鼎', '旗', '符', '笔', '图', '盘', '袋', '伞', '梭', '灯', '鼓'],
-
-  // 词缀/前缀（品质词，与材质词分属不同语义维度，避免"乾坤乾坤剑""寒冰烈火剑"式组合）
-  prefixes: {
-    普通: ['粗制', '简陋', '凡质', '陈旧', '钝口', '笨重', '实用', '耐用', '平庸', '粗坯', '凡品'],
-    稀有: ['精良', '淬炼', '锋锐', '轻灵', '坚韧', '聚灵', '破甲', '嗜血', '护主', '流光'],
-    传说: ['旷世', '绝代', '通灵', '镇派', '无双', '逆天', '噬魂', '斩魔', '圣耀', '虚空'],
-    仙品: ['太初', '不朽', '禁断', '至高', '天命', '灭世', '至尊', '亘古', '太上', '洪荒'],
-  },
-
   // 丹药效果词
   pillEffects: ['聚气', '回血', '强体', '凝神', '回春', '增智', '提速', '护魂', '保命', '筑基', '洗髓', '破境', '凝魂', '强魄', '增灵', '回灵', '回元', '固本', '培元', '养神'],
   // 丹药大小前缀
@@ -56,17 +34,7 @@ const NAME_COMPONENTS = {
     仙品: ['仙', '神', '天'],
   },
 
-  // 草药效果词
-  herbEffects: ['止血', '聚灵', '回气', '凝神', '血参', '紫猴', '天灵', '龙鳞', '凤羽', '星辰', '回春', '强体', '增智', '护魂', '保命', '固本', '培元', '养神', '凝魂', '强魄'],
-  // 草药类型
-  herbTypes: ['草', '花', '果', '参', '芝', '根', '叶', '枝', '茎', '籽'],
-  // 草药稀有度前缀
-  herbRarityPrefixes: {
-    普通: [],
-    稀有: ['灵'],
-    传说: ['仙', '千年', '万年'],
-    仙品: ['神', '万年', '亿年'],
-  },
+  // （原草药效果/类型/前缀词库已迁移至下方 HERB_NAME_POOLS 四档词库）
 
   // 材料类型
   materialTypes: ['锭', '片', '晶', '玉', '石', '沙', '粉', '块', '条', '核', '丝', '线', '粒', '珠', '丸'],
@@ -81,135 +49,216 @@ const NAME_COMPONENTS = {
   },
 };
 
+// ==================== 草药命名四档词库（确定性取模，禁用 Math.random） ====================
+const HERB_NAME_POOLS = {
+  // 普通档：朴素药性 × 草类（前三个与固定炼丹材料同名，保持材料体系一致）
+  plainEffects: ['止血', '回气', '聚灵', '生肌', '清心', '行气', '化瘀', '培元', '温阳', '宁神'],
+  plainTypes: ['草', '花', '叶', '藤', '根', '参'],
+  // 稀有档：灵韵色字 × 药性字 × 草类（如 赤血参、紫霞芝）
+  rareAdorn: ['赤', '紫', '碧', '青', '银', '玄'],
+  rareCores: ['血', '灵', '露', '魂', '霜', '霞'],
+  rareTypes: ['参', '芝', '花', '草', '果', '藤'],
+  // 传说档：意象名号
+  legendaryNames: ['凤血灵芝', '千年玉髓参', '万载空青藤', '九叶龙涎芝', '紫府灵榴', '沧海月华草', '太阴玄精花', '地心火莲', '天山雪魄参', '百龄赤芍'],
+  // 仙品档：专名表（手写；避开洞府种植的太虚仙草/九转还魂草/混沌青莲等固定仙草药名）
+  immortalNames: ['菩提血参', '先天灵椿', '不老泉芝', '周天星髓草', '大罗玉露参', '鸿蒙紫芝', '万劫不灭花', '青帝长生藤', '太上玄冥花', '九幽冥河草'],
+  // 仙品专名用尽后的回退草类
+  immortalFallbackTypes: ['仙草', '灵芝', '宝参', '神藤', '圣花', '瑞草'],
+};
+
+// ==================== 装备命名：四层名号制 ====================
+// 普通（凡器）：材质 + 器型，朴素直白（如 精铁长剑、青钢枪）
+// 稀有（灵器）：灵韵修饰词 + 器型（如 流云剑、踏雪靴），禁用品质评价词
+// 传说（宝器）：双字名号 + 器型（如 斩龙大剑、震天弓）
+// 仙品（仙器）：专名表优先，用尽后程序化回退「仙品名号 + 器型」并加 ·贰/·叁 序号
+// 所有选择均基于 index 的确定性运算（不使用 Math.random），保证同 index 同名（存档兼容依赖此）。
+
+/** 护甲槽位 -> 部位词库 key */
+const SLOT_PART_KEY: Partial<Record<EquipmentSlot, string>> = {
+  [EquipmentSlot.Head]: 'head',
+  [EquipmentSlot.Shoulder]: 'shoulder',
+  [EquipmentSlot.Chest]: 'chest',
+  [EquipmentSlot.Gloves]: 'gloves',
+  [EquipmentSlot.Legs]: 'legs',
+  [EquipmentSlot.Boots]: 'boots',
+};
+
+/** 仙品护甲各槽位专名表 */
+const SLOT_IMMORTAL_TABLE: Record<string, string[]> = {
+  head: IMMORTAL_EXPLICIT_NAMES.armorHead,
+  shoulder: IMMORTAL_EXPLICIT_NAMES.armorShoulder,
+  chest: IMMORTAL_EXPLICIT_NAMES.armorChest,
+  gloves: IMMORTAL_EXPLICIT_NAMES.armorGloves,
+  legs: IMMORTAL_EXPLICIT_NAMES.armorLegs,
+  boots: IMMORTAL_EXPLICIT_NAMES.armorBoots,
+};
+
+/** 仙品护甲程序化回退器型：全量护甲部位词合并去重 */
+const ARMOR_IMMORTAL_FALLBACK_TYPES = Array.from(
+  new Set([...ARMOR_TYPE_POOLS.full, ...Object.values(ARMOR_PART_POOLS).flatMap(pools => pools.full)])
+);
+
+/** 仙品非护甲类别的专名表 */
+const IMMORTAL_TABLES: Record<Exclude<EquipmentType, 'armor'>, string[]> = {
+  weapon: IMMORTAL_EXPLICIT_NAMES.weapon,
+  accessory: IMMORTAL_EXPLICIT_NAMES.accessory,
+  ring: IMMORTAL_EXPLICIT_NAMES.ring,
+  artifact: IMMORTAL_EXPLICIT_NAMES.artifact,
+};
+
+/** 仙品非护甲类别的程序化回退器型池 */
+const IMMORTAL_FALLBACK_POOLS: Record<Exclude<EquipmentType, 'armor'>, string[]> = {
+  weapon: WEAPON_TYPE_POOLS.immortal,
+  accessory: ACCESSORY_TYPE_POOLS.full,
+  ring: RING_TYPE_POOLS.full,
+  artifact: ARTIFACT_TYPE_POOLS.full,
+};
+
 /**
- * 生成武器名称
+ * 仙品专名用尽后的程序化回退：仙品名号 + 器型。
+ * 与专名表冲突时追加 ·贰/·叁 序号保证唯一感；选择由 fallbackIndex 确定性推导。
+ */
+function generateImmortalFallback(typePool: string[], fallbackIndex: number): string {
+  const title = IMMORTAL_TITLES[(fallbackIndex * 3 + 1) % IMMORTAL_TITLES.length];
+  const typeWord = typePool[(fallbackIndex * 7 + 2) % typePool.length];
+  let name = `${title}${typeWord}`;
+  if (IMMORTAL_NAME_SET.has(name)) name = `${name}·贰`;
+  if (IMMORTAL_NAME_SET.has(name)) name = `${name}·叁`;
+  if (IMMORTAL_NAME_SET.has(name)) name = `${name}·肆`;
+  return name;
+}
+
+/**
+ * 仙品命名：优先从专名表取名（有来历/有典故），用尽后程序化回退。
+ */
+function generateImmortalEquipmentName(type: EquipmentType, index: number, slot?: EquipmentSlot): string {
+  if (type === 'armor') {
+    const partKey = slot ? SLOT_PART_KEY[slot] : undefined;
+    const table = (partKey && SLOT_IMMORTAL_TABLE[partKey]) || IMMORTAL_EXPLICIT_NAMES.armorChest;
+    if (index < table.length) return table[index];
+    const typePool = (partKey && ARMOR_PART_POOLS[partKey]?.full) || ARMOR_TYPE_POOLS.full;
+    return generateImmortalFallback(typePool, index - table.length);
+  }
+  const table = IMMORTAL_TABLES[type];
+  if (index < table.length) return table[index];
+  return generateImmortalFallback(IMMORTAL_FALLBACK_POOLS[type], index - table.length);
+}
+
+/**
+ * 生成武器名称（四层名号制，确定性）
  */
 function generateWeaponName(rarity: ItemRarity, index: number): string {
-  const materials =
-    rarity === '普通' ? NAME_COMPONENTS.commonMaterials :
-    rarity === '稀有' ? NAME_COMPONENTS.rareMaterials :
-    rarity === '传说' ? NAME_COMPONENTS.legendaryMaterials :
-    NAME_COMPONENTS.immortalMaterials;
+  if (rarity === '仙品') return generateImmortalEquipmentName('weapon', index);
 
-  const prefixes = NAME_COMPONENTS.prefixes[rarity];
-  const prefix = prefixes[index % prefixes.length];
-  // 使用偏移量组合，增加多样性
-  const material = materials[(index * 2) % materials.length];
-  const weaponType = NAME_COMPONENTS.weaponTypes[(index * 3) % NAME_COMPONENTS.weaponTypes.length];
+  if (rarity === '普通') {
+    // 凡器：材质 + 器型
+    const material = WEAPON_COMMON_MATERIALS[(index * 2) % WEAPON_COMMON_MATERIALS.length];
+    const weaponType = WEAPON_TYPE_POOLS.plain[index % WEAPON_TYPE_POOLS.plain.length];
+    return `${material}${weaponType}`;
+  }
 
-  // 混合模式
-  if (index % 5 === 0) return `${material}${weaponType}`;
-  if (index % 5 === 1) return `${prefix}${weaponType}`;
-  return `${prefix}${material}${weaponType}`;
+  if (rarity === '稀有') {
+    // 灵器：灵韵修饰词 + 器型
+    const adorn = RARE_ADORN_WORDS[(index * 2) % RARE_ADORN_WORDS.length];
+    const weaponType = WEAPON_TYPE_POOLS.rare[index % WEAPON_TYPE_POOLS.rare.length];
+    return `${adorn}${weaponType}`;
+  }
+
+  // 宝器：双字名号 + 器型
+  const title = LEGENDARY_TITLES[(index * 2) % LEGENDARY_TITLES.length];
+  const weaponType = WEAPON_TYPE_POOLS.legendary[index % WEAPON_TYPE_POOLS.legendary.length];
+  return `${title}${weaponType}`;
 }
 
 /**
- * 生成护甲名称
+ * 生成护甲名称（四层名号制，确定性）
  * @param rarity 稀有度
  * @param index 索引
- * @param slot 装备槽位（可选，如果提供则根据槽位生成对应的部位名称）
+ * @param slot 装备槽位（可选，提供时按槽位取部位词）
  */
 function generateArmorName(rarity: ItemRarity, index: number, slot?: EquipmentSlot): string {
-  const materials =
-    rarity === '普通' ? NAME_COMPONENTS.commonMaterials :
-    rarity === '稀有' ? NAME_COMPONENTS.rareMaterials :
-    rarity === '传说' ? NAME_COMPONENTS.legendaryMaterials :
-    NAME_COMPONENTS.immortalMaterials;
+  if (rarity === '仙品') return generateImmortalEquipmentName('armor', index, slot);
 
-  const prefixes = NAME_COMPONENTS.prefixes[rarity];
-  const prefix = prefixes[index % prefixes.length];
-  const material = materials[(index * 2) % materials.length];
+  // 部位词池：有槽位用对应部位词，无槽位用护甲器型兜底
+  const partKey = slot ? SLOT_PART_KEY[slot] : undefined;
+  const partPools = (partKey && ARMOR_PART_POOLS[partKey]) || ARMOR_TYPE_POOLS;
+  // 普通档用朴素部位词，其余档位可用带仙/龙/凤修饰的部位词
+  const partPool = rarity === '普通' ? partPools.plain : partPools.full;
+  const part = partPool[(index * 3) % partPool.length];
 
-  // 如果提供了槽位，根据槽位生成对应的部位名称
-  if (slot) {
-    const slotPartsMap: Partial<Record<EquipmentSlot, string[]>> = {
-      [EquipmentSlot.Head]: NAME_COMPONENTS.armorParts.head,
-      [EquipmentSlot.Shoulder]: NAME_COMPONENTS.armorParts.shoulder,
-      [EquipmentSlot.Chest]: NAME_COMPONENTS.armorParts.chest,
-      [EquipmentSlot.Gloves]: NAME_COMPONENTS.armorParts.gloves,
-      [EquipmentSlot.Legs]: NAME_COMPONENTS.armorParts.legs,
-      [EquipmentSlot.Boots]: NAME_COMPONENTS.armorParts.boots,
-    };
-
-    const parts = slotPartsMap[slot];
-    if (parts && parts.length > 0) {
-      const part = parts[(index * 3) % parts.length];
-      if (index % 4 === 0) return `${material}${part}`;
-      return `${prefix}${material}${part}`;
-    }
+  if (rarity === '普通') {
+    const material = COMMON_MATERIALS[(index * 2) % COMMON_MATERIALS.length];
+    return `${material}${part}`;
   }
-
-  // 如果没有提供槽位
-  const armorType = NAME_COMPONENTS.armorTypes[(index * 3) % NAME_COMPONENTS.armorTypes.length];
-  if (index % 4 === 0) return `${material}${armorType}`;
-  return `${prefix}${material}${armorType}`;
+  if (rarity === '稀有') {
+    const adorn = RARE_ADORN_WORDS[(index * 2) % RARE_ADORN_WORDS.length];
+    return `${adorn}${part}`;
+  }
+  const title = LEGENDARY_TITLES[(index * 2) % LEGENDARY_TITLES.length];
+  return `${title}${part}`;
 }
 
 /**
- * 生成饰品名称
+ * 生成饰品名称（四层名号制，确定性）
  */
 function generateAccessoryName(rarity: ItemRarity, index: number): string {
-  const materials =
-    rarity === '普通' ? NAME_COMPONENTS.commonMaterials :
-    rarity === '稀有' ? NAME_COMPONENTS.rareMaterials :
-    rarity === '传说' ? NAME_COMPONENTS.legendaryMaterials :
-    NAME_COMPONENTS.immortalMaterials;
+  if (rarity === '仙品') return generateImmortalEquipmentName('accessory', index);
 
-  const prefixes = NAME_COMPONENTS.prefixes[rarity];
-  const prefix = prefixes[index % prefixes.length];
-  const material = materials[(index * 2) % materials.length];
-  const accessoryType = NAME_COMPONENTS.accessoryTypes[(index * 3) % NAME_COMPONENTS.accessoryTypes.length];
+  const typePool = rarity === '普通' ? ACCESSORY_TYPE_POOLS.plain : ACCESSORY_TYPE_POOLS.full;
+  const accessoryType = typePool[(index * 3) % typePool.length];
 
   if (rarity === '普通') {
-    if (index % 3 === 0) return `${material}${/制$/.test(material) ? '' : '制'}${accessoryType}`;
-    return `${prefix}${material}${accessoryType}`;
+    const material = COMMON_MATERIALS[(index * 2) % COMMON_MATERIALS.length];
+    return `${material}${accessoryType}`;
   }
-
-  if (index % 4 === 0) return `${material}${accessoryType}`;
-  return `${prefix}${material}${accessoryType}`;
+  if (rarity === '稀有') {
+    const adorn = RARE_ADORN_WORDS[(index * 2) % RARE_ADORN_WORDS.length];
+    return `${adorn}${accessoryType}`;
+  }
+  const title = LEGENDARY_TITLES[(index * 2) % LEGENDARY_TITLES.length];
+  return `${title}${accessoryType}`;
 }
 
 /**
- * 生成戒指名称
+ * 生成戒指名称（四层名号制，确定性）
  */
 function generateRingName(rarity: ItemRarity, index: number): string {
-  const materials =
-    rarity === '普通' ? NAME_COMPONENTS.commonMaterials :
-    rarity === '稀有' ? NAME_COMPONENTS.rareMaterials :
-    rarity === '传说' ? NAME_COMPONENTS.legendaryMaterials :
-    NAME_COMPONENTS.immortalMaterials;
+  if (rarity === '仙品') return generateImmortalEquipmentName('ring', index);
 
-  const prefixes = NAME_COMPONENTS.prefixes[rarity];
-  const prefix = prefixes[index % prefixes.length];
-  const material = materials[(index * 2) % materials.length];
-  const ringType = NAME_COMPONENTS.ringTypes[(index * 3) % NAME_COMPONENTS.ringTypes.length];
+  const typePool = rarity === '普通' ? RING_TYPE_POOLS.plain : RING_TYPE_POOLS.full;
+  const ringType = typePool[(index * 3) % typePool.length];
 
-  if (index % 3 === 0) return `${material}${ringType}`;
-  return `${prefix}${ringType}`;
+  if (rarity === '普通') {
+    const material = COMMON_MATERIALS[(index * 2) % COMMON_MATERIALS.length];
+    return `${material}${ringType}`;
+  }
+  if (rarity === '稀有') {
+    const adorn = RARE_ADORN_WORDS[(index * 2) % RARE_ADORN_WORDS.length];
+    return `${adorn}${ringType}`;
+  }
+  const title = LEGENDARY_TITLES[(index * 2) % LEGENDARY_TITLES.length];
+  return `${title}${ringType}`;
 }
 
 /**
- * 生成法宝名称
+ * 生成法宝名称（四层名号制，确定性）
  */
 function generateArtifactName(rarity: ItemRarity, index: number): string {
-  const materials =
-    rarity === '普通' ? NAME_COMPONENTS.commonMaterials :
-    rarity === '稀有' ? NAME_COMPONENTS.rareMaterials :
-    rarity === '传说' ? NAME_COMPONENTS.legendaryMaterials :
-    NAME_COMPONENTS.immortalMaterials;
+  if (rarity === '仙品') return generateImmortalEquipmentName('artifact', index);
 
-  const prefixes = NAME_COMPONENTS.prefixes[rarity];
-  const prefix = prefixes[index % prefixes.length];
-  const material = materials[(index * 2) % materials.length];
-  const artifactType = NAME_COMPONENTS.artifactTypes[(index * 3) % NAME_COMPONENTS.artifactTypes.length];
+  const typePool = rarity === '普通' ? ARTIFACT_TYPE_POOLS.plain : ARTIFACT_TYPE_POOLS.full;
+  const artifactType = typePool[(index * 3) % typePool.length];
 
   if (rarity === '普通') {
-    if (index % 3 === 0) return `${material}${/制$/.test(material) ? '' : '制'}${artifactType}`;
-    return `${prefix}${artifactType}`;
+    const material = COMMON_MATERIALS[(index * 2) % COMMON_MATERIALS.length];
+    return `${material}${artifactType}`;
   }
-
-  if (index % 4 === 0) return `${material}${artifactType}`;
-  return `${prefix}${material}${artifactType}`;
+  if (rarity === '稀有') {
+    const adorn = RARE_ADORN_WORDS[(index * 2) % RARE_ADORN_WORDS.length];
+    return `${adorn}${artifactType}`;
+  }
+  const title = LEGENDARY_TITLES[(index * 2) % LEGENDARY_TITLES.length];
+  return `${title}${artifactType}`;
 }
 
 /**
@@ -223,14 +272,29 @@ function generatePillName(rarity: ItemRarity, index: number): string {
 }
 
 /**
- * 生成草药名称
+ * 生成草药名称（四档语法，确定性取模，禁用 Math.random）
+ * 普通=朴素药性+草类（止血草/回气草）、稀有=灵韵字+药草（赤血参/紫霞芝）、
+ * 传说=意象名号（凤血灵芝/千年玉髓参）、仙品=专名表（菩提血参/周天星髓草）。
  */
 function generateHerbName(rarity: ItemRarity, index: number): string {
-  const effect = NAME_COMPONENTS.herbEffects[index % NAME_COMPONENTS.herbEffects.length];
-  const herbType = NAME_COMPONENTS.herbTypes[Math.floor(index / NAME_COMPONENTS.herbEffects.length) % NAME_COMPONENTS.herbTypes.length];
-  const rarityPrefixes = NAME_COMPONENTS.herbRarityPrefixes[rarity];
-  const rarityPrefix = rarityPrefixes.length > 0 ? rarityPrefixes[index % rarityPrefixes.length] : '';
-  return `${rarityPrefix}${effect}${herbType}`;
+  const pools = HERB_NAME_POOLS;
+  if (rarity === '仙品') {
+    // 仙品专名表优先，用尽后回退「仙品名号 + 草类」
+    if (index < pools.immortalNames.length) return pools.immortalNames[index];
+    const title = IMMORTAL_TITLES[(index * 3 + 1) % IMMORTAL_TITLES.length];
+    const typeWord = pools.immortalFallbackTypes[(index * 5) % pools.immortalFallbackTypes.length];
+    return `${title}${typeWord}`;
+  }
+  if (rarity === '传说') {
+    return pools.legendaryNames[index % pools.legendaryNames.length];
+  }
+  if (rarity === '稀有') {
+    // 灵韵色字 + 药性字 + 草类
+    const core = pools.rareCores[(index * 5) % pools.rareCores.length];
+    return `${pools.rareAdorn[index % pools.rareAdorn.length]}${core}${pools.rareTypes[index % pools.rareTypes.length]}`;
+  }
+  // 普通档：朴素药性 + 草类
+  return `${pools.plainEffects[index % pools.plainEffects.length]}${pools.plainTypes[(index * 5) % pools.plainTypes.length]}`;
 }
 
 /**
@@ -711,61 +775,49 @@ function generateEquipmentTemplates(): Item[] {
 
 /**
  * 生成丹药属性
- * 严格遵循数值平衡原则，防止属性膨胀
+ * 数值按锚定境界标定（普通≈炼气筑基、稀有≈金丹、传说≈元婴化神、仙品≈合道长生）：
+ * 即时回血取该境界 baseMaxHp 的 25%/35%/50%/100%，即时修为取 maxExpBase 的 8%~15%，
+ * 永久属性取基础属性的 1%~5%，在同档区间内浮动。
  */
 function generatePillStats(
   rarity: ItemRarity,
   index: number
 ): { effect?: Item['effect']; permanentEffect?: Item['permanentEffect'] } {
-  const multiplier = RARITY_MULTIPLIERS[rarity];
-  // 大幅提升基础值，确保高品质物品有保底感
-  const baseValue = (20 + index * 10) * multiplier;
-
-  // 定义各稀有度的最大效果值
-  const MAX_EFFECTS: Record<ItemRarity, { exp: number; hp: number; spirit: number; physique: number, attack: number, defense: number , speed: number}> = {
-    普通: { exp: 1000, hp: 500, spirit: 50, physique: 50, attack: 50, defense: 50, speed: 50},
-    稀有: { exp: 5000, hp: 2000, spirit: 500, physique: 500, attack: 500, defense: 500, speed: 500},
-    传说: { exp: 20000, hp: 8000, spirit: 3000, physique: 3000, attack: 3000, defense: 3000, speed: 3000},
-    仙品: { exp: 100000, hp: 20000, spirit: 5000, physique: 5000, attack: 5000, defense: 5000, speed: 5000},
+  // 各稀有度效果基准值（对照 realms.ts REALM_DATA 标定）
+  const PILL_EFFECT_BASE: Record<ItemRarity, { hp: number; exp: number; spirit: number; physique: number }> = {
+    普通: { hp: 120, exp: 300, spirit: 3, physique: 4 },
+    稀有: { hp: 2000, exp: 5000, spirit: 6, physique: 10 },
+    传说: { hp: 25000, exp: 80000, spirit: 100, physique: 200 },
+    仙品: { hp: 200000, exp: 400000, spirit: 1500, physique: 3000 },
   };
+  const base = PILL_EFFECT_BASE[rarity];
 
-  // 计算效果值的辅助函数，确保不超过上限，且有合理的随机性
-  const calculateEffect = (val: number, weight: number, maxValue: number): number => {
-    const value = Math.floor(val * weight * (0.9 + Math.random() * 0.4));
-    return Math.min(maxValue, value);
-  };
+  // 在基准值附近浮动（0.85~1.15），保证同档丹药数值有差异但不出档
+  const fluctuate = (val: number): number => Math.floor(val * (0.85 + Math.random() * 0.3));
 
-  // 随机选择效果类型
+  // 按索引轮换效果类型：修为 / 回血 / 永久属性 / 混合
   const effectType = index % 4;
 
   switch (effectType) {
     case 0: // 增加修为
-      return {
-        effect: {
-          exp: calculateEffect(baseValue, 10.0, MAX_EFFECTS[rarity].exp)
-        },
-      };
+      return { effect: { exp: fluctuate(base.exp) } };
     case 1: // 恢复气血
-      return {
-        effect: {
-          hp: calculateEffect(baseValue, 5.0, MAX_EFFECTS[rarity].hp)
-        },
-      };
+      return { effect: { hp: fluctuate(base.hp) } };
     case 2: // 永久增加属性
       return {
         permanentEffect: {
-          spirit: calculateEffect(baseValue, 0.5, MAX_EFFECTS[rarity].spirit),
-          physique: calculateEffect(baseValue, 0.5, MAX_EFFECTS[rarity].physique),
+          spirit: fluctuate(base.spirit),
+          physique: fluctuate(base.physique),
         },
       };
     case 3: // 混合效果
       return {
         effect: {
-          exp: calculateEffect(baseValue, 5.0, MAX_EFFECTS[rarity].exp),
-          hp: calculateEffect(baseValue, 2.5, MAX_EFFECTS[rarity].hp)
+          exp: fluctuate(base.exp * 0.6),
+          hp: fluctuate(base.hp * 0.6),
         },
         permanentEffect: {
-          spirit: calculateEffect(baseValue, 0.3, MAX_EFFECTS[rarity].spirit),
+          spirit: fluctuate(base.spirit * 0.5),
         },
       };
     default:
@@ -863,52 +915,38 @@ function generatePillTemplates(): Item[] {
 
 /**
  * 生成草药属性
- * 严格遵循数值平衡原则，防止属性膨胀
+ * 数值与 generatePillStats 使用同一套锚定境界标定体系（略低于同档丹药）。
  */
 function generateHerbStats(
   rarity: ItemRarity,
   index: number
 ): { effect?: Item['effect']; permanentEffect?: Item['permanentEffect'] } {
-  const multiplier = RARITY_MULTIPLIERS[rarity];
-  // 提高基础值，草药略低于丹药
-  const baseValue = (15 + index * 5) * multiplier;
-
-  // 定义各稀有度的最大效果值
-  const MAX_EFFECTS: Record<ItemRarity, { hp: number; exp: number; spirit: number; physique: number; maxHp: number }> = {
-    普通: { hp: 300, exp: 200, spirit: 15, physique: 15, maxHp: 30 },
-    稀有: { hp: 1000, exp: 800, spirit: 40, physique: 40, maxHp: 150 },
-    传说: { hp: 5000, exp: 3000, spirit: 80, physique: 80, maxHp: 600 },
-    仙品: { hp: 15000, exp: 10000, spirit: 150, physique: 150, maxHp: 1500 },
+  // 各稀有度效果基准值（对照 realms.ts REALM_DATA 标定）
+  const HERB_EFFECT_BASE: Record<ItemRarity, { hp: number; exp: number; spirit: number; physique: number; maxHp: number }> = {
+    普通: { hp: 120, exp: 250, spirit: 2, physique: 3, maxHp: 15 },
+    稀有: { hp: 900, exp: 3000, spirit: 5, physique: 8, maxHp: 80 },
+    传说: { hp: 12000, exp: 60000, spirit: 80, physique: 150, maxHp: 900 },
+    仙品: { hp: 300000, exp: 2000000, spirit: 1200, physique: 2500, maxHp: 25000 },
   };
+  const base = HERB_EFFECT_BASE[rarity];
 
-  // 计算效果值的辅助函数
-  const calculateEffect = (val: number, weight: number, maxValue: number): number => {
-    const value = Math.floor(val * weight * (0.8 + Math.random() * 0.4));
-    return Math.min(maxValue, value);
-  };
+  // 在基准值附近浮动（0.85~1.15）
+  const fluctuate = (val: number): number => Math.floor(val * (0.85 + Math.random() * 0.3));
 
-  // 随机选择效果类型
+  // 按索引轮换效果类型：回血 / 修为 / 永久属性
   const effectType = index % 3;
 
   switch (effectType) {
     case 0: // 恢复气血
-      return {
-        effect: {
-          hp: calculateEffect(baseValue, 4.0, MAX_EFFECTS[rarity].hp)
-        },
-      };
+      return { effect: { hp: fluctuate(base.hp) } };
     case 1: // 增加修为
-      return {
-        effect: {
-          exp: calculateEffect(baseValue, 2.0, MAX_EFFECTS[rarity].exp)
-        },
-      };
+      return { effect: { exp: fluctuate(base.exp) } };
     case 2: // 永久增加属性
       return {
         permanentEffect: {
-          spirit: calculateEffect(baseValue, 0.3, MAX_EFFECTS[rarity].spirit),
-          physique: calculateEffect(baseValue, 0.3, MAX_EFFECTS[rarity].physique),
-          maxHp: calculateEffect(baseValue, 1.0, MAX_EFFECTS[rarity].maxHp),
+          spirit: fluctuate(base.spirit),
+          physique: fluctuate(base.physique),
+          maxHp: fluctuate(base.maxHp),
         },
       };
     default:

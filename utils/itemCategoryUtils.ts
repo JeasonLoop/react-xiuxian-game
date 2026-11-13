@@ -34,6 +34,8 @@ export function getItemCategory(item: Item | MarketItem): ItemCategory {
   const typeKey = String(item.type).toLowerCase();
   if (item.type === ItemType.Recipe || typeKey === 'recipe') return 'recipe';
   if (item.type === ItemType.AdvancedItem || typeKey === 'advanceditem' || typeKey === '进阶物品') return 'advancedItem';
+  // 通天宝匣是宝箱不是装备：按名称判断，兼容旧存档误入库为 Artifact 的情况
+  if (typeof (item as any).name === 'string' && (item as any).name.includes('宝匣')) return 'material';
   if (item.isEquippable || item.type === ItemType.Weapon || item.type === ItemType.Armor || item.type === ItemType.Artifact || item.type === ItemType.Accessory || item.type === ItemType.Ring || ['weapon', 'armor', 'artifact', 'accessory', 'ring'].includes(typeKey)) return 'equipment';
   if (item.type === ItemType.Pill || ['pill', 'elixir', 'potion'].includes(typeKey)) return 'pill';
   if (item.type === ItemType.Herb || typeKey === 'herb' || typeKey === '草药') return 'herb';

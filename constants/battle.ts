@@ -158,7 +158,7 @@ export const BATTLE_POTIONS: Record<string, BattlePotion> = {
     name: '回血丹',
     type: 'heal',
     effect: {
-      heal: 50,
+      heal: 100,
     },
     cooldown: 0,
     itemType: ItemType.Pill,
@@ -168,14 +168,14 @@ export const BATTLE_POTIONS: Record<string, BattlePotion> = {
     name: '回春丹',
     type: 'heal',
     effect: {
-      heal: 200,
+      heal: 900,
     },
     cooldown: 0,
     itemType: ItemType.Pill,
   },
-  '强体丹': {
+  '固本培元丹': {
     itemId: 'potion-strength',
-    name: '强体丹',
+    name: '固本培元丹',
     type: 'buff',
     effect: {
       buffs: [
@@ -185,7 +185,7 @@ export const BATTLE_POTIONS: Record<string, BattlePotion> = {
           type: 'attack',
           value: 50, // 攻击力+50
           duration: 3,
-          source: '强体丹',
+          source: '固本培元丹',
           description: '攻击力提升50点，持续3回合',
         },
       ],
@@ -193,9 +193,9 @@ export const BATTLE_POTIONS: Record<string, BattlePotion> = {
     cooldown: 5,
     itemType: ItemType.Pill,
   },
-  '凝神丹': {
+  '凝神静心丹': {
     itemId: 'potion-spirit',
-    name: '凝神丹',
+    name: '凝神静心丹',
     type: 'buff',
     effect: {
       buffs: [
@@ -205,7 +205,7 @@ export const BATTLE_POTIONS: Record<string, BattlePotion> = {
           type: 'custom',
           value: 30, // 神识+30（影响法术伤害）
           duration: 3,
-          source: '凝神丹',
+          source: '凝神静心丹',
           description: '神识提升30点，持续3回合',
         },
       ],

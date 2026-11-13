@@ -29,7 +29,7 @@ export const INITIAL_ITEMS: Item[] = [
     description: '常见的止血草药，叶片翠绿，散发着淡淡的药香，能够快速止血并恢复轻微的外伤，是修士们常备的疗伤草药。',
     quantity: 2,
     rarity: '普通',
-    effect: { hp: 200 },
+    effect: { hp: 150 },
   },
   {
     id: 'spirit-gathering-grass',
@@ -90,7 +90,7 @@ export const PILL_RECIPES: Recipe[] = [
       type: ItemType.Pill,
       description: '疗伤圣药，由多种珍贵草药炼制而成，服用后能够大幅恢复气血，是修士们在战斗中保命的珍贵丹药。',
       rarity: '稀有',
-      effect: { hp: 200 },
+      effect: { hp: 900 },
     },
   },
   {
@@ -125,14 +125,14 @@ export const PILL_RECIPES: Recipe[] = [
     },
   },
   {
-    name: '龙血丹',
+    name: '真龙凝血丹',
     cost: 2000,
     ingredients: [
       { name: '龙鳞果', qty: 3 },
       { name: '高阶妖丹', qty: 2 },
     ],
     result: {
-      name: '龙血丹',
+      name: '真龙凝血丹',
       type: ItemType.Pill,
       description: '蕴含一丝真龙之血，服用后气血如龙。大幅增加气血上限。',
       rarity: '传说',
@@ -151,7 +151,7 @@ export const PILL_RECIPES: Recipe[] = [
       type: ItemType.Pill,
       description: '传说中的九转金丹，由万年灵乳和九叶芝草炼制而成，服用后甚至能让凡人立地飞升，是修士们梦寐以求的仙丹，能够大幅提升修为和各项属性。',
       rarity: '仙品',
-      effect: { exp: 50000 },
+      effect: { exp: 600000 },
       permanentEffect: { maxLifespan: 1000, spirit: 1000, attack: 1000, defense: 1000, physique: 1000, speed: 1000},
     },
   },
@@ -186,7 +186,7 @@ export const PILL_RECIPES: Recipe[] = [
     },
   },
   {
-    name: '不死仙丹',
+    name: '不死玄冥丹',
     cost: 8000,
     ingredients: [
       { name: '万年灵乳', qty: 2 },
@@ -194,9 +194,9 @@ export const PILL_RECIPES: Recipe[] = [
       { name: '龙鳞果', qty: 3 },
     ],
     result: {
-      name: '不死仙丹',
+      name: '不死玄冥丹',
       type: ItemType.Pill,
-      description: '传说中的不死仙丹，由万年灵乳、九叶芝草和龙鳞果炼制而成，服用后能够延长200年寿命并大幅增加最大寿命500年，是修士们梦寐以求的仙丹。',
+      description: '传说中的不死玄冥丹，由万年灵乳、九叶芝草和龙鳞果炼制而成，服用后能够延长200年寿命并大幅增加最大寿命500年，是修士们梦寐以求的仙丹。',
       rarity: '仙品',
       effect: { lifespan: 200 },
       permanentEffect: { maxLifespan: 500 },
@@ -226,7 +226,7 @@ export const PILL_RECIPES: Recipe[] = [
     },
   },
   {
-    name: '五行灵丹',
+    name: '五气朝元丹',
     cost: 2500,
     ingredients: [
       { name: '千年人参', qty: 3 },
@@ -234,7 +234,7 @@ export const PILL_RECIPES: Recipe[] = [
       { name: '高阶妖丹', qty: 2 },
     ],
     result: {
-      name: '五行灵丹',
+      name: '五气朝元丹',
       type: ItemType.Pill,
       description: '平衡五行，所有灵根各提升3点。',
       rarity: '传说',
@@ -250,7 +250,7 @@ export const PILL_RECIPES: Recipe[] = [
     },
   },
   {
-    name: '天灵根丹',
+    name: '先天道体丹',
     cost: 10000,
     ingredients: [
       { name: '万年灵乳', qty: 3 },
@@ -258,7 +258,7 @@ export const PILL_RECIPES: Recipe[] = [
       { name: '万年仙草', qty: 2 },
     ],
     result: {
-      name: '天灵根丹',
+      name: '先天道体丹',
       type: ItemType.Pill,
       description: '传说中的仙丹，所有灵根各提升10点。',
       rarity: '仙品',
@@ -278,14 +278,14 @@ export const PILL_RECIPES: Recipe[] = [
 // 可通过历练获得的额外丹方（这些不会在初始炼丹面板中显示，需要通过使用丹方物品解锁）
 export const DISCOVERABLE_RECIPES: Recipe[] = [
   {
-    name: '凝神丹',
+    name: '凝神静心丹',
     cost: 150,
     ingredients: [
       { name: '凝神花', qty: 3 },
       { name: '聚灵草', qty: 2 },
     ],
     result: {
-      name: '凝神丹',
+      name: '凝神静心丹',
       type: ItemType.Pill,
       description: '凝神静气，提升神识。永久增加神识属性。',
       rarity: '稀有',
@@ -293,14 +293,14 @@ export const DISCOVERABLE_RECIPES: Recipe[] = [
     },
   },
   {
-    name: '强体丹',
+    name: '固本培元丹',
     cost: 200,
     ingredients: [
       { name: '血参', qty: 2 },
       { name: '回气草', qty: 3 },
     ],
     result: {
-      name: '强体丹',
+      name: '固本培元丹',
       type: ItemType.Pill,
       description: '强身健体，提升体魄。永久增加体魄属性。',
       rarity: '稀有',
@@ -308,14 +308,14 @@ export const DISCOVERABLE_RECIPES: Recipe[] = [
     },
   },
   {
-    name: '破境丹',
+    name: '破境通玄丹',
     cost: 800,
     ingredients: [
       { name: '千年灵芝', qty: 1 },
       { name: '妖兽内丹', qty: 2 },
     ],
     result: {
-      name: '破境丹',
+      name: '破境通玄丹',
       type: ItemType.Pill,
       description: '突破境界的辅助丹药，大幅提升修为并永久增强属性。',
       rarity: '传说',
@@ -324,23 +324,23 @@ export const DISCOVERABLE_RECIPES: Recipe[] = [
     },
   },
   {
-    name: '仙灵丹',
+    name: '仙灵再造丹',
     cost: 3000,
     ingredients: [
       { name: '万年仙草', qty: 1 },
       { name: '高阶妖丹', qty: 3 },
     ],
     result: {
-      name: '仙灵丹',
+      name: '仙灵再造丹',
       type: ItemType.Pill,
       description: '仙家灵丹，服用后修为与属性大幅提升。',
       rarity: '传说',
-      effect: { exp: 2000, spirit: 50, physique: 50 },
+      effect: { exp: 15000, spirit: 50, physique: 50 },
       permanentEffect: { maxLifespan: 300, spirit: 300, attack: 300, defense: 300, physique: 300, speed: 300},
     },
   },
   {
-    name: '天元丹',
+    name: '太乙紫金丹',
     cost: 10000,
     ingredients: [
       { name: '万年灵乳', qty: 2 },
@@ -348,34 +348,34 @@ export const DISCOVERABLE_RECIPES: Recipe[] = [
       { name: '龙鳞果', qty: 5 },
     ],
     result: {
-      name: '天元丹',
+      name: '太乙紫金丹',
       type: ItemType.Pill,
       description: '天元级别的仙丹，服用后全属性大幅提升。',
       rarity: '仙品',
       effect: {
-        exp: 10000,
+        exp: 600000,
       },
       permanentEffect: { maxLifespan: 500, spirit: 500, attack: 500, defense: 500, physique: 500, speed: 500},
     },
   },
   {
-    name: '结金丹',
+    name: '金液还丹',
     cost: 3000,
     ingredients: [
       { name: '千年灵芝', qty: 2 },
       { name: '妖兽内丹', qty: 3 },
     ],
     result: {
-      name: '结金丹',
+      name: '金液还丹',
       type: ItemType.Pill,
       description: '有助于凝结金丹的珍贵丹药。服用后大幅提升修为，并永久增强神识。',
       rarity: '稀有',
-      effect: { exp: 30000, spirit: 20 },
+      effect: { exp: 3800, spirit: 20 },
       permanentEffect: { spirit: 50, maxHp: 200 },
     },
   },
   {
-    name: '凝魂丹',
+    name: '三魂凝魄丹',
     cost: 4000,
     ingredients: [
       { name: '万年仙草', qty: 1 },
@@ -383,11 +383,11 @@ export const DISCOVERABLE_RECIPES: Recipe[] = [
       { name: '高阶妖丹', qty: 2 },
     ],
     result: {
-      name: '凝魂丹',
+      name: '三魂凝魄丹',
       type: ItemType.Pill,
       description: '能够凝聚神魂的珍贵丹药。服用后大幅提升修为和神识，并永久增强神魂。',
       rarity: '传说',
-      effect: { exp: 10000, spirit: 50, hp: 300 },
+      effect: { exp: 10000, spirit: 50, hp: 8000 },
       permanentEffect: { spirit: 100, maxHp: 300, attack: 50 },
     },
   },
@@ -405,7 +405,7 @@ export const DISCOVERABLE_RECIPES: Recipe[] = [
       type: ItemType.Pill,
       description: '蕴含凤凰涅槃之力的神丹。服用后获得涅槃重生之力，大幅提升修为和属性。',
       rarity: '传说',
-      effect: { hp: 800, exp: 1500, attack: 30 },
+      effect: { hp: 12000, exp: 15000, attack: 30 },
       permanentEffect: { maxHp: 400, attack: 100, defense: 100, spirit: 80, physique: 80, speed: 50 },
     },
   },
@@ -427,21 +427,21 @@ export const COMMON_PILLS = {
   回血丹: () => getPillDefinition('回血丹'), // 注意：回血丹不在丹方中，需要特殊处理
   洗髓丹: () => getPillDefinition('洗髓丹'),
   筑基丹: () => getPillDefinition('筑基丹'),
-  龙血丹: () => getPillDefinition('龙血丹'),
+  真龙凝血丹: () => getPillDefinition('真龙凝血丹'),
   九转金丹: () => getPillDefinition('九转金丹'),
   延寿丹: () => getPillDefinition('延寿丹'),
   长生丹: () => getPillDefinition('长生丹'),
-  不死仙丹: () => getPillDefinition('不死仙丹'),
+  不死玄冥丹: () => getPillDefinition('不死玄冥丹'),
   洗灵丹: () => getPillDefinition('洗灵丹'),
-  五行灵丹: () => getPillDefinition('五行灵丹'),
-  天灵根丹: () => getPillDefinition('天灵根丹'),
-  凝神丹: () => getPillDefinition('凝神丹'),
-  强体丹: () => getPillDefinition('强体丹'),
-  破境丹: () => getPillDefinition('破境丹'),
-  仙灵丹: () => getPillDefinition('仙灵丹'),
-  天元丹: () => getPillDefinition('天元丹'),
-  结金丹: () => getPillDefinition('结金丹'),
-  凝魂丹: () => getPillDefinition('凝魂丹'),
+  五气朝元丹: () => getPillDefinition('五气朝元丹'),
+  先天道体丹: () => getPillDefinition('先天道体丹'),
+  凝神静心丹: () => getPillDefinition('凝神静心丹'),
+  固本培元丹: () => getPillDefinition('固本培元丹'),
+  破境通玄丹: () => getPillDefinition('破境通玄丹'),
+  仙灵再造丹: () => getPillDefinition('仙灵再造丹'),
+  太乙紫金丹: () => getPillDefinition('太乙紫金丹'),
+  金液还丹: () => getPillDefinition('金液还丹'),
+  三魂凝魄丹: () => getPillDefinition('三魂凝魄丹'),
   凤凰涅槃丹: () => getPillDefinition('凤凰涅槃丹'),
 };
 
@@ -568,10 +568,10 @@ export const ALCHEMY_MATERIALS_ITEMS: Item[] = [
     id: 'spirit-concentrating-flower',
     name: '凝神花',
     type: ItemType.Herb,
-    description: '能够凝聚神识的珍贵花朵，散发着淡淡的灵香，是炼制凝神丹的主要材料。直接使用可永久提升神识。',
+    description: '能够凝聚神识的珍贵花朵，散发着淡淡的灵香，是炼制凝神静心丹的主要材料。直接使用可永久提升神识。',
     quantity: 1,
     rarity: '稀有',
-    effect: { hp: 50, spirit: 5 },
+    effect: { hp: 900, spirit: 5 },
     permanentEffect: { spirit: 50 },
   },
   {
@@ -581,7 +581,7 @@ export const ALCHEMY_MATERIALS_ITEMS: Item[] = [
     description: '能够快速恢复灵气的灵草，叶片翠绿，是炼制回气类丹药的常用材料。直接使用可恢复气血并略微提升气血上限。',
     quantity: 1,
     rarity: '普通',
-    effect: { hp: 300 },
+    effect: { hp: 150 },
     permanentEffect: { maxHp: 50 },
   },
   {
@@ -591,7 +591,7 @@ export const ALCHEMY_MATERIALS_ITEMS: Item[] = [
     description: '生长千年的灵芝，蕴含着浓郁的灵气，是炼制高阶丹药的珍贵材料。直接使用可大幅提升属性并增加寿命。',
     quantity: 1,
     rarity: '传说',
-    effect: { hp: 1500 },
+    effect: { hp: 10000 },
     permanentEffect: { maxHp: 400, spirit: 200, physique: 150, maxLifespan: 300 },
   },
   {
@@ -601,8 +601,8 @@ export const ALCHEMY_MATERIALS_ITEMS: Item[] = [
     description: '生长万年的仙草，蕴含着天地精华，是炼制仙品丹药的顶级材料。直接使用可获得大幅属性提升和寿命增长。',
     quantity: 1,
     rarity: '仙品',
-    effect: { hp: 10000 },
-    permanentEffect: { maxHp: 1000, spirit: 1000, physique: 800, speed: 500, maxLifespan: 2000 },
+    effect: { hp: 250000 },
+    permanentEffect: { maxHp: 5000, spirit: 1000, physique: 800, speed: 500, maxLifespan: 2000 },
   },
   {
     id: 'high-grade-monster-core',
@@ -627,7 +627,7 @@ export const ALCHEMY_MATERIALS_ITEMS: Item[] = [
     description: '九叶灵芝，每一片叶子都蕴含着强大的灵气，是炼制仙品丹药的顶级材料。直接使用可大幅提升属性。',
     quantity: 1,
     rarity: '传说',
-    effect: { hp: 2500 },
+    effect: { hp: 10000 },
     permanentEffect: { maxHp: 800, spirit: 600, physique: 500, defense: 300 },
   },
   {

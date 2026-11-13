@@ -41,7 +41,7 @@ export const ART_SYNERGY_SETS: ArtSynergySet[] = [
   {
     id: 'synergy-fire-triple',
     name: '火系三绝',
-    description: '烈火拳、纯阳无极功、凤凰涅槃功三法合一，火系功法威力大增',
+    description: '赤炎拳、纯阳无极功、凤凰涅槃功三法合一，火系功法威力大增',
     requiredArts: ['art-fiery-fist', 'art-pure-yang', 'art-phoenix-rebirth'],
     effects: {
       attackPercent: 0.25,
@@ -152,7 +152,7 @@ export const ART_SYNERGY_SETS: ArtSynergySet[] = [
   {
     id: 'synergy-dragon-phoenix',
     name: '龙凤呈祥',
-    description: '龙拳与凤凰涅槃功，龙凤齐鸣',
+    description: '降龙拳与凤凰涅槃功，龙凤齐鸣',
     requiredArts: ['art-dragon-fist', 'art-phoenix-rebirth'],
     effects: {
       attack: 300,

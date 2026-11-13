@@ -46,7 +46,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-fiery-fist',
-    name: '烈火拳',
+    name: '赤炎拳',
     type: 'body',
     grade: '玄',
     description: '将灵气转化为烈火附着于双拳。大幅提升攻击力。',
@@ -160,7 +160,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-dragon-fist',
-    name: '龙拳',
+    name: '降龙拳',
     type: 'body',
     grade: '地',
     description: '拳如真龙，威力无穷。大幅提升攻击力。',
@@ -241,7 +241,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-flame-palm',
-    name: '炎掌',
+    name: '赤焰掌',
     type: 'body',
     grade: '玄',
     description: '掌中带火，焚尽万物。',
@@ -251,7 +251,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-frost-breath',
-    name: '寒冰吐息',
+    name: '玄冰真解',
     type: 'mental',
     grade: '玄',
     description: '冰系心法，修炼时如临寒潭。',
@@ -261,7 +261,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-iron-fist',
-    name: '铁拳术',
+    name: '崩山拳',
     type: 'body',
     grade: '玄',
     description: '双拳如铁，刚猛无比。',
@@ -281,7 +281,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-storm-heart',
-    name: '风暴之心',
+    name: '罡风心诀',
     type: 'mental',
     grade: '玄',
     description: '心法狂暴如风暴，修炼速度惊人。',
@@ -331,7 +331,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-starlight-gather',
-    name: '聚星诀',
+    name: '周天聚星诀',
     type: 'mental',
     grade: '地',
     description: '聚集星辰之力，修炼事半功倍。',
@@ -361,7 +361,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-void-step',
-    name: '虚空步',
+    name: '缩地成寸',
     type: 'body',
     grade: '天',
     description: '穿梭虚空，身法超绝。',
@@ -391,7 +391,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-immortal-awakening',
-    name: '仙醒诀',
+    name: '大梦醒仙诀',
     type: 'mental',
     grade: '天',
     description: '觉醒仙人之力，超越凡俗。',
@@ -447,7 +447,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-earth-core',
-    name: '土核功',
+    name: '厚土功',
     type: 'body',
     grade: '黄',
     description: '土系炼体，厚重沉稳。',
@@ -491,7 +491,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-sun-fire',
-    name: '太阳真火诀',
+    name: '大日焚天诀',
     type: 'mental',
     grade: '地',
     description: '火系至高心法，如太阳般炽热。',
@@ -502,7 +502,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-earth-mountain',
-    name: '山岳功',
+    name: '镇岳功',
     type: 'body',
     grade: '地',
     description: '土系炼体至境，如山岳般厚重。',
@@ -524,7 +524,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-wood-immortal',
-    name: '木仙诀',
+    name: '青帝长生诀',
     type: 'mental',
     grade: '天',
     description: '木系仙级心法，与天地同寿。',
@@ -535,7 +535,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-ocean-heart',
-    name: '海心诀',
+    name: '北溟玄海诀',
     type: 'mental',
     grade: '天',
     description: '水系仙级心法，如海洋般深邃。',
@@ -557,7 +557,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-earth-immortal',
-    name: '土仙体',
+    name: '厚土无量体',
     type: 'body',
     grade: '天',
     description: '土系仙级炼体，与大地同源。',
@@ -568,7 +568,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-golden-immortal',
-    name: '金仙剑',
+    name: '庚金仙剑诀',
     type: 'body',
     grade: '天',
     description: '金系仙级剑法，斩断一切。',
@@ -601,7 +601,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-thunder-palm',
-    name: '雷掌',
+    name: '奔雷掌',
     type: 'body',
     grade: '黄',
     description: '掌中带雷，威力不俗。',
@@ -644,7 +644,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-lightning-strike',
-    name: '雷霆一击',
+    name: '裂天雷击',
     type: 'body',
     grade: '玄',
     description: '引天雷之力，一击必杀。',
@@ -655,7 +655,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-demon-fist',
-    name: '魔拳',
+    name: '噬魂魔拳',
     type: 'body',
     grade: '玄',
     description: '魔道拳法，威力霸道。',
@@ -718,7 +718,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-divine-sword',
-    name: '神剑诀',
+    name: '破军剑诀',
     type: 'body',
     grade: '地',
     description: '神级剑法，威力绝伦。',
@@ -729,7 +729,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-phoenix-blade',
-    name: '凤凰刀',
+    name: '焚天凤翎刀',
     type: 'body',
     grade: '地',
     description: '如凤凰展翅，刀法华丽而致命。',
@@ -740,7 +740,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-dragon-claw',
-    name: '龙爪功',
+    name: '擒龙爪',
     type: 'body',
     grade: '地',
     description: '如真龙之爪，撕裂一切。',
@@ -750,7 +750,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-void-sword',
-    name: '虚空剑',
+    name: '破虚剑',
     type: 'body',
     grade: '地',
     description: '剑破虚空，无物不斩。',
@@ -801,7 +801,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-celestial-blade',
-    name: '开天',
+    name: '开天辟地刀',
     type: 'body',
     grade: '天',
     description: '天级刀法，一刀断天地。',
@@ -812,7 +812,7 @@ export const CULTIVATION_ARTS: CultivationArt[] = [
   },
   {
     id: 'art-demon-god-fist',
-    name: '魔神道音',
+    name: '魔神裂天拳',
     type: 'body',
     grade: '天',
     description: '魔道至高拳法，一拳可破天。',
@@ -939,7 +939,7 @@ export const CULTIVATION_ART_BATTLE_SKILLS: Record<string, BattleSkill[]> = {
   'art-fiery-fist': [
     {
       id: 'skill-fiery-fist',
-      name: '烈火拳',
+      name: '赤炎拳',
       description: '将灵气转化为烈火附着于双拳，造成物理伤害并可能灼烧敌人。',
       type: 'attack',
       source: 'cultivation_art',
@@ -1135,7 +1135,7 @@ export const CULTIVATION_ART_BATTLE_SKILLS: Record<string, BattleSkill[]> = {
   'art-dragon-fist': [
     {
       id: 'skill-dragon-fist',
-      name: '龙拳',
+      name: '降龙拳',
       description: '拳如真龙，威力无穷，造成大量物理伤害。',
       type: 'attack',
       source: 'cultivation_art',

@@ -666,7 +666,7 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
           description: '你在荒村古井旁听见求救声，井下似乎有人被困。',
           choices: [
             { text: '稳妥救援（绳索+护体）', reputationChange: 12, expChange: 25, hpChange: -5, description: '你花了些时间布置，成功救人并获得感谢。', riskTag: '稳妥' as const },
-            { text: '直接跃下强救（高风险）', reputationChange: 18, expChange: 40, hpChange: -25, description: '你强行跃下，虽受伤但救援成功，村民口口称赞。', riskTag: '激进' as const },
+            { text: '直接跃下强救（高风险）', reputationChange: 18, expChange: 55, hpChange: -25, description: '你强行跃下，虽受伤但救援成功，村民口口称赞。', riskTag: '激进' as const },
             { text: '请村民自救并留下药包（保底）', reputationChange: 4, spiritStonesChange: 20, description: '你未亲自下井，但留下物资，至少避免了最坏结果。', riskTag: '保底' as const },
           ],
         },
@@ -693,7 +693,7 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
           description: '遗迹封印松动，附近散修请求你协助稳固法阵。',
           choices: [
             { text: '协助稳固封印（稳妥）', reputationChange: 16, expChange: 35, hpChange: -10, description: '你参与维稳，众修士对你评价大幅提升。', riskTag: '稳妥' as const },
-            { text: '趁乱入内抢先机缘（高风险）', reputationChange: -15, expChange: 55, spiritStonesChange: 80, hpChange: -20, description: '你收获不菲，但“趁火打劫”的名声传开。', riskTag: '激进' as const },
+            { text: '趁乱入内抢先机缘（高风险）', reputationChange: -15, expChange: 70, spiritStonesChange: 80, hpChange: -20, description: '你收获不菲，但“趁火打劫”的名声传开。', riskTag: '激进' as const },
             { text: '提供材料后离开（保底）', reputationChange: 6, spiritStonesChange: -15, description: '你捐出材料后撤离，虽有成本但维护了声望。', riskTag: '保底' as const },
           ],
         },
@@ -788,7 +788,7 @@ function generateNormalEventTemplate(index: number): AdventureEventTemplate {
           description: '古木上结着灵果，但附近妖兽气息明显。',
           choices: [
             { text: '驱散妖兽后采摘（稳妥）', reputationChange: 0, expChange: 42, spiritStonesChange: 22, hpChange: -6, description: '你先稳住局势再采摘灵果，收益扎实且损耗较低。', riskTag: '稳妥' as const },
-            { text: '趁妖兽混战抢果（激进）', reputationChange: 0, expChange: 78, spiritStonesChange: 62, hpChange: -20, description: '你抓住乱局一口气夺下大量灵果，代价是经脉受创。', riskTag: '激进' as const },
+            { text: '趁妖兽混战抢果（激进）', reputationChange: 0, expChange: 88, spiritStonesChange: 62, hpChange: -20, description: '你抓住乱局一口气夺下大量灵果，代价是经脉受创。', riskTag: '激进' as const },
             { text: '仅取落果（保底）', reputationChange: 0, expChange: 24, spiritStonesChange: 32, description: '你不争主果，专收落果与残枝，稳稳带走一笔资源。', riskTag: '保底' as const },
           ],
         },
@@ -962,7 +962,7 @@ function generateLuckyEventTemplate(index: number): AdventureEventTemplate {
       description: '你触发了一处高阶机缘节点，灵光与煞气并存。',
       choices: [
         { text: '稳住心神缓慢吸收（稳妥）', reputationChange: 0, expChange: 120, hpChange: -10, description: '你稳扎稳打，机缘转化稳定。', riskTag: '稳妥' as const },
-        { text: '强行满载吸收（激进）', reputationChange: 0, expChange: 220, spiritStonesChange: 120, hpChange: -45, description: '你短时间吞纳大量灵气，收益巨大但经脉受创。', riskTag: '激进' as const },
+        { text: '强行满载吸收（激进）', reputationChange: 0, expChange: 250, spiritStonesChange: 120, hpChange: -45, description: '你短时间吞纳大量灵气，收益巨大但经脉受创。', riskTag: '激进' as const },
         { text: '截取部分机缘离场（保底）', reputationChange: 0, expChange: 70, spiritStonesChange: 60, description: '你见好就收，收益不错且风险可控。', riskTag: '保底' as const },
       ],
     },
